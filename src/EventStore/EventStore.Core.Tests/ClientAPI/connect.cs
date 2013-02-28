@@ -23,15 +23,14 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void should_throw_exception_when_trying_to_reopen_closed_connection()
         {
+            var reconnected = new ManualResetEventSlim();
             var settings = ConnectionSettings.Create()
                                              .LimitReconnectionsTo(0)
-                                             .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0));
+                                             .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
+                                             .OnReconnecting(x => reconnected.Set());
 
             using (var connection = EventStoreConnection.Create(settings))
             {
-                var reconnected = new ManualResetEventSlim();
-                connection.Reconnecting += (_, __) => reconnected.Set();
-
                 connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
 
                 if (!reconnected.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might might be even 60 seconds
@@ -47,14 +46,14 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void should_close_connection_after_configured_amount_of_failed_reconnections()
         {
+            var reconnected = new ManualResetEventSlim();
             var settings = ConnectionSettings.Create()
                                              .LimitReconnectionsTo(0)
-                                             .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0));
+                                             .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
+                                             .OnReconnecting(x => reconnected.Set());
 
             using (var connection = EventStoreConnection.Create(settings))
             {
-                var reconnected = new ManualResetEventSlim();
-                connection.Reconnecting += (_, __) => reconnected.Set();
 
                 connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
 

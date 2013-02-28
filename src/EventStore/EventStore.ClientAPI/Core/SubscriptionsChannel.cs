@@ -226,7 +226,7 @@ namespace EventStore.ClientAPI.Core
 
         private void Connect(IPEndPoint endPoint)
         {
-            _connection = _connector.CreateTcpConnection(endPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
+            _connection = _connector.CreateTcpConnection(endPoint, Guid.NewGuid(), OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
         }
 
         private class SubscriptionTaskPair

@@ -30,7 +30,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.Transport.Tcp
@@ -40,43 +40,43 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private readonly ILogger _log;
         private readonly TcpClientConnector _connector = new TcpClientConnector();
 
-        public TcpConnector()
+        public TcpConnector(ILogger log)
         {
-            _log = LogManager.GetLogger();
+            Ensure.NotNull(log, "log");
+            _log = log;
         }
 
-        public TcpTypedConnection CreateTcpConnection(IPEndPoint tcpEndpoint,
+        public TcpTypedConnection CreateTcpConnection(IPEndPoint tcpEndPoint,
+                                                      Guid connectionId,
                                                       Action<TcpTypedConnection, TcpPackage> handlePackage,
                                                       Action<TcpTypedConnection> connectionEstablished,
                                                       Action<TcpTypedConnection, IPEndPoint, SocketError> connectionClosed)
         {
+            Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+            Ensure.NotEmptyGuid(connectionId, "connectionId");
+
             var connectionCreatedEvent = new ManualResetEventSlim();
             TcpTypedConnection typedConnection = null;
 
             var connection = _connector.ConnectTo(
-                tcpEndpoint,
+                tcpEndPoint,
                 tcpConnection =>
                 {
-                    _log.Debug("Connected to [{0}].", tcpConnection.EffectiveEndPoint);
+                    _log.Debug("Connected to [{0}, {1:B}].", tcpConnection.EffectiveEndPoint, connectionId);
                     connectionCreatedEvent.Wait(500);
                     connectionEstablished(typedConnection);
                 },
                 (conn, error) =>
                 {
-                    var message = string.Format("Connection to [{0}] failed. Error: {1}.", conn.EffectiveEndPoint, error);
-                    _log.Debug(message);
-
+                    _log.Debug("Connection to [{0}, {1:B}] failed. Error: {2}.", conn.EffectiveEndPoint, connectionId, error);
                     connectionClosed(null, conn.EffectiveEndPoint, error);
                 });
 
-            typedConnection = new TcpTypedConnection(connection);
+            typedConnection = new TcpTypedConnection(connection, connectionId);
             typedConnection.ConnectionClosed +=
                 (conn, error) =>
                 {
-                    _log.Debug("Connection [{0}] was closed {1}",
-                               conn.EffectiveEndPoint,
-                               error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
-
+                    _log.Debug("Connection [{0}, {1:B}] was closed {2}", conn.EffectiveEndPoint, error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
                     connectionClosed(conn, conn.EffectiveEndPoint, error);
                 };
 
@@ -105,7 +105,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     var effectiveEndPoint = conn.EffectiveEndPoint;
                     var message = string.Format("[{0}] ERROR for {1}. Connection will be closed.",
                                                 effectiveEndPoint,
-                                                valid ? package.Command as object : "<invalid package>");
+                                                valid ? package.Command.ToString() : "<invalid package>");
 
                     _log.Debug(e, message);
                     conn.Close();

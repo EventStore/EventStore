@@ -29,89 +29,376 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net;
+using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.Core
 {
     internal class EventStoreConnectionLogicHandler
     {
-        private readonly Common.Concurrent.ConcurrentQueue<Message> _messageQueue = new Common.Concurrent.ConcurrentQueue<Message>();
-        private readonly Dictionary<Type, Action<Message>> _handlers = new Dictionary<Type, Action<Message>>();
-        private int _isProcessing;
+        private static readonly IComparer<OperationItem> SeqNoComparer = new OperationItemSeqNoComparer();
 
-        private readonly TcpConnector _connector = new TcpConnector();
+        public int TotalOperationCount { get { return _operations.Count; } }
+
+        private readonly SimpleQueuedHandler _queue = new SimpleQueuedHandler();
+
+        private readonly Timer _timer;
+        private readonly Stopwatch _timerStopwatch;
+
+        private readonly EventStoreConnection _esConnection;
+        private readonly ConnectionSettings _settings;
+        private readonly ILogger _log;
+        private readonly string _connectionName;
+
         private TcpTypedConnection _connection;
+        private readonly Stopwatch _connectionStopwatch = new Stopwatch();
+        private TimeSpan _lastTimeoutCheckTimestamp;
+
+        private readonly Stopwatch _reconnectionStopwatch = new Stopwatch();
+        private int _reconnectionCount;
 
         private bool _connectionActive;
-        private bool _stopping;
+        private bool _disposed;
 
-        private readonly DateTime _startTime = DateTime.UtcNow;
-        private readonly Stopwatch _watch = Stopwatch.StartNew();
-        private DateTime _lastReconnectionTimestamp;
+        private readonly Dictionary<Guid, OperationItem> _operations = new Dictionary<Guid, OperationItem>();
+        private readonly Queue<OperationItem> _waitingOperations = new Queue<OperationItem>();
+        private volatile int _operationsInProgressCount;
 
-
-
-        public EventStoreConnectionLogicHandler()
+        public EventStoreConnectionLogicHandler(EventStoreConnection esConnection, ConnectionSettings settings, string connectionName)
         {
-            RegisterHandler<EstablishTcpConnectionMessage>(EstablishTcpConnection);   
-        }
+            Ensure.NotNull(esConnection, "esConnection");
+            Ensure.NotNull(settings, "settings");
+            Ensure.NotNullOrEmpty(connectionName, "connectionName");
 
-        private void RegisterHandler<T>(Action<T> handler) where T : Message
-        {
-            Ensure.NotNull(handler, "handler");
-            _handlers.Add(typeof(T), msg => handler((T)msg));
-        }
+            _esConnection = esConnection;
+            _settings = settings;
+            _log = settings.Log;
+            _connectionName = connectionName;
 
-        private DateTime GetNow()
-        {
-            return _startTime + _watch.Elapsed;
+            _queue.RegisterHandler<EstablishTcpConnectionMessage>(msg => EstablishTcpConnection(msg.Task, msg.EndPoint));
+            _queue.RegisterHandler<CloseConnectionMessage>(msg => CloseConnection("Connection close requested by client."));
+            _queue.RegisterHandler<TcpConnectionEstablishedMessage>(msg => TcpConnectionEstablished(msg.Connection));
+            _queue.RegisterHandler<TcpConnectionClosedMessage>(msg => TcpConnectionClosed(msg.Connection));
+
+            _queue.RegisterHandler<TimerTickMessage>(TimerTick);
+
+            _queue.RegisterHandler<StartOperationMessage>(msg => StartOperation(msg.Operation, msg.MaxAttempts, msg.Timeout));
+
+            _queue.RegisterHandler<RemoveOperationMessage>(msg => RemoveOperation(msg.OperationItem));
+            _queue.RegisterHandler<RetryOperationMessage>(msg => RetryOperation(msg.OperationItem));
+            _queue.RegisterHandler<ReconnectAndRetryOperationMessage>(msg => ReconnectAndRetryOperation(msg.OperationItem, msg.TcpEndPoint));
+
+            _timerStopwatch = Stopwatch.StartNew();
+            _timer = new Timer(_ => _queue.EnqueueMessage(new TimerTickMessage(_timerStopwatch.Elapsed)),
+                               null,
+                               Consts.TimerPeriod,
+                               Consts.TimerPeriod);
         }
 
         public void EnqueueMessage(Message message)
         {
-            Ensure.NotNull(message, "message");
-
-            _messageQueue.Enqueue(message);
-            if (Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0)
-                ThreadPool.QueueUserWorkItem(ProcessQueue);
+            _queue.EnqueueMessage(message);
         }
 
-        private void ProcessQueue(object state)
+        private void EstablishTcpConnection(TaskCompletionSource<object> task, IPEndPoint tcpEndPoint)
         {
-            do
-            {
-                Message message;
+            Ensure.NotNull(task, "task");
+            Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
 
-                while (_messageQueue.TryDequeue(out message))
+            if (_disposed) task.SetException(new ObjectDisposedException(_connectionName));
+            if (_connectionActive) task.SetException(new InvalidOperationException("EventStoreConnection is already active."));
+
+            _settings.Log.Info("EventStoreConnection '{0}': connecting to [{1}].", _connectionName, tcpEndPoint);
+
+            _connectionActive = true;
+            Connect(tcpEndPoint);
+            
+            task.SetResult(null);
+        }
+
+        private void Connect(IPEndPoint tcpEndPoint)
+        {
+            Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+            _connection = new TcpConnector(_log).CreateTcpConnection(
+                tcpEndPoint,
+                Guid.NewGuid(),
+                HandleTcpPackage,
+                connection => _queue.EnqueueMessage(new TcpConnectionEstablishedMessage(connection)),
+                (connection, endpoint, error) => _queue.EnqueueMessage(new TcpConnectionClosedMessage(connection, error)));
+        }
+
+        private void CloseConnection(string reason)
+        {
+            if (_disposed) return;
+
+            _connectionActive = false;
+            _disposed = true;
+
+            if (_connection != null)
+                _connection.Close();
+            
+            _timer.Dispose();
+
+            foreach (var operationItem in _operations)
+            {
+                operationItem.Value.Operation.Fail(
+                    new ConnectionClosingException(string.Format("Operation was in progress on connection '{0}' closing.", _connectionName)));
+            }
+            _operations.Clear();
+            _waitingOperations.Clear();
+            
+            _log.Info("EventStoreConnection '{0}' closed.", _connectionName);
+
+            if (_settings.Closed != null)
+                _settings.Closed(_esConnection, reason);
+        }
+
+        private void TcpConnectionEstablished(TcpTypedConnection connection)
+        {
+            if (_disposed || connection.ConnectionId != _connection.ConnectionId)
+                return;
+
+            _reconnectionStopwatch.Stop();
+            _reconnectionCount = 0;
+            _connectionStopwatch.Restart();
+
+            if (_settings.Connected != null)
+                _settings.Connected(_esConnection);
+        }
+
+        private void TcpConnectionClosed(TcpTypedConnection connection)
+        {
+            if (_disposed || connection.ConnectionId != _connection.ConnectionId)
+                return;
+
+            _connectionStopwatch.Stop();
+            _reconnectionStopwatch.Restart();
+
+            if (_settings.Disconnected != null)
+                _settings.Disconnected(_esConnection);
+        }
+
+        private void TimerTick(TimerTickMessage msg)
+        {
+            if (_disposed || !_connectionActive) return;
+
+            if (_connectionStopwatch.IsRunning && _connectionStopwatch.Elapsed - _lastTimeoutCheckTimestamp > _settings.OperationTimeoutCheckPeriod)
+            {
+                var retriable = new List<OperationItem>();
+                foreach (var operation in _operations.Values)
                 {
-                    Action<Message> handler;
-                    if (!_handlers.TryGetValue(message.GetType(), out handler))
-                        throw new Exception(string.Format("No handler registered for message {0}", message.GetType().Name));
-                    handler(message);
+                    if (operation.ConnectionId != _connection.ConnectionId)
+                    {
+                        retriable.Add(operation);
+                    }
+                    else if (operation.Timeout > TimeSpan.Zero && DateTime.Now - operation.LastUpdated > _settings.OperationTimeout)
+                    {
+                        var err = string.Format("{0} never got response from server.\n" +
+                                                "Last state update: {1:HH:mm:ss.fff}, UTC now: {2:HH:mm:ss.fff}.",
+                                                operation, operation.LastUpdated, DateTime.Now);
+                        _log.Error(err);
+
+                        operation.Operation.Fail(new OperationTimedOutException(err));
+                        _queue.EnqueueMessage(new RemoveOperationMessage(operation));
+                    }
                 }
 
-                Interlocked.Exchange(ref _isProcessing, 0);
-            } while (_messageQueue.Count > 0 && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
+                retriable.Sort(SeqNoComparer);
+                foreach (var operationItem in retriable)
+                {
+                    _queue.EnqueueMessage(new RetryOperationMessage(operationItem));
+                }
+
+                _lastTimeoutCheckTimestamp = _connectionStopwatch.Elapsed;
+            }
+
+            if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= _settings.ReconnectionDelay)
+            {
+                _reconnectionCount += 1;
+                if (_reconnectionCount > _settings.MaxReconnections)
+                    CloseConnection("Reconnection limit reached.");
+                else
+                {
+                    if (_settings.Reconnecting != null)
+                        _settings.Reconnecting(_esConnection);
+                    Connect(_connection.EffectiveEndPoint);
+                }
+                _reconnectionStopwatch.Stop();
+            }
         }
 
-        private void EstablishTcpConnection(EstablishTcpConnectionMessage message)
+        private void StartOperation(IClientOperation operation, int maxAttempts, TimeSpan timeout)
         {
-            if (_connectionActive) throw new InvalidOperationException("EventStoreConnection is already active.");
-            if (_stopping) throw new InvalidOperationException("EventStoreConnection has been closed.");
-            
-            _connectionActive = true;
-            _lastReconnectionTimestamp = GetNow();
-            _connection = _connector.CreateTcpConnection(message.EndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
-            
-//            _timeoutCheckStopwatch.Start();
+            if (_disposed) operation.Fail(new ObjectDisposedException(_connectionName));
+            if (!_connectionActive) operation.Fail(new InvalidOperationException(string.Format("EventStoreConnection '{0}' is not active.", _connectionName)));
 
-//            _worker = new Thread(MainLoop) { IsBackground = true, Name = "EventStoreConnection worker" };
-//            _worker.Start();
-
-            message.Task.SetResult(null);
+            ScheduleOperation(new OperationItem(operation, maxAttempts, timeout));
         }
 
+        private void HandleTcpPackage(TcpTypedConnection connection, TcpPackage package)
+        {
+            if (package.Command == TcpCommand.BadRequest && package.CorrelationId == Guid.Empty)
+            {
+                if (_settings.ErrorOccurred != null)
+                {
+                    string message = Helper.EatException(() => Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
+                    var exc = new EventStoreConnectionException(
+                        string.Format("BadRequest received from server. Error: {0}", string.IsNullOrEmpty(message) ? "<no message>" : message));
+                    _settings.ErrorOccurred(_esConnection, exc);
+                }
+                return;
+            }
+
+            OperationItem operationItem;
+            if (!_operations.TryGetValue(package.CorrelationId, out operationItem))
+            {
+                _log.Debug("Unexpected CorrelationId {{{0}}} received. Ignoring...", package.CorrelationId);
+                return;
+            }
+
+            var result = operationItem.Operation.InspectPackage(package);
+            switch (result.Decision)
+            {
+                case InspectionDecision.DoNothing:
+                {
+                    break;
+                }
+                case InspectionDecision.EndOperation:
+                {
+                    _queue.EnqueueMessage(new RemoveOperationMessage(operationItem));
+                    break;
+                }
+                case InspectionDecision.Retry:
+                {
+                    _queue.EnqueueMessage(new RetryOperationMessage(operationItem));
+                    break;
+                }
+                case InspectionDecision.Reconnect:
+                {
+                    _queue.EnqueueMessage(new ReconnectAndRetryOperationMessage(operationItem, result.TcpEndPoint));
+                    break;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException(string.Format("Unknown InspectionDecision: {0}.", result.Decision));
+            }
+        }
+
+        private bool RemoveOperation(OperationItem operation)
+        {
+            if (!_operations.Remove(operation.CorrelationId))
+                return false;
+
+            _operationsInProgressCount -= 1;
+            
+            while (_operationsInProgressCount < _settings.MaxConcurrentItems && _waitingOperations.Count > 0)
+            {
+                var waitingOperation = _waitingOperations.Dequeue();
+                ScheduleOperation(waitingOperation);
+            }
+            return true;
+        }
+
+        private void RetryOperation(OperationItem operation)
+        {
+            if (!RemoveOperation(operation))
+                return;
+
+            if (operation.MaxRetries >= 0 && operation.RetryCount >= operation.MaxRetries)
+            {
+                operation.Operation.Fail(new RetriesLimitReachedException(operation.ToString(), operation.RetryCount));
+                return;
+            }
+
+            operation.CorrelationId = Guid.NewGuid();
+            operation.RetryCount += 1;
+
+            ScheduleOperation(operation);
+        }
+
+        private void ReconnectAndRetryOperation(OperationItem operationItem, IPEndPoint tcpEndPoint)
+        {
+            if (!_reconnectionStopwatch.IsRunning || !_connection.EffectiveEndPoint.Equals(tcpEndPoint))
+            {
+                _log.Info("Going to reconnect to [{0}]. Current state: {1}, Current endpoint: {2}",
+                          tcpEndPoint, _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected", _connection.EffectiveEndPoint);
+
+                _connection.Close();
+                Connect(tcpEndPoint);
+            }
+            RetryOperation(operationItem);
+        }
+
+        private void ScheduleOperation(OperationItem operation)
+        {
+            if (!operation.Operation.IsLongRunning && _operationsInProgressCount >= _settings.MaxConcurrentItems)
+            {
+                _waitingOperations.Enqueue(operation);
+                return;
+            }
+
+            if (!operation.Operation.IsLongRunning)
+                _operationsInProgressCount += 1;
+
+            operation.ConnectionId = _connection.ConnectionId;
+            operation.LastUpdated = DateTime.UtcNow;
+
+            _operations.Add(operation.CorrelationId, operation);
+
+            var package = operation.Operation.CreateNetworkPackage(operation.CorrelationId);
+            _connection.EnqueueSend(package.AsByteArray());
+        }
+
+        public class OperationItem
+        {
+            private static long _nextSeqNo = -1;
+
+            public readonly long SeqNo = Interlocked.Increment(ref _nextSeqNo);
+
+            public readonly IClientOperation Operation;
+            public readonly int MaxRetries;
+            public readonly TimeSpan Timeout;
+
+            public Guid ConnectionId;
+            public Guid CorrelationId;
+            public int RetryCount;
+            public DateTime LastUpdated;
+
+            public OperationItem(IClientOperation operation, int maxRetries, TimeSpan timeout)
+            {
+                Ensure.NotNull(operation, "operation");
+
+                Operation = operation;
+                MaxRetries = maxRetries;
+                Timeout = timeout;
+
+                RetryCount = 0;
+                LastUpdated = DateTime.UtcNow;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("WorkItem {0} ({1:B}): {2}, retry count: {3}, last updated: {4}",
+                                     Operation.GetType().Name,
+                                     CorrelationId,
+                                     Operation,
+                                     RetryCount,
+                                     LastUpdated);
+            }
+        }
+
+        private class OperationItemSeqNoComparer: IComparer<OperationItem>
+        {
+            public int Compare(OperationItem x, OperationItem y)
+            {
+                return x.SeqNo.CompareTo(y.SeqNo);
+            }
+        }
     }
 }

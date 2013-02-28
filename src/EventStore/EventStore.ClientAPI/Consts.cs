@@ -44,6 +44,8 @@ namespace EventStore.ClientAPI
 
         public static readonly TimeSpan SubscriptionChannelConnectionTimeout = TimeSpan.FromSeconds(2);
 
+        public static readonly TimeSpan TimerPeriod = TimeSpan.FromMilliseconds(1000);
+
         public const int DefaultMaxClusterDiscoverAttempts = 10;
         public const int DefaultClusterManagerPort = 30777;
     }

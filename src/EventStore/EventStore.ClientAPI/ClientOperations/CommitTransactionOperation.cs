@@ -36,11 +36,13 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class CommitTransactionOperation : OperationBase<object, ClientMessage.TransactionCommitCompleted>
     {
+        public override bool IsLongRunning { get { return false; } }
+
         private readonly bool _forward;
         private readonly long _transactionId;
 
-        public CommitTransactionOperation(TaskCompletionSource<object> source, Guid correlationId, bool forward, long transactionId)
-            : base(source, correlationId, TcpCommand.TransactionCommit, TcpCommand.TransactionCommitCompleted)
+        public CommitTransactionOperation(TaskCompletionSource<object> source, bool forward, long transactionId)
+            : base(source, TcpCommand.TransactionCommit, TcpCommand.TransactionCommitCompleted)
         {
             _forward = forward;
             _transactionId = transactionId;
@@ -56,20 +58,22 @@ namespace EventStore.ClientAPI.ClientOperations
             switch (response.Result)
             {
                 case ClientMessage.OperationResult.Success:
-                    return new InspectionResult(InspectionDecision.Succeed);
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 case ClientMessage.OperationResult.PrepareTimeout:
                 case ClientMessage.OperationResult.CommitTimeout:
                 case ClientMessage.OperationResult.ForwardTimeout:
                     return new InspectionResult(InspectionDecision.Retry);
                 case ClientMessage.OperationResult.WrongExpectedVersion:
-                    var err = string.Format("Commit transaction failed due to WrongExpectedVersion. TransactionID: {0}, CorrID: {1}.",
-                                            _transactionId,
-                                            CorrelationId);
-                    return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
+                    var err = string.Format("Commit transaction failed due to WrongExpectedVersion. TransactionID: {0}.", _transactionId);
+                    Fail(new WrongExpectedVersionException(err));
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 case ClientMessage.OperationResult.StreamDeleted:
-                    return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException());
+                    Fail(new StreamDeletedException());
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 case ClientMessage.OperationResult.InvalidTransaction:
-                    return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
+                    Fail(new InvalidTransactionException());
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 default:
                     throw new ArgumentOutOfRangeException(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }
@@ -82,7 +86,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("TransactionId: {0}, CorrelationId: {1}", _transactionId, CorrelationId);
+            return string.Format("TransactionId: {0}", _transactionId);
         }
     }
 }

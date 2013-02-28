@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
@@ -42,15 +43,20 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         public int SendQueueSize { get { return _connection.SendQueueSize; } }
         public readonly IPEndPoint EffectiveEndPoint;
+        public readonly Guid ConnectionId;
 
         private readonly LengthPrefixMessageFramer _framer = new LengthPrefixMessageFramer();
         private readonly TcpConnection _connection;
         private Action<TcpTypedConnection, byte[]> _receiveCallback;
 
-        public TcpTypedConnection(TcpConnection connection)
+        public TcpTypedConnection(TcpConnection connection, Guid connectionId)
         {
+            Ensure.NotNull(connection, "connection");
+            Ensure.NotEmptyGuid(connectionId, "connectionId");
+
             _connection = connection;
             EffectiveEndPoint = connection.EffectiveEndPoint;
+            ConnectionId = connectionId;
 
             connection.ConnectionClosed += OnConnectionClosed;
 

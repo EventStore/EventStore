@@ -84,7 +84,6 @@
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="ClientOperations\CommitTransactionOperation.cs" />
     <Compile Include="ClientOperations\OperationBase.cs" />
-    <Compile Include="ClientOperations\OperationHelpers.cs" />
     <Compile Include="ClientOperations\ReadAllEventsBackwardOperation.cs" />
     <Compile Include="ClientOperations\ReadAllEventsForwardOperation.cs" />
     <Compile Include="ClientOperations\ReadStreamEventsBackwardOperation.cs" />
@@ -103,10 +102,10 @@
     <Compile Include="Core\ClusterExplorer.cs" />
     <Compile Include="Core\EventStoreConnectionLogicHandler.cs" />
     <Compile Include="Core\Message.cs" />
+    <Compile Include="Core\SimpleQueuedHandler.cs" />
     <Compile Include="Core\SubscriptionsChannel.cs" />
-    <Compile Include="Core\WorkItem.cs" />
     <Compile Include="Consts.cs" />
-    <Compile Include="Core\EventStoreConnectionNew.cs" />
+    <Compile Include="EventStoreConnection.cs" />
     <Compile Include="EventStoreCatchUpSubscription.cs" />
     <Compile Include="Empty.cs" />
     <Compile Include="EventData.cs" />
@@ -167,7 +166,7 @@
     <Compile Include="Transport.Tcp\TcpConnectionMonitor.cs" />
     <Compile Include="Transport.Tcp\TcpConnector.cs" />
     <Compile Include="Transport.Tcp\TcpTypedConnection.cs" />
-    <Compile Include="EventStoreConnection.cs" />
+    <Compile Include="EventStoreConnectionOld.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Transport.Tcp\TcpClientConnector.cs" />
     <Compile Include="Transport.Tcp\IMonitoredTcpConnection.cs" />

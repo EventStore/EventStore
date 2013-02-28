@@ -29,21 +29,13 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Diagnostics;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
-using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Core;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.SystemData;
-using EventStore.ClientAPI.Transport.Tcp;
-using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
-using System.Linq;
 
 namespace EventStore.ClientAPI
 {
@@ -63,75 +55,44 @@ namespace EventStore.ClientAPI
     /// </remarks>
     public class EventStoreConnection : IDisposable
     {
-        /// <summary>
-        /// Raised whenever the internal connection is disconnected from the event store
-        /// </summary>
-        public event EventHandler Disconnected;
-        /// <summary>
-        /// Raised whenever the internal connection is reconnecting to the event store
-        /// </summary>
-        public event EventHandler Reconnecting;
-        /// <summary>
-        /// Raised whenever the internal connection is connected to the event store
-        /// </summary>
-        public event EventHandler Connected;
-
-        private readonly ILogger _log;
-
-        private readonly TcpConnector _connector = new TcpConnector();
-        private readonly object _connectionLock = new object();
-        private IPEndPoint _tcpEndPoint;
-        private TcpTypedConnection _connection;
-        private volatile bool _active;
-
-        private readonly SubscriptionsChannel _subscriptionsChannel;
-
-        private readonly Common.Concurrent.ConcurrentQueue<IClientOperation> _queue = new Common.Concurrent.ConcurrentQueue<IClientOperation>();
-        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, WorkItem> _inProgress = new System.Collections.Concurrent.ConcurrentDictionary<Guid, WorkItem>();
-        private int _inProgressCount;
-
-        private DateTime _lastReconnectionTimestamp;
-        private readonly Stopwatch _reconnectionStopwatch = new Stopwatch();
-        private readonly Stopwatch _timeoutCheckStopwatch = new Stopwatch();
-        private int _reconnectionsCount;
-
-        private Thread _worker;
-        private volatile bool _stopping;
+        public readonly string ConnectionName;
 
         private readonly ConnectionSettings _settings;
+        private readonly EventStoreConnectionLogicHandler _handler;
 
         /// <summary>
         /// Constructs a new instance of a <see cref="EventStoreConnection"/>
         /// </summary>
         /// <param name="settings">The <see cref="ConnectionSettings"/> containing the settings for this connection.</param>
-        private EventStoreConnection(ConnectionSettings settings)
+        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
+        private EventStoreConnection(ConnectionSettings settings, string connectionName)
         {
+            Ensure.NotNull(settings, "settings");
+            ConnectionName = connectionName ?? string.Format("ES-{0}", Guid.NewGuid());
             _settings = settings;
-
-            LogManager.RegisterLogger(settings.Log);
-            _log = LogManager.GetLogger();
-
-            _subscriptionsChannel = new SubscriptionsChannel(_connector);
+            _handler = new EventStoreConnectionLogicHandler(this, settings, ConnectionName);
         }
 
         /// <summary>
         /// Creates a new <see cref="EventStoreConnection"/> using default <see cref="ConnectionSettings"/>
         /// </summary>
+        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <returns>a new <see cref="EventStoreConnection"/></returns>
-        public static EventStoreConnection Create()
+        public static EventStoreConnection Create(string connectionName = null)
         {
-            return new EventStoreConnection(ConnectionSettings.Default);
+            return new EventStoreConnection(ConnectionSettings.Default, connectionName);
         }
 
         /// <summary>
         /// Creates a new <see cref="EventStoreConnection"/> using specific <see cref="ConnectionSettings"/>
         /// </summary>
         /// <param name="settings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
+        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <returns>a new <see cref="EventStoreConnection"/></returns>
-        public static EventStoreConnection Create(ConnectionSettings settings)
+        public static EventStoreConnection Create(ConnectionSettings settings, string connectionName = null)
         {
             Ensure.NotNull(settings, "settings");
-            return new EventStoreConnection(settings);
+            return new EventStoreConnection(settings, connectionName);
         }
 
         /// <summary>
@@ -151,9 +112,6 @@ namespace EventStore.ClientAPI
         public Task ConnectAsync(IPEndPoint tcpEndPoint)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
-
-            _log.Info("EventStoreConnection: connecting to [{0}]", tcpEndPoint);
-
             return EstablishConnectionAsync(tcpEndPoint);
         }
 
@@ -163,7 +121,7 @@ namespace EventStore.ClientAPI
         /// <param name="clusterDns">The cluster's DNS entry.</param>
         /// <param name="maxDiscoverAttempts">The maximum number of attempts to try the DNS.</param>
         /// <param name="port">The port to connect to.</param>
-        public void Connect(string clusterDns, int maxDiscoverAttempts = 10, int port = 30777)
+        public void Connect(string clusterDns, int maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts, int port = Consts.DefaultClusterManagerPort)
         {
             ConnectAsync(clusterDns, maxDiscoverAttempts, port).Wait();
         }
@@ -175,12 +133,13 @@ namespace EventStore.ClientAPI
         /// <param name="maxDiscoverAttempts">The maximum number of attempts to try the DNS</param>
         /// <param name="port">The port to connect to</param>
         /// <returns>A <see cref="Task"/> that can be awaited upon</returns>
-        public Task ConnectAsync(string clusterDns, int maxDiscoverAttempts = 10, int port = 30777)
+        public Task ConnectAsync(string clusterDns, int maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts, int port = Consts.DefaultClusterManagerPort)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
             Ensure.Positive(maxDiscoverAttempts, "maxDiscoverAttempts");
             Ensure.Nonnegative(port, "port");
 
+            // TODO AN: rework this mess
             var explorer = new ClusterExplorer(_settings.AllowForwarding, maxDiscoverAttempts, port);
             return explorer.Resolve(clusterDns)
                            .ContinueWith(resolve =>
@@ -194,31 +153,10 @@ namespace EventStore.ClientAPI
 
         private Task EstablishConnectionAsync(IPEndPoint tcpEndPoint)
         {
-            lock (_connectionLock)
-            {
-                if (_active)
-                    throw new InvalidOperationException("EventStoreConnection is already active");
-                if (_stopping)
-                    throw new InvalidOperationException("EventStoreConnection has been closed");
-                _active = true;
-
-                _tcpEndPoint = tcpEndPoint;
-
-                _lastReconnectionTimestamp = GetNow();
-                _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
-                _timeoutCheckStopwatch.Start();
-
-                _worker = new Thread(MainLoop) {IsBackground = true, Name = "EventStoreConnection worker"};
-                _worker.Start();
-
-                return Tasks.CreateCompleted();
-            }
-        }
-
-        private void EnsureActive()
-        {
-            if (!_active)
-                throw new InvalidOperationException(string.Format("EventStoreConnection [{0}] is not active.", _tcpEndPoint));
+            Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+            var source = new TaskCompletionSource<object>();
+            _handler.EnqueueMessage(new EstablishTcpConnectionMessage(source, tcpEndPoint));
+            return source.Task;
         }
 
         /// <summary>
@@ -234,25 +172,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         public void Close()
         {
-            lock (_connectionLock)
-            {
-                if (!_active)
-                    return;
-
-                _stopping = true;
-                _active = false;
-
-                _connection.Close();
-                _subscriptionsChannel.Close();
-            }
-
-            foreach (var workItem in _inProgress.Values)
-            {
-                workItem.Operation.Fail(new ConnectionClosingException("Work item was still in progress at the moment of manual connection closing."));
-            }
-            _inProgress.Clear();
-
-            _log.Info("EventStoreConnection closed.");
+            _handler.EnqueueMessage(new CloseConnectionMessage());
         }
 
 
@@ -280,12 +200,9 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotEmptyGuid(id, "id");
-            EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new CreateStreamOperation(source, Guid.NewGuid(), _settings.AllowForwarding, stream, id, isJson, metadata);
-
-            EnqueueOperation(operation);
+            EnqueueOperation(new CreateStreamOperation(source, _settings.AllowForwarding, stream, id, isJson, metadata));
             return source.Task;
         }
 
@@ -308,12 +225,9 @@ namespace EventStore.ClientAPI
         public Task DeleteStreamAsync(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
-            EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new DeleteStreamOperation(source, Guid.NewGuid(), _settings.AllowForwarding, stream, expectedVersion);
-
-            EnqueueOperation(operation);
+            EnqueueOperation(new DeleteStreamOperation(source, _settings.AllowForwarding, stream, expectedVersion));
             return source.Task;
         }
 
@@ -407,12 +321,9 @@ namespace EventStore.ClientAPI
 // ReSharper disable PossibleMultipleEnumeration
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
-            EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new AppendToStreamOperation(source, Guid.NewGuid(), _settings.AllowForwarding, stream, expectedVersion, events);
-
-            EnqueueOperation(operation);
+            EnqueueOperation(new AppendToStreamOperation(source, _settings.AllowForwarding, stream, expectedVersion, events));
             return source.Task;
 // ReSharper restore PossibleMultipleEnumeration
         }
@@ -448,12 +359,9 @@ namespace EventStore.ClientAPI
         public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
-            EnsureActive();
 
             var source = new TaskCompletionSource<EventStoreTransaction>();
-            var operation = new StartTransactionOperation(source, Guid.NewGuid(), _settings.AllowForwarding, stream, expectedVersion, this);
-
-            EnqueueOperation(operation);
+            EnqueueOperation(new StartTransactionOperation(source, _settings.AllowForwarding, stream, expectedVersion, this));
             return source.Task;
         }
 
@@ -489,12 +397,9 @@ namespace EventStore.ClientAPI
 // ReSharper disable PossibleMultipleEnumeration
             Ensure.NotNull(transaction, "transaction");
             Ensure.NotNull(events, "events");
-            EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transaction.TransactionId, events);
-
-            EnqueueOperation(operation);
+            EnqueueOperation(new TransactionalWriteOperation(source, _settings.AllowForwarding, transaction.TransactionId, events));
             return source.Task;
 // ReSharper restore PossibleMultipleEnumeration
         }
@@ -507,12 +412,9 @@ namespace EventStore.ClientAPI
         internal Task CommitTransactionAsync(EventStoreTransaction transaction)
         {
             Ensure.NotNull(transaction, "transaction");
-            EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transaction.TransactionId);
-
-            EnqueueOperation(operation);
+            EnqueueOperation(new CommitTransactionOperation(source, _settings.AllowForwarding, transaction.TransactionId));
             return source.Task;
         }
 
@@ -542,12 +444,9 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(start, "start");
             Ensure.Positive(count, "count");
-            EnsureActive();
 
             var source = new TaskCompletionSource<StreamEventsSlice>();
-            var operation = new ReadStreamEventsForwardOperation(source, Guid.NewGuid(), stream, start, count, resolveLinkTos);
-
-            EnqueueOperation(operation);
+            EnqueueOperation(new ReadStreamEventsForwardOperation(source, stream, start, count, resolveLinkTos));
             return source.Task;
         }
 
@@ -576,12 +475,9 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
-            EnsureActive();
 
             var source = new TaskCompletionSource<StreamEventsSlice>();
-            var operation = new ReadStreamEventsBackwardOperation(source, Guid.NewGuid(), stream, start, count, resolveLinkTos);
-
-            EnqueueOperation(operation);
+            EnqueueOperation(new ReadStreamEventsBackwardOperation(source, stream, start, count, resolveLinkTos));
             return source.Task;
         }
 
@@ -608,12 +504,9 @@ namespace EventStore.ClientAPI
         public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos)
         {
             Ensure.Positive(maxCount, "maxCount");
-            EnsureActive();
 
             var source = new TaskCompletionSource<AllEventsSlice>();
-            var operation = new ReadAllEventsForwardOperation(source, Guid.NewGuid(), position, maxCount, resolveLinkTos);
-
-            EnqueueOperation(operation);
+            EnqueueOperation(new ReadAllEventsForwardOperation(source, position, maxCount, resolveLinkTos));
             return source.Task;
         }
 
@@ -639,22 +532,19 @@ namespace EventStore.ClientAPI
         public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos)
         {
             Ensure.Positive(maxCount, "maxCount");
-            EnsureActive();
 
             var source = new TaskCompletionSource<AllEventsSlice>();
-            var operation = new ReadAllEventsBackwardOperation(source, Guid.NewGuid(), position, maxCount, resolveLinkTos);
-
-            EnqueueOperation(operation);
+            EnqueueOperation(new ReadAllEventsBackwardOperation(source, position, maxCount, resolveLinkTos));
             return source.Task;
         }
 
         private void EnqueueOperation(IClientOperation operation)
         {
-            while (_queue.Count >= _settings.MaxQueueSize)
+            while (_handler.TotalOperationCount >= _settings.MaxQueueSize)
             {
                 Thread.Sleep(1);
             }
-            _queue.Enqueue(operation);
+            _handler.EnqueueMessage(new StartOperationMessage(operation, _settings.MaxAttempts, _settings.OperationTimeout));
         }
 
         public Task<EventStoreSubscription> SubscribeToStream(string stream, 
@@ -676,9 +566,9 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
-            EnsureActive();
-            _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
-            return _subscriptionsChannel.Subscribe(stream, resolveLinkTos, eventAppeared, subscriptionDropped);
+//            _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
+//            return _subscriptionsChannel.Subscribe(stream, resolveLinkTos, eventAppeared, subscriptionDropped);
+            throw new NotImplementedException();
         }
 
         public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
@@ -687,6 +577,8 @@ namespace EventStore.ClientAPI
                                                                          Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                          Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped = null)
         {
+            throw new NotImplementedException();
+/*
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription = new EventStoreStreamCatchUpSubscription(this,
@@ -697,6 +589,7 @@ namespace EventStore.ClientAPI
                                                                               subscriptionDropped);
             catchUpSubscription.Start();
             return catchUpSubscription;
+*/
         }
 
         public Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos,
@@ -713,10 +606,13 @@ namespace EventStore.ClientAPI
                                                            Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
                                                            Action<EventStoreSubscription> subscriptionDropped = null)
         {
+            throw new NotImplementedException();
+/*
             Ensure.NotNull(eventAppeared, "eventAppeared");
             EnsureActive();
             _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             return _subscriptionsChannel.Subscribe(string.Empty, resolveLinkTos, eventAppeared, subscriptionDropped);
+*/
         }
 
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? fromPositionExclusive,
@@ -724,6 +620,8 @@ namespace EventStore.ClientAPI
                                                                    Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                    Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped = null)
         {
+            throw new NotImplementedException();
+/*
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription = new EventStoreAllCatchUpSubscription(this,
                                                                              fromPositionExclusive,
@@ -732,258 +630,7 @@ namespace EventStore.ClientAPI
                                                                              subscriptionDropped);
             catchUpSubscription.Start();
             return catchUpSubscription;
-        }
-
-        private void MainLoop()
-        {
-            while (!_stopping)
-            {
-                IClientOperation operation;
-                if (_inProgressCount < _settings.MaxConcurrentItems && _queue.TryDequeue(out operation))
-                {
-                    Interlocked.Increment(ref _inProgressCount);
-                    Send(new WorkItem(operation));
-                }
-                else
-                {
-                    Thread.Sleep(1);
-                }
-
-                lock (_connectionLock)
-                {
-                    if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= _settings.ReconnectionDelay)
-                    {
-                        _reconnectionsCount += 1;
-                        if (_reconnectionsCount > _settings.MaxReconnections)
-                            Close();
-
-                        OnReconnecting();
-
-                        _lastReconnectionTimestamp = GetNow();
-                        _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
-                        _reconnectionStopwatch.Stop();
-                    }
-                }
-
-                if (_timeoutCheckStopwatch.Elapsed > _settings.OperationTimeoutCheckPeriod)
-                {
-                    var now = GetNow();
-                    var retriable = new List<WorkItem>();
-                    foreach (var workerItem in _inProgress.Values)
-                    {
-                        var lastUpdated = new DateTime(Interlocked.Read(ref workerItem.LastUpdatedTicks));
-                        if (now - lastUpdated > _settings.OperationTimeout)
-                        {
-                            if (lastUpdated >= _lastReconnectionTimestamp)
-                            {
-                                var err = string.Format("{0} never got response from server" +
-                                                        "Last state update: {1:HH:mm:ss.fff}, last reconnect: {2:HH:mm:ss.fff}, UTC now: {3:HH:mm:ss.fff}.",
-                                                        workerItem, lastUpdated, _lastReconnectionTimestamp, now);
-                                _log.Error(err);
-                                if (TryRemoveWorkItem(workerItem))
-                                    workerItem.Operation.Fail(new OperationTimedOutException(err));
-                            }
-                            else
-                            {
-                                retriable.Add(workerItem);
-                            }
-                        }
-                    }
-
-                    foreach (var workItem in retriable.OrderBy(wi => wi.SeqNo))
-                    {
-                        Retry(workItem);
-                    }
-
-                    _timeoutCheckStopwatch.Restart();
-                }
-            }
-        }
-
-        private bool TryRemoveWorkItem(WorkItem workItem)
-        {
-            WorkItem removed;
-            if (!_inProgress.TryRemove(workItem.Operation.CorrelationId, out removed))
-                return false;
-
-            Interlocked.Decrement(ref _inProgressCount);
-            return true;
-        }
-
-        private void Send(WorkItem workItem)
-        {
-            lock (_connectionLock)
-            {
-                _inProgress.TryAdd(workItem.Operation.CorrelationId, workItem);
-                _connection.EnqueueSend(workItem.Operation.CreateNetworkPackage().AsByteArray());
-            }
-        }
-
-        private void Retry(WorkItem workItem)
-        {
-            lock (_connectionLock)
-            {
-                WorkItem inProgressItem;
-                if (_inProgress.TryRemove(workItem.Operation.CorrelationId, out inProgressItem))
-                {
-                    inProgressItem.Attempt += 1;
-                    if (inProgressItem.Attempt > _settings.MaxAttempts)
-                    {
-                        _log.Error("Retries limit reached for : {0}", inProgressItem);
-                        inProgressItem.Operation.Fail(new RetriesLimitReachedException(inProgressItem.ToString(),
-                                                                                       inProgressItem.Attempt));
-                    }
-                    else
-                    {
-                        inProgressItem.Operation.SetRetryId(Guid.NewGuid());
-                        Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, GetNow().Ticks);
-                        Send(inProgressItem);
-                    }
-                }
-                else
-                {
-                    _log.Error("Concurrency failure. Unable to remove in progress item on retry");
-                }
-            }
-        }
-
-        private void Reconnect(WorkItem workItem, IPEndPoint tcpEndpoint)
-        {
-            lock (_connectionLock)
-            {
-                if (!_reconnectionStopwatch.IsRunning || (_reconnectionStopwatch.IsRunning && !_tcpEndPoint.Equals(tcpEndpoint)))
-                {
-                    _log.Info("Going to reconnect to [{0}]. Current state: {1}, Current endpoint: {2}",
-                              tcpEndpoint,
-                              _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected",
-                              _tcpEndPoint);
-
-                    _tcpEndPoint = tcpEndpoint;
-                    _connection.Close();
-                    _subscriptionsChannel.Close();
-                }
-                Retry(workItem);
-            }
-        }
-
-        private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
-        {
-            if (package.Command == TcpCommand.BadRequest && package.CorrelationId == Guid.Empty)
-            {
-                string message = Helper.EatException(() => Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
-                try
-                {
-                    throw new EventStoreConnectionException(
-                        string.Format("BadRequest received from server. Error: {0}", string.IsNullOrEmpty(message) ? "<no message>" : message));
-                }
-                catch (EventStoreConnectionException exc)
-                {
-                    OnError(exc);
-                }
-                return;
-            }
-
-            WorkItem workItem;
-            if (!_inProgress.TryGetValue(package.CorrelationId, out workItem))
-            {
-                _log.Error("Unexpected CorrelationId received {{{0}}}", package.CorrelationId);
-                return;
-            }
-
-            var result = workItem.Operation.InspectPackage(package);
-            switch (result.Decision)
-            {
-                case InspectionDecision.Succeed:
-                {
-                    if (TryRemoveWorkItem(workItem))
-                        workItem.Operation.Complete();
-                    break;
-                }
-                case InspectionDecision.Retry:
-                {
-                    Retry(workItem);
-                    break;
-                }
-                case InspectionDecision.Reconnect:
-                {
-                    Reconnect(workItem, (IPEndPoint) result.Data);
-                    break;
-                }
-                case InspectionDecision.NotifyError:
-                {
-                    if (TryRemoveWorkItem(workItem))
-                        workItem.Operation.Fail(result.Error);
-                    break;
-                }
-                default:
-                    throw new ArgumentOutOfRangeException(string.Format("Unknown InspectionDecision: {0}.", result.Decision));
-            }
-        }
-
-        private void OnConnectionEstablished(TcpTypedConnection tcpTypedConnection)
-        {
-            lock (_connectionLock)
-            {
-                _reconnectionsCount = 0;
-            }
-            OnConnected();
-        }
-
-        private void OnConnectionClosed(TcpTypedConnection connection, IPEndPoint endPoint, SocketError error)
-        {
-            OnDisconnected();
-            lock (_connectionLock)
-            {
-                _reconnectionStopwatch.Restart();
-            }
-        }
-
-        private void OnError(Exception exc)
-        {
-            if (_settings.ErrorOccurred != null)
-                _settings.ErrorOccurred(this, exc);
-        }
-
-        private void OnConnected()
-        {
-            if (_settings.Connected != null)
-                _settings.Connected(this);
-
-            var handler = Connected;
-            if (handler != null)
-                handler(this, EventArgs.Empty);
-        }
-
-        private void OnDisconnected()
-        {
-            if (_settings.Disconnected != null)
-                _settings.Disconnected(this);
-
-            var handler = Disconnected;
-            if (handler != null)
-                handler(this, EventArgs.Empty);
-        }
-
-        private void OnReconnecting()
-        {
-            if (_settings.Reconnecting != null)
-                _settings.Reconnecting(this);
-
-            var handler = Reconnecting;
-            if (handler != null)
-                handler(this, EventArgs.Empty);
-        }
-
-        private readonly object _timeLock = new object();
-        private readonly DateTime _startTime = DateTime.UtcNow;
-        private readonly Stopwatch _watch = Stopwatch.StartNew();
-             
-        private DateTime GetNow()
-        {
-            lock (_timeLock)
-            {
-                return _startTime + _watch.Elapsed;
-            }
+*/
         }
     }
 }

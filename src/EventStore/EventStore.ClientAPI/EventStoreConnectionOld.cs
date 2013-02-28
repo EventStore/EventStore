@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+﻿/*// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -36,13 +36,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Core;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
+using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
 using System.Linq;
 
-namespace EventStore.ClientAPI.Core
+namespace EventStore.ClientAPI
 {
     /// <summary>
     /// Maintains a full duplex connection to the EventStore
@@ -58,64 +61,77 @@ namespace EventStore.ClientAPI.Core
     /// time or a single thread can make many asynchronous requests. To get the most performance out of the connection
     /// it is generally recommended to use it in this way.
     /// </remarks>
-    public class EventStoreConnectionNew : IDisposable
+    public class EventStoreConnection : IDisposable
     {
-//        private readonly TcpConnector _connector = new TcpConnector();
-//        private readonly object _connectionLock = new object();
-//        private IPEndPoint _tcpEndPoint;
-//        private TcpTypedConnection _connection;
-//        private volatile bool _active;
-//
-//        private readonly SubscriptionsChannel _subscriptionsChannel;
-//
-//        private readonly Common.Concurrent.ConcurrentQueue<IClientOperation> _queue = new Common.Concurrent.ConcurrentQueue<IClientOperation>();
-//        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, WorkItem> _inProgress = new System.Collections.Concurrent.ConcurrentDictionary<Guid, WorkItem>();
-//        private int _inProgressCount;
-//
-//        private DateTime _lastReconnectionTimestamp;
-//        private readonly Stopwatch _reconnectionStopwatch = new Stopwatch();
-//        private readonly Stopwatch _timeoutCheckStopwatch = new Stopwatch();
-//        private int _reconnectionsCount;
-//
-//        private Thread _worker;
-//        private volatile bool _stopping;
+        /// <summary>
+        /// Raised whenever the internal connection is disconnected from the event store
+        /// </summary>
+        public event EventHandler Disconnected;
+        /// <summary>
+        /// Raised whenever the internal connection is reconnecting to the event store
+        /// </summary>
+        public event EventHandler Reconnecting;
+        /// <summary>
+        /// Raised whenever the internal connection is connected to the event store
+        /// </summary>
+        public event EventHandler Connected;
 
-        private readonly string ConnectionName;
+        private readonly ILogger _log;
+
+        private readonly TcpConnector _connector = new TcpConnector();
+        private readonly object _connectionLock = new object();
+        private IPEndPoint _tcpEndPoint;
+        private TcpTypedConnection _connection;
+        private volatile bool _active;
+
+        private readonly SubscriptionsChannel _subscriptionsChannel;
+
+        private readonly Common.Concurrent.ConcurrentQueue<IClientOperation> _queue = new Common.Concurrent.ConcurrentQueue<IClientOperation>();
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, WorkItem> _inProgress = new System.Collections.Concurrent.ConcurrentDictionary<Guid, WorkItem>();
+        private int _inProgressCount;
+
+        private DateTime _lastReconnectionTimestamp;
+        private readonly Stopwatch _reconnectionStopwatch = new Stopwatch();
+        private readonly Stopwatch _timeoutCheckStopwatch = new Stopwatch();
+        private int _reconnectionsCount;
+
+        private Thread _worker;
+        private volatile bool _stopping;
+
         private readonly ConnectionSettings _settings;
-        private readonly EventStoreConnectionLogicHandler _handler = new EventStoreConnectionLogicHandler();
 
         /// <summary>
         /// Constructs a new instance of a <see cref="EventStoreConnection"/>
         /// </summary>
         /// <param name="settings">The <see cref="ConnectionSettings"/> containing the settings for this connection.</param>
-        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
-        private EventStoreConnectionNew(ConnectionSettings settings, string connectionName)
+        private EventStoreConnection(ConnectionSettings settings)
         {
-            Ensure.NotNull(settings, "settings");
-            ConnectionName = connectionName ?? string.Format("ES-{0}", Guid.NewGuid());
             _settings = settings;
+
+            LogManager.RegisterLogger(settings.Log);
+            _log = LogManager.GetLogger();
+
+            _subscriptionsChannel = new SubscriptionsChannel(_connector);
         }
 
         /// <summary>
         /// Creates a new <see cref="EventStoreConnection"/> using default <see cref="ConnectionSettings"/>
         /// </summary>
-        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <returns>a new <see cref="EventStoreConnection"/></returns>
-        public static EventStoreConnectionNew Create(string connectionName = null)
+        public static EventStoreConnection Create()
         {
-            return new EventStoreConnectionNew(ConnectionSettings.Default, connectionName);
+            return new EventStoreConnection(ConnectionSettings.Default);
         }
 
         /// <summary>
         /// Creates a new <see cref="EventStoreConnection"/> using specific <see cref="ConnectionSettings"/>
         /// </summary>
         /// <param name="settings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
-        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <returns>a new <see cref="EventStoreConnection"/></returns>
-        public static EventStoreConnectionNew Create(ConnectionSettings settings, string connectionName = null)
+        public static EventStoreConnection Create(ConnectionSettings settings)
         {
             Ensure.NotNull(settings, "settings");
-            return new EventStoreConnectionNew(settings, connectionName);
+            return new EventStoreConnection(settings);
         }
 
         /// <summary>
@@ -136,7 +152,7 @@ namespace EventStore.ClientAPI.Core
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
 
-            _settings.Log.Info("EventStoreConnection: connecting to [{0}]", tcpEndPoint);
+            _log.Info("EventStoreConnection: connecting to [{0}]", tcpEndPoint);
 
             return EstablishConnectionAsync(tcpEndPoint);
         }
@@ -147,9 +163,9 @@ namespace EventStore.ClientAPI.Core
         /// <param name="clusterDns">The cluster's DNS entry.</param>
         /// <param name="maxDiscoverAttempts">The maximum number of attempts to try the DNS.</param>
         /// <param name="port">The port to connect to.</param>
-        public void ConnectToCluster(string clusterDns, int maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts, int port = Consts.DefaultClusterManagerPort)
+        public void Connect(string clusterDns, int maxDiscoverAttempts = 10, int port = 30777)
         {
-            ConnectToClusterAsync(clusterDns, maxDiscoverAttempts, port).Wait();
+            ConnectAsync(clusterDns, maxDiscoverAttempts, port).Wait();
         }
 
         /// <summary>
@@ -159,13 +175,12 @@ namespace EventStore.ClientAPI.Core
         /// <param name="maxDiscoverAttempts">The maximum number of attempts to try the DNS</param>
         /// <param name="port">The port to connect to</param>
         /// <returns>A <see cref="Task"/> that can be awaited upon</returns>
-        public Task ConnectToClusterAsync(string clusterDns, int maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts, int port = Consts.DefaultClusterManagerPort)
+        public Task ConnectAsync(string clusterDns, int maxDiscoverAttempts = 10, int port = 30777)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
             Ensure.Positive(maxDiscoverAttempts, "maxDiscoverAttempts");
             Ensure.Nonnegative(port, "port");
 
-            // TODO AN: rework this mess
             var explorer = new ClusterExplorer(_settings.AllowForwarding, maxDiscoverAttempts, port);
             return explorer.Resolve(clusterDns)
                            .ContinueWith(resolve =>
@@ -179,7 +194,6 @@ namespace EventStore.ClientAPI.Core
 
         private Task EstablishConnectionAsync(IPEndPoint tcpEndPoint)
         {
-
             lock (_connectionLock)
             {
                 if (_active)
@@ -972,4 +986,4 @@ namespace EventStore.ClientAPI.Core
             }
         }
     }
-}
+}*/

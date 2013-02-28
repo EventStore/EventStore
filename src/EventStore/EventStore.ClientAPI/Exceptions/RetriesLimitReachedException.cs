@@ -26,8 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-
 namespace EventStore.ClientAPI.Exceptions
 {
     public class RetriesLimitReachedException : EventStoreConnectionException

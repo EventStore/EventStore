@@ -26,9 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
+using System;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.Core
 {
@@ -36,15 +40,101 @@ namespace EventStore.ClientAPI.Core
     {
     }
 
+    internal class TimerTickMessage: Message
+    {
+        public readonly TimeSpan Timestamp;
+
+        public TimerTickMessage(TimeSpan timestamp)
+        {
+            Timestamp = timestamp;
+        }
+    }
+
     internal class EstablishTcpConnectionMessage: Message
     {
+        public readonly TaskCompletionSource<object> Task;
         public readonly IPEndPoint EndPoint;
-        public readonly TaskCompletionSource<object> Task = new TaskCompletionSource<object>();
 
-        public EstablishTcpConnectionMessage(IPEndPoint endPoint)
+        public EstablishTcpConnectionMessage(TaskCompletionSource<object> task, IPEndPoint endPoint)
         {
+            Ensure.NotNull(task, "task");
             Ensure.NotNull(endPoint, "endPoint");
+            Task = task;
             EndPoint = endPoint;
+        }
+    }
+
+    internal class CloseConnectionMessage: Message
+    {
+    }
+
+    internal class TcpConnectionEstablishedMessage : Message
+    {
+        public readonly TcpTypedConnection Connection;
+
+        public TcpConnectionEstablishedMessage(TcpTypedConnection connection)
+        {
+            Ensure.NotNull(connection, "connection");
+            Connection = connection;
+        }
+    }
+
+    internal class TcpConnectionClosedMessage : Message
+    {
+        public readonly TcpTypedConnection Connection;
+        public readonly SocketError Error;
+
+        public TcpConnectionClosedMessage(TcpTypedConnection connection, SocketError error)
+        {
+            Ensure.NotNull(connection, "connection");
+            Connection = connection;
+            Error = error;
+        }
+    }
+
+    internal class StartOperationMessage: Message
+    {
+        public readonly IClientOperation Operation;
+        public readonly int MaxAttempts;
+        public readonly TimeSpan Timeout;
+
+        public StartOperationMessage(IClientOperation operation, int maxAttempts, TimeSpan timeout)
+        {
+            Ensure.NotNull(operation, "operation");
+            Operation = operation;
+            MaxAttempts = maxAttempts;
+            Timeout = timeout;
+        }
+    }
+
+    internal class RemoveOperationMessage: Message
+    {
+        public readonly EventStoreConnectionLogicHandler.OperationItem OperationItem;
+
+        public RemoveOperationMessage(EventStoreConnectionLogicHandler.OperationItem operationItem)
+        {
+            OperationItem = operationItem;
+        }
+    }
+
+    internal class RetryOperationMessage : Message
+    {
+        public readonly EventStoreConnectionLogicHandler.OperationItem OperationItem;
+
+        public RetryOperationMessage(EventStoreConnectionLogicHandler.OperationItem operationItem)
+        {
+            OperationItem = operationItem;
+        }
+    }
+    internal class ReconnectAndRetryOperationMessage : Message
+    {
+        public readonly EventStoreConnectionLogicHandler.OperationItem OperationItem;
+        public readonly IPEndPoint TcpEndPoint;
+
+        public ReconnectAndRetryOperationMessage(EventStoreConnectionLogicHandler.OperationItem operationItem, IPEndPoint tcpEndPoint)
+        {
+            OperationItem = operationItem;
+            TcpEndPoint = tcpEndPoint;
         }
     }
 }

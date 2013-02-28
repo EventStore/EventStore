@@ -50,6 +50,7 @@ namespace EventStore.ClientAPI
         private TimeSpan _operationTimeoutCheckPeriod = Consts.DefaultOperationTimeoutCheckPeriod;
 
         private Action<EventStoreConnection, Exception> _errorOccurred;
+        private Action<EventStoreConnection, string> _closed;
         private Action<EventStoreConnection> _connected;
         private Action<EventStoreConnection> _disconnected;
         private Action<EventStoreConnection> _reconnecting;
@@ -187,6 +188,17 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Sets handler of <see cref="EventStoreConnection"/> closing.
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder OnClosed(Action<EventStoreConnection, string> handler)
+        {
+            _closed = handler;
+            return this;
+        }
+
+        /// <summary>
         /// Sets handler called when connection is established.
         /// </summary>
         /// <param name="handler"></param>
@@ -231,6 +243,7 @@ namespace EventStore.ClientAPI
                                           builder._operationTimeout,
                                           builder._operationTimeoutCheckPeriod,
                                           builder._errorOccurred,
+                                          builder._closed,
                                           builder._connected,
                                           builder._disconnected,
                                           builder._reconnecting);

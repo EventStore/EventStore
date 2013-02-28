@@ -34,16 +34,14 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class ReadAllEventsBackwardOperation : OperationBase<AllEventsSlice, ClientMessage.ReadAllEventsCompleted>
     {
+        public override bool IsLongRunning { get { return false; } }
+
         private readonly Position _position;
         private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
 
-        public ReadAllEventsBackwardOperation(TaskCompletionSource<AllEventsSlice> source,
-                                              Guid correlationId,
-                                              Position position,
-                                              int maxCount,
-                                              bool resolveLinkTos)
-            : base(source, correlationId, TcpCommand.ReadAllEventsBackward, TcpCommand.ReadAllEventsBackwardCompleted)
+        public ReadAllEventsBackwardOperation(TaskCompletionSource<AllEventsSlice> source, Position position, int maxCount, bool resolveLinkTos)
+            : base(source, TcpCommand.ReadAllEventsBackward, TcpCommand.ReadAllEventsBackwardCompleted)
         {
             _position = position;
             _maxCount = maxCount;
@@ -57,7 +55,8 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override InspectionResult InspectResponse(ClientMessage.ReadAllEventsCompleted response)
         {
-            return new InspectionResult(InspectionDecision.Succeed);
+            Succeed();
+            return new InspectionResult(InspectionDecision.EndOperation);
         }
 
         protected override AllEventsSlice TransformResponse(ClientMessage.ReadAllEventsCompleted response)
@@ -70,11 +69,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("Position: {0}, MaxCount: {1}, ResolveLinkTos: {2}, CorrelationId: {3}", 
-                                 _position,
-                                 _maxCount, 
-                                 _resolveLinkTos, 
-                                 CorrelationId);
+            return string.Format("Position: {0}, MaxCount: {1}, ResolveLinkTos: {2}",  _position, _maxCount,  _resolveLinkTos);
         }
     }
 }

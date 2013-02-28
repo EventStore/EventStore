@@ -38,18 +38,19 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class AppendToStreamOperation : OperationBase<object, ClientMessage.WriteEventsCompleted>
     {
+        public override bool IsLongRunning { get { return false; } }
+
         private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;
         private readonly IEnumerable<EventData> _events;
 
         public AppendToStreamOperation(TaskCompletionSource<object> source,
-                                       Guid correlationId,
                                        bool forward,
                                        string stream,
                                        int expectedVersion,
                                        IEnumerable<EventData> events)
-            : base(source, correlationId, TcpCommand.WriteEvents, TcpCommand.WriteEventsCompleted)
+            : base(source, TcpCommand.WriteEvents, TcpCommand.WriteEventsCompleted)
         {
             _forward = forward;
             _stream = stream;
@@ -68,21 +69,22 @@ namespace EventStore.ClientAPI.ClientOperations
             switch (response.Result)
             {
                 case ClientMessage.OperationResult.Success:
-                    return new InspectionResult(InspectionDecision.Succeed);
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 case ClientMessage.OperationResult.PrepareTimeout:
                 case ClientMessage.OperationResult.CommitTimeout:
                 case ClientMessage.OperationResult.ForwardTimeout:
                     return new InspectionResult(InspectionDecision.Retry);
                 case ClientMessage.OperationResult.WrongExpectedVersion:
-                    var err = string.Format("Append failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}, CorrID : {2}",
-                                            _stream,
-                                            _expectedVersion,
-                                            CorrelationId);
-                    return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
+                    var err = string.Format("Append failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}", _stream, _expectedVersion);
+                    Fail(new WrongExpectedVersionException(err));
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 case ClientMessage.OperationResult.StreamDeleted:
-                    return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
+                    Fail(new StreamDeletedException(_stream));
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 case ClientMessage.OperationResult.InvalidTransaction:
-                    return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
+                    Fail(new InvalidTransactionException());
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 default:
                     throw new ArgumentOutOfRangeException(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }
@@ -95,7 +97,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("Stream: {0}, ExpectedVersion: {1}, CorrelationId: {2}", _stream, _expectedVersion, CorrelationId);
+            return string.Format("Stream: {0}, ExpectedVersion: {1}", _stream, _expectedVersion);
         }
     }
 }

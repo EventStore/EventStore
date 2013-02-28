@@ -26,10 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 
@@ -39,16 +41,7 @@ namespace EventStore.ClientAPI.ClientOperations
         where TResult: class
         where TResponse: class
     {
-        public Guid CorrelationId
-        {
-            get
-            {
-                lock (_corrIdLock)
-                {
-                    return _correlationId;
-                }
-            }
-        }
+        public abstract bool IsLongRunning { get; }
 
         private readonly TcpCommand _requestCommand;
         private readonly TcpCommand _responseCommand;
@@ -56,41 +49,23 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly TaskCompletionSource<TResult> _source;
         private TResponse _response;
         private int _completed;
-        private Guid _correlationId;
-        private readonly object _corrIdLock = new object();
 
         protected abstract object CreateRequestDto();
         protected abstract InspectionResult InspectResponse(TResponse response);
         protected abstract TResult TransformResponse(TResponse response);
 
-        protected OperationBase(TaskCompletionSource<TResult> source, Guid correlationId, TcpCommand requestCommand, TcpCommand responseCommand)
+        protected OperationBase(TaskCompletionSource<TResult> source, TcpCommand requestCommand, TcpCommand responseCommand)
         {
             Ensure.NotNull(source, "source");
-            Ensure.NotEmptyGuid(correlationId, "correlationId");
 
             _source = source;
-            _correlationId = correlationId;
             _requestCommand = requestCommand;
             _responseCommand = responseCommand;
         }
 
-        public void SetRetryId(Guid correlationId)
+        public TcpPackage CreateNetworkPackage(Guid correlationId)
         {
-            Ensure.NotEmptyGuid(correlationId, "correlationId");
-            lock (_corrIdLock)
-            {
-                _correlationId = correlationId;
-            }
-        }
-
-        public TcpPackage CreateNetworkPackage()
-        {
-            Guid corrId;
-            lock (_corrIdLock)
-            {
-                corrId = _correlationId;
-            }
-            return new TcpPackage(_requestCommand, corrId, CreateRequestDto().Serialize());
+            return new TcpPackage(_requestCommand, correlationId, CreateRequestDto().Serialize());
         }
 
         public virtual InspectionResult InspectPackage(TcpPackage package)
@@ -104,18 +79,19 @@ namespace EventStore.ClientAPI.ClientOperations
                 }
                 switch (package.Command)
                 {
-                    case TcpCommand.BadRequest: return package.InspectBadRequest();
-                    case TcpCommand.NotHandled: return package.InspectNotHandled();
-                    default: return package.InspectUnexpectedCommand(TcpCommand.TransactionCommitCompleted);
+                    case TcpCommand.BadRequest: return InspectBadRequest(package);
+                    case TcpCommand.NotHandled: return InspectNotHandled(package);
+                    default: return InspectUnexpectedCommand(package, TcpCommand.TransactionCommitCompleted);
                 }
             }
             catch (Exception e)
             {
-                return new InspectionResult(InspectionDecision.NotifyError, e);
+                Fail(e);
+                return new InspectionResult(InspectionDecision.EndOperation, null);
             }
         }
 
-        public void Complete()
+        protected void Succeed()
         {
             if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
             {
@@ -132,6 +108,45 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 _source.SetException(exception);
             }
+        }
+
+        public InspectionResult InspectBadRequest(TcpPackage package)
+        {
+            if (package.Command != TcpCommand.BadRequest)
+                throw new ArgumentException(string.Format("Wrong command: {0}, expected: {1}.", package.Command, TcpCommand.BadRequest));
+            string message = Helper.EatException(() => Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
+            Fail(new ServerErrorException(string.IsNullOrEmpty(message) ? "<no message>" : message));
+            return new InspectionResult(InspectionDecision.EndOperation, null);
+        }
+
+        public static InspectionResult InspectNotHandled(TcpPackage package)
+        {
+            if (package.Command != TcpCommand.NotHandled)
+                throw new ArgumentException(string.Format("Wrong command: {0}, expected: {1}.", package.Command, TcpCommand.NotHandled));
+            var message = package.Data.Deserialize<ClientMessage.NotHandled>();
+
+            switch (message.Reason)
+            {
+                case ClientMessage.NotHandled.NotHandledReason.NotReady:
+                case ClientMessage.NotHandled.NotHandledReason.TooBusy:
+                    return new InspectionResult(InspectionDecision.Retry, null);
+
+                case ClientMessage.NotHandled.NotHandledReason.NotMaster:
+                    var masterInfo = message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.MasterInfo>();
+                    return new InspectionResult(InspectionDecision.Reconnect, masterInfo.ExternalTcpEndPoint);
+
+                default:
+                    //LogManager.GetLogger().Info("Unknown NotHandledReason: {0}.", message.Reason);
+                    return new InspectionResult(InspectionDecision.Retry, null);
+            }
+        }
+
+        public InspectionResult InspectUnexpectedCommand(TcpPackage package, TcpCommand expectedCommand)
+        {
+            if (package.Command == expectedCommand)
+                throw new ArgumentException(string.Format("Command shouldn't be {0}.", package.Command));
+            Fail(new CommandNotExpectedException(expectedCommand.ToString(), package.Command.ToString()));
+            return new InspectionResult(InspectionDecision.EndOperation, null);
         }
     }
 }

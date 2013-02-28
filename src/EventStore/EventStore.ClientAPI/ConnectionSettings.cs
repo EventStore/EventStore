@@ -91,6 +91,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         public Action<EventStoreConnection, Exception> ErrorOccurred;
         /// <summary>
+        /// Raised whenever the internal error occurs
+        /// </summary>
+        public Action<EventStoreConnection, string> Closed;
+        /// <summary>
         /// Raised whenever the internal connection is connected to the event store
         /// </summary>
         public Action<EventStoreConnection> Connected;
@@ -113,6 +117,7 @@ namespace EventStore.ClientAPI
                                     TimeSpan operationTimeout,
                                     TimeSpan operationTimeoutCheckPeriod,
                                     Action<EventStoreConnection, Exception> errorOccurred,
+                                    Action<EventStoreConnection, string> closed,
                                     Action<EventStoreConnection> connected,
                                     Action<EventStoreConnection> disconnected,
                                     Action<EventStoreConnection> reconnecting)
@@ -134,6 +139,7 @@ namespace EventStore.ClientAPI
             OperationTimeoutCheckPeriod = operationTimeoutCheckPeriod;
 
             ErrorOccurred = errorOccurred;
+            Closed = closed;
             Connected = connected;
             Disconnected = disconnected;
             Reconnecting = reconnecting;

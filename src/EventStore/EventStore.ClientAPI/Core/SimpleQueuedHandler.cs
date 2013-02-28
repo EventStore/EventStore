@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,46 +25,50 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-
 using System;
+using System.Collections.Generic;
 using System.Threading;
-using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Core
 {
-    internal class WorkItem
+    internal class SimpleQueuedHandler
     {
-        private static long _seqNumber = -1;
+        private readonly Common.Concurrent.ConcurrentQueue<Message> _messageQueue = new Common.Concurrent.ConcurrentQueue<Message>();
+        private readonly Dictionary<Type, Action<Message>> _handlers = new Dictionary<Type, Action<Message>>();
+        private int _isProcessing;
 
-        public readonly long SeqNo;
-        public IClientOperation Operation;
-
-        public int Attempt;
-        public long LastUpdatedTicks;
-
-        public WorkItem(IClientOperation operation)
+        public void RegisterHandler<T>(Action<T> handler) where T : Message
         {
-            Ensure.NotNull(operation, "operation");
-            SeqNo = NextSeqNo();
-            Operation = operation;
-
-            Attempt = 0;
-            LastUpdatedTicks = DateTime.UtcNow.Ticks;
+            Ensure.NotNull(handler, "handler");
+            _handlers.Add(typeof(T), msg => handler((T)msg));
         }
 
-        private static long NextSeqNo()
+        public void EnqueueMessage(Message message)
         {
-            return Interlocked.Increment(ref _seqNumber);
+            Ensure.NotNull(message, "message");
+
+            _messageQueue.Enqueue(message);
+            if (Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0)
+                ThreadPool.QueueUserWorkItem(ProcessQueue);
         }
 
-        public override string ToString()
+        private void ProcessQueue(object state)
         {
-            return string.Format("WorkItem {0}: {1}, attempt: {2}, seqNo: {3}", 
-                                 Operation.GetType().Name, 
-                                 Operation,
-                                 Attempt, 
-                                 SeqNo);
+            do
+            {
+                Message message;
+
+                while (_messageQueue.TryDequeue(out message))
+                {
+                    Action<Message> handler;
+                    if (!_handlers.TryGetValue(message.GetType(), out handler))
+                        throw new Exception(string.Format("No handler registered for message {0}", message.GetType().Name));
+                    handler(message);
+                }
+
+                Interlocked.Exchange(ref _isProcessing, 0);
+            } while (_messageQueue.Count > 0 && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
         }
     }
 }

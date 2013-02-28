@@ -25,7 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
@@ -34,16 +33,14 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class ReadAllEventsForwardOperation : OperationBase<AllEventsSlice, ClientMessage.ReadAllEventsCompleted>
     {
+        public override bool IsLongRunning { get { return false; } }
+
         private readonly Position _position;
         private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
 
-        public ReadAllEventsForwardOperation(TaskCompletionSource<AllEventsSlice> source,
-                                             Guid correlationId,
-                                             Position position,
-                                             int maxCount,
-                                             bool resolveLinkTos)
-            : base(source, correlationId, TcpCommand.ReadAllEventsForward, TcpCommand.ReadAllEventsForwardCompleted)
+        public ReadAllEventsForwardOperation(TaskCompletionSource<AllEventsSlice> source, Position position, int maxCount, bool resolveLinkTos)
+            : base(source, TcpCommand.ReadAllEventsForward, TcpCommand.ReadAllEventsForwardCompleted)
         {
             _position = position;
             _maxCount = maxCount;
@@ -57,7 +54,8 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override InspectionResult InspectResponse(ClientMessage.ReadAllEventsCompleted response)
         {
-            return new InspectionResult(InspectionDecision.Succeed);
+            Succeed();
+            return new InspectionResult(InspectionDecision.EndOperation);
         }
 
         protected override AllEventsSlice TransformResponse(ClientMessage.ReadAllEventsCompleted response)
@@ -70,11 +68,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("Position: {0}, MaxCount: {1}, ResolveLinkTos: {2}, CorrelationId: {3}",
-                                 _position,
-                                 _maxCount,
-                                 _resolveLinkTos,
-                                 CorrelationId);
+            return string.Format("Position: {0}, MaxCount: {1}, ResolveLinkTos: {2}", _position, _maxCount, _resolveLinkTos);
         }
     }
 }
