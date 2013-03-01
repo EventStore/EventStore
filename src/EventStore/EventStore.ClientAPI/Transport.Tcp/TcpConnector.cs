@@ -63,13 +63,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 tcpConnection =>
                 {
                     _log.Debug("Connected to [{0}, {1:B}].", tcpConnection.EffectiveEndPoint, connectionId);
-                    connectionCreatedEvent.Wait(500);
+                    connectionCreatedEvent.Wait();
                     connectionEstablished(typedConnection);
                 },
                 (conn, error) =>
                 {
                     _log.Debug("Connection to [{0}, {1:B}] failed. Error: {2}.", conn.EffectiveEndPoint, connectionId, error);
-                    connectionClosed(null, conn.EffectiveEndPoint, error);
+                    connectionCreatedEvent.Wait();
+                    connectionClosed(typedConnection, conn.EffectiveEndPoint, error);
                 });
 
             typedConnection = new TcpTypedConnection(connection, connectionId);

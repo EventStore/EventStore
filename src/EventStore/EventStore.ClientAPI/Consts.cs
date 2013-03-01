@@ -42,7 +42,7 @@ namespace EventStore.ClientAPI
         public static readonly TimeSpan DefaultOperationTimeout = TimeSpan.FromSeconds(7);
         public static readonly TimeSpan DefaultOperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
-        public static readonly TimeSpan SubscriptionChannelConnectionTimeout = TimeSpan.FromSeconds(2);
+        public static readonly TimeSpan SubscriptionTimeout = TimeSpan.FromSeconds(5);
 
         public static readonly TimeSpan TimerPeriod = TimeSpan.FromMilliseconds(1000);
 

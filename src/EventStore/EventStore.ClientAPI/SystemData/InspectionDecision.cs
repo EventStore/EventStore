@@ -33,6 +33,7 @@ namespace EventStore.ClientAPI.SystemData
         DoNothing,
         EndOperation,
         Retry,
-        Reconnect
+        Reconnect,
+        Subscribed
     }
 }

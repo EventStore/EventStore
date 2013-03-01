@@ -556,19 +556,28 @@ namespace EventStore.ClientAPI
             return SubscribeToStream(stream,
                                      resolveLinkTos,
                                      (subscr, e) => eventAppeared(e),
-                                     subscriptionDropped == null ? (Action<EventStoreSubscription>)null : subscr => subscriptionDropped());
+                                     subscriptionDropped == null
+                                             ? (Action<EventStoreSubscription, string, Exception>)null
+                                             : (s, r, e) => subscriptionDropped());
         }
 
         public Task<EventStoreSubscription> SubscribeToStream(string stream,
                                                               bool resolveLinkTos,
                                                               Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-                                                              Action<EventStoreSubscription> subscriptionDropped = null)
+                                                              Action<EventStoreSubscription, string, Exception> subscriptionDropped = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
-//            _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
-//            return _subscriptionsChannel.Subscribe(stream, resolveLinkTos, eventAppeared, subscriptionDropped);
-            throw new NotImplementedException();
+
+            var source = new TaskCompletionSource<EventStoreSubscription>();
+            _handler.EnqueueMessage(new StartSubscriptionMessage(source,
+                                                                 stream,
+                                                                 resolveLinkTos,
+                                                                 eventAppeared,
+                                                                 subscriptionDropped,
+                                                                 _settings.MaxAttempts,
+                                                                 _settings.OperationTimeout));
+            return source.Task;
         }
 
         public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
@@ -577,8 +586,6 @@ namespace EventStore.ClientAPI
                                                                          Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                          Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped = null)
         {
-            throw new NotImplementedException();
-/*
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription = new EventStoreStreamCatchUpSubscription(this,
@@ -589,7 +596,6 @@ namespace EventStore.ClientAPI
                                                                               subscriptionDropped);
             catchUpSubscription.Start();
             return catchUpSubscription;
-*/
         }
 
         public Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos,
@@ -599,20 +605,26 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(eventAppeared, "eventAppeared");
             return SubscribeToAll(resolveLinkTos,
                                   (subscr, e) => eventAppeared(e),
-                                  subscriptionDropped == null ? (Action<EventStoreSubscription>)null : subscr => subscriptionDropped());
+                                  subscriptionDropped == null
+                                          ? (Action<EventStoreSubscription, string, Exception>) null
+                                          : (s, r, e) => subscriptionDropped());
         }
 
         public Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos, 
                                                            Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                                                           Action<EventStoreSubscription> subscriptionDropped = null)
+                                                           Action<EventStoreSubscription, string, Exception> subscriptionDropped = null)
         {
-            throw new NotImplementedException();
-/*
             Ensure.NotNull(eventAppeared, "eventAppeared");
-            EnsureActive();
-            _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
-            return _subscriptionsChannel.Subscribe(string.Empty, resolveLinkTos, eventAppeared, subscriptionDropped);
-*/
+
+            var source = new TaskCompletionSource<EventStoreSubscription>();
+            _handler.EnqueueMessage(new StartSubscriptionMessage(source,
+                                                                 string.Empty,
+                                                                 resolveLinkTos,
+                                                                 eventAppeared,
+                                                                 subscriptionDropped,
+                                                                 _settings.MaxAttempts,
+                                                                 _settings.OperationTimeout));
+            return source.Task;
         }
 
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? fromPositionExclusive,
@@ -620,8 +632,6 @@ namespace EventStore.ClientAPI
                                                                    Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                    Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped = null)
         {
-            throw new NotImplementedException();
-/*
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription = new EventStoreAllCatchUpSubscription(this,
                                                                              fromPositionExclusive,
@@ -630,7 +640,6 @@ namespace EventStore.ClientAPI
                                                                              subscriptionDropped);
             catchUpSubscription.Start();
             return catchUpSubscription;
-*/
         }
     }
 }

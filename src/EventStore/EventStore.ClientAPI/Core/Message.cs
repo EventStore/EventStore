@@ -32,6 +32,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.Core
@@ -107,34 +108,48 @@ namespace EventStore.ClientAPI.Core
         }
     }
 
-    internal class RemoveOperationMessage: Message
+    internal class StartSubscriptionMessage : Message
     {
-        public readonly EventStoreConnectionLogicHandler.OperationItem OperationItem;
+        public readonly TaskCompletionSource<EventStoreSubscription> Source;
 
-        public RemoveOperationMessage(EventStoreConnectionLogicHandler.OperationItem operationItem)
+        public readonly string StreamId;
+        public readonly bool ResolveLinkTos;
+        public readonly Action<EventStoreSubscription, ResolvedEvent> EventAppeared;
+        public readonly Action<EventStoreSubscription, string, Exception> SubscriptionDropped;
+           
+        public readonly int MaxAttempts;
+        public readonly TimeSpan Timeout;
+
+        public StartSubscriptionMessage(TaskCompletionSource<EventStoreSubscription> source,
+                                        string streamId,
+                                        bool resolveLinkTos, 
+                                        Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
+                                        Action<EventStoreSubscription, string, Exception> subscriptionDropped, 
+                                        int maxAttempts, 
+                                        TimeSpan timeout)
         {
-            OperationItem = operationItem;
+            Ensure.NotNull(source, "source");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+
+            Source = source;
+            StreamId = streamId;
+            ResolveLinkTos = resolveLinkTos;
+            EventAppeared = eventAppeared;
+            SubscriptionDropped = subscriptionDropped;
+            MaxAttempts = maxAttempts;
+            Timeout = timeout;
         }
     }
 
-    internal class RetryOperationMessage : Message
+    internal class HandleTcpPackageMessage: Message
     {
-        public readonly EventStoreConnectionLogicHandler.OperationItem OperationItem;
+        public readonly TcpTypedConnection Connection;
+        public readonly TcpPackage Package;
 
-        public RetryOperationMessage(EventStoreConnectionLogicHandler.OperationItem operationItem)
+        public HandleTcpPackageMessage(TcpTypedConnection connection, TcpPackage package)
         {
-            OperationItem = operationItem;
-        }
-    }
-    internal class ReconnectAndRetryOperationMessage : Message
-    {
-        public readonly EventStoreConnectionLogicHandler.OperationItem OperationItem;
-        public readonly IPEndPoint TcpEndPoint;
-
-        public ReconnectAndRetryOperationMessage(EventStoreConnectionLogicHandler.OperationItem operationItem, IPEndPoint tcpEndPoint)
-        {
-            OperationItem = operationItem;
-            TcpEndPoint = tcpEndPoint;
+            Connection = connection;
+            Package = package;
         }
     }
 }

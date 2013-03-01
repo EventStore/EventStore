@@ -33,10 +33,13 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal interface IClientOperation
     {
-        bool IsLongRunning { get; }
-
         TcpPackage CreateNetworkPackage(Guid correlationId);
         InspectionResult InspectPackage(TcpPackage package);
         void Fail(Exception exception);
+    }
+
+    internal interface ISubscription: IClientOperation
+    {
+        
     }
 }

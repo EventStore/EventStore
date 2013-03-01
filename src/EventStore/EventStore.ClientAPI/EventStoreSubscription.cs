@@ -27,10 +27,8 @@
 //  
 
 using System;
-using System.Threading;
-using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Core;
 
 namespace EventStore.ClientAPI
 {
@@ -39,57 +37,22 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class EventStoreSubscription : IDisposable
     {
-        private readonly ILogger Log = LogManager.GetLogger();
-
         public bool IsSubscribedToAll { get { return _streamId == string.Empty; } }
         public string StreamId { get { return _streamId; } }
+        public readonly long LastCommitPosition;
+        public readonly int? LastEventNumber;
 
-        public long LastCommitPosition
-        {
-            get
-            {
-                if (_commitPosition == long.MinValue)
-                    throw new InvalidOperationException("Subscription wasn't confirmed yet.");
-                return _commitPosition;
-            }
-        }
-
-        public int? LastEventNumber
-        {
-            get
-            {
-                if (_commitPosition == long.MinValue)
-                    throw new InvalidOperationException("Subscription wasn't confirmed yet.");
-                return _eventNumber;
-            }
-        }
-
-        private readonly Guid _correlationId;
+        private readonly SubscriptionOperation _subscriptionOperation;
         private readonly string _streamId;
-        private readonly SubscriptionsChannel _subscriptionsChannel;
-        private readonly Action<EventStoreSubscription, ResolvedEvent> _eventAppeared;
-        private readonly Action<EventStoreSubscription> _subscriptionDropped;
-        
-        private long _commitPosition = long.MinValue;
-        private int? _eventNumber;
-        private volatile int _unsubscribed;
 
-        internal EventStoreSubscription(Guid correlationId, 
-                                        string streamId, 
-                                        SubscriptionsChannel subscriptionsChannel,
-                                        Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                                        Action<EventStoreSubscription> subscriptionDropped)
+        internal EventStoreSubscription(SubscriptionOperation subscriptionOperation, string streamId, long lastCommitPosition, int? lastEventNumber)
         {
-            Ensure.NotEmptyGuid(correlationId, "correlationId");
-            Ensure.NotNull(streamId, "stream");
-            Ensure.NotNull(subscriptionsChannel, "subscriptionsChannel");
-            Ensure.NotNull(eventAppeared, "eventAppeared");
-            
-            _correlationId = correlationId;
+            Ensure.NotNull(subscriptionOperation, "subscriptionOperation");
+
+            _subscriptionOperation = subscriptionOperation;
             _streamId = streamId;
-            _subscriptionsChannel = subscriptionsChannel;
-            _eventAppeared = eventAppeared;
-            _subscriptionDropped = subscriptionDropped ?? (x => {});
+            LastCommitPosition = lastCommitPosition;
+            LastEventNumber = lastEventNumber;
         }
 
         public void Dispose()
@@ -104,43 +67,7 @@ namespace EventStore.ClientAPI
 
         public void Unsubscribe()
         {
-#pragma warning disable 420
-            if (Interlocked.CompareExchange(ref _unsubscribed, 1, 0) == 0)
-            {
-                Log.Debug("Subscription {0:B} to {1}: unsubscribing...", _correlationId, IsSubscribedToAll ? "<all>" : StreamId);
-
-                _subscriptionsChannel.Unsubscribe(_correlationId);
-                _subscriptionDropped(this);
-            }
-#pragma warning restore 420
-        }
-
-        internal void ConfirmSubscription(long commitPosition, int? eventNumber)
-        {
-            if (commitPosition < -1)
-                throw new ArgumentOutOfRangeException("commitPosition", string.Format("Invalid commitPosition {0} on subscription confirmation.", commitPosition));
-
-            Log.Debug("Subscription {0:B} to {1}: subscribed at CommitPosition: {2}, EventNumber: {3}.", 
-                      _correlationId, IsSubscribedToAll ? "<all>" : StreamId, commitPosition, eventNumber);
-
-            _commitPosition = commitPosition;
-            _eventNumber = eventNumber;
-        }
-
-        internal void EventAppeared(ResolvedEvent @event)
-        {
-            if (_unsubscribed != 0)
-                return;
-            Log.Debug("Subscription {0:B} to {1}: event appeared ({2}, {3}, {4} @ {5}).",
-                      _correlationId, IsSubscribedToAll ? "<all>" : StreamId, 
-                      @event.OriginalStreamId, @event.OriginalEventNumber, @event.OriginalEvent.EventType, @event.OriginalPosition);
-            _eventAppeared(this, @event);
-        }
-
-        internal void SubscriptionDropped()
-        {
-            Log.Debug("Subscription {0:B} to {1}: subscription dropped...", _correlationId, IsSubscribedToAll ? "<all>" : StreamId);
-            Unsubscribe();
+            _subscriptionOperation.Unsubscribe();
         }
     }
 }

@@ -38,6 +38,7 @@ using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
+using System.Linq;
 
 namespace EventStore.ClientAPI.Core
 {
@@ -67,6 +68,8 @@ namespace EventStore.ClientAPI.Core
         private bool _connectionActive;
         private volatile bool _disposed;
 
+        private readonly Dictionary<Guid, SubscriptionItem> _subscriptions = new Dictionary<Guid, SubscriptionItem>();
+
         private readonly Dictionary<Guid, OperationItem> _operations = new Dictionary<Guid, OperationItem>();
         private readonly Queue<OperationItem> _waitingOperations = new Queue<OperationItem>();
         private volatile int _operationsInProgressCount;
@@ -84,16 +87,15 @@ namespace EventStore.ClientAPI.Core
 
             _queue.RegisterHandler<EstablishTcpConnectionMessage>(msg => EstablishTcpConnection(msg.Task, msg.EndPoint));
             _queue.RegisterHandler<CloseConnectionMessage>(msg => CloseConnection("Connection close requested by client."));
+
             _queue.RegisterHandler<TcpConnectionEstablishedMessage>(msg => TcpConnectionEstablished(msg.Connection));
+            _queue.RegisterHandler<HandleTcpPackageMessage>(msg => HandleTcpPackage(msg.Connection, msg.Package));
             _queue.RegisterHandler<TcpConnectionClosedMessage>(msg => TcpConnectionClosed(msg.Connection));
 
-            _queue.RegisterHandler<TimerTickMessage>(TimerTick);
+            _queue.RegisterHandler<TimerTickMessage>(msg => TimerTick());
 
             _queue.RegisterHandler<StartOperationMessage>(msg => StartOperation(msg.Operation, msg.MaxAttempts, msg.Timeout));
-
-            _queue.RegisterHandler<RemoveOperationMessage>(msg => RemoveOperation(msg.OperationItem));
-            _queue.RegisterHandler<RetryOperationMessage>(msg => RetryOperation(msg.OperationItem));
-            _queue.RegisterHandler<ReconnectAndRetryOperationMessage>(msg => ReconnectAndRetryOperation(msg.OperationItem, msg.TcpEndPoint));
+            _queue.RegisterHandler<StartSubscriptionMessage>(StartSubscription);
 
             _timerStopwatch = Stopwatch.StartNew();
             _timer = new Timer(_ => _queue.EnqueueMessage(new TimerTickMessage(_timerStopwatch.Elapsed)),
@@ -137,7 +139,7 @@ namespace EventStore.ClientAPI.Core
             _connection = new TcpConnector(_log).CreateTcpConnection(
                 tcpEndPoint,
                 Guid.NewGuid(),
-                HandleTcpPackage,
+                (connection, package) => _queue.EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
                 connection => _queue.EnqueueMessage(new TcpConnectionEstablishedMessage(connection)),
                 (connection, endpoint, error) => _queue.EnqueueMessage(new TcpConnectionClosedMessage(connection, error)));
         }
@@ -149,23 +151,35 @@ namespace EventStore.ClientAPI.Core
             _connectionActive = false;
             _disposed = true;
 
-            if (_connection != null)
-                _connection.Close();
-            
+            CloseTcpConnection();
             _timer.Dispose();
-
+            
             foreach (var operationItem in _operations)
             {
-                operationItem.Value.Operation.Fail(
-                    new ConnectionClosingException(string.Format("Operation was in progress on connection '{0}' closing.", _connectionName)));
+                operationItem.Value.Operation.Fail(new ConnectionClosingException(string.Format("Connection '{0}' was closed.", _connectionName)));
             }
             _operations.Clear();
             _waitingOperations.Clear();
-            
-            _log.Info("EventStoreConnection '{0}' closed.", _connectionName);
 
+            foreach (var subscription in _subscriptions)
+            {
+                subscription.Value.Operation.Fail(new ConnectionClosingException(string.Format("Connection '{0}' was closed.", _connectionName)));
+            }
+            _subscriptions.Clear();
+            
             if (_settings.Closed != null)
                 _settings.Closed(_esConnection, reason);
+
+            _log.Info("EventStoreConnection '{0}' closed.", _connectionName);
+        }
+
+        private void CloseTcpConnection()
+        {
+            if (_connection != null)
+            {
+                _connection.Close();
+                TcpConnectionClosed(_connection);
+            }
         }
 
         private void TcpConnectionEstablished(TcpTypedConnection connection)
@@ -191,20 +205,32 @@ namespace EventStore.ClientAPI.Core
 
             if (_settings.Disconnected != null)
                 _settings.Disconnected(_esConnection);
+
+            var subscriptionsToRemove = new List<SubscriptionItem>();
+            foreach (var subscription in _subscriptions.Values.Where(x => x.IsSubscribed && x.ConnectionId == connection.ConnectionId))
+            {
+                subscription.Operation.ConnectionClosed();
+                subscriptionsToRemove.Add(subscription);
+            }
+            foreach (var subscription in subscriptionsToRemove)
+            {
+                _subscriptions.Remove(subscription.CorrelationId);
+            }
         }
 
-        private void TimerTick(TimerTickMessage msg)
+        private void TimerTick()
         {
             if (_disposed || !_connectionActive) return;
 
             if (_connectionStopwatch.IsRunning && _connectionStopwatch.Elapsed - _lastTimeoutCheckTimestamp > _settings.OperationTimeoutCheckPeriod)
             {
-                var retriable = new List<OperationItem>();
+                var retryOperations = new List<OperationItem>();
+                var removeOperations = new List<OperationItem>();
                 foreach (var operation in _operations.Values)
                 {
                     if (operation.ConnectionId != _connection.ConnectionId)
                     {
-                        retriable.Add(operation);
+                        retryOperations.Add(operation);
                     }
                     else if (operation.Timeout > TimeSpan.Zero && DateTime.Now - operation.LastUpdated > _settings.OperationTimeout)
                     {
@@ -214,14 +240,47 @@ namespace EventStore.ClientAPI.Core
                         _log.Error(err);
 
                         operation.Operation.Fail(new OperationTimedOutException(err));
-                        _queue.EnqueueMessage(new RemoveOperationMessage(operation));
+                        removeOperations.Add(operation);
                     }
                 }
 
-                retriable.Sort(SeqNoComparer);
-                foreach (var operationItem in retriable)
+                retryOperations.Sort(SeqNoComparer);
+                foreach (var operationItem in retryOperations)
                 {
-                    _queue.EnqueueMessage(new RetryOperationMessage(operationItem));
+                    RetryOperation(operationItem);
+                }
+                foreach (var operationItem in retryOperations)
+                {
+                    RemoveOperation(operationItem);
+                }
+
+                var retrySubscriptions = new List<SubscriptionItem>();
+                var removeSubscriptions = new List<SubscriptionItem>();
+                foreach (var subscription in _subscriptions.Values.Where(x => x.IsSubscribed))
+                {
+                    if (subscription.ConnectionId != _connection.ConnectionId)
+                    {
+                        retrySubscriptions.Add(subscription);
+                    }
+                    else if (subscription.Timeout > TimeSpan.Zero && DateTime.Now - subscription.LastUpdated > _settings.OperationTimeout)
+                    {
+                        var err = string.Format("Subscription {0} never got confirmation from server.\n" +
+                                                "Last state update: {1:HH:mm:ss.fff}, UTC now: {2:HH:mm:ss.fff}.",
+                                                subscription, subscription.LastUpdated, DateTime.Now);
+                        _log.Error(err);
+
+                        subscription.Operation.Fail(new OperationTimedOutException(err));
+                        removeSubscriptions.Add(subscription);
+                    }
+                }
+
+                foreach (var subscription in retrySubscriptions)
+                {
+                    RetrySubscription(subscription);
+                }
+                foreach (var subscription in removeSubscriptions)
+                {
+                    RemoveSubscription(subscription);
                 }
 
                 _lastTimeoutCheckTimestamp = _connectionStopwatch.Elapsed;
@@ -258,9 +317,35 @@ namespace EventStore.ClientAPI.Core
             ScheduleOperation(new OperationItem(operation, maxAttempts, timeout));
         }
 
+        private void StartSubscription(StartSubscriptionMessage msg)
+        {
+            if (_disposed)
+            {
+                msg.Source.SetException(new ObjectDisposedException(_connectionName));
+                return;
+            }
+            if (!_connectionActive)
+            {
+                msg.Source.SetException(new InvalidOperationException(string.Format("EventStoreConnection '{0}' is not active.", _connectionName)));
+                return;
+            }
+
+            var subscription = new SubscriptionItem(new SubscriptionOperation(_log,
+                                                                              msg.Source,
+                                                                              x => _connection.EnqueueSend(x.AsByteArray()),
+                                                                              msg.StreamId,
+                                                                              msg.ResolveLinkTos,
+                                                                              msg.EventAppeared,
+                                                                              msg.SubscriptionDropped),
+                                                    msg.MaxAttempts,
+                                                    msg.Timeout);
+            StartSubscription(subscription);
+        }
+
         private void HandleTcpPackage(TcpTypedConnection connection, TcpPackage package)
         {
-            if (_disposed) return;
+            if (_disposed || connection.ConnectionId != _connection.ConnectionId) 
+                return;
 
             if (package.Command == TcpCommand.BadRequest && package.CorrelationId == Guid.Empty)
             {
@@ -270,41 +355,56 @@ namespace EventStore.ClientAPI.Core
                     var exc = new EventStoreConnectionException(
                         string.Format("BadRequest received from server. Error: {0}", string.IsNullOrEmpty(message) ? "<no message>" : message));
                     _settings.ErrorOccurred(_esConnection, exc);
+
+                    CloseConnection("Connection-wide BadRequest received. Too dangerous to continue.");
                 }
                 return;
             }
 
             OperationItem operationItem;
-            if (!_operations.TryGetValue(package.CorrelationId, out operationItem))
+            SubscriptionItem subscriptionItem;
+            if (_operations.TryGetValue(package.CorrelationId, out operationItem))
             {
-                _log.Debug("Unexpected CorrelationId {{{0}}} received. Ignoring...", package.CorrelationId);
-                return;
-            }
-
-            var result = operationItem.Operation.InspectPackage(package);
-            switch (result.Decision)
+                var result = operationItem.Operation.InspectPackage(package);
+                switch (result.Decision)
+                {
+                    case InspectionDecision.DoNothing:
+                        break;
+                    case InspectionDecision.EndOperation:
+                        RemoveOperation(operationItem);
+                        break;
+                    case InspectionDecision.Retry:
+                        RetryOperation(operationItem);
+                        break;
+                    case InspectionDecision.Reconnect:
+                        ReconnectAndRetryOperation(operationItem, result.TcpEndPoint);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(string.Format("Unknown InspectionDecision: {0}.", result.Decision));
+                }
+            } 
+            else if (_subscriptions.TryGetValue(package.CorrelationId, out subscriptionItem))
             {
-                case InspectionDecision.DoNothing:
+                var result = subscriptionItem.Operation.InspectPackage(package);
+                switch (result.Decision)
                 {
-                    break;
+                    case InspectionDecision.DoNothing: 
+                        break;
+                    case InspectionDecision.EndOperation:
+                        RemoveSubscription(subscriptionItem);
+                        break;
+                    case InspectionDecision.Retry:
+                        RetrySubscription(subscriptionItem);
+                        break;
+                    case InspectionDecision.Reconnect:
+                        ReconnectAndRetrySubscription(subscriptionItem, result.TcpEndPoint);
+                        break;
+                    case InspectionDecision.Subscribed:
+                        subscriptionItem.IsSubscribed = true;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(string.Format("Unknown InspectionDecision: {0}.", result.Decision));
                 }
-                case InspectionDecision.EndOperation:
-                {
-                    _queue.EnqueueMessage(new RemoveOperationMessage(operationItem));
-                    break;
-                }
-                case InspectionDecision.Retry:
-                {
-                    _queue.EnqueueMessage(new RetryOperationMessage(operationItem));
-                    break;
-                }
-                case InspectionDecision.Reconnect:
-                {
-                    _queue.EnqueueMessage(new ReconnectAndRetryOperationMessage(operationItem, result.TcpEndPoint));
-                    break;
-                }
-                default:
-                    throw new ArgumentOutOfRangeException(string.Format("Unknown InspectionDecision: {0}.", result.Decision));
             }
         }
 
@@ -347,7 +447,7 @@ namespace EventStore.ClientAPI.Core
                 _log.Info("Going to reconnect to [{0}]. Current state: {1}, Current endpoint: {2}",
                           tcpEndPoint, _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected", _connection.EffectiveEndPoint);
 
-                _connection.Close();
+                CloseTcpConnection();
                 Connect(tcpEndPoint);
             }
             RetryOperation(operationItem);
@@ -355,14 +455,13 @@ namespace EventStore.ClientAPI.Core
 
         private void ScheduleOperation(OperationItem operation)
         {
-            if (!operation.Operation.IsLongRunning && _operationsInProgressCount >= _settings.MaxConcurrentItems)
+            if (_operationsInProgressCount >= _settings.MaxConcurrentItems)
             {
                 _waitingOperations.Enqueue(operation);
                 return;
             }
 
-            if (!operation.Operation.IsLongRunning)
-                _operationsInProgressCount += 1;
+            _operationsInProgressCount += 1;
 
             operation.ConnectionId = _connection.ConnectionId;
             operation.LastUpdated = DateTime.UtcNow;
@@ -373,10 +472,60 @@ namespace EventStore.ClientAPI.Core
             _connection.EnqueueSend(package.AsByteArray());
         }
 
-        public class OperationItem
+        private bool RemoveSubscription(SubscriptionItem subscription)
         {
-            private static long _nextSeqNo = -1;
+            return _subscriptions.Remove(subscription.CorrelationId);
+        }
 
+        private void RetrySubscription(SubscriptionItem subscription)
+        {
+            if (!RemoveSubscription(subscription))
+                return;
+
+            if (subscription.MaxRetries >= 0 && subscription.RetryCount >= subscription.MaxRetries)
+            {
+                subscription.Operation.Fail(new RetriesLimitReachedException(subscription.ToString(), subscription.RetryCount));
+                return;
+            }
+
+            subscription.RetryCount += 1;
+            StartSubscription(subscription);
+        }
+
+        private void ReconnectAndRetrySubscription(SubscriptionItem operationItem, IPEndPoint tcpEndPoint)
+        {
+            if (!_reconnectionStopwatch.IsRunning || !_connection.EffectiveEndPoint.Equals(tcpEndPoint))
+            {
+                _log.Info("Going to reconnect to [{0}]. Current state: {1}, Current endpoint: {2}",
+                          tcpEndPoint, _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected", _connection.EffectiveEndPoint);
+
+                CloseTcpConnection();
+                Connect(tcpEndPoint);
+            }
+            RetrySubscription(operationItem);
+        }
+
+        private void StartSubscription(SubscriptionItem subscription)
+        {
+            if (subscription.IsSubscribed)
+            {
+                RemoveSubscription(subscription);
+                return;
+            }
+
+            subscription.CorrelationId = Guid.NewGuid();
+            subscription.ConnectionId = _connection.ConnectionId;
+            subscription.LastUpdated = DateTime.UtcNow;
+
+            _subscriptions.Add(subscription.CorrelationId, subscription);
+
+            if (!subscription.Operation.Subscribe(subscription.CorrelationId))
+                RemoveSubscription(subscription);
+        }
+
+        public class OperationItem
+        {        
+            private static long _nextSeqNo = -1;
             public readonly long SeqNo = Interlocked.Increment(ref _nextSeqNo);
 
             public readonly IClientOperation Operation;
@@ -403,7 +552,7 @@ namespace EventStore.ClientAPI.Core
 
             public override string ToString()
             {
-                return string.Format("WorkItem {0} ({1:B}): {2}, retry count: {3}, last updated: {4}",
+                return string.Format("Operation {0} ({1:B}): {2}, retry count: {3}, last updated: {4}",
                                      Operation.GetType().Name,
                                      CorrelationId,
                                      Operation,
@@ -417,6 +566,43 @@ namespace EventStore.ClientAPI.Core
             public int Compare(OperationItem x, OperationItem y)
             {
                 return x.SeqNo.CompareTo(y.SeqNo);
+            }
+        }
+
+        public class SubscriptionItem
+        {
+            public readonly SubscriptionOperation Operation;
+            public readonly int MaxRetries;
+            public readonly TimeSpan Timeout;
+
+            public Guid ConnectionId;
+            public Guid CorrelationId;
+            public bool IsSubscribed;
+            public int RetryCount;
+            public DateTime LastUpdated;
+
+            public SubscriptionItem(SubscriptionOperation operation, int maxRetries, TimeSpan timeout)
+            {
+                Ensure.NotNull(operation, "operation");
+
+                Operation = operation;
+                MaxRetries = maxRetries;
+                Timeout = timeout;
+
+                CorrelationId = Guid.NewGuid();
+                RetryCount = 0;
+                LastUpdated = DateTime.UtcNow;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("Subscription {0} ({1:B}): {2}, is subscribed: {3}, retry count: {4}, last updated: {5}",
+                                     Operation.GetType().Name,
+                                     CorrelationId,
+                                     Operation,
+                                     IsSubscribed,
+                                     RetryCount,
+                                     LastUpdated);
             }
         }
     }

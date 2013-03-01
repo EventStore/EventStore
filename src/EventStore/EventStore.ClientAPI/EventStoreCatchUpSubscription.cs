@@ -161,9 +161,9 @@ namespace EventStore.ClientAPI
                 EnsureProcessingPushQueue();
         }
 
-        private void ServerSubscriptionDropped(EventStoreSubscription subscription)
+        private void ServerSubscriptionDropped(EventStoreSubscription subscription, string reason, Exception exc)
         {
-            EnqueueSubscriptionDropNotification("Subscription dropped by server.", null);
+            EnqueueSubscriptionDropNotification(reason, exc);
         }
 
         private void EnqueueSubscriptionDropNotification(string reason, Exception error)
