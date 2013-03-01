@@ -27,49 +27,61 @@
 // 
 
 using System;
-using System.Collections.Generic;
-using EventStore.Core.Bus;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
+using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Standard
 {
-    public class MultiStreamEventReader : MultiStreamEventReaderBase<long>
+    public class StubHandler : IProjectionStateHandler
     {
-        public MultiStreamEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, string[] streams,
-            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
-            bool stopOnEof = false)
-            : base(
-                publisher, eventReaderCorrelationId, streams, fromPositions, resolveLinkTos, timeProvider,
-                stopOnEof)
+        private readonly char _separator;
+        private readonly string _categoryStreamPrefix;
+
+        public StubHandler(string source, Action<string> logger)
+        {
+            if (!string.IsNullOrWhiteSpace(source))
+                throw new InvalidOperationException(
+                    "Does not require source");
+        }
+
+        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        {
+            builder.FromAll();
+            builder.AllEvents();
+        }
+
+        public void Load(string state)
         {
         }
 
-        protected override long? EventPairToPosition(EventStore.Core.Data.ResolvedEvent resolvedEvent)
+        public void Initialize()
         {
-            return resolvedEvent.OriginalEvent.LogPosition;
         }
 
-        protected override long? MessageToLastCommitPosition(ClientMessage.ReadStreamEventsForwardCompleted message)
+        public string GetStatePartition(
+            CheckpointTag position, string streamId, string eventType, string category, Guid eventid, int sequenceNumber,
+            string metadata, string data)
         {
-            return GetLastCommitPositionFrom(message);
+            throw new NotImplementedException();
         }
 
-        protected override long GetItemPosition(Tuple<EventRecord, EventRecord, float> head)
+        public bool ProcessEvent(
+            string partition, CheckpointTag eventPosition, string streamId, string eventType, string category1,
+            Guid eventId, int sequenceNumber, string metadata, string data, out string newState,
+            out EmittedEvent[] emittedEvents)
         {
-            return head.Item2.LogPosition;
+            emittedEvents = null;
+            newState = null;
+            return true;
         }
 
-        protected override long GetMaxPosition()
+        public string TransformStateToResult()
         {
-            return long.MaxValue;
+            throw new NotImplementedException();
         }
 
-        protected override long? PositionToSafeJoinPosition(long? safePositionToJoin)
+        public void Dispose()
         {
-            return safePositionToJoin;
         }
     }
 }

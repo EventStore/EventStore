@@ -730,7 +730,7 @@ namespace EventStore.Projections.Core.Services.Management
             var checkpointsEnabled = _persistedState.CheckpointsDisabled != true;
             var checkpointHandledThreshold = checkpointsEnabled ? 4000 : 0;
             var checkpointUnhandledBytesThreshold = checkpointsEnabled ? 10*1000*1000 : 0;
-            var pendingEventsThreshold = 1000;
+            var pendingEventsThreshold = 5000;
             var maxWriteBatchLength = 500;
             var emitEventEnabled = _persistedState.EmitEnabled == true;
             var createTempStreams = _persistedState.CreateTempStreams == true;

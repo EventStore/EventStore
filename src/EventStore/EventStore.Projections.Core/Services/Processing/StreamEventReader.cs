@@ -47,9 +47,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _maxReadCount = 111;
 
         public StreamEventReader(
-            IPublisher publisher, Guid distibutionPointCorrelationId, string streamName, int fromSequenceNumber,
+            IPublisher publisher, Guid eventReaderCorrelationId, string streamName, int fromSequenceNumber,
             ITimeProvider timeProvider, bool resolveLinkTos, bool stopOnEof = false)
-            : base(publisher, distibutionPointCorrelationId, stopOnEof)
+            : base(publisher, eventReaderCorrelationId, stopOnEof)
         {
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
             if (streamName == null) throw new ArgumentNullException("streamName");
@@ -142,7 +142,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void SendIdle()
         {
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.EventReaderIdle(_distibutionPointCorrelationId, _timeProvider.Now));
+                new ProjectionCoreServiceMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
         }
 
         public override void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
@@ -173,7 +173,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private Message CreateReadEventsMessage()
         {
             return new ClientMessage.ReadStreamEventsForward(
-                _distibutionPointCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
+                EventReaderCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
                 _maxReadCount, _resolveLinkTos);
         }
 
@@ -183,7 +183,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return; //TODO: this should not happen, but StorageReader does not return it now
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, null, safeJoinPosition, 100.0f));
+                    EventReaderCorrelationId, null, safeJoinPosition, 100.0f));
         }
 
         private void DeliverEvent(EventRecord @event, EventRecord link, float progress, ref int sequenceNumber)
@@ -200,7 +200,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(
                 //TODO: publish both link and event data
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId,
+                    EventReaderCorrelationId,
                     new ResolvedEvent(
                         positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
                         resolvedLinkTo, default(EventPosition), @event.EventId, @event.EventType, false, @event.Data,

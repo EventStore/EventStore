@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                                    IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
                                                    IDisposable
     {
-        protected readonly Guid _distibutionPointCorrelationId;
+        protected readonly Guid EventReaderCorrelationId;
         protected readonly IPublisher _publisher;
         protected readonly ILogger _logger = LogManager.GetLoggerFor<EventReader>();
 
@@ -48,13 +48,13 @@ namespace EventStore.Projections.Core.Services.Processing
         protected bool _disposed;
 
         protected EventReader(
-            IPublisher publisher, Guid distibutionPointCorrelationId, bool stopOnEof)
+            IPublisher publisher, Guid eventReaderCorrelationId, bool stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
-            if (distibutionPointCorrelationId == Guid.Empty)
+            if (eventReaderCorrelationId == Guid.Empty)
                 throw new ArgumentException("distibutionPointCorrelationId");
             _publisher = publisher;
-            _distibutionPointCorrelationId = distibutionPointCorrelationId;
+            EventReaderCorrelationId = eventReaderCorrelationId;
             _stopOnEof = stopOnEof;
         }
 
@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _paused = false;
             _pauseRequested = false;
-            _logger.Trace("Resuming event distribution {0} at '{1}'", _distibutionPointCorrelationId, FromAsText());
+//            _logger.Trace("Resuming event distribution {0} at '{1}'", EventReaderCorrelationId, FromAsText());
             RequestEvents();
         }
 
@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _pauseRequested = true;
             if (!AreEventsRequested())
                 _paused = true;
-            _logger.Trace("Pausing event distribution {0} at '{1}'", _distibutionPointCorrelationId, FromAsText());
+//            _logger.Trace("Pausing event distribution {0} at '{1}'", EventReaderCorrelationId, FromAsText());
         }
 
         public abstract void Handle(ClientMessage.ReadStreamEventsForwardCompleted message);
@@ -109,7 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_stopOnEof)
             {
-                _publisher.Publish(new ProjectionCoreServiceMessage.EventReaderEof(_distibutionPointCorrelationId));
+                _publisher.Publish(new ProjectionCoreServiceMessage.EventReaderEof(EventReaderCorrelationId));
                 Dispose();
             }
         }

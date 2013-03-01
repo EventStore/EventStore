@@ -40,6 +40,8 @@
                             Categorize Event by Stream Path</option>
                         <option value="native:EventStore.Projections.Core.Standard.IndexEventsByEventType">
                             Index Events by Event Type</option>
+                        <option value="native:EventStore.Projections.Core.Standard.StubHandler">
+                            Reading Speed Test Handler</option>
                     </select>
                 </div>
             </div>
@@ -62,7 +64,7 @@
                 $('#post').click(function () {
                     
                     var name = $("#name").val();
-                    $.ajax("/projections/persistent?name=" + name + "&type=" + encodeURIComponent($("#type").val()), {
+                    $.ajax("/projections/continuous?name=" + name + "&type=" + encodeURIComponent($("#type").val()), {
                         headers: {
                             Accept: "application/json",
                             "Content-Type": "text/plain",

@@ -43,16 +43,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _maxReadCount = 250;
         private EventPosition _from;
         private readonly bool _deliverEndOfTfPosition;
+        private readonly bool _resolveLinkTos;
         private readonly ITimeProvider _timeProvider;
 
         public TransactionFileEventReader(
-            IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition @from, ITimeProvider timeProvider,
-            bool stopOnEof = false, bool deliverEndOfTFPosition = true)
-            : base(publisher, distibutionPointCorrelationId, stopOnEof)
+            IPublisher publisher, Guid eventReaderCorrelationId, EventPosition @from, ITimeProvider timeProvider,
+            bool stopOnEof = false, bool deliverEndOfTFPosition = true, bool resolveLinkTos = true)
+            : base(publisher, eventReaderCorrelationId, stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             _from = @from;
             _deliverEndOfTfPosition = deliverEndOfTFPosition;
+            _resolveLinkTos = resolveLinkTos;
             _timeProvider = timeProvider;
         }
 
@@ -123,7 +125,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void SendIdle()
         {
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.EventReaderIdle(_distibutionPointCorrelationId, _timeProvider.Now));
+                new ProjectionCoreServiceMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
         }
 
         private void RequestEvents(bool delay)
@@ -149,8 +151,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private Message CreateReadEventsMessage()
         {
             return new ClientMessage.ReadAllEventsForward(
-                _distibutionPointCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
-                _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, true, null);
+                EventReaderCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
+                _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, _resolveLinkTos, null);
         }
 
         private void DeliverLastCommitPosition(EventPosition lastPosition)
@@ -159,7 +161,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, null, lastPosition.PreparePosition, 100.0f));
+                    EventReaderCorrelationId, null, lastPosition.PreparePosition, 100.0f));
                 //TODO: check was is passed here
         }
 
@@ -176,7 +178,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId,
+                    EventReaderCorrelationId,
                     new ResolvedEvent(
                         positionEvent.EventStreamId, positionEvent.EventNumber, @event.Event.EventStreamId,
                         @event.Event.EventNumber, @event.Link != null, receivedPosition, @event.Event.EventId,

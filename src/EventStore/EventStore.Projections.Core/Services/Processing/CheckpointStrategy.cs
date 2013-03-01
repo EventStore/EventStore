@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var eventReader = new TransactionFileEventReader(
                     publisher, eventReaderId,
                     new EventPosition(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value),
-                    new RealTimeProvider(), deliverEndOfTFPosition: true, stopOnEof: stopOnEof);
+                    new RealTimeProvider(), deliverEndOfTFPosition: true, stopOnEof: stopOnEof, resolveLinkTos: false);
                 return eventReader;
             }
             if (_streams != null && _streams.Count == 1)

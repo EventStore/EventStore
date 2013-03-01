@@ -71,8 +71,8 @@ namespace EventStore.Projections.Core.Services.Processing
             DistributeMessage(message);
             if (_headSubscribers.Count == 0 && !_headEventReaderPaused)
             {
-                _headEventReader.Pause();
-                _headEventReaderPaused = true;
+//                _headEventReader.Pause();
+//                _headEventReaderPaused = true;
             }
             return true;
         }
@@ -115,6 +115,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Stop()
         {
             EnsureStarted();
+            _headEventReader.Pause();
             _headEventReader = null;
             _started = false;
         }
@@ -192,7 +193,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_headEventReaderPaused)
             {
                 _headEventReaderPaused = false;
-                _headEventReader.Resume();
+                //_headEventReader.Resume();
             }
         }
 

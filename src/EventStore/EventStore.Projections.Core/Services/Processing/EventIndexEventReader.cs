@@ -39,11 +39,11 @@ namespace EventStore.Projections.Core.Services.Processing
     public class EventIndexEventReader : MultiStreamEventReaderBase<EventPosition>
     {
         public EventIndexEventReader(
-            IPublisher publisher, Guid distibutionPointCorrelationId, string[] streams,
+            IPublisher publisher, Guid eventReaderCorrelationId, string[] streams,
             Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
             bool stopOnEof = false)
             : base(
-                publisher, distibutionPointCorrelationId, streams, fromPositions, resolveLinkTos, timeProvider,
+                publisher, eventReaderCorrelationId, streams, fromPositions, resolveLinkTos, timeProvider,
                 stopOnEof, skipStreamCreated: true)
         {
         }

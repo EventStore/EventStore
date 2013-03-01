@@ -41,7 +41,7 @@ namespace js1
 		if (!prelude->enter_cancellable_region())
 			return S_TERMINATED;
 
-		v8:Handle<v8::Value> result = run_script(get_context());
+		v8::Handle<v8::Value> result = run_script(get_context());
 		if (!prelude->exit_cancellable_region())
 			return S_TERMINATED;
 

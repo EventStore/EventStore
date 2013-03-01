@@ -59,10 +59,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, bool> _eofs;
 
         protected MultiStreamEventReaderBase(
-            IPublisher publisher, Guid distibutionPointCorrelationId, string[] streams,
+            IPublisher publisher, Guid eventReaderCorrelationId, string[] streams,
             Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
             bool stopOnEof = false, bool skipStreamCreated = false)
-            : base(publisher, distibutionPointCorrelationId, stopOnEof)
+            : base(publisher, eventReaderCorrelationId, stopOnEof)
         {
             if (streams == null) throw new ArgumentNullException("streams");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
@@ -204,7 +204,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_eofs.All(v => v.Value))
                 _publisher.Publish(
-                    new ProjectionCoreServiceMessage.EventReaderIdle(_distibutionPointCorrelationId, _timeProvider.Now));
+                    new ProjectionCoreServiceMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
         }
 
         private void ProcessBuffers()
@@ -274,7 +274,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested.Add(stream);
 
             var readEventsForward = new ClientMessage.ReadStreamEventsForward(
-                _distibutionPointCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
+                EventReaderCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
                 _maxReadCount, _resolveLinkTos);
             if (delay)
                 _publisher.Publish(
@@ -292,7 +292,7 @@ namespace EventStore.Projections.Core.Services.Processing
             // deliver if already available
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, null, PositionToSafeJoinPosition(_safePositionToJoin), 100.0f));
+                    EventReaderCorrelationId, null, PositionToSafeJoinPosition(_safePositionToJoin), 100.0f));
         }
 
         private void UpdateSafePositionToJoin(string streamId, TPosition? preparePosition)
@@ -316,7 +316,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(
                 //TODO: publish both link and event data
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId,
+                    EventReaderCorrelationId,
                     new ResolvedEvent(
                         streamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
                         default(EventPosition), @event.EventId, @event.EventType, false, @event.Data, @event.Metadata,
