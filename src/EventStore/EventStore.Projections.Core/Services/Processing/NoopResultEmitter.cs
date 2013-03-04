@@ -39,7 +39,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public EmittedEvent[] NewPartition(string partition, CheckpointTag at)
         {
-            throw new NotImplementedException();
+            // Do nothing. Noop result emitter does not care about partitions
+            return null;
         }
     }
 }
