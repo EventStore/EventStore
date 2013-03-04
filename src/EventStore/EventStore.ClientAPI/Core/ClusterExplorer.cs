@@ -32,7 +32,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
-using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.Transport.Http;
@@ -44,16 +44,18 @@ namespace EventStore.ClientAPI.Core
     internal class ClusterExplorer
     {
         private readonly ILogger _log;
-        private readonly HttpAsyncClient _client = new HttpAsyncClient();
+        private readonly HttpAsyncClient _client;
 
         private readonly bool _allowForwarding;
         private readonly int _maxDiscoverAttempts;
         private readonly int _port;
 
-        public ClusterExplorer(bool allowForwarding, int maxDiscoverAttempts, int port)
+        public ClusterExplorer(ILogger log, bool allowForwarding, int maxDiscoverAttempts, int port)
         {
-            _log = LogManager.GetLogger();
+            Ensure.NotNull(log, "log");
 
+            _log = log;
+            _client = new HttpAsyncClient(log);
             _allowForwarding = allowForwarding;
             _maxDiscoverAttempts = maxDiscoverAttempts;
             _port = port;

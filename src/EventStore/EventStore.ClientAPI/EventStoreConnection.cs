@@ -140,7 +140,7 @@ namespace EventStore.ClientAPI
             Ensure.Nonnegative(port, "port");
 
             // TODO AN: rework this mess
-            var explorer = new ClusterExplorer(_settings.AllowForwarding, maxDiscoverAttempts, port);
+            var explorer = new ClusterExplorer(_settings.Log, _settings.AllowForwarding, maxDiscoverAttempts, port);
             return explorer.Resolve(clusterDns)
                            .ContinueWith(resolve =>
                                          {
@@ -589,6 +589,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription = new EventStoreStreamCatchUpSubscription(this,
+                                                                              _settings.Log,
                                                                               stream,
                                                                               fromEventNumberExclusive,
                                                                               resolveLinkTos,
@@ -634,10 +635,11 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription = new EventStoreAllCatchUpSubscription(this,
-                                                                             fromPositionExclusive,
-                                                                             resolveLinkTos,
-                                                                             eventAppeared,
-                                                                             subscriptionDropped);
+                                                                           _settings.Log,
+                                                                           fromPositionExclusive,
+                                                                           resolveLinkTos,
+                                                                           eventAppeared,
+                                                                           subscriptionDropped);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }

@@ -38,9 +38,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Tcp;
+using ConsoleLogger = EventStore.ClientAPI.Common.Log.ConsoleLogger;
 using ILogger = EventStore.Common.Log.ILogger;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
@@ -112,7 +114,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             _tcpEndPoint = GetTcpEndPoint();
 
             _connections = new EventStoreConnection[connections];
-            _projectionsManager = new ProjectionsManager(new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000));
+            _projectionsManager = new ProjectionsManager(new ConsoleLogger(), new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000));
 
             _writeHandlers = new Dictionary<WriteMode, Func<string, int, Func<int, EventData>, Task>>
             {

@@ -38,14 +38,14 @@ namespace EventStore.ClientAPI
 {
     public abstract class EventStoreCatchUpSubscription
     {
-        protected static readonly ILogger Log = LogManager.GetLogger();
-
         private const int DefaultReadBatchSize = 500;
         private const int DefaultMaxPushQueueSize = 10000;
         private static readonly ResolvedEvent DropSubscriptionEvent = new ResolvedEvent();
 
         public bool IsSubscribedToAll { get { return _streamId == string.Empty; } }
         public string StreamId { get { return _streamId; } }
+
+        protected readonly ILogger Log;
 
         private readonly EventStoreConnection _connection;
         private readonly bool _resolveLinkTos;
@@ -72,6 +72,7 @@ namespace EventStore.ClientAPI
         protected abstract void TryProcess(ResolvedEvent e);
 
         protected EventStoreCatchUpSubscription(EventStoreConnection connection, 
+                                                ILogger log,
                                                 string streamId,
                                                 bool resolveLinkTos,
                                                 Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared, 
@@ -80,11 +81,13 @@ namespace EventStore.ClientAPI
                                                 int maxPushQueueSize = DefaultMaxPushQueueSize)
         {
             Ensure.NotNull(connection, "connection");
+            Ensure.NotNull(log, "log");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.Positive(readBatchSize, "readBatchSize");
             Ensure.Positive(maxPushQueueSize, "maxPushQueueSize");
 
             _connection = connection;
+            Log = log;
             _streamId = string.IsNullOrEmpty(streamId) ? string.Empty : streamId;
             _resolveLinkTos = resolveLinkTos;
             ReadBatchSize = readBatchSize;
@@ -251,11 +254,12 @@ namespace EventStore.ClientAPI
         private Position _lastProcessedPosition;
 
         internal EventStoreAllCatchUpSubscription(EventStoreConnection connection,
-                                                    Position? fromPositionExclusive, /* if null -- from the very beginning */
-                                                    bool resolveLinkTos,
-                                                    Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
-                                                    Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped)
-                : base(connection, string.Empty, resolveLinkTos, eventAppeared, subscriptionDropped)
+                                                  ILogger log,
+                                                  Position? fromPositionExclusive, /* if null -- from the very beginning */
+                                                  bool resolveLinkTos,
+                                                  Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                                                  Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped)
+                : base(connection, log, string.Empty, resolveLinkTos, eventAppeared, subscriptionDropped)
         {
             _lastProcessedPosition = fromPositionExclusive ?? new Position(-1, -1);
             _nextReadPosition = fromPositionExclusive ?? Position.Start;
@@ -310,12 +314,13 @@ namespace EventStore.ClientAPI
         private int _lastProcessedEventNumber;
 
         internal EventStoreStreamCatchUpSubscription(EventStoreConnection connection,
-                                                       string streamId,
-                                                       int? fromEventNumberExclusive, /* if null -- from the very beginning */
-                                                       bool resolveLinkTos,
-                                                       Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
-                                                       Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped)
-            : base(connection, streamId, resolveLinkTos, eventAppeared, subscriptionDropped)
+                                                     ILogger log,
+                                                     string streamId,
+                                                     int? fromEventNumberExclusive, /* if null -- from the very beginning */
+                                                     bool resolveLinkTos,
+                                                     Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                                                     Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped)
+            : base(connection, log, streamId, resolveLinkTos, eventAppeared, subscriptionDropped)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
 

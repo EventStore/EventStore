@@ -92,7 +92,7 @@ namespace EventStore.ClientAPI.ClientOperations
             return new TcpPackage(TcpCommand.SubscribeToStream, _correlationId, dto.Serialize());
         }
 
-        internal void Unsubscribe()
+        public void Unsubscribe()
         {
             DropSubscription("Client requested subscription drop.", null, clientInitiated: true, shouldSubscriptionExist: true);
         }
@@ -102,7 +102,7 @@ namespace EventStore.ClientAPI.ClientOperations
             return new TcpPackage(TcpCommand.UnsubscribeFromStream, _correlationId, new ClientMessage.UnsubscribeFromStream().Serialize());
         }
 
-        internal InspectionResult InspectPackage(TcpPackage package)
+        public InspectionResult InspectPackage(TcpPackage package)
         {
             try
             {

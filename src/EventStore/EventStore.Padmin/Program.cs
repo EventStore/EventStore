@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using EventStore.ClientAPI;
 using System.Linq;
+using EventStore.ClientAPI.Common.Log;
 
 namespace EventStore.Padmin
 {
@@ -76,7 +77,7 @@ namespace EventStore.Padmin
                 var port = int.Parse(config["http-port"]);
                 var endPoint = new IPEndPoint(ip, port);
 
-                var manager = new ProjectionsManager(endPoint);
+                var manager = new ProjectionsManager(new ConsoleLogger(), endPoint);
                 Execute(manager, args);
                 return true;
             }

@@ -101,9 +101,7 @@
     <Compile Include="Common\Log\ConsoleLogger.cs" />
     <Compile Include="Common\Log\NoopLogger.cs" />
     <Compile Include="Common\Log\DebugLogger.cs" />
-    <Compile Include="Common\Utils\BytesFormatter.cs" />
     <Compile Include="Common\Utils\Helper.cs" />
-    <Compile Include="Common\Utils\Tasks.cs" />
     <Compile Include="ConnectionSettings.cs" />
     <Compile Include="ConnectionSettingsBuilder.cs" />
     <Compile Include="Core\ClusterExplorer.cs" />
@@ -130,7 +128,6 @@
     <Compile Include="StreamEventsSlice.cs" />
     <Compile Include="Exceptions\CommandNotExpectedException.cs" />
     <Compile Include="Exceptions\ConnectionClosingException.cs" />
-    <Compile Include="Exceptions\ConnectionFailedException.cs" />
     <Compile Include="Exceptions\NoResultException.cs" />
     <Compile Include="Exceptions\OperationTimedOutException.cs" />
     <Compile Include="Exceptions\RetriesLimitReachedException.cs" />
@@ -168,8 +165,8 @@
     <Compile Include="Transport.Tcp\TcpConnection.cs" />
     <Compile Include="Transport.Tcp\LengthPrefixFramer.cs" />
     <Compile Include="Transport.Tcp\TcpConnectionMonitor.cs" />
-    <Compile Include="Transport.Tcp\TcpConnector.cs" />
-    <Compile Include="Transport.Tcp\TcpTypedConnection.cs" />
+    <Compile Include="Transport.Tcp\TcpStats.cs" />
+    <Compile Include="Transport.Tcp\TcpPackageConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Transport.Tcp\TcpClientConnector.cs" />
     <Compile Include="Transport.Tcp\IMonitoredTcpConnection.cs" />

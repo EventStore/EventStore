@@ -76,6 +76,7 @@
     <Compile Include="TcpConnectionBase.cs" />
     <Compile Include="TcpConnectionMonitor.cs" />
     <Compile Include="TcpServerListener.cs" />
+    <Compile Include="TcpStats.cs" />
     <Compile Include="TcpTypedConnection.cs" />
   </ItemGroup>
   <ItemGroup>

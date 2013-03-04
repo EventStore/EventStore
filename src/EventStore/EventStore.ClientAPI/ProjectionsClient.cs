@@ -35,7 +35,12 @@ namespace EventStore.ClientAPI
 {
     internal class ProjectionsClient
     {
-        private readonly HttpAsyncClient _client = new HttpAsyncClient();
+        private readonly HttpAsyncClient _client;
+
+        public ProjectionsClient(ILogger log)
+        {
+            _client = new HttpAsyncClient(log);
+        }
 
         public Task Enable(IPEndPoint endPoint, string name)
         {

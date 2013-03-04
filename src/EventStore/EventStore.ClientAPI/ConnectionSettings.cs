@@ -91,7 +91,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         public Action<EventStoreConnection, Exception> ErrorOccurred;
         /// <summary>
-        /// Raised whenever the internal error occurs
+        /// Raised whenever the connection is closed
         /// </summary>
         public Action<EventStoreConnection, string> Closed;
         /// <summary>

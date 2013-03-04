@@ -30,17 +30,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common.Log;
+using EventStore.Common.Log;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
+using ILogger = EventStore.Common.Log.ILogger;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
     public class subscribe_to_all_catching_up_should : SpecificationWithDirectory
     {
-        private static readonly ILogger Log = LogManager.GetLogger();
+        private static readonly ILogger Log = LogManager.GetLoggerFor<subscribe_to_all_catching_up_should>();
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
 
         private MiniNode _node;

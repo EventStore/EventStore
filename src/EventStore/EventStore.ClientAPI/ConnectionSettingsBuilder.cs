@@ -36,7 +36,7 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class ConnectionSettingsBuilder
     {
-        private ILogger _log = new NoopLogger();
+        private ILogger _log = new ConsoleLogger();
 
         private int _maxQueueSize = Consts.DefaultMaxQueueSize;
         private int _maxConcurrentItems = Consts.DefaultMaxConcurrentItems;

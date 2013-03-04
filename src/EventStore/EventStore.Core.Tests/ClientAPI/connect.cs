@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning"), Ignore("Unstable tests. Need to investigate later.")]
+    [TestFixture, Category("LongRunning")]
     public class connect : SpecificationWithDirectoryPerTestFixture
     {
         [Test]
@@ -23,22 +23,22 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void should_throw_exception_when_trying_to_reopen_closed_connection()
         {
-            var reconnected = new ManualResetEventSlim();
+            var closed = new ManualResetEventSlim();
             var settings = ConnectionSettings.Create()
                                              .LimitReconnectionsTo(0)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
-                                             .OnReconnecting(x => reconnected.Set());
+                                             .OnClosed((x, r) => closed.Set());
 
             using (var connection = EventStoreConnection.Create(settings))
             {
                 connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
 
-                if (!reconnected.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might might be even 60 seconds
-                    Assert.Fail("Reconnection took too long.");
+                if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
+                    Assert.Fail("Connection timeout took too long.");
 
-                Assert.Throws<InvalidOperationException>(
-                    () => connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348)),
-                        "EventStoreConnection has been closed");
+                Assert.That(() => connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348)),
+                            Throws.Exception.InstanceOf<AggregateException>()
+                            .With.InnerException.InstanceOf<InvalidOperationException>());
             }
         }
 
@@ -46,22 +46,23 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void should_close_connection_after_configured_amount_of_failed_reconnections()
         {
-            var reconnected = new ManualResetEventSlim();
+            var closed = new ManualResetEventSlim();
             var settings = ConnectionSettings.Create()
-                                             .LimitReconnectionsTo(0)
+                                             .LimitReconnectionsTo(2)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
-                                             .OnReconnecting(x => reconnected.Set());
+                                             .OnClosed((x, r) => closed.Set());
 
             using (var connection = EventStoreConnection.Create(settings))
             {
 
                 connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
 
-                if (!reconnected.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might might be even 60 seconds
-                    Assert.Fail("Reconnection took too long.");
+                if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
+                    Assert.Fail("Connection timeout took too long.");
 
-                Assert.Throws<InvalidOperationException>(() => connection.CreateStream("stream", Guid.NewGuid(), false, new byte[0]),
-                                                         "EventStoreConnection [127.0.0.1:12348] is still active.");
+                Assert.That(() => connection.CreateStream("stream", Guid.NewGuid(), false, new byte[0]), 
+                            Throws.Exception.InstanceOf<AggregateException>()
+                            .With.InnerException.InstanceOf<InvalidOperationException>());
             }
         }
     }
