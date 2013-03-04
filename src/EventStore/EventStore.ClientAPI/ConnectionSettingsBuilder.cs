@@ -98,7 +98,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Limits the number of operation attempts for a given operation
+        /// Limits the number of operation attempts
         /// </summary>
         /// <param name="limit"></param>
         /// <returns></returns>
@@ -111,7 +111,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Limits the number of retries for a given operation
+        /// Limits the number of operation retries
         /// </summary>
         /// <param name="limit"></param>
         /// <returns></returns>
@@ -124,9 +124,8 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Allow infinite retry attempts
+        /// Allows infinite operation retry attempts
         /// </summary>
-        /// <param name="limit"></param>
         /// <returns></returns>
         public ConnectionSettingsBuilder KeepRetrying()
         {
@@ -144,6 +143,16 @@ namespace EventStore.ClientAPI
             Ensure.Nonnegative(limit, "limit");
 
             _maxReconnections = limit;
+            return this;
+        }
+
+        /// <summary>
+        /// Allows infinite reconnection attempts
+        /// </summary>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder KeepReconnecting()
+        {
+            _maxReconnections = -1;
             return this;
         }
 

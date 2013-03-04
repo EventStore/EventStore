@@ -126,8 +126,9 @@ namespace EventStore.ClientAPI
             Ensure.Positive(maxQueueSize, "maxQueueSize");
             Ensure.Positive(maxConcurrentItems, "maxConcurrentItems");
             if (maxRetries < -1)
-                throw new ArgumentOutOfRangeException("maxRetries", string.Format("maxRetires value is out of range: {0}. Allowed range: [-1, infinity].", maxRetries));
-            Ensure.Nonnegative(maxReconnections, "maxReconnections");
+                throw new ArgumentOutOfRangeException("maxRetries", string.Format("maxRetries value is out of range: {0}. Allowed range: [-1, infinity].", maxRetries));
+            if (maxReconnections < -1)
+                throw new ArgumentOutOfRangeException("maxReconnections", string.Format("maxReconnections value is out of range: {0}. Allowed range: [-1, infinity].", maxRetries));
 
             Log = log;
             MaxQueueSize = maxQueueSize;

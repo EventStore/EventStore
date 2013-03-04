@@ -242,7 +242,7 @@ namespace EventStore.ClientAPI.Core
             if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= _settings.ReconnectionDelay)
             {
                 _reconnectionCount += 1;
-                if (_reconnectionCount > _settings.MaxReconnections)
+                if (_settings.MaxReconnections >= 0 && _reconnectionCount > _settings.MaxReconnections)
                     CloseConnection("Reconnection limit reached.");
                 else
                 {
