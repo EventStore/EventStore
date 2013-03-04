@@ -74,11 +74,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         }
 
         public bool ProcessEvent(
-            string partition, CheckpointTag eventPosition, string streamId, string eventType, string category,
-            Guid eventid, int sequenceNumber, string metadata, string data, out string newState,
-            out EmittedEvent[] emittedEvents)
+            string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
+            out string newState, out EmittedEvent[] emittedEvents)
         {
-            if (eventType == "fail" || _query == "fail")
+            if (data.EventType == "fail" || _query == "fail")
                 throw new Exception("failed");
             _logger("ProcessEvent(" + "..." + ")");
             newState = "{\"data\": 1}";

@@ -142,14 +142,14 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 var link = _emittedEvents[1];
 
                 Assert.AreEqual("Result", @event.EventType);
-                Assert.AreEqual(_result, Encoding.UTF8.GetString(@event.Data));
+                Assert.AreEqual(_result, @event.Data);
                 Assert.AreEqual("$projections-projection-partition-result", @event.StreamId);
                 Assert.AreEqual(_resultAt, @event.CausedByTag);
                 Assert.IsNull(@event.ExpectedTag);
 
                 Assert.AreEqual("$>", link.EventType);
                 ((EmittedLinkTo) link).SetTargetEventNumber(1);
-                Assert.AreEqual("1@$projections-projection-partition-result", Encoding.UTF8.GetString(link.Data));
+                Assert.AreEqual("1@$projections-projection-partition-result", link.Data);
                 Assert.AreEqual("$projections-projection-result", link.StreamId);
                 Assert.AreEqual(_resultAt, link.CausedByTag);
                 Assert.IsNull(link.ExpectedTag);
@@ -206,7 +206,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
 
                 Assert.AreEqual("$>", link.EventType);
                 ((EmittedLinkTo)link).SetTargetEventNumber(1);
-                Assert.AreEqual("1@$projections-projection-partition-result", Encoding.UTF8.GetString(link.Data));
+                Assert.AreEqual("1@$projections-projection-partition-result", link.Data);
                 Assert.AreEqual("$projections-projection-result", link.StreamId);
                 Assert.AreEqual(_resultAt, link.CausedByTag);
                 Assert.IsNull(link.ExpectedTag);
@@ -258,7 +258,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 var @event = _emittedEvents[0];
 
                 Assert.AreEqual("Result", @event.EventType);
-                Assert.AreEqual(_result, Encoding.UTF8.GetString(@event.Data));
+                Assert.AreEqual(_result, @event.Data);
                 Assert.AreEqual("$projections-projection-result", @event.StreamId);
                 Assert.AreEqual(_resultAt, @event.CausedByTag);
                 Assert.IsNull(@event.ExpectedTag);

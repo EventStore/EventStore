@@ -28,6 +28,7 @@
 
 using System;
 using System.Text;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -73,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.AreEqual(1, emittedEvents.Length);
             Assert.AreEqual("emitted-event0", emittedEvents[0].EventType);
             Assert.AreEqual("output-stream0", emittedEvents[0].StreamId);
-            Assert.AreEqual(@"{""a"":""b""}", Encoding.UTF8.GetString(emittedEvents[0].Data));
+            Assert.AreEqual(@"{""a"":""b""}", emittedEvents[0].Data);
         }
 
         [Test, Category("v8"), Category("Manual"), Ignore]
@@ -91,7 +92,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 Assert.AreEqual(1, emittedEvents.Length);
                 Assert.AreEqual("emitted-event" + i, emittedEvents[0].EventType);
                 Assert.AreEqual("output-stream" + i, emittedEvents[0].StreamId);
-                Assert.AreEqual(@"{""a"":""" + i + @"""}", Encoding.UTF8.GetString(emittedEvents[0].Data));
+                Assert.AreEqual(@"{""a"":""" + i + @"""}", emittedEvents[0].Data);
 
                 if (i%10000 == 0)
                 {

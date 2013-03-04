@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _onCommitted = onCommitted;
         }
 
-        public abstract byte[] Data { get; }
+        public abstract string Data { get; }
 
         public CheckpointTag CausedByTag
         {

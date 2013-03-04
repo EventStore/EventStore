@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -53,13 +54,28 @@ namespace EventStore.Projections.Core.Services
         /// </summary>
         /// <returns>true - if event was processed (new state must be returned) </returns>
         bool ProcessEvent(
-            string partition, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data, out string newState, out EmittedEvent[] emittedEvents);
+            string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
+            out EmittedEvent[] emittedEvents);
 
         /// <summary>
         /// Transforms current state into a projection result.  Should not call any emit/linkTo etc 
         /// </summary>
         /// <returns>result JSON or NULL if current state has been skipped</returns>
         string TransformStateToResult();
+    }
+
+    public static class ProjectionStateHandlerTestExtensions
+    {
+        public static bool ProcessEvent(
+            this IProjectionStateHandler self, string partition, CheckpointTag eventPosition, string streamId,
+            string eventType, string category, Guid eventId, int eventSequenceNumber, string metadata, string data,
+            out string state, out EmittedEvent[] emittedEvents)
+        {
+            return self.ProcessEvent(
+                partition, eventPosition, category,
+                new ResolvedEvent(
+                    streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new EventPosition(0, -1),
+                    eventId, eventType, true, data, metadata, default(DateTime)), out state, out emittedEvents);
+        }
     }
 }

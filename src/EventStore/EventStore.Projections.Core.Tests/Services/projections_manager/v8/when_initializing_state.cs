@@ -29,6 +29,7 @@
 using System;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
 {

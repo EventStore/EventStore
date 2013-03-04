@@ -45,15 +45,14 @@ namespace EventStore.Projections.Core.Services.Processing
             _targetStreamId = targetStreamId;
         }
 
-        public override byte[] Data
+        public override string Data
         {
             get
             {
                 if (!IsReady())
                     throw new InvalidOperationException("Link target has not been yet committed");
                 return
-                    Encoding.UTF8.GetBytes(
-                        _eventNumber.Value.ToString(CultureInfo.InvariantCulture) + "@" + _targetStreamId);
+                    _eventNumber.Value.ToString(CultureInfo.InvariantCulture) + "@" + _targetStreamId;
             }
         }
 

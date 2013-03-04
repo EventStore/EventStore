@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
             var eventWriter = new FakeEventWriter();
             _updateManager.EmitEvents(eventWriter);
             EmittedEvent @event = eventWriter.Writes[0][0];
-            Assert.AreEqual("[{\"state\":2}]", Encoding.UTF8.GetString(@event.Data));
+            Assert.AreEqual("[{\"state\":2}]", @event.Data);
         }
 
         [Test]

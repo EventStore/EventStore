@@ -44,8 +44,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return _handler.GetStatePartition(
                 @event.CheckpointTag, @event.Data.EventStreamId, @event.Data.EventType, @event.EventCategory,
-                @event.Data.EventId, @event.Data.EventSequenceNumber, Encoding.UTF8.GetString(@event.Data.Metadata),
-                Encoding.UTF8.GetString(@event.Data.Data));
+                @event.Data.EventId, @event.Data.EventSequenceNumber, @event.Data.Metadata,
+                @event.Data.Data);
         }
     }
 }

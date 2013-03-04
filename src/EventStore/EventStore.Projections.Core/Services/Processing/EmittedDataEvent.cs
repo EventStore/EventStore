@@ -33,17 +33,17 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class EmittedDataEvent : EmittedEvent
     {
-        private readonly byte[] _data;
+        private readonly string _data;
 
         public EmittedDataEvent(
             string streamId, Guid eventId, string eventType, string data, CheckpointTag causedByTag,
             CheckpointTag expectedTag, Action<int> onCommitted = null)
             : base(streamId, eventId, eventType, causedByTag, expectedTag, onCommitted)
         {
-            _data = data == null ? null : Encoding.UTF8.GetBytes(data);
+            _data = data;
         }
 
-        public override byte[] Data
+        public override string Data
         {
             get { return _data; }
         }

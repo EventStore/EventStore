@@ -122,9 +122,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             var message2 = messages[1];
             var message3 = messages[2];
 
-            Assert.AreEqual(@"{""data"":""c""", Encoding.UTF8.GetString(message1.Data.Data));
-            Assert.AreEqual(@"{""data"":""a""", Encoding.UTF8.GetString(message2.Data.Data));
-            Assert.AreEqual(@"{""data"":""b""", Encoding.UTF8.GetString(message3.Data.Data));
+            Assert.AreEqual(@"{""data"":""c""", message1.Data.Data);
+            Assert.AreEqual(@"{""data"":""a""", message2.Data.Data);
+            Assert.AreEqual(@"{""data"":""b""", message3.Data.Data);
 
             Assert.AreEqual("Event", message1.Data.EventType);
             Assert.AreEqual("Event", message2.Data.EventType);

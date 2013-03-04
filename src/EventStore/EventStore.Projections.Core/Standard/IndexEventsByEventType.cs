@@ -70,21 +70,20 @@ namespace EventStore.Projections.Core.Standard
         }
 
         public bool ProcessEvent(
-            string partition, CheckpointTag eventPosition, string streamId, string eventType, string category1,
-            Guid eventId, int sequenceNumber, string metadata, string data, out string newState,
-            out EmittedEvent[] emittedEvents)
+            string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
+            out string newState, out EmittedEvent[] emittedEvents)
         {
             emittedEvents = null;
             newState = null;
-            if (streamId.StartsWith("$"))
+            if (data.EventStreamId.StartsWith("$"))
                 return false;
-            if (eventType == "$>")
+            if (data.EventType == "$>")
                 return false;
 
             emittedEvents = new[]
                 {
                     new EmittedDataEvent(
-                        _indexStreamPrefix + eventType, Guid.NewGuid(), "$>", sequenceNumber + "@" + streamId,
+                        _indexStreamPrefix + data.EventType, Guid.NewGuid(), "$>", data.EventSequenceNumber+ "@" + data.EventStreamId,
                         eventPosition, expectedTag: null)
                 };
 

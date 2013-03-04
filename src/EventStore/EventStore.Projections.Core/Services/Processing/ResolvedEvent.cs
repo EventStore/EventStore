@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Text;
 using EventStore.Common.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -47,8 +48,8 @@ namespace EventStore.Projections.Core.Services.Processing
         public readonly bool IsJson;
         public readonly DateTime Timestamp;
 
-        public readonly byte[] Data;
-        public readonly byte[] Metadata;
+        public readonly string Data;
+        public readonly string Metadata;
 
         public ResolvedEvent(
             string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
@@ -71,8 +72,34 @@ namespace EventStore.Projections.Core.Services.Processing
             IsJson = isJson;
             Timestamp = timestamp;
 
-            Data = data ?? Empty.ByteArray;
-            Metadata = metadata ?? Empty.ByteArray;
+            //TODO: handle utf-8 conversion exception
+            Data = Encoding.UTF8.GetString(data);
+            Metadata = Encoding.UTF8.GetString(metadata);
+        }
+
+        public ResolvedEvent(
+            string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
+            bool resolvedLinkTo, EventPosition position, Guid eventId, string eventType, bool isJson, string data,
+            string metadata, DateTime timestamp)
+        {
+            if (Guid.Empty == eventId)
+                throw new ArgumentException("Empty eventId provided.");
+            if (string.IsNullOrEmpty(eventType))
+                throw new ArgumentException("Empty eventType provided.");
+
+            _positionStreamId = positionStreamId;
+            _positionSequenceNumber = positionSequenceNumber;
+            _eventStreamId = eventStreamId;
+            _eventSequenceNumber = eventSequenceNumber;
+            _resolvedLinkTo = resolvedLinkTo;
+            _position = position;
+            EventId = eventId;
+            EventType = eventType;
+            IsJson = isJson;
+            Timestamp = timestamp;
+
+            Data = data;
+            Metadata = metadata;
         }
 
         public string EventStreamId

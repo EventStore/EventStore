@@ -73,22 +73,27 @@ namespace EventStore.Projections.Core.Standard
         }
 
         public bool ProcessEvent(
-            string partition, CheckpointTag eventPosition, string streamId, string eventType, string category1, Guid eventId,
-            int sequenceNumber, string metadata, string data, out string newState, out EmittedEvent[] emittedEvents)
+            string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
+            out string newState, out EmittedEvent[] emittedEvents)
         {
             emittedEvents = null;
             newState = null;
-            if (sequenceNumber != 0)
+            if (data.PositionSequenceNumber != 0)
                 return false; // not our event
-            if (streamId.StartsWith("$"))
+            if (data.EventStreamId.StartsWith("$"))
                 return false;
-            var lastSlashPos = streamId.LastIndexOf(_separator);
+            var lastSlashPos = data.EventStreamId.LastIndexOf(_separator);
             if (lastSlashPos < 0)
                 return true; // handled but not interesting to us
 
-            var category = streamId.Substring(0, lastSlashPos);
+            var category = data.EventStreamId.Substring(0, lastSlashPos);
 
-            emittedEvents = new[] { new EmittedDataEvent("$category" + _separator + category, Guid.NewGuid(), "StreamCreated", streamId, eventPosition, expectedTag: null) };
+            emittedEvents = new[]
+                {
+                    new EmittedDataEvent(
+                        "$category" + _separator + category, Guid.NewGuid(), "StreamCreated", data.EventStreamId,
+                        eventPosition, expectedTag: null)
+                };
 
             return true;
         }

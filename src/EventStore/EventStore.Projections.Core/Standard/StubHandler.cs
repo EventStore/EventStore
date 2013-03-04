@@ -66,9 +66,8 @@ namespace EventStore.Projections.Core.Standard
         }
 
         public bool ProcessEvent(
-            string partition, CheckpointTag eventPosition, string streamId, string eventType, string category1,
-            Guid eventId, int sequenceNumber, string metadata, string data, out string newState,
-            out EmittedEvent[] emittedEvents)
+            string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
+            out string newState, out EmittedEvent[] emittedEvents)
         {
             emittedEvents = null;
             newState = null;

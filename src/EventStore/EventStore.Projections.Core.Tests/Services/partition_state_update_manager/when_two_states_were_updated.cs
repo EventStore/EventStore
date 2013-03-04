@@ -61,8 +61,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
             var event1 = events.Single(v => "$projections-projection-partition1-checkpoint" == v.StreamId);
             var event2 = events.Single(v => "$projections-projection-partition2-checkpoint" == v.StreamId);
 
-            Assert.AreEqual("[{\"state\":1}]", Encoding.UTF8.GetString(event1.Data));
-            Assert.AreEqual("[{\"state\":2}]", Encoding.UTF8.GetString(event2.Data));
+            Assert.AreEqual("[{\"state\":1}]", event1.Data);
+            Assert.AreEqual("[{\"state\":2}]", event2.Data);
         }
 
         [Test]

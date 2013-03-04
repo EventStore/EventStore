@@ -295,8 +295,8 @@ namespace EventStore.Projections.Core.Messages
                     return new Event 
                         {
                             Partition = partition,
-                            BodyRaw = Encoding.UTF8.GetString(source.Data.Data),
-                            MetadataRaw = Encoding.UTF8.GetString(source.Data.Metadata),
+                            BodyRaw = source.Data.Data,
+                            MetadataRaw = source.Data.Metadata,
                             EventType = source.Data.EventType,
                             StreamId = source.Data.EventStreamId,
                             SequenceNumber = source.Data.EventSequenceNumber,

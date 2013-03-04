@@ -166,22 +166,20 @@ namespace EventStore.Projections.Core.Services.v8
         }
 
         public bool ProcessEvent(
-            string partition, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data, out string newState, out EmittedEvent[] emittedEvents)
+            string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
+            out EmittedEvent[] emittedEvents)
         {
             CheckDisposed();
-            if (eventType == null)
-                throw new ArgumentNullException("eventType");
-            if (streamId == null)
-                throw new ArgumentNullException("streamId");
+            if (data == null)
+                throw new ArgumentNullException("data");
             _eventPosition = eventPosition;
             _emittedEvents = null;
             newState = _query.Push(
-                data.Trim(), // trimming data passed to a JS 
+                data.Data.Trim(), // trimming data passed to a JS 
                 new[]
                     {
-                        streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture),
-                        metadata ?? "", partition
+                        data.EventStreamId, data.EventType, category ?? "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
+                        data.Metadata, partition
                     });
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
