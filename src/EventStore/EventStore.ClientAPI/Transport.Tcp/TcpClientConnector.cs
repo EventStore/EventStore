@@ -53,12 +53,13 @@ namespace EventStore.ClientAPI.Transport.Tcp
         }
 
         public TcpConnection ConnectTo(IPEndPoint remoteEndPoint, 
-                                            Action<TcpConnection> onConnectionEstablished = null,
-                                            Action<TcpConnection, SocketError> onConnectionFailed = null)
+                                       Action<TcpConnection> onConnectionEstablished = null,
+                                       Action<TcpConnection, SocketError> onConnectionFailed = null,
+                                       Action<TcpConnection, SocketError> onConnectionClosed = null)
         {
             if (remoteEndPoint == null) 
                 throw new ArgumentNullException("remoteEndPoint");
-            return TcpConnection.CreateConnectingTcpConnection(remoteEndPoint, this, onConnectionEstablished, onConnectionFailed);
+            return TcpConnection.CreateConnectingTcpConnection(remoteEndPoint, this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
         }
 
         internal void InitConnect(IPEndPoint serverEndPoint,

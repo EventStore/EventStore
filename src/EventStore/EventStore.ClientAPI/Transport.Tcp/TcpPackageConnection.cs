@@ -84,31 +84,29 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 tcpEndPoint,
                 tcpConnection =>
                 {
-                    log.Debug("Connected to [{0}, {1:B}].", tcpConnection.EffectiveEndPoint, connectionId);
                     connectionCreated.Wait();
+                    log.Debug("Connected to [{0}, {1:B}].", tcpConnection.EffectiveEndPoint, connectionId);
                     if (connectionEstablished != null)
                         connectionEstablished(this);
                 },
                 (conn, error) =>
                 {
-                    log.Debug("Connection to [{0}, {1:B}] failed. Error: {2}.", conn.EffectiveEndPoint, connectionId, error);
                     connectionCreated.Wait();
+                    log.Debug("Connection to [{0}, {1:B}] failed. Error: {2}.", conn.EffectiveEndPoint, connectionId, error);
                     if (connectionClosed != null)
                         connectionClosed(this, conn.EffectiveEndPoint, error);
+                },
+                (conn, error) =>
+                {
+                    connectionCreated.Wait();
+                    _log.Debug("Connection [{0}, {1:B}] was closed {2}",
+                               conn.EffectiveEndPoint, ConnectionId, error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
+
+                    if (_connectionClosed != null)
+                        _connectionClosed(this, EffectiveEndPoint, error);
                 });
-            _connection.ConnectionClosed += OnConnectionClosed;
+
             connectionCreated.Set();
-        }
-
-        private void OnConnectionClosed(ITcpConnection connection, SocketError socketError)
-        {
-            connection.ConnectionClosed -= OnConnectionClosed;
-
-            _log.Debug("Connection [{0}, {1:B}] was closed {2}",
-                       connection.EffectiveEndPoint, ConnectionId, socketError == SocketError.Success ? "cleanly." : "with error: " + socketError + ".");
-           
-            if (_connectionClosed != null)
-                _connectionClosed(this, EffectiveEndPoint, socketError);
         }
 
         private void OnRawDataReceived(ITcpConnection connection, IEnumerable<ArraySegment<byte>> data)

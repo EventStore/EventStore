@@ -48,9 +48,10 @@ namespace EventStore.ClientAPI.Transport.Tcp
         internal static TcpConnection CreateConnectingTcpConnection(IPEndPoint remoteEndPoint,
                                                                     TcpClientConnector connector,
                                                                     Action<TcpConnection> onConnectionEstablished,
-                                                                    Action<TcpConnection, SocketError> onConnectionFailed)
+                                                                    Action<TcpConnection, SocketError> onConnectionFailed,
+                                                                    Action<TcpConnection, SocketError> onConnectionClosed)
         {
-            var connection = new TcpConnection(remoteEndPoint);
+            var connection = new TcpConnection(remoteEndPoint, onConnectionClosed);
             connector.InitConnect(remoteEndPoint,
                                   (_, socket) =>
                                   {
@@ -67,14 +68,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
             return connection;
         }
 
-        internal static TcpConnection CreateAcceptedTcpConnection(IPEndPoint effectiveEndPoint, Socket socket)
+        internal static TcpConnection CreateAcceptedTcpConnection(IPEndPoint effectiveEndPoint, Socket socket, Action<TcpConnection, SocketError> onConnectionClosed)
         {
-            var connection = new TcpConnection(effectiveEndPoint);
+            var connection = new TcpConnection(effectiveEndPoint, onConnectionClosed);
             connection.InitSocket(socket);
             return connection;
         }
-
-        public event Action<ITcpConnection, SocketError> ConnectionClosed;
 
         public IPEndPoint EffectiveEndPoint { get; private set; }
         public int SendQueueSize { get { return _sendQueue.Count; } }
@@ -93,6 +92,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private int _closed;
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
+        private readonly Action<TcpConnection, SocketError> _onConnectionClosed;
 
         private int _packagesSent;
         private long _bytesSent;
@@ -103,11 +103,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private int _recvAsyncs;
         private int _recvAsyncCallbacks;
 
-        private TcpConnection(IPEndPoint effectiveEndPoint)
+        private TcpConnection(IPEndPoint effectiveEndPoint, Action<TcpConnection, SocketError> onConnectionClosed)
         {
             Ensure.NotNull(effectiveEndPoint, "effectiveEndPoint");
 
             EffectiveEndPoint = effectiveEndPoint;
+            _onConnectionClosed = onConnectionClosed;
         }
 
         private void InitSocket(Socket socket)
@@ -381,23 +382,10 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             if (_socket != null)
             {
-                try
-                {
-                    _socket.Shutdown(SocketShutdown.Both);
-                }
-                catch (Exception)
-                {
-                }
-
-                try
-                {
-                    _socket.Close(TcpConfiguration.SocketCloseTimeoutMs);
-                }
-                catch (Exception)
-                {
-                }
+                Helper.EatException(() => _socket.Shutdown(SocketShutdown.Both));
+                Helper.EatException(() => _socket.Close(TcpConfiguration.SocketCloseTimeoutMs));
+                _socket = null;
             }
-            _socket = null;
 
             lock (_sendingLock)
             {
@@ -405,9 +393,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     ReturnSendingSocketArgs();
             }
 
-            var handler = ConnectionClosed;
-            if (handler != null)
-                handler(this, socketError);
+            if (_onConnectionClosed != null)
+                _onConnectionClosed(this, socketError);
         }
 
         private void ReturnSendingSocketArgs()
