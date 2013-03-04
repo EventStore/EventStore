@@ -27,7 +27,11 @@
 // 
 using System;
 
+#if CLIENTAPI
+namespace EventStore.ClientAPI.SystemData
+#else
 namespace EventStore.Core.Services.Transport.Tcp
+#endif
 {
     public struct TcpPackage
     {

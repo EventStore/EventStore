@@ -65,6 +65,7 @@ namespace EventStore.ClientAPI
         private int _isProcessing;
 
         private volatile bool _stop;
+        private int _isDropped;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 
         protected abstract void ReadEventsTill(EventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber);
@@ -186,8 +187,7 @@ namespace EventStore.ClientAPI
 
         private void ProcessLiveQueue()
         {
-            bool proceed = true;
-            while (proceed)
+            do
             {
                 ResolvedEvent e;
                 while (_liveQueue.TryDequeue(out e))
@@ -210,23 +210,24 @@ namespace EventStore.ClientAPI
                     }
                 }
                 Interlocked.CompareExchange(ref _isProcessing, 0, 1);
-                // try to reacquire lock if needed
-                proceed = _liveQueue.Count > 0 && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0;
-            }
+            } while (_liveQueue.Count > 0 && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
         }
 
         private void DropSubscription(string reason, Exception error)
         {
             Ensure.NotNull(reason, "reason");
-            
-            Log.Debug("Catch-up Subscription to {0}: dropping subscription, reason: {1} {2}.",
-                      IsSubscribedToAll ? "<all>" : StreamId, reason, error == null ? string.Empty : error.ToString());
 
-            if (_subscription != null)
-                _subscription.Unsubscribe();
-            if (_subscriptionDropped != null)
-                _subscriptionDropped(this, reason, error);
-            _stopped.Set();
+            if (Interlocked.CompareExchange(ref _isDropped, 1, 0) == 0)
+            {
+                Log.Debug("Catch-up Subscription to {0}: dropping subscription, reason: {1} {2}.",
+                          IsSubscribedToAll ? "<all>" : StreamId, reason, error == null ? string.Empty : error.ToString());
+
+                if (_subscription != null)
+                    _subscription.Unsubscribe();
+                if (_subscriptionDropped != null) 
+                    _subscriptionDropped(this, reason, error);
+                _stopped.Set();
+            }
         }
     }
 
