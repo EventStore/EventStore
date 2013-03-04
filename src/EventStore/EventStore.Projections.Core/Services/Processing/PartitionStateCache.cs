@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly int _maxCachedPartitions;
 
-        private readonly List<Tuple<CheckpointTag, string>> _cacheOrder = new List<Tuple<CheckpointTag, string>>();
+        private readonly LinkedList<Tuple<CheckpointTag, string>> _cacheOrder = new LinkedList<Tuple<CheckpointTag, string>>();
 
         private readonly Dictionary<string, Tuple<PartitionState, CheckpointTag>> _partitionStates =
             new Dictionary<string, Tuple<PartitionState, CheckpointTag>>();
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _cachedItemCount = _partitionStates.Count;
 
             if (!string.IsNullOrEmpty(partition)) // cached forever - for root state
-                _cacheOrder.Add(Tuple.Create(at, partition));
+                _cacheOrder.AddLast(Tuple.Create(at, partition));
             CleanUp();
         }
 
@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStates[partition] = Tuple.Create(data, _zeroPosition);
             _cachedItemCount = _partitionStates.Count;
 
-            _cacheOrder.Insert(0, Tuple.Create(_zeroPosition, partition));
+            _cacheOrder.AddFirst(Tuple.Create(_zeroPosition, partition));
             CleanUp();
         }
 
@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _cachedItemCount = _partitionStates.Count;
 
             if (!string.IsNullOrEmpty(partition)) // cached forever - for root state
-            _cacheOrder.Add(Tuple.Create(lockAt, partition));
+            _cacheOrder.AddLast(Tuple.Create(lockAt, partition));
             CleanUp();
             return stateData.Item1;
         }
@@ -155,7 +155,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 Tuple<CheckpointTag, string> top = _cacheOrder.FirstOrDefault();
                 if (top.Item1 >= _unlockedBefore)
                     break; // other entries were locked after the checkpoint (or almost .. order is not very strong)
-                _cacheOrder.RemoveAt(0);
+                _cacheOrder.RemoveFirst();
                 Tuple<PartitionState, CheckpointTag> entry;
                 if (!_partitionStates.TryGetValue(top.Item2, out entry))
                     continue; // already removed
