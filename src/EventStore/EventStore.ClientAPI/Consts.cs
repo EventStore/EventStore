@@ -33,7 +33,7 @@ namespace EventStore.ClientAPI
     {
         public const int DefaultMaxQueueSize = 5000;
         public const int DefaultMaxConcurrentItems = 5000;
-        public const int DefaultMaxOperationAttempts = 10;
+        public const int DefaultMaxOperationRetries = 10;
         public const int DefaultMaxReconnections = 10;
 
         public const bool DefaultAllowForwarding = true;

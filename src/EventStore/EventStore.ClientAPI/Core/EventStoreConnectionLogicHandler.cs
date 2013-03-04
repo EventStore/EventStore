@@ -96,7 +96,7 @@ namespace EventStore.ClientAPI.Core
 
             _queue.RegisterHandler<TimerTickMessage>(msg => TimerTick());
 
-            _queue.RegisterHandler<StartOperationMessage>(msg => StartOperation(msg.Operation, msg.MaxAttempts, msg.Timeout));
+            _queue.RegisterHandler<StartOperationMessage>(msg => StartOperation(msg.Operation, msg.MaxRetries, msg.Timeout));
             _queue.RegisterHandler<StartSubscriptionMessage>(StartSubscription);
 
             _timerStopwatch = Stopwatch.StartNew();
@@ -323,7 +323,7 @@ namespace EventStore.ClientAPI.Core
             }
         }
 
-        private void StartOperation(IClientOperation operation, int maxAttempts, TimeSpan timeout)
+        private void StartOperation(IClientOperation operation, int maxRetries, TimeSpan timeout)
         {
             if (_disposed)
             {
@@ -336,7 +336,7 @@ namespace EventStore.ClientAPI.Core
                 return;
             }
 
-            ScheduleOperation(new OperationItem(operation, maxAttempts, timeout));
+            ScheduleOperation(new OperationItem(operation, maxRetries, timeout));
         }
 
         private void StartSubscription(StartSubscriptionMessage msg)
@@ -359,7 +359,7 @@ namespace EventStore.ClientAPI.Core
                                                                               msg.ResolveLinkTos,
                                                                               msg.EventAppeared,
                                                                               msg.SubscriptionDropped),
-                                                    msg.MaxAttempts,
+                                                    msg.MaxRetries,
                                                     msg.Timeout);
             StartSubscription(subscription);
         }

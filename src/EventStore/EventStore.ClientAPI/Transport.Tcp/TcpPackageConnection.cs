@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -38,7 +39,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
 {
     internal class TcpPackageConnection
     {
-        private static readonly ArraySegment<byte>[] HeartbeatResponse = new[] { new TcpPackage(TcpCommand.HeartbeatResponseCommand, Guid.NewGuid(), null).AsArraySegment() };
+        private static readonly ArraySegment<byte>[] HeartbeatResponse = new LengthPrefixMessageFramer().FrameData(
+            new TcpPackage(TcpCommand.HeartbeatResponseCommand, Guid.NewGuid(), null).AsArraySegment()).ToArray();
         private static readonly TcpClientConnector Connector = new TcpClientConnector();
 
         public int SendQueueSize { get { return _connection.SendQueueSize; } }

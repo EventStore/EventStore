@@ -96,14 +96,14 @@ namespace EventStore.ClientAPI.Core
     internal class StartOperationMessage: Message
     {
         public readonly IClientOperation Operation;
-        public readonly int MaxAttempts;
+        public readonly int MaxRetries;
         public readonly TimeSpan Timeout;
 
-        public StartOperationMessage(IClientOperation operation, int maxAttempts, TimeSpan timeout)
+        public StartOperationMessage(IClientOperation operation, int maxRetries, TimeSpan timeout)
         {
             Ensure.NotNull(operation, "operation");
             Operation = operation;
-            MaxAttempts = maxAttempts;
+            MaxRetries = maxRetries;
             Timeout = timeout;
         }
     }
@@ -117,7 +117,7 @@ namespace EventStore.ClientAPI.Core
         public readonly Action<EventStoreSubscription, ResolvedEvent> EventAppeared;
         public readonly Action<EventStoreSubscription, string, Exception> SubscriptionDropped;
            
-        public readonly int MaxAttempts;
+        public readonly int MaxRetries;
         public readonly TimeSpan Timeout;
 
         public StartSubscriptionMessage(TaskCompletionSource<EventStoreSubscription> source,
@@ -125,7 +125,7 @@ namespace EventStore.ClientAPI.Core
                                         bool resolveLinkTos, 
                                         Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
                                         Action<EventStoreSubscription, string, Exception> subscriptionDropped, 
-                                        int maxAttempts, 
+                                        int maxRetries, 
                                         TimeSpan timeout)
         {
             Ensure.NotNull(source, "source");
@@ -136,7 +136,7 @@ namespace EventStore.ClientAPI.Core
             ResolveLinkTos = resolveLinkTos;
             EventAppeared = eventAppeared;
             SubscriptionDropped = subscriptionDropped;
-            MaxAttempts = maxAttempts;
+            MaxRetries = maxRetries;
             Timeout = timeout;
         }
     }

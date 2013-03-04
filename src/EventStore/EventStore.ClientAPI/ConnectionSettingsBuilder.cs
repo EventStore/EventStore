@@ -40,7 +40,7 @@ namespace EventStore.ClientAPI
 
         private int _maxQueueSize = Consts.DefaultMaxQueueSize;
         private int _maxConcurrentItems = Consts.DefaultMaxConcurrentItems;
-        private int _maxAttempts = Consts.DefaultMaxOperationAttempts;
+        private int _maxRetries = Consts.DefaultMaxOperationRetries;
         private int _maxReconnections = Consts.DefaultMaxReconnections;
 
         private bool _allowForwarding = Consts.DefaultAllowForwarding;
@@ -98,7 +98,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Limits the number of retry attempts for a given operation
+        /// Limits the number of operation attempts for a given operation
         /// </summary>
         /// <param name="limit"></param>
         /// <returns></returns>
@@ -106,7 +106,31 @@ namespace EventStore.ClientAPI
         {
             Ensure.Positive(limit, "limit");
 
-            _maxAttempts = limit;
+            _maxRetries = limit - 1;
+            return this;
+        }
+
+        /// <summary>
+        /// Limits the number of retries for a given operation
+        /// </summary>
+        /// <param name="limit"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder LimitRetriesForOperationTo(int limit)
+        {
+            Ensure.Nonnegative(limit, "limit");
+
+            _maxRetries = limit;
+            return this;
+        }
+
+        /// <summary>
+        /// Allow infinite retry attempts
+        /// </summary>
+        /// <param name="limit"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder KeepRetrying()
+        {
+            _maxRetries = -1;
             return this;
         }
 
@@ -236,7 +260,7 @@ namespace EventStore.ClientAPI
             return new ConnectionSettings(builder._log,
                                           builder._maxQueueSize,
                                           builder._maxConcurrentItems,
-                                          builder._maxAttempts,
+                                          builder._maxRetries,
                                           builder._maxReconnections,
                                           builder._allowForwarding,
                                           builder._reconnectionDelay,

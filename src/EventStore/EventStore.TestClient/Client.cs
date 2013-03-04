@@ -86,6 +86,7 @@ namespace EventStore.TestClient
             _commands.Register(new WriteProcessor());
             _commands.Register(new WriteJsonProcessor());
             _commands.Register(new WriteFloodProcessor());
+            _commands.Register(new WriteFloodClientApiProcessor());
             _commands.Register(new WriteFloodWaitingProcessor());
 
             _commands.Register(new MultiWriteProcessor());

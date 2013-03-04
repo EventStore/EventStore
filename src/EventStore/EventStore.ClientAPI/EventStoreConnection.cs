@@ -544,7 +544,7 @@ namespace EventStore.ClientAPI
             {
                 Thread.Sleep(1);
             }
-            _handler.EnqueueMessage(new StartOperationMessage(operation, _settings.MaxAttempts, _settings.OperationTimeout));
+            _handler.EnqueueMessage(new StartOperationMessage(operation, _settings.MaxRetries, _settings.OperationTimeout));
         }
 
         public Task<EventStoreSubscription> SubscribeToStream(string stream, 
@@ -575,7 +575,7 @@ namespace EventStore.ClientAPI
                                                                  resolveLinkTos,
                                                                  eventAppeared,
                                                                  subscriptionDropped,
-                                                                 _settings.MaxAttempts,
+                                                                 _settings.MaxRetries,
                                                                  _settings.OperationTimeout));
             return source.Task;
         }
@@ -623,7 +623,7 @@ namespace EventStore.ClientAPI
                                                                  resolveLinkTos,
                                                                  eventAppeared,
                                                                  subscriptionDropped,
-                                                                 _settings.MaxAttempts,
+                                                                 _settings.MaxRetries,
                                                                  _settings.OperationTimeout));
             return source.Task;
         }
