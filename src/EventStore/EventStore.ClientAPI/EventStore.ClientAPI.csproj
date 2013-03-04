@@ -78,9 +78,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
-      <Link>Properties\AssemblyVersion.cs</Link>
-    </Compile>
     <Compile Include="..\EventStore.Core\Services\Transport\Tcp\TcpCommand.cs">
       <Link>SystemData\TcpCommand.cs</Link>
     </Compile>
@@ -117,6 +114,7 @@
     <Compile Include="Exceptions\EventStoreConnectionException.cs" />
     <Compile Include="Exceptions\ServerErrorException.cs" />
     <Compile Include="ProjectionsClient.cs" />
+    <Compile Include="Properties\AssemblyVersion.cs" />
     <Compile Include="ReadDirection.cs" />
     <Compile Include="ResolvedEvent.cs" />
     <Compile Include="Exceptions\CannotEstablishConnectionException.cs" />
@@ -175,7 +173,9 @@
     <Compile Include="Transport.Tcp\TcpConnectionBase.cs" />
     <Compile Include="ClientOperations\AppendToStreamOperation.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Properties\ESCAVersion.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <PreBuildEvent>
