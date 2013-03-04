@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
@@ -35,11 +36,11 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class ConnectionSettingsBuilder
     {
-        private ILogger _log;
+        private ILogger _log = new ConsoleLogger();
 
         private int _maxQueueSize = Consts.DefaultMaxQueueSize;
         private int _maxConcurrentItems = Consts.DefaultMaxConcurrentItems;
-        private int _maxAttempts = Consts.DefaultMaxOperationAttempts;
+        private int _maxRetries = Consts.DefaultMaxOperationRetries;
         private int _maxReconnections = Consts.DefaultMaxReconnections;
 
         private bool _allowForwarding = Consts.DefaultAllowForwarding;
@@ -49,6 +50,7 @@ namespace EventStore.ClientAPI
         private TimeSpan _operationTimeoutCheckPeriod = Consts.DefaultOperationTimeoutCheckPeriod;
 
         private Action<EventStoreConnection, Exception> _errorOccurred;
+        private Action<EventStoreConnection, string> _closed;
         private Action<EventStoreConnection> _connected;
         private Action<EventStoreConnection> _disconnected;
         private Action<EventStoreConnection> _reconnecting;
@@ -64,6 +66,7 @@ namespace EventStore.ClientAPI
         /// <returns></returns>
         public ConnectionSettingsBuilder UseLogger(ILogger logger)
         {
+            Ensure.NotNull(logger, "logger");
             _log = logger;
             return this;
         }
@@ -95,7 +98,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Limits the number of retry attempts for a given operation
+        /// Limits the number of operation attempts for a given operation
         /// </summary>
         /// <param name="limit"></param>
         /// <returns></returns>
@@ -103,7 +106,31 @@ namespace EventStore.ClientAPI
         {
             Ensure.Positive(limit, "limit");
 
-            _maxAttempts = limit;
+            _maxRetries = limit - 1;
+            return this;
+        }
+
+        /// <summary>
+        /// Limits the number of retries for a given operation
+        /// </summary>
+        /// <param name="limit"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder LimitRetriesForOperationTo(int limit)
+        {
+            Ensure.Nonnegative(limit, "limit");
+
+            _maxRetries = limit;
+            return this;
+        }
+
+        /// <summary>
+        /// Allow infinite retry attempts
+        /// </summary>
+        /// <param name="limit"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder KeepRetrying()
+        {
+            _maxRetries = -1;
             return this;
         }
 
@@ -185,6 +212,17 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Sets handler of <see cref="EventStoreConnection"/> closing.
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder OnClosed(Action<EventStoreConnection, string> handler)
+        {
+            _closed = handler;
+            return this;
+        }
+
+        /// <summary>
         /// Sets handler called when connection is established.
         /// </summary>
         /// <param name="handler"></param>
@@ -222,13 +260,14 @@ namespace EventStore.ClientAPI
             return new ConnectionSettings(builder._log,
                                           builder._maxQueueSize,
                                           builder._maxConcurrentItems,
-                                          builder._maxAttempts,
+                                          builder._maxRetries,
                                           builder._maxReconnections,
                                           builder._allowForwarding,
                                           builder._reconnectionDelay,
                                           builder._operationTimeout,
                                           builder._operationTimeoutCheckPeriod,
                                           builder._errorOccurred,
+                                          builder._closed,
                                           builder._connected,
                                           builder._disconnected,
                                           builder._reconnecting);

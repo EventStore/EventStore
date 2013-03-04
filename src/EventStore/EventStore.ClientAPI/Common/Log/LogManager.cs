@@ -28,7 +28,7 @@
 
 namespace EventStore.ClientAPI.Common.Log
 {
-    public static class LogManager
+/*    public static class LogManager
     {
         private static readonly ILogger Default = new DebugLogger();
 
@@ -49,5 +49,5 @@ namespace EventStore.ClientAPI.Common.Log
         {
             _userLogger = logger;
         }
-    }
+    }*/
 }

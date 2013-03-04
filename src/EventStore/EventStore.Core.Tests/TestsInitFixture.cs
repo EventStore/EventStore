@@ -38,7 +38,6 @@ namespace EventStore.Core.Tests
         public void SetUp()
         {
             Console.WriteLine("Initializing tests (setting console loggers)...");
-            EventStore.ClientAPI.Common.Log.LogManager.SetDefaultLogger(new EventStore.ClientAPI.Common.Log.ConsoleLogger());
             EventStore.Common.Log.LogManager.SetLogFactory(x => new EventStore.Common.Log.ConsoleLogger(x));
         }
 

@@ -79,7 +79,8 @@ namespace EventStore.Core.Tests.ClientAPI
             var connection = EventStoreConnection.Create();
             Assert.DoesNotThrow(() => connection.Connect(_node.TcpEndPoint));
 
-            Assert.Throws<InvalidOperationException>(() => connection.Connect(_node.TcpEndPoint));
+            Assert.That(() => connection.Connect(_node.TcpEndPoint),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
         }
 
         [Test]
@@ -90,7 +91,8 @@ namespace EventStore.Core.Tests.ClientAPI
             connection.Connect(_node.TcpEndPoint);
             connection.Close();
 
-            Assert.Throws<InvalidOperationException>(() => connection.Connect(_node.TcpEndPoint));
+            Assert.That(() => connection.Connect(_node.TcpEndPoint),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
         }
 
         [Test]
@@ -99,43 +101,55 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var connection = EventStoreConnection.Create();
 
-            var s = "stream";
+            const string s = "stream";
             var events = new[] { TestEvent.NewTestEvent() };
             var bytes = new byte[0];
 
-            Assert.Throws<InvalidOperationException>(() => connection.CreateStream(s, Guid.NewGuid(), false, bytes));
-            Assert.Throws<InvalidOperationException>(() => connection.CreateStreamAsync(s, Guid.NewGuid(), false, bytes));
+            Assert.That(() => connection.CreateStream(s, Guid.NewGuid(), false, bytes),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
+            Assert.That(() => connection.CreateStreamAsync(s, Guid.NewGuid(), false, bytes).Wait(),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.Throws<InvalidOperationException>(() => connection.DeleteStream(s, 0));
-            Assert.Throws<InvalidOperationException>(() => connection.DeleteStreamAsync(s, 0));
+            Assert.That(() => connection.DeleteStream(s, 0),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
+            Assert.That(() => connection.DeleteStreamAsync(s, 0).Wait(),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.Throws<InvalidOperationException>(() => connection.AppendToStream(s, 0, events));
-            Assert.Throws<InvalidOperationException>(() => connection.AppendToStreamAsync(s, 0, events));
+            Assert.That(() => connection.AppendToStream(s, 0, events),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
+            Assert.That(() => connection.AppendToStreamAsync(s, 0, events).Wait(),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.Throws<InvalidOperationException>(() => connection.ReadStreamEventsForward(s, 0, 1, false));
-            Assert.Throws<InvalidOperationException>(() => connection.ReadStreamEventsForwardAsync(s, 0, 1, resolveLinkTos: false));
+            Assert.That(() => connection.ReadStreamEventsForward(s, 0, 1, false),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
+            Assert.That(() => connection.ReadStreamEventsForwardAsync(s, 0, 1, resolveLinkTos: false).Wait(),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.Throws<InvalidOperationException>(() => connection.ReadStreamEventsBackward(s, 0, 1, false));
-            Assert.Throws<InvalidOperationException>(() => connection.ReadStreamEventsBackwardAsync(s, 0, 1, resolveLinkTos: false));
+            Assert.That(() => connection.ReadStreamEventsBackward(s, 0, 1, false),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
+            Assert.That(() => connection.ReadStreamEventsBackwardAsync(s, 0, 1, resolveLinkTos: false).Wait(),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsForward(Position.Start, 1, false));
-            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsForwardAsync(Position.Start, 1, false));
+            Assert.That(() => connection.ReadAllEventsForward(Position.Start, 1, false),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
+            Assert.That(() => connection.ReadAllEventsForwardAsync(Position.Start, 1, false).Wait(),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsBackward(Position.End, 1, false));
-            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsBackwardAsync(Position.End, 1, false));
+            Assert.That(() => connection.ReadAllEventsBackward(Position.End, 1, false),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
+            Assert.That(() => connection.ReadAllEventsBackwardAsync(Position.End, 1, false).Wait(),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.Throws<InvalidOperationException>(() => connection.StartTransaction(s, 0));
-            Assert.Throws<InvalidOperationException>(() => connection.StartTransactionAsync(s, 0));
-            //TODO GFY maybe these should be moved to the transaction? otherwise need a friend assembly to access constructor
-            //Assert.Throws<InvalidOperationException>(() => connection.TransactionalWrite(0, s, events));
-            //Assert.Throws<InvalidOperationException>(() => connection.TransactionalWriteAsync(null, events));
+            Assert.That(() => connection.StartTransaction(s, 0),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
+            Assert.That(() => connection.StartTransactionAsync(s, 0).Wait(),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            //Assert.Throws<InvalidOperationException>(() => connection.CommitTransaction(0, s));
-            //Assert.Throws<InvalidOperationException>(() => connection.CommitTransactionAsync(0, s));
+            Assert.That(() => connection.SubscribeToStream(s, false, _ => { }, () => { }).Wait(),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.Throws<InvalidOperationException>(() => connection.SubscribeToStream(s, false, _ => { }, () => { }));
-
-            Assert.Throws<InvalidOperationException>(() => connection.SubscribeToAll(false, _ => { }, () => { }));
+            Assert.That(() => connection.SubscribeToAll(false, _ => { }, () => { }).Wait(),
+                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
         }
     }
 }

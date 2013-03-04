@@ -25,31 +25,50 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-
 using System;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Threading;
+using EventStore.ClientAPI.Common.Utils;
 
-namespace EventStore.ClientAPI.Common.Utils
+namespace EventStore.ClientAPI.Core
 {
-    internal static class Tasks
+    internal class SimpleQueuedHandler
     {
-        private static readonly Lazy<Task> CompletedTask = new Lazy<Task>(() =>
-        {
-            var source = new TaskCompletionSource<object>();
-            source.SetResult(null);
-            return source.Task;
-        });
+        private readonly Common.Concurrent.ConcurrentQueue<Message> _messageQueue = new Common.Concurrent.ConcurrentQueue<Message>();
+        private readonly Dictionary<Type, Action<Message>> _handlers = new Dictionary<Type, Action<Message>>();
+        private int _isProcessing;
 
-        public static Task CreateCompleted()
+        public void RegisterHandler<T>(Action<T> handler) where T : Message
         {
-            return CompletedTask.Value;
+            Ensure.NotNull(handler, "handler");
+            _handlers.Add(typeof(T), msg => handler((T)msg));
         }
 
-        public static Task<TResult> CreateCompleted<TResult>(TResult result)
+        public void EnqueueMessage(Message message)
         {
-            var source = new TaskCompletionSource<TResult>();
-            source.SetResult(result);
-            return source.Task;
+            Ensure.NotNull(message, "message");
+
+            _messageQueue.Enqueue(message);
+            if (Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0)
+                ThreadPool.QueueUserWorkItem(ProcessQueue);
+        }
+
+        private void ProcessQueue(object state)
+        {
+            do
+            {
+                Message message;
+
+                while (_messageQueue.TryDequeue(out message))
+                {
+                    Action<Message> handler;
+                    if (!_handlers.TryGetValue(message.GetType(), out handler))
+                        throw new Exception(string.Format("No handler registered for message {0}", message.GetType().Name));
+                    handler(message);
+                }
+
+                Interlocked.Exchange(ref _isProcessing, 0);
+            } while (_messageQueue.Count > 0 && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
         }
     }
 }

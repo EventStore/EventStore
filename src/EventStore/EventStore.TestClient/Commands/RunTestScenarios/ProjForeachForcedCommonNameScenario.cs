@@ -68,9 +68,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected override void RunInternal()
         {
-            var started = DateTime.Now;
+            var started = DateTime.UtcNow;
 
-            while ((DateTime.Now - started) < _executionPeriod)
+            while ((DateTime.UtcNow - started) < _executionPeriod)
             {
                 var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
                                         GetIterationCode(),

@@ -29,6 +29,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
@@ -111,13 +112,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             var callbacks = (CallbacksToken)socketArgs.UserToken;
             var onConnectionFailed = callbacks.OnConnectionFailed;
 
-            try 
-            {
-               socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs);
-            }
-            catch(Exception)
-            {
-            }
+            Helper.EatException(() => socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
 
             socketArgs.AcceptSocket = null;
             callbacks.Reset();

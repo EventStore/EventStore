@@ -34,18 +34,19 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class ReadStreamEventsForwardOperation : OperationBase<StreamEventsSlice, ClientMessage.ReadStreamEventsCompleted>
     {
+        public override bool IsLongRunning { get { return false; } }
+
         private readonly string _stream;
         private readonly int _fromEventNumber;
         private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
 
         public ReadStreamEventsForwardOperation(TaskCompletionSource<StreamEventsSlice> source,
-                                                Guid correlationId,
                                                 string stream,
                                                 int fromEventNumber,
                                                 int maxCount,
                                                 bool resolveLinkTos)
-            : base(source, correlationId, TcpCommand.ReadStreamEventsForward, TcpCommand.ReadStreamEventsForwardCompleted)
+            : base(source, TcpCommand.ReadStreamEventsForward, TcpCommand.ReadStreamEventsForwardCompleted)
         {
             _stream = stream;
             _fromEventNumber = fromEventNumber;
@@ -65,7 +66,8 @@ namespace EventStore.ClientAPI.ClientOperations
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.Success:
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.StreamDeleted:
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.NoStream:
-                    return new InspectionResult(InspectionDecision.Succeed);
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 default:
                     throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadStreamResult: {0}.", response.Result));
             }
@@ -85,12 +87,11 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("Stream: {0}, FromEventNumber: {1}, MaxCount: {2}, ResolveLinkTos: {3}, CorrelationId: {4}",
+            return string.Format("Stream: {0}, FromEventNumber: {1}, MaxCount: {2}, ResolveLinkTos: {3}",
                                  _stream,
                                  _fromEventNumber,
                                  _maxCount,
-                                 _resolveLinkTos,
-                                 CorrelationId);
+                                 _resolveLinkTos);
         }
     }
 }

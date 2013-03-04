@@ -27,96 +27,28 @@
 //  
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    internal class TcpStats
-    {
-        public readonly int Connections;
-        public readonly long SentBytesTotal;
-        public readonly long ReceivedBytesTotal;
-        public readonly long SentBytesSinceLastRun;
-        public readonly long ReceivedBytesSinceLastRun;
-        public readonly double SendingSpeed;
-        public readonly double ReceivingSpeed;
-        public readonly long PendingSend;
-        public readonly long InSend;
-        public readonly long PendingReceived;
-        public readonly TimeSpan MeasureTime;
-
-        public readonly string SentBytesTotalFriendly;
-        public readonly string ReceivedBytesTotalFriendly;
-        public readonly string SendingSpeedFriendly;
-        public readonly string ReceivingSpeedFriendly;
-        public readonly string MeasureTimeFriendly;
-
-        public TcpStats(int connections,
-                        long sentBytesTotal,
-                        long receivedBytesTotal,
-                        long sentBytesSinceLastRunSinceLastRun,
-                        long receivedBytesSinceLastRun,
-                        long pendingSend,
-                        long inSend,
-                        long pendingReceived,
-                        TimeSpan measureTime)
-        {
-            Connections = connections;
-            SentBytesTotal = sentBytesTotal;
-            ReceivedBytesTotal = receivedBytesTotal;
-            SentBytesSinceLastRun = sentBytesSinceLastRunSinceLastRun;
-            ReceivedBytesSinceLastRun = receivedBytesSinceLastRun;
-            PendingSend = pendingSend;
-            InSend = inSend;
-            PendingReceived = pendingReceived;
-            MeasureTime = measureTime;
-            SendingSpeed = MeasureTime.TotalSeconds < 0.00001 ? 0 : SentBytesSinceLastRun / MeasureTime.TotalSeconds;
-            ReceivingSpeed = MeasureTime.TotalSeconds < 0.00001 ? 0 : ReceivedBytesSinceLastRun / MeasureTime.TotalSeconds;
-
-            SentBytesTotalFriendly = SentBytesTotal.ToFriendlySizeString();
-            ReceivedBytesTotalFriendly = ReceivedBytesTotal.ToFriendlySizeString();
-            SendingSpeedFriendly = SendingSpeed.ToFriendlySpeedString();
-            ReceivingSpeedFriendly = ReceivingSpeed.ToFriendlySpeedString();
-            MeasureTimeFriendly = string.Format(@"{0:s\.fff}s", MeasureTime);
-        }
-    }
-
     internal class TcpConnectionMonitor
     {
-        private readonly ILogger _log;
+        private static TcpConnectionMonitor _default = new TcpConnectionMonitor(new NoopLogger());
+        public static TcpConnectionMonitor Default { get { return _default; } }
 
-        public static readonly TcpConnectionMonitor Default = new TcpConnectionMonitor();
-
-        private readonly object _connectionsLock = new object();
-        private readonly object _statsLock = new object();
-
-        private class ConnectionData
+        public static void SetDefault(TcpConnectionMonitor monitor)
         {
-            private readonly IMonitoredTcpConnection _connection;
-
-            public ConnectionData(IMonitoredTcpConnection connection)
-            {
-                _connection = connection;
-            }
-
-            public IMonitoredTcpConnection Connection
-            {
-                get { return _connection; }
-            }
-
-            public bool LastMissingSendCallBack { get; set; }
-
-            public bool LastMissingReceiveCallBack { get; set; }
-
-            public long LastTotalBytesSent { get; set; }
-            public long LastTotalBytesReceived { get; set; }
+            Ensure.NotNull(monitor, "monitor");
+            _default = monitor;
         }
 
-        private readonly Dictionary<IMonitoredTcpConnection, ConnectionData> _connections =
-                     new Dictionary<IMonitoredTcpConnection, ConnectionData>();
+        private readonly ILogger _log;
+        private readonly object _statsLock = new object();
+
+        private readonly ConcurrentDictionary<IMonitoredTcpConnection, ConnectionData> _connections = new ConcurrentDictionary<IMonitoredTcpConnection, ConnectionData>();
 
         private long _sentTotal;
         private long _receivedTotal;
@@ -126,44 +58,35 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private long _inSendOnLastRun;
         private long _pendingReceivedOnLastRun;
 
-        bool _anySendBlockedOnLastRun;
+        private bool _anySendBlockedOnLastRun;
         private DateTime _lastUpdateTime;
 
-        private TcpConnectionMonitor()
+        private TcpConnectionMonitor(ILogger log)
         {
-            _log = LogManager.GetLogger();
+            Ensure.NotNull(log, "log");
+            _log = log;
         }
 
         public void Register(IMonitoredTcpConnection connection)
         {
-            lock (_connectionsLock)
-            {
-                DoRegisterConnection(connection);
-            }
+            _connections.TryAdd(connection, new ConnectionData(connection));
         }
 
         public void Unregister(IMonitoredTcpConnection connection)
         {
-            lock (_connectionsLock)
-            {
-                DoUnregisterConnection(connection);
-            }
+            ConnectionData data;
+            _connections.TryRemove(connection, out data);
         }
 
         public TcpStats GetTcpStats()
         {
-            ConnectionData[] connections;
-            TcpStats stats;
-            lock (_connectionsLock)
-            {
-                connections = _connections.Values.ToArray();
-            }
+            ConnectionData[] connections = _connections.Values.ToArray();
             lock (_statsLock)
             {
-                stats = AnalyzeConnections(connections, DateTime.UtcNow - _lastUpdateTime);
+                var stats = AnalyzeConnections(connections, DateTime.UtcNow - _lastUpdateTime);
                 _lastUpdateTime = DateTime.UtcNow;
+                return stats;
             }
-            return stats;
         }
 
         private TcpStats AnalyzeConnections(ConnectionData[] connections, TimeSpan measurePeriod)
@@ -191,7 +114,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                      measurePeriod);
 
 #if DUMP_STATISTICS
-            _log.Debug("# Total connections: {0,3}. Out: {1:0.00}b/s  In: {2:0.00}b/s  Pending Send: {3}  " +
+            _log.Debug("\n# Total connections: {0,3}. Out: {1:0.00}b/s  In: {2:0.00}b/s  Pending Send: {3}  " +
                        "In Send: {4}  Pending Received: {5} Measure Time: {6}",
                        stats.Connections,
                        stats.SendingSpeed,
@@ -199,7 +122,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                        stats.PendingSend,
                        stats.InSend,
                        stats.PendingSend,
-                       stats.MeasureTimeFriendly);
+                       stats.MeasureTime);
 #endif
             return stats;
         }
@@ -212,7 +135,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             if (connection.IsFaulted)
             {
-                _log.Debug("# {0} is faulted", connection);
+                _log.Info("# {0} is faulted", connection);
                 return;
             }
 
@@ -258,9 +181,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             if (missingReceiveCallback && connectionData.LastMissingReceiveCallBack)
             {
-                _log.Debug("# {0} {1}ms since last Receive started. No completion callback received, but socket status is READY_FOR_RECEIVE",
-                           connection, 
-                           sinceLastReceive);
+                _log.Error("# {0} {1}ms since last Receive started. No completion callback received, but socket status is READY_FOR_RECEIVE",
+                           connection, sinceLastReceive);
             }
             connectionData.LastMissingReceiveCallBack = missingReceiveCallback;
         }
@@ -279,10 +201,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
             if (missingSendCallback && connectionData.LastMissingSendCallBack)
             {
                 // _anySendBlockedOnLastRun = true;
-                _log.Debug("# {0} {1}ms since last send started. No completion callback received, but socket status is READY_FOR_SEND. In send: {2}",
-                           connection, 
-                           sinceLastSend, 
-                           inSendBytes);
+                _log.Error(
+                    "# {0} {1}ms since last send started. No completion callback received, but socket status is READY_FOR_SEND. In send: {2}",
+                    connection, sinceLastSend, inSendBytes);
             }
             connectionData.LastMissingSendCallBack = missingSendCallback;
         }
@@ -292,7 +213,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             int pendingSendBytes = connection.PendingSendBytes;
             if (pendingSendBytes > 128 * 1024)
             {
-                _log.Debug("# {0} {1}kb pending send", connection, pendingSendBytes / 1024);
+                _log.Info("# {0} {1}kb pending send", connection, pendingSendBytes / 1024);
             }
         }
 
@@ -301,7 +222,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             int pendingReceivedBytes = connection.PendingReceivedBytes;
             if (pendingReceivedBytes > 128 * 1024)
             {
-                _log.Debug("# {0} {1}kb are not dispatched", connection, pendingReceivedBytes / 1024);
+                _log.Info("# {0} {1}kb are not dispatched", connection, pendingReceivedBytes / 1024);
             }
         }
 
@@ -310,16 +231,18 @@ namespace EventStore.ClientAPI.Transport.Tcp
             return _anySendBlockedOnLastRun;
         }
 
-        private void DoRegisterConnection(IMonitoredTcpConnection connection)
+        private class ConnectionData
         {
-            _connections.Add(connection, new ConnectionData(connection));
+            public readonly IMonitoredTcpConnection Connection;
+            public bool LastMissingSendCallBack;
+            public bool LastMissingReceiveCallBack;
+            public long LastTotalBytesSent;
+            public long LastTotalBytesReceived;
+
+            public ConnectionData(IMonitoredTcpConnection connection)
+            {
+                Connection = connection;
+            }
         }
-
-        private void DoUnregisterConnection(IMonitoredTcpConnection connection)
-        {
-            _connections.Remove(connection);
-        }
-
-
     }
 }

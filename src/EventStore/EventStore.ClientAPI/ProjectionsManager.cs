@@ -37,11 +37,12 @@ namespace EventStore.ClientAPI
         private readonly ProjectionsClient _client;
         private readonly IPEndPoint _httpEndPoint;
 
-        public ProjectionsManager(IPEndPoint httpEndPoint)
+        public ProjectionsManager(ILogger log, IPEndPoint httpEndPoint)
         {
+            Ensure.NotNull(log, "log");
             Ensure.NotNull(httpEndPoint, "httpEndPoint");
 
-            _client = new ProjectionsClient();
+            _client = new ProjectionsClient(log);
             _httpEndPoint = httpEndPoint;
         }
 

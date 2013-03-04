@@ -29,27 +29,25 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
-using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
     internal class TransactionalWriteOperation : OperationBase<object, ClientMessage.TransactionWriteCompleted>
     {
+        public override bool IsLongRunning { get { return false; } }
+
         private readonly bool _forward;
         private readonly long _transactionId;
         private readonly IEnumerable<EventData> _events;
 
         public TransactionalWriteOperation(TaskCompletionSource<object> source,
-                                           Guid correlationId,
                                            bool forward,
                                            long transactionId,
                                            IEnumerable<EventData> events)
-                : base(source, correlationId, TcpCommand.TransactionWrite, TcpCommand.TransactionWriteCompleted)
+                : base(source, TcpCommand.TransactionWrite, TcpCommand.TransactionWriteCompleted)
         {
             _forward = forward;
             _transactionId = transactionId;
@@ -67,7 +65,8 @@ namespace EventStore.ClientAPI.ClientOperations
             switch (response.Result)
             {
                 case ClientMessage.OperationResult.Success:
-                    return new InspectionResult(InspectionDecision.Succeed);
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 case ClientMessage.OperationResult.PrepareTimeout:
                 case ClientMessage.OperationResult.CommitTimeout:
                 case ClientMessage.OperationResult.ForwardTimeout:
@@ -84,7 +83,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("TransactionId: {0}, CorrelationId: {1}", _transactionId, CorrelationId);
+            return string.Format("TransactionId: {0}", _transactionId);
         }
     }
 }

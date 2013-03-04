@@ -42,6 +42,14 @@ namespace EventStore.ClientAPI.Transport.Http
             ServicePointManager.DefaultConnectionLimit = 800;
         }
 
+        private readonly ILogger _log;
+
+        public HttpAsyncClient(ILogger log)
+        {
+            Ensure.NotNull(log, "log");
+            _log = log;
+        }
+
         public void Get(string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
@@ -95,7 +103,7 @@ namespace EventStore.ClientAPI.Transport.Http
             request.Pipelined = true;
 #endif
 
-            request.BeginGetResponse(ResponseAcquired, new ClientOperationState(request, onSuccess, onException));
+            request.BeginGetResponse(ResponseAcquired, new ClientOperationState(_log, request, onSuccess, onException));
         }
 
         private void Send(string method, string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
@@ -109,10 +117,9 @@ namespace EventStore.ClientAPI.Transport.Http
             request.ContentLength = bodyBytes.Length;
             request.ContentType = contentType;
 
-            var state = new ClientOperationState(request, onSuccess, onException)
-            {
-                InputStream = new MemoryStream(bodyBytes)
-            };
+            var state = new ClientOperationState(_log, request, onSuccess, onException);
+            state.InputStream = new MemoryStream(bodyBytes);
+
             request.BeginGetRequestStream(GotRequestStream, state);
         }
 

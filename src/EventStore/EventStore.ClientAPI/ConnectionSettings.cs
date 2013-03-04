@@ -27,6 +27,7 @@
 //  
 
 using System;
+using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
 {
@@ -63,7 +64,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The maximum number of retry attempts
         /// </summary>
-        public readonly int MaxAttempts;
+        public readonly int MaxRetries;
         /// <summary>
         /// The maximum number of times to allow for reconnection
         /// </summary>
@@ -90,6 +91,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         public Action<EventStoreConnection, Exception> ErrorOccurred;
         /// <summary>
+        /// Raised whenever the connection is closed
+        /// </summary>
+        public Action<EventStoreConnection, string> Closed;
+        /// <summary>
         /// Raised whenever the internal connection is connected to the event store
         /// </summary>
         public Action<EventStoreConnection> Connected;
@@ -105,21 +110,29 @@ namespace EventStore.ClientAPI
         internal ConnectionSettings(ILogger log,
                                     int maxQueueSize,
                                     int maxConcurrentItems,
-                                    int maxAttempts,
+                                    int maxRetries,
                                     int maxReconnections,
                                     bool allowForwarding,
                                     TimeSpan reconnectionDelay,
                                     TimeSpan operationTimeout,
                                     TimeSpan operationTimeoutCheckPeriod,
                                     Action<EventStoreConnection, Exception> errorOccurred,
+                                    Action<EventStoreConnection, string> closed,
                                     Action<EventStoreConnection> connected,
                                     Action<EventStoreConnection> disconnected,
                                     Action<EventStoreConnection> reconnecting)
         {
+            Ensure.NotNull(log, "log");
+            Ensure.Positive(maxQueueSize, "maxQueueSize");
+            Ensure.Positive(maxConcurrentItems, "maxConcurrentItems");
+            if (maxRetries < -1)
+                throw new ArgumentOutOfRangeException("maxRetries", string.Format("maxRetires value is out of range: {0}. Allowed range: [-1, infinity].", maxRetries));
+            Ensure.Nonnegative(maxReconnections, "maxReconnections");
+
             Log = log;
             MaxQueueSize = maxQueueSize;
             MaxConcurrentItems = maxConcurrentItems;
-            MaxAttempts = maxAttempts;
+            MaxRetries = maxRetries;
             MaxReconnections = maxReconnections;
             AllowForwarding = allowForwarding;
             ReconnectionDelay = reconnectionDelay;
@@ -127,6 +140,7 @@ namespace EventStore.ClientAPI
             OperationTimeoutCheckPeriod = operationTimeoutCheckPeriod;
 
             ErrorOccurred = errorOccurred;
+            Closed = closed;
             Connected = connected;
             Disconnected = disconnected;
             Reconnecting = reconnecting;

@@ -33,7 +33,7 @@ namespace EventStore.ClientAPI
     {
         public const int DefaultMaxQueueSize = 5000;
         public const int DefaultMaxConcurrentItems = 5000;
-        public const int DefaultMaxOperationAttempts = 10;
+        public const int DefaultMaxOperationRetries = 10;
         public const int DefaultMaxReconnections = 10;
 
         public const bool DefaultAllowForwarding = true;
@@ -42,6 +42,9 @@ namespace EventStore.ClientAPI
         public static readonly TimeSpan DefaultOperationTimeout = TimeSpan.FromSeconds(7);
         public static readonly TimeSpan DefaultOperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
-        public static readonly TimeSpan SubscriptionChannelConnectionTimeout = TimeSpan.FromSeconds(2);
+        public static readonly TimeSpan TimerPeriod = TimeSpan.FromMilliseconds(1000);
+
+        public const int DefaultMaxClusterDiscoverAttempts = 10;
+        public const int DefaultClusterManagerPort = 30777;
     }
 }
