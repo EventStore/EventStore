@@ -55,16 +55,15 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_checkpointManager.CheckpointSuggested(_message.CheckpointTag, _message.Progress))
             {
                 _projection.SetCurrentCheckpointSuggestedWorkItem(null);
-                Complete();
+                _completed = true;
             }
-            else 
-                NextStage();
+            NextStage();
         }
 
         protected override void CompleteItem()
         {
             if (_completed)
-                Complete();
+                NextStage();
             else
                 _completeRequested = true;
         }
@@ -72,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
         internal void CheckpointCompleted()
         {
             if (_completeRequested)
-                Complete();
+                NextStage();
             else
                 _completed = true;
         }

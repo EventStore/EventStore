@@ -57,13 +57,18 @@ namespace EventStore.Projections.Core.Services.Processing
             _partition = _statePartitionSelector.GetStatePartition(_message);
             if (_partition == null)
                 // skip processing of events not mapped to any partition
-                Complete();
+                NextStage();
             else
                 NextStage(_partition);
         }
 
         protected override void Load(CheckpointTag checkpointTag)
         {
+            if (_partition == null)
+            {
+                NextStage();
+                return;
+            }
             // we load partition state even if stopping etc.  should we skip?
             Projection.BeginGetPartitionStateAt(
                 _partition, _message.CheckpointTag, LoadCompleted, lockLoaded: true);
@@ -76,6 +81,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void ProcessEvent()
         {
+            if (_partition == null)
+            {
+                NextStage();
+                return;
+            }
             var eventProcessedResult = Projection.ProcessCommittedEvent(_message, _partition);
             if (eventProcessedResult != null)
                 SetEventProcessedResult(eventProcessedResult);
@@ -84,8 +94,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void WriteOutput()
         {
+            if (_partition == null)
+            {
+                NextStage();
+                return;
+            }
             Projection.FinalizeEventProcessing(_eventProcessedResult, _message.CheckpointTag, _message.Progress);
-            Complete();
+            NextStage();
         }
 
         private void SetEventProcessedResult(EventProcessedResult eventProcessedResult)

@@ -40,11 +40,12 @@ namespace EventStore.Projections.Core.Services.Processing
             new StagedProcessingQueue(
                 new[]
                     {
-                        true /* record event order */, true
-                        /* get state partition - ordered as it may change correlation id */, false
-                        /* load foreach state */, false
-                        /* process Js */, true
-                        /* write emits */, false /* complete item */ 
+                        true /* record event order - async with ordered output*/, 
+                        true /* get state partition - ordered as it may change correlation id - sync */, 
+                        false /* load foreach state - async- unordered completion*/, 
+                        false /* process Js - unordered - inherently unordered completion*/, 
+                        true /* write emits - ordered - async ordered completion*/, 
+                        false /* complete item */ 
                     });
 
         private readonly IPublisher _publisher;
