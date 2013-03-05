@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void ProcessEvent()
         {
             if (_queuePendingEvents.Count > 0)
-                ProcessOneEvent();
+                ProcessOneEventBatch();
         }
 
         public int GetBufferedEventCount()
@@ -144,11 +144,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
         private bool _unsubscribed;
 
-        private void ProcessOneEvent()
+        private void ProcessOneEventBatch()
         {
             if (_queuePendingEvents.Count > _pendingEventsThreshold)
                 PauseSubscription();
-            _queuePendingEvents.Process();
+            _queuePendingEvents.Process(max: 30);
             if (_subscriptionPaused && _queuePendingEvents.Count < _pendingEventsThreshold / 2)
                 ResumeSubscription();
 

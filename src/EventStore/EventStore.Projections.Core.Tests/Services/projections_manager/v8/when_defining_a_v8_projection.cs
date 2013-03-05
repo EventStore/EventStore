@@ -288,7 +288,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             {
                 _projection = @"
                     options({
-                        stateStreamName: 'state-stream',
+                        resultStreamName: 'state-stream',
                     });
                     fromAll().whenAny(
                         function(state, event) {
@@ -301,7 +301,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             [Test, Category("v8")]
             public void source_definition_is_correct()
             {
-                Assert.AreEqual("state-stream", _source.Options.StateStreamName);
+                Assert.AreEqual("state-stream", _source.Options.ResultStreamName);
             }
         }
 
