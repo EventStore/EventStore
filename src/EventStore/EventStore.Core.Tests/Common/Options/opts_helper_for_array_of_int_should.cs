@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void parse_explicitly_present_array_from_cmd_line()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             
             Helper.Parse("-a", "321", "--arr", "642");
             Assert.AreEqual(new [] {321, 642}, Helper.Get(() => Array));
@@ -49,14 +49,14 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void throw_option_exception_for_missing_array_with_no_default()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             Assert.Throws<OptionException>(() => Helper.Parse());
         }
 
         [Test]
         public void return_default_value_for_missing_value_if_default_is_set()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr", new int[0]);
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", new int[0]);
             
             Helper.Parse();
             Assert.AreEqual(new int[0], Helper.Get(() => Array));
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void prefer_cmd_line_before_env()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             SetEnv("ARR", "123,246");
 
             Helper.Parse("--arr=321", "-a:642");
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void prefer_cmd_line_before_json()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             var cfg = WriteJsonConfig(new { settings = new { arr = new[] { 111, 222, 333 } } });
             
             Helper.Parse("-a", "321", "-a", "642", "--cfg", cfg);
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void prefer_cmd_line_before_json_and_env()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             SetEnv("ARR", "123");
             var cfg = WriteJsonConfig(new { settings = new { arr = new[] { 111, 222, 333 } } });
             
@@ -96,7 +96,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void prefer_env_if_no_cmd_line()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             SetEnv("ARR", "123,246");
             var cfg = WriteJsonConfig(new { settings = new { arr = new[] { 111, 222, 333 } } });
             
@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void prefer_json_if_no_cmd_line_or_env()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             var cfg = WriteJsonConfig(new { settings = new { arr = new[] { 111, 222, 333 } } });
 
             Helper.Parse("--cfg", cfg);
@@ -117,7 +117,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void preserve_order_of_jsons()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             var cfg1 = WriteJsonConfig(new { settings = new { arr = new[] { 111, 222, 333 } } });
             var cfg2 = WriteJsonConfig(new { settings = new { arr = new[] { 444, 555, 666 } } });
 
@@ -128,7 +128,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void search_all_jsons_before_giving_up()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             var cfg1 = WriteJsonConfig(new { settings = new { arr_other = new[] { 111, 222, 333 } } });
             var cfg2 = WriteJsonConfig(new { settings = new { arr = new[] { 444, 555, 666 } } });
 
@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void use_default_if_all_failed()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr", new[] { 777 });
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", new[] { 777 });
             var cfg1 = WriteJsonConfig(new { settings = new { arr_other = false } });
             
             Helper.Parse("--cfg", cfg1);

@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void with_no_value_in_cmd_line()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
 
             Assert.Throws<OptionException>(() => Helper.Parse("-a"));
         }
@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void with_wrong_format_of_element_in_cmd_line()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
 
             Assert.Throws<OptionException>(() => Helper.Parse("-a", "123", "-a", "abc"));
         }
@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void with_wrong_format_of_element_in_env()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             SetEnv("ARR", "127,abc");
 
             Assert.Throws<OptionException>(() => Helper.Parse());
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void with_missing_elements_in_env()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             SetEnv("ARR", "127,,721");
 
             Assert.Throws<OptionException>(() => Helper.Parse());
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void with_wrong_type_in_json()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             var cfg = WriteJsonConfig(new { settings = new { arr = new { } } });
 
             Assert.Throws<OptionException>(() => Helper.Parse("--cfg", cfg));
@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void with_string_instead_of_array_in_json()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             var cfg = WriteJsonConfig(new { settings = new { arr = "1,2,3" } });
 
             Assert.Throws<OptionException>(() => Helper.Parse("--cfg", cfg));
@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void with_wrong_format_of_element_in_json()
         {
-            Helper.RegisterArray(() => Array, "a|arr=", "ARR", ",", "settings.arr");
+            Helper.RegisterArray<int>(() => Array, "a|arr=", "ARR", ",", "settings.arr", null);
             var cfg = WriteJsonConfig(new {settings = new {arr = new object[] {123, "abc"}}});
 
             Assert.Throws<OptionException>(() => Helper.Parse("--cfg", cfg));
