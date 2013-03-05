@@ -56,17 +56,39 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             var checkpoint = Config.WriterCheckpoint.Read();
             var lastChunkNum = (int) (checkpoint/Config.ChunkSize);
+            var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
+
+
             for (int i = 0; i < lastChunkNum; ++i)
             {
                 var versions = Config.FileNamingStrategy.GetAllVersionsFor(i);
                 if (versions.Length == 0)
                     throw new CorruptDatabaseException(new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i, 0)));
-                
-                var chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash);
+
+                TFChunk.TFChunk chunk;
+                if (lastChunkVersions.Length == 0 && (i + 1) * (long)Config.ChunkSize == checkpoint)
+                {
+                    // The situation where the logical data size is exactly divisible by ChunkSize,
+                    // so it might happen that we have checkpoint indicating one more chunk should exist, 
+                    // but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
+                    var footer = ReadChunkFooter(versions[0]);
+                    if (footer.IsCompleted)
+                        chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash);
+                    else
+                    {
+                        chunk = TFChunk.TFChunk.FromOngoingFile(versions[0], Config.ChunkSize, checkSize: false);
+                        // chunk is full with data, we should complete it right here
+                        if (!readOnly)
+                            chunk.Complete();
+                    }
+                }
+                else
+                {
+                    chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash);
+                }
                 Manager.AddChunk(chunk);
             }
 
-            var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
             if (lastChunkVersions.Length == 0)
             {
                 var onBoundary = checkpoint % Config.ChunkSize == 0;
