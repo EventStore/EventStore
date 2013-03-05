@@ -39,8 +39,6 @@
     // either event_type1 or event_type1 events in the store
     options({
 
-                // stateStreamName: null,         // overrides output stream StateUpdated events are emitted to
-                                                  // NOTE: use {0} placeholder in case of a partitioned projection
                 useEventIndexes: true,            // makes a fromAll() projection to use event indexes 
                                                   // NOTE: $by_event_type standard projection should be enabled
                 // reorderEvents: false,          // enables event reordering in a multi-stream projection
@@ -78,7 +76,7 @@
         */
     })
     // .filterBy(f)/transformBy(f)
-                    
+    // .outputTo(name[, namePattern]) // defines a name for the output stream               
                         
     //NOTE: filterBy(), transformBy(), emit(), linkTo() require "emit enabled" (see checkbox below)
                             

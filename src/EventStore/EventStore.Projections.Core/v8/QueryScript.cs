@@ -293,8 +293,11 @@ namespace EventStore.Projections.Core.v8
         [DataContract]
         internal class QuerySourcesDefinitionOptions
         {
-            [DataMember(Name = "stateStreamName")]
-            public string StateStreamName { get; set; }
+            [DataMember(Name = "resultStreamName")]
+            public string ResultStreamName { get; set; }
+
+            [DataMember(Name = "partitionResultStreamNamePattern")]
+            public string PartitionResultStreamNamePattern { get; set; }
 
             [DataMember(Name = "useEventIndexes")]
             public bool UseEventIndexes { get; set; }

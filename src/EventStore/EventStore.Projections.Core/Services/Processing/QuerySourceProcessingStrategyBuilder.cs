@@ -37,7 +37,10 @@ namespace EventStore.Projections.Core.Services.Processing
         public class QuerySourceOptions
         {
             [DataMember]
-            public string StateStreamName { get; set; }
+            public string ResultStreamName { get; set; }
+
+            [DataMember]
+            public string PartitionResultStreamNamePattern { get; set; }
 
             [DataMember]
             public string ForceProjectionName { get; set; }
@@ -111,9 +114,14 @@ namespace EventStore.Projections.Core.Services.Processing
             _definesStateTransform = true;
         }
 
-        public void SetStateStreamNameOption(string stateStreamName)
+        public void SetResultStreamNameOption(string resultStreamName)
         {
-            _options.StateStreamName = string.IsNullOrWhiteSpace(stateStreamName) ? null : stateStreamName;
+            _options.ResultStreamName = string.IsNullOrWhiteSpace(resultStreamName) ? null : resultStreamName;
+        }
+
+        public void SetPartitionResultStreamNamePatternOption(string partitionResultStreamNamePattern)
+        {
+            _options.PartitionResultStreamNamePattern = string.IsNullOrWhiteSpace(partitionResultStreamNamePattern) ? null : partitionResultStreamNamePattern;
         }
 
         public void SetForceProjectionName(string forceProjectionName)

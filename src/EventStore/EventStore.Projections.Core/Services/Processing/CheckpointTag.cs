@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Mode_ = CalculateMode();
         }
 
-        public CheckpointTag(long preparePosition)
+        private CheckpointTag(long preparePosition)
         {
             Position = new EventPosition(long.MinValue, preparePosition);
             Mode_ = CalculateMode();
@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Mode_ = CalculateMode();
         }
 
-        public CheckpointTag(Dictionary<string, int> streams)
+        private CheckpointTag(Dictionary<string, int> streams)
         {
             foreach (var stream in streams)
             {

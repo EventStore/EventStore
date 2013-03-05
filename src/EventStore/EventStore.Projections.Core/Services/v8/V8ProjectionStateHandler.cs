@@ -121,8 +121,10 @@ namespace EventStore.Projections.Core.Services.v8
                 builder.SetByStream();
             if (sourcesDefintion.ByCustomPartitions)
                 builder.SetByCustomPartitions();
-            if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.StateStreamName))
-                builder.SetStateStreamNameOption(sourcesDefintion.Options.StateStreamName);
+            if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.ResultStreamName))
+                builder.SetResultStreamNameOption(sourcesDefintion.Options.ResultStreamName);
+            if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.PartitionResultStreamNamePattern))
+                builder.SetPartitionResultStreamNamePatternOption(sourcesDefintion.Options.PartitionResultStreamNamePattern);
             if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.ForceProjectionName))
                 builder.SetForceProjectionName(sourcesDefintion.Options.ForceProjectionName);
             if (sourcesDefintion.Options.UseEventIndexes)

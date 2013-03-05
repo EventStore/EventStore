@@ -60,6 +60,7 @@ function scope($on, $notify) {
         return {
             transformBy: transformBy,
             filterBy: filterBy,
+            outputTo: outputTo,
         };
     }
 
@@ -71,7 +72,15 @@ function scope($on, $notify) {
         return {
             transformBy: transformBy,
             filterBy: filterBy,
+            outputTo: outputTo,
         };
+    }
+
+    function outputTo(resultStream, partitionResultStreamPattern) {
+        eventProcessor.options({
+            resultStreamName: resultStream,
+            partitionResultStreamNamePattern: partitionResultStreamPattern,
+        });
     }
 
     function when(handlers) {
@@ -80,6 +89,7 @@ function scope($on, $notify) {
             $defines_state_transform: $defines_state_transform,
             transformBy: transformBy,
             filterBy: filterBy,
+            outputTo: outputTo,
         };
     }
 
@@ -89,6 +99,7 @@ function scope($on, $notify) {
             $defines_state_transform: $defines_state_transform,
             transformBy: transformBy,
             filterBy: filterBy,
+            outputTo: outputTo,
         };
     }
 

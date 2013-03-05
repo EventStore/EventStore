@@ -48,14 +48,14 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return
                 String.Format(
-                    _options.StateStreamName
+                    _options.PartitionResultStreamNamePattern
                     ?? ProjectionsStreamPrefix + EffectiveProjectionName + "-{0}" + ProjectionsStateStreamSuffix,
                     partitonName);
         }
 
         public string GetResultStreamName()
         {
-            return _options.StateStreamName ?? ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionsStateStreamSuffix;
+            return _options.ResultStreamName ?? ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionsStateStreamSuffix;
         }
 
         private const string ProjectionsStreamPrefix = "$projections-";

@@ -22,7 +22,8 @@ var $projections = {
             events: [],
             defines_state_transform: false,
             options: { 
-                stateStreamName: null, 
+                resultStreamName: null, 
+                partitionResultStreamNamePattern: null, 
                 $forceProjectionName: null, 
                 useEventIndexes: false,
                 reorderEvents: false,

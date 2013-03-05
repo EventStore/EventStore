@@ -835,8 +835,11 @@ namespace EventStore.Projections.Core.Services.Management
 
             //TODO: set false if options == null?
 
-            if (_sourceDefinition.Options != null && !string.IsNullOrEmpty(_sourceDefinition.Options.StateStreamName))
-                builder.SetStateStreamNameOption(_sourceDefinition.Options.StateStreamName);
+            if (_sourceDefinition.Options != null && !string.IsNullOrEmpty(_sourceDefinition.Options.ResultStreamName))
+                builder.SetResultStreamNameOption(_sourceDefinition.Options.ResultStreamName);
+
+            if (_sourceDefinition.Options != null && !string.IsNullOrEmpty(_sourceDefinition.Options.PartitionResultStreamNamePattern))
+                builder.SetPartitionResultStreamNamePatternOption(_sourceDefinition.Options.PartitionResultStreamNamePattern);
 
             if (_sourceDefinition.Options != null && !string.IsNullOrEmpty(_sourceDefinition.Options.ForceProjectionName))
                 builder.SetForceProjectionName(_sourceDefinition.Options.ForceProjectionName);

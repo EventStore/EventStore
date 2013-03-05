@@ -238,16 +238,16 @@ namespace EventStore.Projections.Core.Services.Processing
                                               CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted)
         {
             var stateEventType = "Checkpoint";
-            var partitionStateStreamName = _namingBuilder.MakePartitionCheckpointStreamName(statePartition);
+            var partitionCheckpointStreamName = _namingBuilder.MakePartitionCheckpointStreamName(statePartition);
             _readRequestsInProgress++;
             var requestId =
                 _readDispatcher.Publish(
                     new ClientMessage.ReadStreamEventsBackward(
-                        Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, -1, 1, resolveLinks: false, validationStreamVersion: null),
+                        Guid.NewGuid(), _readDispatcher.Envelope, partitionCheckpointStreamName, -1, 1, resolveLinks: false, validationStreamVersion: null),
                     m =>
                     OnLoadPartitionStateReadStreamEventsBackwardCompleted(
                         m, requestedStateCheckpointTag, loadCompleted,
-                        partitionStateStreamName, stateEventType));
+                        partitionCheckpointStreamName, stateEventType));
             if (requestId != Guid.Empty)
                 _loadStateRequests.Add(requestId);
         }
