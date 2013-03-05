@@ -127,18 +127,18 @@ namespace EventStore.Projections.Core.Services.Processing
             EnqueueForStage(entry, 0);
         }
 
-        public int Process()
+        public int Process(int max = 1)
         {
             int processed = 0;
-            TaskEntry taskProcessed = null;
-            while (_count > 0)
+            int fromStage = _maxStage;
+            while (_count > 0 && processed < max)
             {
                 RemoveCompleted();
-                var entry = GetEntryToProcess(taskProcessed);
+                var entry = GetEntryToProcess(fromStage);
                 if (entry == null)
                     break;
                 ProcessEntry(entry);
-                taskProcessed = entry;
+                fromStage = entry.ReadForStage;
                 processed++;
             }
             return processed;
@@ -154,10 +154,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 (readyForStage, newCorrelationId) => CompleteTaskProcessing(entry, readyForStage, newCorrelationId));
         }
 
-        private TaskEntry GetEntryToProcess(TaskEntry runThisOnly)
+        private TaskEntry GetEntryToProcess(int fromStage)
         {
 
-            var stageIndex  = _maxStage;
+            var stageIndex  = fromStage;
             while (stageIndex >= 0)
             {
                 TaskEntry task = null;
@@ -183,8 +183,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     continue;
                 }
 
-                if (runThisOnly != null && task != runThisOnly)
-                    return null;
                 if (task.ReadForStage != stageIndex)
                     throw new Exception();
                 return task;
