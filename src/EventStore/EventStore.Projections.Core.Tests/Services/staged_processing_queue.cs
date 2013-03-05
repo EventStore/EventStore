@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services
             public void process_does_not_proces_anything()
             {
                 var processed = _q.Process();
-                Assert.AreEqual(0, processed);
+                Assert.IsFalse(processed);
             }
         }
 
@@ -88,11 +88,11 @@ namespace EventStore.Projections.Core.Tests.Services
             }
 
             [Test]
-            public void process_returns_the_number_of_executed_tasks()
+            public void process_returns_true()
             {
                 var processed = _q.Process();
 
-                Assert.AreEqual(1, processed);
+                Assert.IsTrue(processed);
             }
         }
 
@@ -113,18 +113,11 @@ namespace EventStore.Projections.Core.Tests.Services
             [Test]
             public void process_executes_the_task_up_to_stage_one()
             {
-                _q.Process();
+                _q.Process(max: 2);
 
                 Assert.That(_t1.StartedOn(1));
             }
 
-            [Test]
-            public void process_returns_the_number_of_executed_tasks()
-            {
-                var processed = _q.Process();
-
-                Assert.AreEqual(2, processed);
-            }
         }
 
         [TestFixture]
@@ -148,14 +141,6 @@ namespace EventStore.Projections.Core.Tests.Services
                 _q.Process();
 
                 Assert.That(!_t1.StartedOn(0));
-            }
-
-            [Test]
-            public void process_returns_the_number_of_executed_tasks()
-            {
-                var processed = _q.Process();
-
-                Assert.AreEqual(0, processed);
             }
 
             [Test]
@@ -188,17 +173,17 @@ namespace EventStore.Projections.Core.Tests.Services
             [Test]
             public void queue_becomes_empty()
             {
-                _q.Process();
+                _q.Process(max: 2);
 
                 Assert.That(_q.IsEmpty);
             }
 
             [Test]
-            public void process_returns_the_number_of_executed_tasks()
+            public void process_returns_true()
             {
-                var processed = _q.Process();
+                var processed = _q.Process(max: 2);
 
-                Assert.AreEqual(2, processed);
+                Assert.IsTrue(processed);
             }
         }
 
@@ -229,15 +214,6 @@ namespace EventStore.Projections.Core.Tests.Services
                 Assert.That(!_t2.StartedOn(0));
             }
 
-            [Test]
-            public void process_returns_the_number_of_executed_tasks()
-            {
-                var processed1 = _q.Process();
-                var processed2 = _q.Process();
-
-                Assert.AreEqual(1, processed1);
-                Assert.AreEqual(0, processed2);
-            }
         }
 
         [TestFixture]
@@ -355,9 +331,6 @@ namespace EventStore.Projections.Core.Tests.Services
             private StagedProcessingQueue _q;
             private TestTask _t1;
             private TestTask _t2;
-            private int _processed1;
-            private int _processed2;
-            private int _processed3;
 
             [SetUp]
             public void when()
@@ -367,9 +340,9 @@ namespace EventStore.Projections.Core.Tests.Services
                 _t2 = new TestTask(2, 2, 0);
                 _q.Enqueue(_t1);
                 _q.Enqueue(_t2);
-                _processed1 = _q.Process();
-                _processed2 = _q.Process();
-                _processed3 = _q.Process();
+                _q.Process(max: 2);
+                _q.Process(max: 2);
+                _q.Process(max: 2);
             }
 
             [Test]
@@ -380,25 +353,14 @@ namespace EventStore.Projections.Core.Tests.Services
             }
 
             [Test]
-            public void process_returns_the_number_of_executed_tasks()
-            {
-                Assert.AreEqual(1, _processed1);
-                Assert.AreEqual(1, _processed2);
-                Assert.AreEqual(0, _processed3);
-            }
-
-            [Test]
             public void first_task_completed_unblocks_both_tasks()
             {
                 _t1.Complete();
-                var processed4 = _q.Process();
-                var processed5 = _q.Process();
+                _q.Process();
+                _q.Process();
 
-                Assert.AreEqual(1, _processed1);
-                Assert.AreEqual(1, _processed2);
-                Assert.AreEqual(0, _processed3);
-                Assert.AreEqual(1, processed4);
-                Assert.AreEqual(1, processed5);
+                Assert.That(_t1.StartedOn(1));
+                Assert.That(_t2.StartedOn(1));
             }
         }
 
@@ -408,9 +370,6 @@ namespace EventStore.Projections.Core.Tests.Services
             private StagedProcessingQueue _q;
             private TestTask _t1;
             private TestTask _t2;
-            private int _processed1;
-            private int _processed2;
-            private int _processed3;
 
             [SetUp]
             public void when()
@@ -420,9 +379,9 @@ namespace EventStore.Projections.Core.Tests.Services
                 _t2 = new TestTask(2, 3, 0);
                 _q.Enqueue(_t1);
                 _q.Enqueue(_t2);
-                _processed1 = _q.Process();
-                _processed2 = _q.Process();
-                _processed3 = _q.Process();
+                _q.Process(max: 3);
+                _q.Process(max: 3);
+                _q.Process(max: 3);
             }
 
             [Test]
@@ -433,25 +392,14 @@ namespace EventStore.Projections.Core.Tests.Services
             }
 
             [Test]
-            public void process_returns_the_number_of_executed_tasks()
-            {
-                Assert.AreEqual(1, _processed1);
-                Assert.AreEqual(2, _processed2);
-                Assert.AreEqual(0, _processed3);
-            }
-
-            [Test]
             public void first_task_completed_unblocks_both_tasks()
             {
                 _t1.Complete();
                 var processed4 = _q.Process();
                 var processed5 = _q.Process();
 
-                Assert.AreEqual(1, _processed1);
-                Assert.AreEqual(2, _processed2);
-                Assert.AreEqual(0, _processed3);
-                Assert.AreEqual(1, processed4);
-                Assert.AreEqual(0, processed5);
+                Assert.That(_t1.StartedOn(1));
+                Assert.That(_t2.StartedOn(1));
             }
         }
 
@@ -462,9 +410,6 @@ namespace EventStore.Projections.Core.Tests.Services
             private TestTask _t1;
             private TestTask _t2;
             private TestTask _t3;
-            private int _processed1;
-            private int _processed2;
-            private int _processed3;
 
             [SetUp]
             public void when()
@@ -476,9 +421,9 @@ namespace EventStore.Projections.Core.Tests.Services
                 _q.Enqueue(_t1);
                 _q.Enqueue(_t2);
                 _q.Enqueue(_t3);
-                _processed1 = _q.Process();
-                _processed2 = _q.Process();
-                _processed3 = _q.Process();
+                _q.Process(max: 3);
+                _q.Process(max: 3);
+                _q.Process(max: 3);
             }
 
             [Test]
@@ -490,54 +435,34 @@ namespace EventStore.Projections.Core.Tests.Services
             }
 
             [Test]
-            public void process_returns_the_number_of_executed_tasks()
-            {
-                Assert.AreEqual(1, _processed1);
-                Assert.AreEqual(2, _processed2);
-                Assert.AreEqual(2, _processed3);
-            }
-
-            [Test]
             public void first_task_keeps_other_blocked_at_stage_two()
             {
                 _t1.Complete();
-                var processed4 = _q.Process();
-                var processed5 = _q.Process();
+                _q.Process(max: 2);
+                _q.Process(max: 2);
                 _t2.Complete();
                 _t3.Complete();
-                var processed7 = _q.Process();
-
-                Assert.AreEqual(1, _processed1);
-                Assert.AreEqual(2, _processed2);
-                Assert.AreEqual(2, _processed3);
-                Assert.AreEqual(1, processed4);
-                Assert.AreEqual(0, processed5);
-                Assert.AreEqual(0, processed7);
+                _q.Process();
+                Assert.That(!_t2.StartedOn(2));
+                Assert.That(!_t3.StartedOn(2));
             }
 
             [Test]
             public void first_task_completed_at_stage_one_unblock_all()
             {
                 _t1.Complete();
-                var processed4 = _q.Process();
-                var processed5 = _q.Process();
+                _q.Process();
+                _q.Process();
                 _t2.Complete();
                 _t3.Complete();
-                var processed7 = _q.Process();
+                _q.Process();
                 _t1.Complete();
-                var processed8 = _q.Process();
-                var processed9 = _q.Process();
-                var processed10 = _q.Process();
+                _q.Process();
+                _q.Process();
+                _q.Process();
 
-                Assert.AreEqual(1, _processed1);
-                Assert.AreEqual(2, _processed2);
-                Assert.AreEqual(2, _processed3);
-                Assert.AreEqual(1, processed4);
-                Assert.AreEqual(0, processed5);
-                Assert.AreEqual(0, processed7);
-                Assert.AreEqual(1, processed8);
-                Assert.AreEqual(1, processed9);
-                Assert.AreEqual(1, processed10);
+                Assert.That(_t2.StartedOn(2));
+                Assert.That(_t3.StartedOn(2));
             }
         }
 
@@ -568,15 +493,6 @@ namespace EventStore.Projections.Core.Tests.Services
                 Assert.That(_t2.StartedOn(0));
             }
 
-            [Test]
-            public void process_returns_the_number_of_executed_tasks()
-            {
-                var processed1 = _q.Process();
-                var processed2 = _q.Process();
-
-                Assert.AreEqual(1, processed1);
-                Assert.AreEqual(1, processed2);
-            }
         }
 
 
