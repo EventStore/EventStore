@@ -27,7 +27,6 @@
 // 
 
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -41,7 +40,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void with_a_writer_checksum_of_nonzero_and_no_files_a_corrupted_database_exception_is_thrown()
         {
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                        new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                                        10000,
@@ -58,7 +56,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void with_a_writer_checksum_of_zero_and_no_files_is_valid()
         {
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                        new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                                        10000,

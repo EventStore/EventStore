@@ -198,8 +198,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (chunk == null)
             {
                 throw new InvalidOperationException(
-                        string.Format(
-                                      "No chunk returned for LogPosition: {0}, chunkNum: {1}, chunkPos: {2}, writer check: {3}",
+                        string.Format("No chunk returned for LogPosition: {0}, chunkNum: {1}, chunkPos: {2}, writer check: {3}",
                                       position,
                                       chunkNum,
                                       chunkPos,

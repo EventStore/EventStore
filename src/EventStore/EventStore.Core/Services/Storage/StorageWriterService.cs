@@ -273,6 +273,11 @@ namespace EventStore.Core.Services.Storage
                         transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
                 }
             }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Exception in writer.");
+                throw;
+            }
             finally
             {
                 Flush();
@@ -296,6 +301,11 @@ namespace EventStore.Core.Services.Storage
 
                 // we update cache to avoid non-cached look-up on next TransactionWrite
                 ReadIndex.UpdateTransactionInfo(res.WrittenPos, new TransactionInfo(shouldCreateStream ? 0 : -1, message.EventStreamId)); 
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Exception in writer.");
+                throw;
             }
             finally
             {
@@ -334,6 +344,11 @@ namespace EventStore.Core.Services.Storage
                                                 new TransactionInfo(transactionInfo.TransactionOffset + message.Events.Length,
                                                                     transactionInfo.EventStreamId));
             }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Exception in writer.");
+                throw;
+            }
             finally
             {
                 Flush();
@@ -357,6 +372,11 @@ namespace EventStore.Core.Services.Storage
                                                       message.TransactionId,
                                                       transactionInfo.EventStreamId);
                 WritePrepareWithRetry(record);
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Exception in writer.");
+                throw;
             }
             finally
             {
@@ -419,6 +439,11 @@ namespace EventStore.Core.Services.Storage
                         throw new ArgumentOutOfRangeException();
                 }
             }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Exception in writer.");
+                throw;
+            }
             finally
             {
                 Flush();
@@ -464,6 +489,11 @@ namespace EventStore.Core.Services.Storage
                                                            message.ExpectedVersion);
                     WritePrepareWithRetry(record);
                 }
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Exception in writer.");
+                throw;
             }
             finally
             {
