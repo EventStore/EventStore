@@ -197,7 +197,6 @@ namespace EventStore.ClientAPI.Core
                 return;
 
             _reconnectionStopwatch.Stop();
-            _reconnectionCount = 0;
             _connectionStopwatch.Restart();
 
             if (_settings.Connected != null)
@@ -234,6 +233,10 @@ namespace EventStore.ClientAPI.Core
             // operations timeouts are checked only if connection is established and check period time passed
             if (_connectionStopwatch.IsRunning && _connectionStopwatch.Elapsed - _lastTimeoutCheckTimestamp > _settings.OperationTimeoutCheckPeriod)
             {
+                // On mono even impossible connection first says that it is established
+                // so clearing of reconnection count on ConnectionEstablished event causes infinite reconnections.
+                // So we reset reconnection count to zero on each timeout check period when connection is established
+                _reconnectionCount = 0;
                 CheckOperationsTimeouts();
                 CheckSubscriptionsTimeouts();
                 _lastTimeoutCheckTimestamp = _connectionStopwatch.Elapsed;

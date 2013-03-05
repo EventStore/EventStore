@@ -50,7 +50,11 @@ namespace EventStore.Core.Tests.ClientAPI
             var settings = ConnectionSettings.Create()
                                              .LimitReconnectionsTo(2)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
-                                             .OnClosed((x, r) => closed.Set());
+                                             .OnClosed((x, r) => closed.Set())
+                                             .OnConnected(x => Console.WriteLine("Connected..."))
+                                             .OnReconnecting(x => Console.WriteLine("Reconnecting..."))
+                                             .OnDisconnected(x => Console.WriteLine("Disconnected..."))
+                                             .OnErrorOccurred((x, exc) => Console.WriteLine("Error: {0}", exc));
 
             using (var connection = EventStoreConnection.Create(settings))
             {
