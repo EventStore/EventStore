@@ -213,7 +213,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             private PosMap ReadPosMap(ReaderWorkItem workItem, int index)
             {
-                var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalChunkSize + index * PosMap.Size;
+                var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.Size;
                 workItem.Stream.Seek(pos, SeekOrigin.Begin);
                 return new PosMap(workItem.Reader.ReadUInt64());
             }
@@ -516,11 +516,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 #if DEBUG
                 // verify suffix length == prefix length
                 int suffixLength = workItem.Reader.ReadInt32();
-                Debug.Assert(suffixLength == length,
-                             "Prefix/suffix length inconsistency ",
-                             "Prefix length({0}) != suffix length ({1})",
-                             length,
-                             suffixLength);
+                if (suffixLength != length)
+                    throw new Exception(string.Format("Prefix/suffix length inconsistency: Prefix length({0}) != suffix length ({1})", length, suffixLength));
 #endif
                 return true;
             }

@@ -54,7 +54,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public bool IsReadOnly { get { return _isReadOnly; } }
         public bool IsCached { get { return _isCached != 0; } }
-        public int LogicalDataSize { get { return _logicalDataSize; } }  // the logical size of data (could be > PhysicalChunkSize if scavenged chunk)
+        public int LogicalDataSize { get { return _logicalDataSize; } }  // the logical size of data (could be > PhysicalDataSize if scavenged chunk)
         public int PhysicalDataSize { get { return _physicalDataSize; } }  // the physical size of data size of data
         public string FileName { get { return _filename; } }
         public int FileSize { get { return (int) new FileInfo(_filename).Length; } }
@@ -193,9 +193,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
                 _chunkFooter = ReadFooter(reader.Stream);
                 _logicalDataSize = _chunkFooter.LogicalDataSize;
-                _physicalDataSize = _chunkFooter.PhysicalChunkSize;
+                _physicalDataSize = _chunkFooter.PhysicalDataSize;
 
-                var expectedFileSize = _chunkFooter.PhysicalChunkSize + _chunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
+                var expectedFileSize = _chunkFooter.PhysicalDataSize + _chunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
                 if (reader.Stream.Length != expectedFileSize)
                 {
                     throw new CorruptDatabaseException(new BadChunkInDatabaseException(
@@ -351,11 +351,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 {
                     workItem.Stream.Seek(0, SeekOrigin.Begin);
                     // hash header and data
-                    MD5Hash.ContinuousHashFor(md5, workItem.Stream, 0, ChunkHeader.Size + footer.PhysicalChunkSize);
+                    MD5Hash.ContinuousHashFor(md5, workItem.Stream, 0, ChunkHeader.Size + footer.PhysicalDataSize);
                     // hash mapping and footer except MD5 hash sum which should always be last
                     MD5Hash.ContinuousHashFor(md5, 
                                               workItem.Stream,
-                                              ChunkHeader.Size + footer.PhysicalChunkSize,
+                                              ChunkHeader.Size + footer.PhysicalDataSize,
                                               footer.MapSize + ChunkFooter.Size - ChunkFooter.ChecksumSize);
                     md5.TransformFinalBlock(new byte[0], 0, 0);
                     hash = md5.Hash;
@@ -595,8 +595,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             
             // for non-scavenged chunk _physicalDataSize should be the same as _logicalDataSize
             // for scavenged chunk _logicalDataSize should be at least the same as _physicalDataSize
-            Debug.Assert((!ChunkHeader.IsScavenged && _logicalDataSize == _physicalDataSize) 
-                         || (ChunkHeader.IsScavenged && _logicalDataSize >= _physicalDataSize));
+            if ((!ChunkHeader.IsScavenged && _logicalDataSize != _physicalDataSize)
+                || (ChunkHeader.IsScavenged && _logicalDataSize < _physicalDataSize))
+            {
+                throw new Exception(string.Format("Data sizes violation. Chunk: {0}, IsScavenged: {1}, LogicalDataSize: {2}, PhysicalDataSize: {3}.",
+                                                  FileName, ChunkHeader.IsScavenged, _logicalDataSize, _physicalDataSize));
+            }
             
             return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
         }

@@ -127,7 +127,7 @@ namespace EventStore.Projections.Core.Services.Processing
             EnqueueForStage(entry, 0);
         }
 
-        public int Process(int max = 1)
+        public bool Process(int max = 1)
         {
             int processed = 0;
             int fromStage = _maxStage;
@@ -141,7 +141,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 fromStage = entry.ReadForStage;
                 processed++;
             }
-            return processed;
+            return processed > 0;
         }
 
         private void ProcessEntry(TaskEntry entry)
