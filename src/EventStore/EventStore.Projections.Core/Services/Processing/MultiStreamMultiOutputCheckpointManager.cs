@@ -135,7 +135,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                 case ReadStreamResult.Success:
                                     foreach (var @event in completed.Events)
                                     {
-                                        var tag = @event.Event.Metadata.ParseJson<CheckpointTagJson>();
+                                        var tag = @event.Event.Metadata.ParseCheckpointTagJson();
                                         if (tag <= checkpointTag)
                                         {
                                             SetOrderStreamReadCompleted();

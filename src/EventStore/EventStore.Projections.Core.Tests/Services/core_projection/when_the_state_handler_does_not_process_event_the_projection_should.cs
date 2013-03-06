@@ -40,10 +40,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void Given()
         {
             ExistingEvent(
-                "$projections-projection-result", "Result", @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
+                "$projections-projection-result", "Result", @"{""commitPosition"": 100, ""preparePosition"": 50}", "{}");
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
+                @"{""commitPosition"": 100, ""preparePosition"": 50}", "{}");
         }
 
         protected override void When()

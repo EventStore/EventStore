@@ -178,7 +178,7 @@
     <Compile Include="Services\Processing\ByStreamStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\CategoryEventFilter.cs" />
     <Compile Include="Services\Processing\CheckpointSuggestedWorkItem.cs" />
-    <Compile Include="Services\Processing\CheckpointTagJson.cs" />
+    <Compile Include="Services\Processing\CheckpointTagExtensions.cs" />
     <Compile Include="Services\Processing\CheckpointWorkItemBase.cs" />
     <Compile Include="Services\Processing\CommittedEventWorkItem.cs" />
     <Compile Include="Services\Processing\CompletedWorkItem.cs" />

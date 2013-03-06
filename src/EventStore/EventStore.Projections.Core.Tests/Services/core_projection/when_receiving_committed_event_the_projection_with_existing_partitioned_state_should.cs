@@ -56,13 +56,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             AllWritesToSucceed("$projections-projection-order");
             ExistingEvent(
                 "$projections-projection-partitions", "PartitionCreated",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "account-01");
+                @"{""commitPosition"": 100, ""preparePosition"": 50}", "account-01");
             ExistingEvent(
                 "$projections-projection-account-01-result", "Result",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", _testProjectionState);
+                @"{""commitPosition"": 100, ""preparePosition"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", _testProjectionState);
+                @"{""commitPosition"": 100, ""preparePosition"": 50}", _testProjectionState);
             AllWritesSucceed();
         }
 

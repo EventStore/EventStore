@@ -26,57 +26,27 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    [DataContract]
-    public class CheckpointTagJson 
+    public static class CheckpointTagExtensions
     {
-        internal CheckpointTagJson()
+        public static CheckpointTag ParseCheckpointTagJson(this string source)
         {
-            Position = new EventPosition(long.MinValue, long.MinValue);
+            if (string.IsNullOrEmpty(source))
+                return null;
+            var reader = new JsonTextReader(new StringReader(source));
+            return CheckpointTag.FromJson(reader);
         }
 
-        public EventPosition Position;
-
-        [DataMember]
-        public Dictionary<string, int> Streams { get; set; }
-
-        [DataMember]
-        public long? CommitPosition
+        public static CheckpointTag ParseCheckpointTagJson(this byte[] source)
         {
-            get
-            {
-                return Streams != null
-                           ? null
-                           : (Position.CommitPosition != Int64.MinValue ? Position.CommitPosition : (long?) null);
-            }
-            set
-            {
-                Position = new EventPosition(
-                    value == null ? Int64.MinValue : value.GetValueOrDefault(), Position.PreparePosition);
-            }
+            if (source == null || source.Length == 0)
+                return null;
+            var reader = new JsonTextReader(new StreamReader(new MemoryStream(source)));
+            return CheckpointTag.FromJson(reader);
         }
-
-        [DataMember]
-        public long? PreparePosition
-        {
-            get
-            {
-                return Streams != null
-                           ? null
-                           : (Position.PreparePosition != Int64.MinValue ? Position.PreparePosition : (long?) null);
-            }
-            set
-            {
-                Position = new EventPosition(
-                    Position.CommitPosition, value == null ? Int64.MinValue : value.GetValueOrDefault());
-            }
-        }
-
-
     }
 }

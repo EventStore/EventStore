@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         protected override void Given()
         {
             AllWritesQueueUp();
-            ExistingEvent("test_stream", "type", @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "data");
+            ExistingEvent("test_stream", "type", @"{""commitPosition"": 100, ""preparePosition"": 50}", "data");
         }
 
         [SetUp]
