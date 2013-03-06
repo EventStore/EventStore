@@ -27,7 +27,7 @@
 // 
 using System;
 
-namespace EventStore.Core.Services.Transport.Tcp
+namespace EventStore.ClientAPI.SystemData
 {
     public struct TcpPackage
     {

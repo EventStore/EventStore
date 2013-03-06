@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\..\bin\eventstore\debug\anycpu\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;CLIENTAPI</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -78,12 +78,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\EventStore.Core\Services\Transport\Tcp\TcpCommand.cs">
-      <Link>SystemData\TcpCommand.cs</Link>
-    </Compile>
-    <Compile Include="..\EventStore.Core\Services\Transport\Tcp\TcpPackage.cs">
-      <Link>SystemData\TcpPackage.cs</Link>
-    </Compile>
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="ClientOperations\CommitTransactionOperation.cs" />
     <Compile Include="ClientOperations\SubscriptionOperation.cs" />
@@ -147,6 +141,8 @@
     <Compile Include="ExpectedVersion.cs" />
     <Compile Include="SystemData\InspectionResult.cs" />
     <Compile Include="SystemData\InspectionDecision.cs" />
+    <Compile Include="SystemData\TcpCommand.cs" />
+    <Compile Include="SystemData\TcpPackage.cs" />
     <Compile Include="Transport.Http\AsyncStreamCopier.cs" />
     <Compile Include="Transport.Http\ClientOperationState.cs" />
     <Compile Include="Transport.Http\ContentType.cs" />
