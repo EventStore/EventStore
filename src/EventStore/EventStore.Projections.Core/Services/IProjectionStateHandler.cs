@@ -69,13 +69,13 @@ namespace EventStore.Projections.Core.Services
         public static bool ProcessEvent(
             this IProjectionStateHandler self, string partition, CheckpointTag eventPosition, string streamId,
             string eventType, string category, Guid eventId, int eventSequenceNumber, string metadata, string data,
-            out string state, out EmittedEvent[] emittedEvents)
+            out string state, out EmittedEvent[] emittedEvents, bool isJson = true)
         {
             return self.ProcessEvent(
                 partition, eventPosition, category,
                 new ResolvedEvent(
                     streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new EventPosition(0, -1),
-                    eventId, eventType, true, data, metadata, default(DateTime)), out state, out emittedEvents);
+                    eventId, eventType, isJson, data, metadata, default(DateTime)), out state, out emittedEvents);
         }
     }
 }
