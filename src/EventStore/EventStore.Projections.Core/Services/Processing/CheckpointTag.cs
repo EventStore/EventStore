@@ -28,10 +28,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
-using EventStore.Core.Util;
+using Newtonsoft.Json;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -279,6 +280,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         internal readonly Mode Mode_;
+        private static readonly Encoding _utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         public static CheckpointTag FromPosition(long commitPosition, long preparePosition)
         {
@@ -370,7 +372,42 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public byte[] ToJsonBytes()
         {
-            return new CheckpointTagJson { Position =  Position, Streams = Streams }.ToJsonBytes();
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var textWriter = new StreamWriter(memoryStream, _utf8NoBom))
+                using (var jsonWriter = new JsonTextWriter(textWriter))
+                    switch (Mode_)
+                    {
+                        case Mode.Position:
+                            jsonWriter.WriteStartObject();
+                            jsonWriter.WritePropertyName("commitPosition");
+                            jsonWriter.WriteValue(CommitPosition.GetValueOrDefault());
+                            jsonWriter.WritePropertyName("preparePosition");
+                            jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
+                            jsonWriter.WriteEndObject();
+                            break;
+                        case Mode.PreparePosition:
+                            jsonWriter.WriteStartObject();
+                            jsonWriter.WritePropertyName("preparePosition");
+                            jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
+                            jsonWriter.WriteEndObject();
+                            break;
+                        case Mode.Stream:
+                        case Mode.MultiStream:
+                            jsonWriter.WriteStartObject();
+                            jsonWriter.WritePropertyName("streams");
+                            jsonWriter.WriteStartObject();
+                            foreach (var stream in Streams)
+                            {
+                                jsonWriter.WritePropertyName(stream.Key);
+                                jsonWriter.WriteValue(stream.Value);
+                            }
+                            jsonWriter.WriteEndObject();
+                            jsonWriter.WriteEndObject();
+                            break;
+                    }
+                return memoryStream.ToArray();
+            }
         }
     }
 }
