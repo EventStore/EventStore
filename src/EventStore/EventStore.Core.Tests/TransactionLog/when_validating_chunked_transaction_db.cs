@@ -128,6 +128,43 @@ namespace EventStore.Core.Tests.TransactionLog
             db.Dispose();
         }
 
+        [Test]
+        public void allows_last_chunk_to_be_not_completed_when_checksum_is_exactly_in_between_two_chunks_and_no_next_chunk_exists()
+        {
+            var config = new TFChunkDbConfig(PathName,
+                                             new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                             10000,
+                                             0,
+                                             new InMemoryCheckpoint(10000),
+                                             new InMemoryCheckpoint(),
+                                             new InMemoryCheckpoint(-1),
+                                             new InMemoryCheckpoint(-1));
+            var db = new TFChunkDb(config);
+            CreateOngoingChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
+            db.Dispose();
+        }
+
+        [Test]
+        public void does_not_allow_pre_last_chunk_to_be_not_completed_when_checksum_is_exactly_in_between_two_chunks_and_next_chunk_exists()
+        {
+            var config = new TFChunkDbConfig(PathName,
+                                             new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                             10000,
+                                             0,
+                                             new InMemoryCheckpoint(10000),
+                                             new InMemoryCheckpoint(),
+                                             new InMemoryCheckpoint(-1),
+                                             new InMemoryCheckpoint(-1));
+            var db = new TFChunkDb(config);
+            CreateOngoingChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
+            CreateOngoingChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1, 0)), config.ChunkSize, config.ChunkSize);
+            Assert.That(() => db.Open(verifyHash: false),
+                        Throws.Exception.InstanceOf<CorruptDatabaseException>()
+                        .With.InnerException.InstanceOf<BadChunkInDatabaseException>());
+            db.Dispose();
+        }
+
         [Test, Ignore("Not valid test now after disabling size validation on ongoing TFChunk ")]
         public void with_wrong_size_file_less_than_checksum_throws()
         {
