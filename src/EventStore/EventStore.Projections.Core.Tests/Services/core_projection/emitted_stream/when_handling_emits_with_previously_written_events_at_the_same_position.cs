@@ -47,8 +47,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             AllWritesQueueUp();
             //NOTE: it is possible for a batch of events to be partially written if it contains links 
-            ExistingEvent("test_stream", "type1", @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "data");
-            ExistingEvent("test_stream", "type2", @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "data");
+            ExistingEvent("test_stream", "type1", @"{""commitPosition"": 100, ""preparePosition"": 50}", "data");
+            ExistingEvent("test_stream", "type2", @"{""commitPosition"": 100, ""preparePosition"": 50}", "data");
         }
 
         private EmittedEvent[] CreateEventBatch()

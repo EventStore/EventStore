@@ -221,7 +221,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 else
                 {
                     //TODO: verify order - as we are reading backward
-                    var projectionStateMetadata = message.Events[0].Event.Metadata.ParseJson<CheckpointTagJson>();
+                    var projectionStateMetadata = message.Events[0].Event.Metadata.ParseCheckpointTagJson();
                     _lastSubmittedOrCommittedMetadata = projectionStateMetadata;
                     _lastKnownEventNumber = message.Events[0].Event.EventNumber;
                 }
@@ -237,7 +237,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 foreach (var e in message.Events)
                 {
-                    CheckpointTag tag = e.Event.Metadata.ParseJson<CheckpointTagJson>();
+                    CheckpointTag tag = e.Event.Metadata.ParseCheckpointTagJson();
                     if (tag < upTo) // ignore any events prior to the requested upTo (== first emitted event position)
                         break;
                     var eventType = e.Event.EventType;
@@ -246,7 +246,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 //TODO: verify order - as we are reading backward
                 var lastReadEvent = message.Events[message.Events.Length - 1];
-                var projectionStateMetadata = lastReadEvent.Event.Metadata.ParseJson<CheckpointTagJson>();
+                var projectionStateMetadata = lastReadEvent.Event.Metadata.ParseCheckpointTagJson();
                 lastReadTag = projectionStateMetadata;
             }
 

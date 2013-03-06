@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("Result").Count);
 
             var metedata =
-                _writeEventHandler.HandledMessages.OfEventType("Result")[0].Metadata.ParseJson<CheckpointTagJson>();
+                _writeEventHandler.HandledMessages.OfEventType("Result")[0].Metadata.ParseCheckpointTagJson();
 
             Assert.AreEqual(120, metedata.CommitPosition);
             Assert.AreEqual(110, metedata.PreparePosition);
