@@ -91,7 +91,7 @@ namespace EventStore.TestClient.Commands
 
                 var settings = ConnectionSettings.Create()
                     .EnableOperationsForwarding()
-                    .UseLogger(new ConsoleLogger())
+                    .UseCustomLogger(new ConsoleLogger())
                     .LimitReconnectionsTo(0)
                     //.KeepReconnecting()
                     .LimitRetriesForOperationTo(0)
