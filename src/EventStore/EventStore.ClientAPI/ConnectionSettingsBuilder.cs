@@ -36,7 +36,7 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class ConnectionSettingsBuilder
     {
-        private ILogger _log = new ConsoleLogger();
+        private ILogger _log = new NoopLogger();
 
         private int _maxQueueSize = Consts.DefaultMaxQueueSize;
         private int _maxConcurrentItems = Consts.DefaultMaxConcurrentItems;
@@ -60,14 +60,42 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Configures the connection to utilize a given logger.
+        /// Configures the connection not to output log messages. This is the default.
+        /// </summary>
+        public ConnectionSettingsBuilder DoNotLog()
+        {
+            _log = new NoopLogger();
+            return this;
+        }
+
+        /// <summary>
+        /// Configures the connection to output log messages to the given <see cref="ILogger" />.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to use.</param>
         /// <returns></returns>
-        public ConnectionSettingsBuilder UseLogger(ILogger logger)
+        public ConnectionSettingsBuilder UseCustomLogger(ILogger logger)
         {
             Ensure.NotNull(logger, "logger");
             _log = logger;
+            return this;
+        }
+
+        /// <summary>
+        /// Configures the connection to output log messages to the console.
+        /// </summary>
+        public ConnectionSettingsBuilder UseConsoleLogger()
+        {
+            _log = new ConsoleLogger();
+            return this;
+        }
+
+        /// <summary>
+        /// Configures the connection to output log messages to the listeners
+        /// configured on <see cref="System.Diagnostics.Debug" />.
+        /// </summary>
+        public ConnectionSettingsBuilder UseDebugLogger()
+        {
+            _log = new DebugLogger();
             return this;
         }
 
