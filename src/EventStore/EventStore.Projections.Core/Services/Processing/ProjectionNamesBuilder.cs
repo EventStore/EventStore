@@ -30,13 +30,46 @@ using System;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionNamesBuilder : QuerySourceProcessingStrategyBuilder
+    public class ProjectionNamesBuilder 
     {
-        private readonly string _name;
+        public static ProjectionNamesBuilder CreateForTest(string name)
+        {
+            return new ProjectionNamesBuilder(name);
+        }
 
-        public ProjectionNamesBuilder(string name)
+        public class Factory : QuerySourceProcessingStrategyBuilder
+        {
+            public ProjectionNamesBuilder Create(string name)
+            {
+                return new ProjectionNamesBuilder(name, _options);
+            }
+        }
+
+        private readonly string _name;
+        private readonly QuerySourceProcessingStrategyBuilder.QuerySourceOptions _options;
+        private readonly string _partitionResultStreamNamePattern;
+        private readonly string _resultStreamName;
+        private readonly string _partitionCatalogStreamName;
+        private readonly string _checkpointStreamName;
+        private readonly string _orderStreamName;
+
+        private ProjectionNamesBuilder(string name)
+            : this(name, new QuerySourceProcessingStrategyBuilder.QuerySourceOptions())
+        {
+        }
+
+        public ProjectionNamesBuilder(string name, QuerySourceProcessingStrategyBuilder.QuerySourceOptions options)
         {
             _name = name;
+            _options = options;
+            _partitionResultStreamNamePattern = _options.PartitionResultStreamNamePattern
+                                                ?? ProjectionsStreamPrefix + EffectiveProjectionName + "-{0}" + ProjectionsStateStreamSuffix;
+            _resultStreamName = _options.ResultStreamName ?? ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionsStateStreamSuffix;
+            _partitionCatalogStreamName = ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionPartitionCatalogStreamSuffix;
+            _checkpointStreamName = ProjectionsStreamPrefix + EffectiveProjectionName
+                                    + ProjectionCheckpointStreamSuffix;
+            _orderStreamName = ProjectionsStreamPrefix + EffectiveProjectionName
+                               + ProjectionOrderStreamSuffix;
         }
 
         public string EffectiveProjectionName
@@ -44,18 +77,14 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _options.ForceProjectionName ?? _name; }
         }
 
-        private string GetPartitionResultStreamName(string partitonName)
+        private string GetPartitionResultStreamName(string partitionName)
         {
-            return
-                String.Format(
-                    _options.PartitionResultStreamNamePattern
-                    ?? ProjectionsStreamPrefix + EffectiveProjectionName + "-{0}" + ProjectionsStateStreamSuffix,
-                    partitonName);
+            return String.Format(_partitionResultStreamNamePattern, partitionName);
         }
 
         public string GetResultStreamName()
         {
-            return _options.ResultStreamName ?? ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionsStateStreamSuffix;
+            return _resultStreamName;
         }
 
         private const string ProjectionsStreamPrefix = "$projections-";
@@ -66,7 +95,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public string GetPartitionCatalogStreamName()
         {
-            return ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionPartitionCatalogStreamSuffix;
+            return _partitionCatalogStreamName;
         }
 
         public string MakePartitionResultStreamName(string statePartition)
@@ -87,14 +116,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public string MakeCheckpointStreamName()
         {
-            return ProjectionsStreamPrefix + EffectiveProjectionName
-                   + ProjectionCheckpointStreamSuffix;
+            return _checkpointStreamName;
         }
 
         public string GetOrderStreamName()
         {
-            return ProjectionsStreamPrefix + EffectiveProjectionName
-                   + ProjectionOrderStreamSuffix;
+            return _orderStreamName;
         }
     }
 }

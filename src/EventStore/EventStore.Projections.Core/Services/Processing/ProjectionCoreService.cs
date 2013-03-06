@@ -331,7 +331,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var sourceDefintionRecorder = new SourceDefintionRecorder();
                 stateHandler.ConfigureSourceProcessingStrategy(sourceDefintionRecorder);
                 var sourceDefintion = sourceDefintionRecorder.Build();
-                var projection = CoreProjection.CreateAndPrepapre(message.Name, message.ProjectionId, _publisher, stateHandler, message.Config, _readDispatcher,
+                var projection = CoreProjection.CreateAndPrepapre(message.Name, message.Epoch, message.Version, message.ProjectionId, _publisher, stateHandler, message.Config, _readDispatcher,
                                                       _writeDispatcher, _logger);
                 _projections.Add(message.ProjectionId, projection);
                 message.Envelope.ReplyWith(
@@ -352,11 +352,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 // constructor can fail if wrong source defintion
                 //TODO: revise it
                 var sourceDefintionRecorder = new SourceDefintionRecorder();
-                message.SourceDefintion.ConfigureSourceProcessingStrategy(sourceDefintionRecorder);
+                message.SourceDefinition.ConfigureSourceProcessingStrategy(sourceDefintionRecorder);
                 var sourceDefintion = sourceDefintionRecorder.Build();
                 var projection = CoreProjection.CreatePrepapred(
-                    message.Name, message.ProjectionId, _publisher, message.SourceDefintion, message.Config,
-                    _readDispatcher, _writeDispatcher, _logger);
+                    message.Name, message.Epoch, message.Version, message.ProjectionId, _publisher,
+                    message.SourceDefinition, message.Config, _readDispatcher, _writeDispatcher, _logger);
                 _projections.Add(message.ProjectionId, projection);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefintion));

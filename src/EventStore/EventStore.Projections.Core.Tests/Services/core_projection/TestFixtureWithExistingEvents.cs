@@ -35,6 +35,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Bus.Helpers;
@@ -209,22 +210,29 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private void ProcessWrite(ClientMessage.WriteEvents message)
         {
             List<EventRecord> list;
+            int add = 0;
             if (!_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || list == null)
             {
                 list = new List<EventRecord>();
+                add = 1;
+                list.Add(new EventRecord(
+                                            0, 0, message.CorrelationId, Guid.NewGuid(), 1, 0,
+                                            message.EventStreamId, ExpectedVersion.Any, DateTime.UtcNow,
+                                            PrepareFlags.SingleWrite, SystemEventTypes.StreamCreatedImplicit, new byte[0], new byte[0]));
                 _lastMessageReplies[message.EventStreamId] = list;
             }
             foreach (var eventRecord in from e in message.Events
+                                        let eventNumber = list.Count
                                         select
                                             new EventRecord(
-                                            list.Count, list.Count*1000, message.CorrelationId, e.EventId, list.Count*1000, 0,
+                                            eventNumber, eventNumber*1000, message.CorrelationId, e.EventId, eventNumber*1000, 0,
                                             message.EventStreamId, ExpectedVersion.Any, DateTime.UtcNow,
                                             PrepareFlags.SingleWrite, e.EventType, e.Data, e.Metadata))
             {
                 list.Add(eventRecord);
             }
 
-            message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length));
+            message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length - add));
         }
 
         public void Handle(ProjectionCoreServiceMessage.Tick message)

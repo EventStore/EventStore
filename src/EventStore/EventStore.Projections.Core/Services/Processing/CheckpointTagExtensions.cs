@@ -31,6 +31,13 @@ using Newtonsoft.Json;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
+
+    public struct CheckpointTagVersion
+    {
+        public int Version;
+        public CheckpointTag Tag;
+    }
+
     public static class CheckpointTagExtensions
     {
         public static CheckpointTag ParseCheckpointTagJson(this string source)
@@ -38,13 +45,13 @@ namespace EventStore.Projections.Core.Services.Processing
             if (string.IsNullOrEmpty(source))
                 return null;
             var reader = new JsonTextReader(new StringReader(source));
-            return CheckpointTag.FromJson(reader);
+            return CheckpointTag.FromJson(reader).Tag;
         }
 
-        public static CheckpointTag ParseCheckpointTagJson(this byte[] source)
+        public static CheckpointTagVersion ParseCheckpointTagJson(this byte[] source)
         {
             if (source == null || source.Length == 0)
-                return null;
+                return new CheckpointTagVersion { Version = -1, Tag = null };
             var reader = new JsonTextReader(new StreamReader(new MemoryStream(source)));
             return CheckpointTag.FromJson(reader);
         }

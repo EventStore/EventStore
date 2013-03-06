@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
         [SetUp]
         public void setup()
         {
-            _updateManager = new PartitionStateUpdateManager(new ProjectionNamesBuilder("projection"));
+            _updateManager = new PartitionStateUpdateManager(ProjectionNamesBuilder.CreateForTest("projection"));
             _updateManager.StateUpdated("partition1", new PartitionState("{\"state\":1}", null, _one), _zero);
             _updateManager.StateUpdated("partition2", new PartitionState("{\"state\":2}", null, _two), _zero);
         }

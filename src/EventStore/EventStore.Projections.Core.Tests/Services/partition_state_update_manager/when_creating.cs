@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
         [Test]
         public void no_exceptions_are_thrown()
         {
-            var updateManager = new PartitionStateUpdateManager(new ProjectionNamesBuilder("projection"));
+            var updateManager = new PartitionStateUpdateManager(ProjectionNamesBuilder.CreateForTest("projection"));
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]

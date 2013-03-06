@@ -49,12 +49,12 @@ namespace EventStore.Projections.Core.Services.Processing
         public override CheckpointTag MakeCheckpointTag(
             CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
         {
-            return new CheckpointTag(comittedEvent.Data.Position);
+            return CheckpointTag.FromPosition(comittedEvent.Data.Position);
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()
         {
-            return new CheckpointTag(new EventPosition(0, -1));
+            return CheckpointTag.FromPosition(0, -1);
         }
     }
 }

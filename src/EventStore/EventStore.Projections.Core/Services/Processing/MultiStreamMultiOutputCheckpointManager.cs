@@ -47,14 +47,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Stack<Item> _loadQueue = new Stack<Item>();
         private CheckpointTag _loadingPrerecordedEventsFrom;
 
-        public MultiStreamMultiOutputCheckpointManager(IPublisher publisher, Guid projectionCorrelationId,
+        public MultiStreamMultiOutputCheckpointManager(IPublisher publisher, Guid projectionCorrelationId, int projectionVersion,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
             ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints = false)
-            : base(publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
+            : base(publisher, projectionCorrelationId, projectionVersion, readDispatcher, writeDispatcher, projectionConfig,
                 name, positionTagger, namingBuilder, resultEmitter, useCheckpoints, emitPartitionCheckpoints)
         {
             _positionTagger = positionTagger;
@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private EmittedStream CreateOrderStream(CheckpointTag from)
         {
             return new EmittedStream(
-                _namingBuilder.GetOrderStreamName(), _positionTagger.MakeZeroCheckpointTag(), from,
+                _namingBuilder.GetOrderStreamName(), _projectionVersion, _positionTagger.MakeZeroCheckpointTag(), from,
                 _readDispatcher, _writeDispatcher, /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger,
                 noCheckpoints: true);
         }
@@ -135,7 +135,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                 case ReadStreamResult.Success:
                                     foreach (var @event in completed.Events)
                                     {
-                                        var tag = @event.Event.Metadata.ParseCheckpointTagJson();
+                                        var tag = @event.Event.Metadata.ParseCheckpointTagJson().Tag;
                                         if (tag <= checkpointTag)
                                         {
                                             SetOrderStreamReadCompleted();

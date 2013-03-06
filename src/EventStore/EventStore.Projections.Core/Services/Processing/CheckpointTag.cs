@@ -49,12 +49,6 @@ namespace EventStore.Projections.Core.Services.Processing
             PreparePosition
         }
 
-        internal CheckpointTag()
-        {
-            Position = new EventPosition(long.MinValue, long.MinValue);
-            Mode_ = CalculateMode();
-        }
-
         private CheckpointTag(EventPosition position, Dictionary<string, int> streams)
         {
             Position = position;
@@ -68,7 +62,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Mode_ = CalculateMode();
         }
 
-        public CheckpointTag(EventPosition position)
+        private CheckpointTag(EventPosition position)
         {
             Position = position;
             Mode_ = CalculateMode();
@@ -281,6 +275,11 @@ namespace EventStore.Projections.Core.Services.Processing
             return new CheckpointTag(new EventPosition(commitPosition, preparePosition));
         }
 
+        public static CheckpointTag FromPosition(EventPosition position)
+        {
+            return new CheckpointTag(position);
+        }
+
         public static CheckpointTag FromPreparePosition(long preparePosition)
         {
             return new CheckpointTag(preparePosition);
@@ -364,7 +363,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return FromStreamPositions(resultDictionary);
         }
 
-        public byte[] ToJsonBytes()
+        public byte[] ToJsonBytes(int projectionVersion = -1)
         {
             using (var memoryStream = new MemoryStream())
             {
@@ -374,22 +373,28 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         case Mode.Position:
                             jsonWriter.WriteStartObject();
-                            jsonWriter.WritePropertyName("commitPosition");
+                            jsonWriter.WritePropertyName("v");
+                            jsonWriter.WriteValue(projectionVersion);
+                            jsonWriter.WritePropertyName("c");
                             jsonWriter.WriteValue(CommitPosition.GetValueOrDefault());
-                            jsonWriter.WritePropertyName("preparePosition");
+                            jsonWriter.WritePropertyName("p");
                             jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
                             jsonWriter.WriteEndObject();
                             break;
                         case Mode.PreparePosition:
                             jsonWriter.WriteStartObject();
-                            jsonWriter.WritePropertyName("preparePosition");
+                            jsonWriter.WritePropertyName("v");
+                            jsonWriter.WriteValue(projectionVersion);
+                            jsonWriter.WritePropertyName("p");
                             jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
                             jsonWriter.WriteEndObject();
                             break;
                         case Mode.Stream:
                         case Mode.MultiStream:
                             jsonWriter.WriteStartObject();
-                            jsonWriter.WritePropertyName("streams");
+                            jsonWriter.WritePropertyName("v");
+                            jsonWriter.WriteValue(projectionVersion);
+                            jsonWriter.WritePropertyName("s");
                             jsonWriter.WriteStartObject();
                             foreach (var stream in Streams)
                             {
@@ -404,13 +409,14 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public static CheckpointTag FromJson(JsonTextReader reader)
+        public static CheckpointTagVersion FromJson(JsonTextReader reader)
         {
             Check(reader.Read(), reader);
             Check(JsonToken.StartObject, reader);
             long? commitPosition = null;
             long? preparePosition = null;
             Dictionary<string, int> streams = null;
+            int projectionVersion = -1;
             while (true)
             {
                 Check(reader.Read(), reader);
@@ -420,14 +426,21 @@ namespace EventStore.Projections.Core.Services.Processing
                 var name = (string) reader.Value;
                 switch (name)
                 {
+                    case "v":
+                        Check(reader.Read(), reader);
+                        projectionVersion = (int)(long)reader.Value;
+                        break;
+                    case "c":
                     case "commitPosition":
                         Check(reader.Read(), reader);
                         commitPosition = (long) reader.Value;
                         break;
+                    case "p":
                     case "preparePosition":
                         Check(reader.Read(), reader);
                         preparePosition = (long) reader.Value;
                         break;
+                    case "s":
                     case "streams":
                         Check(reader.Read(), reader);
                         Check(JsonToken.StartObject, reader);
@@ -448,7 +461,13 @@ namespace EventStore.Projections.Core.Services.Processing
                         throw new Exception("Invalid JSON");
                 }
             }
-            return new CheckpointTag(new EventPosition(commitPosition ?? Int64.MinValue, preparePosition ?? Int64.MinValue), streams);
+            return new CheckpointTagVersion
+                {
+                    Tag =
+                        new CheckpointTag(
+                            new EventPosition(commitPosition ?? Int64.MinValue, preparePosition ?? Int64.MinValue), streams),
+                    Version = projectionVersion,
+                };
         }
 
         private static void Check(JsonToken type, JsonTextReader reader)
