@@ -77,6 +77,7 @@ function scope($on, $notify) {
     }
 
     function outputTo(resultStream, partitionResultStreamPattern) {
+        eventProcessor.$defines_state_transform();
         eventProcessor.options({
             resultStreamName: resultStream,
             partitionResultStreamNamePattern: partitionResultStreamPattern,
