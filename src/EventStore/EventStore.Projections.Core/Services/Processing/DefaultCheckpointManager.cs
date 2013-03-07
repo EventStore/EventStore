@@ -207,28 +207,36 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void OnLoadStateReadRequestCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message)
         {
-            string checkpointData = null;
-            CheckpointTag checkpointTag = null;
-            int checkpointEventNumber = -1;
             if (message.Events.Length > 0)
             {
                 EventRecord checkpoint = message.Events.FirstOrDefault(v => v.Event.EventType == "ProjectionCheckpoint").Event;
                 if (checkpoint != null)
                 {
-                    checkpointData = Encoding.UTF8.GetString(checkpoint.Data);
-                    checkpointTag = checkpoint.Metadata.ParseCheckpointTagJson(_projectionEpoch).Tag;
-                    checkpointEventNumber = checkpoint.EventNumber;
+                    var parsed = checkpoint.Metadata.ParseCheckpointTagJson(_projectionEpoch);
+                    if (parsed.Version >= _projectionEpoch)
+                    {
+                        //TODO: check epoch and correctly set _lastWrittenCheckpointEventNumber
+                        var checkpointData = Encoding.UTF8.GetString(checkpoint.Data);
+                        _lastWrittenCheckpointEventNumber = checkpoint.EventNumber;
+                        CheckpointLoaded(parsed.Tag, checkpointData);
+                    }
+                    else
+                    {
+                        _lastWrittenCheckpointEventNumber = ExpectedVersion.NoStream;
+                        CheckpointLoaded(null, null);
+                    }
+                    return;
                 }
             }
 
-            if (checkpointTag == null && message.NextEventNumber != -1)
+            if (message.NextEventNumber != -1)
             {
                 _nextStateIndexToRequest = message.NextEventNumber;
                 RequestLoadState();
                 return;
             }
-            _lastWrittenCheckpointEventNumber = checkpointEventNumber;
-            CheckpointLoaded(checkpointTag, checkpointData);
+            _lastWrittenCheckpointEventNumber = ExpectedVersion.NoStream;
+            CheckpointLoaded(null, null);
         }
 
         protected override void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag)
@@ -267,12 +275,24 @@ namespace EventStore.Projections.Core.Services.Processing
                 EventRecord @event = message.Events[0].Event;
                 if (@event.EventType == stateEventType)
                 {
-                    var loadedStateCheckpointTag = @event.Metadata.ParseCheckpointTagJson(_projectionEpoch).Tag;
-                    // always recovery mode? skip until state before current event
-                    //TODO: skip event processing in case we know i has been already processed
-                    if (loadedStateCheckpointTag < requestedStateCheckpointTag)
+                    var parsed = @event.Metadata.ParseCheckpointTagJson(_projectionEpoch);
+                    if (parsed.Version >= _projectionEpoch)
                     {
-                        var state = PartitionState.Deserialize(Encoding.UTF8.GetString(@event.Data), loadedStateCheckpointTag);
+
+                        var loadedStateCheckpointTag = parsed.Tag;
+                        // always recovery mode? skip until state before current event
+                        //TODO: skip event processing in case we know i has been already processed
+                        if (loadedStateCheckpointTag < requestedStateCheckpointTag)
+                        {
+                            var state = PartitionState.Deserialize(
+                                Encoding.UTF8.GetString(@event.Data), loadedStateCheckpointTag);
+                            loadCompleted(state);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        var state = new PartitionState("", null, _zeroTag);
                         loadCompleted(state);
                         return;
                     }

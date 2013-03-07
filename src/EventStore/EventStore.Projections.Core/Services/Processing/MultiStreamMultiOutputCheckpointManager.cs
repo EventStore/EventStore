@@ -134,9 +134,16 @@ namespace EventStore.Projections.Core.Services.Processing
                                     PrerecordedEventsLoaded(checkpointTag);
                                     break;
                                 case ReadStreamResult.Success:
+                                    var epochEnded = false;
                                     foreach (var @event in completed.Events)
                                     {
-                                        var tag = @event.Event.Metadata.ParseCheckpointTagJson(_projectionEpoch).Tag;
+                                        var parsed = @event.Event.Metadata.ParseCheckpointTagJson(_projectionEpoch);
+                                        if (parsed.Version < _projectionEpoch)
+                                        {
+                                            epochEnded = true;
+                                            break;
+                                        }
+                                        var tag = parsed.Tag;
                                         //NOTE: even if this tag <= checkpointTag we set last tag
                                         // this is to know the exact last tag to request when writing
                                         if (_lastOrderCheckpointTag == null)
@@ -149,7 +156,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                         }
                                         EnqueuePrerecordedEvent(@event.Event, tag);
                                     }
-                                    if (completed.IsEndOfStream)
+                                    if (epochEnded || completed.IsEndOfStream)
                                         SetOrderStreamReadCompleted();
                                     else
                                         BeginLoadPrerecordedEventsChunk(checkpointTag, completed.NextEventNumber);
