@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                         new EventRecord(
                             11, 100, Guid.NewGuid(), _secondEventId, 100, 0, "stream", ExpectedVersion.Any,
                             DateTime.UtcNow,
-                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsJson,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
                         }, "", 12, 11, true, 200));
         }
@@ -123,6 +123,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             Assert.AreEqual(0, second.Data.Position.CommitPosition);
             Assert.AreEqual(50, first.SafeTransactionFileReaderJoinPosition);
             Assert.AreEqual(100, second.SafeTransactionFileReaderJoinPosition);
+            Assert.IsFalse(first.Data.IsJson);
+            Assert.IsTrue(second.Data.IsJson);
         }
 
         [Test]
