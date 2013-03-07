@@ -28,7 +28,6 @@
 
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;

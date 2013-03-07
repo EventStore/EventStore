@@ -57,6 +57,7 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<ProjectionManagementMessage.GetDebugState>,
                                      IHandle<ProjectionManagementMessage.Disable>,
                                      IHandle<ProjectionManagementMessage.Enable>,
+                                     IHandle<ProjectionManagementMessage.Reset>,
                                      IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
                                      IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
                                      IHandle<ProjectionManagementMessage.Internal.Deleted>,
@@ -235,6 +236,20 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Enable message)
         {
             _logger.Info("Enabling '{0}' projection", message.Name);
+
+            var projection = GetProjection(message.Name);
+            if (projection == null)
+            {
+                _logger.Error("DBG: PROJECTION *{0}* NOT FOUND!!!", message.Name);
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
+            }
+            else
+                projection.Handle(message);
+        }
+
+        public void Handle(ProjectionManagementMessage.Reset message)
+        {
+            _logger.Info("Resetting '{0}' projection", message.Name);
 
             var projection = GetProjection(message.Name);
             if (projection == null)

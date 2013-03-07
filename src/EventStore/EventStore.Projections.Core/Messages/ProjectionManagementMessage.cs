@@ -551,6 +551,28 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class Reset : Message
+        {
+            private readonly IEnvelope _envelope;
+            private readonly string _name;
+
+            public Reset(IEnvelope envelope, string name)
+            {
+                _envelope = envelope;
+                _name = name;
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+        }
+
         public class CancelExecutionMessage : Message
         {
             private readonly Action _action;

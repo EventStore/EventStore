@@ -191,6 +191,8 @@ namespace EventStore.Projections.Core.Services.Management
                 status = new ProjectionStatistics
                     {
                         Name = _name,
+                        Epoch = -1,
+                        Version = -1,
                         Mode = GetMode(),
                         Status = _state.EnumValueName(),
                         MasterStatus = _state
@@ -308,6 +310,20 @@ namespace EventStore.Projections.Core.Services.Management
                 () => Start(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
             UpdateProjectionVersion();
             Prepare(() => BeginWrite(completed));
+        }
+
+        public void Handle(ProjectionManagementMessage.Reset message)
+        {
+            _lastAccessed = _timeProvider.Now;
+            if (Enabled)
+            {
+                message.Envelope.ReplyWith(
+                    new ProjectionManagementMessage.OperationFailed("Must be disabled before resetting"));
+                return;
+            }
+            UpdateProjectionVersion();
+            _persistedState.Epoch = _persistedState.Version;
+            Prepare(() => BeginWrite(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name))));
         }
 
         public void Handle(ProjectionManagementMessage.Delete message)

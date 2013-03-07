@@ -242,6 +242,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointManager.GetStatistics(info);
             info.Status = _state.EnumValueName() + info.Status + _processingQueue.GetStatus();
             info.Name = _name;
+            info.EffectiveName = _name;
+            info.Epoch = _epoch;
+            info.Version = _version;
             info.StateReason = "";
             info.BufferedEvents = _processingQueue.GetBufferedEventCount();
             info.PartitionsCached = _partitionStateCache.CachedItemCount;

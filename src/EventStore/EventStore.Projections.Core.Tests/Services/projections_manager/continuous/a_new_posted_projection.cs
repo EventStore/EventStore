@@ -47,6 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             protected ProjectionMode _projectionMode;
             protected bool _checkpointsEnabled;
             protected bool _emitEnabled;
+            protected bool _projectionEnabled;
 
             protected override void Given()
             {
@@ -58,7 +59,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 _projectionMode = ProjectionMode.Continuous;
                 _checkpointsEnabled = true;
                 _emitEnabled = true;
-
+                _projectionEnabled = true;
+                
                 NoStream("$projections-test-projection-checkpoint");
                 NoStream("$projections-test-projection-order");
                 AllWritesSucceed();
@@ -70,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 _manager.Handle(
                     new ProjectionManagementMessage.Post(
                         new PublishEnvelope(_bus), _projectionMode, _projectionName,
-                        "native:" + _fakeProjectionType.AssemblyQualifiedName, _projectionSource, enabled: true,
+                        "native:" + _fakeProjectionType.AssemblyQualifiedName, _projectionSource, enabled: _projectionEnabled,
                         checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
             }
         }
