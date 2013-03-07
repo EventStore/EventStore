@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
 
         protected override void Given()
         {
-            ExistingEvent("test_stream", "type", @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "data");
+            ExistingEvent("test_stream", "type", @"{""commitPosition"": 100, ""preparePosition"": 50}", "data");
         }
 
         [SetUp]
@@ -99,8 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[] { new EmittedDataEvent("test_stream", Guid.NewGuid(), "type", "data",
                 CheckpointTag.FromPosition(200, 150), CheckpointTag.FromPosition(100, 50)) });
             var metaData =
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single().Events[0].Metadata.ParseJson
-                    <CheckpointTagJson>();
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single().Events[0].Metadata.ParseCheckpointTagJson();
             Assert.AreEqual(200, metaData.CommitPosition);
             Assert.AreEqual(150, metaData.PreparePosition);
         }

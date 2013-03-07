@@ -50,12 +50,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     ""SourceDefinition"":{
                         ""AllEvents"":true,
                         ""AllStreams"":false,
-                        ""Streams"":[""$ce-test""]
+                        ""streams"":[""$ce-test""]
                     }
                 }");    
-            ExistingEvent("$projections-test-projection-a-checkpoint", "Checkpoint", @"{""Streams"":{""$ce-test"": 9}}", @"{""data"":1}");
+            ExistingEvent("$projections-test-projection-a-checkpoint", "Checkpoint", @"{""streams"":{""$ce-test"": 9}}", @"{""data"":1}");
             NoStream("$projections-test-projection-b-checkpoint");
-            ExistingEvent("$projections-test-projection-checkpoint", "ProjectionCheckpoint", @"{""Streams"":{""$ce-test"": 10}}", @"{}");
+            ExistingEvent("$projections-test-projection-checkpoint", "ProjectionCheckpoint", @"{""streams"":{""$ce-test"": 10}}", @"{}");
             AllWritesSucceed();
         }
 

@@ -180,6 +180,7 @@ namespace EventStore.Projections.Core.Services.v8
                 data.Data.Trim(), // trimming data passed to a JS 
                 new[]
                     {
+                        data.IsJson ? "1" : "",
                         data.EventStreamId, data.EventType, category ?? "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
                         data.Metadata, partition
                     });

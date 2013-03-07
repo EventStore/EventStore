@@ -15,9 +15,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         protected override void Given()
         {
             AllWritesQueueUp();
-            ExistingEvent("test_stream", "type1", @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "data");
-            ExistingEvent("test_stream", "type2", @"{""CommitPosition"": 200, ""PreparePosition"": 150}", "data");
-            ExistingEvent("test_stream", "type3", @"{""CommitPosition"": 300, ""PreparePosition"": 250}", "data");
+            ExistingEvent("test_stream", "type1", @"{""commitPosition"": 100, ""preparePosition"": 50}", "data");
+            ExistingEvent("test_stream", "type2", @"{""commitPosition"": 200, ""preparePosition"": 150}", "data");
+            ExistingEvent("test_stream", "type3", @"{""commitPosition"": 300, ""preparePosition"": 250}", "data");
         }
 
         [SetUp]

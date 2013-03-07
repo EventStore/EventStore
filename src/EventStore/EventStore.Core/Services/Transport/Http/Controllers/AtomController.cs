@@ -209,7 +209,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(entity, string.Format("'{0}' is not valid count. Should be positive integer", count));
                 return;
             }
-            OnGetStreamFeedCore(entity, stream, startIdx, cnt, embed, headOfStream: false);
+            OnGetStreamFeedCore(entity, stream, startIdx, cnt, embed, headOfStream: startIdx == -1);
         }
 
         private void OnGetStreamFeedCore(HttpEntity entity, string stream, int start, int count, EmbedLevel embed, bool headOfStream)

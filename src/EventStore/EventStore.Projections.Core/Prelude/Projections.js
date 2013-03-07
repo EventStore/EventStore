@@ -49,8 +49,8 @@ var $projections = {
                 return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata);
             },
 
-            process_event: function (event, streamId, eventType, category, sequenceNumber, metadata, partition) {
-                processEvent(event, streamId, eventType, category, sequenceNumber, metadata, partition);
+            process_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition) {
+                processEvent(event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition);
                 var stateJson = JSON.stringify(projectionState);
                 return stateJson;
             },
@@ -155,7 +155,7 @@ var $projections = {
 
         }
 
-         function processEvent(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw, partition) {
+         function processEvent(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, partition) {
 
             var eventName = eventType;
 
@@ -181,7 +181,7 @@ var $projections = {
 
             eventHandler = eventHandlers[eventName];
 
-            if (eventHandler !== undefined || anyEventHandlers.length > 0) 
+            if (isJson && (eventHandler !== undefined || anyEventHandlers.length > 0)) 
                 tryDeserializeBody(eventEnvelope);
 
             for (index = 0; index < anyEventHandlers.length; index++) {

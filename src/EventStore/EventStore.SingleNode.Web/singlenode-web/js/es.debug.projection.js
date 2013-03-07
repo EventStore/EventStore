@@ -121,6 +121,7 @@
                     processor.set_state(data);
                 processor.process_event(
                     first.bodyRaw,
+                    "1", // isJson
                     first.streamId,
                     first.eventType,
                     first.category,

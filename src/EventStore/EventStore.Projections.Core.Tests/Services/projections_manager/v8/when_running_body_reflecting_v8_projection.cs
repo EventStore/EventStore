@@ -27,40 +27,49 @@
 // 
 
 using System;
-using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection
+namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
 {
     [TestFixture]
-    public class when_the_state_handler_does_not_process_event_the_projection_should :
-        TestFixtureWithCoreProjectionStarted
+    public class when_running_body_reflecting_v8_projection : TestFixtureWithJsProjection
     {
         protected override void Given()
         {
-            ExistingEvent(
-                "$projections-projection-result", "Result", @"{""commitPosition"": 100, ""preparePosition"": 50}", "{}");
-            ExistingEvent(
-                "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""commitPosition"": 100, ""preparePosition"": 50}", "{}");
+            _projection = @"
+                fromAll().when({$any: 
+                    function(state, event) {
+                        if (event.body) 
+                            return event.body; 
+                            else return {};
+                    }
+                });
+            ";
         }
 
-        protected override void When()
+        [Test, Category("v8")]
+        public void process_event_should_reflect_event()
         {
-            //projection subscribes here
-            _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    new ResolvedEvent(
-                        "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(120, 110),
-                        Guid.NewGuid(), "skip_this_type", false, new byte[0], new byte[0], default(DateTime)),
-                    Guid.Empty, _subscriptionId, 0));
+            string state;
+            EmittedEvent[] emittedEvents;
+            _stateHandler.ProcessEvent(
+                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                @"{""a"":""b""}", out state, out emittedEvents);
+            Assert.AreEqual(@"{""a"":""b""}", state);
         }
 
-        [Test]
-        public void not_update_state_snapshot()
+        [Test, Category("v8")]
+        public void process_event_should_not_reflect_non_json_events_even_if_valid_json()
         {
-            Assert.AreEqual(0, _writeEventHandler.HandledMessages.Count);
+            string state;
+            EmittedEvent[] emittedEvents;
+            _stateHandler.ProcessEvent(
+                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                @"{""a"":""b""}", out state, out emittedEvents, isJson: false);
+            Assert.AreEqual(@"{}", state);
         }
+
     }
 }

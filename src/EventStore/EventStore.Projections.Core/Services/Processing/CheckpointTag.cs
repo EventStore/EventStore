@@ -212,12 +212,6 @@ namespace EventStore.Projections.Core.Services.Processing
             return !(left == right);
         }
 
-        public static implicit operator CheckpointTag (CheckpointTagJson source)
-        {
-            return source == null ? null : new CheckpointTag(source.Position, source.Streams);
-        }
-
-
         protected bool Equals(CheckpointTag other)
         {
             var leftMode = Mode_;
@@ -408,6 +402,65 @@ namespace EventStore.Projections.Core.Services.Processing
                     }
                 return memoryStream.ToArray();
             }
+        }
+
+        public static CheckpointTag FromJson(JsonTextReader reader)
+        {
+            Check(reader.Read(), reader);
+            Check(JsonToken.StartObject, reader);
+            long? commitPosition = null;
+            long? preparePosition = null;
+            Dictionary<string, int> streams = null;
+            while (true)
+            {
+                Check(reader.Read(), reader);
+                if (reader.TokenType == JsonToken.EndObject)
+                    break;
+                Check(JsonToken.PropertyName, reader);
+                var name = (string) reader.Value;
+                switch (name)
+                {
+                    case "commitPosition":
+                        Check(reader.Read(), reader);
+                        commitPosition = (long) reader.Value;
+                        break;
+                    case "preparePosition":
+                        Check(reader.Read(), reader);
+                        preparePosition = (long) reader.Value;
+                        break;
+                    case "streams":
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.StartObject, reader);
+                        streams = new Dictionary<string, int>();
+                        while (true)
+                        {
+                            Check(reader.Read(), reader);
+                            if (reader.TokenType == JsonToken.EndObject)
+                                break;
+                            Check(JsonToken.PropertyName, reader);
+                            var streamName = (string) reader.Value;
+                            Check(reader.Read(), reader);
+                            var position = (int)(long) reader.Value;
+                            streams.Add(streamName, position);
+                        }
+                        break;
+                    default:
+                        throw new Exception("Invalid JSON");
+                }
+            }
+            return new CheckpointTag(new EventPosition(commitPosition ?? Int64.MinValue, preparePosition ?? Int64.MinValue), streams);
+        }
+
+        private static void Check(JsonToken type, JsonTextReader reader)
+        {
+            if (reader.TokenType != type)
+                throw new Exception("Invalid JSON");
+        }
+
+        private static void Check(bool read, JsonTextReader reader)
+        {
+            if (!read)
+                throw new Exception("Invalid JSON");
         }
     }
 }

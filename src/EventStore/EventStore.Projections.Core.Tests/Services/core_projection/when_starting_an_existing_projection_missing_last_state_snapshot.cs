@@ -42,13 +42,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void Given()
         {
             ExistingEvent(
-                "$projections-projection-result", "Result", @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
+                "$projections-projection-result", "Result", @"{""commitPosition"": 100, ""preparePosition"": 50}", "{}");
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
+                @"{""commitPosition"": 100, ""preparePosition"": 50}", "{}");
             ExistingEvent(
                 FakeProjectionStateHandler._emit1StreamId, FakeProjectionStateHandler._emit1EventType,
-                @"{""CommitPosition"": 120, ""PreparePosition"": 110}", FakeProjectionStateHandler._emit1Data);
+                @"{""commitPosition"": 120, ""preparePosition"": 110}", FakeProjectionStateHandler._emit1Data);
             NoStream("$projections-projection-order");
             AllWritesToSucceed("$projections-projection-order");
         }

@@ -42,16 +42,16 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             ExistingEvent(
                 "$projections-projection-result", "Result",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", _testProjectionState);
+                @"{""commitPosition"": 100, ""preparePosition"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", _testProjectionState);
+                @"{""commitPosition"": 100, ""preparePosition"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-result", "Result",
-                @"{""CommitPosition"": 200, ""PreparePosition"": 150}", _testProjectionState);
+                @"{""commitPosition"": 200, ""preparePosition"": 150}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-result", "Result",
-                @"{""CommitPosition"": 300, ""PreparePosition"": 250}", _testProjectionState);
+                @"{""commitPosition"": 300, ""preparePosition"": 250}", _testProjectionState);
         }
 
         protected override void When()

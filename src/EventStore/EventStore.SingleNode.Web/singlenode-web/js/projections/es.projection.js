@@ -41,6 +41,7 @@ es.projection = function (settings) {
             var parsedEvent = event;
 
             var stateStr = processor.process_event(parsedEvent.data,
+                            "1", // isJson
                             parsedEvent.eventStreamId,
                             parsedEvent.eventType,
                             category,
