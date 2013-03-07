@@ -409,14 +409,14 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public static CheckpointTagVersion FromJson(JsonTextReader reader)
+        public static CheckpointTagVersion FromJson(JsonTextReader reader, int currentEpoch)
         {
             Check(reader.Read(), reader);
             Check(JsonToken.StartObject, reader);
             long? commitPosition = null;
             long? preparePosition = null;
             Dictionary<string, int> streams = null;
-            int projectionVersion = -1;
+            int projectionVersion = currentEpoch;
             while (true)
             {
                 Check(reader.Read(), reader);
@@ -428,7 +428,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     case "v":
                         Check(reader.Read(), reader);
-                        projectionVersion = (int)(long)reader.Value;
+                        var v = (int) (long) reader.Value;
+                        if (v > 0) // TODO: remove this if with time
+                            projectionVersion = v;
                         break;
                     case "c":
                     case "commitPosition":

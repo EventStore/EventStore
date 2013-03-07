@@ -34,6 +34,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -319,7 +320,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     EventReaderCorrelationId,
                     new ResolvedEvent(
                         streamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
-                        default(EventPosition), @event.EventId, @event.EventType, false, @event.Data, @event.Metadata,
+                        default(EventPosition), @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata,
                         positionEvent.TimeStamp), _stopOnEof ? (long?) null : positionEvent.LogPosition, progress));
         }
     }

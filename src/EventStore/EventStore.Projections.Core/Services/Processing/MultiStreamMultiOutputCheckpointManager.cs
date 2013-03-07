@@ -32,7 +32,6 @@ using System.Text;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -47,15 +46,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Stack<Item> _loadQueue = new Stack<Item>();
         private CheckpointTag _loadingPrerecordedEventsFrom;
 
-        public MultiStreamMultiOutputCheckpointManager(IPublisher publisher, Guid projectionCorrelationId, int projectionVersion,
+        public MultiStreamMultiOutputCheckpointManager(
+            IPublisher publisher, Guid projectionCorrelationId, int projectionEpoch, int projectionVersion,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
             ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints = false)
-            : base(publisher, projectionCorrelationId, projectionVersion, readDispatcher, writeDispatcher, projectionConfig,
-                name, positionTagger, namingBuilder, resultEmitter, useCheckpoints, emitPartitionCheckpoints)
+            : base(
+                publisher, projectionCorrelationId, projectionEpoch, projectionVersion, readDispatcher, writeDispatcher,
+                projectionConfig, name, positionTagger, namingBuilder, resultEmitter, useCheckpoints,
+                emitPartitionCheckpoints)
         {
             _positionTagger = positionTagger;
         }
@@ -71,13 +73,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void Start(CheckpointTag checkpointTag)
         {
             base.Start(checkpointTag);
-            _lastOrderCheckpointTag = checkpointTag;
-            _orderStream = CreateOrderStream(_lastOrderCheckpointTag);
+            _orderStream = CreateOrderStream(checkpointTag);
             _orderStream.Start();
         }
 
-        public override void RecordEventOrder(
-            ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed)
+        public override void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action committed)
         {
             EnsureStarted();
             if (_stopping)
@@ -88,16 +88,16 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         new EmittedDataEvent(
                     orderStreamName, Guid.NewGuid(), "$>",
-                    message.Data.PositionSequenceNumber + "@" + message.Data.PositionStreamId, message.CheckpointTag,
+                    resolvedEvent.PositionSequenceNumber + "@" + resolvedEvent.PositionStreamId, orderCheckpointTag,
                     _lastOrderCheckpointTag, v => committed())
                     });
-            _lastOrderCheckpointTag = message.CheckpointTag;
+            _lastOrderCheckpointTag = orderCheckpointTag;
         }
 
         private EmittedStream CreateOrderStream(CheckpointTag from)
         {
             return new EmittedStream(
-                _namingBuilder.GetOrderStreamName(), _projectionVersion, _positionTagger.MakeZeroCheckpointTag(), from,
+                _namingBuilder.GetOrderStreamName(), _projectionEpoch, _projectionVersion, _positionTagger.MakeZeroCheckpointTag(), from,
                 _readDispatcher, _writeDispatcher, /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger,
                 noCheckpoints: true);
         }
@@ -125,17 +125,23 @@ namespace EventStore.Projections.Core.Services.Processing
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, _namingBuilder.GetOrderStreamName(), fromEventNumber, 100,
-                    false, null), completed =>
+                    resolveLinks: false, validationStreamVersion: null), completed =>
                         {
                             switch (completed.Result)
                             {
                                 case ReadStreamResult.NoStream:
+                                    _lastOrderCheckpointTag = _positionTagger.MakeZeroCheckpointTag();
                                     PrerecordedEventsLoaded(checkpointTag);
                                     break;
                                 case ReadStreamResult.Success:
                                     foreach (var @event in completed.Events)
                                     {
-                                        var tag = @event.Event.Metadata.ParseCheckpointTagJson().Tag;
+                                        var tag = @event.Event.Metadata.ParseCheckpointTagJson(_projectionEpoch).Tag;
+                                        //NOTE: even if this tag <= checkpointTag we set last tag
+                                        // this is to know the exact last tag to request when writing
+                                        if (_lastOrderCheckpointTag == null)
+                                            _lastOrderCheckpointTag = tag; 
+
                                         if (tag <= checkpointTag)
                                         {
                                             SetOrderStreamReadCompleted();
@@ -165,7 +171,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var item = new Item(tag);
             _loadQueue.Push(item);
-
+            //NOTE: we do manual link-to resolution to avoid too many resolves when 
+            // reading long batch (thousands of events), but actually replaying just 
+            // a small portion
             var linkTo = Encoding.UTF8.GetString(@event.Data);
             string[] parts = linkTo.Split('@');
             int eventNumber = int.Parse(parts[0]);

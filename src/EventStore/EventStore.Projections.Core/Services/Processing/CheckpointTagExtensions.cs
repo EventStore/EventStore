@@ -45,15 +45,15 @@ namespace EventStore.Projections.Core.Services.Processing
             if (string.IsNullOrEmpty(source))
                 return null;
             var reader = new JsonTextReader(new StringReader(source));
-            return CheckpointTag.FromJson(reader).Tag;
+            return CheckpointTag.FromJson(reader, -1).Tag;
         }
 
-        public static CheckpointTagVersion ParseCheckpointTagJson(this byte[] source)
+        public static CheckpointTagVersion ParseCheckpointTagJson(this byte[] source, int currentEpoch)
         {
             if (source == null || source.Length == 0)
-                return new CheckpointTagVersion { Version = -1, Tag = null };
+                return new CheckpointTagVersion { Version = currentEpoch, Tag = null };
             var reader = new JsonTextReader(new StreamReader(new MemoryStream(source)));
-            return CheckpointTag.FromJson(reader);
+            return CheckpointTag.FromJson(reader, currentEpoch);
         }
     }
 }
