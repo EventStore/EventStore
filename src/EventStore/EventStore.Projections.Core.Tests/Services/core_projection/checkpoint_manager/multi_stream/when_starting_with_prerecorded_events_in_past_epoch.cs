@@ -87,7 +87,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         }
 
         [Test]
-        public void sends_correct_prerecoded_events_loaded_message()
+        public void sends_correct_prerecorded_events_loaded_message()
         {
             Assert.AreEqual(1, _projection._prerecordedEventsLoadedMessages.Count);
             Assert.AreEqual(

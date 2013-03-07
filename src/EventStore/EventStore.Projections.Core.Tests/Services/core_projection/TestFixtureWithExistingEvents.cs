@@ -36,7 +36,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -140,10 +139,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             _lastMessageReplies.Clear();
+            Given1();
             Given();
             _lastPosition =
                 _lastMessageReplies.Values.Max(v => v == null ? (long?) 0 : v.Max(u => (long?) u.LogPosition))
                 ?? 0 + 100;
+        }
+
+        protected virtual void Given1()
+        {
         }
 
         protected virtual void Given()
