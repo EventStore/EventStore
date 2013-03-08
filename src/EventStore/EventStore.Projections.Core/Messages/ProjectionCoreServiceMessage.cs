@@ -121,7 +121,7 @@ namespace EventStore.Projections.Core.Messages
                     correlationId,
                     new ResolvedEvent(
                         positionStreamId, positionSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo,
-                        position, eventId, eventType, isJson, data, metadata, default(DateTime)),
+                        position, eventId, eventType, isJson, data, metadata, null, default(DateTime)),
                     safeTransactionFileReaderJoinPosition, progress);
             }
 
@@ -134,7 +134,7 @@ namespace EventStore.Projections.Core.Messages
                     correlationId,
                     new ResolvedEvent(
                         eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo, position,
-                        eventId, eventType, isJson, data, metadata, timestamp.GetValueOrDefault()),
+                        eventId, eventType, isJson, data, metadata, null, timestamp.GetValueOrDefault()),
                     position.PreparePosition, 11.1f);
             }
 

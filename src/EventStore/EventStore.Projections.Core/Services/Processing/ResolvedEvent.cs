@@ -50,11 +50,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public readonly string Data;
         public readonly string Metadata;
+        public readonly string PositionMetadata;
 
         public ResolvedEvent(
             string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
             bool resolvedLinkTo, EventPosition position, Guid eventId, string eventType, bool isJson, byte[] data,
-            byte[] metadata, DateTime timestamp)
+            byte[] metadata, byte[] positionMetadata, DateTime timestamp)
         {
             if (Guid.Empty == eventId)
                 throw new ArgumentException("Empty eventId provided.");
@@ -75,7 +76,9 @@ namespace EventStore.Projections.Core.Services.Processing
             //TODO: handle utf-8 conversion exception
             Data = Encoding.UTF8.GetString(data);
             Metadata = Encoding.UTF8.GetString(metadata);
+            PositionMetadata = positionMetadata != null ? Encoding.UTF8.GetString(positionMetadata) : null;
         }
+
 
         public ResolvedEvent(
             string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,

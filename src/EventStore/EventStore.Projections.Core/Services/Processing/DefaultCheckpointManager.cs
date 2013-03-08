@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointEventToBePublished = new Event(
                 Guid.NewGuid(), "ProjectionCheckpoint", true,
                 requestedCheckpointState == null ? null : Encoding.UTF8.GetBytes(requestedCheckpointState),
-                requestedCheckpointPosition.ToJsonBytes(_projectionVersion));
+                requestedCheckpointPosition.ToJsonBytes(projectionVersion: _projectionVersion));
             PublishWriteCheckpointEvent();
         }
 

@@ -224,6 +224,7 @@
     <Compile Include="Services\Processing\ResolvedEvent.cs" />
     <Compile Include="Services\Processing\ResultEmitter.cs" />
     <Compile Include="Services\Processing\SourceDefintionRecorder.cs" />
+    <Compile Include="Services\Processing\EmittedLinkToWithRecategorization.cs" />
     <Compile Include="Services\Processing\StagedProcessingQueue.cs" />
     <Compile Include="Services\Processing\StatePartitionSelector.cs" />
     <Compile Include="Services\Processing\StreamEventFilter.cs" />

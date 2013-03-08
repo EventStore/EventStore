@@ -26,8 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -36,6 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         public int Version;
         public CheckpointTag Tag;
+        public Dictionary<string, JToken> ExtraMetadata;
     }
 
     public static class CheckpointTagExtensions
@@ -53,6 +56,14 @@ namespace EventStore.Projections.Core.Services.Processing
             if (source == null || source.Length == 0)
                 return new CheckpointTagVersion { Version = currentEpoch, Tag = null };
             var reader = new JsonTextReader(new StreamReader(new MemoryStream(source)));
+            return CheckpointTag.FromJson(reader, currentEpoch);
+        }
+
+        public static CheckpointTagVersion ParseCheckpointTagJson(this string source, int currentEpoch)
+        {
+            if (string.IsNullOrEmpty(source))
+                return new CheckpointTagVersion { Version = currentEpoch, Tag = null };
+            var reader = new JsonTextReader(new StringReader(source));
             return CheckpointTag.FromJson(reader, currentEpoch);
         }
     }

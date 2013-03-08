@@ -33,6 +33,7 @@ using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -363,35 +364,32 @@ namespace EventStore.Projections.Core.Services.Processing
             return FromStreamPositions(resultDictionary);
         }
 
-        public byte[] ToJsonBytes(int projectionVersion = -1)
+        public byte[] ToJsonBytes(int projectionVersion = -1, IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
         {
             using (var memoryStream = new MemoryStream())
             {
                 using (var textWriter = new StreamWriter(memoryStream, _utf8NoBom))
                 using (var jsonWriter = new JsonTextWriter(textWriter))
+                {
+                    jsonWriter.WriteStartObject();
                     switch (Mode_)
                     {
                         case Mode.Position:
-                            jsonWriter.WriteStartObject();
                             jsonWriter.WritePropertyName("$v");
                             jsonWriter.WriteValue(projectionVersion);
                             jsonWriter.WritePropertyName("$c");
                             jsonWriter.WriteValue(CommitPosition.GetValueOrDefault());
                             jsonWriter.WritePropertyName("$p");
                             jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
-                            jsonWriter.WriteEndObject();
                             break;
                         case Mode.PreparePosition:
-                            jsonWriter.WriteStartObject();
                             jsonWriter.WritePropertyName("$v");
                             jsonWriter.WriteValue(projectionVersion);
                             jsonWriter.WritePropertyName("$p");
                             jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
-                            jsonWriter.WriteEndObject();
                             break;
                         case Mode.Stream:
                         case Mode.MultiStream:
-                            jsonWriter.WriteStartObject();
                             jsonWriter.WritePropertyName("$v");
                             jsonWriter.WriteValue(projectionVersion);
                             jsonWriter.WritePropertyName("$s");
@@ -402,9 +400,18 @@ namespace EventStore.Projections.Core.Services.Processing
                                 jsonWriter.WriteValue(stream.Value);
                             }
                             jsonWriter.WriteEndObject();
-                            jsonWriter.WriteEndObject();
                             break;
                     }
+                    if (extraMetaData != null)
+                    {
+                        foreach (var pair in extraMetaData)
+                        {
+                            jsonWriter.WritePropertyName(pair.Key);
+                            jsonWriter.WriteRawValue(pair.Value);
+                        }
+                    }
+                    jsonWriter.WriteEndObject();
+                }
                 return memoryStream.ToArray();
             }
         }
@@ -416,6 +423,7 @@ namespace EventStore.Projections.Core.Services.Processing
             long? commitPosition = null;
             long? preparePosition = null;
             Dictionary<string, int> streams = null;
+            Dictionary<string, JToken> extra = null;
             int projectionVersion = currentEpoch;
             while (true)
             {
@@ -464,7 +472,12 @@ namespace EventStore.Projections.Core.Services.Processing
                         }
                         break;
                     default:
-                        throw new Exception("Invalid JSON");
+                        if (extra == null)
+                            extra = new Dictionary<string, JToken>();
+                        Check(reader.Read(), reader);
+                        var jToken = JToken.ReadFrom(reader);
+                        extra.Add(name, jToken);
+                        break;
                 }
             }
             return new CheckpointTagVersion
@@ -473,6 +486,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         new CheckpointTag(
                             new EventPosition(commitPosition ?? Int64.MinValue, preparePosition ?? Int64.MinValue), streams),
                     Version = projectionVersion,
+                    ExtraMetadata = extra,
                 };
         }
 
