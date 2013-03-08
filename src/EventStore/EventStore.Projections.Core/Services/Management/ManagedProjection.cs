@@ -835,6 +835,9 @@ namespace EventStore.Projections.Core.Services.Management
 
             //TODO: set false if options == null?
 
+            if (_sourceDefinition.Options != null && _sourceDefinition.Options.IncludeLinks)
+                builder.SetIncludeLinks(_sourceDefinition.Options.IncludeLinks);
+
             if (_sourceDefinition.Options != null && !string.IsNullOrEmpty(_sourceDefinition.Options.ResultStreamName))
                 builder.SetResultStreamNameOption(_sourceDefinition.Options.ResultStreamName);
 

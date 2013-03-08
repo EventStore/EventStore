@@ -121,6 +121,8 @@ namespace EventStore.Projections.Core.Services.v8
                 builder.SetByStream();
             if (sourcesDefintion.ByCustomPartitions)
                 builder.SetByCustomPartitions();
+            if (sourcesDefintion.Options.IncludeLinks)
+                builder.SetIncludeLinks();
             if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.ResultStreamName))
                 builder.SetResultStreamNameOption(sourcesDefintion.Options.ResultStreamName);
             if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.PartitionResultStreamNamePattern))

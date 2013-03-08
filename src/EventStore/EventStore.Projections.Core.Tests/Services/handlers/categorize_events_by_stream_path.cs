@@ -96,8 +96,8 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
                 _result = _handler.ProcessEvent(
                     "", CheckpointTag.FromPosition(200, 150), null,
                     new ResolvedEvent(
-                        "cat2-stream2", 20, "cat1-stream1", 10, true, new EventPosition(200, 150), Guid.NewGuid(),
-                        "$>", true, "{}", "{}", default(DateTime)), out _state, out _emittedEvents);
+                        "cat2-stream2", 20, "cat2-stream2", 20, true, new EventPosition(200, 150), Guid.NewGuid(),
+                        "$>", true, "10@cat1-stream1", "{}", default(DateTime)), out _state, out _emittedEvents);
             }
 
             [Test]

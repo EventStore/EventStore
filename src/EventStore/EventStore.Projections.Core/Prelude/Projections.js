@@ -24,7 +24,8 @@ var $projections = {
             options: { 
                 resultStreamName: null, 
                 partitionResultStreamNamePattern: null, 
-                $forceProjectionName: null, 
+                $forceProjectionName: null,
+                $includeLinks: false,
                 useEventIndexes: false,
                 reorderEvents: false,
                 processingLag: 0,
