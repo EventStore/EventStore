@@ -373,28 +373,28 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         case Mode.Position:
                             jsonWriter.WriteStartObject();
-                            jsonWriter.WritePropertyName("v");
+                            jsonWriter.WritePropertyName("$v");
                             jsonWriter.WriteValue(projectionVersion);
-                            jsonWriter.WritePropertyName("c");
+                            jsonWriter.WritePropertyName("$c");
                             jsonWriter.WriteValue(CommitPosition.GetValueOrDefault());
-                            jsonWriter.WritePropertyName("p");
+                            jsonWriter.WritePropertyName("$p");
                             jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
                             jsonWriter.WriteEndObject();
                             break;
                         case Mode.PreparePosition:
                             jsonWriter.WriteStartObject();
-                            jsonWriter.WritePropertyName("v");
+                            jsonWriter.WritePropertyName("$v");
                             jsonWriter.WriteValue(projectionVersion);
-                            jsonWriter.WritePropertyName("p");
+                            jsonWriter.WritePropertyName("$p");
                             jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
                             jsonWriter.WriteEndObject();
                             break;
                         case Mode.Stream:
                         case Mode.MultiStream:
                             jsonWriter.WriteStartObject();
-                            jsonWriter.WritePropertyName("v");
+                            jsonWriter.WritePropertyName("$v");
                             jsonWriter.WriteValue(projectionVersion);
-                            jsonWriter.WritePropertyName("s");
+                            jsonWriter.WritePropertyName("$s");
                             jsonWriter.WriteStartObject();
                             foreach (var stream in Streams)
                             {
@@ -426,22 +426,26 @@ namespace EventStore.Projections.Core.Services.Processing
                 var name = (string) reader.Value;
                 switch (name)
                 {
+                    case "$v":
                     case "v":
                         Check(reader.Read(), reader);
                         var v = (int) (long) reader.Value;
                         if (v > 0) // TODO: remove this if with time
                             projectionVersion = v;
                         break;
+                    case "$c":
                     case "c":
                     case "commitPosition":
                         Check(reader.Read(), reader);
                         commitPosition = (long) reader.Value;
                         break;
+                    case "$p":
                     case "p":
                     case "preparePosition":
                         Check(reader.Read(), reader);
                         preparePosition = (long) reader.Value;
                         break;
+                    case "$s":
                     case "s":
                     case "streams":
                         Check(reader.Read(), reader);
