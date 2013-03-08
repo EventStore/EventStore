@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void RecordEventOrder()
         {
-            Projection.RecordEventOrder(_message, () => NextStage());
+            Projection.RecordEventOrder(_message.Data, _message.CheckpointTag, () => NextStage());
         }
 
         protected override void GetStatePartition()

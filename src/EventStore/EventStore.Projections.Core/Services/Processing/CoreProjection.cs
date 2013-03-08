@@ -170,7 +170,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
             if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
             var coreProjectionCheckpointManager = checkpointStrategy.CreateCheckpointManager(
-                this, projectionCorrelationId, version, publisher, readDispatcher, writeDispatcher, projectionConfig, name,
+                this, projectionCorrelationId, epoch, version, publisher, readDispatcher, writeDispatcher, projectionConfig, name,
                 namingBuilder);
             var projectionQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
@@ -949,17 +949,16 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        internal void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action completed)
+        internal void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action completed)
         {
             switch (_state)
             {
                 case State.Running:
-                    _checkpointManager.RecordEventOrder(
-                        message, () =>
-                            {
-                                completed();
-                                EnsureTickPending();
-                            });
+                    _checkpointManager.RecordEventOrder(resolvedEvent, orderCheckpointTag, () =>
+                        {
+                            completed();
+                            EnsureTickPending();
+                        });
                     break;
                 case State.FaultedStopping:
                 case State.Stopping:

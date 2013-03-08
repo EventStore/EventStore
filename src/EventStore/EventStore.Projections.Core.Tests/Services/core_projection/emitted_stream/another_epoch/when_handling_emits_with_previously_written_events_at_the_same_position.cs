@@ -32,7 +32,7 @@ using EventStore.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
+namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream.another_epoch
 {
     [TestFixture]
     public class when_handling_emits_with_previously_written_events_at_the_same_position : TestFixtureWithExistingEvents
@@ -47,8 +47,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             AllWritesQueueUp();
             //NOTE: it is possible for a batch of events to be partially written if it contains links 
-            ExistingEvent("test_stream", "type1", @"{""c"": 100, ""p"": 50}", "data");
-            ExistingEvent("test_stream", "type2", @"{""c"": 100, ""p"": 50}", "data");
+            ExistingEvent("test_stream", "type1", @"{""v"": 1, ""c"": 100, ""p"": 50}", "data");
+            ExistingEvent("test_stream", "type2", @"{""v"": 1, ""c"": 100, ""p"": 50}", "data");
         }
 
         private EmittedEvent[] CreateEventBatch()
@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", 1, 1, CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(100, 50), _readDispatcher,
+                "test_stream", 2, 2, CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(100, 50), _readDispatcher,
                 _writeDispatcher, _readyHandler, maxWriteBatchLength: 50);
             _stream.Start();
             _stream.EmitEvents(CreateEventBatch());
@@ -77,20 +77,22 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         }
 
         [Test]
-        public void publishes_not_yet_written_events_only()
+        public void publishes_all_events()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
-            var writeMessage = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single();
-            Assert.AreEqual(1, writeMessage.Events.Length);
-            Assert.AreEqual("type3", writeMessage.Events[0].EventType);
+            var writtenEvents =
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().SelectMany(v => v.Events).ToArray();
+            Assert.AreEqual(3, writtenEvents.Length);
+            Assert.AreEqual("type1", writtenEvents[0].EventType);
+            Assert.AreEqual("type2", writtenEvents[1].EventType);
+            Assert.AreEqual("type3", writtenEvents[2].EventType);
         }
 
         [Test]
         public void reports_correct_event_numbers()
         {
-            Assert.AreEqual(0, _1);
-            Assert.AreEqual(1, _2);
-            Assert.AreEqual(2, _3);
+            Assert.AreEqual(2, _1);
+            Assert.AreEqual(3, _2);
+            Assert.AreEqual(4, _3);
         }
 
     }

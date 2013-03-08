@@ -27,7 +27,6 @@
 // 
 
 using System;
-using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -59,6 +58,6 @@ namespace EventStore.Projections.Core.Services.Processing
             string statePartition, CheckpointTag requestedStateCheckpointTag,
             Action<PartitionState> loadCompleted);
 
-        void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed);
+        void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action committed);
     }
 }
