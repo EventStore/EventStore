@@ -89,12 +89,13 @@
 
     <script type="text/javascript">
         require.config({ baseUrl: "/web/es/js" });
-        require(['projections/Observer', 'projections/Controller', 'projections/ui/Editor'],
-            function (observer, controller, editor) {
+        require(['projections/Observer', 'projections/Controller', 'projections/ui/Editor', 'projections/ui/Ace'],
+            function (observer, controller, editor, aceEditor) {
                 $(function () {
                     var projectionStatusUrl = location.hash.substr(1);
+                    var sourceEdit = aceEditor.createAceEditor($("#ace-source"));
 
-                    var projectionEditor = editor.create(projectionStatusUrl, {
+                    var projectionEditor = editor.create(projectionStatusUrl, sourceEdit, {
                         status: $("#status"),
                         name: $("#projection-name"),
                         source: $("#ace-source"),
@@ -105,6 +106,8 @@
                         start: $("#btn-run"),
                         stop: $("#btn-break"),
                         save: $("#btn-save"),
+                    }, {
+                        
                     });
 
                     projectionEditor.bind();
