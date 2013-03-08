@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
             [SetUp]
             public void setup()
             {
-                _namesBuilder = new ProjectionNamesBuilder("projection");
+                _namesBuilder = ProjectionNamesBuilder.CreateForTest("projection");
             }
 
             [Test]
@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 _projection = "projection";
                 _partitionAt = CheckpointTag.FromPosition(100, 50);
                 _partition = "partition";
-                _namesBuilder = new ProjectionNamesBuilder(_projection);
+                _namesBuilder = ProjectionNamesBuilder.CreateForTest(_projection);
                 _re = new ResultEmitter(_namesBuilder);
             }
 
@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 _resultAt = CheckpointTag.FromPosition(100, 50);
                 _partition = "partition";
                 _result = "{\"result\":1}";
-                _namesBuilder = new ProjectionNamesBuilder(_projection);
+                _namesBuilder = ProjectionNamesBuilder.CreateForTest(_projection);
                 _re = new ResultEmitter(_namesBuilder);
             }
 
@@ -181,7 +181,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 _projection = "projection";
                 _resultAt = CheckpointTag.FromPosition(100, 50);
                 _partition = "partition";
-                _namesBuilder = new ProjectionNamesBuilder(_projection);
+                _namesBuilder = ProjectionNamesBuilder.CreateForTest(_projection);
                 _re = new ResultEmitter(_namesBuilder);
             }
 
@@ -241,7 +241,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 _resultAt = CheckpointTag.FromPosition(100, 50);
                 _partition = "";
                 _result = "{\"result\":1}";
-                _namesBuilder = new ProjectionNamesBuilder(_projection);
+                _namesBuilder = ProjectionNamesBuilder.CreateForTest(_projection);
                 _re = new ResultEmitter(_namesBuilder);
             }
 

@@ -58,13 +58,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
 
+        private readonly int _projectionVersion;
+
         private List<IEnvelope> _awaitingStreams;
 
         public ProjectionCheckpoint(RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            IProjectionCheckpointManager readyHandler, CheckpointTag from, CheckpointTag zero, int maxWriteBatchLength,
-            ILogger logger = null)
+            int projectionVersion, IProjectionCheckpointManager readyHandler, CheckpointTag from, CheckpointTag zero, 
+            int maxWriteBatchLength, ILogger logger = null)
         {
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
             if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
@@ -74,6 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
             _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
+            _projectionVersion = projectionVersion;
             _readyHandler = readyHandler;
             _zero = zero;
             _from = _last = from;
@@ -156,7 +159,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_emittedStreams.TryGetValue(streamId, out stream))
             {
                 stream = new EmittedStream(
-                    streamId, _zero, _from, _readDispatcher, _writeDispatcher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength,
+                    streamId, _projectionVersion, _zero, _from, _readDispatcher, _writeDispatcher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength,
                     logger: _logger);
                 if (_started)
                     stream.Start();

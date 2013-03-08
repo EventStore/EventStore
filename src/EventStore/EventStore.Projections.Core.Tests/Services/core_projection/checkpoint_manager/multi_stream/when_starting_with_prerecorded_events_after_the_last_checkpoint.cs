@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             base.Given();
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""streams"": {""a"": 0, ""b"": 0, ""c"": 0}}", "{}");
+                @"{""s"": {""a"": 0, ""b"": 0, ""c"": 0}}", "{}");
             ExistingEvent("a", "StreamCreated", "", "");
             ExistingEvent("b", "StreamCreated", "", "");
             ExistingEvent("c", "StreamCreated", "", "");
@@ -63,13 +63,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             ExistingEvent("c", "Event", "", @"{""data"":""c""");
 
             ExistingEvent(
-                "$projections-projection-order", "$>", @"{""streams"": {""a"": 0, ""b"": 0, ""c"": 0}}", "0@c");
+                "$projections-projection-order", "$>", @"{""s"": {""a"": 0, ""b"": 0, ""c"": 0}}", "0@c");
             ExistingEvent(
-                "$projections-projection-order", "$>", @"{""streams"": {""a"": 0, ""b"": 0, ""c"": 1}}", "1@c");
+                "$projections-projection-order", "$>", @"{""s"": {""a"": 0, ""b"": 0, ""c"": 1}}", "1@c");
             ExistingEvent(
-                "$projections-projection-order", "$>", @"{""streams"": {""a"": 1, ""b"": 0, ""c"": 1}}", "1@a");
+                "$projections-projection-order", "$>", @"{""s"": {""a"": 1, ""b"": 0, ""c"": 1}}", "1@a");
             ExistingEvent(
-                "$projections-projection-order", "$>", @"{""streams"": {""a"": 1, ""b"": 1, ""c"": 1}}", "1@b");
+                "$projections-projection-order", "$>", @"{""s"": {""a"": 1, ""b"": 1, ""c"": 1}}", "1@b");
         }
 
         protected override void When()

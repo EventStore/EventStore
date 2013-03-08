@@ -15,9 +15,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         protected override void Given()
         {
             AllWritesQueueUp();
-            ExistingEvent("test_stream", "type1", @"{""commitPosition"": 100, ""preparePosition"": 50}", "data");
-            ExistingEvent("test_stream", "type2", @"{""commitPosition"": 200, ""preparePosition"": 150}", "data");
-            ExistingEvent("test_stream", "type3", @"{""commitPosition"": 300, ""preparePosition"": 250}", "data");
+            ExistingEvent("test_stream", "type1", @"{""c"": 100, ""p"": 50}", "data");
+            ExistingEvent("test_stream", "type2", @"{""c"": 200, ""p"": 150}", "data");
+            ExistingEvent("test_stream", "type3", @"{""c"": 300, ""p"": 250}", "data");
         }
 
         [SetUp]
@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(200, 150), _readDispatcher, _writeDispatcher, _readyHandler,
+                "test_stream", 1, CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(200, 150), _readDispatcher, _writeDispatcher, _readyHandler,
                 maxWriteBatchLength: 50);
             _stream.Start();
         }

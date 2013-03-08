@@ -51,6 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly ILogger _logger;
         private readonly string _streamId;
+        private readonly int _projectionVersion;
         private readonly CheckpointTag _zeroPosition;
         private readonly CheckpointTag _from;
         private readonly IEmittedStreamContainer _readyHandler;
@@ -76,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public EmittedStream(
-            string streamId, CheckpointTag zeroPosition, CheckpointTag from,
+            string streamId, int projectionVersion, CheckpointTag zeroPosition, CheckpointTag from,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
@@ -91,6 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
+            _projectionVersion = projectionVersion;
             _zeroPosition = zeroPosition;
             _from = @from;
             _last = null;
@@ -221,7 +223,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 else
                 {
                     //TODO: verify order - as we are reading backward
-                    var projectionStateMetadata = message.Events[0].Event.Metadata.ParseCheckpointTagJson();
+                    var projectionStateMetadata = message.Events[0].Event.Metadata.ParseCheckpointTagJson().Tag;
                     _lastSubmittedOrCommittedMetadata = projectionStateMetadata;
                     _lastKnownEventNumber = message.Events[0].Event.EventNumber;
                 }
@@ -237,7 +239,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 foreach (var e in message.Events)
                 {
-                    CheckpointTag tag = e.Event.Metadata.ParseCheckpointTagJson();
+                    CheckpointTag tag = e.Event.Metadata.ParseCheckpointTagJson().Tag;
                     if (tag < upTo) // ignore any events prior to the requested upTo (== first emitted event position)
                         break;
                     var eventType = e.Event.EventType;
@@ -247,7 +249,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: verify order - as we are reading backward
                 var lastReadEvent = message.Events[message.Events.Length - 1];
                 var projectionStateMetadata = lastReadEvent.Event.Metadata.ParseCheckpointTagJson();
-                lastReadTag = projectionStateMetadata;
+                lastReadTag = projectionStateMetadata.Tag;
             }
 
             if (lastReadTag < upTo || message.IsEndOfStream)
@@ -310,7 +312,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 events.Add(
                     new Event(
                         e.EventId, e.EventType, true, e.Data != null ? Encoding.UTF8.GetBytes(e.Data) : null,
-                        e.CausedByTag.ToJsonBytes()));
+                        e.CausedByTag.ToJsonBytes(_projectionVersion)));
                 emittedEvents.Add(e);
             }
             _submittedToWriteEvents = events.ToArray();

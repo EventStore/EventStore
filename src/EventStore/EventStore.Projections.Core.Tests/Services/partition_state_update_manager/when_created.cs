@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
         [SetUp]
         public void setup()
         {
-            _updateManager = new PartitionStateUpdateManager(new ProjectionNamesBuilder("projection"));
+            _updateManager = new PartitionStateUpdateManager(ProjectionNamesBuilder.CreateForTest("projection"));
         }
 
         [Test]
