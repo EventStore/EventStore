@@ -96,21 +96,34 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
             }
             if (controls.emit)
                 controls.emit.attr("checked", source.emitEnabled);
+            var anyResults = false;
             if (controls.result_stream) {
                 var resultStreamName = source.definition.resultStreamName;
-                if (resultStreamName) {
+                if (source.definition.definesStateTransform && resultStreamName) {
                     controls.result_stream.attr("href", "/streams/" + resultStreamName);
                     controls.result_stream.show();
+                    anyResults = true;
                 } else {
                     controls.result_stream.hide();
                 }
             }
+
             if (controls.result) {
-                if (!source.definition.byStream && !source.definition.byCustomPartitions)
+                if (source.definition.definesStateTransform && !source.definition.byStream && !source.definition.byCustomPartitions) {
                     controls.result.show();
-                else 
+                    anyResults = true;
+                } else {
+
                     controls.result.hide();
+                }
             }
+
+            if (controls.result_container)
+                if (anyResults)
+                    controls.result_container.show();
+                else 
+                    controls.result_container.hide();
+
             lastEmitEnabled = source.emitEnabled;
         }
 
