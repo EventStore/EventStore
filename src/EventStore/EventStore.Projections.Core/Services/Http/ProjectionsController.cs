@@ -160,6 +160,10 @@ namespace EventStore.Projections.Core.Services.Http
                 new ControllerAction(
                     "/projection/{name}/command/enable", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},
                     SupportedCodecs, DefaultResponseCodec), OnProjectionCommandEnable);
+            service.RegisterControllerAction(
+                new ControllerAction(
+                    "/projection/{name}/command/reset", HttpMethod.Post, new ICodec[] { Codec.ManualEncoding },
+                    SupportedCodecs, DefaultResponseCodec), OnProjectionCommandReset);
         }
 
         private static void OnProjections(HttpEntity http, UriTemplateMatch match)

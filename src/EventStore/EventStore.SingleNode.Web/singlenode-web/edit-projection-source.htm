@@ -3,6 +3,7 @@
 <head>
     <title>Change Projection</title>
     <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jquery/jquery-ui-1.8.23.min.js" type="text/javascript"></script>
     <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
     <script src="/web/es/lib/require-full.js" type="text/javascript"></script>
     <script src="/web/es/js/projections/lib/ace/ace.js" type="text/javascript"></script>
@@ -36,6 +37,9 @@
                         <li><a href="#" id="btn-break" class="btn btn-danger">Stop</a></li>
                         <li>    </li>
                         <li><a href="#" id="btn-save" class="btn btn-info">Save</a></li>
+                        <li> </li>
+                        <li> </li>
+                        <li><a href="#" id="btn-reset" class="btn btn-danger">Reset</a></li>
                     </ul>
                 </div>
             </div>
@@ -115,6 +119,7 @@
                         start: $("#btn-run"),
                         stop: $("#btn-break"),
                         save: $("#btn-save"),
+                        reset: $("#btn-reset"),
                     }, {
                         
                     });

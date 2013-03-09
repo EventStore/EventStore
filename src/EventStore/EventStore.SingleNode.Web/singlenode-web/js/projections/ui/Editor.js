@@ -1,6 +1,7 @@
 ﻿"use strict";
 
-define(["ace/ace", "projections/Observer", "projections/Controller"], function (ace, observerFactory, controllerFactory) {
+define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "projections/Controller"],
+    function (ace, confirmation, observerFactory, controllerFactory) {
 
     function internalCreate(mode, url, sourceEditor, controls, options) {
         var observer = null;
@@ -147,6 +148,20 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
             window.open("/web/debug-projection.htm#" + lastStatusUrl, "debug-" + lastName);
         }
 
+        function reset() {
+            confirmation.confirm("Reset projection?",
+                '<p><span class="ui-icon ui-icon-alert" style="float: left; margin: 0 7px 20px 0;"></span>' + 
+                'Projection reset is a dangarous operation.  [PROVIDE MORE TEXT]. Are you sure?</p>',
+                [
+                    {
+                        title: "Confirm", handler: function () {
+                            controller.reset();
+                        }
+                    },
+                    { title: "Cancel", handler: null },
+                ]);
+        }
+
         function stop() {
             controller.stop();
         }
@@ -174,6 +189,7 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
                 bindClick(controls.stop, stop);
                 bindClick(controls.save, save);
                 bindClick(controls.debug, debug);
+                bindClick(controls.reset, reset);
             }
         };
     }
