@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Text;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
@@ -483,12 +484,14 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _name;
             private readonly string _query;
             private readonly bool _emitEnabled;
+            private readonly ProjectionSourceDefinition _definition;
 
-            public ProjectionQuery(string name, string query, bool emitEnabled)
+            public ProjectionQuery(string name, string query, bool emitEnabled, ProjectionSourceDefinition definition)
             {
                 _name = name;
                 _query = query;
                 _emitEnabled = emitEnabled;
+                _definition = definition;
             }
 
             public string Name
@@ -504,6 +507,11 @@ namespace EventStore.Projections.Core.Messages
             public bool EmitEnabled
             {
                 get { return _emitEnabled; }
+            }
+
+            public ProjectionSourceDefinition Definition
+            {
+                get { return _definition; }
             }
         }
 

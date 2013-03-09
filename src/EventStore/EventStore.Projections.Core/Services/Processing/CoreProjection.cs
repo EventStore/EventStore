@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                   IHandle<ProjectionSubscriptionMessage.ProgressChanged>,
                                   IHandle<ProjectionSubscriptionMessage.EofReached>
     {
-        public static CoreProjection CreateAndPrepapre(
+        public static CoreProjection CreateAndPrepare(
             string name, ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
             IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig,
             RequestResponseDispatcher
@@ -65,18 +65,39 @@ namespace EventStore.Projections.Core.Services.Processing
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
             if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
 
+            ProjectionSourceDefinition temp;
             return InternalCreate(
                 name, version, projectionCorrelationId, publisher, projectionStateHandler, projectionConfig, readDispatcher,
-                writeDispatcher, logger, projectionStateHandler);
+                writeDispatcher, logger, sourceDefinition: projectionStateHandler, preparedSourceDefinition: out temp);
         }
 
-        public static CoreProjection CreatePrepapred(
+        public static CoreProjection CreateAndPrepare(
             string name, ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
-            ISourceDefinitionConfigurator sourceDefintion, ProjectionConfig projectionConfig,
+            IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ILogger logger)
+            ILogger logger, out ProjectionSourceDefinition preparedSourceDefinition)
+        {
+            if (name == null) throw new ArgumentNullException("name");
+            if (name == "") throw new ArgumentException("name");
+            if (publisher == null) throw new ArgumentNullException("publisher");
+            if (projectionStateHandler == null) throw new ArgumentNullException("projectionStateHandler");
+            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
+            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
+
+            return InternalCreate(
+                name, version, projectionCorrelationId, publisher, projectionStateHandler, projectionConfig, readDispatcher,
+                writeDispatcher, logger, sourceDefinition: projectionStateHandler, preparedSourceDefinition: out preparedSourceDefinition);
+        }
+
+        public static CoreProjection CreatePrepared(
+            string name, ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
+            ISourceDefinitionConfigurator sourceDefinition, ProjectionConfig projectionConfig,
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+            ILogger logger, out ProjectionSourceDefinition preparedSourceDefinition)
         {
             if (name == null) throw new ArgumentNullException("name");
             if (name == "") throw new ArgumentException("name");
@@ -86,7 +107,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             return InternalCreate(
                 name, version, projectionCorrelationId, publisher, null, projectionConfig, readDispatcher, writeDispatcher,
-                logger, sourceDefintion);
+                logger, sourceDefinition: sourceDefinition, preparedSourceDefinition: out preparedSourceDefinition);
         }
 
         private static CoreProjection InternalCreate(
@@ -95,15 +116,18 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ILogger logger, ISourceDefinitionConfigurator sourceDefintion)
+            ILogger logger, ISourceDefinitionConfigurator sourceDefinition, out ProjectionSourceDefinition preparedSourceDefinition)
         {
             var builder = new CheckpointStrategy.Builder();
             var namingBuilderFactory = new ProjectionNamesBuilder.Factory();
-            sourceDefintion.ConfigureSourceProcessingStrategy(builder);
-            sourceDefintion.ConfigureSourceProcessingStrategy(namingBuilderFactory);
+            sourceDefinition.ConfigureSourceProcessingStrategy(builder);
+            sourceDefinition.ConfigureSourceProcessingStrategy(namingBuilderFactory);
             var namingBuilder = namingBuilderFactory.Create(name);
             var effectiveProjectionName = namingBuilder.EffectiveProjectionName;
             var checkpointStrategy = builder.Build(projectionConfig);
+            var sourceDefinitionRecorder = new SourceDefinitionRecorder();
+            (projectionStateHandler ?? sourceDefinition).ConfigureSourceProcessingStrategy(sourceDefinitionRecorder);
+            preparedSourceDefinition = sourceDefinitionRecorder.Build(namingBuilder);
             return new CoreProjection(
                 effectiveProjectionName, version, projectionCorrelationId, publisher, projectionStateHandler, projectionConfig, readDispatcher,
                 writeDispatcher, logger, checkpointStrategy, namingBuilder);

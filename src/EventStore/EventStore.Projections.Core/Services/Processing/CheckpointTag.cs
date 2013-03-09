@@ -520,7 +520,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (reader.TokenType != type)
                 throw new Exception("Invalid JSON");
-        }
+        } 
 
         private static void Check(bool read, JsonTextReader reader)
         {

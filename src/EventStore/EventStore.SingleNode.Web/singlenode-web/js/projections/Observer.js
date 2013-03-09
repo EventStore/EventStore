@@ -8,8 +8,9 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
             var resultMonitor = null;
             var statusMonitor = null;
             var sourceMonitor = null;
-            var commandErrorHandler = null;
-            var pendingSubscribe = null;
+            var commandErrorHandler = [];
+            var pendingSubscribe = [];
+            var subscribed = { statusChanged: [], stateChanged: [], resultChanged: [], sourceChanged: [], error: []};
 
             function enrichStatus(status) {
                 var startUpdateAvailable =
@@ -26,6 +27,11 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                 return status;
             }
 
+            function dispatch(handlers, arg) {
+                for (var i = 0; i < handlers.length; i++) 
+                    handlers[i](arg);
+            }
+
             function internalSubscribe(handlers) {
 
                 stateMonitor = resourceMonitor.create(baseUrl + "/state", "application/json", "text");
@@ -34,28 +40,36 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                 sourceMonitor = resourceMonitor.create(baseUrl + "/query?config=yes", "application/json");
 
                 if (handlers.statusChanged) {
-                    statusMonitor.start(function(rawStatus) {
-                        var status = rawStatus.projections[0];
-                        var enriched = enrichStatus(status);
-                        handlers.statusChanged(enriched);
-                    });
+                    if (subscribed.statusChanged.length == 0) 
+                        statusMonitor.start(function(rawStatus) {
+                            var status = rawStatus.projections[0];
+                            var enriched = enrichStatus(status);
+                            dispatch(subscribed.statusChanged, enriched);
+                        });
+                    subscribed.statusChanged.push(handlers.statusChanged);
                 }
 
                 if (handlers.stateChanged) {
-                    stateMonitor.start(handlers.stateChanged);
+                    if (subscribed.stateChanged.length == 0)
+                        stateMonitor.start(function (v) { dispatch(subscribed.stateChanged, v); });
+                    subscribed.stateChanged.push(handlers.stateChanged);
                 }
 
                 if (handlers.resultChanged) {
-                    resultMonitor.start(handlers.resultChanged);
+                    if (subscribed.resultChanged.length == 0)
+                        resultMonitor.start(function (v) { dispatch(subscribed.resultChanged, v); });
+                    subscribed.resultChanged.push(handlers.resultChanged);
                 }
 
                 if (handlers.sourceChanged) {
-                    sourceMonitor.start(handlers.sourceChanged);
+                    if (subscribed.sourceChanged.length == 0)
+                        sourceMonitor.start(function (v) { dispatch(subscribed.sourceChanged, v); });
+                    subscribed.sourceChanged.push(handlers.sourceChanged);
                 }
 
 
                 if (handlers.error) {
-                    commandErrorHandler = handlers.error;
+                    commandErrorHandler.push(handlers.error);
                 }
             }
 
@@ -64,19 +78,8 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                     if (baseUrl) {
                         internalSubscribe(handlers);
                     } else {
-                        pendingSubscribe = handlers;
+                        pendingSubscribe.push(handlers);
                     }
-                },
-
-                unsubscribe: function () {
-                    pendingSubscribe = null;
-                    if (stateMonitor !== null) stateMonitor.stop();
-                    if (resultMonitor !== null) resultMonitor.stop();
-                    if (statusMonitor !== null) statusMonitor.stop();
-
-                    stateMonitor = null;
-                    resultMonitor = null;
-                    statusMonitor = null;
                 },
 
                 poll: function () {
@@ -89,8 +92,9 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                 configureUrl: function (url) {
                     baseUrl = url;
                     if (pendingSubscribe)
-                        internalSubscribe(pendingSubscribe);
-                    pendingSubscribe = null;
+                        for (var i = 0; i < pendingSubscribe.length; i++) 
+                            internalSubscribe(pendingSubscribe[i]);
+                    pendingSubscribe = [];
                 }
 
             };

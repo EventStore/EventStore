@@ -79,12 +79,19 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private string GetPartitionResultStreamName(string partitionName)
         {
-            return String.Format(_partitionResultStreamNamePattern, partitionName);
+            return
+                String.Format(GetPartitionResultStreamNamePattern(), partitionName);
         }
 
         public string GetResultStreamName()
         {
             return _resultStreamName;
+        }
+
+        public string GetPartitionResultStreamNamePattern()
+        {
+            return _options.PartitionResultStreamNamePattern
+                    ?? ProjectionsStreamPrefix + EffectiveProjectionName + "-{0}" + ProjectionsStateStreamSuffix;
         }
 
         private const string ProjectionsStreamPrefix = "$projections-";
@@ -96,6 +103,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public string GetPartitionCatalogStreamName()
         {
             return _partitionCatalogStreamName;
+        }
+
+        public string GetPartitionResultCatalogStreamName()
+        {
+            return ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionPartitionCatalogStreamSuffix;
         }
 
         public string MakePartitionResultStreamName(string statePartition)

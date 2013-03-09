@@ -11,6 +11,10 @@
         es.tmpl.renderHead();
     </script>
     <style>
+        #result-stream:after
+        {
+            content: " (" attr(href) ")";
+        }
         .container
         {
             width: inherit;
@@ -54,9 +58,11 @@
                     <div style="margin: 0px 5px 20px 5px">
                         
                         <label class="control-label" for="result">
-                            <strong>Result</strong></label>
+                            <strong>Result</strong><a id="result-stream"></a></label>
 
                         <pre id="result" style="position: relative; display: block; height: 200px; padding: 4px 6px 4px 6px; margin: 0 0 0 0"></pre>
+                        <div id="result-streams" class="well" style="display: none">
+                        </div>
                         
 
                     </div>
@@ -89,22 +95,27 @@
 
     <script type="text/javascript">
         require.config({ baseUrl: "/web/es/js" });
-        require(['projections/Observer', 'projections/Controller', 'projections/ui/Editor'],
-            function (observer, controller, editor) {
+        require(['projections/Observer', 'projections/Controller', 'projections/ui/Editor', 'projections/ui/Ace'],
+            function (observer, controller, editor, aceEditor) {
                 $(function () {
                     var projectionStatusUrl = location.hash.substr(1);
+                    var sourceEdit = aceEditor.createAceEditor($("#ace-source"));
 
-                    var projectionEditor = editor.create(projectionStatusUrl, {
+                    var projectionEditor = editor.create(projectionStatusUrl, sourceEdit, {
                         status: $("#status"),
                         name: $("#projection-name"),
                         source: $("#ace-source"),
                         state: $("#state"),
                         result: $("#result"),
+                        result_stream: $("#result-stream"),
+                        result_streams: $("#result-streams"),
                         message: $("#message"),
                         emit: $("#emit"),
                         start: $("#btn-run"),
                         stop: $("#btn-break"),
                         save: $("#btn-save"),
+                    }, {
+                        
                     });
 
                     projectionEditor.bind();
