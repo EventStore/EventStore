@@ -11,6 +11,12 @@
         es.tmpl.renderHead();
     </script>
     <style>
+
+        #result-stream:after
+        {
+            content: " (" attr(href) ")";
+        }
+         
         .es-proj-stats-table th
         {
             text-align: right;
@@ -67,10 +73,10 @@
                                     <ul style="display: inline;">
                                         <li><a href="#" id="btn-run" class="btn btn-success">Start</a></li>
                                         <li><a href="#" id="btn-break" class="btn btn-danger">Stop</a></li>
-                                        <li></li>
+                                        <li> </li>
                                         <li id="edit-source-btn-container"></li>
                                         <li id="debug-container"></li>
-                                        <li></li>
+                                        <li> </li>
                                         <li id="delete-projection-btn-container"></li>
                                     </ul>
                                 </div>
@@ -95,9 +101,11 @@
                     <div style="margin: 0px 5px 20px 5px">
 
                         <label class="control-label" for="result">
-                            <strong>Result</strong></label>
+                            <strong>Result</strong><a id="result-stream"></a></label>
 
                         <pre id="result" style="position: relative; display: block; height: 200px; padding: 4px 6px 4px 6px; margin: 0 0 0 0"></pre>
+                        <div id="result-streams" class="well" style="display: none">
+                        </div>
 
 
                     </div>
@@ -231,6 +239,8 @@
                         source: $("#ace-source"),
                         state: $("#state"),
                         result: $("#result"),
+                        result_stream: $("#result-stream"),
+                        result_streams: $("#result-streams"),
                         message: $("#message"),
                         emit: $("#emit"),
                         start: $("#btn-run"),

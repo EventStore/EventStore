@@ -96,6 +96,21 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
             }
             if (controls.emit)
                 controls.emit.attr("checked", source.emitEnabled);
+            if (controls.result_stream) {
+                var resultStreamName = source.definition.resultStreamName;
+                if (resultStreamName) {
+                    controls.result_stream.attr("href", "/streams/" + resultStreamName);
+                    controls.result_stream.show();
+                } else {
+                    controls.result_stream.hide();
+                }
+            }
+            if (controls.result) {
+                if (!source.definition.byStream && !source.definition.byCustomPartitions)
+                    controls.result.show();
+                else 
+                    controls.result.hide();
+            }
             lastEmitEnabled = source.emitEnabled;
         }
 

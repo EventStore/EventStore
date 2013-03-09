@@ -214,7 +214,8 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _lastAccessed = _timeProvider.Now;
             var emitEnabled = _persistedState.EmitEnabled ?? false;
-            message.Envelope.ReplyWith(new ProjectionManagementMessage.ProjectionQuery(_name, Query, emitEnabled));
+            message.Envelope.ReplyWith(
+                new ProjectionManagementMessage.ProjectionQuery(_name, Query, emitEnabled, _persistedState.SourceDefinition));
         }
 
         public void Handle(ProjectionManagementMessage.UpdateQuery message)
