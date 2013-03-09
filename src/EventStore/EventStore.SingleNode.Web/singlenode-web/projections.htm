@@ -57,11 +57,10 @@
                     <th class="c progress">% Done</th>
                     <th class="c position">Position</th>
                     <th class="c checkpoint">Last Checkpoint</th>
-                    <th class="c checkpoint-status">Checkpoint Status</th>
                     <th class="c read-writes">Reads / Writes In-Progress</th>
-                    <th class="c writes">Writes Pending</th>
+                    <th class="c writes">Write Queues</th>
                     <th class="c partitions">Partitions Cached</th>
-                    <th class="c processed">Processed (since restart)</th>
+                    <th class="c processed">Processed</th>
                     <th class="c per-second">per Second</th>
                     <th class="c buffered">Buffered Events</th>
                 </tr>
@@ -72,12 +71,11 @@
         <script id="projectionTemplate" type="text/x-jsrender">
         <tr>
           <td class="name"><a href="view-projection.htm#{{>statusUrl}}">{{>name}}</a></td>
-          <td>{{>status}}</td>
+          <td>{{>status}}{{>checkpointStatus}}</td>
           <td>{{>mode}}</td>
           <td class="r">{{>progress.toFixed(1)}}%</td>
           <td class="r">{{>~addSpace(position)}}</td>
           <td class="r">{{>~addSpace(lastCheckpoint)}}</td>
-          <td>{{>checkpointStatus}}</td>
           <td class="r">{{>readsInProgress}} / {{>writesInProgress}}</td>
           <td class="r">{{>writePendingEventsAfterCheckpoint}} / {{>writePendingEventsBeforeCheckpoint}}</td>
           <td class="r">{{>partitionsCached}}</td>
