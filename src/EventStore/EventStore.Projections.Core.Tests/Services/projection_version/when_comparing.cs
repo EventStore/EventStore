@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,45 +26,49 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Collections.Generic;
-using System.IO;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.projection_version
 {
-
-    public struct CheckpointTagVersion
+    [TestFixture]
+    public class when_comparing
     {
-        public ProjectionVersion Version;
-        public CheckpointTag Tag;
-        public Dictionary<string, JToken> ExtraMetadata;
-    }
-
-    public static class CheckpointTagExtensions
-    {
-        public static CheckpointTag ParseCheckpointTagJson(this string source)
+        [Test]
+        public void equal()
         {
-            if (string.IsNullOrEmpty(source))
-                return null;
-            var reader = new JsonTextReader(new StringReader(source));
-            return CheckpointTag.FromJson(reader, default(ProjectionVersion)).Tag;
+            var v1 = new ProjectionVersion(10, 5, 6);
+            var v2 = new ProjectionVersion(10, 5, 6);
+
+            Assert.AreEqual(v1, v2);
         }
 
-        public static CheckpointTagVersion ParseCheckpointTagJson(this byte[] source, ProjectionVersion current)
+        [Test]
+        public void not_equal_id()
         {
-            if (source == null || source.Length == 0)
-                return new CheckpointTagVersion { Version = current, Tag = null };
-            var reader = new JsonTextReader(new StreamReader(new MemoryStream(source)));
-            return CheckpointTag.FromJson(reader, current);
+            var v1 = new ProjectionVersion(10, 5, 6);
+            var v2 = new ProjectionVersion(11, 5, 6);
+
+            Assert.AreNotEqual(v1, v2);
         }
 
-        public static CheckpointTagVersion ParseCheckpointTagJson(this string source, ProjectionVersion current)
+        [Test]
+        public void not_equal_epoch()
         {
-            if (string.IsNullOrEmpty(source))
-                return new CheckpointTagVersion { Version = current, Tag = null };
-            var reader = new JsonTextReader(new StringReader(source));
-            return CheckpointTag.FromJson(reader, current);
+            var v1 = new ProjectionVersion(10, 5, 6);
+            var v2 = new ProjectionVersion(11, 6, 6);
+
+            Assert.AreNotEqual(v1, v2);
         }
+
+        [Test]
+        public void not_equal_version()
+        {
+            var v1 = new ProjectionVersion(10, 5, 6);
+            var v2 = new ProjectionVersion(10, 5, 7);
+
+            Assert.AreNotEqual(v1, v2);
+        }
+
     }
 }

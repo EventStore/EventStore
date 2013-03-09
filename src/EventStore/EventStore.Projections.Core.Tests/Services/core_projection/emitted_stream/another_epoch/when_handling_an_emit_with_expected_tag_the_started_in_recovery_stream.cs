@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 CheckpointTag.FromPosition(200, 150), null) });
             var metaData =
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single().Events[0].Metadata.ParseCheckpointTagJson(default(ProjectionVersion));
-            Assert.AreEqual(2, metaData.Version);
+            Assert.AreEqual(new ProjectionVersion(1, 2, 2), metaData.Version);
         }
 
     }

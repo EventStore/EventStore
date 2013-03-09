@@ -211,8 +211,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (checkpoint != null)
                 {
                     var parsed = checkpoint.Metadata.ParseCheckpointTagJson(_projectionVersion);
-                    if (parsed.ProjectionId != _projectionVersion.ProjectionId
-                        || _projectionVersion.Epoch > parsed.Version)
+                    if (parsed.Version.ProjectionId != _projectionVersion.ProjectionId
+                        || _projectionVersion.Epoch > parsed.Version.Version)
                     {
                         _lastWrittenCheckpointEventNumber = ExpectedVersion.NoStream;
                         CheckpointLoaded(null, null);
@@ -275,8 +275,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (@event.EventType == stateEventType)
                 {
                     var parsed = @event.Metadata.ParseCheckpointTagJson(_projectionVersion);
-                    if (parsed.ProjectionId != _projectionVersion.ProjectionId
-                        || _projectionVersion.Epoch > parsed.Version)
+                    if (parsed.Version.ProjectionId != _projectionVersion.ProjectionId
+                        || _projectionVersion.Epoch > parsed.Version.Version)
                     {
                         var state = new PartitionState("", null, _zeroTag);
                         loadCompleted(state);

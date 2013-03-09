@@ -222,8 +222,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     parsed = message.Events[0].Event.Metadata.ParseCheckpointTagJson(_projectionVersion);
                 _lastKnownEventNumber = newPhysicalStream ? ExpectedVersion.NoStream : message.Events[0].Event.EventNumber;
                 //TODO: thorw exception when _projectionVersion.ProjectionId != parsed.ProjectionId ?
-                var newLogicalStream = newPhysicalStream 
-                    || (_projectionVersion.ProjectionId != parsed.ProjectionId || _projectionVersion.Epoch > parsed.Version);
+                var newLogicalStream = newPhysicalStream
+                    || (_projectionVersion.ProjectionId != parsed.Version.ProjectionId || _projectionVersion.Epoch > parsed.Version.Version);
 
                 if (newLogicalStream)
                     _lastSubmittedOrCommittedMetadata = _zeroPosition;
@@ -240,7 +240,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var checkpointTagVersion = e.Event.Metadata.ParseCheckpointTagJson(_projectionVersion);
                 //TODO: thorw exception when _projectionVersion.ProjectionId != checkpointTagVersion.ProjectionId ?
-                var ourEpoch = checkpointTagVersion.ProjectionId == _projectionVersion.ProjectionId && checkpointTagVersion.Version >= _projectionVersion.Epoch;
+                var ourEpoch = checkpointTagVersion.Version.ProjectionId == _projectionVersion.ProjectionId && checkpointTagVersion.Version.Version >= _projectionVersion.Epoch;
                 if (!ourEpoch
                     || // ignore any events from previous projection epoch
                     checkpointTagVersion.Tag < upTo)

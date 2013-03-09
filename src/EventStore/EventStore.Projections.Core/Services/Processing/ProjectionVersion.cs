@@ -26,45 +26,41 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Collections.Generic;
-using System.IO;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 namespace EventStore.Projections.Core.Services.Processing
 {
-
-    public struct CheckpointTagVersion
+    public struct ProjectionVersion
     {
-        public ProjectionVersion Version;
-        public CheckpointTag Tag;
-        public Dictionary<string, JToken> ExtraMetadata;
-    }
+        public readonly int ProjectionId;
+        public readonly int Epoch;
+        public readonly int Version;
 
-    public static class CheckpointTagExtensions
-    {
-        public static CheckpointTag ParseCheckpointTagJson(this string source)
+        public ProjectionVersion(int projectionId, int epoch, int version)
         {
-            if (string.IsNullOrEmpty(source))
-                return null;
-            var reader = new JsonTextReader(new StringReader(source));
-            return CheckpointTag.FromJson(reader, default(ProjectionVersion)).Tag;
+            ProjectionId = projectionId;
+            Epoch = epoch;
+            Version = version;
         }
 
-        public static CheckpointTagVersion ParseCheckpointTagJson(this byte[] source, ProjectionVersion current)
+        public bool Equals(ProjectionVersion other)
         {
-            if (source == null || source.Length == 0)
-                return new CheckpointTagVersion { Version = current, Tag = null };
-            var reader = new JsonTextReader(new StreamReader(new MemoryStream(source)));
-            return CheckpointTag.FromJson(reader, current);
+            return ProjectionId == other.ProjectionId && Epoch == other.Epoch && Version == other.Version;
         }
 
-        public static CheckpointTagVersion ParseCheckpointTagJson(this string source, ProjectionVersion current)
+        public override bool Equals(object obj)
         {
-            if (string.IsNullOrEmpty(source))
-                return new CheckpointTagVersion { Version = current, Tag = null };
-            var reader = new JsonTextReader(new StringReader(source));
-            return CheckpointTag.FromJson(reader, current);
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is ProjectionVersion && Equals((ProjectionVersion) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = ProjectionId;
+                hashCode = (hashCode*397) ^ Epoch;
+                hashCode = (hashCode*397) ^ Version;
+                return hashCode;
+            }
         }
     }
 }

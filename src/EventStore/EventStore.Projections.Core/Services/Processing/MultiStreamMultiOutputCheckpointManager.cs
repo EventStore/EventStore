@@ -139,8 +139,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                     {
                                         var parsed = @event.Event.Metadata.ParseCheckpointTagJson(_projectionVersion);
                                         //TODO: throw exception if different projectionID?
-                                        if (_projectionVersion.ProjectionId != parsed.ProjectionId 
-                                            || _projectionVersion.Epoch > parsed.Version)
+                                        if (_projectionVersion.ProjectionId != parsed.Version.ProjectionId
+                                            || _projectionVersion.Epoch > parsed.Version.Version)
                                         {
                                             epochEnded = true;
                                             break;
