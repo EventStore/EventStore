@@ -58,8 +58,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(120, 110),
-                        _causingEventId, "no_state_emit1_type", false, Encoding.UTF8.GetBytes("data"),
-                        Encoding.UTF8.GetBytes("metadata"), default(DateTime)), Guid.Empty, _subscriptionId, 0);
+                        _causingEventId, "no_state_emit1_type", false, "data",
+                        "metadata", default(DateTime)), Guid.Empty, _subscriptionId, 0);
             _coreProjection.Handle(committedEventReceived);
         }
 

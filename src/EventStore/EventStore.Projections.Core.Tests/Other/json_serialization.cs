@@ -111,5 +111,12 @@ namespace EventStore.Projections.Core.Tests.Other
             Assert.AreEqual(tag, back);
             Assert.IsNull(back.CommitPosition);
         }
+
+        [Test]
+        public void extra_metadata_are_preserved()
+        {
+            //TODO: implement
+            Assert.Inconclusive();
+        }
     }
 }

@@ -27,55 +27,39 @@
 // 
 
 using System;
-using System.Globalization;
-using System.Text;
+using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EmittedLinkTo : EmittedEvent
+    public class EmittedLinkToWithRecategorization : EmittedEvent
     {
-        private readonly string _targetStreamId;
-        private int? _eventNumber;
+        private readonly string _target;
+        private readonly string _originalStreamId;
 
-        public EmittedLinkTo(
-            string streamId, Guid eventId, string targetStreamId, CheckpointTag causedByTag,
-            CheckpointTag expectedTag, Action<int> onCommitted = null)
-            : base(streamId, eventId, "$>", causedByTag, expectedTag, onCommitted)
-        {
-            _targetStreamId = targetStreamId;
-        }
-
-        public EmittedLinkTo(
-            string streamId, Guid eventId, string targetStreamId, int targetEventNumber, CheckpointTag causedByTag,
-            CheckpointTag expectedTag, string originalStreamId = null)
+        public EmittedLinkToWithRecategorization(
+            string streamId, Guid eventId, string target, CheckpointTag causedByTag, CheckpointTag expectedTag,
+            string originalStreamId = null)
             : base(streamId, eventId, "$>", causedByTag, expectedTag, null)
         {
-            _eventNumber = targetEventNumber;
-            _targetStreamId = targetStreamId;
+            _target = target;
+            _originalStreamId = originalStreamId;
         }
 
         public override string Data
         {
-            get
-            {
-                if (!IsReady())
-                    throw new InvalidOperationException("Link target has not been yet committed");
-                return
-                    _eventNumber.Value.ToString(CultureInfo.InvariantCulture) + "@" + _targetStreamId;
-            }
+            get { return _target; }
         }
 
         public override bool IsReady()
         {
-            return _eventNumber != null;
+            return true;
         }
 
-        public void SetTargetEventNumber(int eventNumber)
+        public override IEnumerable<KeyValuePair<string, string>> ExtraMetaData()
         {
-            if (_eventNumber != null)
-                throw new InvalidOperationException("Target event number has been already set");
-            _eventNumber = eventNumber;
+            if (!string.IsNullOrEmpty(_originalStreamId))
+                yield return new KeyValuePair<string, string>("$o", JsonConvert.ToString(_originalStreamId));
         }
-
     }
 }

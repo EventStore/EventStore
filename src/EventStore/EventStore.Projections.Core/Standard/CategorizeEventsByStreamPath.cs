@@ -26,8 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using Microsoft.Win32;
 
 namespace EventStore.Projections.Core.Standard
 {
@@ -57,6 +59,7 @@ namespace EventStore.Projections.Core.Standard
         {
             builder.FromAll();
             builder.AllEvents();
+            builder.SetIncludeLinks();
         }
 
         public void Load(string state)
@@ -88,11 +91,17 @@ namespace EventStore.Projections.Core.Standard
 
             var category = data.PositionStreamId.Substring(0, lastSlashPos);
 
+            string linkTarget;
+            if (data.EventType == SystemEventTypes.LinkTo) 
+                linkTarget = data.Data;
+            else 
+                linkTarget = data.EventSequenceNumber + "@" + data.EventStreamId;
+
             emittedEvents = new[]
                 {
-                    new EmittedDataEvent(
-                        _categoryStreamPrefix + category, Guid.NewGuid(), "$>",
-                        data.EventSequenceNumber + "@" + data.EventStreamId, eventPosition, expectedTag: null)
+                    new EmittedLinkToWithRecategorization(
+                        _categoryStreamPrefix + category, Guid.NewGuid(), linkTarget, eventPosition, expectedTag: null,
+                        originalStreamId: data.PositionStreamId)
                 };
 
             return true;

@@ -312,7 +312,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 events.Add(
                     new Event(
                         e.EventId, e.EventType, true, e.Data != null ? Encoding.UTF8.GetBytes(e.Data) : null,
-                        e.CausedByTag.ToJsonBytes(_projectionVersion)));
+                        e.CausedByTag.ToJsonBytes(_projectionVersion, e.ExtraMetaData())));
                 emittedEvents.Add(e);
             }
             _submittedToWriteEvents = events.ToArray();

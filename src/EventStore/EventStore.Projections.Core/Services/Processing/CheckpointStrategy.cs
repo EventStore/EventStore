@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly HashSet<string> _categories;
         private readonly HashSet<string> _streams;
         private readonly bool _allEvents;
+        private readonly bool _includeLinks;
         private readonly HashSet<string> _events;
         private readonly bool _byStream;
         private readonly bool _byCustomPartitions;
@@ -59,9 +60,9 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 base.Validate(config);
                 return new CheckpointStrategy(
-                    _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream,
-                    _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag,
-                    config.CheckpointsEnabled, _definesStateTransform);
+                    _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, _options.IncludeLinks, ToSet(_events),
+                    _byStream, _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents,
+                    _options.ProcessingLag, config.CheckpointsEnabled, _definesStateTransform);
             }
         }
 
@@ -169,13 +170,15 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private CheckpointStrategy(
-            bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, HashSet<string> events,
-            bool byStream, bool byCustomPartitions, bool useEventIndexes, bool reorderEvents, int processingLag, bool useCheckpoints, bool definesStateTransform)
+            bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, bool includeLinks,
+            HashSet<string> events, bool byStream, bool byCustomPartitions, bool useEventIndexes, bool reorderEvents,
+            int processingLag, bool useCheckpoints, bool definesStateTransform)
         {
             _allStreams = allStreams;
             _categories = categories;
             _streams = streams;
             _allEvents = allEvents;
+            _includeLinks = includeLinks;
             _events = events;
             _byStream = byStream;
             _byCustomPartitions = byCustomPartitions;
@@ -196,7 +199,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
                 return new IndexedEventTypesEventFilter(_events.ToArray());
             if (_allStreams)
-                return new TransactionFileEventFilter(_allEvents, _events);
+                return new TransactionFileEventFilter(_allEvents, _events, includeLinks: _includeLinks);
             if (_categories != null && _categories.Count == 1)
                 return new CategoryEventFilter(_categories.First(), _allEvents, _events);
             if (_categories != null)

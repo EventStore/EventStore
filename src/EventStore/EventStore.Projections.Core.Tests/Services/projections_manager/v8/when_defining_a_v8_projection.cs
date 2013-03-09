@@ -330,6 +330,30 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
+        public class with_include_links_option : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    options({
+                        $includeLinks: true,
+                    });
+                    fromAll().whenAny(
+                        function(state, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.Options.IncludeLinks);
+            }
+        }
+
+        [TestFixture]
         public class with_reorder_events_option : TestFixtureWithJsProjection
         {
             protected override void Given()
