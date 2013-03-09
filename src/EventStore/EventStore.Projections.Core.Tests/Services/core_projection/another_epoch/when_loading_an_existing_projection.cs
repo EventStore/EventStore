@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.another_epoch
@@ -37,8 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.another_epo
 
         protected override void Given()
         {
-            _epoch = 2;
-            _version = 2;
+            _version = new ProjectionVersion(1, 2, 2);
             ExistingEvent(
                 "$projections-projection-result", "Result",
                 @"{""v"":1, ""c"": 100, ""p"": 50}", _testProjectionState);

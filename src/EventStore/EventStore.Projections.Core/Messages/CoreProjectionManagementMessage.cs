@@ -361,17 +361,15 @@ namespace EventStore.Projections.Core.Messages
             private readonly ProjectionConfig _config;
             private readonly Func<IProjectionStateHandler> _handlerFactory;
             private readonly string _name;
-            private readonly int _epoch;
-            private readonly int _version;
+            private readonly ProjectionVersion _version;
 
             public CreateAndPrepare(
-                IEnvelope envelope, Guid projectionId, string name, int epoch, int version, ProjectionConfig config,
+                IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
                 Func<IProjectionStateHandler> handlerFactory)
                 : base(projectionId)
             {
                 _envelope = envelope;
                 _name = name;
-                _epoch = epoch;
                 _version = version;
                 _config = config;
                 _handlerFactory = handlerFactory;
@@ -397,12 +395,7 @@ namespace EventStore.Projections.Core.Messages
                 get { return _envelope; }
             }
 
-            public int Epoch
-            {
-                get { return _epoch; }
-            }
-
-            public int Version
+            public ProjectionVersion Version
             {
                 get { return _version; }
             }
@@ -414,11 +407,10 @@ namespace EventStore.Projections.Core.Messages
             private readonly ProjectionConfig _config;
             private readonly ISourceDefinitionConfigurator _sourceDefinition;
             private readonly string _name;
-            private readonly int _epoch;
-            private readonly int _version;
+            private readonly ProjectionVersion _version;
 
             public CreatePrepared(
-                IEnvelope envelope, Guid projectionId, string name, int epoch, int version, ProjectionConfig config,
+                IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
                 ISourceDefinitionConfigurator sourceDefinition)
                 : base(projectionId)
             {
@@ -427,7 +419,6 @@ namespace EventStore.Projections.Core.Messages
                 if (sourceDefinition == null) throw new ArgumentNullException("sourceDefinition");
                 _envelope = envelope;
                 _name = name;
-                _epoch = epoch;
                 _version = version;
                 _config = config;
                 _sourceDefinition = sourceDefinition;
@@ -453,12 +444,7 @@ namespace EventStore.Projections.Core.Messages
                 get { return _sourceDefinition; }
             }
 
-            public int Epoch
-            {
-                get { return _epoch; }
-            }
-
-            public int Version
+            public ProjectionVersion Version
             {
                 get { return _version; }
             }

@@ -36,6 +36,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
     public struct CheckpointTagVersion
     {
+        public int ProjectionId;
         public int Version;
         public CheckpointTag Tag;
         public Dictionary<string, JToken> ExtraMetadata;
@@ -48,23 +49,23 @@ namespace EventStore.Projections.Core.Services.Processing
             if (string.IsNullOrEmpty(source))
                 return null;
             var reader = new JsonTextReader(new StringReader(source));
-            return CheckpointTag.FromJson(reader, -1).Tag;
+            return CheckpointTag.FromJson(reader, default(ProjectionVersion)).Tag;
         }
 
-        public static CheckpointTagVersion ParseCheckpointTagJson(this byte[] source, int currentEpoch)
+        public static CheckpointTagVersion ParseCheckpointTagJson(this byte[] source, ProjectionVersion current)
         {
             if (source == null || source.Length == 0)
-                return new CheckpointTagVersion { Version = currentEpoch, Tag = null };
+                return new CheckpointTagVersion { Version = current.Version, ProjectionId = current.ProjectionId, Tag = null };
             var reader = new JsonTextReader(new StreamReader(new MemoryStream(source)));
-            return CheckpointTag.FromJson(reader, currentEpoch);
+            return CheckpointTag.FromJson(reader, current);
         }
 
-        public static CheckpointTagVersion ParseCheckpointTagJson(this string source, int currentEpoch)
+        public static CheckpointTagVersion ParseCheckpointTagJson(this string source, ProjectionVersion current)
         {
             if (string.IsNullOrEmpty(source))
-                return new CheckpointTagVersion { Version = currentEpoch, Tag = null };
+                return new CheckpointTagVersion { Version = current.Version, ProjectionId = current.ProjectionId, Tag = null };
             var reader = new JsonTextReader(new StringReader(source));
-            return CheckpointTag.FromJson(reader, currentEpoch);
+            return CheckpointTag.FromJson(reader, current);
         }
     }
 }

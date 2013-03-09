@@ -364,7 +364,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return FromStreamPositions(resultDictionary);
         }
 
-        public byte[] ToJsonBytes(int projectionVersion = -1, IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
+        public byte[] ToJsonBytes(ProjectionVersion projectionVersion = default(ProjectionVersion), IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
         {
             using (var memoryStream = new MemoryStream())
             {
@@ -416,7 +416,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public static CheckpointTagVersion FromJson(JsonTextReader reader, int currentEpoch)
+        public static CheckpointTagVersion FromJson(JsonTextReader reader, ProjectionVersion current)
         {
             Check(reader.Read(), reader);
             Check(JsonToken.StartObject, reader);
@@ -424,7 +424,8 @@ namespace EventStore.Projections.Core.Services.Processing
             long? preparePosition = null;
             Dictionary<string, int> streams = null;
             Dictionary<string, JToken> extra = null;
-            int projectionVersion = currentEpoch;
+            var projectionId = current.ProjectionId;
+            var projectionVersion = current.Epoch;
             while (true)
             {
                 Check(reader.Read(), reader);
@@ -437,9 +438,20 @@ namespace EventStore.Projections.Core.Services.Processing
                     case "$v":
                     case "v":
                         Check(reader.Read(), reader);
-                        var v = (int) (long) reader.Value;
-                        if (v > 0) // TODO: remove this if with time
-                            projectionVersion = v;
+                        if (reader.ValueType == typeof (long))
+                        {
+                            var v = (int)(long)reader.Value;
+                            if (v > 0) // TODO: remove this if with time
+                                projectionVersion = v;
+                        }
+                        else
+                        {
+                            //TODO: better handle errors
+                            var v = (string) reader.Value;
+                            string[] parts = v.Split(':');
+                            projectionId = Int32.Parse(parts[0]);
+                            projectionVersion = Int32.Parse(parts[1]);
+                        }
                         break;
                     case "$c":
                     case "c":
@@ -486,6 +498,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         new CheckpointTag(
                             new EventPosition(commitPosition ?? Int64.MinValue, preparePosition ?? Int64.MinValue), streams),
                     Version = projectionVersion,
+                    ProjectionId = projectionId,
                     ExtraMetadata = extra,
                 };
         }

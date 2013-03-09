@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (@event.Data.ResolvedLinkTo && @event.Data.PositionMetadata != null)
             {
-                var cpv = @event.Data.PositionMetadata.ParseCheckpointTagJson(-1);
+                var cpv = @event.Data.PositionMetadata.ParseCheckpointTagJson(default(ProjectionVersion));
                 JToken v;
                 if (cpv.ExtraMetadata != null && cpv.ExtraMetadata.TryGetValue("$o", out v))
                 {

@@ -48,8 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         protected override void Given()
         {
             base.Given();
-            _projectionEpoch = 2;
-            _projectionVersion = 2;
+            _projectionVersion = new ProjectionVersion(1, 2, 2);
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint", @"{""v"":2, ""s"": {""a"": 0, ""b"": 0, ""c"": 0}}",
                 "{}");

@@ -248,7 +248,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
-            ICoreProjection coreProjection, Guid projectionCorrelationId, int projectionEpoch, int projectionVersion,
+            ICoreProjection coreProjection, Guid projectionCorrelationId, ProjectionVersion projectionVersion, 
             IPublisher publisher,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
@@ -266,21 +266,21 @@ namespace EventStore.Projections.Core.Services.Processing
             if (emitAny && _allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
-                    publisher, projectionCorrelationId, projectionEpoch, projectionVersion, readDispatcher,
+                    publisher, projectionCorrelationId, projectionVersion, readDispatcher,
                     writeDispatcher, projectionConfig, name, PositionTagger, namingBuilder, resultEmitter,
                     UseCheckpoints, emitPartitionCheckpoints);
             }
             else if (emitAny && _streams != null && _streams.Count > 1)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
-                    publisher, projectionCorrelationId, projectionEpoch, projectionVersion, readDispatcher,
+                    publisher, projectionCorrelationId, projectionVersion, readDispatcher,
                     writeDispatcher, projectionConfig, name, PositionTagger, namingBuilder, resultEmitter,
                     UseCheckpoints, emitPartitionCheckpoints);
             }
             else
             {
                 return new DefaultCheckpointManager(
-                    publisher, projectionCorrelationId, projectionVersion, projectionEpoch, readDispatcher,
+                    publisher, projectionCorrelationId, projectionVersion, readDispatcher,
                     writeDispatcher, projectionConfig, name, PositionTagger, namingBuilder, resultEmitter,
                     UseCheckpoints, emitPartitionCheckpoints);
             }

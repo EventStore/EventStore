@@ -97,6 +97,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly ISingletonTimeoutScheduler _timeoutScheduler;
         private readonly IPublisher _coreQueue;
         private readonly Guid _id;
+        private readonly int _projectionId;
         private readonly string _name;
         private ManagedProjectionState _state;
         private PersistedState _persistedState = new PersistedState();
@@ -112,7 +113,7 @@ namespace EventStore.Projections.Core.Services.Management
         private int _lastWrittenVersion;
 
         public ManagedProjection(
-            IPublisher coreQueue, Guid id, string name, ILogger logger,
+            IPublisher coreQueue, Guid id, int projectionId, string name, ILogger logger,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
@@ -125,6 +126,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (name == "") throw new ArgumentException("name");
             _coreQueue = coreQueue;
             _id = id;
+            _projectionId = projectionId;
             _name = name;
             _logger = logger;
             _writeDispatcher = writeDispatcher;
@@ -664,7 +666,8 @@ namespace EventStore.Projections.Core.Services.Management
 
             var createProjectionMessage =
                 new CoreProjectionManagementMessage.CreateAndPrepare(
-                    new PublishEnvelope(_inputQueue), _id, _name, _persistedState.Epoch ?? 1, _persistedState.Version ?? 1,
+                    new PublishEnvelope(_inputQueue), _id, _name, 
+                    new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 1, _persistedState.Version ?? 1),
                     config, delegate
                         {
                             // this delegate runs in the context of a projection core thread
@@ -724,8 +727,8 @@ namespace EventStore.Projections.Core.Services.Management
 
             var createProjectionMessage =
                 new CoreProjectionManagementMessage.CreatePrepared(
-                    new PublishEnvelope(_inputQueue), _id, _name, _persistedState.Epoch ?? 1,
-                    _persistedState.Version ?? 1, config, new SourceDefinition(_persistedState.SourceDefinition));
+                    new PublishEnvelope(_inputQueue), _id, _name, new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 1,
+                    _persistedState.Version ?? 1), config, new SourceDefinition(_persistedState.SourceDefinition));
 
             //note: set running before start as coreProjection.start() can respond with faulted
             _state = ManagedProjectionState.Preparing;

@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void set_a_caused_by_position_attributes()
         {
-            var metadata = _writeEventHandler.HandledMessages[0].Events[0].Metadata.ParseCheckpointTagJson(-1);
+            var metadata = _writeEventHandler.HandledMessages[0].Events[0].Metadata.ParseCheckpointTagJson(default(ProjectionVersion));
             Assert.AreEqual(120, metadata.Tag.CommitPosition);
             Assert.AreEqual(110, metadata.Tag.PreparePosition);
         }

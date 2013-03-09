@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", 1, 1, CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(100, 50), _readDispatcher,
+                "test_stream", new ProjectionVersion(1, 1, 1), CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(100, 50), _readDispatcher,
                 _writeDispatcher, _readyHandler, maxWriteBatchLength: 50);
             _stream.Start();
             _stream.EmitEvents(CreateEventBatch());

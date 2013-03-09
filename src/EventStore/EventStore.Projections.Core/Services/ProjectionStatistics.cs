@@ -44,6 +44,8 @@ namespace EventStore.Projections.Core.Services
 
         public string Name { get; set; }
 
+        public int ProjectionId { get; set; }
+
         public int Epoch { get; set; }
 
         public int Version { get; set; }
