@@ -153,7 +153,7 @@ var $projections = {
 
              var eventHandler = getStatePartitionHandler;
 
-             var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, null, position);
+             var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, null);
 
              tryDeserializeBody(eventEnvelope);
 
