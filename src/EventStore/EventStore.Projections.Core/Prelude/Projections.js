@@ -127,20 +127,33 @@ var $projections = {
                 eventEnvelope.jsonError = ex;
                 eventEnvelope.body = undefined;
             }
+         }
+
+        function envelope(body, bodyRaw, eventType, streamId, sequenceNumber, metadataRaw, partition) {
+            this.body = body;
+            this.bodyRaw = bodyRaw;;
+            this.eventType = eventType;
+            this.streamId = streamId;
+            this.sequenceNumber = sequenceNumber;
+            this.metadataRaw = metadataRaw;
+            this.partition = partition;
+            this.metadata_ = null;
         }
 
-         function getStatePartition(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw) {
+        Object.defineProperty(envelope.prototype, "metadata", {
+            get: function () {
+                if (!this.metadata_) {
+                    this.metadata_ = JSON.parse(this.metadataRaw);
+                }
+                return this.metadata_;
+            }
+        });
+
+        function getStatePartition(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw) {
 
              var eventHandler = getStatePartitionHandler;
 
-             var eventEnvelope = {
-                 body: null,
-                 bodyRaw: eventRaw,
-                 eventType: eventType,
-                 streamId: streamId,
-                 sequenceNumber: sequenceNumber,
-                 metadataRaw: metadataRaw,
-             };
+             var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, null, position);
 
              tryDeserializeBody(eventEnvelope);
 
@@ -165,16 +178,8 @@ var $projections = {
 
             var index;
 
-            var eventEnvelope = {
-                body: null,
-                bodyRaw: eventRaw,
-                eventType: eventType,
-                streamId: streamId,
-                sequenceNumber: sequenceNumber,
-                metadataRaw: metadataRaw,
-                partition: partition,
-            };
-            // debug only
+            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, partition);
+             // debug only
             for (index = 0; index < rawEventHandlers.length; index++) {
                 eventHandler = rawEventHandlers[index];
                 state = callHandler(eventHandler, state, eventEnvelope);
