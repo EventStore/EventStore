@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.ClientAPI
             var closed = new ManualResetEventSlim();
             var settings = ConnectionSettings.Create()
                                              .UseConsoleLogger()
-                                             .LimitReconnectionsTo(2)
+                                             .LimitReconnectionsTo(1)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
                                              .OnClosed((x, r) => closed.Set())
                                              .OnConnected(x => Console.WriteLine("Connected..."))
@@ -60,7 +60,6 @@ namespace EventStore.Core.Tests.ClientAPI
 
             using (var connection = EventStoreConnection.Create(settings))
             {
-
                 connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
 
                 if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds

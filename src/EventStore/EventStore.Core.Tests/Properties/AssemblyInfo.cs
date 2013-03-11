@@ -28,7 +28,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using NUnit.Framework;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -50,4 +49,5 @@ using NUnit.Framework;
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("1596e010-9891-4859-b842-b91aa7eab42d")]
 
-[assembly: Category("All")]
+[assembly: NUnit.Framework.Category("All")]
+[assembly: NUnit.Framework.Timeout(30 * 60 * 1000)]

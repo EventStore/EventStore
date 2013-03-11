@@ -237,7 +237,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public void Fail(Exception exception)
         {
-            _source.SetException(exception);
+            _source.TrySetException(exception);
             DropSubscription("Subscription failed.", exception, clientInitiated: false, shouldSubscriptionExist: false);
         }
 
