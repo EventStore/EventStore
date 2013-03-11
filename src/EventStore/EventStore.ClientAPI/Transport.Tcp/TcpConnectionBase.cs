@@ -118,7 +118,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private long _lastSendStarted = -1;
         private long _lastReceiveStarted = -1;
-        private bool _isClosed;
+        private volatile bool _isClosed;
 
         private int _pendingSendBytes;
         private int _inSendBytes;
