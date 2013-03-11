@@ -59,9 +59,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
             Ensure.NotNull(epochCheckpoint, "epochCheckpoint");
             Ensure.NotNull(truncateCheckpoint, "truncateCheckpoint");
-
-//            if ((chunkSize & (chunkSize-1)) != 0)
-//                throw new ArgumentException("Segment size should be the power of 2.", "chunkSize");
             
             Path = path;
             ChunkSize = chunkSize;

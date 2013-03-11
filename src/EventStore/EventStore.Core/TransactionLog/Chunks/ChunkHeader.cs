@@ -38,6 +38,10 @@ namespace EventStore.Core.TransactionLog.Chunks
     {
         public const int Size = 128;
 
+        public long ChunkFullSize { get { return (ChunkEndNumber - ChunkStartNumber + 1) * (long)ChunkSize; } }
+        public long ChunkStartPosition { get { return ChunkStartNumber * (long)ChunkSize; } }
+        public long ChunkEndPosition { get { return (ChunkEndNumber + 1) * (long)ChunkSize; } }
+
         public readonly byte Version;
         public readonly int ChunkSize;
         public readonly int ChunkStartNumber;
@@ -96,15 +100,29 @@ namespace EventStore.Core.TransactionLog.Chunks
             return new ChunkHeader(version, chunkSize, chunkStartNumber, chunkEndNumber, isScavenged, chunkId);
         }
 
+        // TODO AN this should be long
+        public int GetChunkLocalLogicalPosition(long globalLogicalPosition)
+        {
+            Ensure.Nonnegative(globalLogicalPosition, "globalLogicalPosition");
+            if (globalLogicalPosition < ChunkStartPosition || globalLogicalPosition > ChunkEndPosition)
+                throw new Exception(string.Format("globalLogicalPosition {0} is out of chunk logical positions [{1}, {2}].",
+                                                  globalLogicalPosition, ChunkStartPosition, ChunkEndPosition));
+            return (int)(globalLogicalPosition - ChunkStartPosition);
+        }
+
         public override string ToString()
         {
-            return string.Format("Version: {0}, ChunkSize: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, IsScavenged: {4}, ChunkId: {5}",
+            return string.Format("Version: {0}, ChunkSize: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, IsScavenged: {4}, ChunkId: {5}\n" +
+                                 "ChunkFullSize: {6}, ChunkStartPosition: {7}, ChunkEndPosition: {8}",
                                  Version,
                                  ChunkSize,
                                  ChunkStartNumber,
                                  ChunkEndNumber,
                                  IsScavenged,
-                                 ChunkId);
+                                 ChunkId,
+                                 ChunkFullSize,
+                                 ChunkStartNumber,
+                                 ChunkEndNumber);
         }
     }
 }

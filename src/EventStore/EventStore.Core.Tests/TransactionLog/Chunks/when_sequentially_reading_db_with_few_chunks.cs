@@ -49,8 +49,6 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             base.TestFixtureSetUp();
 
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             _db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                     new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                     4096,

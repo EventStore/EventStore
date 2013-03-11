@@ -58,7 +58,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             var lastChunkNum = (int) (checkpoint/Config.ChunkSize);
             var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
 
-
             for (int i = 0; i < lastChunkNum; ++i)
             {
                 var versions = Config.FileNamingStrategy.GetAllVersionsFor(i);

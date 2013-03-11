@@ -60,23 +60,25 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             Log.Trace("Started scavenging of DB. Chunks count at start: {0}.", _db.Manager.ChunksCount);
 
-            for (int i = 0; i < _db.Manager.ChunksCount; ++i)
+            long scavengePos = 0;
+            while (scavengePos < _db.Config.WriterCheckpoint.Read())
             {
-                var chunk = _db.Manager.GetChunk(i);
+                var chunk = _db.Manager.GetChunkFor(scavengePos);
                 if (chunk == null)
-                    throw new Exception(string.Format("Requested oldChunk #{0}, which is not present in TFChunkManager.", i));
+                    throw new Exception(string.Format("Requested oldChunk for position {0}, which is not present in TFChunkManager.", scavengePos));
                 if (!chunk.IsReadOnly)
                 {
-                    Log.Trace("Stopping scavenging due to non-completed TFChunk #{0}.", i);
+                    Log.Trace("Stopping scavenging due to non-completed TFChunk for position {0}.", scavengePos);
                     break;
                 }
-                if (_db.Config.ChaserCheckpoint.Read() < chunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize)
+                if (_db.Config.ChaserCheckpoint.Read() < chunk.ChunkHeader.ChunkStartPosition)
                 {
-                    Log.Trace("Stopping scavenging due to chaser hasn't yet processed TFChunk #{0} completely.", i);
+                    Log.Trace("Stopping scavenging due to chaser hasn't yet processed TFChunk for position {0} completely.", scavengePos);
                     break;
                 }
 
                 ScavengeChunk(chunk, alwaysKeepScavenged);
+                scavengePos = chunk.ChunkHeader.ChunkEndPosition;
             }
 
             Log.Trace("Scavenging pass COMPLETED in {0}.", sw.Elapsed);
@@ -88,7 +90,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             int chunkStartNumber = oldChunk.ChunkHeader.ChunkStartNumber;
             int chunkEndNumber = oldChunk.ChunkHeader.ChunkStartNumber;
-            long chunkStartPosition = chunkStartNumber * (long)oldChunk.ChunkHeader.ChunkSize;
+            long chunkStartPosition = oldChunk.ChunkHeader.ChunkStartPosition;
             int chunkSize = oldChunk.ChunkHeader.ChunkSize;
 
             var tmpChunkPath = Path.Combine(_db.Config.Path, Guid.NewGuid() + ".scavenge.tmp");
@@ -368,7 +370,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                         writeResult.OldPosition,
                         record));
             }
-            int logPos = (int) (record.Position%newChunk.ChunkHeader.ChunkSize);
+            // TODO AN: int --> long
+            int logPos = (int) newChunk.ChunkHeader.GetChunkLocalLogicalPosition(record.Position);
             int actualPos = (int) writeResult.OldPosition;
             return new PosMap(logPos, actualPos);
         }

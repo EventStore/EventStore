@@ -289,7 +289,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
                     int nextLogicalPos = Chunk.ChunkFooter.MapCount >= 2
                                          ? ReadPosMap(workItem, 1).LogPos
-                                         : (int)(record.Position % Chunk.ChunkHeader.ChunkSize) + length + 2*sizeof(int);
+                                         : Chunk.ChunkHeader.GetChunkLocalLogicalPosition(record.Position + length + 2*sizeof(int));
                     return new RecordReadResult(true, nextLogicalPos, record, length);
                 }
                 finally
@@ -315,7 +315,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
                     int nextLogicalPos = pos.Item2 + 1 < Chunk.ChunkFooter.MapCount
                                          ? ReadPosMap(workItem, pos.Item2 + 1).LogPos
-                                         : (int)(record.Position % Chunk.ChunkHeader.ChunkSize) + length + 2*sizeof(int);
+                                         : Chunk.ChunkHeader.GetChunkLocalLogicalPosition(record.Position + length + 2*sizeof(int));
                     return new RecordReadResult(true, nextLogicalPos, record, length);
                 }
                 finally
@@ -337,9 +337,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     if (!TryReadBackwardInternal(workItem, Chunk.PhysicalDataSize, out length, out record))
                         return RecordReadResult.Failure;
 
-                    int nextLogicalPos = Chunk.ChunkFooter.MapCount > 1
-                                         ? ReadPosMap(workItem, Chunk.ChunkFooter.MapCount - 1).LogPos
-                                         : (int)(record.Position % Chunk.ChunkHeader.ChunkSize);
+                    int nextLogicalPos = Chunk.ChunkHeader.GetChunkLocalLogicalPosition(record.Position);
                     return new RecordReadResult(true, nextLogicalPos, record, length);
                 }
                 finally
@@ -364,9 +362,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     if (!TryReadBackwardInternal(workItem, actualPosition, out length, out record))
                         return RecordReadResult.Failure;
 
-                    int nextLogicalPos = pos.Item2 > 0
-                                         ? ReadPosMap(workItem, pos.Item2 - 1).LogPos
-                                         : (int)(record.Position % Chunk.ChunkHeader.ChunkSize);
+                    int nextLogicalPos = Chunk.ChunkHeader.GetChunkLocalLogicalPosition(record.Position);
                     return new RecordReadResult(true, nextLogicalPos, record, length);
                 }
                 finally
