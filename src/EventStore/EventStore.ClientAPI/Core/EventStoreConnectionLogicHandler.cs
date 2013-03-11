@@ -585,7 +585,7 @@ namespace EventStore.ClientAPI.Core
 
             public override string ToString()
             {
-                return string.Format("Operation {0} ({1:B}): {2}, retry count: {3}, last updated: {4}",
+                return string.Format("Operation {0} ({1:B}): {2}, retry count: {3}, last updated: {4:HH:mm:ss.fff}",
                                      Operation.GetType().Name,
                                      CorrelationId,
                                      Operation,
@@ -629,7 +629,7 @@ namespace EventStore.ClientAPI.Core
 
             public override string ToString()
             {
-                return string.Format("Subscription {0} ({1:B}): {2}, is subscribed: {3}, retry count: {4}, last updated: {5}",
+                return string.Format("Subscription {0} ({1:B}): {2}, is subscribed: {3}, retry count: {4}, last updated: {5:HH:mm:ss.fff}",
                                      Operation.GetType().Name,
                                      CorrelationId,
                                      Operation,

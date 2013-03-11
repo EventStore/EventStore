@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_does_not_exist_should_be_successfull()
         {
             const string stream = "which_does_not_exist_should_be_successfull";
-            using (var connection = EventStoreConnection.Create())
+            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 connection.Connect(_node.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void many_times_with_same_id_should_succeed()
         {
             const string stream = "many_times_with_same_id_should_succeed";
-            using (var connection = EventStoreConnection.Create())
+            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 connection.Connect(_node.TcpEndPoint);
                 var id = Guid.NewGuid();
@@ -95,7 +95,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_supposed_to_be_system_should_succees__but_on_your_own_risk()
         {
             const string stream = "$which_supposed_to_be_system_should_succees__but_on_your_own_risk";
-            using (var connection = EventStoreConnection.Create())
+            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 connection.Connect(_node.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_already_exists_should_fail()
         {
             const string stream = "which_already_exists_should_fail";
-            using (var connection = EventStoreConnection.Create())
+            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 connection.Connect(_node.TcpEndPoint);
                 var initialCreate = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -124,7 +124,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_was_deleted_should_fail()
         {
             const string stream = "which_was_deleted_should_fail";
-            using (var connection = EventStoreConnection.Create())
+            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 connection.Connect(_node.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);

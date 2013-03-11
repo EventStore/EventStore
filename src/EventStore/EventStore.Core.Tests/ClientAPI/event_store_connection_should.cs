@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void not_throw_on_close_if_connect_was_not_called()
         {
-            var connection = EventStoreConnection.Create();
+            var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger());
             Assert.DoesNotThrow(connection.Close);
         }
 
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void not_throw_on_close_if_called_multiple_times()
         {
-            var connection = EventStoreConnection.Create();
+            var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger());
             connection.Connect(_node.TcpEndPoint);
             connection.Close();
             Assert.DoesNotThrow(connection.Close);
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void throw_on_connect_called_more_than_once()
         {
-            var connection = EventStoreConnection.Create();
+            var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger());
             Assert.DoesNotThrow(() => connection.Connect(_node.TcpEndPoint));
 
             Assert.That(() => connection.Connect(_node.TcpEndPoint),
@@ -87,7 +87,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void throw_on_connect_called_after_close()
         {
-            var connection = EventStoreConnection.Create();
+            var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger());
             connection.Connect(_node.TcpEndPoint);
             connection.Close();
 
@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void throw_invalid_operation_on_every_api_call_if_connect_was_not_called()
         {
-            var connection = EventStoreConnection.Create();
+            var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger());
 
             const string s = "stream";
             var events = new[] { TestEvent.NewTestEvent() };
