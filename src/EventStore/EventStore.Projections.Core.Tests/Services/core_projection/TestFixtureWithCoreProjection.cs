@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         protected override void Given1()
         {
-            _version = new ProjectionVersion(1, 1, 1);
+            _version = new ProjectionVersion(1, 0, 0);
         }
 
         [SetUp]

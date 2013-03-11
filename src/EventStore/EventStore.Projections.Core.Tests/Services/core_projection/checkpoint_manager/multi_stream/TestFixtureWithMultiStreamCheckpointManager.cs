@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         protected override void Given()
         {
             base.Given();
-            _projectionVersion = new ProjectionVersion(1, 1, 1);
+            _projectionVersion = new ProjectionVersion(1, 0, 0);
         }
 
         protected override void When()

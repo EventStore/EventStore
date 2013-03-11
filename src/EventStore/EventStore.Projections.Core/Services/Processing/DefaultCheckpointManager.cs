@@ -214,7 +214,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (parsed.Version.ProjectionId != _projectionVersion.ProjectionId
                         || _projectionVersion.Epoch > parsed.Version.Version)
                     {
-                        _lastWrittenCheckpointEventNumber = ExpectedVersion.NoStream;
+                        _lastWrittenCheckpointEventNumber = checkpoint.EventNumber;
                         CheckpointLoaded(null, null);
                     }
                     else

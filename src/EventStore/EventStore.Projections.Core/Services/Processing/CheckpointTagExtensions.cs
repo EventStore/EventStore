@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public static CheckpointTagVersion ParseCheckpointTagJson(this byte[] source, ProjectionVersion current)
         {
             if (source == null || source.Length == 0)
-                return new CheckpointTagVersion { Version = current, Tag = null };
+                return new CheckpointTagVersion { Version = new ProjectionVersion(current.ProjectionId, 0, 0), Tag = null };
             var reader = new JsonTextReader(new StreamReader(new MemoryStream(source)));
             return CheckpointTag.FromJson(reader, current);
         }
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public static CheckpointTagVersion ParseCheckpointTagJson(this string source, ProjectionVersion current)
         {
             if (string.IsNullOrEmpty(source))
-                return new CheckpointTagVersion { Version = current, Tag = null };
+                return new CheckpointTagVersion { Version = new ProjectionVersion(current.ProjectionId, 0, 0), Tag = null };
             var reader = new JsonTextReader(new StringReader(source));
             return CheckpointTag.FromJson(reader, current);
         }

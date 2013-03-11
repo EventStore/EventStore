@@ -430,8 +430,8 @@ namespace EventStore.Projections.Core.Services.Processing
             Dictionary<string, int> streams = null;
             Dictionary<string, JToken> extra = null;
             var projectionId = current.ProjectionId;
-            var projectionEpoch = current.Epoch;
-            var projectionVersion = current.Epoch;
+            var projectionEpoch = 0;
+            var projectionVersion = 0;
             while (true)
             {
                 Check(reader.Read(), reader);

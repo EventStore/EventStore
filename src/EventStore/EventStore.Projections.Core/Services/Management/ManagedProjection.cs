@@ -326,7 +326,11 @@ namespace EventStore.Projections.Core.Services.Management
             }
             UpdateProjectionVersion();
             _persistedState.Epoch = _persistedState.Version;
-            Prepare(() => BeginWrite(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name))));
+            Prepare(
+                () =>
+                BeginWrite(
+                    () =>
+                    LoadStopped(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)))));
         }
 
         public void Handle(ProjectionManagementMessage.Delete message)
