@@ -193,7 +193,7 @@ namespace EventStore.ClientAPI.Core
 
         private void TcpConnectionEstablished(TcpPackageConnection connection)
         {
-            if (_disposed || connection.ConnectionId != _connection.ConnectionId)
+            if (_disposed || connection.ConnectionId != _connection.ConnectionId || connection.IsClosed)
                 return;
 
             _reconnectionStopwatch.Stop();
