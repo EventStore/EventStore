@@ -203,6 +203,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _readyHandler.Handle(message);
         }
 
+        public void Handle(CoreProjectionProcessingMessage.Failed message)
+        {
+            _readyHandler.Handle(message);
+        }
+
         public void Dispose()
         {
             if (_emittedStreams != null)

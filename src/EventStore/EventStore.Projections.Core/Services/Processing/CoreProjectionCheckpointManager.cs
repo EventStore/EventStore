@@ -410,6 +410,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(new CoreProjectionProcessingMessage.RestartRequested(_projectionCorrelationId, reason));
         }
 
+        protected void Failed(string reason)
+        {
+            _stopped = true; // ignore messages
+            _publisher.Publish(new CoreProjectionProcessingMessage.Failed(_projectionCorrelationId, reason));
+        }
+
         public void Handle(CoreProjectionProcessingMessage.ReadyForCheckpoint message)
         {
             // ignore any messages - typically when faulted
@@ -443,6 +449,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             RequestRestart(message.Reason);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.Failed message)
+        {
+            Failed(message.Reason);
         }
 
         private EmittedEvent[] ResultUpdated(string partition, PartitionState oldState, PartitionState newState)

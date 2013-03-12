@@ -484,6 +484,11 @@ namespace EventStore.Projections.Core.Services.Processing
             
         }
 
+        public void Handle(CoreProjectionProcessingMessage.Failed message)
+        {
+            SetFaulted(message.Reason);
+        }
+
         private void EnsureUnsubscribed()
         {
             if (_subscribed)

@@ -71,7 +71,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                         IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>, 
                                         IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>, 
                                         IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>, 
-                                        IHandle<CoreProjectionProcessingMessage.RestartRequested>
+                                        IHandle<CoreProjectionProcessingMessage.RestartRequested>,
+                                        IHandle<CoreProjectionProcessingMessage.Failed>
 
 
     {
@@ -485,6 +486,13 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.Failed message)
         {
             CoreProjection projection;
             if (_projections.TryGetValue(message.ProjectionId, out projection))
