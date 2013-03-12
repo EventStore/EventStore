@@ -318,19 +318,19 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Reset message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (Enabled)
-            {
-                message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.OperationFailed("Must be disabled before resetting"));
-                return;
-            }
-            UpdateProjectionVersion();
-            _persistedState.Epoch = _persistedState.Version;
-            Prepare(
+            Stop(
                 () =>
-                BeginWrite(
-                    () =>
-                    LoadStopped(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)))));
+                    {
+                        UpdateProjectionVersion();
+                        _persistedState.Epoch = _persistedState.Version;
+                        Prepare(
+                            () =>
+                            BeginWrite(
+                                () =>
+                                StartOrLoadStopped(
+                                    () =>
+                                    message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)))));
+                    });
         }
 
         public void Handle(ProjectionManagementMessage.Delete message)
@@ -442,7 +442,7 @@ namespace EventStore.Projections.Core.Services.Management
                         Epoch = 0,
                         Version = 0,
                     });
-            Action completed1 = () => StartOrLoadNew(completed);
+            Action completed1 = () => StartOrLoadStopped(completed);
             UpdateProjectionVersion();
             Prepare(() => BeginWrite(completed1));
         }
@@ -797,7 +797,7 @@ namespace EventStore.Projections.Core.Services.Management
             return projectionConfig;
         }
 
-        private void StartOrLoadNew(Action completed)
+        private void StartOrLoadStopped(Action completed)
         {
             if (Enabled)
                 Start(completed);
@@ -810,10 +810,7 @@ namespace EventStore.Projections.Core.Services.Management
             UpdateQuery(message.HandlerType ?? HandlerType, message.Query, message.EmitEnabled);
             Action completed = () =>
                 {
-                    if (Enabled)
-                        Start(() => { });
-                    else
-                        LoadStopped(() => { });
+                    StartOrLoadStopped(() => { });
                     message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name));
                 };
             UpdateProjectionVersion();

@@ -150,8 +150,8 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
 
         function reset() {
             confirmation.confirm("Reset projection?",
-                '<p><span class="ui-icon ui-icon-alert" style="float: left; margin: 0 7px 20px 0;"></span>' + 
-                'Projection reset is a dangarous operation.  [PROVIDE MORE TEXT]. Are you sure?</p>',
+                '<div><span class="ui-icon ui-icon-alert" style="float: left; margin: 0 7px 20px 0;"></span>' + 
+                '<p style="padding-left: 20px;">Projection reset is an unsafe operation.  Any previously emitted events will be emitted again to the same streams and handled by their subscribers.  <br><strong>Are you sure?</strong></p></div>',
                 [
                     {
                         title: "Confirm", handler: function () {
