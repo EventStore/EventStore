@@ -364,8 +364,10 @@ namespace EventStore.Projections.Core.Services.Processing
             return FromStreamPositions(resultDictionary);
         }
 
-        public byte[] ToJsonBytes(ProjectionVersion projectionVersion = default(ProjectionVersion), IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
+        public byte[] ToJsonBytes(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
         {
+            if (projectionVersion.ProjectionId <= 0) throw new ArgumentException("projectionId is required", "projectionVersion");
+
             using (var memoryStream = new MemoryStream())
             {
                 using (var textWriter = new StreamWriter(memoryStream, _utf8NoBom))
