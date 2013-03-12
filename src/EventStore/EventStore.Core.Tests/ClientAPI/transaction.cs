@@ -273,5 +273,29 @@ namespace EventStore.Core.Tests.ClientAPI
                 }
             }
         }
+
+        [Test, Category("LongRunning")]
+        public void idempotency_is_correct_for_explicit_transactions_with_expected_version_any()
+        {
+            const string streamId = "idempotency_is_correct_for_explicit_transactions_with_expected_version_any";
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
+            {
+                store.Connect(_node.TcpEndPoint);
+
+                var e = new EventData(Guid.NewGuid(), "SomethingHappened", true, Encoding.UTF8.GetBytes("{Value:42}"), null);
+
+                var transaction1 = store.StartTransaction(streamId, ExpectedVersion.Any);
+                transaction1.Write(new[] {e});
+                transaction1.Commit();
+
+                var transaction2 = store.StartTransaction(streamId, ExpectedVersion.Any);
+                transaction2.Write(new[] {e});
+                transaction2.Commit();
+
+                var res = store.ReadStreamEventsForward(streamId, 1, 100, false);
+                Assert.AreEqual(1, res.Events.Length);
+                Assert.AreEqual(e.EventId, res.Events[0].Event.EventId);
+            }
+        }
     }
 }
