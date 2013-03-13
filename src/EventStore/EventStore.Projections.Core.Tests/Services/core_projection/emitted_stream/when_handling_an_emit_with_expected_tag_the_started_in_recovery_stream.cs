@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
 
         protected override void Given()
         {
-            ExistingEvent("test_stream", "type", @"{""commitPosition"": 100, ""preparePosition"": 50}", "data");
+            ExistingEvent("test_stream", "type", @"{""c"": 100, ""p"": 50}", "data");
         }
 
         [SetUp]
@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler,
+                "test_stream", new ProjectionVersion(1, 0, 0), CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler,
                 maxWriteBatchLength: 50);
             _stream.Start();
         }
@@ -77,6 +77,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         [Test]
         public void does_not_publish_not_yet_published_events_if_expected_tag_is_before_last_event_tag()
         {
+            //TODO: is it corrupted dB case? 
             _stream.EmitEvents(
                 new[] { new EmittedDataEvent("test_stream", Guid.NewGuid(), "type", "data",
                 CheckpointTag.FromPosition(200, 150), CheckpointTag.FromPosition(40, 20)) });
@@ -99,9 +100,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[] { new EmittedDataEvent("test_stream", Guid.NewGuid(), "type", "data",
                 CheckpointTag.FromPosition(200, 150), CheckpointTag.FromPosition(100, 50)) });
             var metaData =
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single().Events[0].Metadata.ParseCheckpointTagJson();
-            Assert.AreEqual(200, metaData.CommitPosition);
-            Assert.AreEqual(150, metaData.PreparePosition);
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single().Events[0].Metadata.ParseCheckpointTagJson(default(ProjectionVersion));
+            Assert.AreEqual(200, metaData.Tag.CommitPosition);
+            Assert.AreEqual(150, metaData.Tag.PreparePosition);
         }
 
     }

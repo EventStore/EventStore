@@ -35,7 +35,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -139,10 +139,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             _lastMessageReplies.Clear();
+            Given1();
             Given();
             _lastPosition =
                 _lastMessageReplies.Values.Max(v => v == null ? (long?) 0 : v.Max(u => (long?) u.LogPosition))
                 ?? 0 + 100;
+        }
+
+        protected virtual void Given1()
+        {
         }
 
         protected virtual void Given()
@@ -161,7 +166,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                                                   .Reverse()
                                                   .SkipWhile(v => message.FromEventNumber != -1 && v.EventNumber > message.FromEventNumber)
                                                   .Take(message.MaxCount)
-                                                  .Select(x => new ResolvedEvent(x, null))
+                                                  .Select(v => BuildEvent(v, message.ResolveLinks))
                                                   .ToArray();
                     message.Envelope.ReplyWith(
                             new ClientMessage.ReadStreamEventsBackwardCompleted(
@@ -196,6 +201,21 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             }
         }
 
+        private ResolvedEvent BuildEvent(EventRecord x, bool resolveLinks)
+        {
+            if (x.EventType == "$>" && resolveLinks)
+            {
+                var parts = Encoding.UTF8.GetString(x.Data).Split('@');
+                var list = _lastMessageReplies[parts[1]];
+                var eventNumber = int.Parse(parts[0]);
+                var target = list[eventNumber];
+
+                return new ResolvedEvent(target, x);
+            }
+            else
+                return new ResolvedEvent(x, null);
+        }
+
         public void Handle(ClientMessage.WriteEvents message)
         {
             if (_allWritesSucceed || _writesToSucceed.Contains(message.EventStreamId))
@@ -209,22 +229,29 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private void ProcessWrite(ClientMessage.WriteEvents message)
         {
             List<EventRecord> list;
+            int add = 0;
             if (!_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || list == null)
             {
                 list = new List<EventRecord>();
+                add = 1;
+                list.Add(new EventRecord(
+                                            0, 0, message.CorrelationId, Guid.NewGuid(), 1, 0,
+                                            message.EventStreamId, ExpectedVersion.Any, DateTime.UtcNow,
+                                            PrepareFlags.SingleWrite, SystemEventTypes.StreamCreatedImplicit, new byte[0], new byte[0]));
                 _lastMessageReplies[message.EventStreamId] = list;
             }
             foreach (var eventRecord in from e in message.Events
+                                        let eventNumber = list.Count
                                         select
                                             new EventRecord(
-                                            list.Count, list.Count*1000, message.CorrelationId, e.EventId, list.Count*1000, 0,
+                                            eventNumber, eventNumber*1000, message.CorrelationId, e.EventId, eventNumber*1000, 0,
                                             message.EventStreamId, ExpectedVersion.Any, DateTime.UtcNow,
                                             PrepareFlags.SingleWrite, e.EventType, e.Data, e.Metadata))
             {
                 list.Add(eventRecord);
             }
 
-            message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length));
+            message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length - add));
         }
 
         public void Handle(ProjectionCoreServiceMessage.Tick message)

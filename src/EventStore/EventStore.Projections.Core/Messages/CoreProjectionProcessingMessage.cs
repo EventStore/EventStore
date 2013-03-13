@@ -121,6 +121,22 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class Failed : Message
+        {
+            private readonly string _reason;
+
+            public Failed(Guid projectionId, string reason)
+                : base(projectionId)
+            {
+                _reason = reason;
+            }
+
+            public string Reason
+            {
+                get { return _reason; }
+            }
+        }
+
         public class ReadyForCheckpoint : EventStore.Core.Messaging.Message
         {
             private readonly object _sender;

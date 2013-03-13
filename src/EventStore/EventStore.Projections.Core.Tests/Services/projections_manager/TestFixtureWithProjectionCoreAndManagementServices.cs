@@ -28,7 +28,6 @@
 
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
@@ -84,6 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_coreService);
             _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_coreService);
             _bus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_coreService);
+            _bus.Subscribe<CoreProjectionProcessingMessage.Failed>(_coreService);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_coreService);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_coreService);
             _bus.Subscribe<ProjectionCoreServiceMessage.Start>(_coreService);

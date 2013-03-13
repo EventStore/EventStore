@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             new ResolvedEvent(
                         new EventRecord(
                             1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
-                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsJson,
                             "event_type1", new byte[] {1}, new byte[] {2}), null),
                             new ResolvedEvent(
                         new EventRecord(
@@ -227,6 +227,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             Assert.AreEqual(first.Data.EventId, _firstEventId);
             Assert.AreEqual(second.Data.EventId, _thirdEventId);
             Assert.AreEqual(third.Data.EventId, _secondEventId);
+
+            Assert.IsTrue(first.Data.IsJson);
+            Assert.IsFalse(second.Data.IsJson);
         }
     }
 }

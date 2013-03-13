@@ -26,11 +26,21 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
+
+    public struct CheckpointTagVersion
+    {
+        public ProjectionVersion Version;
+        public CheckpointTag Tag;
+        public Dictionary<string, JToken> ExtraMetadata;
+    }
+
     public static class CheckpointTagExtensions
     {
         public static CheckpointTag ParseCheckpointTagJson(this string source)
@@ -38,15 +48,23 @@ namespace EventStore.Projections.Core.Services.Processing
             if (string.IsNullOrEmpty(source))
                 return null;
             var reader = new JsonTextReader(new StringReader(source));
-            return CheckpointTag.FromJson(reader);
+            return CheckpointTag.FromJson(reader, default(ProjectionVersion)).Tag;
         }
 
-        public static CheckpointTag ParseCheckpointTagJson(this byte[] source)
+        public static CheckpointTagVersion ParseCheckpointTagJson(this byte[] source, ProjectionVersion current)
         {
             if (source == null || source.Length == 0)
-                return null;
+                return new CheckpointTagVersion { Version = new ProjectionVersion(current.ProjectionId, 0, 0), Tag = null };
             var reader = new JsonTextReader(new StreamReader(new MemoryStream(source)));
-            return CheckpointTag.FromJson(reader);
+            return CheckpointTag.FromJson(reader, current);
+        }
+
+        public static CheckpointTagVersion ParseCheckpointTagJson(this string source, ProjectionVersion current)
+        {
+            if (string.IsNullOrEmpty(source))
+                return new CheckpointTagVersion { Version = new ProjectionVersion(current.ProjectionId, 0, 0), Tag = null };
+            var reader = new JsonTextReader(new StringReader(source));
+            return CheckpointTag.FromJson(reader, current);
         }
     }
 }

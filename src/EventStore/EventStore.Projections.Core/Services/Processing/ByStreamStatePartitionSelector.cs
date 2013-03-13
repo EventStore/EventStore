@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using EventStore.Projections.Core.Messages;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -33,6 +34,19 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         public override string GetStatePartition(ProjectionSubscriptionMessage.CommittedEventReceived @event)
         {
+
+            if (@event.Data.ResolvedLinkTo && @event.Data.PositionMetadata != null)
+            {
+                var cpv = @event.Data.PositionMetadata.ParseCheckpointTagJson(default(ProjectionVersion));
+                JToken v;
+                if (cpv.ExtraMetadata != null && cpv.ExtraMetadata.TryGetValue("$o", out v))
+                {
+                    //TODO: handle exceptions properly
+                    var originalStream = (string) ((JValue) v).Value;
+                    return originalStream;
+                }
+            }
+
             return @event.Data.EventStreamId;
         }
     }

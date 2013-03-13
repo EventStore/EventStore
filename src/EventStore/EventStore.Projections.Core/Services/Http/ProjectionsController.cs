@@ -160,6 +160,10 @@ namespace EventStore.Projections.Core.Services.Http
                 new ControllerAction(
                     "/projection/{name}/command/enable", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},
                     SupportedCodecs, DefaultResponseCodec), OnProjectionCommandEnable);
+            service.RegisterControllerAction(
+                new ControllerAction(
+                    "/projection/{name}/command/reset", HttpMethod.Post, new ICodec[] { Codec.ManualEncoding },
+                    SupportedCodecs, DefaultResponseCodec), OnProjectionCommandReset);
         }
 
         private static void OnProjections(HttpEntity http, UriTemplateMatch match)
@@ -250,6 +254,13 @@ namespace EventStore.Projections.Core.Services.Http
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
             Publish(new ProjectionManagementMessage.Enable(envelope, match.BoundVariables["name"]));
+        }
+
+        private void OnProjectionCommandReset(HttpEntity http, UriTemplateMatch match)
+        {
+            var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
+                _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
+            Publish(new ProjectionManagementMessage.Reset(envelope, match.BoundVariables["name"]));
         }
 
         private void OnProjectionStatusGet(HttpEntity http, UriTemplateMatch match)

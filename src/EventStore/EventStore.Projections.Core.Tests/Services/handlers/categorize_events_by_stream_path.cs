@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
                     "", CheckpointTag.FromPosition(200, 150), null,
                     new ResolvedEvent(
                         "cat1-stream1", 10, "cat1-stream1", 10, false, new EventPosition(200, 150), Guid.NewGuid(),
-                        "event_type", true, "{}", "{}", default(DateTime)), out _state, out _emittedEvents);
+                        "event_type", true, "{}", "{}"), out _state, out _emittedEvents);
             }
 
             [Test]
@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
                     "", CheckpointTag.FromPosition(200, 150), null,
                     new ResolvedEvent(
                         "cat2-stream2", 20, "cat2-stream2", 20, true, new EventPosition(200, 150), Guid.NewGuid(),
-                        "$>", true, "10@cat1-stream1", "{}", default(DateTime)), out _state, out _emittedEvents);
+                        "$>", true, "10@cat1-stream1", "{}"), out _state, out _emittedEvents);
             }
 
             [Test]

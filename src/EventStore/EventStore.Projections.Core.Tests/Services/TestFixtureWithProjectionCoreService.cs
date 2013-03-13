@@ -90,6 +90,11 @@ namespace EventStore.Projections.Core.Tests.Services
                 throw new NotImplementedException();
             }
 
+            public void Handle(CoreProjectionProcessingMessage.Failed message)
+            {
+                throw new NotImplementedException();
+            }
+
             public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
             {
                 throw new NotImplementedException();
@@ -122,7 +127,7 @@ namespace EventStore.Projections.Core.Tests.Services
         {
             return new ResolvedEvent(
                 "test", -1, "test", -1, false, new EventPosition(10, 5), Guid.NewGuid(), "t", false, new byte[0],
-                new byte[0], default(DateTime));
+                new byte[0], null, default(DateTime));
         }
     }
 }

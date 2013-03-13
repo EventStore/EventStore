@@ -44,6 +44,12 @@ namespace EventStore.Projections.Core.Services
 
         public string Name { get; set; }
 
+        public int ProjectionId { get; set; }
+
+        public int Epoch { get; set; }
+
+        public int Version { get; set; }
+
         public ProjectionMode Mode { get; set; }
 
         public CheckpointTag Position { get; set; }
@@ -67,6 +73,8 @@ namespace EventStore.Projections.Core.Services
         public int ReadsInProgress { get; set; }
 
         public int WritesInProgress { get; set; }
+
+        public string EffectiveName { get; set; }
 
         public ProjectionStatistics Clone()
         {

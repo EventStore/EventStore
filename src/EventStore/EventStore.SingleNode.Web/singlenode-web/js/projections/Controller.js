@@ -84,6 +84,10 @@ define(function () {
                 if (created)
                     postCommand("disable", success);
             },
+            reset: function(success) {
+                if (created)
+                    postCommand("reset", success);
+            },
             update: function (query, emit, success) {
                 if (created)
                     postSource(query, emit, success);

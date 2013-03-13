@@ -39,6 +39,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public readonly List<CoreProjectionProcessingMessage.RestartRequested> HandledRestartRequestedMessages =
             new List<CoreProjectionProcessingMessage.RestartRequested>();
 
+        public readonly List<CoreProjectionProcessingMessage.Failed> HandledFailedMessages =
+            new List<CoreProjectionProcessingMessage.Failed>();
+
         public readonly List<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted> HandledWriteCompletedMessage =
             new List<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted>();
 
@@ -53,6 +56,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             HandledRestartRequestedMessages.Add(message);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.Failed message)
+        {
+            HandledFailedMessages.Add(message);
         }
 
         public void Handle(CoreProjectionProcessingMessage.EmittedStreamAwaiting message)

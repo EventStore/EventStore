@@ -34,7 +34,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -51,6 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly ILogger _logger;
         private readonly string _streamId;
+        private readonly ProjectionVersion _projectionVersion;
         private readonly CheckpointTag _zeroPosition;
         private readonly CheckpointTag _from;
         private readonly IEmittedStreamContainer _readyHandler;
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public EmittedStream(
-            string streamId, CheckpointTag zeroPosition, CheckpointTag from,
+            string streamId, ProjectionVersion projectionVersion, CheckpointTag zeroPosition, CheckpointTag from,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
@@ -91,6 +91,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
+            _projectionVersion = projectionVersion;
             _zeroPosition = zeroPosition;
             _from = @from;
             _last = null;
@@ -112,7 +113,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     groupCausedBy = @event.CausedByTag;
                     if (!(_last != null && groupCausedBy > _last) && !(_last == null && groupCausedBy >= _from))
-                        throw new InvalidOperationException(string.Format("Invalid event order.  '{0}' goes after '{1}'", @event.CausedByTag, _last));
+                        throw new InvalidOperationException(
+                            string.Format("Invalid event order.  '{0}' goes after '{1}'", @event.CausedByTag, _last));
                     _last = groupCausedBy;
                 }
                 else if (@event.CausedByTag != groupCausedBy)
@@ -200,6 +202,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _readyHandler.Handle(new CoreProjectionProcessingMessage.RestartRequested(Guid.Empty, reason));
         }
 
+        private void Failed(string reason)
+        {
+            _readyHandler.Handle(new CoreProjectionProcessingMessage.Failed(Guid.Empty, reason));
+        }
+
         private void ReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag upTo)
         {
             if (upTo == _zeroPosition)
@@ -211,50 +218,67 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             _awaitingListEventsCompleted = false;
 
+            var newPhysicalStream = message.Events.Length == 0;
+
             if (_lastSubmittedOrCommittedMetadata == null)
             {
-                if (message.Events.Length == 0)
+                var parsed = default(CheckpointTagVersion);
+                if (!newPhysicalStream)
                 {
-                    _lastSubmittedOrCommittedMetadata = _zeroPosition;
-                    _lastKnownEventNumber = ExpectedVersion.NoStream;
+                    parsed = message.Events[0].Event.Metadata.ParseCheckpointTagJson(_projectionVersion);
+                    if (_projectionVersion.ProjectionId != parsed.Version.ProjectionId)
+                    {
+                        Failed(
+                            string.Format(
+                                "Multiple projections emitting to the same stream detected.  Stream: '{0}'. Last event projection: '{1}'.  Emitting projection: '{2}'",
+                                _streamId, parsed.Version.ProjectionId, _projectionVersion.ProjectionId));
+                        return;
+                    }
                 }
+                var newLogicalStream = newPhysicalStream
+                    || (_projectionVersion.ProjectionId != parsed.Version.ProjectionId || _projectionVersion.Epoch > parsed.Version.Version);
+
+                _lastKnownEventNumber = newPhysicalStream ? ExpectedVersion.NoStream : message.Events[0].Event.EventNumber;
+
+                //TODO: throw exception when _projectionVersion.ProjectionId != parsed.ProjectionId ?
+
+                if (newLogicalStream)
+                    _lastSubmittedOrCommittedMetadata = _zeroPosition;
                 else
                 {
                     //TODO: verify order - as we are reading backward
-                    var projectionStateMetadata = message.Events[0].Event.Metadata.ParseCheckpointTagJson();
-                    _lastSubmittedOrCommittedMetadata = projectionStateMetadata;
-                    _lastKnownEventNumber = message.Events[0].Event.EventNumber;
+                    _lastSubmittedOrCommittedMetadata = parsed.Tag;
                 }
             }
 
-            CheckpointTag lastReadTag = null;
+            var stop = CollectAlreadyCommittedEvents(message, upTo);
 
-            if (message.Events.Length == 0)
-            {
-                lastReadTag = _zeroPosition;
-            }
-            else
-            {
-                foreach (var e in message.Events)
-                {
-                    CheckpointTag tag = e.Event.Metadata.ParseCheckpointTagJson();
-                    if (tag < upTo) // ignore any events prior to the requested upTo (== first emitted event position)
-                        break;
-                    var eventType = e.Event.EventType;
-                    _alreadyCommittedEvents.Push(Tuple.Create(tag, eventType, e.Event.EventNumber));
-                }
-
-                //TODO: verify order - as we are reading backward
-                var lastReadEvent = message.Events[message.Events.Length - 1];
-                var projectionStateMetadata = lastReadEvent.Event.Metadata.ParseCheckpointTagJson();
-                lastReadTag = projectionStateMetadata;
-            }
-
-            if (lastReadTag < upTo || message.IsEndOfStream)
+            if (stop)
                 SubmitWriteEventsInRecovery();
             else
                 SubmitListEvents(upTo, message.NextEventNumber);
 
+        }
+
+        private bool CollectAlreadyCommittedEvents(ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag upTo)
+        {
+            var stop = false;
+            foreach (var e in message.Events)
+            {
+                var checkpointTagVersion = e.Event.Metadata.ParseCheckpointTagJson(_projectionVersion);
+                var ourEpoch = checkpointTagVersion.Version.ProjectionId == _projectionVersion.ProjectionId
+                               && checkpointTagVersion.Version.Version >= _projectionVersion.Epoch;
+                if (!ourEpoch || // ignore any events from previous projection epoch
+                    checkpointTagVersion.Tag < upTo)
+                    // ignore any events prior to the requested upTo (== first emitted event position)
+                {
+                    stop = true;
+                    break;
+                }
+                var eventType = e.Event.EventType;
+                _alreadyCommittedEvents.Push(Tuple.Create(checkpointTagVersion.Tag, eventType, e.Event.EventNumber));
+            }
+            return stop || message.IsEndOfStream;
         }
 
         private void ProcessWrites()
@@ -310,7 +334,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 events.Add(
                     new Event(
                         e.EventId, e.EventType, true, e.Data != null ? Encoding.UTF8.GetBytes(e.Data) : null,
-                        e.CausedByTag.ToJsonBytes()));
+                        e.CausedByTag.ToJsonBytes(_projectionVersion, e.ExtraMetaData())));
                 emittedEvents.Add(e);
             }
             _submittedToWriteEvents = events.ToArray();
@@ -324,12 +348,17 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool DetectConcurrencyViolations(CheckpointTag expectedTag)
         {
+            //NOTE: the comment below is not longer actual
+            //      Keeping it for reference only
+            //      We do back-read all the streams when loading state, so we know exactly which version to expect
+
+            //TODO: if the following statement is about event order stream - let write null event into this stream
             //NOTE: the following condition is only meant to detect concurrency violations when
             // another instance of the projection (running in the another node etc) has been writing to 
             // the same stream.  However, the expected tag sometimes can be greater than last actually written tag
             // This happens when a projection is restarted from a checkpoint and the checkpoint has been made at 
             // position not updating the projection state 
-            return expectedTag < _lastSubmittedOrCommittedMetadata;
+            return expectedTag != _lastSubmittedOrCommittedMetadata;
         }
 
         private void PublishWriteEvents()

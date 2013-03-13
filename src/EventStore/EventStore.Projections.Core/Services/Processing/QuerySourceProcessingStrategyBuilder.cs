@@ -152,12 +152,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.ProcessingLag = processingLag;
         }
 
-        public void SetDefinesStateTransform(bool definesStateTransform = true)
-        {
-            _options.DefinesStateTransform = definesStateTransform;
-        }
-
-
         protected HashSet<string> ToSet(IEnumerable<string> list)
         {
             if (list == null)
@@ -198,7 +192,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_options.ProcessingLag < 50)
                     throw new InvalidOperationException("Event reordering requires processing lag at least of 50ms");
             }
-            if (_options.DefinesStateTransform && !config.EmitEventEnabled)
+            if (_definesStateTransform && !config.EmitEventEnabled)
                 throw new InvalidOperationException(
                     "transformBy/filterBy requires EmitEventEnabled mode");
         }

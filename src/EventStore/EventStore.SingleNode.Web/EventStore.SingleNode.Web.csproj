@@ -61,6 +61,12 @@
     <Content Include="singlenode-web\chat.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="singlenode-web\js\projections\ui\Ace.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="singlenode-web\js\projections\ui\Confirmation.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="singlenode-web\query.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

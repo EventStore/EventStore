@@ -31,5 +31,17 @@ namespace EventStore.Projections.Core.Services.Processing
 
         [DataMember]
         public bool DefinesStateTransform { get; set; }
+
+        [DataMember]
+        public string ResultStreamName { get; set; }
+
+        [DataMember]
+        public string PartitionResultStreamNamePattern { get; set; }
+
+        [DataMember]
+        public string PartitionCatalogStream { get; set; }
+
+        [DataMember]
+        public string PartitionResultCatalogStream { get; set; }
     }
 }

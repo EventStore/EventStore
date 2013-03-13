@@ -57,8 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(120, 110), _eventId,
-                        "handle_this_type", false, Encoding.UTF8.GetBytes("data"), Encoding.UTF8.GetBytes("metadata"),
-                        default(DateTime)), Guid.Empty, _subscriptionId, 0));
+                        "handle_this_type", false, "data", "metadata"), Guid.Empty, _subscriptionId, 0));
         }
 
         [Test]
@@ -67,10 +66,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("Result").Count);
 
             var metedata =
-                _writeEventHandler.HandledMessages.OfEventType("Result")[0].Metadata.ParseCheckpointTagJson();
+                _writeEventHandler.HandledMessages.OfEventType("Result")[0].Metadata.ParseCheckpointTagJson(default(ProjectionVersion));
 
-            Assert.AreEqual(120, metedata.CommitPosition);
-            Assert.AreEqual(110, metedata.PreparePosition);
+            Assert.AreEqual(120, metedata.Tag.CommitPosition);
+            Assert.AreEqual(110, metedata.Tag.PreparePosition);
         }
 
         [Test]

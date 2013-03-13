@@ -276,8 +276,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public abstract void RecordEventOrder(
-            ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed);
+        public abstract void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action committed);
 
         public abstract void BeginLoadPartitionStateAt(
             string statePartition, CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted);
@@ -396,7 +395,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ResolvedEvent(
                     position.EventStreamId, position.EventNumber, pair.Event.EventStreamId, pair.Event.EventNumber,
                     pair.Link != null, default(EventPosition), pair.Event.EventId, pair.Event.EventType,
-                    (pair.Event.Flags & PrepareFlags.IsJson) != 0, pair.Event.Data, pair.Event.Metadata,
+                    (pair.Event.Flags & PrepareFlags.IsJson) != 0, pair.Event.Data, pair.Event.Metadata, pair.Link == null ? null : pair.Link.Metadata,
                     pair.Event.TimeStamp), null, -1);
             _publisher.Publish(
                 ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
@@ -409,6 +408,12 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _stopped = true; // ignore messages
             _publisher.Publish(new CoreProjectionProcessingMessage.RestartRequested(_projectionCorrelationId, reason));
+        }
+
+        protected void Failed(string reason)
+        {
+            _stopped = true; // ignore messages
+            _publisher.Publish(new CoreProjectionProcessingMessage.Failed(_projectionCorrelationId, reason));
         }
 
         public void Handle(CoreProjectionProcessingMessage.ReadyForCheckpoint message)
@@ -444,6 +449,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             RequestRestart(message.Reason);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.Failed message)
+        {
+            Failed(message.Reason);
         }
 
         private EmittedEvent[] ResultUpdated(string partition, PartitionState oldState, PartitionState newState)

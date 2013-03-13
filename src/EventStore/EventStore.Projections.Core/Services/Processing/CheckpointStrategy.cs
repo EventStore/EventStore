@@ -248,7 +248,8 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
-            ICoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
+            ICoreProjection coreProjection, Guid projectionCorrelationId, ProjectionVersion projectionVersion, 
+            IPublisher publisher,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
@@ -264,21 +265,24 @@ namespace EventStore.Projections.Core.Services.Processing
             // as they don't depend on stable event order
             if (emitAny && _allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
-                return new MultiStreamMultiOutputCheckpointManager(publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
-                    emitPartitionCheckpoints);
+                return new MultiStreamMultiOutputCheckpointManager(
+                    publisher, projectionCorrelationId, projectionVersion, readDispatcher,
+                    writeDispatcher, projectionConfig, name, PositionTagger, namingBuilder, resultEmitter,
+                    UseCheckpoints, emitPartitionCheckpoints);
             }
             else if (emitAny && _streams != null && _streams.Count > 1)
             {
-                return new MultiStreamMultiOutputCheckpointManager(publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
-                    emitPartitionCheckpoints);
+                return new MultiStreamMultiOutputCheckpointManager(
+                    publisher, projectionCorrelationId, projectionVersion, readDispatcher,
+                    writeDispatcher, projectionConfig, name, PositionTagger, namingBuilder, resultEmitter,
+                    UseCheckpoints, emitPartitionCheckpoints);
             }
             else
             {
-                return new DefaultCheckpointManager(publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
-                    emitPartitionCheckpoints);
+                return new DefaultCheckpointManager(
+                    publisher, projectionCorrelationId, projectionVersion, readDispatcher,
+                    writeDispatcher, projectionConfig, name, PositionTagger, namingBuilder, resultEmitter,
+                    UseCheckpoints, emitPartitionCheckpoints);
             }
         }
 

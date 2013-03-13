@@ -169,5 +169,151 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                              .Enabled);
             }
         }
+
+        [TestFixture]
+        public class when_resetting : Base
+        {
+            protected override void Given()
+            {
+                base.Given();
+                _projectionEnabled = false;
+            }
+
+            protected override void When()
+            {
+                base.When();
+                _manager.Handle(new ProjectionManagementMessage.Reset(new PublishEnvelope(_bus), _projectionName));
+            }
+
+            [Test]
+            public void the_projection_epoch_changes()
+            {
+                _manager.Handle(
+                    new ProjectionManagementMessage.GetStatistics(
+                        new PublishEnvelope(_bus), null, _projectionName, false));
+
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
+                Assert.AreEqual(
+                    1,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Length);
+                Assert.AreEqual(
+                    2,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Epoch);
+                Assert.AreEqual(
+                    2,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Version);
+            }
+
+            [Test]
+            public void the_projection_status_is_enabled_running()
+            {
+                _manager.Handle(
+                    new ProjectionManagementMessage.GetStatistics(
+                        new PublishEnvelope(_bus), null, _projectionName, false));
+
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
+                Assert.AreEqual(
+                    1,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Length);
+                Assert.AreEqual(
+                    ManagedProjectionState.Stopped,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .MasterStatus);
+                Assert.AreEqual(
+                    false,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Enabled);
+            }
+        }
+
+        [TestFixture]
+        public class when_resetting_and_starting : Base
+        {
+            protected override void Given()
+            {
+                base.Given();
+                _projectionEnabled = false;
+            }
+
+            protected override void When()
+            {
+                base.When();
+                _manager.Handle(new ProjectionManagementMessage.Reset(new PublishEnvelope(_bus), _projectionName));
+                _manager.Handle(new ProjectionManagementMessage.Enable(new PublishEnvelope(_bus), _projectionName));
+                _bus.Publish(
+                    ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                        _reader, new EventPosition(100, 150), "stream", 1, "stream", 1 + 1, false,
+                        Guid.NewGuid(), "type", false, new byte[0], new byte[0], 200, 33.3f));
+            }
+
+            [Test]
+            public void the_projection_epoch_changes()
+            {
+                _manager.Handle(
+                    new ProjectionManagementMessage.GetStatistics(
+                        new PublishEnvelope(_bus), null, _projectionName, false));
+
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
+                Assert.AreEqual(
+                    1,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Length);
+                Assert.AreEqual(
+                    2,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Epoch);
+                Assert.AreEqual(
+                    3,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Version);
+            }
+
+            [Test]
+            public void the_projection_status_is_enabled_running()
+            {
+                _manager.Handle(
+                    new ProjectionManagementMessage.GetStatistics(
+                        new PublishEnvelope(_bus), null, _projectionName, false));
+
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
+                Assert.AreEqual(
+                    1,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Length);
+                Assert.AreEqual(
+                    ManagedProjectionState.Running,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .MasterStatus);
+                Assert.AreEqual(
+                    true,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Enabled);
+            }
+        }
+
     }
 }

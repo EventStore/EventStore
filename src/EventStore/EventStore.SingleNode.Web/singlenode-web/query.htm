@@ -53,7 +53,7 @@
     // fromStream('streamId') | fromStreams(['sream1', 'stream2']) | fromCategory('category')
        //NOTE: fromCategory requires $by_category standard projection to be enabled
 
-    // .foreachStream() | .paritionBy(function(e) { return e.body.useId; })
+    // .foreachStream() | .partitionBy(function(e) { return e.body.useId; })
 
     .when({
         $init: function () {
@@ -103,8 +103,8 @@
 
     <script type="text/javascript">
         require.config({ baseUrl: "/web/es/js" });
-        require(['projections/Observer', 'projections/Controller', 'projections/ui/Editor'],
-            function (observer, controller, editor) {
+        require(['projections/Observer', 'projections/Controller', 'projections/ui/Editor', 'projections/ui/Ace'],
+            function (observer, controller, editor, aceEditor) {
                 $(function() {
                     var controls = {
                         status: $("#status"),
@@ -117,11 +117,12 @@
                         debug: $("#btn-debug"),
                     };
                     var url = window.location.hash.substr(1);
+                    var sourceEdit = aceEditor.createAceEditor($("#ace-source"));
                     var projectionEditor;
                     if (url) {
-                        projectionEditor = editor.openQuery(url, controls);
+                        projectionEditor = editor.openQuery(url, sourceEdit, controls, {});
                     } else {
-                        projectionEditor = editor.createQuery(controls);
+                        projectionEditor = editor.createQuery(sourceEdit, controls, {});
                     }
                     projectionEditor.bind();
                 });

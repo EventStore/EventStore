@@ -89,6 +89,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             throw new System.NotImplementedException();
         }
 
+        public void Handle(CoreProjectionProcessingMessage.Failed message)
+        {
+            throw new System.NotImplementedException();
+        }
 
         public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
         {

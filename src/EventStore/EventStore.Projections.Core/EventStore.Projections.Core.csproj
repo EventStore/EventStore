@@ -16,7 +16,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
-    <Optimize>true</Optimize>
+    <Optimize>false</Optimize>
     <OutputPath>..\..\..\bin\eventstore\debug\anycpu\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -216,6 +216,7 @@
     <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
     <Compile Include="Services\Processing\ProjectionSourceDefinition.cs" />
     <Compile Include="Services\Processing\ProjectionSubscriptionBase.cs" />
+    <Compile Include="Services\Processing\ProjectionVersion.cs" />
     <Compile Include="Services\Processing\QuerySourceProcessingStrategyBuilder.cs" />
     <Compile Include="Services\Processing\CheckpointTag.cs" />
     <Compile Include="Services\Processing\EmittedEvent.cs" />
@@ -223,7 +224,8 @@
     <Compile Include="Services\Processing\HeadingEventReader.cs" />
     <Compile Include="Services\Processing\ResolvedEvent.cs" />
     <Compile Include="Services\Processing\ResultEmitter.cs" />
-    <Compile Include="Services\Processing\SourceDefintionRecorder.cs" />
+    <Compile Include="Services\Processing\SourceDefinitionRecorder.cs" />
+    <Compile Include="Services\Processing\EmittedLinkToWithRecategorization.cs" />
     <Compile Include="Services\Processing\StagedProcessingQueue.cs" />
     <Compile Include="Services\Processing\StatePartitionSelector.cs" />
     <Compile Include="Services\Processing\StreamEventFilter.cs" />

@@ -56,13 +56,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             AllWritesToSucceed("$projections-projection-order");
             ExistingEvent(
                 "$projections-projection-partitions", "PartitionCreated",
-                @"{""commitPosition"": 100, ""preparePosition"": 50}", "account-01");
+                @"{""c"": 100, ""p"": 50}", "account-01");
             ExistingEvent(
                 "$projections-projection-account-01-result", "Result",
-                @"{""commitPosition"": 100, ""preparePosition"": 50}", _testProjectionState);
+                @"{""c"": 100, ""p"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""commitPosition"": 100, ""preparePosition"": 50}", _testProjectionState);
+                @"{""c"": 100, ""p"": 50}", _testProjectionState);
             AllWritesSucceed();
         }
 
@@ -75,13 +75,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "account-01", 2, "account-01", 2, false, new EventPosition(120, 110), _eventId,
-                        "handle_this_type", false, Encoding.UTF8.GetBytes("data1"), Encoding.UTF8.GetBytes("metadata"),
-                        default(DateTime)), Guid.Empty, _subscriptionId, 0));
+                        "handle_this_type", false, "data1", "metadata"), Guid.Empty, _subscriptionId, 0));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "account-01", 3, "account-01", 3, false, new EventPosition(160, 150), _eventId, "append", false,
-                        Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata"), default(DateTime)), Guid.Empty,
+                        "$", "metadata"), Guid.Empty,
                     _subscriptionId, 1));
         }
 

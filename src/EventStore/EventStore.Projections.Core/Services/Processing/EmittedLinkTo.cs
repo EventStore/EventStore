@@ -45,6 +45,15 @@ namespace EventStore.Projections.Core.Services.Processing
             _targetStreamId = targetStreamId;
         }
 
+        public EmittedLinkTo(
+            string streamId, Guid eventId, string targetStreamId, int targetEventNumber, CheckpointTag causedByTag,
+            CheckpointTag expectedTag, string originalStreamId = null)
+            : base(streamId, eventId, "$>", causedByTag, expectedTag, null)
+        {
+            _eventNumber = targetEventNumber;
+            _targetStreamId = targetStreamId;
+        }
+
         public override string Data
         {
             get
@@ -67,5 +76,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Target event number has been already set");
             _eventNumber = eventNumber;
         }
+
     }
 }

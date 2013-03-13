@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Text;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
@@ -483,12 +484,14 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _name;
             private readonly string _query;
             private readonly bool _emitEnabled;
+            private readonly ProjectionSourceDefinition _definition;
 
-            public ProjectionQuery(string name, string query, bool emitEnabled)
+            public ProjectionQuery(string name, string query, bool emitEnabled, ProjectionSourceDefinition definition)
             {
                 _name = name;
                 _query = query;
                 _emitEnabled = emitEnabled;
+                _definition = definition;
             }
 
             public string Name
@@ -504,6 +507,11 @@ namespace EventStore.Projections.Core.Messages
             public bool EmitEnabled
             {
                 get { return _emitEnabled; }
+            }
+
+            public ProjectionSourceDefinition Definition
+            {
+                get { return _definition; }
             }
         }
 
@@ -535,6 +543,28 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _name;
 
             public Enable(IEnvelope envelope, string name)
+            {
+                _envelope = envelope;
+                _name = name;
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+        }
+
+        public class Reset : Message
+        {
+            private readonly IEnvelope _envelope;
+            private readonly string _name;
+
+            public Reset(IEnvelope envelope, string name)
             {
                 _envelope = envelope;
                 _name = name;

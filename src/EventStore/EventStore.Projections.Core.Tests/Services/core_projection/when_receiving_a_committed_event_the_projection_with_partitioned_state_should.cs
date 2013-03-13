@@ -70,8 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "account-01", -1, "account-01", -1, false, new EventPosition(120, 110), _eventId,
-                        "handle_this_type", false, Encoding.UTF8.GetBytes("data"), Encoding.UTF8.GetBytes("metadata"),
-                        default(DateTime)), Guid.Empty, _subscriptionId, 0));
+                        "handle_this_type", false, "data", "metadata"), Guid.Empty, _subscriptionId, 0));
         }
 
         [Test]
@@ -102,10 +101,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "Result")).ToList();
             Assert.AreEqual(1, writeEvents.Count);
 
-            var metedata = writeEvents[0].Events[0].Metadata.ParseCheckpointTagJson();
+            var metedata = writeEvents[0].Events[0].Metadata.ParseCheckpointTagJson(default(ProjectionVersion));
 
-            Assert.AreEqual(120, metedata.CommitPosition);
-            Assert.AreEqual(110, metedata.PreparePosition);
+            Assert.AreEqual(120, metedata.Tag.CommitPosition);
+            Assert.AreEqual(110, metedata.Tag.PreparePosition);
         }
 
         [Test]

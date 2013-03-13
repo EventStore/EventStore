@@ -47,8 +47,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             AllWritesQueueUp();
             //NOTE: it is possible for a batch of events to be partially written if it contains links 
-            ExistingEvent("test_stream", "type1", @"{""commitPosition"": 100, ""preparePosition"": 50}", "data");
-            ExistingEvent("test_stream", "type2", @"{""commitPosition"": 100, ""preparePosition"": 50}", "data");
+            ExistingEvent("test_stream", "type1", @"{""c"": 100, ""p"": 50}", "data");
+            ExistingEvent("test_stream", "type2", @"{""c"": 100, ""p"": 50}", "data");
         }
 
         private EmittedEvent[] CreateEventBatch()
@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(100, 50), _readDispatcher,
+                "test_stream", new ProjectionVersion(1, 0, 0), CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(100, 50), _readDispatcher,
                 _writeDispatcher, _readyHandler, maxWriteBatchLength: 50);
             _stream.Start();
             _stream.EmitEvents(CreateEventBatch());

@@ -9,7 +9,8 @@ namespace EventStore.Projections.Core.Messages
                                        IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>,
                                        IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>,
                                        IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
-                                       IHandle<CoreProjectionProcessingMessage.RestartRequested>
+                                       IHandle<CoreProjectionProcessingMessage.RestartRequested>,
+                                       IHandle<CoreProjectionProcessingMessage.Failed>
     {
     }
 }

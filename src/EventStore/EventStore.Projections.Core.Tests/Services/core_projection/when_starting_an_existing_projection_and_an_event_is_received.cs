@@ -42,16 +42,16 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void Given()
         {
             ExistingEvent(
-                "$projections-projection-result", "Result", @"{""commitPosition"": 100, ""preparePosition"": 50}",
+                "$projections-projection-result", "Result", @"{""c"": 100, ""p"": 50}",
                 _testProjectionState);
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""commitPosition"": 100, ""preparePosition"": 50}", _testProjectionState);
+                @"{""c"": 100, ""p"": 50}", _testProjectionState);
             ExistingEvent(
-                "$projections-projection-result", "Result", @"{""commitPosition"": 200, ""preparePosition"": 150}",
+                "$projections-projection-result", "Result", @"{""c"": 200, ""p"": 150}",
                 _testProjectionState);
             ExistingEvent(
-                "$projections-projection-result", "Result", @"{""commitPosition"": 300, ""preparePosition"": 250}",
+                "$projections-projection-result", "Result", @"{""c"": 300, ""p"": 250}",
                 _testProjectionState);
             NoStream("$projections-projection-order");
             AllWritesToSucceed("$projections-projection-order");
@@ -64,8 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(120, 110), eventId,
-                        "append", false, Encoding.UTF8.GetBytes("data"), Encoding.UTF8.GetBytes("metadata"),
-                        default(DateTime)), Guid.Empty, _subscriptionId, 0));
+                        "append", false, "data", "metadata"), Guid.Empty, _subscriptionId, 0));
         }
 
 

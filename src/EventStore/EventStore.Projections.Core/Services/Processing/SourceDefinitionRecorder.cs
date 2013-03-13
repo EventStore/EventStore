@@ -2,9 +2,9 @@ using System.Collections.Generic;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class SourceDefintionRecorder : QuerySourceProcessingStrategyBuilder
+    public class SourceDefinitionRecorder : QuerySourceProcessingStrategyBuilder
     {
-        public ProjectionSourceDefinition Build()
+        public ProjectionSourceDefinition Build(ProjectionNamesBuilder namingBuilder)
         {
             return new ProjectionSourceDefinition
                 {
@@ -17,6 +17,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     Streams = (_streams ?? new List<string>()).ToArray(),
                     DefinesStateTransform = _definesStateTransform,
                     Options = _options,
+                    ResultStreamName = namingBuilder.GetResultStreamName(),
+                    PartitionResultStreamNamePattern = namingBuilder.GetPartitionResultStreamNamePattern(),
+                    PartitionResultCatalogStream = namingBuilder.GetPartitionResultCatalogStreamName(),
+                    PartitionCatalogStream = namingBuilder.GetPartitionCatalogStreamName(),
                 };
         }
     }

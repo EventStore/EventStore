@@ -361,14 +361,16 @@ namespace EventStore.Projections.Core.Messages
             private readonly ProjectionConfig _config;
             private readonly Func<IProjectionStateHandler> _handlerFactory;
             private readonly string _name;
+            private readonly ProjectionVersion _version;
 
             public CreateAndPrepare(
-                IEnvelope envelope, Guid projectionId, string name, ProjectionConfig config,
+                IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
                 Func<IProjectionStateHandler> handlerFactory)
                 : base(projectionId)
             {
                 _envelope = envelope;
                 _name = name;
+                _version = version;
                 _config = config;
                 _handlerFactory = handlerFactory;
             }
@@ -392,26 +394,34 @@ namespace EventStore.Projections.Core.Messages
             {
                 get { return _envelope; }
             }
+
+            public ProjectionVersion Version
+            {
+                get { return _version; }
+            }
         }
 
         public class CreatePrepared : CoreProjectionManagementMessage
         {
             private readonly IEnvelope _envelope;
             private readonly ProjectionConfig _config;
-            private readonly ISourceDefinitionConfigurator _sourceDefintion;
+            private readonly ISourceDefinitionConfigurator _sourceDefinition;
             private readonly string _name;
+            private readonly ProjectionVersion _version;
 
             public CreatePrepared(
-                IEnvelope envelope, Guid projectionId, string name, ProjectionConfig config, ISourceDefinitionConfigurator sourceDefintion)
+                IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
+                ISourceDefinitionConfigurator sourceDefinition)
                 : base(projectionId)
             {
                 if (name == null) throw new ArgumentNullException("name");
                 if (config == null) throw new ArgumentNullException("config");
-                if (sourceDefintion == null) throw new ArgumentNullException("sourceDefintion");
+                if (sourceDefinition == null) throw new ArgumentNullException("sourceDefinition");
                 _envelope = envelope;
                 _name = name;
+                _version = version;
                 _config = config;
-                _sourceDefintion = sourceDefintion;
+                _sourceDefinition = sourceDefinition;
             }
 
             public ProjectionConfig Config
@@ -429,9 +439,14 @@ namespace EventStore.Projections.Core.Messages
                 get { return _envelope; }
             }
 
-            public ISourceDefinitionConfigurator SourceDefintion
+            public ISourceDefinitionConfigurator SourceDefinition
             {
-                get { return _sourceDefintion; }
+                get { return _sourceDefinition; }
+            }
+
+            public ProjectionVersion Version
+            {
+                get { return _version; }
             }
         }
 

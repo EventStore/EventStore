@@ -71,7 +71,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                         IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>, 
                                         IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>, 
                                         IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>, 
-                                        IHandle<CoreProjectionProcessingMessage.RestartRequested>
+                                        IHandle<CoreProjectionProcessingMessage.RestartRequested>,
+                                        IHandle<CoreProjectionProcessingMessage.Failed>
 
 
     {
@@ -327,15 +328,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: factory method can throw!
                 IProjectionStateHandler stateHandler = message.HandlerFactory();
                 // constructor can fail if wrong source defintion
-                //TODO: revise it
-                var sourceDefintionRecorder = new SourceDefintionRecorder();
-                stateHandler.ConfigureSourceProcessingStrategy(sourceDefintionRecorder);
-                var sourceDefintion = sourceDefintionRecorder.Build();
-                var projection = CoreProjection.CreateAndPrepapre(message.Name, message.ProjectionId, _publisher, stateHandler, message.Config, _readDispatcher,
-                                                      _writeDispatcher, _logger);
+                ProjectionSourceDefinition sourceDefinition;
+                var projection = CoreProjection.CreateAndPrepare(message.Name, message.Version, message.ProjectionId, _publisher, stateHandler, message.Config, _readDispatcher,
+                                                      _writeDispatcher, _logger, out sourceDefinition);
                 _projections.Add(message.ProjectionId, projection);
                 message.Envelope.ReplyWith(
-                    new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefintion));
+                    new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
             }
             catch (Exception ex)
             {
@@ -350,16 +348,13 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 //TODO: factory method can throw!
                 // constructor can fail if wrong source defintion
-                //TODO: revise it
-                var sourceDefintionRecorder = new SourceDefintionRecorder();
-                message.SourceDefintion.ConfigureSourceProcessingStrategy(sourceDefintionRecorder);
-                var sourceDefintion = sourceDefintionRecorder.Build();
-                var projection = CoreProjection.CreatePrepapred(
-                    message.Name, message.ProjectionId, _publisher, message.SourceDefintion, message.Config,
-                    _readDispatcher, _writeDispatcher, _logger);
+                ProjectionSourceDefinition sourceDefinition;
+                var projection = CoreProjection.CreatePrepared(
+                    message.Name, message.Version, message.ProjectionId, _publisher, message.SourceDefinition, message.Config,
+                    _readDispatcher, _writeDispatcher, _logger, out sourceDefinition);
                 _projections.Add(message.ProjectionId, projection);
                 message.Envelope.ReplyWith(
-                    new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefintion));
+                    new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
             }
             catch (Exception ex)
             {
@@ -491,6 +486,13 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.Failed message)
         {
             CoreProjection projection;
             if (_projections.TryGetValue(message.ProjectionId, out projection))
