@@ -180,9 +180,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var item = new Item(tag);
             _loadQueue.Push(item);
-            //NOTE: we do manual link-to resolution to avoid too many resolves when 
-            // reading long batch (thousands of events), but actually replaying just 
-            // a small portion
+            //NOTE: we do manual link-to resolution as we write links to the position events
+            //      which may in turn be a link.  This is necessary to provide a correct 
+            //       ResolvedEvent when replaying from the -order stream
             var linkTo = Encoding.UTF8.GetString(@event.Data);
             string[] parts = linkTo.Split('@');
             int eventNumber = int.Parse(parts[0]);

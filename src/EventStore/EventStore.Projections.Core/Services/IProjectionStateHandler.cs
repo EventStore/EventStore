@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Services
                 partition, eventPosition, category,
                 new ResolvedEvent(
                     streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new EventPosition(0, -1),
-                    eventId, eventType, isJson, data, metadata, default(DateTime)), out state, out emittedEvents);
+                    eventId, eventType, isJson, data, metadata), out state, out emittedEvents);
         }
     }
 }

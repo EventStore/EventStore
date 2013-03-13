@@ -166,7 +166,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                                                   .Reverse()
                                                   .SkipWhile(v => message.FromEventNumber != -1 && v.EventNumber > message.FromEventNumber)
                                                   .Take(message.MaxCount)
-                                                  .Select(x => new ResolvedEvent(x, null))
+                                                  .Select(v => BuildEvent(v, message.ResolveLinks))
                                                   .ToArray();
                     message.Envelope.ReplyWith(
                             new ClientMessage.ReadStreamEventsBackwardCompleted(
@@ -199,6 +199,21 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 */
                 }
             }
+        }
+
+        private ResolvedEvent BuildEvent(EventRecord x, bool resolveLinks)
+        {
+            if (x.EventType == "$>" && resolveLinks)
+            {
+                var parts = Encoding.UTF8.GetString(x.Data).Split('@');
+                var list = _lastMessageReplies[parts[1]];
+                var eventNumber = int.Parse(parts[0]);
+                var target = list[eventNumber];
+
+                return new ResolvedEvent(target, x);
+            }
+            else
+                return new ResolvedEvent(x, null);
         }
 
         public void Handle(ClientMessage.WriteEvents message)
