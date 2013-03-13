@@ -34,7 +34,7 @@ This step produces a file named js1.dll, which contains the projections framewor
 
 ####Build the Event Store solution using 64-bit msbuild
 
-	C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe /p:Configuration=Debug;Platform=x64 src\EventStore\EventStore.sln
+	C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe /p:Configuration=Debug;Platform="Any CPU" src\EventStore\EventStore.sln
 
 *NOTE: EventStore.sln has build configurations set up to be compatible with either xbuild or msbuild. Although named "Any CPU", it in fact targets x64 only.*
 
