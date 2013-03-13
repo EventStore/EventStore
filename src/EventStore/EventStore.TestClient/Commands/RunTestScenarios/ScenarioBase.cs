@@ -139,11 +139,19 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             for (int i = 0; i < Connections; ++i)
             {
-                _connections[i] = EventStoreConnection.Create(ConnectionSettings.Create()
-                                                                                .UseCustomLogger(ApiLogger)
-                                                                                .LimitConcurrentOperationsTo(MaxConcurrentRequests));
+                _connections[i] = EventStoreConnection.Create(
+                    ConnectionSettings.Create()
+                                        .UseCustomLogger(ApiLogger)
+                                        .LimitConcurrentOperationsTo(MaxConcurrentRequests)
+                                        .KeepRetrying()
+                                        .OnClosed((c, s) => Log.Debug("[SCENARIO] {0} closed.", c.ConnectionName))
+                                        .OnConnected(c => Log.Debug("[SCENARIO] {0} connected.", c.ConnectionName))
+                                        .OnDisconnected(c => Log.Debug("[SCENARIO] {0} disconnected.", c.ConnectionName))
+                                        .OnErrorOccurred((c, e) => Log.DebugException(e, "[SCENARIO] {0} error occurred.", c.ConnectionName))
+                                        .OnReconnecting(c => Log.Debug("[SCENARIO] {0} reconnecting.", c.ConnectionName)),
+                    connectionName: string.Format("ESConn-{0}", i));
                 _connections[i].Connect(_tcpEndPoint);
-            }
+            } 
             RunInternal();   
         }
 

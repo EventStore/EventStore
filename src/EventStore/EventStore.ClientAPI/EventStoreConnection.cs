@@ -70,7 +70,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(settings, "settings");
             ConnectionName = connectionName ?? string.Format("ES-{0}", Guid.NewGuid());
             _settings = settings;
-            _handler = new EventStoreConnectionLogicHandler(this, settings, ConnectionName);
+            _handler = new EventStoreConnectionLogicHandler(this, settings);
         }
 
         /// <summary>
