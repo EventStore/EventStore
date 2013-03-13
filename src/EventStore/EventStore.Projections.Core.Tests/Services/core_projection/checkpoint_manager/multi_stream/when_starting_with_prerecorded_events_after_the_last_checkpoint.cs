@@ -57,10 +57,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             ExistingEvent("a", "StreamCreated", "", "");
             ExistingEvent("b", "StreamCreated", "", "");
             ExistingEvent("c", "StreamCreated", "", "");
+            ExistingEvent("d", "StreamCreated", "", "");
 
             ExistingEvent("a", "Event", "", @"{""data"":""a""");
-            ExistingEvent("b", "Event", "", @"{""data"":""b""");
-            ExistingEvent("c", "Event", "", @"{""data"":""c""");
+            ExistingEvent("b", "Event", "bb", @"{""data"":""b""");
+            ExistingEvent("c", "$>", "{$o:\"org\"}", @"1@d");
+            ExistingEvent("d", "Event", "dd", @"{""data"":""d""");
 
             ExistingEvent(
                 "$projections-projection-order", "$>", @"{""s"": {""a"": 0, ""b"": 0, ""c"": 0}}", "0@c");
@@ -122,9 +124,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             var message2 = messages[1];
             var message3 = messages[2];
 
-            Assert.AreEqual(@"{""data"":""c""", message1.Data.Data);
+            Assert.AreEqual(@"{""data"":""d""", message1.Data.Data);
             Assert.AreEqual(@"{""data"":""a""", message2.Data.Data);
             Assert.AreEqual(@"{""data"":""b""", message3.Data.Data);
+
+            Assert.AreEqual(@"dd", message1.Data.Metadata);
+            Assert.AreEqual(@"", message2.Data.Metadata);
+            Assert.AreEqual(@"bb", message3.Data.Metadata);
+
+            Assert.AreEqual("{$o:\"org\"}", message1.Data.PositionMetadata);
+            Assert.IsNull(message2.Data.PositionMetadata);
+            Assert.IsNull(message3.Data.PositionMetadata);
 
             Assert.AreEqual("Event", message1.Data.EventType);
             Assert.AreEqual("Event", message2.Data.EventType);
@@ -134,7 +144,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             Assert.AreEqual("a", message2.Data.PositionStreamId);
             Assert.AreEqual("b", message3.Data.PositionStreamId);
 
-            Assert.AreEqual("c", message1.Data.EventStreamId);
+            Assert.AreEqual("d", message1.Data.EventStreamId);
             Assert.AreEqual("a", message2.Data.EventStreamId);
             Assert.AreEqual("b", message3.Data.EventStreamId);
 
@@ -142,7 +152,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             Assert.AreEqual(Guid.Empty, message2.SubscriptionId);
             Assert.AreEqual(Guid.Empty, message3.SubscriptionId);
 
-            Assert.AreEqual(false, message1.Data.ResolvedLinkTo);
+            Assert.AreEqual(true, message1.Data.ResolvedLinkTo);
             Assert.AreEqual(false, message2.Data.ResolvedLinkTo);
             Assert.AreEqual(false, message3.Data.ResolvedLinkTo);
         }

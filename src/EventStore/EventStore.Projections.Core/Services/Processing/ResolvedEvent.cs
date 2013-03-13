@@ -83,8 +83,9 @@ namespace EventStore.Projections.Core.Services.Processing
         public ResolvedEvent(
             string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
             bool resolvedLinkTo, EventPosition position, Guid eventId, string eventType, bool isJson, string data,
-            string metadata, DateTime timestamp)
+            string metadata, string positionMetadata = null)
         {
+            DateTime timestamp = default(DateTime);
             if (Guid.Empty == eventId)
                 throw new ArgumentException("Empty eventId provided.");
             if (string.IsNullOrEmpty(eventType))
@@ -103,6 +104,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             Data = data;
             Metadata = metadata;
+            PositionMetadata = positionMetadata;
         }
 
         public string EventStreamId

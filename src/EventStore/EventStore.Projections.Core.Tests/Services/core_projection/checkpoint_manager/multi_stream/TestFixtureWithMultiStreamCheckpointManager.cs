@@ -32,10 +32,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 {
     public class TestFixtureWithMultiStreamCheckpointManager : TestFixtureWithCoreProjectionCheckpointManager
     {
+        protected string[] _streams;
+
+        protected override void Given()
+        {
+            base.Given();
+            _streams = new[] { "a", "b", "c" };
+        }
+
         protected override void When()
         {
             _manager = new MultiStreamMultiOutputCheckpointManager(_bus, _projectionCorrelationId, 1, 1, _readDispatcher, _writeDispatcher, _config, "projection",
-                new MultiStreamPositionTagger(new[] { "a", "b", "c" }), _namingBuilder, _resultEmitter, _checkpointsEnabled);
+                new MultiStreamPositionTagger(_streams), _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
     }
 }
