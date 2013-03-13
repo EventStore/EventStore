@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0_1e0_2e1_3e2_4e3_5e4_6e5_1e0_idempotent()
         {
             const string stream = "appending_to_explicitly_created_stream_using_transaction_sequence_0_1e0_2e1_3e2_4e3_5e4_6e5_1e0_idempotent";
-            using (var store = EventStoreConnection.Create())
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0_1e0_2e1_3e2_4e3_5e4_6e5_1any_idempotent()
         {
             const string stream = "appending_to_explicitly_created_stream_using_transaction_sequence_0_1e0_2e1_3e2_4e3_5e4_6e5_1any_idempotent";
-            using (var store = EventStoreConnection.Create())
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -111,7 +111,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0_1e0_2e1_3e2_4e3_5e4_6e5_1e6_non_idempotent()
         {
             const string stream = "appending_to_explicitly_created_stream_using_transaction_sequence_0_1e0_2e1_3e2_4e3_5e4_6e5_1e6_non_idempotent";
-            using (var store = EventStoreConnection.Create())
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -133,7 +133,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0_1e0_2e1_3e2_4e3_5e4_6e5_1e7_wev()
         {
             const string stream = "appending_to_explicitly_created_stream_using_transaction_sequence_0_1e0_2e1_3e2_4e3_5e4_6e5_1e7_wev";
-            using (var store = EventStoreConnection.Create())
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -152,7 +152,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0_1e0_2e1_3e2_4e3_5e4_6e5_1e5_wev()
         {
             const string stream = "appending_to_explicitly_created_stream_using_transaction_sequence_0_1e0_2e1_3e2_4e3_5e4_6e5_1e5_wev";
-            using (var store = EventStoreConnection.Create())
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -171,7 +171,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0_1e0_1e1_non_idempotent()
         {
             const string stream = "appending_to_explicitly_created_stream_using_transaction_sequence_0_1e0_1e1_non_idempotent";
-            using (var store = EventStoreConnection.Create())
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -193,7 +193,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0_1e0_1any_idempotent()
         {
             const string stream = "appending_to_explicitly_created_stream_using_transaction_sequence_sequence_0_1e0_1any_idempotent";
-            using (var store = EventStoreConnection.Create())
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -215,7 +215,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0_1e0_1e0_idempotent()
         {
             const string stream = "appending_to_explicitly_created_stream_using_transaction_sequence_sequence_0_1e0_1e0_idempotent";
-            using (var store = EventStoreConnection.Create())
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -237,7 +237,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0_1e0_2e1_3e2_2any_2any_idempotent()
         {
             const string stream = "appending_to_explicitly_created_stream_using_transaction_sequence_0_1e0_2e1_3e2_2any_2any_idempotent";
-            using (var store = EventStoreConnection.Create())
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -259,7 +259,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0_S_1e0_2e0_E_S_1e0_2e0_3e0_E_idempotency_fail()
         {
             const string stream = "appending_to_explicitly_created_stream_using_transaction_sequence_0_S_1e0_2e0_E_S_1e0_2e0_3e0_E_idempotency_fail";
-            using (var store = EventStoreConnection.Create())
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);

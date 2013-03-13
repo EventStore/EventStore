@@ -43,6 +43,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             new TcpPackage(TcpCommand.HeartbeatResponseCommand, Guid.NewGuid(), null).AsArraySegment()).ToArray();
         private static readonly TcpClientConnector Connector = new TcpClientConnector();
 
+        public bool IsClosed { get { return _connection.IsClosed; } }
         public int SendQueueSize { get { return _connection.SendQueueSize; } }
         public readonly IPEndPoint EffectiveEndPoint;
         public readonly Guid ConnectionId;

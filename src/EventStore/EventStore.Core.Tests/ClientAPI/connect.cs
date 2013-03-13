@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void should_not_throw_exception_when_server_is_down()
         {
-            using (var connection = EventStoreConnection.Create())
+            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
             {
                 Assert.DoesNotThrow(() => connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348)));
             }
@@ -25,6 +25,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var closed = new ManualResetEventSlim();
             var settings = ConnectionSettings.Create()
+                                             .UseConsoleLogger()
                                              .LimitReconnectionsTo(0)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
                                              .OnClosed((x, r) => closed.Set());
@@ -48,7 +49,8 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var closed = new ManualResetEventSlim();
             var settings = ConnectionSettings.Create()
-                                             .LimitReconnectionsTo(2)
+                                             .UseConsoleLogger()
+                                             .LimitReconnectionsTo(1)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
                                              .OnClosed((x, r) => closed.Set())
                                              .OnConnected(x => Console.WriteLine("Connected..."))
@@ -58,7 +60,6 @@ namespace EventStore.Core.Tests.ClientAPI
 
             using (var connection = EventStoreConnection.Create(settings))
             {
-
                 connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
 
                 if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds

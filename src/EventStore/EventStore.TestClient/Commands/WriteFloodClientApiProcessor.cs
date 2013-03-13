@@ -90,6 +90,7 @@ namespace EventStore.TestClient.Commands
                 var rnd = new Random();
 
                 var settings = ConnectionSettings.Create()
+                    .UseConsoleLogger()
                     .EnableOperationsForwarding()
                     .UseCustomLogger(new ConsoleLogger())
                     .LimitReconnectionsTo(0)

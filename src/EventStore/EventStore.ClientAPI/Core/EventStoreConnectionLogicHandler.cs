@@ -193,7 +193,7 @@ namespace EventStore.ClientAPI.Core
 
         private void TcpConnectionEstablished(TcpPackageConnection connection)
         {
-            if (_disposed || connection.ConnectionId != _connection.ConnectionId)
+            if (_disposed || connection.ConnectionId != _connection.ConnectionId || connection.IsClosed)
                 return;
 
             _reconnectionStopwatch.Stop();
@@ -231,7 +231,9 @@ namespace EventStore.ClientAPI.Core
             if (_disposed || !_connectionActive) return;
 
             // operations timeouts are checked only if connection is established and check period time passed
-            if (_connectionStopwatch.IsRunning && _connectionStopwatch.Elapsed - _lastTimeoutCheckTimestamp > _settings.OperationTimeoutCheckPeriod)
+            if (_connectionStopwatch.IsRunning 
+                && !_connection.IsClosed
+                && _connectionStopwatch.Elapsed - _lastTimeoutCheckTimestamp > _settings.OperationTimeoutCheckPeriod)
             {
                 // On mono even impossible connection first says that it is established
                 // so clearing of reconnection count on ConnectionEstablished event causes infinite reconnections.
@@ -585,7 +587,7 @@ namespace EventStore.ClientAPI.Core
 
             public override string ToString()
             {
-                return string.Format("Operation {0} ({1:B}): {2}, retry count: {3}, last updated: {4}",
+                return string.Format("Operation {0} ({1:B}): {2}, retry count: {3}, last updated: {4:HH:mm:ss.fff}",
                                      Operation.GetType().Name,
                                      CorrelationId,
                                      Operation,
@@ -629,7 +631,7 @@ namespace EventStore.ClientAPI.Core
 
             public override string ToString()
             {
-                return string.Format("Subscription {0} ({1:B}): {2}, is subscribed: {3}, retry count: {4}, last updated: {5}",
+                return string.Format("Subscription {0} ({1:B}): {2}, is subscribed: {3}, retry count: {4}, last updated: {5:HH:mm:ss.fff}",
                                      Operation.GetType().Name,
                                      CorrelationId,
                                      Operation,
