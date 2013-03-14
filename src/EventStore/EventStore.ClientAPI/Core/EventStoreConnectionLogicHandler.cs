@@ -106,6 +106,7 @@ namespace EventStore.ClientAPI.Core
 
         public void EnqueueMessage(Message message)
         {
+            _log.Debug("EventStoreConnection '{0}': enqueueing message {1}.", _esConnection.ConnectionName, message);
             _queue.EnqueueMessage(message);
         }
 
@@ -113,6 +114,8 @@ namespace EventStore.ClientAPI.Core
         {
             Ensure.NotNull(task, "task");
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+
+            _log.Debug("EventStoreConnection '{0}': EstablishTcpConnection, tcpEndPoint: {1}.", _esConnection.ConnectionName, tcpEndPoint);
 
             if (_disposed)
             {
@@ -151,6 +154,8 @@ namespace EventStore.ClientAPI.Core
         {
             if (_disposed) return;
 
+            _log.Debug("EventStoreConnection '{0}': CloseConnection, reason {1}, exception {2}.", _esConnection.ConnectionName, reason, exception);
+
             if (exception != null && _settings.ErrorOccurred != null)
                 _settings.ErrorOccurred(_esConnection, exception);
 
@@ -185,6 +190,8 @@ namespace EventStore.ClientAPI.Core
 
         private void CloseTcpConnection()
         {
+            _log.Debug("EventStoreConnection '{0}': CloseTcpConnection.", _esConnection.ConnectionName);
+
             if (_connection == null) 
                 return;
 
@@ -243,9 +250,13 @@ namespace EventStore.ClientAPI.Core
         {
             if (_disposed || !_connectionActive) return;
 
+            _log.Debug("EventStoreConnection '{0}': TimerTick.", _esConnection.ConnectionName);
+
             // operations timeouts are checked only if connection is established and check period time passed
             if (_connectionStopwatch.IsRunning && _connectionStopwatch.Elapsed >= _settings.OperationTimeoutCheckPeriod)
             {
+                _log.Debug("EventStoreConnection '{0}': TimerTick checking timeouts...", _esConnection.ConnectionName);
+
                 // On mono even impossible connection first says that it is established
                 // so clearing of reconnection count on ConnectionEstablished event causes infinite reconnections.
                 // So we reset reconnection count to zero on each timeout check period when connection is established
@@ -260,6 +271,8 @@ namespace EventStore.ClientAPI.Core
 
             if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= _settings.ReconnectionDelay)
             {
+                _log.Debug("EventStoreConnection '{0}': TimerTick checking reconnection...", _esConnection.ConnectionName);
+
                 _reconnectionCount += 1;
                 if (_settings.MaxReconnections >= 0 && _reconnectionCount > _settings.MaxReconnections)
                     CloseConnection("Reconnection limit reached.");
@@ -383,6 +396,7 @@ namespace EventStore.ClientAPI.Core
                 operation.Fail(new InvalidOperationException(string.Format("EventStoreConnection '{0}' is not active.", _esConnection.ConnectionName)));
                 return;
             }
+            _log.Debug("EventStoreConnection '{0}': StartOperation {1}, {2}, {3}, {4}.", _esConnection.ConnectionName, operation.GetType().Name, operation, maxRetries, timeout);
 
             ScheduleOperation(new OperationItem(operation, maxRetries, timeout));
         }
@@ -411,13 +425,19 @@ namespace EventStore.ClientAPI.Core
                                                       msg.ResolveLinkTos,
                                                       msg.EventAppeared,
                                                       msg.SubscriptionDropped);
+            _log.Debug("EventStoreConnection '{0}': StartSubscription {1}, {2}, {3}, {4}.", _esConnection.ConnectionName, operation.GetType().Name, operation, msg.MaxRetries, msg.Timeout);
             StartSubscription(new SubscriptionItem(operation, msg.MaxRetries, msg.Timeout));
         }
 
         private void HandleTcpPackage(TcpPackageConnection connection, TcpPackage package)
         {
-            if (_disposed || _connection != connection) 
+            if (_disposed || _connection != connection)
+            {
+                _log.Debug("EventStoreConnection '{0}': HandleTcpPackage IGNORED connId {1}, package {2}, {3}.", _esConnection.ConnectionName, connection.ConnectionId, package.Command, package.CorrelationId);
                 return;
+            }
+
+            _log.Debug("EventStoreConnection '{0}': HandleTcpPackage connId {1}, package {2}, {3}.", _esConnection.ConnectionName, connection.ConnectionId, package.Command, package.CorrelationId);
 
             if (package.Command == TcpCommand.BadRequest && package.CorrelationId == Guid.Empty)
             {
@@ -436,6 +456,7 @@ namespace EventStore.ClientAPI.Core
             if (_operations.TryGetValue(package.CorrelationId, out operation))
             {
                 var result = operation.Operation.InspectPackage(package);
+                _log.Debug("EventStoreConnection '{0}': HandleTcpPackage OPERATION DECISION {1}, {2}.", _esConnection.ConnectionName, result.Decision, operation);
                 switch (result.Decision)
                 {
                     case InspectionDecision.DoNothing:
@@ -456,6 +477,7 @@ namespace EventStore.ClientAPI.Core
             else if (_subscriptions.TryGetValue(package.CorrelationId, out subscription))
             {
                 var result = subscription.Operation.InspectPackage(package);
+                _log.Debug("EventStoreConnection '{0}': HandleTcpPackage SUBSCRIPTION DECISION {1}, {2}.", _esConnection.ConnectionName, result.Decision, subscription);
                 switch (result.Decision)
                 {
                     case InspectionDecision.DoNothing: 
@@ -483,13 +505,20 @@ namespace EventStore.ClientAPI.Core
             if (_disposed || _connection != connection) 
                 return;
 
+            _log.Debug("EventStoreConnection '{0}': TcpConnectionError connId {1}, exc {2}.", _esConnection.ConnectionName, connection.ConnectionId, exception);
+
             CloseConnection("Exception occurred.", exception);
         }
 
         private bool RemoveOperation(OperationItem operation)
         {
             if (!_operations.Remove(operation.CorrelationId))
+            {
+                _log.Debug("EventStoreConnection '{0}': RemoveOperation FAILED for {1}.", _esConnection.ConnectionName, operation);
                 return false;
+            }
+
+            _log.Debug("EventStoreConnection '{0}': RemoveOperation for {1}.", _esConnection.ConnectionName, operation);
 
             _operationsInProgressCount -= 1;
             _operationCount -= 1;
@@ -506,13 +535,13 @@ namespace EventStore.ClientAPI.Core
             if (!RemoveOperation(operation))
                 return;
 
+            _log.Debug("EventStoreConnection '{0}': RetryOperation for {1}.", _esConnection.ConnectionName, operation);
+
             if (operation.MaxRetries >= 0 && operation.RetryCount >= operation.MaxRetries)
             {
                 operation.Operation.Fail(new RetriesLimitReachedException(operation.ToString(), operation.RetryCount));
                 return;
             }
-
-            _log.Debug("EventStoreConnection '{0}': adding to retry later {1}.", _esConnection.ConnectionName, operation);
 
             _retryPendingOperations.Add(operation);
         }
@@ -540,6 +569,8 @@ namespace EventStore.ClientAPI.Core
 
             if (_operationsInProgressCount >= _settings.MaxConcurrentItems)
             {
+                _log.Debug("EventStoreConnection '{0}': ScheduleOperation WAITING for {1}.", _esConnection.ConnectionName, operation);
+
                 _waitingOperations.Enqueue(operation);
                 return;
             }
@@ -553,25 +584,35 @@ namespace EventStore.ClientAPI.Core
             _operationCount += 1;
 
             var package = operation.Operation.CreateNetworkPackage(operation.CorrelationId);
+
+            _log.Debug("EventStoreConnection '{0}': ScheduleOperation package {1}, {2}, {3}.", _esConnection.ConnectionName, package.Command, package.CorrelationId, operation);
+
             _connection.EnqueueSend(package);
         }
 
         private bool RemoveSubscription(SubscriptionItem subscription)
         {
-            return _subscriptions.Remove(subscription.CorrelationId);
+            var res = _subscriptions.Remove(subscription.CorrelationId);
+            _log.Debug("EventStoreConnection '{0}': RemoveSubscription {1}, result {2}.", _esConnection.ConnectionName, subscription, res);
+            return res;
         }
 
         private void RetrySubscription(SubscriptionItem subscription)
         {
             if (!RemoveSubscription(subscription))
+            {
+                _log.Debug("EventStoreConnection '{0}': RemoveSubscription failed when trying to retry {1}.", _esConnection.ConnectionName, subscription);
                 return;
+            }
 
             if (subscription.MaxRetries >= 0 && subscription.RetryCount >= subscription.MaxRetries)
             {
+                _log.Debug("EventStoreConnection '{0}': RETRIES LIMIT REACHED when trying to retry {1}.", _esConnection.ConnectionName, subscription);
                 subscription.Operation.Fail(new RetriesLimitReachedException(subscription.ToString(), subscription.RetryCount));
                 return;
             }
 
+            _log.Debug("EventStoreConnection '{0}': retrying subscription {1}.", _esConnection.ConnectionName, subscription);
             _retryPendingSubscriptions.Add(subscription);
         }
 
@@ -598,6 +639,7 @@ namespace EventStore.ClientAPI.Core
 
             if (subscription.IsSubscribed)
             {
+                _log.Debug("EventStoreConnection '{0}': StartSubscription REMOVING due to already subscribed {1}.", _esConnection.ConnectionName, subscription);
                 RemoveSubscription(subscription);
                 return;
             }
@@ -609,7 +651,14 @@ namespace EventStore.ClientAPI.Core
             _subscriptions.Add(subscription.CorrelationId, subscription);
 
             if (!subscription.Operation.Subscribe(subscription.CorrelationId))
+            {
+                _log.Debug("EventStoreConnection '{0}': StartSubscription REMOVING AS COULDN'T SUBSCRIBE {1}.", _esConnection.ConnectionName, subscription);
                 RemoveSubscription(subscription);
+            }
+            else
+            {
+                _log.Debug("EventStoreConnection '{0}': StartSubscription SUBSCRIBING {1}.", _esConnection.ConnectionName, subscription);
+            }
         }
 
         public class OperationItem

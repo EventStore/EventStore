@@ -169,9 +169,6 @@ namespace EventStore.Core.Services.Storage
             var writerCheckpoint = Db.Config.WriterCheckpoint.Read();
             var chaserCheckpoint = Db.Config.ChaserCheckpoint.Read();
             ReadIndex.Init(writerCheckpoint, chaserCheckpoint);
-
-            Thread.Sleep(5000);
-
             Bus.Publish(new SystemMessage.StorageWriterInitializationDone());
         }
 
