@@ -268,13 +268,9 @@ namespace EventStore.ClientAPI
         protected override void ReadEventsTill(EventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber)
         {
             bool done;
-            AllEventsSlice slice = null;
             do
             {
-                if (slice != null && slice.IsEndOfStream)
-                    Thread.Sleep(1); // we are waiting for server to flush its data
-
-                slice = connection.ReadAllEventsForward(_nextReadPosition, ReadBatchSize, resolveLinkTos);
+                AllEventsSlice slice = connection.ReadAllEventsForward(_nextReadPosition, ReadBatchSize, resolveLinkTos);
                 foreach (var e in slice.Events)
                 {
                     Debug.Assert(e.OriginalPosition.HasValue, "Subscription event came up with no OriginalPosition.");
@@ -285,6 +281,9 @@ namespace EventStore.ClientAPI
                 done = lastCommitPosition == null
                                ? slice.IsEndOfStream
                                : slice.NextPosition >= new Position(lastCommitPosition.Value, lastCommitPosition.Value);
+
+                if (!done && slice.IsEndOfStream)
+                    Thread.Sleep(1); // we are waiting for server to flush its data
             } while (!done);
 
             Log.Debug("Catch-up Subscription to {0}: finished reading events, nextReadPosition = {1}.",
@@ -330,14 +329,10 @@ namespace EventStore.ClientAPI
 
         protected override void ReadEventsTill(EventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber)
         {
-            StreamEventsSlice slice = null;
             bool done;
             do
             {
-                if (slice != null && slice.IsEndOfStream)
-                    Thread.Sleep(1); // we are waiting for server to flush its data
-
-                slice = connection.ReadStreamEventsForward(StreamId, _nextReadEventNumber, ReadBatchSize, resolveLinkTos);
+                var slice = connection.ReadStreamEventsForward(StreamId, _nextReadEventNumber, ReadBatchSize, resolveLinkTos);
                 switch (slice.Status)
                 {
                     case SliceReadStatus.Success:
@@ -362,6 +357,9 @@ namespace EventStore.ClientAPI
                     default:
                         throw new ArgumentOutOfRangeException(string.Format("Unexpected StreamEventsSlice.Status: {0}.", slice.Status));
                 }
+
+                if (!done && slice.IsEndOfStream)
+                    Thread.Sleep(1); // we are waiting for server to flush its data
             } while (!done);
 
             Log.Debug("Catch-up Subscription to {0}: finished reading events, nextReadEventNumber = {1}.",

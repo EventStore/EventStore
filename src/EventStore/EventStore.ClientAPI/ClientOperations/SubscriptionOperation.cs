@@ -112,7 +112,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     {
                         var dto = package.Data.Deserialize<ClientMessage.SubscriptionConfirmation>();
                         ConfirmSubscription(dto.LastCommitPosition, dto.LastEventNumber);
-                        return new InspectionResult(InspectionDecision.DoNothing);
+                        return new InspectionResult(InspectionDecision.Subscribed);
                     }
 
                     case TcpCommand.StreamEventAppeared:

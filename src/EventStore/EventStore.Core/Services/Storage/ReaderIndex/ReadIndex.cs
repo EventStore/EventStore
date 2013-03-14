@@ -218,17 +218,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
 
             if (indexEntries.Count > 0)
-            {
                 _tableIndex.AddEntries(commit.LogPosition, indexEntries); // atomically add a whole bulk of entries
-                for (int i = 0, n = indexEntries.Count; i < n; ++i)
-                {
-                    _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
-                }
-            }
 
             var newLastCommitPosition = commit.LogPosition > lastCommitPosition ? commit.LogPosition : lastCommitPosition;
             if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) != lastCommitPosition)
                 throw new Exception("Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
+
+            for (int i = 0, n = indexEntries.Count; i < n; ++i)
+            {
+                _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
+            }
 
             if (first)
             {
