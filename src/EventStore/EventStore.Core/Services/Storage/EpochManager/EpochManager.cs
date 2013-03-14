@@ -247,7 +247,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 if (!_writer.Write(rec, out pos))
                     throw new Exception(string.Format("Second write try failed at {0}.", epoch.EpochPosition));
             }
-            Log.Debug("=== Writing E{0}@{1}:{2:B} (previous epoch at {3}).", epochNumber, pos, epochId, lastEpochPosition);
+            Log.Debug("=== Writing E{0}@{1}:{2:B} (previous epoch at {3}).", epochNumber, epoch.EpochPosition, epochId, lastEpochPosition);
             return epoch;
         }
 

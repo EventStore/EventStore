@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class subscribe_to_all_should: SpecificationWithDirectory
     {
-        private const int Timeout = 60000;
+        private const int Timeout = 10000;
         
         private MiniNode _node;
 
@@ -73,8 +73,6 @@ namespace EventStore.Core.Tests.ClientAPI
                 using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped).Result)
                 using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped).Result)
                 {
-                    Thread.Sleep(100);
-
                     var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                     Assert.IsTrue(create.Wait(Timeout), "StreamCreateAsync timed out.");
 
