@@ -143,10 +143,10 @@ namespace EventStore.ClientAPI.Core
                 _log,
                 _tcpEndPoint,
                 Guid.NewGuid(),
-                (connection, package) => _queue.EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
-                (connection, exc) => _queue.EnqueueMessage(new TcpConnectionErrorMessage(connection, exc)),
-                connection => _queue.EnqueueMessage(new TcpConnectionEstablishedMessage(connection)),
-                (connection, endpoint, error) => _queue.EnqueueMessage(new TcpConnectionClosedMessage(connection, error)));
+                (connection, package) => EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
+                (connection, exc) => EnqueueMessage(new TcpConnectionErrorMessage(connection, exc)),
+                connection => EnqueueMessage(new TcpConnectionEstablishedMessage(connection)),
+                (connection, endpoint, error) => EnqueueMessage(new TcpConnectionClosedMessage(connection, error)));
             _connection.StartReceiving();
         }
 
@@ -425,7 +425,7 @@ namespace EventStore.ClientAPI.Core
                                                       msg.ResolveLinkTos,
                                                       msg.EventAppeared,
                                                       msg.SubscriptionDropped);
-            _log.Debug("EventStoreConnection '{0}': StartSubscription {1}, {2}, {3}, {4}.", _esConnection.ConnectionName, operation.GetType().Name, operation, msg.MaxRetries, msg.Timeout);
+            _log.Debug("EventStoreConnection '{0}': handling StartSubscriptionMessage. {1}, {2}, {3}, {4}.", _esConnection.ConnectionName, operation.GetType().Name, operation, msg.MaxRetries, msg.Timeout);
             StartSubscription(new SubscriptionItem(operation, msg.MaxRetries, msg.Timeout));
         }
 
