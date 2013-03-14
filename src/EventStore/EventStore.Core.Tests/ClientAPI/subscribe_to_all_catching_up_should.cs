@@ -33,6 +33,7 @@ using EventStore.ClientAPI;
 using EventStore.Common.Log;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 using ILogger = EventStore.Common.Log.ILogger;
 
@@ -64,7 +65,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void call_dropped_callback_after_stop_method_call()
         {
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -81,7 +82,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void be_able_to_subscribe_to_empty_db()
         {
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
             {
                 store.Connect(_node.TcpEndPoint);
                 var appeared = new ManualResetEventSlim(false);
@@ -103,7 +104,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void read_all_existing_events_and_keep_listening_to_new_ones()
         {
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -153,7 +154,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void filter_events_and_keep_listening_to_new_ones()
         {
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -214,7 +215,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void filter_events_and_work_if_nothing_was_written_after_subscription()
         {
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
+            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
             {
                 store.Connect(_node.TcpEndPoint);
 

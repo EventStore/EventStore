@@ -43,11 +43,12 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly long _transactionId;
         private readonly IEnumerable<EventData> _events;
 
-        public TransactionalWriteOperation(TaskCompletionSource<object> source,
+        public TransactionalWriteOperation(ILogger log, 
+                                           TaskCompletionSource<object> source,
                                            bool forward,
                                            long transactionId,
                                            IEnumerable<EventData> events)
-                : base(source, TcpCommand.TransactionWrite, TcpCommand.TransactionWriteCompleted)
+                : base(log, source, TcpCommand.TransactionWrite, TcpCommand.TransactionWriteCompleted)
         {
             _forward = forward;
             _transactionId = transactionId;

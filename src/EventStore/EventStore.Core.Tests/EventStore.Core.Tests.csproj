@@ -129,6 +129,7 @@
     <Compile Include="Hashes\murmur3a_hash_should.cs" />
     <Compile Include="Hashes\SMHasher.cs" />
     <Compile Include="Hashes\xxhash_hash_should.cs" />
+    <Compile Include="Helper\ClientApiLoggerBridge.cs" />
     <Compile Include="Helper\ReflectionDynamic.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />

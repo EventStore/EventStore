@@ -43,12 +43,13 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly int _expectedVersion;
         private readonly EventStoreConnection _parentConnection;
 
-        public StartTransactionOperation(TaskCompletionSource<EventStoreTransaction> source,
+        public StartTransactionOperation(ILogger log, 
+                                         TaskCompletionSource<EventStoreTransaction> source,
                                          bool forward,
                                          string stream,
                                          int expectedVersion,
                                          EventStoreConnection parentConnection)
-            : base(source, TcpCommand.TransactionStart, TcpCommand.TransactionStartCompleted)
+            : base(log, source, TcpCommand.TransactionStart, TcpCommand.TransactionStartCompleted)
         {
             _forward = forward;
             _stream = stream;

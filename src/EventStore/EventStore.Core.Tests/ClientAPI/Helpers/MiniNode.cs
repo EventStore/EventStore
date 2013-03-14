@@ -131,7 +131,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         public void Start()
         {
             var startedEvent = new ManualResetEventSlim(false);
-            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(m => startedEvent.Set()));
+            //_node.Bus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(m => startedEvent.Set()));
+            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.SystemInit>(m => startedEvent.Set()));
 
             _node.Start();
 

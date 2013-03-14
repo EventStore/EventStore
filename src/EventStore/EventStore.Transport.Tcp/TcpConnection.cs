@@ -382,17 +382,18 @@ namespace EventStore.Transport.Tcp
 
             if (_verbose)
             {
-                Console.WriteLine("[{0}]:\nReceived packages: {1}, bytes: {2}\nSent packages: {3}, bytes: {4}\n"
-                                  + "SendAsync calls: {5}, callbacks: {6}\nReceiveAsync calls: {7}, callbacks: {8}\n",
-                                  EffectiveEndPoint,
-                                  _packagesReceived,
-                                  _bytesReceived,
-                                  _packagesSent,
-                                  _bytesSent,
-                                  _sentAsyncs,
-                                  _sentAsyncCallbacks,
-                                  _recvAsyncs,
-                                  _recvAsyncCallbacks);
+                Log.Info("[{0:HH:mm:ss.fff}: {1}]:\nReceived packages: {2}, bytes: {3}\nSent packages: {4}, bytes: {5}\n"
+                         + "SendAsync calls: {6}, callbacks: {7}\nReceiveAsync calls: {8}, callbacks: {9}\n",
+                         DateTime.UtcNow,
+                         EffectiveEndPoint,
+                         _packagesReceived,
+                         _bytesReceived,
+                         _packagesSent,
+                         _bytesSent,
+                         _sentAsyncs,
+                         _sentAsyncCallbacks,
+                         _recvAsyncs,
+                         _recvAsyncCallbacks);
             }
 
             if (_socket != null)

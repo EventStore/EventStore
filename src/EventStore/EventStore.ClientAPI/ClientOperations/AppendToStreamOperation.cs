@@ -45,12 +45,13 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly int _expectedVersion;
         private readonly IEnumerable<EventData> _events;
 
-        public AppendToStreamOperation(TaskCompletionSource<object> source,
+        public AppendToStreamOperation(ILogger log, 
+                                       TaskCompletionSource<object> source,
                                        bool forward,
                                        string stream,
                                        int expectedVersion,
                                        IEnumerable<EventData> events)
-            : base(source, TcpCommand.WriteEvents, TcpCommand.WriteEventsCompleted)
+            : base(log, source, TcpCommand.WriteEvents, TcpCommand.WriteEventsCompleted)
         {
             _forward = forward;
             _stream = stream;

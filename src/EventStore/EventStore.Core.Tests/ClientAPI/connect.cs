@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
@@ -13,7 +14,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void should_not_throw_exception_when_server_is_down()
         {
-            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseConsoleLogger()))
+            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
             {
                 Assert.DoesNotThrow(() => connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348)));
             }

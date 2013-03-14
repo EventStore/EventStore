@@ -44,13 +44,14 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly bool _isJson;
         private readonly byte[] _metadata;
 
-        public CreateStreamOperation(TaskCompletionSource<object> source,
+        public CreateStreamOperation(ILogger log, 
+                                     TaskCompletionSource<object> source,
                                      bool forward,
                                      string stream,
                                      Guid id,
                                      bool isJson,
                                      byte[] metadata)
-                : base(source, TcpCommand.CreateStream, TcpCommand.CreateStreamCompleted)
+                : base(log, source, TcpCommand.CreateStream, TcpCommand.CreateStreamCompleted)
         {
             _forward = forward;
             _stream = stream;

@@ -55,16 +55,16 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Writes an information message to the logger
         /// </summary>
+        /// <param name="format"></param>
+        /// <param name="args"></param>
+        void Info(string format, params object[] args);
+        /// <summary>
+        /// Writes an information message to the logger
+        /// </summary>
         /// <param name="ex"></param>
         /// <param name="format"></param>
         /// <param name="args"></param>
         void Info(Exception ex, string format, params object[] args);
-        /// <summary>
-        /// Writes an information message to the logger
-        /// </summary>
-        /// <param name="format"></param>
-        /// <param name="args"></param>
-        void Info(string format, params object[] args);
 
         /// <summary>
         /// Writes a debug message to the logger

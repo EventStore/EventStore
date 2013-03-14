@@ -42,8 +42,8 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly string _stream;
         private readonly int _expectedVersion;
 
-        public DeleteStreamOperation(TaskCompletionSource<object> source, bool forward, string stream,  int expectedVersion)
-            :base(source, TcpCommand.DeleteStream, TcpCommand.DeleteStreamCompleted)
+        public DeleteStreamOperation(ILogger log, TaskCompletionSource<object> source, bool forward, string stream, int expectedVersion)
+            :base(log, source, TcpCommand.DeleteStream, TcpCommand.DeleteStreamCompleted)
         {
             _forward = forward;
             _stream = stream;

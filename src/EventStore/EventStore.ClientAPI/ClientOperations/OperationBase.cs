@@ -46,6 +46,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly TcpCommand _requestCommand;
         private readonly TcpCommand _responseCommand;
 
+        protected readonly ILogger Log;
         private readonly TaskCompletionSource<TResult> _source;
         private TResponse _response;
         private int _completed;
@@ -54,10 +55,12 @@ namespace EventStore.ClientAPI.ClientOperations
         protected abstract InspectionResult InspectResponse(TResponse response);
         protected abstract TResult TransformResponse(TResponse response);
 
-        protected OperationBase(TaskCompletionSource<TResult> source, TcpCommand requestCommand, TcpCommand responseCommand)
+        protected OperationBase(ILogger log, TaskCompletionSource<TResult> source, TcpCommand requestCommand, TcpCommand responseCommand)
         {
+            Ensure.NotNull(log, "log");
             Ensure.NotNull(source, "source");
 
+            Log = log;
             _source = source;
             _requestCommand = requestCommand;
             _responseCommand = responseCommand;
@@ -119,7 +122,7 @@ namespace EventStore.ClientAPI.ClientOperations
             return new InspectionResult(InspectionDecision.EndOperation, null);
         }
 
-        public static InspectionResult InspectNotHandled(TcpPackage package)
+        public InspectionResult InspectNotHandled(TcpPackage package)
         {
             if (package.Command != TcpCommand.NotHandled)
                 throw new ArgumentException(string.Format("Wrong command: {0}, expected: {1}.", package.Command, TcpCommand.NotHandled));
@@ -129,6 +132,7 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 case ClientMessage.NotHandled.NotHandledReason.NotReady:
                 case ClientMessage.NotHandled.NotHandledReason.TooBusy:
+                    Log.Debug("Received NotHandled response: {0}", message.Reason);
                     return new InspectionResult(InspectionDecision.Retry, null);
 
                 case ClientMessage.NotHandled.NotHandledReason.NotMaster:
@@ -136,7 +140,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     return new InspectionResult(InspectionDecision.Reconnect, masterInfo.ExternalTcpEndPoint);
 
                 default:
-                    //LogManager.GetLogger().Info("Unknown NotHandledReason: {0}.", message.Reason);
+                    Log.Error("Unknown NotHandledReason: {0}.", message.Reason);
                     return new InspectionResult(InspectionDecision.Retry, null);
             }
         }

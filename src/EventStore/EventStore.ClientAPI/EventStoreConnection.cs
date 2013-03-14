@@ -202,7 +202,7 @@ namespace EventStore.ClientAPI
             Ensure.NotEmptyGuid(id, "id");
 
             var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new CreateStreamOperation(source, _settings.AllowForwarding, stream, id, isJson, metadata));
+            EnqueueOperation(new CreateStreamOperation(_settings.Log, source, _settings.AllowForwarding, stream, id, isJson, metadata));
             return source.Task;
         }
 
@@ -227,7 +227,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new DeleteStreamOperation(source, _settings.AllowForwarding, stream, expectedVersion));
+            EnqueueOperation(new DeleteStreamOperation(_settings.Log, source, _settings.AllowForwarding, stream, expectedVersion));
             return source.Task;
         }
 
@@ -323,7 +323,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new AppendToStreamOperation(source, _settings.AllowForwarding, stream, expectedVersion, events));
+            EnqueueOperation(new AppendToStreamOperation(_settings.Log, source, _settings.AllowForwarding, stream, expectedVersion, events));
             return source.Task;
 // ReSharper restore PossibleMultipleEnumeration
         }
@@ -361,7 +361,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<EventStoreTransaction>();
-            EnqueueOperation(new StartTransactionOperation(source, _settings.AllowForwarding, stream, expectedVersion, this));
+            EnqueueOperation(new StartTransactionOperation(_settings.Log, source, _settings.AllowForwarding, stream, expectedVersion, this));
             return source.Task;
         }
 
@@ -399,7 +399,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new TransactionalWriteOperation(source, _settings.AllowForwarding, transaction.TransactionId, events));
+            EnqueueOperation(new TransactionalWriteOperation(_settings.Log, source, _settings.AllowForwarding, transaction.TransactionId, events));
             return source.Task;
 // ReSharper restore PossibleMultipleEnumeration
         }
@@ -414,7 +414,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(transaction, "transaction");
 
             var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new CommitTransactionOperation(source, _settings.AllowForwarding, transaction.TransactionId));
+            EnqueueOperation(new CommitTransactionOperation(_settings.Log, source, _settings.AllowForwarding, transaction.TransactionId));
             return source.Task;
         }
 
@@ -446,7 +446,7 @@ namespace EventStore.ClientAPI
             Ensure.Positive(count, "count");
 
             var source = new TaskCompletionSource<StreamEventsSlice>();
-            EnqueueOperation(new ReadStreamEventsForwardOperation(source, stream, start, count, resolveLinkTos));
+            EnqueueOperation(new ReadStreamEventsForwardOperation(_settings.Log, source, stream, start, count, resolveLinkTos));
             return source.Task;
         }
 
@@ -477,7 +477,7 @@ namespace EventStore.ClientAPI
             Ensure.Positive(count, "count");
 
             var source = new TaskCompletionSource<StreamEventsSlice>();
-            EnqueueOperation(new ReadStreamEventsBackwardOperation(source, stream, start, count, resolveLinkTos));
+            EnqueueOperation(new ReadStreamEventsBackwardOperation(_settings.Log, source, stream, start, count, resolveLinkTos));
             return source.Task;
         }
 
@@ -506,7 +506,7 @@ namespace EventStore.ClientAPI
             Ensure.Positive(maxCount, "maxCount");
 
             var source = new TaskCompletionSource<AllEventsSlice>();
-            EnqueueOperation(new ReadAllEventsForwardOperation(source, position, maxCount, resolveLinkTos));
+            EnqueueOperation(new ReadAllEventsForwardOperation(_settings.Log, source, position, maxCount, resolveLinkTos));
             return source.Task;
         }
 
@@ -534,7 +534,7 @@ namespace EventStore.ClientAPI
             Ensure.Positive(maxCount, "maxCount");
 
             var source = new TaskCompletionSource<AllEventsSlice>();
-            EnqueueOperation(new ReadAllEventsBackwardOperation(source, position, maxCount, resolveLinkTos));
+            EnqueueOperation(new ReadAllEventsBackwardOperation(_settings.Log, source, position, maxCount, resolveLinkTos));
             return source.Task;
         }
 

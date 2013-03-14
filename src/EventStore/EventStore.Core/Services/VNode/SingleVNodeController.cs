@@ -102,14 +102,6 @@ namespace EventStore.Core.Services.VNode
                 .InAllStatesExcept(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)
                     .When<ClientMessage.ReadRequestMessage>().ForwardTo(_outputBus)
 
-                .InAnyState()
-                    .When<ClientMessage.CreateStream>().Do(Handle)
-                    .When<ClientMessage.WriteEvents>().Do(Handle)
-                    .When<ClientMessage.TransactionStart>().Do(Handle)
-                    .When<ClientMessage.TransactionWrite>().Do(Handle)
-                    .When<ClientMessage.TransactionCommit>().Do(Handle)
-                    .When<ClientMessage.DeleteStream>().Do(Handle)
-
                 .InAllStatesExcept(VNodeState.PreMaster)
                     .When<SystemMessage.WaitForChaserToCatchUp>().Ignore()
                     .When<SystemMessage.ChaserCaughtUp>().Ignore()
@@ -121,7 +113,13 @@ namespace EventStore.Core.Services.VNode
                     .WhenOther().ForwardTo(_outputBus)
 
                 .InState(VNodeState.Master)
-                    .When<ClientMessage.WriteRequestMessage>().ForwardTo(_outputBus)
+                    .When<ClientMessage.CreateStream>().Do(Handle)
+                    .When<ClientMessage.WriteEvents>().Do(Handle)
+                    .When<ClientMessage.TransactionStart>().Do(Handle)
+                    .When<ClientMessage.TransactionWrite>().Do(Handle)
+                    .When<ClientMessage.TransactionCommit>().Do(Handle)
+                    .When<ClientMessage.DeleteStream>().Do(Handle)
+
                     .When<StorageMessage.WritePrepares>().ForwardTo(_outputBus)
                     .When<StorageMessage.WriteDelete>().ForwardTo(_outputBus)
                     .When<StorageMessage.WriteTransactionStart>().ForwardTo(_outputBus)
