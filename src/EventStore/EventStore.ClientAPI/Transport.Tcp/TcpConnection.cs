@@ -45,20 +45,20 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool", 
                                                                                    TcpConfiguration.SendReceivePoolSize, 
                                                                                    () => new SocketAsyncEventArgs());
-        internal static TcpConnection CreateConnectingTcpConnection(IPEndPoint remoteEndPoint,
+        internal static TcpConnection CreateConnectingTcpConnection(Guid connectionId, 
+                                                                    IPEndPoint remoteEndPoint,
                                                                     TcpClientConnector connector,
                                                                     Action<TcpConnection> onConnectionEstablished,
                                                                     Action<TcpConnection, SocketError> onConnectionFailed,
                                                                     Action<TcpConnection, SocketError> onConnectionClosed)
         {
-            var connection = new TcpConnection(remoteEndPoint, onConnectionClosed);
+            var connection = new TcpConnection(connectionId, remoteEndPoint, onConnectionClosed);
             connector.InitConnect(remoteEndPoint,
                                   (_, socket) =>
                                   {
                                       connection.InitSocket(socket);
                                       if (onConnectionEstablished != null)
                                           onConnectionEstablished(connection);
-                                      connection.TrySend();
                                   },
                                   (_, socketError) =>
                                   {
@@ -68,13 +68,17 @@ namespace EventStore.ClientAPI.Transport.Tcp
             return connection;
         }
 
-        internal static TcpConnection CreateAcceptedTcpConnection(IPEndPoint effectiveEndPoint, Socket socket, Action<TcpConnection, SocketError> onConnectionClosed)
+        internal static TcpConnection CreateAcceptedTcpConnection(Guid connectionId, 
+                                                                  IPEndPoint effectiveEndPoint, 
+                                                                  Socket socket, 
+                                                                  Action<TcpConnection, SocketError> onConnectionClosed)
         {
-            var connection = new TcpConnection(effectiveEndPoint, onConnectionClosed);
+            var connection = new TcpConnection(connectionId, effectiveEndPoint, onConnectionClosed);
             connection.InitSocket(socket);
             return connection;
         }
 
+        public readonly Guid ConnectionId;
         public IPEndPoint EffectiveEndPoint { get; private set; }
         public int SendQueueSize { get { return _sendQueue.Count; } }
 
@@ -103,10 +107,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private int _recvAsyncs;
         private int _recvAsyncCallbacks;
 
-        private TcpConnection(IPEndPoint effectiveEndPoint, Action<TcpConnection, SocketError> onConnectionClosed)
+        private TcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, Action<TcpConnection, SocketError> onConnectionClosed)
         {
+            Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(effectiveEndPoint, "effectiveEndPoint");
 
+            ConnectionId = connectionId;
             EffectiveEndPoint = effectiveEndPoint;
             _onConnectionClosed = onConnectionClosed;
         }
@@ -141,6 +147,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 _sendSocketArgs.Completed += OnSendAsyncCompleted;
             }
             StartReceive();
+            TrySend();
         }
 
         public void EnqueueSend(IEnumerable<ArraySegment<byte>> data)
@@ -368,10 +375,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             NotifyClosed();
 
-            Console.WriteLine("[{0:HH:mm:ss.fff}: {1}]:\nReceived packages: {2}, bytes: {3}\nSent packages: {4}, bytes: {5}\n"
-                              + "SendAsync calls: {6}, callbacks: {7}\nReceiveAsync calls: {8}, callbacks: {9}\n",
+            Console.WriteLine("[{0:HH:mm:ss.fff}: {1}]:\nConnection ID: {2:B}\nReceived packages: {3}, bytes: {4}\nSent packages: {5}, bytes: {6}\n"
+                              + "SendAsync calls: {7}, callbacks: {8}\nReceiveAsync calls: {9}, callbacks: {10}\n",
                               DateTime.UtcNow,
                               EffectiveEndPoint,
+                              ConnectionId,
                               _packagesReceived,
                               _bytesReceived,
                               _packagesSent,

@@ -49,20 +49,20 @@ namespace EventStore.Transport.Tcp
                                                                                    () => new SocketAsyncEventArgs());
         private static readonly BufferManager BufferManager = new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
 
-        internal static TcpConnection CreateConnectingTcpConnection(IPEndPoint remoteEndPoint, 
+        internal static TcpConnection CreateConnectingTcpConnection(Guid connectionId, 
+                                                                    IPEndPoint remoteEndPoint, 
                                                                     TcpClientConnector connector, 
                                                                     Action<TcpConnection> onConnectionEstablished, 
                                                                     Action<TcpConnection, SocketError> onConnectionFailed,
                                                                     bool verbose)
         {
-            var connection = new TcpConnection(remoteEndPoint, verbose);
+            var connection = new TcpConnection(connectionId, remoteEndPoint, verbose);
             connector.InitConnect(remoteEndPoint,
                                   (_, socket) =>
                                   {
                                       connection.InitSocket(socket, verbose);
                                       if (onConnectionEstablished != null)
                                           onConnectionEstablished(connection);
-                                      connection.TrySend();
                                   },
                                   (_, socketError) =>
                                   {
@@ -72,15 +72,16 @@ namespace EventStore.Transport.Tcp
             return connection;
         }
 
-        internal static TcpConnection CreateAcceptedTcpConnection(IPEndPoint effectiveEndPoint, Socket socket, bool verbose)
+        internal static TcpConnection CreateAcceptedTcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, Socket socket, bool verbose)
         {
-            var connection = new TcpConnection(effectiveEndPoint, verbose);
+            var connection = new TcpConnection(connectionId, effectiveEndPoint, verbose);
             connection.InitSocket(socket, verbose);
             return connection;
         }
 
         public event Action<ITcpConnection, SocketError> ConnectionClosed;
 
+        public readonly Guid ConnectionId;
         public IPEndPoint EffectiveEndPoint { get; private set; }
         public int SendQueueSize { get { return _sendQueue.Count; } }
 
@@ -110,10 +111,12 @@ namespace EventStore.Transport.Tcp
 
         private readonly bool _verbose;
 
-        private TcpConnection(IPEndPoint effectiveEndPoint, bool verbose)
+        private TcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, bool verbose)
         {
+            Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(effectiveEndPoint, "effectiveEndPoint");
 
+            ConnectionId = connectionId;
             EffectiveEndPoint = effectiveEndPoint;
             _verbose = verbose;
         }
@@ -149,6 +152,7 @@ namespace EventStore.Transport.Tcp
                 _sendSocketArgs.Completed += OnSendAsyncCompleted;
             }
             StartReceive();
+            TrySend();
         }
 
         public void EnqueueSend(IEnumerable<ArraySegment<byte>> data)
@@ -382,10 +386,11 @@ namespace EventStore.Transport.Tcp
 
             if (_verbose)
             {
-                Log.Info("[{0:HH:mm:ss.fff}: {1}]:\nReceived packages: {2}, bytes: {3}\nSent packages: {4}, bytes: {5}\n"
-                         + "SendAsync calls: {6}, callbacks: {7}\nReceiveAsync calls: {8}, callbacks: {9}\n",
+                Log.Info("[{0:HH:mm:ss.fff}: {1}]:\nConnection ID: {2:B}\nReceived packages: {3}, bytes: {4}\nSent packages: {5}, bytes: {6}\n"
+                         + "SendAsync calls: {7}, callbacks: {8}\nReceiveAsync calls: {9}, callbacks: {10}\n",
                          DateTime.UtcNow,
                          EffectiveEndPoint,
+                         ConnectionId,
                          _packagesReceived,
                          _bytesReceived,
                          _packagesSent,

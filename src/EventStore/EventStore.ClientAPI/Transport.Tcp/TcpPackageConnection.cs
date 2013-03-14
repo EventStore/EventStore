@@ -82,6 +82,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             var connectionCreated = new ManualResetEventSlim();
             _connection = Connector.ConnectTo(
+                connectionId,
                 tcpEndPoint,
                 tcpConnection =>
                 {

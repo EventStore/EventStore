@@ -145,7 +145,7 @@ namespace EventStore.Transport.Tcp
                 return;
             }
 
-            var tcpConnection = TcpConnection.CreateAcceptedTcpConnection(socketEndPoint, socket, verbose: true);
+            var tcpConnection = TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(), socketEndPoint, socket, verbose: true);
             _onConnectionAccepted(tcpConnection);
         }
 

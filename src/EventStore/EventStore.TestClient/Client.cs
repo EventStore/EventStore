@@ -191,6 +191,7 @@ namespace EventStore.TestClient
             Connection typedConnection = null;
 
             var connection = _connector.ConnectTo(
+                Guid.NewGuid(),
                 tcpEndPoint ?? TcpEndpoint,
                 conn =>
                 {

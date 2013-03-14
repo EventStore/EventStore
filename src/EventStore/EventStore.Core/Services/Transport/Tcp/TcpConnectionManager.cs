@@ -58,8 +58,8 @@ namespace EventStore.Core.Services.Transport.Tcp
         public event Action<TcpConnectionManager, SocketError> ConnectionClosed;
         public event Action<TcpConnectionManager> ConnectionEstablished;
 
-        public Guid ConnectionId { get { return _connectionId; } }
-        public string ConnectionName { get { return _connectionName; } }
+        public readonly Guid ConnectionId;
+        public readonly string ConnectionName;
         public readonly IPEndPoint EndPoint;
         public bool IsClosed { get { return _isClosed; } }
         public int SendQueueSize { get { return _connection.SendQueueSize; } }
@@ -71,24 +71,20 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly IMessageFramer _framer;
         private int _messageNumber;
         private bool _isClosed;
-        private readonly string _connectionName;
-        private readonly Guid _connectionId;
 
         public TcpConnectionManager(string connectionName, 
-                                    Guid connectionId,
                                     ITcpDispatcher dispatcher, 
                                     IPublisher publisher, 
                                     TcpConnection openedConnection,
                                     IPublisher networkSendQueue)
         {
-            Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(dispatcher, "dispatcher");
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(openedConnection, "openedConnnection");
-           
-            _connectionName = connectionName;
-            _connectionId = connectionId;
-            
+
+            ConnectionId = openedConnection.ConnectionId;
+            ConnectionName = connectionName;
+
             _tcpEnvelope = new SendOverTcpEnvelope(this, networkSendQueue);
             _publisher = publisher;
             _dispatcher = dispatcher;
@@ -118,8 +114,8 @@ namespace EventStore.Core.Services.Transport.Tcp
             Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
             Ensure.NotNull(connector, "connector");
 
-            _connectionName = connectionName;
-            _connectionId = connectionId;
+            ConnectionId = connectionId;
+            ConnectionName = connectionName;
 
             _tcpEnvelope = new SendOverTcpEnvelope(this, networkSendQueue);
             _publisher = publisher;
@@ -130,13 +126,13 @@ namespace EventStore.Core.Services.Transport.Tcp
             _framer = new LengthPrefixMessageFramer();
             _framer.RegisterMessageArrivedCallback(OnMessageArrived);
 
-            _connection = connector.ConnectTo(remoteEndPoint, OnConnectionEstablished, OnConnectionFailed);
+            _connection = connector.ConnectTo(ConnectionId, remoteEndPoint, OnConnectionEstablished, OnConnectionFailed);
             _connection.ConnectionClosed += OnConnectionClosed;
         }
 
         private void OnConnectionEstablished(TcpConnection connection)
         {
-            Log.Info("Connection '{0}' ({1:B}) to [{2}] established.", _connectionName, _connectionId, connection.EffectiveEndPoint);
+            Log.Info("Connection '{0}' ({1:B}) to [{2}] established.", ConnectionName, ConnectionId, connection.EffectiveEndPoint);
 
             ScheduleHeartbeat(0);
 
@@ -147,7 +143,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnConnectionFailed(TcpConnection connection, SocketError socketError)
         {
-            Log.Info("Connection '{0}' ({1:B}) to [{2}] failed: {3}.", _connectionName, _connectionId, connection.EffectiveEndPoint, socketError);
+            Log.Info("Connection '{0}' ({1:B}) to [{2}] failed: {3}.", ConnectionName, ConnectionId, connection.EffectiveEndPoint, socketError);
 
             _isClosed = true;
             connection.ConnectionClosed -= OnConnectionClosed;
@@ -210,7 +206,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                         string reason = string.Empty;
                         Helper.EatException(() => reason = Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
                         var exitMessage = string.Format("Bad request received from '{0}' [{1}, {2:B}], will stop server. CorrelationId: {3:B}, Error: {4}.",
-                                                        _connectionName, EndPoint, _connectionId, package.CorrelationId,
+                                                        ConnectionName, EndPoint, ConnectionId, package.CorrelationId,
                                                         reason.IsEmptyString() ? "<reason missing>" : reason);
                         Log.Error(exitMessage);
                         Application.Exit(1, exitMessage);
@@ -239,14 +235,14 @@ namespace EventStore.Core.Services.Transport.Tcp
             Ensure.NotNull(message, "message");
 
             SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Encoding.UTF8.GetBytes(message)));
-            Log.Error("Closing connection '{0}' [{1}, {2:B}] due to error. Reason: {3}", _connectionName, EndPoint, _connectionId, message);
+            Log.Error("Closing connection '{0}' [{1}, {2:B}] due to error. Reason: {3}", ConnectionName, EndPoint, ConnectionId, message);
             _connection.Close();
         }
 
         public void Stop(string reason = null)
         {
             Log.Trace("Closing connection '{0}' [{1}, {2:B}] cleanly.{3}",
-                      _connectionName, EndPoint, _connectionId,
+                      ConnectionName, EndPoint, ConnectionId,
                       reason.IsEmpty() ? string.Empty : " Reason: " + reason);
             _connection.Close();
         }
@@ -299,14 +295,14 @@ namespace EventStore.Core.Services.Transport.Tcp
             else 
             {
                 Log.Info("Closing connection '{0}' [{1}, {2:B}] due to HEARTBEAT TIMEOUT at msgNum {3}.", 
-                         _connectionName, EndPoint, _connectionId, msgNum);
+                         ConnectionName, EndPoint, ConnectionId, msgNum);
                 _connection.Close();
             }
         }
 
         private void OnConnectionClosed(ITcpConnection connection, SocketError socketError)
         {
-            Log.Info("Connection '{0}' [{1}, {2:B}] closed: {3}.", _connectionName, connection.EffectiveEndPoint, _connectionId, socketError);
+            Log.Info("Connection '{0}' [{1}, {2:B}] closed: {3}.", ConnectionName, connection.EffectiveEndPoint, ConnectionId, socketError);
 
             _isClosed = true;
             connection.ConnectionClosed -= OnConnectionClosed;

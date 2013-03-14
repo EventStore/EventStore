@@ -152,7 +152,11 @@ namespace EventStore.ClientAPI.Core
 
         private void CloseConnection(string reason, Exception exception = null)
         {
-            if (_disposed) return;
+            if (_disposed)
+            {
+                _log.Debug("EventStoreConnection '{0}': CloseConnection IGNORED because is DISPOSED, reason {1}, exception {2}.", _esConnection.ConnectionName, reason, exception);
+                return;
+            }
 
             _log.Debug("EventStoreConnection '{0}': CloseConnection, reason {1}, exception {2}.", _esConnection.ConnectionName, reason, exception);
 
@@ -190,10 +194,13 @@ namespace EventStore.ClientAPI.Core
 
         private void CloseTcpConnection()
         {
-            _log.Debug("EventStoreConnection '{0}': CloseTcpConnection.", _esConnection.ConnectionName);
-
-            if (_connection == null) 
+            if (_connection == null)
+            {
+                _log.Debug("EventStoreConnection '{0}': CloseTcpConnection IGNORED because _connection == null.", _esConnection.ConnectionName);
                 return;
+            }
+            
+            _log.Debug("EventStoreConnection '{0}': CloseTcpConnection.", _esConnection.ConnectionName);
 
             _connection.Close();
             TcpConnectionClosed(_connection);
@@ -203,7 +210,12 @@ namespace EventStore.ClientAPI.Core
         private void TcpConnectionEstablished(TcpPackageConnection connection)
         {
             if (_disposed || _connection != connection || connection.IsClosed)
+            {
+                _log.Debug("EventStoreConnection '{0}': IGNORED (_disposed {2}, _conn.Id {3}, conn.Id {4}, conn.closed {5}): TCP connection to [{1}] established.", 
+                           _esConnection.ConnectionName, connection.EffectiveEndPoint,
+                           _disposed, _connection == null ? Guid.Empty : _connection.ConnectionId, connection.ConnectionId, connection.IsClosed);
                 return;
+            }
 
             _log.Debug("EventStoreConnection '{0}': TCP connection to [{1}] established.", _esConnection.ConnectionName, connection.EffectiveEndPoint);
 
@@ -217,7 +229,12 @@ namespace EventStore.ClientAPI.Core
         private void TcpConnectionClosed(TcpPackageConnection connection)
         {
             if (_disposed || _connection != connection)
+            {
+                _log.Debug("EventStoreConnection '{0}': IGNORED (_disposed {2}, _conn.ID: {3}, conn.ID: {4}):TCP connection to [{1}] closed.", 
+                           _esConnection.ConnectionName, connection.EffectiveEndPoint,
+                           _disposed, _connection == null ? Guid.Empty : _connection.ConnectionId, connection.ConnectionId);
                 return;
+            }
 
             _log.Debug("EventStoreConnection '{0}': TCP connection to [{1}] closed.", _esConnection.ConnectionName, connection.EffectiveEndPoint);
 
@@ -433,7 +450,7 @@ namespace EventStore.ClientAPI.Core
         {
             if (_disposed || _connection != connection)
             {
-                _log.Debug("EventStoreConnection '{0}': HandleTcpPackage IGNORED connId {1}, package {2}, {3}.", _esConnection.ConnectionName, connection.ConnectionId, package.Command, package.CorrelationId);
+                _log.Debug("EventStoreConnection '{0}': IGNORED: HandleTcpPackage connId {1}, package {2}, {3}.", _esConnection.ConnectionName, connection.ConnectionId, package.Command, package.CorrelationId);
                 return;
             }
 

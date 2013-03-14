@@ -106,11 +106,10 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnConnectionAccepted(TcpConnection connection)
         {
-            var connectionId = Guid.NewGuid();
-            Log.Info("{0} TCP connection accepted: [{1}], connection ID: {2}.", _serviceType, connection.EffectiveEndPoint, connectionId);
+            Log.Info("{0} TCP connection accepted: [{1}], connection ID: {2}.", _serviceType, connection.EffectiveEndPoint, connection.ConnectionId);
             
-            var dispatcher = _dispatcherFactory(connectionId, _serverEndPoint);
-            var manager = new TcpConnectionManager(_serviceType.ToString().ToLower(), connectionId, dispatcher, _publisher, connection, _networkSendQueue);
+            var dispatcher = _dispatcherFactory(connection.ConnectionId, _serverEndPoint);
+            var manager = new TcpConnectionManager(_serviceType.ToString().ToLower(), dispatcher, _publisher, connection, _networkSendQueue);
             manager.ConnectionClosed += OnConnectionClosed;
 
             _publisher.Publish(new TcpMessage.ConnectionEstablished(manager));

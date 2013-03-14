@@ -52,14 +52,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
             return socketArgs;
         }
 
-        public TcpConnection ConnectTo(IPEndPoint remoteEndPoint, 
+        public TcpConnection ConnectTo(Guid connectionId,
+                                       IPEndPoint remoteEndPoint, 
                                        Action<TcpConnection> onConnectionEstablished = null,
                                        Action<TcpConnection, SocketError> onConnectionFailed = null,
                                        Action<TcpConnection, SocketError> onConnectionClosed = null)
         {
-            if (remoteEndPoint == null) 
-                throw new ArgumentNullException("remoteEndPoint");
-            return TcpConnection.CreateConnectingTcpConnection(remoteEndPoint, this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
+            Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
+            return TcpConnection.CreateConnectingTcpConnection(connectionId, remoteEndPoint, this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
         }
 
         internal void InitConnect(IPEndPoint serverEndPoint,
