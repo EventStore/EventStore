@@ -98,14 +98,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
         private readonly Action<TcpConnection, SocketError> _onConnectionClosed;
 
-        private int _packagesSent;
+        private volatile int _packagesSent;
         private long _bytesSent;
-        private int _packagesReceived;
+        private volatile int _packagesReceived;
         private long _bytesReceived;
-        private int _sentAsyncs;
-        private int _sentAsyncCallbacks;
-        private int _recvAsyncs;
-        private int _recvAsyncCallbacks;
+        private volatile int _sentAsyncs;
+        private volatile int _sentAsyncCallbacks;
+        private volatile int _recvAsyncs;
+        private volatile int _recvAsyncCallbacks;
 
         private TcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, Action<TcpConnection, SocketError> onConnectionClosed)
         {
@@ -381,9 +381,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
                               EffectiveEndPoint,
                               ConnectionId,
                               _packagesReceived,
-                              _bytesReceived,
+                              Interlocked.Read(ref _bytesReceived),
                               _packagesSent,
-                              _bytesSent,
+                              Interlocked.Read(ref _bytesSent),
                               _sentAsyncs,
                               _sentAsyncCallbacks,
                               _recvAsyncs,
