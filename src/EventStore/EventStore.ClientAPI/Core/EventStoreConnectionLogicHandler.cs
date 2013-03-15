@@ -217,7 +217,7 @@ namespace EventStore.ClientAPI.Core
                 return;
             }
 
-            _log.Debug("EventStoreConnection '{0}': TCP connection to [{1}] established.", _esConnection.ConnectionName, connection.EffectiveEndPoint);
+            _log.Debug("EventStoreConnection '{0}': TCP connection to [{1}, {2:B}] established.", _esConnection.ConnectionName, connection.EffectiveEndPoint, connection.ConnectionId);
 
             _reconnectionStopwatch.Stop();
             _connectionStopwatch.Restart();
@@ -236,7 +236,7 @@ namespace EventStore.ClientAPI.Core
                 return;
             }
 
-            _log.Debug("EventStoreConnection '{0}': TCP connection to [{1}] closed.", _esConnection.ConnectionName, connection.EffectiveEndPoint);
+            _log.Debug("EventStoreConnection '{0}': TCP connection to [{1}, {2}] closed.", _esConnection.ConnectionName, connection.EffectiveEndPoint, connection.ConnectionId);
 
             _connectionStopwatch.Stop();
             _reconnectionStopwatch.Restart();
