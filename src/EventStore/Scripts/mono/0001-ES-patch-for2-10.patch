@@ -1,13 +1,21 @@
----
- mono/metadata/threadpool.c | 2 +-
- mono/mini/driver.c         | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
+diff --git a/mcs/tools/xbuild/ErrorUtilities.cs b/mcs/tools/xbuild/ErrorUtilities.cs
+index a210486..9aed323 100644
+--- a/mcs/tools/xbuild/ErrorUtilities.cs
++++ b/mcs/tools/xbuild/ErrorUtilities.cs
+@@ -33,7 +33,7 @@ namespace Mono.XBuild.CommandLine {
+ 	public static class ErrorUtilities {
+ 
+ 		static string[] version = {
+-			String.Format ("XBuild Engine Version {0}", Consts.MonoVersion),
++			String.Format ("XBuild Engine Version {0} (EventStore patched build: ThreadPool.c)", Consts.MonoVersion),
+ 			String.Format ("Mono, Version {0}", Consts.MonoVersion),
+ 			"Copyright (C) Marek Sieradzki 2005-2008, Novell 2008-2011.",
+ 		};
 diff --git a/mono/metadata/threadpool.c b/mono/metadata/threadpool.c
-index ad2b3de..c24950b 100644
+index e8a2f1a..f83e473 100644
 --- a/mono/metadata/threadpool.c
 +++ b/mono/metadata/threadpool.c
-@@ -574,8 +574,8 @@ socket_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *state)
+@@ -555,8 +555,8 @@ socket_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *state)
  
  	mono_g_hash_table_replace (data->sock_to_state, state->handle, list);
  	ievt = get_events_from_list (list);
@@ -18,10 +26,10 @@ index ad2b3de..c24950b 100644
  
  #ifndef DISABLE_SOCKETS
 diff --git a/mono/mini/mini.c b/mono/mini/mini.c
-index f52a44f..e7e5154 100644
+index 6c9d1c0..1b4379c 100644
 --- a/mono/mini/mini.c
 +++ b/mono/mini/mini.c
-@@ -6968,9 +6968,9 @@ char*
+@@ -7312,9 +7312,9 @@ char*
  mono_get_runtime_build_info (void)
  {
  	if (mono_build_date)
@@ -33,6 +41,3 @@ index f52a44f..e7e5154 100644
  }
  
  static void
-
--- 
-1.8.0.msysgit.0
