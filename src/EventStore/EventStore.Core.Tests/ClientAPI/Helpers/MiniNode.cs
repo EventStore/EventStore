@@ -32,7 +32,9 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -46,7 +48,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
     internal class MiniNode
     {
-        private static readonly EventStore.Common.Concurrent.ConcurrentQueue<int> AvailablePorts = new EventStore.Common.Concurrent.ConcurrentQueue<int>(GetRandomPorts(49200, 5000));
+        private static readonly ILogger Log = LogManager.GetLoggerFor<MiniNode>();
+        private static readonly AvailablePortsPool AvailablePortsPool = new AvailablePortsPool(49200, 5000);
 
         public IPEndPoint TcpEndPoint { get; private set; }
         public IPEndPoint HttpEndPoint { get; private set; }
@@ -63,8 +66,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         {
             var ip = GetLocalIp();
 
-            int extTcpPort = GetAvailablePort(ip);
-            int extHttpPort = GetAvailablePort(ip);
+            int extTcpPort = AvailablePortsPool.GetAvailablePort(ip);
+            int extHttpPort = AvailablePortsPool.GetAvailablePort(ip);
 
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}", extTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
@@ -84,48 +87,20 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                                                               TimeSpan.FromHours(1),
                                                               StatsStorage.None);
 
+            Log.Info("\n{0,-25} {1} ({2})\n"
+                     + "{3,-25} {4} ({5}-bit)\n"
+                     + "{6,-25} {7}\n"
+                     + "{8,-25} {9}\n"
+                     + "{10,-25} {11}\n"
+                     + "{12,-25} {13}\n",
+                     "OS:", OS.IsLinux ? "Linux" : "Windows", Environment.OSVersion,
+                     "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
+                     "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
+                     "DBPATH:", _dbPath,
+                     "TCP ENDPOINT:", TcpEndPoint,
+                     "HTTP ENDPOINT:", HttpEndPoint);
+
             _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, dbVerifyHashes: true, runProjections: false, memTableEntryCount: 1000);
-        }
-
-        private int GetAvailablePort(IPAddress ip)
-        {
-            for (int i = 0; i < 50; ++i)
-            {
-                int port;
-                if (!AvailablePorts.TryDequeue(out port))
-                    throw new Exception("Couldn't get free TCP port for MiniNode.");
-                try
-                {
-                    var listener = new TcpListener(ip, port);
-                    listener.Start();
-
-                    listener.Stop();
-                    return port;
-                }
-                catch (Exception)
-                {
-                    AvailablePorts.Enqueue(port);
-                }
-            }
-            throw new Exception("Reached trials limit while trying to get free port for MiniNode");
-        }
-
-        private static int[] GetRandomPorts(int from, int portCount)
-        {
-            var res = new int[portCount];
-            var rnd = new Random(Guid.NewGuid().GetHashCode());
-            for (int i = 0; i < portCount; ++i)
-            {
-                res[i] = from + i;
-            }
-            for (int i = 0; i < portCount; ++i)
-            {
-                int index = rnd.Next(portCount - i);
-                int tmp = res[i];
-                res[i] = res[i + index];
-                res[i + index] = tmp;
-            }
-            return res;
         }
 
         public void Start()
@@ -150,8 +125,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             if (!shutdownEvent.Wait(20000))
                 throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
 
-            AvailablePorts.Enqueue(TcpEndPoint.Port);
-            AvailablePorts.Enqueue(HttpEndPoint.Port);
+            AvailablePortsPool.ReleasePort(TcpEndPoint.Port);
+            AvailablePortsPool.ReleasePort(HttpEndPoint.Port);
 
             TryDeleteDirectory(_dbPath);
         }

@@ -27,6 +27,9 @@
 // 
 
 using System;
+using System.Runtime.InteropServices;
+using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests
@@ -38,13 +41,28 @@ namespace EventStore.Core.Tests
         public void SetUp()
         {
             Console.WriteLine("Initializing tests (setting console loggers)...");
-            EventStore.Common.Log.LogManager.SetLogFactory(x => new EventStore.Common.Log.ConsoleLogger(x));
+            LogManager.SetLogFactory(x => new ConsoleLogger(x));
+
+            LogEnvironemntInfo();
+        }
+
+        private void LogEnvironemntInfo()
+        {
+            var log = LogManager.GetLoggerFor<TestsInitFixture>();
+
+            log.Info("\n{0,-25} {1} ({2})\n"
+                     + "{3,-25} {4} ({5}-bit)\n"
+                     + "{6,-25} {7}\n\n",
+                     "OS:", OS.IsLinux ? "Linux" : "Windows", Environment.OSVersion,
+                     "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
+                     "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1)
+                     );
         }
 
         [TearDown]
         public void TearDown()
         {
-            EventStore.Common.Log.LogManager.Finish();
+            LogManager.Finish();
         }
     }
 }
