@@ -58,6 +58,7 @@
     <Compile Include="ClientOptions.cs" />
     <Compile Include="CommandProcessorContext.cs" />
     <Compile Include="CommandsProcessor.cs" />
+    <Compile Include="Commands\RunTestScenarios\ProjGenerateSampleData.cs" />
     <Compile Include="Commands\WriteFloodClientApiProcessor.cs" />
     <Compile Include="Commands\ReadAllProcessor.cs" />
     <Compile Include="Commands\RunTestScenariosProcessor.cs" />

@@ -124,6 +124,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 return;
             }
 
+            //NOTE: important to be the last statement in the callback
             connection.ReceiveAsync(OnRawDataReceived);
         }
 
