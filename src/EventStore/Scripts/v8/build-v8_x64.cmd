@@ -19,7 +19,7 @@ exit /b 1
 :setup-environment
 
     path %PATH%;%~dp0..\..\v8\third_party\python_26\;C:\Windows\Microsoft.NET\Framework64\v4.0.30319\;c:\Program Files (x86)\Git\bin; || goto :error
-    call "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64\vcvars64.bat"  || goto :error
+    call "vcvars64.bat"  || goto :error
 
 exit /b 0
 

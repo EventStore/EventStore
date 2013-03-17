@@ -10,7 +10,7 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 
 ####Prerequisites
 
-	- Visual Studio 2010 (with .NET 4 and 64-bit C++ support)
+	- Visual Studio 2010 or 2012 (with .NET 4 and 64-bit C++ support)
 	- git on PATH
 	- svn on PATH
 
@@ -19,6 +19,8 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 Either use a Visual Studio 2010 x64 Command Prompt, or run
 
 	"C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat" x64
+
+Visual Studio 2012 x64 Command Prompt can also be used.
 
 ####Download and build v8
 
@@ -29,6 +31,8 @@ Either use a Visual Studio 2010 x64 Command Prompt, or run
 ####Build the v8 integration code
 
 	C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe /p:Configuration=Debug;Platform=x64 src\EventStore\Projections.Dev.WindowsOnly.sln 
+
+For Visual Studio 2012 add /p:PlatformToolset=v110
 
 This step produces a file named js1.dll, which contains the projections framework. If you already have access to a suitable version of this file (e.g. from the binary distribution) you can proceed to step 4, having made it available in src\EventStore\libs\x64.
 
