@@ -40,6 +40,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
+using EventStore.Core.Tests.Helper;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -49,7 +50,6 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
     internal class MiniNode
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<MiniNode>();
-        private static readonly EventStore.Common.Concurrent.ConcurrentQueue<int> AvailablePorts = new EventStore.Common.Concurrent.ConcurrentQueue<int>(GetRandomPorts(49200, 5000));
 
         public IPEndPoint TcpEndPoint { get; private set; }
         public IPEndPoint HttpEndPoint { get; private set; }
@@ -66,8 +66,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         {
             var ip = GetLocalIp();
 
-            int extTcpPort = GetAvailablePort(ip);
-            int extHttpPort = GetAvailablePort(ip);
+            int extTcpPort = TcpPortsHelper.GetAvailablePort(ip);
+            int extHttpPort = TcpPortsHelper.GetAvailablePort(ip);
 
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}", extTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
@@ -103,52 +103,10 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, dbVerifyHashes: true, runProjections: false, memTableEntryCount: 1000);
         }
 
-        private int GetAvailablePort(IPAddress ip)
-        {
-            for (int i = 0; i < 50; ++i)
-            {
-                int port;
-                if (!AvailablePorts.TryDequeue(out port))
-                    throw new Exception("Couldn't get free TCP port for MiniNode.");
-                try
-                {
-                    var listener = new TcpListener(ip, port);
-                    listener.Start();
-
-                    listener.Stop();
-                    return port;
-                }
-                catch (Exception)
-                {
-                    AvailablePorts.Enqueue(port);
-                }
-            }
-            throw new Exception("Reached trials limit while trying to get free port for MiniNode");
-        }
-
-        private static int[] GetRandomPorts(int from, int portCount)
-        {
-            var res = new int[portCount];
-            var rnd = new Random(Guid.NewGuid().GetHashCode());
-            for (int i = 0; i < portCount; ++i)
-            {
-                res[i] = from + i;
-            }
-            for (int i = 0; i < portCount; ++i)
-            {
-                int index = rnd.Next(portCount - i);
-                int tmp = res[i];
-                res[i] = res[i + index];
-                res[i + index] = tmp;
-            }
-            return res;
-        }
-
         public void Start()
         {
             var startedEvent = new ManualResetEventSlim(false);
-            //_node.Bus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(m => startedEvent.Set()));
-            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.SystemInit>(m => startedEvent.Set()));
+            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(m => startedEvent.Set()));
 
             _node.Start();
 
@@ -166,8 +124,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             if (!shutdownEvent.Wait(20000))
                 throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
 
-            AvailablePorts.Enqueue(TcpEndPoint.Port);
-            AvailablePorts.Enqueue(HttpEndPoint.Port);
+            TcpPortsHelper.ReturnPort(TcpEndPoint.Port);
+            TcpPortsHelper.ReturnPort(HttpEndPoint.Port);
 
             TryDeleteDirectory(_dbPath);
         }
