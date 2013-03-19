@@ -40,6 +40,7 @@ using EventStore.ClientAPI;
 using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.Tests.Helper;
 using ConsoleLogger = EventStore.ClientAPI.Common.Log.ConsoleLogger;
 using ILogger = EventStore.Common.Log.ILogger;
 
@@ -49,7 +50,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
     {
         protected static readonly ILogger Log = LogManager.GetLoggerFor<ScenarioBase>();
         protected static readonly ClientAPI.ILogger ApiLogger = new ClientApiLogger();
-        private static readonly AvailablePortsPool AvailablePortsPool = new AvailablePortsPool(45000, 10000);
 
         protected readonly Action<IPEndPoint, byte[]> DirectSendOverTcp;
         protected readonly int MaxConcurrentRequests;
@@ -99,8 +99,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             CreateNewDbPath();
 
             _ipAddress = IPAddress.Loopback;
-            _tcpPort = AvailablePortsPool.GetAvailablePort(_ipAddress);
-            _httpPort = AvailablePortsPool.GetAvailablePort(_ipAddress);
+            _tcpPort = TcpPortsHelper.GetAvailablePort(_ipAddress);
+            _httpPort = TcpPortsHelper.GetAvailablePort(_ipAddress);
 
             _connections = new EventStoreConnection[connections];
             _projectionsManager = new ProjectionsManager(new ConsoleLogger(), new IPEndPoint(_ipAddress, _httpPort));
@@ -394,7 +394,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 if (process.HasExited)
                 {
                     Log.Info("Killed process {0}", processId);
-                    if (portsToRelease != null) portsToRelease.ToList().ForEach(AvailablePortsPool.ReleasePort);
+                    if (portsToRelease != null)
+                    {
+                        foreach (var port in portsToRelease)
+                        {
+                            TcpPortsHelper.ReturnPort(port);
+                        }
+                    }
                 }
                 else
                 {

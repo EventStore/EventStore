@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.Net;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -40,13 +39,15 @@ namespace EventStore.Transport.Http.Server
         public event Action<HttpAsyncServer, HttpListenerContext> RequestReceived;
         
         public bool IsListening { get { return _listener.IsListening; } }
-        public IEnumerable<string> ListenPrefixes { get { return _listener.Prefixes; } }
+        public readonly string[] ListenPrefixes;
 
         private readonly HttpListener _listener;
 
         public HttpAsyncServer(string[] prefixes)
         {
             Ensure.NotNull(prefixes, "prefixes");
+
+            ListenPrefixes = prefixes;
 
             _listener = new HttpListener();
             foreach (var prefix in prefixes)

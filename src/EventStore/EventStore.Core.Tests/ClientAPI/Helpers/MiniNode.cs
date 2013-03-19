@@ -40,6 +40,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
+using EventStore.Core.Tests.Helper;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -49,7 +50,6 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
     internal class MiniNode
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<MiniNode>();
-        private static readonly AvailablePortsPool AvailablePortsPool = new AvailablePortsPool(49200, 5000);
 
         public IPEndPoint TcpEndPoint { get; private set; }
         public IPEndPoint HttpEndPoint { get; private set; }
@@ -66,8 +66,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         {
             var ip = GetLocalIp();
 
-            int extTcpPort = AvailablePortsPool.GetAvailablePort(ip);
-            int extHttpPort = AvailablePortsPool.GetAvailablePort(ip);
+            int extTcpPort = TcpPortsHelper.GetAvailablePort(ip);
+            int extHttpPort = TcpPortsHelper.GetAvailablePort(ip);
 
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}", extTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
@@ -106,8 +106,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         public void Start()
         {
             var startedEvent = new ManualResetEventSlim(false);
-            //_node.Bus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(m => startedEvent.Set()));
-            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.SystemInit>(m => startedEvent.Set()));
+            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(m => startedEvent.Set()));
 
             _node.Start();
 
@@ -125,8 +124,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             if (!shutdownEvent.Wait(20000))
                 throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
 
-            AvailablePortsPool.ReleasePort(TcpEndPoint.Port);
-            AvailablePortsPool.ReleasePort(HttpEndPoint.Port);
+            TcpPortsHelper.ReturnPort(TcpEndPoint.Port);
+            TcpPortsHelper.ReturnPort(HttpEndPoint.Port);
 
             TryDeleteDirectory(_dbPath);
         }

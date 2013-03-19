@@ -1,24 +1,23 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
-namespace EventStore.Core.Tests.ClientAPI.Helpers
+namespace EventStore.Core.Tests.Helper
 {
-    public class AvailablePortsPool
+    public static class TcpPortsHelper
     {
-        private readonly EventStore.Common.Concurrent.ConcurrentQueue<int> _availablePorts;
+        private static readonly EventStore.Common.Concurrent.ConcurrentQueue<int> AvailablePorts = 
+            new EventStore.Common.Concurrent.ConcurrentQueue<int>(GetRandomPorts(45000, 10000));
 
-        public AvailablePortsPool(int from, int portCount)
-        {
-            _availablePorts = new EventStore.Common.Concurrent.ConcurrentQueue<int>(GetRandomPorts(from, portCount));
-        }
-
-        public int GetAvailablePort(IPAddress ip)
+        public static int GetAvailablePort(IPAddress ip)
         {
             for (int i = 0; i < 50; ++i)
             {
                 int port;
-                if (!_availablePorts.TryDequeue(out port))
+                if (!AvailablePorts.TryDequeue(out port))
                     throw new Exception("Couldn't get free TCP port for MiniNode.");
                 try
                 {
@@ -30,21 +29,21 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                 }
                 catch (Exception)
                 {
-                    _availablePorts.Enqueue(port);
+                    AvailablePorts.Enqueue(port);
                 }
             }
             throw new Exception("Reached trials limit while trying to get free port for MiniNode");
         }
 
-        public void ReleasePort(int port)
+        public static void ReturnPort(int port)
         {
-            _availablePorts.Enqueue(port);
+            AvailablePorts.Enqueue(port);
         }
 
-        private int[] GetRandomPorts(int from, int portCount)
+        private static int[] GetRandomPorts(int from, int portCount)
         {
             var res = new int[portCount];
-            var rnd = new Random(Guid.NewGuid().GetHashCode());
+            var rnd = new Random(Math.Abs(Guid.NewGuid().GetHashCode()));
             for (int i = 0; i < portCount; ++i)
             {
                 res[i] = from + i;
