@@ -310,7 +310,7 @@
     <Compile Include="TransactionLog\Chunks\when_marking_for_deletion_a_tfchunk_that_has_been_locked_and_unlocked.cs" />
     <Compile Include="TransactionLog\Chunks\when_unlocking_a_tfchunk_that_has_been_marked_for_deletion.cs" />
     <Compile Include="TransactionLog\commit_log_record_should.cs" />
-    <Compile Include="TransactionLog\prefix_filenaming_strategy.cs" />
+    <Compile Include="TransactionLog\when_validating_tfchunk_db_with_multi_chunks.cs" />
     <Compile Include="TransactionLog\prepare_log_record_should.cs" />
     <Compile Include="TransactionLog\Chunks\when_creating_tfchunk_from_empty_file.cs" />
     <Compile Include="TransactionLog\Chunks\when_appending_past_end_of_a_tfchunk.cs" />
@@ -343,8 +343,8 @@
     <Compile Include="TransactionLog\when_creating_chunked_transaction_file_writer.cs" />
     <Compile Include="TransactionLog\when_opening_chunked_transaction_file_db_without_previous_files.cs" />
     <Compile Include="TransactionLog\when_reading_an_empty_chunked_transaction_log.cs" />
-    <Compile Include="TransactionLog\when_validating_chunked_transaction_db.cs" />
-    <Compile Include="TransactionLog\when_verifying_chunked_transaction_db_without_previous_files.cs" />
+    <Compile Include="TransactionLog\when_validating_tfchunk_db.cs" />
+    <Compile Include="TransactionLog\when_validating_tfchunkdb_without_previous_files.cs" />
     <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_checksum.cs" />
     <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_checksum_and_data_bigger_than_buffer.cs" />
     <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_not_enough_space_in_chunk.cs" />

@@ -35,13 +35,13 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_verifying_chunked_transaction_db_without_previous_files : SpecificationWithDirectory
+    public class when_validating_tfchunkdb_without_previous_files : SpecificationWithDirectory
     {
         [Test]
         public void with_a_writer_checksum_of_nonzero_and_no_files_a_corrupted_database_exception_is_thrown()
         {
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
                                                        0,
                                                        new InMemoryCheckpoint(500),
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void with_a_writer_checksum_of_zero_and_no_files_is_valid()
         {
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
                                                        0,
                                                        new InMemoryCheckpoint(0),

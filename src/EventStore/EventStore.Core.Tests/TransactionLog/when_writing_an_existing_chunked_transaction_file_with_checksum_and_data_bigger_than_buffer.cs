@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.TransactionLog
 
             _checkpoint = new InMemoryCheckpoint(137);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        chunkHeader.ChunkSize,
                                                        0,
                                                        _checkpoint,

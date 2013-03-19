@@ -58,14 +58,14 @@ namespace EventStore.Core.TransactionLog.Chunks
             var lastChunkNum = (int) (checkpoint/Config.ChunkSize);
             var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
 
-            for (int i = 0; i < lastChunkNum; ++i)
+            for (int chunkNum = 0; chunkNum < lastChunkNum; )
             {
-                var versions = Config.FileNamingStrategy.GetAllVersionsFor(i);
+                var versions = Config.FileNamingStrategy.GetAllVersionsFor(chunkNum);
                 if (versions.Length == 0)
-                    throw new CorruptDatabaseException(new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i, 0)));
+                    throw new CorruptDatabaseException(new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(chunkNum, 0)));
 
                 TFChunk.TFChunk chunk;
-                if (lastChunkVersions.Length == 0 && (i + 1) * (long)Config.ChunkSize == checkpoint)
+                if (lastChunkVersions.Length == 0 && (chunkNum + 1) * (long)Config.ChunkSize == checkpoint)
                 {
                     // The situation where the logical data size is exactly divisible by ChunkSize,
                     // so it might happen that we have checkpoint indicating one more chunk should exist, 
@@ -86,11 +86,12 @@ namespace EventStore.Core.TransactionLog.Chunks
                     chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash);
                 }
                 Manager.AddChunk(chunk);
+                chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
             }
 
             if (lastChunkVersions.Length == 0)
             {
-                var onBoundary = checkpoint % Config.ChunkSize == 0;
+                var onBoundary = checkpoint == (Config.ChunkSize * (long)lastChunkNum);
                 if (!onBoundary)
                     throw new CorruptDatabaseException(new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(lastChunkNum, 0)));
                 if (!readOnly)
@@ -99,13 +100,15 @@ namespace EventStore.Core.TransactionLog.Chunks
             else
             {
                 var chunkFileName = lastChunkVersions[0];
-                var chunkLocalPos = (int)(checkpoint % Config.ChunkSize);
+                var chunkHeader = ReadChunkHeader(chunkFileName);
+                var chunkLocalPos = chunkHeader.GetLocalLogPosition(checkpoint);
                 var chunkFooter = ReadChunkFooter(chunkFileName);
-                if (chunkFooter.IsCompleted && chunkFooter.MapSize > 0)
+                if (chunkHeader.IsScavenged)
                 {
                     var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash);
                     if (lastChunk.ChunkFooter.LogicalDataSize != chunkLocalPos)
                     {
+                        lastChunk.Dispose();
                         throw new CorruptDatabaseException(new BadChunkInDatabaseException(
                             string.Format("Chunk {0} is corrupted. Expected local chunk position: {1}, " 
                                           + "but Chunk.LogicalDataSize is {2} (Chunk.PhysicalDataSize is {3}). Writer checkpoint: {4}.",
@@ -124,9 +127,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 else 
                 {
-                    var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, chunkLocalPos, checkSize: false);
+                    var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false);
                     if (chunkFooter.IsCompleted && chunkLocalPos > chunkFooter.LogicalDataSize)
                     {
+                        lastChunk.Dispose();
                         throw new CorruptDatabaseException(new BadChunkInDatabaseException(
                             string.Format("Chunk {0} is corrupted. Expected local chunk position {1} is greater than "
                                           + "Chunk.LogicalDataSize {2} (Chunk.PhysicalDataSize is {3}). Writer checkpoint: {4}.",
@@ -155,6 +159,22 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (checkpoint.Read() > current)
                     throw new CorruptDatabaseException(new ReaderCheckpointHigherThanWriterException(checkpoint.Name));
             }
+        }
+
+        private static ChunkHeader ReadChunkHeader(string chunkFileName)
+        {
+            ChunkHeader chunkHeader;
+            using (var fs = new FileStream(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                if (fs.Length < ChunkFooter.Size + ChunkHeader.Size)
+                {
+                    throw new CorruptDatabaseException(new BadChunkInDatabaseException(
+                        string.Format("Chunk file '{0}' is bad. It even doesn't have enough size for header and footer, file size is {1} bytes.",
+                                      chunkFileName, fs.Length)));
+                }
+                chunkHeader = ChunkHeader.FromStream(fs);
+            }
+            return chunkHeader;
         }
 
         private static ChunkFooter ReadChunkFooter(string chunkFileName)
@@ -195,13 +215,18 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         private void RemoveOldChunksVersions(int lastChunkNum)
         {
-            for (int i = 0; i <= lastChunkNum; ++i)
+            for (int chunkNum = 0; chunkNum <= lastChunkNum;)
             {
-                var files = Config.FileNamingStrategy.GetAllVersionsFor(i);
-                for (int j = 1; j < files.Length; ++j)
+                var chunk = Manager.GetChunk(chunkNum);
+                for (int i = chunk.ChunkHeader.ChunkStartNumber; i <= chunk.ChunkHeader.ChunkEndNumber; ++i)
                 {
-                    RemoveFile("Removing excess chunk version: {0}...", files[j]);
+                    var files = Config.FileNamingStrategy.GetAllVersionsFor(i);
+                    for (int j = (i == chunk.ChunkHeader.ChunkStartNumber ? 1 : 0); j < files.Length; ++j)
+                    {
+                        RemoveFile("Removing excess chunk version: {0}...", files[j]);
+                    }
                 }
+                chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
             }
         }
         

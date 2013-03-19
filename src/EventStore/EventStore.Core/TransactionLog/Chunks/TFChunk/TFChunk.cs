@@ -196,6 +196,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
 
                 _chunkFooter = ReadFooter(reader.Stream);
+                if (!_chunkFooter.IsCompleted)
+                {
+                    throw new CorruptDatabaseException(new BadChunkInDatabaseException(
+                        string.Format("Chunk file '{0}' should be completed, but is not.", _filename)));
+                }
+
                 _logicalDataSize = _chunkFooter.LogicalDataSize;
                 _physicalDataSize = _chunkFooter.PhysicalDataSize;
 
