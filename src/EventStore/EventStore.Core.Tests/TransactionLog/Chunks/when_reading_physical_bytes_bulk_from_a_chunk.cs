@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             {
                 chunk.MarkForDeletion();
                 var buffer = new byte[1024];
-                var result = reader.ReadNextPhysicalBytes(1024, buffer);
+                var result = reader.ReadNextRawBytes(1024, buffer);
                 Assert.IsFalse(result.IsEOF);
                 Assert.AreEqual(1024, result.BytesRead);
             }
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
-                var result = reader.ReadNextPhysicalBytes(1024, buffer);
+                var result = reader.ReadNextRawBytes(1024, buffer);
                 Assert.IsFalse(result.IsEOF);
                 Assert.AreEqual(1024, result.BytesRead);
             }
@@ -73,9 +73,9 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
-                var result = reader.ReadNextPhysicalBytes(1024, buffer);
+                var result = reader.ReadNextRawBytes(1024, buffer);
                 Assert.IsTrue(result.IsEOF);
-                Assert.AreEqual(272, result.BytesRead); //header 128 + footer 128 + map 16
+                Assert.AreEqual(ChunkHeader.Size + ChunkHeader.Size + 2 * PosMap.FullSize, result.BytesRead);
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
-                var result = reader.ReadNextPhysicalBytes(1024, buffer);
+                var result = reader.ReadNextRawBytes(1024, buffer);
                 Assert.IsTrue(result.IsEOF);
                 Assert.AreEqual(ChunkHeader.Size + ChunkFooter.Size, result.BytesRead); //just header + footer = 256
             }
@@ -104,7 +104,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
-                var result = reader.ReadNextPhysicalBytes(3000, buffer);
+                var result = reader.ReadNextRawBytes(3000, buffer);
                 Assert.IsFalse(result.IsEOF);
                 Assert.AreEqual(1024, result.BytesRead);
             }
@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
-                var result = reader.ReadNextPhysicalBytes(1024, buffer);
+                var result = reader.ReadNextRawBytes(1024, buffer);
                 Assert.IsTrue(result.IsEOF);
                 Assert.AreEqual(556, result.BytesRead); //does not includes header and footer space
             }

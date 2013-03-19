@@ -89,16 +89,13 @@ namespace EventStore.Core.TransactionLog.Chunks
             var sw = Stopwatch.StartNew();
 
             int chunkStartNumber = oldChunk.ChunkHeader.ChunkStartNumber;
-            int chunkEndNumber = oldChunk.ChunkHeader.ChunkStartNumber;
+            int chunkEndNumber = oldChunk.ChunkHeader.ChunkEndNumber;
             long chunkStartPosition = oldChunk.ChunkHeader.ChunkStartPosition;
             int chunkSize = oldChunk.ChunkHeader.ChunkSize;
 
             var tmpChunkPath = Path.Combine(_db.Config.Path, Guid.NewGuid() + ".scavenge.tmp");
             Log.Trace("Scavenging chunk #{0}-{1} ({2}) started. Temp file: {3}.",
-                      chunkStartNumber,
-                      chunkEndNumber,
-                      Path.GetFileName(oldChunk.FileName),
-                      Path.GetFileName(tmpChunkPath));
+                      chunkStartNumber, chunkEndNumber, Path.GetFileName(oldChunk.FileName), Path.GetFileName(tmpChunkPath));
 
             TFChunk.TFChunk newChunk;
             try
@@ -371,7 +368,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                         record));
             }
             // TODO AN: int --> long
-            int logPos = (int) newChunk.ChunkHeader.GetChunkLocalLogicalPosition(record.Position);
+            int logPos = (int) newChunk.ChunkHeader.GetLocalLogPosition(record.Position);
             int actualPos = (int) writeResult.OldPosition;
             return new PosMap(logPos, actualPos);
         }

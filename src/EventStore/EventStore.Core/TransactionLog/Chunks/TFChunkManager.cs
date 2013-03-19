@@ -237,9 +237,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             catch (TimeoutException exc)
             {
                 throw new Exception(string.Format("The chunk that is being switched #{0}-{1} ({2}) is used by someone else.",
-                                                  chunk.ChunkHeader.ChunkStartNumber,
-                                                  chunk.ChunkHeader.ChunkEndNumber,
-                                                  chunk.FileName), 
+                                                  chunk.ChunkHeader.ChunkStartNumber, chunk.ChunkHeader.ChunkEndNumber, chunk.FileName), 
                                     exc);
             }
 

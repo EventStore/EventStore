@@ -114,11 +114,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                     Manager.AddChunk(lastChunk);
                     if (!readOnly)
                     {
-                        var newCheckpoint = (long)Config.ChunkSize * (lastChunk.ChunkHeader.ChunkEndNumber + 1);
                         Log.Info("Moving WriterCheckpoint from {0} to {1}, as it points to the scavenged chunk. " 
                                  + "If that was not caused by replication of scavenged chunks, that could be bug!", 
-                                 checkpoint, newCheckpoint);
-                        Config.WriterCheckpoint.Write(newCheckpoint);
+                                 checkpoint, lastChunk.ChunkHeader.ChunkEndPosition);
+                        Config.WriterCheckpoint.Write(lastChunk.ChunkHeader.ChunkEndPosition);
                         Config.WriterCheckpoint.Flush();
                         Manager.AddNewChunk();
                     }

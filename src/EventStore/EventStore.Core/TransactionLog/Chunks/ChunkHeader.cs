@@ -100,14 +100,14 @@ namespace EventStore.Core.TransactionLog.Chunks
             return new ChunkHeader(version, chunkSize, chunkStartNumber, chunkEndNumber, isScavenged, chunkId);
         }
 
-        // TODO AN this should be long
-        public int GetChunkLocalLogicalPosition(long globalLogicalPosition)
+        public long GetLocalLogPosition(long globalLogicalPosition)
         {
-            Ensure.Nonnegative(globalLogicalPosition, "globalLogicalPosition");
             if (globalLogicalPosition < ChunkStartPosition || globalLogicalPosition > ChunkEndPosition)
+            {
                 throw new Exception(string.Format("globalLogicalPosition {0} is out of chunk logical positions [{1}, {2}].",
                                                   globalLogicalPosition, ChunkStartPosition, ChunkEndPosition));
-            return (int)(globalLogicalPosition - ChunkStartPosition);
+            }
+            return globalLogicalPosition - ChunkStartPosition;
         }
 
         public override string ToString()
@@ -121,8 +121,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                                  IsScavenged,
                                  ChunkId,
                                  ChunkFullSize,
-                                 ChunkStartNumber,
-                                 ChunkEndNumber);
+                                 ChunkStartPosition,
+                                 ChunkEndPosition);
         }
     }
 }

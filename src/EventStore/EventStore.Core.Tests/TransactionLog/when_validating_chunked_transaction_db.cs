@@ -542,7 +542,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var chunkBytes = chunkHeader.AsByteArray();
             var buf = new byte[ChunkHeader.Size + actualSize + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
-            var chunkFooter = new ChunkFooter(true, actualSize, actualSize, 0, new byte[ChunkFooter.ChecksumSize]);
+            var chunkFooter = new ChunkFooter(true, true, actualSize, actualSize, 0, new byte[ChunkFooter.ChecksumSize]);
             chunkBytes = chunkFooter.AsByteArray();
             Buffer.BlockCopy(chunkBytes, 0, buf, buf.Length - ChunkFooter.Size, chunkBytes.Length);
             File.WriteAllBytes(filename, buf);

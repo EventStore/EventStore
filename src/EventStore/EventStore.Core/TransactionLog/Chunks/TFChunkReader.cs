@@ -83,7 +83,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 RecordReadResult result;
                 try
                 {
-                    result = chunk.TryReadClosestForward(chunk.ChunkHeader.GetChunkLocalLogicalPosition(pos));
+                    result = chunk.TryReadClosestForward(chunk.ChunkHeader.GetLocalLogPosition(pos));
                 }
                 catch (FileBeingDeletedException)
                 {
@@ -141,7 +141,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 RecordReadResult result;
                 try
                 {
-                    result = readLast ? chunk.TryReadLast() : chunk.TryReadClosestBackward(chunk.ChunkHeader.GetChunkLocalLogicalPosition(pos));
+                    result = readLast ? chunk.TryReadLast() : chunk.TryReadClosestBackward(chunk.ChunkHeader.GetLocalLogPosition(pos));
                 }
                 catch (FileBeingDeletedException)
                 {
@@ -178,7 +178,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var chunk = _db.Manager.GetChunkFor(position);
             try
             {
-                return chunk.TryReadAt(chunk.ChunkHeader.GetChunkLocalLogicalPosition(position));
+                return chunk.TryReadAt(chunk.ChunkHeader.GetLocalLogPosition(position));
             }
             catch (FileBeingDeletedException)
             {
