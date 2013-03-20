@@ -1,6 +1,8 @@
 #Event Store
 
-This is the repository for the open source version of Event Store. Binaries, documentation and information about the commercial, multi-node version can be found on the Event Store website at http://geteventstore.com.
+This is the repository for the open source version of Event Store. Binaries and information about the commercial, multi-node version can be found on the Event Store website at http://geteventstore.com.
+
+**The documentation has now moved to the <a href="https://github.com/EventStore/EventStore/wiki">wiki in this repository</a>.** For a quick start, look <a href="https://github.com/EventStore/EventStore/wiki/Running-the-Event-Store">here</a>.
 
 ##Building from Source
 
