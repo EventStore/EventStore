@@ -438,18 +438,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 catch (OutOfMemoryException)
                 {
                     Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk #{0}-{1} at {2}.",
-                              _chunkHeader.ChunkStartNumber,
-                              _chunkHeader.ChunkEndNumber,
-                              Path.GetFileName(_filename));
+                              _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
                     _isCached = 0;
                     return;
                 }
                 catch (FileBeingDeletedException)
                 {
                     Log.Debug("CACHING FAILED due to FileBeingDeleted exception (TFChunk is being disposed) in TFChunk #{0}-{1} at {2}.",
-                              _chunkHeader.ChunkStartNumber,
-                              _chunkHeader.ChunkEndNumber,
-                              Path.GetFileName(_filename));
+                              _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
                     _isCached = 0;
                     return;
                 }
@@ -466,9 +462,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             else
             {
                 Log.Trace("CACHING SKIPPED as chunk is cached or caching already in (TFChunk #{0}-{1} at {2}).",
-                          _chunkHeader.ChunkStartNumber,
-                          _chunkHeader.ChunkEndNumber,
-                          Path.GetFileName(_filename));
+                          _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
 
             }
         }

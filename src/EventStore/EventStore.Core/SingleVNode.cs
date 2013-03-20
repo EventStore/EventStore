@@ -152,7 +152,10 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
 
-            var storageScavenger = new StorageScavenger(db, readIndex);
+            var storageScavenger = new StorageScavenger(db,
+                                                        readIndex,
+                                                        Application.IsDefined("ALWAYS_KEEP_SCAVENGED"),
+                                                        !Application.IsDefined("DISABLE_MERGE_CHUNKS"));
             _mainBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
 
             // NETWORK SEND

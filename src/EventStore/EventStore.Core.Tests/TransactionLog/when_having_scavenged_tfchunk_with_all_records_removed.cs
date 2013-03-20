@@ -96,7 +96,7 @@ namespace EventStore.Core.Tests.TransactionLog
             _db.Config.ChaserCheckpoint.Flush();
 
             var scavenger = new TFChunkScavenger(_db, new FakeReadIndex(x => x == "es-to-scavenge"));
-            scavenger.Scavenge(alwaysKeepScavenged: true);
+            scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 
             _scavengedChunk = _db.Manager.GetChunk(0);
         }
