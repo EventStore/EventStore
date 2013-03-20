@@ -48,8 +48,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                      int eventsPerStream, 
                                      int streamDeleteStep,
                                      TimeSpan executionPeriod,
-                                     string dbParentPath)
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
+                                     string dbParentPath,
+                                     NodeConnectionInfo customNode)
+            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath, customNode)
         {
             _executionPeriod = executionPeriod;
             _random = new Random();

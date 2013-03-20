@@ -55,8 +55,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                int eventsPerStream, 
                                int streamDeleteStep,
                                TimeSpan executionPeriod,
-                               string dbParentPath)
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
+                               string dbParentPath,
+                               NodeConnectionInfo customNodeConnection)
+            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath, customNodeConnection)
         {
             _executionPeriod = executionPeriod;
             SetStartupWaitInterval(TimeSpan.FromSeconds(10));
