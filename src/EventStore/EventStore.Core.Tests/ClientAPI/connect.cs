@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
@@ -14,7 +15,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void should_not_throw_exception_when_server_is_down()
         {
-            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var connection = TestConnection.Create())
             {
                 var ip = IPAddress.Loopback;
                 int port = TcpPortsHelper.GetAvailablePort(ip);
@@ -35,6 +36,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var closed = new ManualResetEventSlim();
             var settings = ConnectionSettings.Create()
+                                             .EnableVerboseLogging()
                                              .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .LimitReconnectionsTo(0)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
@@ -68,6 +70,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var closed = new ManualResetEventSlim();
             var settings = ConnectionSettings.Create()
+                                             .EnableVerboseLogging()
                                              .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .LimitReconnectionsTo(1)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))

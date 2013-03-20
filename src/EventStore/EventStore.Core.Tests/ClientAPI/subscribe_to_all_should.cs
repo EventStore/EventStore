@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void allow_multiple_subscriptions()
         {
             const string stream = "subscribe_to_all_should_allow_multiple_subscriptions";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void catch_created_and_deleted_events_as_well()
         {
             const string stream = "subscribe_to_all_should_catch_created_and_deleted_events_as_well";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
