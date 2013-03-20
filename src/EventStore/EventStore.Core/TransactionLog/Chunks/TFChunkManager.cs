@@ -41,6 +41,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public const int MaxChunksCount = 100000; // that's enough for about 25 Tb of data
 
         public int ChunksCount { get { return _chunksCount; } }
+
         private readonly TFChunkDbConfig _config;
         private readonly TFChunk.TFChunk[] _chunks = new TFChunk.TFChunk[MaxChunksCount]; 
         
@@ -59,8 +60,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             _cachingEnabled = true;
 
-            int chunkNum = 0;
-            while (chunkNum < _chunksCount)
+            for (int chunkNum = 0; chunkNum < _chunksCount; )
             {
                 var chunk = _chunks[chunkNum];
                 if (!chunk.IsReadOnly)
@@ -74,8 +74,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public void DisableCaching()
         {
             _cachingEnabled = false;
-            int chunkNum = 0;
-            while (chunkNum < _chunksCount)
+            for (int chunkNum = 0; chunkNum < _chunksCount; )
             {
                 var chunk = _chunks[chunkNum];
                 CacheUncacheInBackground(chunk);
@@ -132,9 +131,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (chunkHeader.ChunkStartNumber != _chunksCount)
             {
                 throw new Exception(string.Format("Received request to create a new ongoing chunk {0}-{1}, but current chunks count is {2}.",
-                                                  chunkHeader.ChunkStartNumber,
-                                                  chunkHeader.ChunkEndNumber,
-                                                  _chunksCount));
+                                                  chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, _chunksCount));
             }
 
             var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, 0);
@@ -159,13 +156,18 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (uncacheIndex >= 0)
                     CacheUncacheInBackground(_chunks[uncacheIndex]);
 
-                if (_cachingEnabled)
-                {
-                    if (!chunk.IsReadOnly)
-                        CacheUncacheForeground(chunk);
-                    else
-                        CacheUncacheInBackground(chunk);
-                }
+                TryCacheChunk(chunk);
+            }
+        }
+
+        private void TryCacheChunk(TFChunk.TFChunk chunk)
+        {
+            if (_cachingEnabled)
+            {
+                if (chunk.IsReadOnly)
+                    CacheUncacheInBackground(chunk);
+                else
+                    CacheUncacheForeground(chunk);
             }
         }
 
@@ -195,17 +197,6 @@ namespace EventStore.Core.TransactionLog.Chunks
         public TFChunk.TFChunk GetChunkForOrDefault(string path)
         {
             return _chunks != null ? _chunks.FirstOrDefault(c => c != null && c.FileName == path) : null;
-        }
-
-        private void TryCacheChunk(TFChunk.TFChunk chunk)
-        {
-            if (_cachingEnabled)
-            {
-                if (chunk.IsReadOnly)
-                    CacheUncacheInBackground(chunk);
-                else
-                    CacheUncacheForeground(chunk);
-            }
         }
 
         public void Dispose()

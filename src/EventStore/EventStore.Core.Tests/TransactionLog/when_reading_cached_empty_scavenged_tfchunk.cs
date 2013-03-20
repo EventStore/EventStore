@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,91 +25,61 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.IO;
-using EventStore.Core.TransactionLog.Chunks;
+
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog.Chunks
+namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_creating_tfchunk_from_empty_file: SpecificationWithFile
+    public class when_reading_cached_empty_scavenged_tfchunk: SpecificationWithFilePerTestFixture
     {
         private TFChunk _chunk;
 
-        [SetUp]
-        public override void SetUp()
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
         {
-            base.SetUp();
-            _chunk = TFChunk.CreateNew(Filename, 1024, 0, false);
+            base.TestFixtureSetUp();
+            _chunk = TFChunk.CreateNew(Filename, 4096, 0, 0, isScavenged: true);
+            _chunk.CompleteScavenge(new PosMap[0]);
+            _chunk.CacheInMemory();
         }
 
-        [TearDown]
-        public override void TearDown()
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
         {
             _chunk.Dispose();
-            base.TearDown();
+            base.TestFixtureTearDown();
         }
 
         [Test]
-        public void the_chunk_is_not_cached()
+        public void no_record_at_exact_position_can_be_read()
         {
-            Assert.IsFalse(_chunk.IsCached);
+            Assert.IsFalse(_chunk.TryReadAt(0).Success);
         }
 
         [Test]
-        public void the_file_is_created()
+        public void no_record_can_be_read_as_first_record()
         {
-            Assert.IsTrue(File.Exists(Filename));
+            Assert.IsFalse(_chunk.TryReadFirst().Success);
+        }
+        
+        [Test]
+        public void no_record_can_be_read_as_closest_forward_record()
+        {
+            Assert.IsFalse(_chunk.TryReadClosestForward(0).Success);
         }
 
         [Test]
-        public void the_chunk_is_not_readonly()
+        public void no_record_can_be_read_as_closest_backward_record()
         {
-            Assert.IsFalse(_chunk.IsReadOnly);
+            Assert.IsFalse(_chunk.TryReadClosestBackward(0).Success);
         }
 
         [Test]
-        public void append_does_not_throw_exception()
+        public void no_record_can_be_read_as_last_record()
         {
-            Assert.DoesNotThrow(() => _chunk.TryAppend(new CommitLogRecord(0, Guid.NewGuid(), 0, DateTime.UtcNow, 0)));
-        }
-
-        [Test]
-        public void there_is_no_record_at_pos_zero()
-        {
-            var res = _chunk.TryReadAt(0);
-            Assert.IsFalse(res.Success);
-        }
-
-        [Test]
-        public void there_is_no_first_record()
-        {
-            var res = _chunk.TryReadFirst();
-            Assert.IsFalse(res.Success);
-        }
-
-        [Test]
-        public void there_is_no_closest_forward_record_to_pos_zero()
-        {
-            var res = _chunk.TryReadClosestForward(0);
-            Assert.IsFalse(res.Success);
-        }
-
-        [Test]
-        public void there_is_no_closest_backward_record_from_end()
-        {
-            var res = _chunk.TryReadClosestForward(0);
-            Assert.IsFalse(res.Success);
-        }
-
-        [Test]
-        public void there_is_no_last_record()
-        {
-            var res = _chunk.TryReadLast();
-            Assert.IsFalse(res.Success);
+            Assert.IsFalse(_chunk.TryReadLast().Success);
         }
     }
 }

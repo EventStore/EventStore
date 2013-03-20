@@ -160,11 +160,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             return CreateWithHeader(filename, chunkHeader, chunkSize + ChunkHeader.Size + ChunkFooter.Size);
         }
 
-        public static TFChunk CreateNew(string filename, int chunkSize, int chunkNumber, bool isScavenged)
-        {
-            return CreateNew(filename, chunkSize, chunkNumber, chunkNumber, isScavenged);
-        }
-
         public static TFChunk CreateWithHeader(string filename, ChunkHeader header, int fileSize)
         {
             var chunk = new TFChunk(filename, ESConsts.TFChunkInitialReaderCount, ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth);
@@ -220,7 +215,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 ReturnReaderWorkItem(reader);
             }
 
-            _readSide = _chunkFooter.MapCount > 0 ? (IChunkReadSide) new TFChunkReadSideScavenged(this) : new TFChunkReadSideUnscavenged(this);
+            _readSide = _chunkHeader.IsScavenged ? (IChunkReadSide) new TFChunkReadSideScavenged(this) : new TFChunkReadSideUnscavenged(this);
             _readSide.Cache();
 
             SetAttributes();
@@ -241,7 +236,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             CreateWriterWorkItemForNewChunk(chunkHeader, fileSize);
             CreateReaderStreams();
 
-            _readSide = new TFChunkReadSideUnscavenged(this);
+            _readSide = chunkHeader.IsScavenged ? (IChunkReadSide) new TFChunkReadSideScavenged(this) : new TFChunkReadSideUnscavenged(this);
 
             SetAttributes();
         }

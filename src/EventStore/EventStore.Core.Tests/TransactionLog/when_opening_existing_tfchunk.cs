@@ -25,14 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using System.IO;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog.Chunks
+namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
     public class when_opening_existing_tfchunk: SpecificationWithFilePerTestFixture
@@ -44,7 +43,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _chunk = TFChunk.CreateNew(Filename, 4096, 0, false);
+            _chunk = TFChunk.CreateNew(Filename, 4096, 0, 0, false);
             _chunk.Complete();
             _testChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true);
         }
