@@ -1,10 +1,10 @@
 ﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,45 +24,24 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//  
+using EventStore.ClientAPI;
+using EventStore.Core.Tests.Helper;
 
-using System;
-using EventStore.Common.Log;
-
-namespace EventStore.TestClient.Commands.RunTestScenarios
+namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
-    public class ClientApiLogger : ClientAPI.ILogger
+    public static class TestConnection
     {
-        private static readonly ILogger Log = LogManager.GetLogger("ClientApiLogger");
-
-        public void Error(string format, params object[] args)
+        public static EventStoreConnection Create()
         {
-            Log.Error(format, args);
+            return EventStoreConnection.Create(Settings());
         }
 
-        public void Error(Exception ex, string format, params object[] args)
+        private static ConnectionSettingsBuilder Settings()
         {
-            Log.ErrorException(ex, format, args);
-        }
-
-        public void Info(Exception ex, string format, params object[] args)
-        {
-            Log.InfoException(ex, format, args);
-        }
-
-        public void Info(string format, params object[] args)
-        {
-            Log.Info(format, args);
-        }
-
-        public void Debug(string format, params object[] args)
-        {
-            Log.Debug(format, args);
-        }
-
-        public void Debug(Exception ex, string format, params object[] args)
-        {
-            Log.DebugException(ex, format, args);
+            return ConnectionSettings.Create()
+                                     .UseCustomLogger(ClientApiLoggerBridge.Default)
+                                     .EnableVerboseLogging();
         }
     }
 }

@@ -48,7 +48,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
     internal abstract class ScenarioBase : IScenario
     {
         protected static readonly ILogger Log = LogManager.GetLoggerFor<ScenarioBase>();
-        protected static readonly ClientAPI.ILogger ApiLogger = new ClientApiLogger();
+        protected static readonly ClientAPI.ILogger ApiLogger = new ClientApiLoggerBridge(LogManager.GetLogger("client-api"));
 
         protected readonly Action<IPEndPoint, byte[]> DirectSendOverTcp;
         protected readonly int MaxConcurrentRequests;
@@ -153,14 +153,15 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 _connections[i] = EventStoreConnection.Create(
                       ConnectionSettings.Create()
-                                        .UseCustomLogger(ApiLogger)
-                                        .LimitConcurrentOperationsTo(MaxConcurrentRequests)
-                                        .KeepRetrying()
-                                        .OnClosed((c, s) => Log.Debug("[SCENARIO] {0} closed.", c.ConnectionName))
-                                        .OnConnected(c => Log.Debug("[SCENARIO] {0} connected.", c.ConnectionName))
-                                        .OnDisconnected(c => Log.Debug("[SCENARIO] {0} disconnected.", c.ConnectionName))
-                                        .OnErrorOccurred((c, e) => Log.DebugException(e, "[SCENARIO] {0} error occurred.", c.ConnectionName))
-                                        .OnReconnecting(c => Log.Debug("[SCENARIO] {0} reconnecting.", c.ConnectionName)),
+                                      .DisableVerboseLogging()
+                                      .UseCustomLogger(ApiLogger)
+                                      .LimitConcurrentOperationsTo(MaxConcurrentRequests)
+                                      .KeepRetrying()
+                                      .OnClosed((c, s) => Log.Debug("[SCENARIO] {0} closed.", c.ConnectionName))
+                                      .OnConnected(c => Log.Debug("[SCENARIO] {0} connected.", c.ConnectionName))
+                                      .OnDisconnected(c => Log.Debug("[SCENARIO] {0} disconnected.", c.ConnectionName))
+                                      .OnErrorOccurred((c, e) => Log.DebugException(e, "[SCENARIO] {0} error occurred.", c.ConnectionName))
+                                      .OnReconnecting(c => Log.Debug("[SCENARIO] {0} reconnecting.", c.ConnectionName)),
                     connectionName: string.Format("ESConn-{0}", i));
                 _connections[i].Connect(new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.TcpPort));
             } 
