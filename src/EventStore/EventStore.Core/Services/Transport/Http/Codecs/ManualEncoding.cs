@@ -37,12 +37,12 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
         public string ContentType { get { throw new InvalidOperationException(); } }
         public Encoding Encoding { get { throw new InvalidOperationException(); } }
 
-        public bool CanParse(string format)
+        public bool CanParse(MediaType format)
         {
             return true;
         }
 
-        public bool SuitableForReponse(AcceptComponent component)
+        public bool SuitableForReponse(MediaType component)
         {
             return true;
         }

@@ -44,17 +44,17 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
         public string ContentType { get { return EventStore.Transport.Http.ContentType.Xml; } }
         public Encoding Encoding { get { return Encoding.UTF8; } }
 
-        public bool CanParse(string format)
+        public bool CanParse(MediaType format)
         {
-            return string.Equals(ContentType, format, StringComparison.OrdinalIgnoreCase);
+            return format != null && format.Matches(ContentType, Encoding);
         }
 
-        public bool SuitableForReponse(AcceptComponent component)
+        public bool SuitableForReponse(MediaType component)
         {
-            return component.MediaType == "*"
-                   || (string.Equals(component.MediaType, "text", StringComparison.OrdinalIgnoreCase)
-                       && (component.MediaSubtype == "*" 
-                           || string.Equals(component.MediaSubtype, "xml", StringComparison.OrdinalIgnoreCase)));
+            return component.Type == "*"
+                   || (string.Equals(component.Type, "text", StringComparison.OrdinalIgnoreCase)
+                       && (component.Subtype == "*" 
+                           || string.Equals(component.Subtype, "xml", StringComparison.OrdinalIgnoreCase)));
         }
 
         public T From<T>(string text)
