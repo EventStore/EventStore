@@ -43,8 +43,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         private int _iterationCode = 0;
         private TimeSpan _executionPeriod;
 
-        public ProjForeachForcedCommonNameScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath)
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
+        public ProjForeachForcedCommonNameScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath, NodeConnectionInfo customNode)
+            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath, customNode)
         {
             _executionPeriod = executionPeriod;
         }
@@ -264,8 +264,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                                             int eventsPerStream, 
                                                             int streamDeleteStep, 
                                                             TimeSpan executionPeriod, 
-                                                            string dbParentPath)
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, executionPeriod, dbParentPath)
+                                                            string dbParentPath,
+                                                            NodeConnectionInfo customNode)
+            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, executionPeriod, dbParentPath, customNode)
         {
         }
 

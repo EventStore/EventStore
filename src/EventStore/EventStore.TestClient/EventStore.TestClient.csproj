@@ -58,6 +58,7 @@
     <Compile Include="ClientOptions.cs" />
     <Compile Include="CommandProcessorContext.cs" />
     <Compile Include="CommandsProcessor.cs" />
+    <Compile Include="Commands\RunTestScenarios\NodeConnectionInfo.cs" />
     <Compile Include="Commands\WriteFloodClientApiProcessor.cs" />
     <Compile Include="Commands\ReadAllProcessor.cs" />
     <Compile Include="Commands\RunTestScenariosProcessor.cs" />
@@ -71,7 +72,6 @@
     </Compile>
     <Compile Include="Commands\RunTestScenarios\ProjectionsKillScenario.cs" />
     <Compile Include="Commands\RunTestScenarios\IScenario.cs" />
-    <Compile Include="Commands\RunTestScenarios\ClientApiLogger.cs" />
     <Compile Include="Commands\RunTestScenarios\LoopingScenario.cs" />
     <Compile Include="Commands\RunTestScenarios\ProjForeachForcedCommonNameScenario.cs" />
     <Compile Include="Commands\RunTestScenarios\LoopingProjTranWriteScenario.cs" />

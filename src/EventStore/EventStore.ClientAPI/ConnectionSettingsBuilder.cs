@@ -37,6 +37,7 @@ namespace EventStore.ClientAPI
     public class ConnectionSettingsBuilder
     {
         private ILogger _log = new NoopLogger();
+        private bool _verboseLogging;
 
         private int _maxQueueSize = Consts.DefaultMaxQueueSize;
         private int _maxConcurrentItems = Consts.DefaultMaxConcurrentItems;
@@ -96,6 +97,26 @@ namespace EventStore.ClientAPI
         public ConnectionSettingsBuilder UseDebugLogger()
         {
             _log = new DebugLogger();
+            return this;
+        }
+
+        /// <summary>
+        /// Turns on excessive <see cref="EventStoreConnection"/> internal logic logging.
+        /// </summary>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder EnableVerboseLogging()
+        {
+            _verboseLogging = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Turns off excessive <see cref="EventStoreConnection"/> internal logic logging.
+        /// </summary>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder DisableVerboseLogging()
+        {
+            _verboseLogging = false;
             return this;
         }
 
@@ -295,6 +316,7 @@ namespace EventStore.ClientAPI
         public static implicit operator ConnectionSettings(ConnectionSettingsBuilder builder)
         {
             return new ConnectionSettings(builder._log,
+                                          builder._verboseLogging,
                                           builder._maxQueueSize,
                                           builder._maxConcurrentItems,
                                           builder._maxRetries,
