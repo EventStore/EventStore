@@ -16,6 +16,8 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 
 ####Download and build v8
 
+	src\EventStore\Scripts\v8\configure-cpp.cmd
+
 	src\EventStore\Scripts\v8\get-v8.cmd 
 
 	src\EventStore\Scripts\v8\build-v8_x64.cmd 
