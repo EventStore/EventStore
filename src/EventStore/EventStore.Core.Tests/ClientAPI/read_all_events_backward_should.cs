@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_empty_slice_if_asked_to_read_from_start()
         {
             const string stream = "read_all_events_backward_should_return_empty_slice_if_asked_to_read_from_start";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void return_empty_slice_if_no_events_present()
         {
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 var all = new List<RecordedEvent>();
@@ -98,7 +98,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_partial_slice_if_not_enough_events()
         {
             const string stream = "read_all_events_backward_should_return_partial_slice_if_not_enough_events";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -120,7 +120,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_events_in_reversed_order_compared_to_written()
         {
             const string stream = "read_all_events_backward_should_return_events_in_reversed_order_compared_to_written";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 var testEvents = Enumerable.Range(0, 5).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
@@ -143,7 +143,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void read_stream_created_events_as_well()
         {
             const string stream = "read_all_events_backward_should_read_system_events_as_well";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 var create1 = store.CreateStreamAsync(stream + 1, Guid.NewGuid(), false, new byte[0]);
@@ -164,7 +164,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void be_able_to_read_all_one_by_one_and_return_empty_slice_at_last()
         {
             const string stream = "read_all_events_backward_should_be_able_to_read_all_one_by_one_and_return_empty_slice_at_last";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -193,7 +193,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void be_able_to_read_events_slice_at_time()
         {
             const string stream = "read_all_events_backward_should_be_able_to_read_events_slice_at_time";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -224,7 +224,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.Inconclusive();
 
             const string stream = "read_all_events_backward_should_return_events_from_deleted_streams";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 store.CreateStream(stream + 1, Guid.NewGuid(), false, new byte[0]);
@@ -254,7 +254,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_stream_deleted_records()
         {
             const string stream = "read_all_events_backward_should_return_stream_deleted_records";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 store.CreateStream(stream + 1, Guid.NewGuid(), false, new byte[0]);
@@ -273,7 +273,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.Inconclusive();
 
             const string stream = "read_all_events_backward_should_return_no_records_if_stream_created_than_deleted";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);

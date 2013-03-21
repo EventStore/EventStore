@@ -1,10 +1,10 @@
 ﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -25,25 +25,27 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using EventStore.ClientAPI;
 
-namespace EventStore.Core.Tests.ClientAPI.Helpers
+using System.Net;
+
+namespace EventStore.TestClient.Commands.RunTestScenarios
 {
-    internal class EventsStream
+    internal class NodeConnectionInfo
     {
-        private const int SliceSize = 10;
+        public IPAddress IpAddress { get; private set; }
+        public int TcpPort { get; private set; }
+        public int HttpPort { get; private set; }
 
-        public static int Count(EventStoreConnection store, string stream)
+        public NodeConnectionInfo(IPAddress ipAddress, int tcpPort, int httPort)
         {
-            var result = 0;
-            while (true)
-            {
-                var slice = store.ReadStreamEventsForward(stream, result, SliceSize, false);
-                result += slice.Events.Length;
-                if (slice.IsEndOfStream)
-                    break;
-            }
-            return result;
+            IpAddress = ipAddress;
+            TcpPort = tcpPort;
+            HttpPort = httPort;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("[{0}:{1}:{2}]", IpAddress, TcpPort, HttpPort);
         }
     }
 }

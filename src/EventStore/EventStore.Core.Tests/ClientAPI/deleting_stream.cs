@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_already_exists_should_success_when_passed_empty_stream_expected_version()
         {
             const string stream = "which_already_exists_should_success_when_passed_empty_stream_expected_version";
-            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var connection = TestConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_already_exists_should_success_when_passed_any_for_expected_version()
         {
             const string stream = "which_already_exists_should_success_when_passed_any_for_expected_version";
-            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var connection = TestConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void with_invalid_expected_version_should_fail()
         {
             const string stream = "with_invalid_expected_version_should_fail";
-            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var connection = TestConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_does_not_exist_should_not_fail()
         {
             const string stream = "which_does_not_exist_should_not_fail";
-            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var connection = TestConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any);
@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_was_allready_deleted_should_fail()
         {
             const string stream = "which_was_allready_deleted_should_fail";
-            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var connection = TestConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);

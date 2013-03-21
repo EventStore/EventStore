@@ -54,6 +54,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly ILogger Log;
         /// <summary>
+        /// Whether or not do excessive logging of <see cref="EventStoreConnection"/> internal logic.
+        /// </summary>
+        public readonly bool VerboseLogging;
+        /// <summary>
         /// The maximum number of outstanding items allowed in the queue
         /// </summary>
         public readonly int MaxQueueSize;
@@ -108,6 +112,7 @@ namespace EventStore.ClientAPI
         public Action<EventStoreConnection> Reconnecting;
 
         internal ConnectionSettings(ILogger log,
+                                    bool verboseLogging,
                                     int maxQueueSize,
                                     int maxConcurrentItems,
                                     int maxRetries,
@@ -131,6 +136,7 @@ namespace EventStore.ClientAPI
                 throw new ArgumentOutOfRangeException("maxReconnections", string.Format("maxReconnections value is out of range: {0}. Allowed range: [-1, infinity].", maxRetries));
 
             Log = log;
+            VerboseLogging = verboseLogging;
             MaxQueueSize = maxQueueSize;
             MaxConcurrentItems = maxConcurrentItems;
             MaxRetries = maxRetries;

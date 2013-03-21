@@ -39,7 +39,6 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helper;
 using ConsoleLogger = EventStore.ClientAPI.Common.Log.ConsoleLogger;
 using ILogger = EventStore.Common.Log.ILogger;
@@ -49,7 +48,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
     internal abstract class ScenarioBase : IScenario
     {
         protected static readonly ILogger Log = LogManager.GetLoggerFor<ScenarioBase>();
-        protected static readonly ClientAPI.ILogger ApiLogger = new ClientApiLogger();
+        protected static readonly ClientAPI.ILogger ApiLogger = new ClientApiLoggerBridge(LogManager.GetLogger("client-api"));
 
         protected readonly Action<IPEndPoint, byte[]> DirectSendOverTcp;
         protected readonly int MaxConcurrentRequests;
@@ -57,27 +56,23 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         protected readonly int Streams;
         protected readonly int EventsPerStream;
         protected readonly int StreamDeleteStep;
-        protected readonly string DbParentPath;
 
-        private readonly Dictionary<int, int[]> _startedNodesProcIdsAndPorts;
+        private readonly NodeConnectionInfo _customNodeConnection;
+        private readonly NodeConnectionInfo _nodeConnection;
+        
+        private readonly HashSet<int> _startedNodesProcIds;
+
+        private readonly string _dbPath;
+
+        private readonly Dictionary<WriteMode, Func<string, int, Func<int, EventData>, Task>> _writeHandlers;
+        private readonly EventStoreConnection[] _connections;
+        private int _nextConnectionNum = -1;
+        private readonly ProjectionsManager _projectionsManager;
 
         protected virtual TimeSpan StartupWaitInterval
         {
             get { return TimeSpan.FromSeconds(12); }
         }
-
-
-        private readonly IPAddress _ipAddress;
-        private readonly int _tcpPort;
-        private readonly int _httpPort;
-        private string _dbPath;
-
-        private readonly Dictionary<WriteMode, Func<string, int, Func<int, EventData>, Task>> _writeHandlers;
-
-        private readonly EventStoreConnection[] _connections;
-        private int _nextConnectionNum = -1;
-        private readonly ProjectionsManager _projectionsManager;
-        
 
         protected ScenarioBase(Action<IPEndPoint, byte[]> directSendOverTcp,
                                int maxConcurrentRequests,
@@ -85,7 +80,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                int streams,
                                int eventsPerStream,
                                int streamDeleteStep,
-                               string dbParentPath)
+                               string dbParentPath,
+                               NodeConnectionInfo customNodeConnection)
         {
             DirectSendOverTcp = directSendOverTcp;
             MaxConcurrentRequests = maxConcurrentRequests;
@@ -93,17 +89,27 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Streams = streams;
             EventsPerStream = eventsPerStream;
             StreamDeleteStep = streamDeleteStep;
-            DbParentPath = dbParentPath;
+            _customNodeConnection = customNodeConnection;
 
-            _startedNodesProcIdsAndPorts = new Dictionary<int, int[]>();
-            CreateNewDbPath();
+            _startedNodesProcIds = new HashSet<int>();
 
-            _ipAddress = IPAddress.Loopback;
-            _tcpPort = TcpPortsHelper.GetAvailablePort(_ipAddress);
-            _httpPort = TcpPortsHelper.GetAvailablePort(_ipAddress);
+            var ipAddress = IPAddress.Loopback;
+
+            if (_customNodeConnection != null)
+            {
+                _nodeConnection = _customNodeConnection;
+                _dbPath = null;
+            }
+            else
+            {
+                _dbPath = CreateNewDbPath(dbParentPath);
+                _nodeConnection = new NodeConnectionInfo(ipAddress,
+                                                         TcpPortsHelper.GetAvailablePort(ipAddress),
+                                                         TcpPortsHelper.GetAvailablePort(ipAddress));
+            }
 
             _connections = new EventStoreConnection[connections];
-            _projectionsManager = new ProjectionsManager(new ConsoleLogger(), new IPEndPoint(_ipAddress, _httpPort));
+            _projectionsManager = new ProjectionsManager(new ConsoleLogger(), new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.HttpPort));
 
             _writeHandlers = new Dictionary<WriteMode, Func<string, int, Func<int, EventData>, Task>>
             {
@@ -113,20 +119,21 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             };
         }
 
-        protected void CreateNewDbPath()
+        private string CreateNewDbPath(string dbParentPath)
         {
-            var dbParent = DbParentPath ?? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dbParent = dbParentPath ?? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             Debug.Assert(dbParent != null, "dbParent != null");
 
             var dataFolder = Path.Combine(dbParent, "data");
             var idx = 0;
-            _dbPath = Path.Combine(dataFolder, string.Format("es_{0}", idx));
+            var dbPath = Path.Combine(dataFolder, string.Format("es_{0}", idx));
 
             while (Directory.Exists(_dbPath))
             {
                 idx += 1;
-                _dbPath = Path.Combine(dataFolder, string.Format("es_{0}", idx));
+                dbPath = Path.Combine(dataFolder, string.Format("es_{0}", idx));
             }
+            return dbPath;
         }
 
         protected EventStoreConnection GetConnection()
@@ -145,17 +152,18 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             for (int i = 0; i < Connections; ++i)
             {
                 _connections[i] = EventStoreConnection.Create(
-                    ConnectionSettings.Create()
-                                        .UseCustomLogger(ApiLogger)
-                                        .LimitConcurrentOperationsTo(MaxConcurrentRequests)
-                                        .KeepRetrying()
-                                        .OnClosed((c, s) => Log.Debug("[SCENARIO] {0} closed.", c.ConnectionName))
-                                        .OnConnected(c => Log.Debug("[SCENARIO] {0} connected.", c.ConnectionName))
-                                        .OnDisconnected(c => Log.Debug("[SCENARIO] {0} disconnected.", c.ConnectionName))
-                                        .OnErrorOccurred((c, e) => Log.DebugException(e, "[SCENARIO] {0} error occurred.", c.ConnectionName))
-                                        .OnReconnecting(c => Log.Debug("[SCENARIO] {0} reconnecting.", c.ConnectionName)),
+                      ConnectionSettings.Create()
+                                      .DisableVerboseLogging()
+                                      .UseCustomLogger(ApiLogger)
+                                      .LimitConcurrentOperationsTo(MaxConcurrentRequests)
+                                      .KeepRetrying()
+                                      .OnClosed((c, s) => Log.Debug("[SCENARIO] {0} closed.", c.ConnectionName))
+                                      .OnConnected(c => Log.Debug("[SCENARIO] {0} connected.", c.ConnectionName))
+                                      .OnDisconnected(c => Log.Debug("[SCENARIO] {0} disconnected.", c.ConnectionName))
+                                      .OnErrorOccurred((c, e) => Log.DebugException(e, "[SCENARIO] {0} error occurred.", c.ConnectionName))
+                                      .OnReconnecting(c => Log.Debug("[SCENARIO] {0} reconnecting.", c.ConnectionName)),
                     connectionName: string.Format("ESConn-{0}", i));
-                _connections[i].Connect(new IPEndPoint(_ipAddress, _tcpPort));
+                _connections[i].Connect(new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.TcpPort));
             } 
             RunInternal();   
         }
@@ -166,12 +174,19 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             CloseConnections();
             KillStartedNodes();
+            DeleteDatabase();
+        }
 
+        private void DeleteDatabase()
+        {
             try
             {
-                Log.Info("Deleting {0}...", _dbPath);
-                Directory.Delete(_dbPath, true);
-                Log.Info("Deleted {0}", _dbPath);
+                if (_dbPath != null)
+                {
+                    Log.Info("Deleting {0}...", _dbPath);
+                    Directory.Delete(_dbPath, true);
+                    Log.Info("Deleted {0}", _dbPath);
+                }
             }
             catch (IOException ex)
             {
@@ -304,6 +319,15 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected int StartNode()
         {
+            int processId = -1;
+            if (_customNodeConnection == null)
+                processId = StartNewNode();
+
+            return processId;
+        }
+
+        private int StartNewNode()
+        {
             var clientFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
             string fileName;
@@ -324,9 +348,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var arguments = string.Format("{0} --run-projections --ip {1} -t {2} -h {3} --db {4}",
                                           argumentsHead,
-                                          _ipAddress,
-                                          _tcpPort,
-                                          _httpPort,
+                                          _nodeConnection.IpAddress,
+                                          _nodeConnection.TcpPort,
+                                          _nodeConnection.HttpPort,
                                           _dbPath);
 
             Log.Info("Starting [{0} {1}]...", fileName, arguments);
@@ -343,7 +367,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             if (!running || tmp.HasExited)
                 throw new ApplicationException("Process was not started.");
 
-            _startedNodesProcIdsAndPorts.Add(nodeProcess.Id, new [] {_tcpPort, _httpPort});
+            _startedNodesProcIds.Add(nodeProcess.Id);
+
             Log.Info("Started node with process id {0}", nodeProcess.Id);
 
             Thread.Sleep(StartupWaitInterval);
@@ -373,15 +398,19 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected void KillNode(int processId)
         {
+            if (processId != -1)
+                KillStartedNode(processId);
+            else
+                Log.Info("Skip killing, procId -1");
+        }
+
+        private void KillStartedNode(int processId)
+        {
             Log.Info("Killing {0}...", processId);
 
             Process process;
             if (TryGetProcessById(processId, out process))
             {
-                int[] portsToRelease;
-                if (_startedNodesProcIdsAndPorts.TryGetValue(processId, out portsToRelease))
-                    _startedNodesProcIdsAndPorts.Remove(processId);
-
                 process.Kill();
 
                 var waitCount = 100;
@@ -393,14 +422,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 if (process.HasExited)
                 {
+                    _startedNodesProcIds.Remove(processId);
+
+                    TcpPortsHelper.ReturnPort(_nodeConnection.TcpPort);
+                    TcpPortsHelper.ReturnPort(_nodeConnection.HttpPort);
+
                     Log.Info("Killed process {0}", processId);
-                    if (portsToRelease != null)
-                    {
-                        foreach (var port in portsToRelease)
-                        {
-                            TcpPortsHelper.ReturnPort(port);
-                        }
-                    }
                 }
                 else
                 {
@@ -436,7 +463,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Log.Info("Killing remaining nodes...");
             try
             {
-                _startedNodesProcIdsAndPorts.Keys.ToList().ForEach(KillNode);
+                _startedNodesProcIds.ToList().ForEach(KillNode);
             }
             catch (Exception ex)
             {
@@ -448,7 +475,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             Log.Info("Send scavenge command...");
             var package = new TcpPackage(TcpCommand.ScavengeDatabase, Guid.NewGuid(), null).AsByteArray();
-            DirectSendOverTcp(new IPEndPoint(_ipAddress, _tcpPort) , package);
+            DirectSendOverTcp(new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.TcpPort), package);
             Log.Info("Scavenge command was sent.");
         }
 
