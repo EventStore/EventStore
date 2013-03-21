@@ -362,16 +362,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public string ContentType  { get { return "text/html"; } }
         public Encoding Encoding { get { return Encoding.UTF8; } }
 
-        public bool CanParse(string format)
+        public bool CanParse(MediaType format)
         {
             throw new NotImplementedException();
         }
 
-        public bool SuitableForReponse(AcceptComponent component)
+        public bool SuitableForReponse(MediaType component)
         {
-            return component.MediaType == "*"
-                   || (string.Equals(component.MediaType, "text", StringComparison.OrdinalIgnoreCase)
-                       && (component.MediaSubtype == "*" || string.Equals(component.MediaSubtype, "html", StringComparison.OrdinalIgnoreCase)));
+            return component.Type == "*"
+                   || (string.Equals(component.Type, "text", StringComparison.OrdinalIgnoreCase)
+                       && (component.Subtype == "*" || string.Equals(component.Subtype, "html", StringComparison.OrdinalIgnoreCase)));
         }
 
         public T From<T>(string text)

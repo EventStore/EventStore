@@ -28,49 +28,62 @@
 
 using System;
 using System.Globalization;
-using System.Linq;
+using System.Text;
 
 namespace EventStore.Transport.Http
 {
-    public class AcceptComponent
+    public class MediaType
     {
-        public readonly string MediaRange;
-        public readonly string MediaType;
-        public readonly string MediaSubtype;
+        public readonly string Range;
+        public readonly string Type;
+        public readonly string Subtype;
         public readonly float Priority;
+        public readonly bool EncodingSpecified;
+        public readonly Encoding Encoding;
 
-        public readonly string[] Parameters;
-
-        public AcceptComponent(string mediaRange, string mediaType, string mediaSubtype, float priority, string[] parameters)
+        public MediaType(string range, string type, string subtype, float priority, bool encodingSpecified, Encoding encoding)
         {
-            MediaRange = mediaRange;
-            MediaType = mediaType;
-            MediaSubtype = mediaSubtype;
+            Range = range;
+            Type = type;
+            Subtype = subtype;
             Priority = priority;
-
-            Parameters = parameters ?? Common.Utils.Empty.StringArray;
+            EncodingSpecified = encodingSpecified;
+            Encoding = encoding;
         }
 
-        public static bool TryParse(string componentText, out AcceptComponent result)
+        public MediaType(string range, string type, string subtype, float priority) 
+            : this(range, type, subtype, priority, false, null)
+        {
+        }
+
+        public bool Matches(string mediaRange, Encoding encoding)
+        {
+            if (EncodingSpecified)
+                return Range == mediaRange && Encoding.Equals(encoding);
+            
+            return Range == mediaRange;
+        }
+
+        public static bool TryParse(string componentText, out MediaType result)
         {
             return TryParseInternal(componentText, false, out result);
         }
 
-        public static AcceptComponent TryParse(string componentText)
+        public static MediaType TryParse(string componentText)
         {
-            AcceptComponent result;
+            MediaType result;
             return TryParseInternal(componentText, false, out result) ? result : null;
         }
 
-        public static AcceptComponent Parse(string componentText)
+        public static MediaType Parse(string componentText)
         {
-            AcceptComponent result;
+            MediaType result;
             if (!TryParseInternal(componentText, true, out result))
                 throw new Exception("This should never happen!");
             return result;
         }
 
-        private static bool TryParseInternal(string componentText, bool throwExceptions, out AcceptComponent result)
+        private static bool TryParseInternal(string componentText, bool throwExceptions, out MediaType result)
         {
             result = null;
 
@@ -87,12 +100,14 @@ namespace EventStore.Transport.Http
                 return false;
             }
 
-            float priority = 1.0f; // default priority
+            var priority = 1.0f; // default priority
+            var encodingSpecified = false;
+            Encoding encoding = null;
 
-            string[] parts = componentText.Split(';');
-            string mediaRange = parts[0];
+            var parts = componentText.Split(';');
+            var mediaRange = parts[0];
 
-            string[] typeParts = mediaRange.Split(new[] { '/' }, 2);
+            var typeParts = mediaRange.Split(new[] { '/' }, 2);
             if (typeParts.Length != 2)
             {
                 if (throwExceptions)
@@ -100,28 +115,37 @@ namespace EventStore.Transport.Http
                 return false;
             }
 
-            string mediaType = typeParts[0];
-            string mediaSubtype = typeParts[1];
-            string[] parameters = null;
+            var mediaType = typeParts[0];
+            var mediaSubtype = typeParts[1];
 
             if (parts.Length > 1)
             {
-                var firstPart = parts[1];
-                var additionSkip = 0;
-                if (firstPart.StartsWith("q="))
+                for (var i = 1; i < parts.Length; i++)
                 {
-                    var quality = firstPart.Substring(2);
-                    float q;
-                    if (float.TryParse(quality, NumberStyles.Float, CultureInfo.InvariantCulture, out q))
+                    var part = parts[i].ToLowerInvariant().Trim();
+
+                    if (part.StartsWith("q="))
                     {
-                        priority = q;
-                        additionSkip = 1;
+                        var quality = part.Substring(2);
+                        float q;
+                        if (float.TryParse(quality, NumberStyles.Float, CultureInfo.InvariantCulture, out q))
+                        {
+                            priority = q;
+                        }
+                    } else if (part.StartsWith("charset="))
+                    {
+                        encodingSpecified = true;
+                        try
+                        {
+                            encoding = Encoding.GetEncoding(part.Substring(8));
+                        } catch (ArgumentException) {
+                            encoding = null;
+                        }
                     }
                 }
-                parameters = parts.Skip(1 + additionSkip).ToArray();
             }
 
-            result = new AcceptComponent(mediaRange, mediaType, mediaSubtype, priority, parameters);
+            result = new MediaType(mediaRange, mediaType, mediaSubtype, priority, encodingSpecified, encoding);
             return true;
         }
     }

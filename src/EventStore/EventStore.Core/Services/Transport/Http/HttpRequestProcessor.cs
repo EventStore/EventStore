@@ -234,7 +234,7 @@ namespace EventStore.Core.Services.Transport.Http
                 case HttpMethod.Post:
                 case HttpMethod.Put:
                 case HttpMethod.Delete:
-                    return supportedCodecs.SingleOrDefault(c => c.CanParse(contentType));
+                    return supportedCodecs.SingleOrDefault(c => c.CanParse(MediaType.Parse(contentType)));
 
                 default:
                     return Codec.NoCodec;
@@ -248,9 +248,9 @@ namespace EventStore.Core.Services.Transport.Http
                 return @default;
 
             if (requestedFormat != null)
-                return supported.FirstOrDefault(c => c.SuitableForReponse(AcceptComponent.Parse(requestedFormat)));
+                return supported.FirstOrDefault(c => c.SuitableForReponse(MediaType.Parse(requestedFormat)));
 
-            return acceptTypes.Select(AcceptComponent.TryParse)
+            return acceptTypes.Select(MediaType.TryParse)
                               .Where(x => x != null)
                               .OrderByDescending(v => v.Priority)
                               .Select(type => supported.FirstOrDefault(codec => codec.SuitableForReponse(type)))

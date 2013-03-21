@@ -52,7 +52,7 @@
     <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
       <Link>Properties\AssemblyVersion.cs</Link>
     </Compile>
-    <Compile Include="AcceptComponent.cs" />
+    <Compile Include="MediaType.cs" />
     <Compile Include="AsyncQueuedBufferWriter.cs" />
     <Compile Include="Client\ClientOperationState.cs" />
     <Compile Include="Client\HttpAsyncClient.cs" />

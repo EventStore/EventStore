@@ -282,7 +282,7 @@
     <Compile Include="Services\Storage\HashCollisions\with_two_collisioned_streams_one_event_each_read_index_should.cs" />
     <Compile Include="Services\Storage\HashCollisions\with_no_hash_collisions_read_index_should.cs" />
     <Compile Include="Services\Storage\HashCollisions\with_three_collisioned_streams_one_event_each_read_index_should.cs" />
-    <Compile Include="Services\Transport\Http\accept_component.cs" />
+    <Compile Include="Services\Transport\Http\media_type.cs" />
     <Compile Include="Services\Transport\Http\atom_specs.cs" />
     <Compile Include="Services\Transport\Http\auto_convertion.cs" />
     <Compile Include="Services\Transport\Http\HttpBootstrap.cs" />
