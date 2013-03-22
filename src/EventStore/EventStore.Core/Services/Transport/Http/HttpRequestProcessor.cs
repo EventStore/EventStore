@@ -147,11 +147,6 @@ namespace EventStore.Core.Services.Transport.Http
                 ICodec requestCodec = SelectRequestCodec(context.Request.HttpMethod,
                                                          context.Request.ContentType,
                                                          match.ControllerAction.SupportedRequestCodecs);
-                if (requestCodec == null)
-                {
-                    BadCodec(context, "Content-Type MUST be set for POST, PUT and DELETE.");
-                    return;
-                }
 
                 ICodec responseCodec = SelectResponseCodec(context.Request.QueryString,
                                                            context.Request.AcceptTypes,
@@ -230,6 +225,8 @@ namespace EventStore.Core.Services.Transport.Http
 
         private ICodec SelectRequestCodec(string method, string contentType, IEnumerable<ICodec> supportedCodecs)
         {
+            if (string.IsNullOrEmpty(contentType))
+                return Codec.NoCodec;
             switch (method.ToUpper())
             {
                 case HttpMethod.Post:
