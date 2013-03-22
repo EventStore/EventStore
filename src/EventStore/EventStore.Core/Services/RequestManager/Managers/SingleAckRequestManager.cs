@@ -28,10 +28,10 @@
 
 using System;
 using System.Diagnostics;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
@@ -41,7 +41,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                            IHandle<StorageMessage.WrongExpectedVersion>,
                                            IHandle<StorageMessage.InvalidTransaction>,
                                            IHandle<StorageMessage.StreamDeleted>,
-                                           IHandle<StorageMessage.PreparePhaseTimeout>
+                                           IHandle<StorageMessage.RequestManagerTimerTick>
     {
         private readonly IPublisher _bus;
         private readonly TimeSpan _prepareTimeout;
@@ -54,12 +54,13 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         private bool _completed;
         private bool _initialized;
+        private DateTime _nextTimeoutTime;
 
         private RequestType _requestType;
 
         public SingleAckRequestManager(IPublisher bus, TimeSpan prepareTimeout)
         {
-            if (bus == null) throw new ArgumentNullException("bus");
+            Ensure.NotNull(bus, "bus");
 
             _bus = bus;
             _prepareTimeout = prepareTimeout;
@@ -84,7 +85,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                                   message.ExpectedVersion,
                                                                   allowImplicitStreamCreation: true,
                                                                   liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks * 9 / 10)));
-            _bus.Publish(TimerMessage.Schedule.Create(_prepareTimeout, _publishEnvelope, new StorageMessage.PreparePhaseTimeout(_correlationId)));
+            _nextTimeoutTime = DateTime.UtcNow + _prepareTimeout;
         }
 
         public void Handle(StorageMessage.TransactionWriteRequestCreated request)
@@ -129,12 +130,12 @@ namespace EventStore.Core.Services.RequestManager.Managers
             CompleteFailedRequest(message.CorrelationId, _transactionId, OperationResult.StreamDeleted, "Stream is deleted.");
         }
 
-        public void Handle(StorageMessage.PreparePhaseTimeout message)
+        public void Handle(StorageMessage.RequestManagerTimerTick message)
         {
-            if (_completed)
+            if (_completed || DateTime.UtcNow < _nextTimeoutTime)
                 return;
-
-            CompleteFailedRequest(message.CorrelationId, _transactionId, OperationResult.PrepareTimeout, "Prepare phase timeout.");
+        
+            CompleteFailedRequest(_correlationId, _transactionId, OperationResult.PrepareTimeout, "Prepare phase timeout.");
         }
 
         private void CompleteSuccessRequest(Guid correlationId, long transactionId)

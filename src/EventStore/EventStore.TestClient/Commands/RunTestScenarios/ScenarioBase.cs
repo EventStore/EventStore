@@ -109,6 +109,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             }
 
             _connections = new EventStoreConnection[connections];
+
+            Log.Info("Projection manager points to {0}.", _nodeConnection);
             _projectionsManager = new ProjectionsManager(new ConsoleLogger(), new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.HttpPort));
 
             _writeHandlers = new Dictionary<WriteMode, Func<string, int, Func<int, EventData>, Task>>
@@ -119,16 +121,15 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             };
         }
 
-        private string CreateNewDbPath(string dbParentPath)
+        private static string CreateNewDbPath(string dbParentPath)
         {
             var dbParent = dbParentPath ?? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            Debug.Assert(dbParent != null, "dbParent != null");
 
             var dataFolder = Path.Combine(dbParent, "data");
             var idx = 0;
             var dbPath = Path.Combine(dataFolder, string.Format("es_{0}", idx));
 
-            while (Directory.Exists(_dbPath))
+            while (Directory.Exists(dbPath))
             {
                 idx += 1;
                 dbPath = Path.Combine(dataFolder, string.Format("es_{0}", idx));
@@ -447,6 +448,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         public void Dispose()
         {
             CloseConnections();
+            Thread.Sleep(2 * 1000);
             KillStartedNodes();
         }
 

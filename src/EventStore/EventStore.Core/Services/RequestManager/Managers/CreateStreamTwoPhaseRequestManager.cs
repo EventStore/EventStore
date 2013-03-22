@@ -30,23 +30,19 @@ using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
     public class CreateStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.CreateStreamRequestCreated>
     {
-        private readonly TimeSpan _prepareTimeout;
-
         public CreateStreamTwoPhaseRequestManager(IPublisher publisher, 
                                                   int prepareCount, 
                                                   int commitCount,
                                                   TimeSpan prepareTimeout,
                                                   TimeSpan commitTimeout) 
-            : base(publisher, prepareCount, commitCount, commitTimeout)
+            : base(publisher, prepareCount, commitCount, prepareTimeout, commitTimeout)
         {
-            _prepareTimeout = prepareTimeout;
         }
 
         public void Handle(StorageMessage.CreateStreamRequestCreated request)
@@ -59,13 +55,9 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     PublishEnvelope,
                     request.EventStreamId,
                     ExpectedVersion.NoStream,
-                    new[]
-                    {
-                        new Event(request.CreateStreamId, SystemEventTypes.StreamCreated, request.IsJson, LogRecord.NoData, request.Metadata)
-                    },
+                    new[] { new Event(request.CreateStreamId, SystemEventTypes.StreamCreated, request.IsJson, LogRecord.NoData, request.Metadata) },
                     allowImplicitStreamCreation: false,
-                    liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks * 9 / 10)));
-            Publisher.Publish(TimerMessage.Schedule.Create(_prepareTimeout, PublishEnvelope, new StorageMessage.PreparePhaseTimeout(CorrelationId)));
+                    liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
         }
 
 

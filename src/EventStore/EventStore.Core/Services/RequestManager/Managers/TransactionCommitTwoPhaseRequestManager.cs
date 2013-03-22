@@ -29,34 +29,30 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
     public class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.TransactionCommitRequestCreated>
     {
-        private readonly TimeSpan _prepareTimeout;
-
         public TransactionCommitTwoPhaseRequestManager(IPublisher publisher, 
                                                        int prepareCount, 
                                                        int commitCount, 
                                                        TimeSpan prepareTimeout, 
-                                                       TimeSpan commitTimeout) 
-            : base(publisher, prepareCount, commitCount, commitTimeout)
+                                                       TimeSpan commitTimeout)
+            : base(publisher, prepareCount, commitCount, prepareTimeout, commitTimeout)
         {
-            _prepareTimeout = prepareTimeout;
         }
 
         public void Handle(StorageMessage.TransactionCommitRequestCreated request)
         {
             Init(request.Envelope, request.CorrelationId, request.TransactionId);
 
-            Publisher.Publish(new StorageMessage.WriteTransactionPrepare(
-                request.CorrelationId,
-                PublishEnvelope,
-                request.TransactionId,
-                liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks*9/10)));
-            Publisher.Publish(TimerMessage.Schedule.Create(_prepareTimeout, PublishEnvelope, new StorageMessage.PreparePhaseTimeout(CorrelationId)));
+            Publisher.Publish(
+                new StorageMessage.WriteTransactionPrepare(
+                    request.CorrelationId,
+                    PublishEnvelope,
+                    request.TransactionId,
+                    liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks*9/10)));
         }
 
         protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)

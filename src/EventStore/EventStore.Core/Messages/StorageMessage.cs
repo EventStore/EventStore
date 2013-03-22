@@ -468,24 +468,8 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class PreparePhaseTimeout : Message
+        public class RequestManagerTimerTick: Message
         {
-            public readonly Guid CorrelationId;
-
-            public PreparePhaseTimeout(Guid correlationId)
-            {
-                CorrelationId = correlationId;
-            }
-        }
-
-        public class CommitPhaseTimeout : Message
-        {
-            public readonly Guid CorrelationId;
-
-            public CommitPhaseTimeout(Guid correlationId)
-            {
-                CorrelationId = correlationId;
-            }
         }
 
         public class ForwardingTimeout : Message
