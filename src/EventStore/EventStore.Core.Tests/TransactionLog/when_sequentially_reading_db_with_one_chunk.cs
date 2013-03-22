@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog;
@@ -34,12 +35,12 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog.Chunks
+namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_sequentially_reading_db_with_few_chunks: SpecificationWithDirectoryPerTestFixture
+    public class when_sequentially_reading_db_with_one_chunk: SpecificationWithDirectoryPerTestFixture
     {
-        private const int RecordsCount = 8;
+        private const int RecordsCount = 3;
 
         private TFChunkDb _db;
         private LogRecord[] _records;
@@ -49,8 +50,6 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             base.TestFixtureSetUp();
 
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             _db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                     new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                     4096,
@@ -60,32 +59,22 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                                                     new InMemoryCheckpoint(-1),
                                                     new InMemoryCheckpoint(-1)));
             _db.Open();
-
+            
             var chunk = _db.Manager.GetChunk(0);
 
             _records = new LogRecord[RecordsCount];
             _results = new RecordWriteResult[RecordsCount];
 
-            var pos = 0;
-            for (int i = 0; i < RecordsCount; ++i)
+            for (int i = 0; i < _records.Length; ++i)
             {
-                if (i > 0 && i % 3 == 0)
-                {
-                    pos = i/3 * _db.Config.ChunkSize;
-                    chunk.Complete();
-                    chunk = _db.Manager.AddNewChunk();
-                }
-
-                _records[i] = LogRecord.SingleWrite(pos,
+                _records[i] = LogRecord.SingleWrite(i == 0 ? 0 : _results[i - 1].NewPosition,
                                                     Guid.NewGuid(), Guid.NewGuid(), "es1", ExpectedVersion.Any, "et1",
-                                                    new byte[1200], new byte[] { 5, 7 });
+                                                    new byte[] { 0, 1, 2 }, new byte[] { 5, 7 });
                 _results[i] = chunk.TryAppend(_records[i]);
-
-                pos += _records[i].GetSizeWithLengthPrefixAndSuffix();
             }
 
             chunk.Flush();
-            _db.Config.WriterCheckpoint.Write((RecordsCount / 3) * _db.Config.ChunkSize + _results[RecordsCount - 1].NewPosition);
+            _db.Config.WriterCheckpoint.Write(_results[RecordsCount - 1].NewPosition);
             _db.Config.WriterCheckpoint.Flush();
         }
 
@@ -102,9 +91,6 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             var pos = 0;
             for (int i = 0; i < RecordsCount; ++i)
             {
-                if (i % 3 == 0)
-                    pos = 0;
-
                 Assert.IsTrue(_results[i].Success);
                 Assert.AreEqual(pos, _results[i].OldPosition);
 

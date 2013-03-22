@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
             _r5 = WriteSingleEvent("ES", 4, "bla1");
             _r6 = WriteSingleEvent("ES", 5, "bla1");
 
-            Scavenge(completeLast: true);
+            Scavenge(completeLast: true, mergeChunks: false);
         }
 
         [Test]

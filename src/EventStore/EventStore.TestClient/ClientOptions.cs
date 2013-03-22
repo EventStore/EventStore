@@ -27,6 +27,7 @@
 // 
 using System.Net;
 using EventStore.Common.Options;
+using EventStore.Core.Util;
 
 namespace EventStore.TestClient
 {

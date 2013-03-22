@@ -39,8 +39,8 @@ namespace EventStore.Projections.Core.Services
         IHandle<ClientMessage.ReadEvent>,
         IHandle<ClientMessage.ReadEventCompleted>,
         IHandle<ProjectionCoreServiceMessage.Connected>,
-        IHandle<ProjectionCoreServiceMessage.Start>,
-        IHandle<ProjectionCoreServiceMessage.Stop>
+        IHandle<ProjectionCoreServiceMessage.StartCore>,
+        IHandle<ProjectionCoreServiceMessage.StopCore>
     {
         private TcpConnectionManager _connection;
         private Dictionary<Guid, IEnvelope> _correlations;
@@ -58,13 +58,13 @@ namespace EventStore.Projections.Core.Services
             _connection = message.Connection;
         }
 
-        public void Handle(ProjectionCoreServiceMessage.Stop message)
+        public void Handle(ProjectionCoreServiceMessage.StopCore message)
         {
             _connection = null;
             _correlations = null;
         }
 
-        public void Handle(ProjectionCoreServiceMessage.Start message)
+        public void Handle(ProjectionCoreServiceMessage.StartCore message)
         {
             _correlations = new Dictionary<Guid, IEnvelope>();
         }

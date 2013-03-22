@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             _event8 = WriteSingleEvent("ES2", 1, new string('.', 5000), retryOnFail: true); //chunk 3
 
             _delete = WriteDelete("ES");
-            Scavenge(completeLast: false);
+            Scavenge(completeLast: false, mergeChunks: false);
         }
 
         [Test]

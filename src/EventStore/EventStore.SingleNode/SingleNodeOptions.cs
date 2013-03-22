@@ -27,6 +27,7 @@
 // 
 using System.Net;
 using EventStore.Common.Options;
+using EventStore.Core.Util;
 
 namespace EventStore.SingleNode
 {
@@ -43,7 +44,10 @@ namespace EventStore.SingleNode
         public int HttpPort { get { return _helper.Get(() => HttpPort); } }
 
         public int StatsPeriodSec { get { return _helper.Get(() => StatsPeriodSec); } }
+        
         public int CachedChunks { get { return _helper.Get(() => CachedChunks); } }
+        public long ChunksCacheSize { get { return _helper.Get(() => ChunksCacheSize); } }
+
         public string DbPath { get { return _helper.Get(() => DbPath); } }
         public bool SkipDbVerify { get { return _helper.Get(() => SkipDbVerify); } }
         public bool RunProjections { get { return _helper.Get(() => RunProjections); } }
@@ -73,7 +77,10 @@ namespace EventStore.SingleNode
             _helper.Register(() => HttpPort, "h|http-port=", "HTTP_PORT", "httpPort", 2113, "The port to run the HTTP server on.");
 
             _helper.Register(() => StatsPeriodSec, Opts.StatsPeriodCmd, Opts.StatsPeriodEnv, Opts.StatsPeriodJson, Opts.StatsPeriodDefault, Opts.StatsPeriodDescr);
-            _helper.Register(() => CachedChunks, Opts.CachedChunksCmd, Opts.CachedChunksEnv, Opts.CachedChunksJson, Opts.CachedChunksDefault, Opts.CachedChunksDescr);
+            
+            _helper.Register(() => CachedChunks, Opts.CachedChunksCmd, Opts.CachedChunksEnv, Opts.CachedChunksJson, Opts.CachedChunksDefault, Opts.CachedChunksDescr, hidden: true);
+            _helper.Register(() => ChunksCacheSize, Opts.ChunksCacheSizeCmd, Opts.ChunksCacheSizeEnv, Opts.ChunksCacheSizeJson, Opts.ChunksCacheSizeDefault, Opts.ChunksCacheSizeDescr);
+            
             _helper.RegisterRef(() => DbPath, Opts.DbPathCmd, Opts.DbPathEnv, Opts.DbPathJson, Opts.DbPathDefault, Opts.DbPathDescr);
             _helper.Register(() => SkipDbVerify, Opts.SkipDbVerifyCmd, Opts.SkipDbVerifyEnv, Opts.SkipDbVerifyJson, Opts.SkipDbVerifyDefault, Opts.SkipDbVerifyDescr);
             _helper.Register(() => RunProjections, Opts.RunProjectionsCmd, Opts.RunProjectionsEnv, Opts.RunProjectionsJson, Opts.RunProjectionsDefault, Opts.RunProjectionsDescr);

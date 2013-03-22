@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using EventStore.Common.Log;
@@ -42,15 +41,15 @@ namespace EventStore.Core.TransactionLog.Chunks
         public const int MaxChunksCount = 100000; // that's enough for about 25 Tb of data
 
         public int ChunksCount { get { return _chunksCount; } }
+
         private readonly TFChunkDbConfig _config;
-        private readonly TFChunk.TFChunk[] _chunks = new TFChunk.TFChunk[MaxChunksCount]; 
+        private readonly TFChunk.TFChunk[] _chunks = new TFChunk.TFChunk[MaxChunksCount];
         private volatile int _chunksCount;
         private volatile bool _cachingEnabled;
-
-        private readonly object _backgroundLock = new object();
-        private bool _backgroundRunning;
-
-        private readonly Common.Concurrent.ConcurrentQueue<TFChunk.TFChunk> _chunksQueue = new Common.Concurrent.ConcurrentQueue<TFChunk.TFChunk>();
+        
+        private readonly object _chunksLocker = new object();
+        private int _backgroundPassesRemaining;
+        private int _backgroundRunning;
 
         public TFChunkManager(TFChunkDbConfig config)
         {
@@ -60,80 +59,87 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void EnableCaching()
         {
-            _cachingEnabled = true;
-            for (int i = 0; i < _chunksCount; ++i)
-            {
-                var chunk = _chunks[i];
-                if (!chunk.IsReadOnly)
-                    CacheUncacheIfNecessary(chunk);
-                else
-                    _chunksQueue.Enqueue(_chunks[i]);
-            }
-            EnsureBackgroundWorkerRunning();
-        }
+            if (_chunksCount == 0)
+                throw new Exception("No chunks in DB.");
 
-        public void DisableCaching()
-        {
-            _cachingEnabled = false;
-            for (int i = 0; i < _chunksCount; ++i)
+            lock (_chunksLocker)
             {
-                _chunksQueue.Enqueue(_chunks[i]);
-            }
-            EnsureBackgroundWorkerRunning();
-        }
-
-        private void EnsureBackgroundWorkerRunning()
-        {
-            lock (_backgroundLock)
-            {
-                if (_backgroundRunning)
-                    return;
-                ThreadPool.QueueUserWorkItem(_ => BackgroundProcessing());
+                _cachingEnabled = _config.MaxChunksCacheSize > 0;
+                TryCacheChunk(_chunks[_chunksCount - 1]);
             }
         }
 
-        private void BackgroundProcessing()
+        private void BackgroundCachingProcess(object state)
         {
-            while (true)
+            do
             {
-                lock (_backgroundLock)
+                do
                 {
-                    if (_chunksQueue.Count == 0)
-                    {
-                        _backgroundRunning = false;
-                        return;
-                    }
-                }
-                TFChunk.TFChunk chunk;
-                while (_chunksQueue.TryDequeue(out chunk))
+                    CacheUncacheReadOnlyChunks();
+                } while (Interlocked.Decrement(ref _backgroundPassesRemaining) > 0);
+                Interlocked.Exchange(ref _backgroundRunning, 0);
+            } while (Interlocked.CompareExchange(ref _backgroundPassesRemaining, 0, 0) > 0 
+                     && Interlocked.CompareExchange(ref _backgroundRunning, 1, 0) == 0);
+        }
+
+        private void CacheUncacheReadOnlyChunks()
+        {
+            int lastChunkToCache;
+            lock (_chunksLocker)
+            {
+                long totalSize = 0;
+                lastChunkToCache = _chunksCount;
+
+                for (int chunkNum = _chunksCount - 1; chunkNum >= 0;)
                 {
-                    CacheUncacheIfNecessary(chunk);
+                    var chunk = _chunks[chunkNum];
+                    var chunkSize = chunk.IsReadOnly
+                            ? chunk.ChunkFooter.PhysicalDataSize + chunk.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size
+                            : chunk.ChunkHeader.ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
+
+                    if (totalSize + chunkSize > _config.MaxChunksCacheSize)
+                        break;
+
+                    totalSize += chunkSize;
+                    lastChunkToCache = chunk.ChunkHeader.ChunkStartNumber;
+
+                    chunkNum = chunk.ChunkHeader.ChunkStartNumber - 1;
                 }
             }
+
+            for (int chunkNum = lastChunkToCache - 1; chunkNum >= 0;)
+            {
+                var chunk = _chunks[chunkNum];
+                if (chunk.IsReadOnly)
+                    chunk.UnCacheFromMemory();
+                chunkNum = chunk.ChunkHeader.ChunkStartNumber - 1;
+            }
+
+            for (int chunkNum = lastChunkToCache; chunkNum < _chunksCount; )
+            {
+                var chunk = _chunks[chunkNum];
+                if (chunk.IsReadOnly)
+                    chunk.CacheInMemory();
+                chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
+            }
         }
 
-        private void CacheUncacheIfNecessary(TFChunk.TFChunk chunk)
+        public TFChunk.TFChunk CreateTempChunk(ChunkHeader chunkHeader, int fileSize)
         {
-            var chunkNumber = chunk.ChunkHeader.ChunkStartNumber;
-            if (_cachingEnabled
-                && _chunksCount - chunkNumber <= _config.CachedChunkCount
-                && ReferenceEquals(chunk, _chunks[chunkNumber]))
-            {
-                chunk.CacheInMemory();
-            }
-            else
-            {
-                chunk.UnCacheFromMemory();
-            }
+            var chunkFileName = _config.FileNamingStrategy.GetTempFilename();
+            return TFChunk.TFChunk.CreateWithHeader(chunkFileName, chunkHeader, fileSize);
         }
 
         public TFChunk.TFChunk AddNewChunk()
         {
-            var chunkNumber = _chunksCount;
-            var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
-            var chunk = TFChunk.TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, isScavenged: false);
-            AddChunk(chunk);
-            return chunk;
+            lock (_chunksLocker)
+            {
+                var chunkNumber = _chunksCount;
+                var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
+                var chunk = TFChunk.TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, chunkNumber, isScavenged: false);
+                AddChunk(chunk);
+                return chunk;
+            }
         }
 
         public TFChunk.TFChunk AddNewChunk(ChunkHeader chunkHeader, int fileSize)
@@ -141,99 +147,32 @@ namespace EventStore.Core.TransactionLog.Chunks
             Ensure.NotNull(chunkHeader, "chunkHeader");
             Ensure.Positive(fileSize, "fileSize");
 
-            if (chunkHeader.ChunkStartNumber != _chunksCount)
+            lock (_chunksLocker)
             {
-                throw new Exception(string.Format("Received request to create a new ongoing chunk {0}-{1}, but current chunks count is {2}.",
-                                                  chunkHeader.ChunkStartNumber,
-                                                  chunkHeader.ChunkEndNumber,
-                                                  _chunksCount));
-            }
+                if (chunkHeader.ChunkStartNumber != _chunksCount)
+                    throw new Exception(string.Format("Received request to create a new ongoing chunk #{0}-{1}, but current chunks count is {2}.",
+                                                      chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, _chunksCount));
 
-            var chunkNumber = _chunksCount;
-            var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
-            var chunk = TFChunk.TFChunk.CreateWithHeader(chunkName, chunkHeader, fileSize);
-            AddChunk(chunk);
-            return chunk;
-        }   
+                var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, 0);
+                var chunk = TFChunk.TFChunk.CreateWithHeader(chunkName, chunkHeader, fileSize);
+                AddChunk(chunk);
+                return chunk;
+            }
+        }
 
         public void AddChunk(TFChunk.TFChunk chunk)
         {
             Ensure.NotNull(chunk, "chunk");
 
-            _chunks[_chunksCount] = chunk;
-            _chunksCount += 1;
-
-            if (_cachingEnabled)
+            lock (_chunksLocker)
             {
-                int uncacheIndex = _chunksCount - _config.CachedChunkCount - 1;
-                if (uncacheIndex >= 0)
+                for (int i = chunk.ChunkHeader.ChunkStartNumber; i <= chunk.ChunkHeader.ChunkEndNumber; ++i)
                 {
-                    _chunksQueue.Enqueue(_chunks[uncacheIndex]);
-                    EnsureBackgroundWorkerRunning();
+                    _chunks[i] = chunk;
                 }
+                _chunksCount = chunk.ChunkHeader.ChunkEndNumber + 1;
 
-                if (_cachingEnabled)
-                {
-                    if (!chunk.IsReadOnly)
-                        CacheUncacheIfNecessary(chunk);
-                    else
-                    {
-                        _chunksQueue.Enqueue(chunk);
-                        EnsureBackgroundWorkerRunning();
-                    }
-                }
-            }
-        }
-
-        public TFChunk.TFChunk GetChunkFor(long logPosition)
-        {
-            return GetChunk((int)(logPosition / _config.ChunkSize));
-        }
-
-        public TFChunk.TFChunk GetChunkForOrDefault(string path)
-        {
-            return _chunks != null
-                       ? _chunks.FirstOrDefault(c => c != null && c.FileName == path)
-                       : null;
-        }
-
-        public TFChunk.TFChunk GetChunk(int chunkNumber)
-        {
-            Ensure.Nonnegative(chunkNumber, "chunkNumber");
-            if (chunkNumber >= MaxChunksCount) 
-                throw new ArgumentOutOfRangeException("chunkNumber");
-
-            var chunk = _chunks[chunkNumber];
-            
-//            if (chunk == null)
-//                throw new InvalidOperationException(
-//                        string.Format("Requested chunk #{0}, which is not present in TFChunkManager.", chunkNumber));
-            return chunk;
-        }
-
-        private void TryCacheChunk(TFChunk.TFChunk chunk)
-        {
-            if (_cachingEnabled)
-            {
-                if (!chunk.IsReadOnly)
-                {
-                    CacheUncacheIfNecessary(chunk);
-                }
-                else
-                {
-                    _chunksQueue.Enqueue(chunk);
-                    EnsureBackgroundWorkerRunning();
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            // NOT THREAD-SAFE
-            for (int i=0; i<_chunksCount; ++i)
-            {
-                if (_chunks[i] != null)
-                    _chunks[i].Dispose();
+                TryCacheChunk(chunk);
             }
         }
 
@@ -256,51 +195,107 @@ namespace EventStore.Core.TransactionLog.Chunks
             catch (TimeoutException exc)
             {
                 throw new Exception(string.Format("The chunk that is being switched #{0}-{1} ({2}) is used by someone else.",
-                                                  chunk.ChunkHeader.ChunkStartNumber,
-                                                  chunk.ChunkHeader.ChunkEndNumber,
-                                                  chunk.FileName), exc);
+                                                  chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, oldFileName), exc);
             }
 
             var newFileName = _config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber);
+            
             Log.Info("File {0} will be moved to file {1}", oldFileName, newFileName);
+            
             File.Move(oldFileName, newFileName);
             var newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash);
-            
-            for (int i = chunkHeader.ChunkStartNumber; i <= chunkHeader.ChunkEndNumber; ++i)
+
+            lock (_chunksLocker)
             {
-                var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
-                if (oldChunk != null)
+                ReplaceChunksWith(chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, newChunk, "Old");
+
+                if (replaceChunksWithGreaterNumbers)
                 {
-                    oldChunk.MarkForDeletion();
-                    Log.Info("Old chunk {0} is marked for deletion.", oldChunk.FileName);
+                    var oldChunksCount = _chunksCount;
+                    _chunksCount = newChunk.ChunkHeader.ChunkEndNumber + 1;
+                    ReplaceChunksWith(chunkHeader.ChunkEndNumber + 1, oldChunksCount-1, null, "Excessive");
+                    if (_chunks[_chunksCount] != null)
+                        throw new Exception(string.Format("Excessive chunk #{0} found after raw replication switch.", _chunksCount));
                 }
+
+                TryCacheChunk(newChunk);
+                return newChunk;
             }
-
-            if (replaceChunksWithGreaterNumbers)
-            {
-                var oldChunksCount = _chunksCount;
-                _chunksCount = newChunk.ChunkHeader.ChunkEndNumber + 1;
-
-                for (int i = chunkHeader.ChunkEndNumber + 1; i < oldChunksCount; ++i)
-                {
-                    var oldChunk = Interlocked.Exchange(ref _chunks[i], null);
-                    if (oldChunk != null)
-                    {
-                        oldChunk.MarkForDeletion();
-                        Log.Info("Excessive chunk {0} is marked for deletion.", oldChunk.FileName);
-                    }
-                }
-                Debug.Assert(_chunks[_chunksCount] == null);
-            }
-
-            TryCacheChunk(newChunk);
-            return newChunk;
         }
 
-        public TFChunk.TFChunk CreateTempChunk(ChunkHeader chunkHeader, int fileSize)
+        private void ReplaceChunksWith(int chunkStartNumber, int chunkEndNumber, TFChunk.TFChunk newChunk, string chunkExplanation)
         {
-            var chunkFileName = _config.FileNamingStrategy.GetTempFilename();
-            return TFChunk.TFChunk.CreateWithHeader(chunkFileName, chunkHeader, fileSize);
+            for (int i = chunkStartNumber; i <= chunkEndNumber; )
+            {
+                var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
+                if (oldChunk == null)
+                    break;
+
+                for (int j = oldChunk.ChunkHeader.ChunkStartNumber + 1; j <= oldChunk.ChunkHeader.ChunkEndNumber; j += 1)
+                {
+                    Interlocked.Exchange(ref _chunks[j], newChunk);
+                }
+
+                oldChunk.MarkForDeletion();
+
+                Log.Info("{0} chunk #{1}-{2} ({3}) is marked for deletion.", chunkExplanation, 
+                         oldChunk.ChunkHeader.ChunkStartNumber, oldChunk.ChunkHeader.ChunkEndNumber, oldChunk.FileName);
+
+                i = oldChunk.ChunkHeader.ChunkEndNumber + 1;
+            }
+        }
+
+        private void TryCacheChunk(TFChunk.TFChunk chunk)
+        {
+            if (!_cachingEnabled)
+                return;
+
+            Interlocked.Increment(ref _backgroundPassesRemaining);
+            if (Interlocked.CompareExchange(ref _backgroundRunning, 1, 0) == 0)
+                ThreadPool.QueueUserWorkItem(BackgroundCachingProcess);
+
+            if (!chunk.IsReadOnly && chunk.ChunkHeader.ChunkSize + ChunkHeader.Size + ChunkFooter.Size <= _config.MaxChunksCacheSize)
+                chunk.CacheInMemory();
+        }
+
+        public TFChunk.TFChunk GetChunkFor(long logPosition)
+        {
+            var chunkNum = (int)(logPosition / _config.ChunkSize);
+            if (chunkNum < 0 || chunkNum >= _chunksCount)
+                throw new ArgumentOutOfRangeException("logPosition", string.Format("LogPosition {0} doesn't have corresponding chunk in DB.", logPosition));
+
+            var chunk = _chunks[chunkNum];
+            if (chunk == null)
+                throw new Exception(string.Format("Requested chunk for LogPosition {0}, which is not present in TFChunkManager.", logPosition));
+            return chunk;
+        }
+
+        public TFChunk.TFChunk GetChunk(int chunkNum)
+        {
+            if (chunkNum < 0 || chunkNum >= _chunksCount)
+                throw new ArgumentOutOfRangeException("chunkNum", string.Format("Chunk #{0} isn't present in DB.", chunkNum));
+
+            var chunk = _chunks[chunkNum];
+            if (chunk == null)
+                throw new Exception(string.Format("Requested chunk #{0}, which is not present in TFChunkManager.", chunkNum));
+            return chunk;
+        }
+
+        public TFChunk.TFChunk GetChunkForOrDefault(string path)
+        {
+            return _chunks != null ? _chunks.FirstOrDefault(c => c != null && c.FileName == path) : null;
+        }
+
+        public void Dispose()
+        {
+            lock (_chunksLocker)
+            {
+                for (int i = 0; i < _chunksCount; ++i)
+                {
+                    if (_chunks[i] != null)
+                        _chunks[i].Dispose();
+                }
+            }
         }
     }
 }

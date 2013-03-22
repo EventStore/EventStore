@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
             var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams);
             var scavenger = new TFChunkScavenger(_dbResult.Db, scavengeReadIndex);
-            scavenger.Scavenge(alwaysKeepScavenged: true);
+            scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
         }
 
         public override void TestFixtureTearDown()

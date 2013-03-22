@@ -25,12 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog.Chunks
+namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
     public class when_writing_multiple_records_to_a_tfchunk: SpecificationWithFilePerTestFixture
@@ -50,8 +51,8 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _chunk = TFChunk.CreateNew(Filename, 4096, 0, false);
-            
+            _chunk = TFChunk.CreateNew(Filename, 4096, 0, 0, false);
+
             _prepare1 = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                              PrepareFlags.None, "Foo", new byte[12], new byte[15]);
             var r1 = _chunk.TryAppend(_prepare1);
