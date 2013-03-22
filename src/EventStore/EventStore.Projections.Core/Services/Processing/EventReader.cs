@@ -98,10 +98,10 @@ namespace EventStore.Projections.Core.Services.Processing
         protected abstract string FromAsText();
         protected abstract void RequestEvents();
 
-        protected ProjectionCoreServiceMessage.Tick CreateTickMessage()
+        protected ProjectionCoreServiceMessage.ReaderTick CreateTickMessage()
         {
             return
-                new ProjectionCoreServiceMessage.Tick(
+                new ProjectionCoreServiceMessage.ReaderTick(
                     () => { if (!_paused && !_disposed) RequestEvents(); });
         }
 

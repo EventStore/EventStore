@@ -131,7 +131,10 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _started = true;
             foreach (var queue in _queues)
-                queue.Publish(new ProjectionCoreServiceMessage.Start());
+            {
+                queue.Publish(new Messages.ProjectionCoreServiceMessage.StartReader());
+                queue.Publish(new ProjectionCoreServiceMessage.StartCore());
+            }
             StartExistingProjections();
             ScheduleExpire();
             ScheduleRegularTimeout();
@@ -159,7 +162,10 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _started = false;
             foreach (var queue in _queues)
-                queue.Publish(new ProjectionCoreServiceMessage.Stop());
+            {
+                queue.Publish(new ProjectionCoreServiceMessage.StopCore());
+                queue.Publish(new Messages.ProjectionCoreServiceMessage.StopReader());
+            }
 
             _writeDispatcher.CancelAll();
             _readDispatcher.CancelAll();

@@ -89,11 +89,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<CoreProjectionProcessingMessage.Failed>(_coreService);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_coreService);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_coreService);
-            _bus.Subscribe<ProjectionCoreServiceMessage.Start>(_coreService);
-            _bus.Subscribe<ProjectionCoreServiceMessage.Stop>(_coreService);
-            _bus.Subscribe<ProjectionCoreServiceMessage.Start>(_readerService);
-            _bus.Subscribe<ProjectionCoreServiceMessage.Stop>(_readerService);
-            _bus.Subscribe<ProjectionCoreServiceMessage.Tick>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.StopCore>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.StartReader>(_readerService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.StopReader>(_readerService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.ReaderTick>(_readerService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.ReaderTick>(_readerService);
             _bus.Subscribe<ProjectionCoreServiceMessage.CommittedEventDistributed>(_readerService);
             _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderEof>(_readerService);
             _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderIdle>(_readerService);

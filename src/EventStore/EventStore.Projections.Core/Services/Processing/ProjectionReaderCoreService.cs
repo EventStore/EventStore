@@ -39,7 +39,17 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionReaderCoreService : IHandle<ProjectionCoreServiceMessage.Start>, IHandle<ProjectionCoreServiceMessage.Stop>, IHandle<ProjectionSubscriptionManagement.Subscribe>, IHandle<ProjectionSubscriptionManagement.Unsubscribe>, IHandle<ProjectionSubscriptionManagement.Pause>, IHandle<ProjectionSubscriptionManagement.Resume>, IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>, IHandle<ProjectionCoreServiceMessage.EventReaderIdle>, IHandle<ProjectionCoreServiceMessage.EventReaderEof>
+    public class ProjectionReaderCoreService : 
+        IHandle<ProjectionCoreServiceMessage.StartReader>, 
+        IHandle<ProjectionCoreServiceMessage.StopReader>, 
+        IHandle<ProjectionSubscriptionManagement.Subscribe>, 
+        IHandle<ProjectionSubscriptionManagement.Unsubscribe>, 
+        IHandle<ProjectionSubscriptionManagement.Pause>, 
+        IHandle<ProjectionSubscriptionManagement.Resume>, 
+        IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>, 
+        IHandle<ProjectionCoreServiceMessage.EventReaderIdle>, 
+        IHandle<ProjectionCoreServiceMessage.EventReaderEof>, 
+        IHandle<ProjectionCoreServiceMessage.ReaderTick>
     {
         private readonly IPublisher _publisher;
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionCoreService>();
@@ -287,16 +297,20 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        public void Handle(ProjectionCoreServiceMessage.Start message)
+        public void Handle(ProjectionCoreServiceMessage.StartReader message)
         {
             StartReaders();
         }
 
-        public void Handle(ProjectionCoreServiceMessage.Stop message)
+        public void Handle(ProjectionCoreServiceMessage.StopReader message)
         {
             StopReaders();
         }
 
 
+        public void Handle(ProjectionCoreServiceMessage.ReaderTick message)
+        {
+            message.Action();
+        }
     }
 }

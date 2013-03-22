@@ -29,6 +29,7 @@
 using System;
 using System.Text;
 using EventStore.Core.Messaging;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 

@@ -36,9 +36,9 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionCoreService : IHandle<ProjectionCoreServiceMessage.Start>,
-                                         IHandle<ProjectionCoreServiceMessage.Stop>,
-                                         IHandle<ProjectionCoreServiceMessage.Tick>,
+    public class ProjectionCoreService : IHandle<ProjectionCoreServiceMessage.StartCore>,
+                                         IHandle<ProjectionCoreServiceMessage.StopCore>,
+                                         IHandle<ProjectionCoreServiceMessage.CoreTick>,
                                          IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
                                          IHandle<CoreProjectionManagementMessage.CreatePrepared>,
                                          IHandle<CoreProjectionManagementMessage.Dispose>,
@@ -92,11 +92,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
         }
 
-        public void Handle(ProjectionCoreServiceMessage.Start message)
+        public void Handle(ProjectionCoreServiceMessage.StartCore message)
         {
         }
 
-        public void Handle(ProjectionCoreServiceMessage.Stop message)
+        public void Handle(ProjectionCoreServiceMessage.StopCore message)
         {
             StopProjections();
         }
@@ -116,7 +116,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void Handle(ProjectionCoreServiceMessage.Tick message)
+        public void Handle(ProjectionCoreServiceMessage.CoreTick message)
         {
             message.Action();
         }
