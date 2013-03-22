@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             {
                 base.When();
                 var readerAssignedMessage =
-                    _consumer.HandledMessages.OfType<ProjectionSubscriptionManagement.ReaderAssigned>().LastOrDefault();
+                    _consumer.HandledMessages.OfType<ProjectionSubscriptionManagement.ReaderAssignedReader>().LastOrDefault();
                 Assert.IsNotNull(readerAssignedMessage);
                 _reader = readerAssignedMessage.ReaderId;
 

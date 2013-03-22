@@ -494,7 +494,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_subscribed)
             {
                 Unsubscribed();
-                _publisher.Publish(new ProjectionSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
+                _publisher.Publish(new ProjectionSubscriptionManagement.Unsubscribe(_currentSubscriptionId));
             }
         }
 
@@ -854,6 +854,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _expectedSubscriptionMessageSequenceNumber = 0;
             _currentSubscriptionId = Guid.NewGuid();
+            _processingQueue.Subscribed(_currentSubscriptionId);
             bool stopOnEof = _projectionConfig.StopOnEof;
             _publisher.Publish(
                 new ProjectionSubscriptionManagement.Subscribe(

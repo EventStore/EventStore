@@ -34,25 +34,38 @@ namespace EventStore.Projections.Core.Messages
 {
     public static class ProjectionSubscriptionManagement
     {
-        public class Subscribe : Message
+        public abstract class ProjectionSubscriptionManagementMessage : Message
         {
-            private readonly Guid _correlationId;
             private readonly Guid _subscriptionId;
+
+            protected ProjectionSubscriptionManagementMessage(Guid subscriptionId)
+            {
+                _subscriptionId = subscriptionId;
+            }
+
+            public Guid SubscriptionId
+            {
+                get { return _subscriptionId; }
+            }
+        }
+
+        public class Subscribe : ProjectionSubscriptionManagementMessage
+        {
+            private readonly Guid _responseCorrelationId;
             private readonly CheckpointTag _fromPosition;
             private readonly CheckpointStrategy _checkpointStrategy;
             private readonly long _checkpointUnhandledBytesThreshold;
             private readonly int _checkpointProcessedEventsThreshold; 
             private readonly bool _stopOnEof;
 
-            public Subscribe(
-                Guid correlationId, Guid subscriptionId, CheckpointTag from,
+            public Subscribe(Guid responseCorrelationId,
+                Guid subscriptionId, CheckpointTag from,
                 CheckpointStrategy checkpointStrategy, long checkpointUnhandledBytesThreshold,
-                int checkpointProcessedEventsThreshold, bool stopOnEof = false)
+                int checkpointProcessedEventsThreshold, bool stopOnEof = false): base(subscriptionId)
             {
                 if (@from == null) throw new ArgumentNullException("from");
                 if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
-                _correlationId = correlationId;
-                _subscriptionId = subscriptionId;
+                _responseCorrelationId = responseCorrelationId;
                 _fromPosition = @from;
                 _checkpointStrategy = checkpointStrategy;
                 _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
@@ -63,11 +76,6 @@ namespace EventStore.Projections.Core.Messages
             public CheckpointTag FromPosition
             {
                 get { return _fromPosition; }
-            }
-
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
             }
 
             public CheckpointStrategy CheckpointStrategy
@@ -90,63 +98,48 @@ namespace EventStore.Projections.Core.Messages
                 get { return _stopOnEof; }
             }
 
-            public Guid SubscriptionId
+            public Guid ResponseCorrelationId
             {
-                get { return _subscriptionId; }
+                get { return _responseCorrelationId; }
             }
         }
 
-        public class Pause : Message
+        public class Pause : ProjectionSubscriptionManagementMessage
         {
-            private readonly Guid _correlationId;
 
-            public Pause(Guid correlationId)
+            public Pause(Guid subscriptionId)
+                : base(subscriptionId)
             {
-                _correlationId = correlationId;
             }
 
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
-            }
         }
 
-        public class Resume : Message
+        public class Resume : ProjectionSubscriptionManagementMessage
         {
-            private readonly Guid _correlationId;
 
-            public Resume(Guid correlationId)
+            public Resume(Guid subscriptionId)
+                : base(subscriptionId)
             {
-                _correlationId = correlationId;
             }
 
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
-            }
         }
 
-        public class Unsubscribe : Message
+        public class Unsubscribe : ProjectionSubscriptionManagementMessage
         {
-            private readonly Guid _correlationId;
 
-            public Unsubscribe(Guid correlationId)
+            public Unsubscribe(Guid subscriptionId)
+                : base(subscriptionId)
             {
-                _correlationId = correlationId;
             }
 
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
-            }
         }
 
-        public class ReaderAssigned : Message
+        public class ReaderAssignedReader : Message
         {
             private readonly Guid _correlationId;
             private readonly Guid _readerId;
 
-            public ReaderAssigned(Guid correlationId, Guid readerId)
+            public ReaderAssignedReader(Guid correlationId, Guid readerId)
             {
                 _correlationId = correlationId;
                 _readerId = readerId;

@@ -123,26 +123,31 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void PauseSubscription()
         {
+            if (_subscriptionId == Guid.Empty)
+                throw new InvalidOperationException("Not subscribed");
             if (!_subscriptionPaused && !_unsubscribed)
             {
                 _subscriptionPaused = true;
                 _publisher.Publish(
-                    new ProjectionSubscriptionManagement.Pause(_projectionCorrelationId));
+                    new ProjectionSubscriptionManagement.Pause(_subscriptionId));
             }
         }
 
         private void ResumeSubscription()
         {
+            if (_subscriptionId == Guid.Empty)
+                throw new InvalidOperationException("Not subscribed");
             if (_subscriptionPaused && !_unsubscribed)
             {
                 _subscriptionPaused = false;
                 _publisher.Publish(
-                    new ProjectionSubscriptionManagement.Resume(_projectionCorrelationId));
+                    new ProjectionSubscriptionManagement.Resume(_subscriptionId));
             }
         }
 
         private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
         private bool _unsubscribed;
+        private Guid _subscriptionId;
 
         private void ProcessOneEventBatch()
         {
@@ -162,6 +167,15 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Unsubscribed()
         {
             _unsubscribed = true;
+        }
+
+        public void Subscribed(Guid currentSubscriptionId)
+        {
+            if (_unsubscribed)
+                throw new InvalidOperationException("Unsubscribed");
+            if (_subscriptionId != Guid.Empty)
+                throw new InvalidOperationException("Already subscribed");
+            _subscriptionId = currentSubscriptionId;
         }
     }
 }
