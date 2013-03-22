@@ -50,8 +50,8 @@ namespace EventStore.Core.Services.Transport.Tcp
     {
         public const int ConnectionQueueSizeThreshold = 50000;
 
-        private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromMilliseconds(15000);
-        private static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromMilliseconds(60000);
+        private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromMilliseconds(2000);
+        private static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromMilliseconds(4000);
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionManager>();
 
