@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}", extTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
-            _tfChunkDb = new TFChunkDb(CreateOneTimeDbConfig(1024*1024, _dbPath, 1));
+            _tfChunkDb = new TFChunkDb(CreateDbConfig(1024*1024, _dbPath, 1024*1024 + ChunkHeader.Size + ChunkFooter.Size));
 
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             HttpEndPoint = new IPEndPoint(ip, extHttpPort);
@@ -149,7 +149,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             return host.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
         }
 
-        private TFChunkDbConfig CreateOneTimeDbConfig(int chunkSize, string dbPath, int chunksToCache)
+        private TFChunkDbConfig CreateDbConfig(int chunkSize, string dbPath, long chunksCacheSize)
         {
             var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
             var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
@@ -172,7 +172,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
                                                  chunkSize,
-                                                 chunksToCache,
+                                                 chunksCacheSize,
                                                  _writerChk,
                                                  _chaserChk,
                                                  _epochChk,

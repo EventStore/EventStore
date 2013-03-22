@@ -25,25 +25,24 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using System.IO;
 using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog.Chunks
+namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_reading_from_a_cached_tfchunk: SpecificationWithFilePerTestFixture
+    public class when_uncaching_a_tfchunk: SpecificationWithFilePerTestFixture
     {
         private TFChunk _chunk;
         private readonly Guid _corrId = Guid.NewGuid();
         private readonly Guid _eventId = Guid.NewGuid();
-        private TFChunk _cachedChunk;
-        private PrepareLogRecord _record;
         private RecordWriteResult _result;
+        private PrepareLogRecord _record;
+        private TFChunk _uncachedChunk;
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
@@ -51,19 +50,20 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             base.TestFixtureSetUp();
             _record = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                            PrepareFlags.None, "Foo", new byte[12], new byte[15]);
-            _chunk = TFChunk.CreateNew(Filename, 4096, 0, false);
+            _chunk = TFChunk.CreateNew(Filename, 4096, 0, 0, false);
             _result = _chunk.TryAppend(_record);
             _chunk.Flush();
             _chunk.Complete();
-            _cachedChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true);
-            _cachedChunk.CacheInMemory();
+            _uncachedChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true);
+            _uncachedChunk.CacheInMemory();
+            _uncachedChunk.UnCacheFromMemory();
         }
 
         [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
             _chunk.Dispose();
-            _cachedChunk.Dispose();
+            _uncachedChunk.Dispose();
             base.TestFixtureTearDown();
         }
 
@@ -76,56 +76,31 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void the_chunk_is_cached()
+        public void the_chunk_is_not_cached()
         {
-            Assert.IsTrue(_cachedChunk.IsCached);
+            Assert.IsFalse(_uncachedChunk.IsCached);
         }
 
         [Test]
-        public void the_record_can_be_read_at_exact_position()
+        public void the_record_was_written()
         {
-            var res = _cachedChunk.TryReadAt(0);
+            Assert.IsTrue(_result.Success);
+        }
+
+        [Test]
+        public void the_correct_position_is_returned()
+        {
+            Assert.AreEqual(0, _result.OldPosition);
+        }
+
+        [Test]
+        public void the_record_can_be_read()
+        {
+            var res = _uncachedChunk.TryReadAt(0);
             Assert.IsTrue(res.Success);
             Assert.AreEqual(_record, res.LogRecord);
             Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
-        }
-
-        [Test]
-        public void the_record_can_be_read_as_first_record()
-        {
-            var res = _cachedChunk.TryReadFirst();
-            Assert.IsTrue(res.Success);
-            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
-            Assert.AreEqual(_record, res.LogRecord);
-            Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
-        }
-
-        [Test]
-        public void the_record_can_be_read_as_closest_forward_to_zero_pos()
-        {
-            var res = _cachedChunk.TryReadClosestForward(0);
-            Assert.IsTrue(res.Success);
-            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
-            Assert.AreEqual(_record, res.LogRecord);
-            Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
-        }
-
-        [Test]
-        public void the_record_can_be_read_as_closest_backward_from_end()
-        {
-            var res = _cachedChunk.TryReadClosestBackward(_record.GetSizeWithLengthPrefixAndSuffix());
-            Assert.IsTrue(res.Success);
-            Assert.AreEqual(0, res.NextPosition);
-            Assert.AreEqual(_record, res.LogRecord);
-        }
-
-        [Test]
-        public void the_record_can_be_read_as_last()
-        {
-            var res = _cachedChunk.TryReadLast();
-            Assert.IsTrue(res.Success);
-            Assert.AreEqual(0, res.NextPosition);
-            Assert.AreEqual(_record, res.LogRecord);
+            //Assert.AreEqual(_result.NewPosition, res.NewPosition);
         }
     }
 }

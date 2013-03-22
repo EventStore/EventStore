@@ -292,9 +292,9 @@
     <Compile Include="TransactionLog\LogRecords\PrepareLogRecord.cs" />
     <Compile Include="TransactionLog\ITransactionFileWriter.cs" />
     <Compile Include="TransactionLog\FileNamingStrategy\IFileNamingStrategy.cs" />
-    <Compile Include="TransactionLog\FileNamingStrategy\PrefixFileNamingStrategy.cs" />
     <Compile Include="SingleVNode.cs" />
     <Compile Include="Util\MiniWeb.cs" />
+    <Compile Include="Util\Opts.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">

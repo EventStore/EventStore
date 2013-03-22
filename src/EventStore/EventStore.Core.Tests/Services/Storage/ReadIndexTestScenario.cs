@@ -27,7 +27,6 @@
 // 
 
 using System;
-using System.IO;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -58,6 +57,7 @@ namespace EventStore.Core.Tests.Services.Storage
         private TFChunkScavenger _scavenger;
         private bool _scavenge;
         private bool _completeLastChunkOnScavenge;
+        private bool _mergeChunks;
 
         protected ReadIndexTestScenario(int maxEntriesInMemTable = 20)
         {
@@ -72,8 +72,6 @@ namespace EventStore.Core.Tests.Services.Storage
             WriterCheckpoint = new InMemoryCheckpoint(0);
             ChaserCheckpoint = new InMemoryCheckpoint(0);
 
-            ICheckpoint[] namedCheckpoints = new[] { WriterCheckpoint, ChaserCheckpoint };
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             Db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                    10000,
@@ -115,7 +113,7 @@ namespace EventStore.Core.Tests.Services.Storage
                 if (_completeLastChunkOnScavenge)
                     Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
                 _scavenger = new TFChunkScavenger(Db, ReadIndex);
-                _scavenger.Scavenge(alwaysKeepScavenged: true);
+                _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks);
             }
         }
 
@@ -308,8 +306,8 @@ namespace EventStore.Core.Tests.Services.Storage
         {
             long pos;
             var prepare = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),
-                                                eventId == default(Guid) ? Guid.NewGuid() : eventId,
                                                 Guid.NewGuid(),
+                                                eventId == default(Guid) ? Guid.NewGuid() : eventId,
                                                 streamId,
                                                 expectedVersion,
                                                 eventType.IsEmptyString() ? "some-type" : eventType,
@@ -340,9 +338,9 @@ namespace EventStore.Core.Tests.Services.Storage
         protected EventRecord WriteDelete(string eventStreamId)
         {
             var prepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(),
-                                                           Guid.NewGuid(),
-                                                           eventStreamId,
-                                                           ExpectedVersion.Any);
+                                                    Guid.NewGuid(),
+                                                    eventStreamId,
+                                                    ExpectedVersion.Any);
             long pos;
             Assert.IsTrue(Writer.Write(prepare, out pos));
             var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(),
@@ -354,18 +352,43 @@ namespace EventStore.Core.Tests.Services.Storage
             return new EventRecord(EventNumber.DeletedStream, prepare);
         }
 
+        protected PrepareLogRecord WriteDeletePrepare(string eventStreamId)
+        {
+            var prepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(),
+                                                    Guid.NewGuid(),
+                                                    eventStreamId,
+                                                    ExpectedVersion.Any);
+            long pos;
+            Assert.IsTrue(Writer.Write(prepare, out pos));
+
+            return prepare;
+        }
+
+        protected CommitLogRecord WriteDeleteCommit(PrepareLogRecord prepare)
+        {
+            long pos;
+            var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(),
+                                          prepare.CorrelationId,
+                                          prepare.LogPosition,
+                                          EventNumber.DeletedStream);
+            Assert.IsTrue(Writer.Write(commit, out pos));
+
+            return commit;
+        }
+
         protected TFPos GetBackwardReadPos()
         {
             var pos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());
             return pos;
         }
 
-        protected void Scavenge(bool completeLast)
+        protected void Scavenge(bool completeLast, bool mergeChunks)
         {
             if (_scavenge)
                 throw new InvalidOperationException("Scavenge can be executed only once in ReadIndexTestScenario");
             _scavenge = true;
             _completeLastChunkOnScavenge = completeLast;
+            _mergeChunks = mergeChunks;
         }
     }
 }

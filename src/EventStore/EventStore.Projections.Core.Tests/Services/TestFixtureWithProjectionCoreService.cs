@@ -104,6 +104,7 @@ namespace EventStore.Projections.Core.Tests.Services
         protected TestHandler<Message> _consumer;
         protected InMemoryBus _bus;
         protected ProjectionCoreService _service;
+        protected ProjectionReaderCoreService _readerService;
 
         [SetUp]
         public void Setup()
@@ -111,7 +112,10 @@ namespace EventStore.Projections.Core.Tests.Services
             _consumer = new TestHandler<Message>();
             _bus = new InMemoryBus("temp");
             _bus.Subscribe(_consumer);
-            _service = new ProjectionCoreService(_bus, _bus, 10, new InMemoryCheckpoint(1000));
+            ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
+            _readerService = new ProjectionReaderCoreService(_bus, 10, writerCheckpoint);
+            _service = new ProjectionCoreService(_bus, _bus);
+            _readerService.Handle(new ProjectionCoreServiceMessage.Start());
             _service.Handle(new ProjectionCoreServiceMessage.Start());
         }
 

@@ -214,6 +214,7 @@
     <Compile Include="Services\Processing\PreparePositionTagger.cs" />
     <Compile Include="Services\Processing\ProgressWorkItem.cs" />
     <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
+    <Compile Include="Services\Processing\ProjectionReaderCoreService.cs" />
     <Compile Include="Services\Processing\ProjectionSourceDefinition.cs" />
     <Compile Include="Services\Processing\ProjectionSubscriptionBase.cs" />
     <Compile Include="Services\Processing\ProjectionVersion.cs" />

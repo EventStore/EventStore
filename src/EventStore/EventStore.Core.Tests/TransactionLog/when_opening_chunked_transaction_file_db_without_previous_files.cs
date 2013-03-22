@@ -40,9 +40,8 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void with_a_writer_checksum_of_zero_the_first_chunk_is_created_with_correct_name()
         {
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
             var config = new TFChunkDbConfig(PathName,
-                                             new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(0),
@@ -54,8 +53,8 @@ namespace EventStore.Core.Tests.TransactionLog
             db.Dispose();
 
             Assert.AreEqual(1, Directory.GetFiles(PathName).Length);
-            Assert.IsTrue(File.Exists(GetFilePathFor("prefix.tf0")));
-            var fileInfo = new FileInfo(GetFilePathFor("prefix.tf0"));
+            Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
+            var fileInfo = new FileInfo(GetFilePathFor("chunk-000000.000000"));
             Assert.AreEqual(10000 + ChunkHeader.Size + ChunkFooter.Size, fileInfo.Length);
         }
     }

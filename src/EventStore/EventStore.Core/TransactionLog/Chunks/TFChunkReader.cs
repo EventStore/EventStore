@@ -79,34 +79,28 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (pos >= writerChk)
                     return SeqReadResult.Failure;
 
-                var chunkNum = (int)(pos / _db.Config.ChunkSize);
-                var chunkPos = (int)(pos % _db.Config.ChunkSize);
-                var chunk = _db.Manager.GetChunk(chunkNum);
-                if (chunk == null)
-                    throw new Exception(string.Format("No chunk returned for read next request at position: {0}, cur inner pos: {1}, chunkNum: {2}, chunkPos: {3}, writer check: {4}",
-                                                      position, pos, chunkNum, chunkPos, writerChk));
-
+                var chunk = _db.Manager.GetChunkFor(pos);
                 RecordReadResult result;
                 try
                 {
-                    result = chunk.TryReadClosestForward(chunkPos);
+                    result = chunk.TryReadClosestForward(chunk.ChunkHeader.GetLocalLogPosition(pos));
                 }
                 catch (FileBeingDeletedException)
                 {
                     if (retries > MaxRetries)
                         throw new Exception(string.Format("Got a file that was being deleted {0} times from TFChunkDb, likely a bug there.", MaxRetries));
-                    return TryReadNextInternal(position, retries + 1);
+                    return TryReadNextInternal(pos, retries + 1);
                 }
 
                 if (result.Success)
                 {
-                    _curPos = chunkNum * (long)_db.Config.ChunkSize + result.NextPosition;
+                    _curPos = chunk.ChunkHeader.ChunkStartPosition + result.NextPosition;
                     var postPos = result.LogRecord.Position + result.RecordLength + 2 * sizeof(int);
                     return new SeqReadResult(true, result.LogRecord, result.RecordLength, result.LogRecord.Position, postPos);
                 }
 
                 // we are the end of chunk
-                pos = (chunk.ChunkHeader.ChunkEndNumber + 1) * (long)_db.Config.ChunkSize; // the start of next physical chunk
+                pos = chunk.ChunkHeader.ChunkEndPosition; // the start of next physical chunk
             }
         }
 
@@ -134,31 +128,20 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (pos <= 0) 
                     return SeqReadResult.Failure;
 
-                var chunkNum = (int)(pos / _db.Config.ChunkSize);
-                var chunkPos = (int)(pos % _db.Config.ChunkSize);
-                var chunk = _db.Manager.GetChunk(chunkNum);
-                if (chunk == null)
-                    throw new Exception(string.Format("No chunk returned for read prev request at pos: {0}, cur inner pos: {1}, chunkNum: {2}, chunkPos: {3}, writer check: {4}",
-                                                      position, pos, chunkNum, chunkPos, writerChk));
+                var chunk = _db.Manager.GetChunkFor(pos);
                 bool readLast = false;
-                if (chunkPos == 0 && chunk.ChunkHeader.ChunkStartNumber == chunkNum) 
+                if (pos == chunk.ChunkHeader.ChunkStartPosition) 
                 {
                     // we are exactly at the boundary of physical chunks
                     // so we switch to previous chunk and request TryReadLast
                     readLast = true;
-                    chunkNum -= 1;
-                    chunkPos = -1;
-
-                    chunk = _db.Manager.GetChunk(chunkNum);
-                    if (chunk == null)
-                        throw new Exception(string.Format("No chunk returned for read prev request (TryReadLast case) at pos: {0}, cur inner pos: {1}, chunkNum: {2}, chunkPos: {3} , writer check: {4}", 
-                                                          position, pos, chunkNum, chunkPos, writerChk));
+                    chunk = _db.Manager.GetChunkFor(pos - 1);
                 }
 
                 RecordReadResult result;
                 try
                 {
-                    result = readLast ? chunk.TryReadLast() : chunk.TryReadClosestBackward(chunkPos);
+                    result = readLast ? chunk.TryReadLast() : chunk.TryReadClosestBackward(chunk.ChunkHeader.GetLocalLogPosition(pos));
                 }
                 catch (FileBeingDeletedException)
                 {
@@ -169,7 +152,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                 if (result.Success)
                 {
-                    _curPos = chunkNum * (long)_db.Config.ChunkSize + result.NextPosition;
+                    _curPos = chunk.ChunkHeader.ChunkStartPosition + result.NextPosition;
                     var postPos = result.LogRecord.Position + result.RecordLength + 2 * sizeof(int);
                     return new SeqReadResult(true, result.LogRecord, result.RecordLength, result.LogRecord.Position, postPos);
                 }
@@ -177,7 +160,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 // we are the beginning of chunk, so need to switch to previous one
                 // to do that we set cur position to the exact boundary position between current and previous chunk, 
                 // this will be handled correctly on next iteration
-                pos = chunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize; // the boundary of current and previous chunk
+                pos = chunk.ChunkHeader.ChunkStartPosition;
             }
         }
 
@@ -192,27 +175,15 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (position + 2 * sizeof(int) > writerChk)
                 return RecordReadResult.Failure;
 
-            var chunkNum = (int)(position / _db.Config.ChunkSize);
-            var chunkPos = (int)(position % _db.Config.ChunkSize);
-            var chunk = _db.Manager.GetChunk(chunkNum);
-            if (chunk == null)
-            {
-                throw new InvalidOperationException(
-                        string.Format("No chunk returned for LogPosition: {0}, chunkNum: {1}, chunkPos: {2}, writer check: {3}",
-                                      position,
-                                      chunkNum,
-                                      chunkPos,
-                                      writerChk));
-            }
-
+            var chunk = _db.Manager.GetChunkFor(position);
             try
             {
-                return chunk.TryReadAt(chunkPos);
+                return chunk.TryReadAt(chunk.ChunkHeader.GetLocalLogPosition(position));
             }
             catch (FileBeingDeletedException)
             {
-                if (retries > TFChunkReader.MaxRetries)
-                    throw new InvalidOperationException("Been told the file was deleted > 100 times. Probably a problem in db");
+                if (retries > MaxRetries)
+                    throw new InvalidOperationException("Been told the file was deleted > MaxRetries times. Probably a problem in db.");
                 return TryReadAtInternal(position, retries + 1);
             }
         }

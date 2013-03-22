@@ -38,6 +38,9 @@ namespace EventStore.Core.TransactionLog.Chunks
     {
         public const int Size = 128;
 
+        public long ChunkStartPosition { get { return ChunkStartNumber * (long)ChunkSize; } }
+        public long ChunkEndPosition { get { return (ChunkEndNumber + 1) * (long)ChunkSize; } }
+
         public readonly byte Version;
         public readonly int ChunkSize;
         public readonly int ChunkStartNumber;
@@ -96,15 +99,29 @@ namespace EventStore.Core.TransactionLog.Chunks
             return new ChunkHeader(version, chunkSize, chunkStartNumber, chunkEndNumber, isScavenged, chunkId);
         }
 
+        public long GetLocalLogPosition(long globalLogicalPosition)
+        {
+            if (globalLogicalPosition < ChunkStartPosition || globalLogicalPosition > ChunkEndPosition)
+            {
+                throw new Exception(string.Format("globalLogicalPosition {0} is out of chunk logical positions [{1}, {2}].",
+                                                  globalLogicalPosition, ChunkStartPosition, ChunkEndPosition));
+            }
+            return globalLogicalPosition - ChunkStartPosition;
+        }
+
         public override string ToString()
         {
-            return string.Format("Version: {0}, ChunkSize: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, IsScavenged: {4}, ChunkId: {5}",
+            return string.Format("Version: {0}, ChunkSize: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, IsScavenged: {4}, ChunkId: {5}\n" +
+                                 "ChunkStartPosition: {6}, ChunkEndPosition: {7}, ChunkFullSize: {8}",
                                  Version,
                                  ChunkSize,
                                  ChunkStartNumber,
                                  ChunkEndNumber,
                                  IsScavenged,
-                                 ChunkId);
+                                 ChunkId,
+                                 ChunkStartPosition,
+                                 ChunkEndPosition,
+                                 ChunkEndPosition - ChunkStartPosition);
         }
     }
 }

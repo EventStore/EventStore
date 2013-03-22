@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
@@ -36,7 +37,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog.Chunks
+namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
     public class when_having_scavenged_tfchunk_with_all_records_removed: SpecificationWithDirectoryPerTestFixture
@@ -52,8 +53,6 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             base.TestFixtureSetUp();
 
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             _db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                     new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                     16 * 1024,
@@ -64,7 +63,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                                                     new InMemoryCheckpoint(-1)));
             _db.Open();
             
-            var chunk = _db.Manager.GetChunk(0);
+            var chunk = _db.Manager.GetChunkFor(0);
 
             _p1 = LogRecord.SingleWrite(0, Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
                                           new byte[] { 0, 1, 2 }, new byte[] { 5, 7 });
@@ -91,8 +90,13 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
 
             chunk.Complete();
 
+            _db.Config.WriterCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
+            _db.Config.WriterCheckpoint.Flush();
+            _db.Config.ChaserCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
+            _db.Config.ChaserCheckpoint.Flush();
+
             var scavenger = new TFChunkScavenger(_db, new FakeReadIndex(x => x == "es-to-scavenge"));
-            scavenger.Scavenge(alwaysKeepScavenged: true);
+            scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 
             _scavengedChunk = _db.Manager.GetChunk(0);
         }

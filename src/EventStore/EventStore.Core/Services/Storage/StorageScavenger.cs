@@ -42,27 +42,27 @@ namespace EventStore.Core.Services.Storage
 
         private readonly TFChunkDb _db;
         private readonly IReadIndex _readIndex;
+        private readonly bool _alwaysKeepScavenged;
+        private readonly bool _mergeChunks;
 
-        private readonly object _scavengingLock = new object();
-        private bool _isScavengingRunning;
+        private int _isScavengingRunning;
 
-        public StorageScavenger(TFChunkDb db, IReadIndex readIndex)
+        public StorageScavenger(TFChunkDb db, IReadIndex readIndex, bool alwaysKeepScavenged, bool mergeChunks)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(readIndex, "readIndex");
             _db = db;
             _readIndex = readIndex;
+            _alwaysKeepScavenged = alwaysKeepScavenged;
+            _mergeChunks = mergeChunks;
         }
 
         public void Handle(SystemMessage.ScavengeDatabase message)
         {
-            lock (_scavengingLock)
+            if (Interlocked.CompareExchange(ref _isScavengingRunning, 1, 0) == 0)
             {
-                if (_isScavengingRunning)
-                    return;
-                _isScavengingRunning = true;
+                ThreadPool.QueueUserWorkItem(_ => Scavenge());
             }
-            ThreadPool.QueueUserWorkItem(_ => Scavenge());
         }
 
         private void Scavenge()
@@ -70,17 +70,14 @@ namespace EventStore.Core.Services.Storage
             try
             {
                 var scavenger = new TFChunkScavenger(_db, _readIndex);
-                scavenger.Scavenge(alwaysKeepScavenged: true);
+                scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks);
             }
             catch (Exception exc)
             {
-                Log.ErrorException(exc, "Error while scavenging DB.");
+                Log.ErrorException(exc, "SCAVENGING: error while scavenging DB.");
             }
 
-            lock (_scavengingLock)
-            {
-                _isScavengingRunning = false;
-            }
+            Interlocked.Exchange(ref _isScavengingRunning, 0);
         }
     }
 }
