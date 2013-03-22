@@ -68,12 +68,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         [Test]
-        public void should_subscribe_non_null_subscriber()
-        {
-            Assert.NotNull(_subscribeProjectionHandler.HandledMessages[0].Subscriber);
-        }
-
-        [Test]
         public void should_not_load_projection_state_handler()
         {
             Assert.AreEqual(0, _stateHandler._loadCalled);

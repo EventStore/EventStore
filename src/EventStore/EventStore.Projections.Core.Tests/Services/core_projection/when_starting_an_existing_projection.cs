@@ -68,12 +68,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         [Test]
-        public void should_subscribe_non_null_subscriber()
-        {
-            Assert.NotNull(_subscribeProjectionHandler.HandledMessages[0].Subscriber);
-        }
-
-        [Test]
         public void should_publish_started_message()
         {
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());

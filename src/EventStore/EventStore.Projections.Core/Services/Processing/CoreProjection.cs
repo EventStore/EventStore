@@ -857,7 +857,7 @@ namespace EventStore.Projections.Core.Services.Processing
             bool stopOnEof = _projectionConfig.StopOnEof;
             _publisher.Publish(
                 new ProjectionSubscriptionManagement.Subscribe(
-                    _projectionCorrelationId, _currentSubscriptionId, this, checkpointTag, _checkpointStrategy,
+                    _projectionCorrelationId, _currentSubscriptionId, checkpointTag, _checkpointStrategy,
                     _projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold, stopOnEof));
             _subscribed = true;
             try

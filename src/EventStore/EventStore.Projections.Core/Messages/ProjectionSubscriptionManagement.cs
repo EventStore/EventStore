@@ -28,7 +28,6 @@
 
 using System;
 using EventStore.Core.Messaging;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
@@ -39,7 +38,6 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly Guid _correlationId;
             private readonly Guid _subscriptionId;
-            private readonly ICoreProjection _subscriber;
             private readonly CheckpointTag _fromPosition;
             private readonly CheckpointStrategy _checkpointStrategy;
             private readonly long _checkpointUnhandledBytesThreshold;
@@ -47,26 +45,19 @@ namespace EventStore.Projections.Core.Messages
             private readonly bool _stopOnEof;
 
             public Subscribe(
-                Guid correlationId, Guid subscriptionId, ICoreProjection subscriber, CheckpointTag from,
+                Guid correlationId, Guid subscriptionId, CheckpointTag from,
                 CheckpointStrategy checkpointStrategy, long checkpointUnhandledBytesThreshold,
                 int checkpointProcessedEventsThreshold, bool stopOnEof = false)
             {
-                if (subscriber == null) throw new ArgumentNullException("subscriber");
                 if (@from == null) throw new ArgumentNullException("from");
                 if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
                 _correlationId = correlationId;
                 _subscriptionId = subscriptionId;
-                _subscriber = subscriber;
                 _fromPosition = @from;
                 _checkpointStrategy = checkpointStrategy;
                 _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
                 _checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
                 _stopOnEof = stopOnEof;
-            }
-
-            public ICoreProjection Subscriber
-            {
-                get { return _subscriber; }
             }
 
             public CheckpointTag FromPosition
