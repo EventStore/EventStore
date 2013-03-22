@@ -31,7 +31,6 @@ using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
 using NUnit.Framework;
 
@@ -55,28 +54,18 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
         }
 
         [Test]
-        public void two_messages_are_created()
+        public void one_message_is_created()
         {
-            Assert.AreEqual(2, produced.Count);
+            Assert.AreEqual(1, produced.Count);
         }
 
         [Test]
-        public void the_first_message_is_write_prepare_with_correct_info()
+        public void the_message_is_write_prepare_with_correct_info()
         {
             Assert.IsInstanceOf<StorageMessage.WritePrepares>(produced[0]);
             var msg = (StorageMessage.WritePrepares) produced[0];
             Assert.AreEqual(CorrelationId, msg.CorrelationId);
             Assert.AreEqual("test123", msg.EventStreamId);
-        }
-
-        [Test]
-        public void the_second_message_is_timer_schedule()
-        {
-            Assert.IsInstanceOf<TimerMessage.Schedule>(produced[1]);
-            var msg = (TimerMessage.Schedule) produced[1];
-            var reply = (StorageMessage.PreparePhaseTimeout) msg.ReplyMessage;
-            Assert.AreEqual(TimeSpan.FromSeconds(2), msg.TriggerAfter);
-            Assert.AreEqual(CorrelationId, reply.CorrelationId);
         }
     }
 }

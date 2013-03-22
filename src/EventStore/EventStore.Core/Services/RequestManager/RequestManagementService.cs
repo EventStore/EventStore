@@ -33,10 +33,12 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager
 {
-    public class RequestManagementService : IHandle<StorageMessage.CreateStreamRequestCreated>, 
+    public class RequestManagementService : IHandle<SystemMessage.SystemInit>,
+                                            IHandle<StorageMessage.CreateStreamRequestCreated>, 
                                             IHandle<StorageMessage.WriteRequestCreated>, 
                                             IHandle<StorageMessage.DeleteStreamRequestCreated>,
                                             IHandle<StorageMessage.TransactionStartRequestCreated>,
@@ -49,10 +51,10 @@ namespace EventStore.Core.Services.RequestManager
                                             IHandle<StorageMessage.WrongExpectedVersion>,
                                             IHandle<StorageMessage.InvalidTransaction>,
                                             IHandle<StorageMessage.StreamDeleted>,
-                                            IHandle<StorageMessage.PreparePhaseTimeout>,
-                                            IHandle<StorageMessage.CommitPhaseTimeout>
+                                            IHandle<StorageMessage.RequestManagerTimerTick>
     {
         private readonly IPublisher _bus;
+        private readonly TimerMessage.Schedule _tickRequestMessage;
         private readonly Dictionary<Guid, object> _currentRequests = new Dictionary<Guid, object>();
 
         private readonly int _prepareCount;
@@ -65,11 +67,21 @@ namespace EventStore.Core.Services.RequestManager
             Ensure.NotNull(bus, "bus");
             Ensure.Nonnegative(prepareCount, "prepareCount");
             Ensure.Nonnegative(commitCount, "commitCount");
+
             _bus = bus;
+            _tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
+                                                               new PublishEnvelope(bus),
+                                                               new StorageMessage.RequestManagerTimerTick());
+
             _prepareCount = prepareCount;
             _commitCount = commitCount;
             _prepareTimeout = prepareTimeout;
             _commitTimeout = commitTimeout;
+        }
+
+        public void Handle(SystemMessage.SystemInit message)
+        {
+            _bus.Publish(_tickRequestMessage);   
         }
 
         public void Handle(StorageMessage.CreateStreamRequestCreated message)
@@ -150,14 +162,15 @@ namespace EventStore.Core.Services.RequestManager
             DispatchInternal(message.CorrelationId, message);
         }
 
-        public void Handle(StorageMessage.PreparePhaseTimeout message)
+        public void Handle(StorageMessage.RequestManagerTimerTick message)
         {
-            DispatchInternal(message.CorrelationId, message);
-        }
-
-        public void Handle(StorageMessage.CommitPhaseTimeout message)
-        {
-            DispatchInternal(message.CorrelationId, message);
+            foreach (var currentRequest in _currentRequests)
+            {
+                var handler = currentRequest.Value as IHandle<StorageMessage.RequestManagerTimerTick>;
+                if (handler != null)
+                    handler.Handle(message);
+            }
+            _bus.Publish(_tickRequestMessage);
         }
 
         private void DispatchInternal<T>(Guid correlationId, T message) where T : Message

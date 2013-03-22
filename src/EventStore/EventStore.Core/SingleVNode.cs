@@ -182,6 +182,7 @@ namespace EventStore.Core
 
             // REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(MainQueue, 1, 1, vNodeSettings.PrepareTimeout, vNodeSettings.CommitTimeout);
+            Bus.Subscribe<SystemMessage.SystemInit>(requestManagement);
             Bus.Subscribe<StorageMessage.CreateStreamRequestCreated>(requestManagement);
             Bus.Subscribe<StorageMessage.WriteRequestCreated>(requestManagement);
             Bus.Subscribe<StorageMessage.TransactionStartRequestCreated>(requestManagement);
@@ -195,8 +196,7 @@ namespace EventStore.Core
             Bus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
             Bus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
             Bus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
-            Bus.Subscribe<StorageMessage.PreparePhaseTimeout>(requestManagement);
-            Bus.Subscribe<StorageMessage.CommitPhaseTimeout>(requestManagement);
+            Bus.Subscribe<StorageMessage.RequestManagerTimerTick>(requestManagement);
 
             new SubscriptionsService(_mainBus, readIndex); // subscribes internally
 
