@@ -48,7 +48,6 @@ namespace EventStore.Projections.Core.Services.Http
         private static readonly ILogger Log = LogManager.GetLoggerFor<ProjectionsController>();
 
         private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json};
-        private static readonly ICodec DefaultResponseCodec = Codec.Json;
 
         private readonly MiniWeb _singleNodeJs;
         private readonly MiniWeb _miniWebPrelude;
@@ -69,101 +68,75 @@ namespace EventStore.Projections.Core.Services.Http
             _miniWebResources = new MiniWeb(
                 "/web/es/js/projections/resources", Path.Combine(fileSystemWebRoot, Path.Combine("web-resources", "js")));
         }
-        
-        
+
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
             _singleNodeJs.RegisterControllerActions(service);
 
             _miniWebPrelude.RegisterControllerActions(service);
             _miniWebResources.RegisterControllerActions(service);
-            
+
             HttpHelpers.RegisterRedirectAction(service, "/web/projections", "/web/projections.htm");
 
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projections", HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding},
-                    Codec.ManualEncoding), OnProjections);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projections/any", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionsGetAny);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projections/all-non-transient", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionsGetAllNonTransient);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projections/transient", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionsGetTransient);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projections/onetime", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionsGetOneTime);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projections/continuous", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionsGetContinuous);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projections/transient?name={name}&type={type}&enabled={enabled}",
-                    HttpMethod.Post, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionsPostTransient);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}",
-                    HttpMethod.Post, new ICodec[] { Codec.ManualEncoding }, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionsPostOneTime);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}", HttpMethod.Post,
-                    new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionsPostContinuous);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projection/{name}/query?config={config}", HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding},
-                    Codec.ManualEncoding), OnProjectionQueryGet);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projection/{name}/query?type={type}&emit={emit}", HttpMethod.Put, new ICodec[] { Codec.ManualEncoding },
-                    SupportedCodecs, DefaultResponseCodec), OnProjectionQueryPut);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projection/{name}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionStatusGet);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}",
-                    HttpMethod.Delete, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionDelete);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projection/{name}/statistics", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs,
-                    DefaultResponseCodec), OnProjectionStatisticsGet);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projection/{name}/debug", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionDebugGet);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projection/{name}/state?partition={partition}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs,
-                    DefaultResponseCodec), OnProjectionStateGet);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projection/{name}/result?partition={partition}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs,
-                    DefaultResponseCodec), OnProjectionResultGet);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projection/{name}/command/disable", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},
-                    SupportedCodecs, DefaultResponseCodec), OnProjectionCommandDisable);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projection/{name}/command/enable", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},
-                    SupportedCodecs, DefaultResponseCodec), OnProjectionCommandEnable);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projection/{name}/command/reset", HttpMethod.Post, new ICodec[] { Codec.ManualEncoding },
-                    SupportedCodecs, DefaultResponseCodec), OnProjectionCommandReset);
+            Register(
+                service, "/projections", HttpMethod.Get, OnProjections, Codec.NoCodecs,
+                new ICodec[] {Codec.ManualEncoding});
+            Register(service, "/projections/any", HttpMethod.Get, OnProjectionsGetAny, Codec.NoCodecs, SupportedCodecs);
+            Register(
+                service, "/projections/all-non-transient", HttpMethod.Get, OnProjectionsGetAllNonTransient,
+                Codec.NoCodecs, SupportedCodecs);
+            Register(
+                service, "/projections/transient", HttpMethod.Get, OnProjectionsGetTransient, Codec.NoCodecs,
+                SupportedCodecs);
+            Register(
+                service, "/projections/onetime", HttpMethod.Get, OnProjectionsGetOneTime, Codec.NoCodecs,
+                SupportedCodecs);
+            Register(
+                service, "/projections/continuous", HttpMethod.Get, OnProjectionsGetContinuous, Codec.NoCodecs,
+                SupportedCodecs);
+            Register(
+                service, "/projections/transient?name={name}&type={type}&enabled={enabled}", HttpMethod.Post,
+                OnProjectionsPostTransient, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+            Register(
+                service,
+                "/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}",
+                HttpMethod.Post, OnProjectionsPostOneTime, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+            Register(
+                service, "/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}",
+                HttpMethod.Post, OnProjectionsPostContinuous, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+            Register(
+                service, "/projection/{name}/query?config={config}", HttpMethod.Get, OnProjectionQueryGet,
+                Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
+            Register(
+                service, "/projection/{name}/query?type={type}&emit={emit}", HttpMethod.Put, OnProjectionQueryPut,
+                new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+            Register(
+                service, "/projection/{name}", HttpMethod.Get, OnProjectionStatusGet, Codec.NoCodecs, SupportedCodecs);
+            Register(
+                service,
+                "/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}",
+                HttpMethod.Delete, OnProjectionDelete, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+            Register(
+                service, "/projection/{name}/statistics", HttpMethod.Get, OnProjectionStatisticsGet, Codec.NoCodecs,
+                SupportedCodecs);
+            Register(
+                service, "/projection/{name}/debug", HttpMethod.Get, OnProjectionDebugGet, Codec.NoCodecs,
+                SupportedCodecs);
+            Register(
+                service, "/projection/{name}/state?partition={partition}", HttpMethod.Get, OnProjectionStateGet,
+                Codec.NoCodecs, SupportedCodecs);
+            Register(
+                service, "/projection/{name}/result?partition={partition}", HttpMethod.Get, OnProjectionResultGet,
+                Codec.NoCodecs, SupportedCodecs);
+            Register(
+                service, "/projection/{name}/command/disable", HttpMethod.Post, OnProjectionCommandDisable,
+                new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+            Register(
+                service, "/projection/{name}/command/enable", HttpMethod.Post, OnProjectionCommandEnable,
+                new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+            Register(
+                service, "/projection/{name}/command/reset", HttpMethod.Post, OnProjectionCommandReset,
+                new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
         }
 
         private static void OnProjections(HttpEntity http, UriTemplateMatch match)

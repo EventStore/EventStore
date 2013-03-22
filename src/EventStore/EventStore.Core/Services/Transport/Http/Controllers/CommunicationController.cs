@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -78,6 +80,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             entity.Manager.ReplyStatus(HttpStatusCode.OK,
                                        "OK",
                                        e => Log.ErrorException(e, "Error while closing http connection (ok)"));
+        }
+
+        protected void Register(IHttpService service, string uriTemplate, string httpMethod, Action<HttpEntity, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs)
+        {
+            service.RegisterControllerAction(
+                new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs),
+                handler);
         }
     }
 }

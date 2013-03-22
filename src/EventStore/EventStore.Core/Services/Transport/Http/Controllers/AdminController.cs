@@ -51,14 +51,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             service.RegisterControllerAction(new ControllerAction("/halt",
                                                                   HttpMethod.Get,
                                                                   SupportedCodecs,
-                                                                  SupportedCodecs,
-                                                                  DefaultResponseCodec),
+                                                                  SupportedCodecs),
                                              OnPostHalt);
             service.RegisterControllerAction(new ControllerAction("/shutdown",
                                                                   HttpMethod.Get,
                                                                   SupportedCodecs,
-                                                                  SupportedCodecs,
-                                                                  DefaultResponseCodec),
+                                                                  SupportedCodecs),
                                              OnPostShutdown);
         }
 

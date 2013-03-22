@@ -154,7 +154,7 @@ namespace EventStore.ClientAPI
             var source = new TaskCompletionSource<object>();
             _client.Put(url,
                         content,
-                        ContentType.Json,
+                        "application/json",
                         response =>
                         {
                             if (response.HttpStatusCode == expectedCode)
@@ -176,7 +176,7 @@ namespace EventStore.ClientAPI
             var source = new TaskCompletionSource<object>();
             _client.Post(url,
                          content,
-                         ContentType.Json,
+                         "application/json",
                          response =>
                          {
                              if (response.HttpStatusCode == expectedCode)

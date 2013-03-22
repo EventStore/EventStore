@@ -114,6 +114,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             try
             {
+                //TODO: probably we should pass HttpVerb into matches
                 var allMatches = _httpService.GetAllUriMatches(context.Request.Url);
                 if (allMatches.Count == 0)
                 {
@@ -241,7 +242,8 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        private ICodec SelectResponseCodec(NameValueCollection query, string[] acceptTypes, ICodec[] supported, ICodec @default)
+        private ICodec SelectResponseCodec(
+            NameValueCollection query, string[] acceptTypes, ICodec[] supported, ICodec @default)
         {
             var requestedFormat = GetFormatOrDefault(query);
             if (requestedFormat == null && acceptTypes.IsEmpty())

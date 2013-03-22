@@ -57,14 +57,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             service.RegisterControllerAction(new ControllerAction("/stats",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
-                                                                  SupportedCodecs,
-                                                                  DefaultResponseCodec),
+                                                                  SupportedCodecs),
                                              OnGetFreshStats);
             service.RegisterControllerAction(new ControllerAction("/stats/{*statPath}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
-                                                                  SupportedCodecs,
-                                                                  DefaultResponseCodec),
+                                                                  SupportedCodecs),
                                              OnGetFreshStats);
         }
 

@@ -65,7 +65,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             HttpHelpers.RegisterRedirectAction(service, "/web", "/web/home.htm");
 
             service.RegisterControllerAction(
-                new ControllerAction("/sys/subsystems", HttpMethod.Get, Codec.NoCodecs, new ICodec[] { Codec.Json }, Codec.Json),
+                new ControllerAction("/sys/subsystems", HttpMethod.Get, Codec.NoCodecs, new ICodec[] { Codec.Json }),
                 OnListNodeSubsystems);
         }
 

@@ -50,8 +50,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             service.RegisterControllerAction(new ControllerAction("/ping", 
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
-                                                                  SupportedCodecs,
-                                                                  DefaultResponseCodec), 
+                                                                  SupportedCodecs), 
                                              OnGetPing);
         }
 

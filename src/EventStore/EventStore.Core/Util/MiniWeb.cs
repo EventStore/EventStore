@@ -59,8 +59,7 @@ namespace EventStore.Core.Util
             service.RegisterControllerAction(new ControllerAction(pattern,
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
-                                                                  new ICodec[] { Codec.ManualEncoding },
-                                                                  Codec.ManualEncoding),
+                                                                  new ICodec[] { Codec.ManualEncoding }),
                                              OnStaticContent);
         }
 

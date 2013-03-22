@@ -53,27 +53,27 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     public class AtomController : CommunicationController
     {
         private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
+        private static readonly ICodec EventStoreJsonCodec = Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Encoding.UTF8);
 
         private static readonly ICodec[] AtomCodecs = new[]
                                                       {
+                                                          EventStoreJsonCodec,
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
                                                           Codec.CreateCustom(Codec.Xml, ContentType.Atom, Encoding.UTF8),
                                                           Codec.Json,
-                                                          Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Encoding.UTF8)
+                                                          
                                                       };
         private static readonly ICodec[] AtomWithHtmlCodecs = new[]
                                                               {
+                                                                  EventStoreJsonCodec,
                                                                   Codec.Xml,
                                                                   Codec.ApplicationXml,
                                                                   Codec.CreateCustom(Codec.Xml, ContentType.Atom, Encoding.UTF8),
                                                                   Codec.Json,
-                                                                  Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Encoding.UTF8),
                                                                   HtmlFeedCodec // initialization order matters
                                                               };
 
-        private static readonly ICodec DefaultResponseCodec = Codec.Xml;
-        private static readonly ICodec DefaultFeedResponseCodec = HtmlFeedCodec; // initialization order matters
 
         private readonly GenericController _genericController;
         private readonly AllEventsController _allEventsController;
@@ -87,69 +87,30 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _allEventsController = new AllEventsController(publisher, networkSendQueue);
         }
 
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
+        protected override void SubscribeCore(IHttpService http, HttpMessagePipe pipe)
         {
-            service.RegisterControllerAction(new ControllerAction("/streams",
-                                                                  HttpMethod.Post,
-                                                                  AtomCodecs,
-                                                                  AtomCodecs,
-                                                                  DefaultResponseCodec),
-                                             OnCreateStream);
-            service.RegisterControllerAction(new ControllerAction("/streams/{stream}",
-                                                                  HttpMethod.Delete,
-                                                                  AtomCodecs,
-                                                                  AtomCodecs,
-                                                                  DefaultResponseCodec),
-                                             OnDeleteStream);
-            service.RegisterControllerAction(new ControllerAction("/streams/{stream}?embed={embed}", 
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  AtomWithHtmlCodecs,
-                                                                  DefaultFeedResponseCodec),
-                                             OnGetStreamFeedLatest);
-            service.RegisterControllerAction(new ControllerAction("/streams/{stream}/range/{start}/{count}?embed={embed}",
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  AtomWithHtmlCodecs,
-                                                                  DefaultFeedResponseCodec),
-                                             OnGetStreamRangeFeedPage);
-            service.RegisterControllerAction(new ControllerAction("/streams/{stream}/{id}",
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  AtomWithHtmlCodecs,
-                                                                  DefaultResponseCodec), 
-                                             OnGetEntry);
-            service.RegisterControllerAction(new ControllerAction("/streams/{stream}",
-                                                                  HttpMethod.Post,
-                                                                  AtomCodecs,
-                                                                  AtomCodecs,
-                                                                  DefaultResponseCodec),
-                                             OnPostEntry);
-
-            service.RegisterControllerAction(new ControllerAction("/streams/$all?embed={embed}",
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  AtomWithHtmlCodecs,
-                                                                  DefaultResponseCodec),
-                                             OnGetAllFeedBeforeHead);
-            service.RegisterControllerAction(new ControllerAction("/streams/$all/{count}?embed={embed}",
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  AtomWithHtmlCodecs,
-                                                                  DefaultResponseCodec),
-                                             OnGetAllFeedBeforeHead);
-            service.RegisterControllerAction(new ControllerAction("/streams/$all/before/{pos}/{count}?embed={embed}",
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  AtomWithHtmlCodecs,
-                                                                  DefaultResponseCodec),
-                                             OnGetAllFeedBefore);
-            service.RegisterControllerAction(new ControllerAction("/streams/$all/after/{pos}/{count}?embed={embed}",
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  AtomWithHtmlCodecs,
-                                                                  DefaultResponseCodec),
-                                             OnGetAllAfterFeed);
+            Register(http, "/streams", HttpMethod.Post, OnCreateStream, AtomCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}", HttpMethod.Delete, OnDeleteStream, AtomCodecs, AtomCodecs);
+            Register(
+                http, "/streams/{stream}?embed={embed}", HttpMethod.Get, OnGetStreamFeedLatest, Codec.NoCodecs,
+                AtomWithHtmlCodecs);
+            Register(
+                http, "/streams/{stream}/range/{start}/{count}?embed={embed}", HttpMethod.Get, OnGetStreamRangeFeedPage,
+                Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/{stream}/{id}", HttpMethod.Get, OnGetEntry, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/{stream}", HttpMethod.Post, OnPostEntry, AtomCodecs, AtomCodecs);
+            Register(
+                http, "/streams/$all?embed={embed}", HttpMethod.Get, OnGetAllFeedBeforeHead, Codec.NoCodecs,
+                AtomWithHtmlCodecs);
+            Register(
+                http, "/streams/$all/{count}?embed={embed}", HttpMethod.Get, OnGetAllFeedBeforeHead, Codec.NoCodecs,
+                AtomWithHtmlCodecs);
+            Register(
+                http, "/streams/$all/before/{pos}/{count}?embed={embed}", HttpMethod.Get, OnGetAllFeedBefore,
+                Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(
+                http, "/streams/$all/after/{pos}/{count}?embed={embed}", HttpMethod.Get, OnGetAllAfterFeed,
+                Codec.NoCodecs, AtomWithHtmlCodecs);
         }
 
         //FEED

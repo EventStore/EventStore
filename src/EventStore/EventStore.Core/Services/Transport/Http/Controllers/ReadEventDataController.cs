@@ -51,8 +51,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             service.RegisterControllerAction(new ControllerAction("/streams/{stream}/event/{version}?resolve={resolve}", 
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
-                                                                  SupportedCodecs,
-                                                                  DefaultResponseCodec), 
+                                                                  SupportedCodecs), 
                                              OnGetRead);
         }
 
