@@ -581,21 +581,6 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class CancelExecutionMessage : Message
-        {
-            private readonly Action _action;
-
-            public CancelExecutionMessage(Action action)
-            {
-                _action = action;
-            }
-
-            public Action Action
-            {
-                get { return _action; }
-            }
-        }
-
         public static class Internal
         {
             public class CleanupExpired: Message

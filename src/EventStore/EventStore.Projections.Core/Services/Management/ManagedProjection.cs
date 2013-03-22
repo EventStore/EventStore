@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Management
     /// <summary>
     /// managed projection controls start/stop/create/update/delete lifecycle of the projection. 
     /// </summary>
-    public class ManagedProjection : IDisposable, IHandle<ProjectionManagementMessage.CancelExecutionMessage>
+    public class ManagedProjection : IDisposable
     {
         public class PersistedState
         {
@@ -685,11 +685,6 @@ namespace EventStore.Projections.Core.Services.Management
                                                                          _timeoutScheduler == null
                                                                              ? (Action<int, Action>) null
                                                                              : _timeoutScheduler.Schedule
-                                    /*(ms, action) => 
-                                        _output.Publish(
-                                            TimerMessage.Schedule.Create(
-                                                TimeSpan.FromMilliseconds(ms), new SendToThisEnvelope(this), 
-                                                new ProjectionManagementMessage.CancelExecutionMessage(action)))*/);
                                 var checkpointStrategyBuilder = new CheckpointStrategy.Builder();
                                 stateHandler.ConfigureSourceProcessingStrategy(checkpointStrategyBuilder);
                                 checkpointStrategyBuilder.Validate(config); // avoid future exceptions in coreprojection
@@ -849,11 +844,6 @@ namespace EventStore.Projections.Core.Services.Management
                 Prepare(() => BeginWrite(completed));
             else
                 BeginWrite(completed);
-        }
-
-        public void Handle(ProjectionManagementMessage.CancelExecutionMessage message)
-        {
-            message.Action();
         }
 
         private void UpdateProjectionVersion()
