@@ -87,7 +87,7 @@
     <Compile Include="Bus\when_publishing_into_memory_bus.cs" />
     <Compile Include="Bus\when_subscribing_to_memory_bus.cs" />
     <Compile Include="Bus\when_unsubscribing_from_memory_bus.cs" />
-    <Compile Include="ClientAPI\Helpers\AvailablePortsPool.cs" />
+    <Compile Include="ClientAPI\Helpers\TestConnection.cs" />
     <Compile Include="ClientAPI\read_all_events_backward_should.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\subscribe_to_all_should.cs" />
@@ -132,6 +132,7 @@
     <Compile Include="Hashes\xxhash_hash_should.cs" />
     <Compile Include="Helper\ClientApiLoggerBridge.cs" />
     <Compile Include="Helper\ReflectionDynamic.cs" />
+    <Compile Include="Helper\TcpPortsHelper.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\create_index_map_from_non_existing_file.cs" />
@@ -281,7 +282,7 @@
     <Compile Include="Services\Storage\HashCollisions\with_two_collisioned_streams_one_event_each_read_index_should.cs" />
     <Compile Include="Services\Storage\HashCollisions\with_no_hash_collisions_read_index_should.cs" />
     <Compile Include="Services\Storage\HashCollisions\with_three_collisioned_streams_one_event_each_read_index_should.cs" />
-    <Compile Include="Services\Transport\Http\accept_component.cs" />
+    <Compile Include="Services\Transport\Http\media_type.cs" />
     <Compile Include="Services\Transport\Http\atom_specs.cs" />
     <Compile Include="Services\Transport\Http\auto_convertion.cs" />
     <Compile Include="Services\Transport\Http\HttpBootstrap.cs" />

@@ -60,17 +60,17 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
             _subtype = parts[1];
         }
 
-        public bool CanParse(string format)
+        public bool CanParse(MediaType format)
         {
-            return string.Equals(format, _contentType, StringComparison.OrdinalIgnoreCase);
+            return format != null && format.Matches(ContentType, Encoding);
         }
 
-        public bool SuitableForReponse(AcceptComponent component)
+        public bool SuitableForReponse(MediaType component)
         {
-            return component.MediaType == "*"
-                   || (string.Equals(component.MediaType, _type, StringComparison.OrdinalIgnoreCase)
-                       && (component.MediaSubtype == "*"
-                           || string.Equals(component.MediaSubtype, _subtype, StringComparison.OrdinalIgnoreCase)));
+            return component.Type == "*"
+                   || (string.Equals(component.Type, _type, StringComparison.OrdinalIgnoreCase)
+                       && (component.Subtype == "*"
+                           || string.Equals(component.Subtype, _subtype, StringComparison.OrdinalIgnoreCase)));
         }
 
         public T From<T>(string text)

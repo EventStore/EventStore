@@ -39,8 +39,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
     {
         private readonly Random _random = new Random();
 
-        public MassProjectionsScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath) 
-            : base(directSendOverTcp, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep, dbParentPath)
+        public MassProjectionsScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath, NodeConnectionInfo customNode)
+            : base(directSendOverTcp, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep, dbParentPath, customNode)
         {
         }
 

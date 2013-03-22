@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
@@ -14,9 +15,18 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void should_not_throw_exception_when_server_is_down()
         {
-            using (var connection = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var connection = TestConnection.Create())
             {
-                Assert.DoesNotThrow(() => connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348)));
+                var ip = IPAddress.Loopback;
+                int port = TcpPortsHelper.GetAvailablePort(ip);
+                try
+                {
+                    Assert.DoesNotThrow(() => connection.Connect(new IPEndPoint(ip, port)));
+                }
+                finally
+                {
+                    TcpPortsHelper.ReturnPort(port);
+                }
             }
         }
 
@@ -26,21 +36,31 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var closed = new ManualResetEventSlim();
             var settings = ConnectionSettings.Create()
-                                             .UseConsoleLogger()
+                                             .EnableVerboseLogging()
+                                             .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .LimitReconnectionsTo(0)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
                                              .OnClosed((x, r) => closed.Set());
 
             using (var connection = EventStoreConnection.Create(settings))
             {
-                connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
+                var ip = IPAddress.Loopback;
+                int port = TcpPortsHelper.GetAvailablePort(ip);
+                try
+                {
+                    connection.Connect(new IPEndPoint(ip, port));
 
-                if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
-                    Assert.Fail("Connection timeout took too long.");
+                    if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
+                        Assert.Fail("Connection timeout took too long.");
 
-                Assert.That(() => connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348)),
-                            Throws.Exception.InstanceOf<AggregateException>()
-                            .With.InnerException.InstanceOf<InvalidOperationException>());
+                    Assert.That(() => connection.Connect(new IPEndPoint(ip, port)),
+                                Throws.Exception.InstanceOf<AggregateException>()
+                                .With.InnerException.InstanceOf<InvalidOperationException>());
+                }
+                finally
+                {
+                    TcpPortsHelper.ReturnPort(port);
+                }
             }
         }
 
@@ -50,7 +70,8 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var closed = new ManualResetEventSlim();
             var settings = ConnectionSettings.Create()
-                                             .UseConsoleLogger()
+                                             .EnableVerboseLogging()
+                                             .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .LimitReconnectionsTo(1)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
                                              .OnClosed((x, r) => closed.Set())
@@ -61,14 +82,23 @@ namespace EventStore.Core.Tests.ClientAPI
 
             using (var connection = EventStoreConnection.Create(settings))
             {
-                connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
+                var ip = IPAddress.Loopback;
+                int port = TcpPortsHelper.GetAvailablePort(ip);
+                try
+                {
+                    connection.Connect(new IPEndPoint(ip, port));
 
-                if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
-                    Assert.Fail("Connection timeout took too long.");
+                    if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
+                        Assert.Fail("Connection timeout took too long.");
 
-                Assert.That(() => connection.CreateStream("stream", Guid.NewGuid(), false, new byte[0]), 
-                            Throws.Exception.InstanceOf<AggregateException>()
-                            .With.InnerException.InstanceOf<InvalidOperationException>());
+                    Assert.That(() => connection.CreateStream("stream", Guid.NewGuid(), false, new byte[0]),
+                                Throws.Exception.InstanceOf<AggregateException>()
+                                .With.InnerException.InstanceOf<InvalidOperationException>());
+                }
+                finally
+                {
+                    TcpPortsHelper.ReturnPort(port);
+                }
             }
         }
     }

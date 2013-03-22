@@ -1,11 +1,15 @@
 @echo off
+::0140fb7c08054e6ef1bdfeffebd2eff7b57749ab
+set v8version=trunk
 pushd %~dp0 || goto :error
 cd ..\.. || goto :error
 
 call :get-v8 || goto :error
 call :get-python || goto :error
 call :get-gyp || goto :error
+echo here
 call :get-cygwin || goto :error
+echo 3.17.11
 
 popd || goto :error
 
@@ -16,11 +20,10 @@ echo %ERRORLEVEL%
 echo FAILED. See previous messages
 exit /b 1
 
-:a8140cb930617054ed0487e6e1287c81cd51718e
+::a8140cb930617054ed0487e6e1287c81cd51718e
 
 :get-v8
-  : this is 3.16.7
-  call :get-from-git V8 https://github.com/v8/v8.git v8 ba55532e3bfbdccec1f5e09a420aad61e1f1a287 || goto :error
+  call :get-from-git V8 https://github.com/v8/v8.git v8 %v8version% || goto :error
 exit /b 0
 
 :get-python

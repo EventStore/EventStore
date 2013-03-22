@@ -36,7 +36,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal abstract class ProjectionsScenarioBase : ScenarioBase
     {
-        protected ProjectionsScenarioBase(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath) : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
+        protected ProjectionsScenarioBase(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath, NodeConnectionInfo customNode)
+            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath, customNode)
         {
         }
 

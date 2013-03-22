@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -24,20 +24,28 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//  
 
-using System.Text;
+using System.Net;
 
-namespace EventStore.Transport.Http
+namespace EventStore.TestClient.Commands.RunTestScenarios
 {
-    public interface ICodec
+    internal class NodeConnectionInfo
     {
-        string ContentType { get; }
-        Encoding Encoding { get; }
-        bool CanParse(MediaType format);
-        bool SuitableForReponse(MediaType component);
+        public IPAddress IpAddress { get; private set; }
+        public int TcpPort { get; private set; }
+        public int HttpPort { get; private set; }
 
-        T From<T>(string text);
-        string To<T>(T value);
+        public NodeConnectionInfo(IPAddress ipAddress, int tcpPort, int httPort)
+        {
+            IpAddress = ipAddress;
+            TcpPort = tcpPort;
+            HttpPort = httPort;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("[{0}:{1}:{2}]", IpAddress, TcpPort, HttpPort);
+        }
     }
 }

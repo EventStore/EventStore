@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1em1_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_1em1_2e1_3e2_4e3_5e4_6e5_1em1_idempotent";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -87,7 +87,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1any_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_1em1_2e1_3e2_4e3_5e4_6e5_1any_idempotent";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -106,7 +106,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e6_non_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e6_non_idempotent";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -125,7 +125,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e7_wev()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e7_wev";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -142,7 +142,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e5_wev()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e5_wev";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_1em1_1e1_non_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_1em1_1e1_non_idempotent";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -178,7 +178,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_1em1_1any_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_1em1_1any_idempotent";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -197,7 +197,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_1em1_1em1_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_1em1_1em1_idempotent";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -216,7 +216,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_1em1_2e1_3e2_2any_2any_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_1em1_2e1_3e2_2any_2any_idempotent";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -235,7 +235,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_S_1em1_2em1_E_S_1em1_E_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_S_1em1_2em1_E_S_1em1_E_idempotent";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -256,7 +256,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_S_1em1_2em1_E_S_1any_E_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_S_1em1_2em1_E_S_1any_E_idempotent";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -277,7 +277,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_S_1em1_2em1_E_S_2e1_E_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_S_1em1_2em1_E_S_2e1_E_idempotent";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -298,7 +298,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_S_1em1_2em1_E_S_2any_E_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_S_1em1_2em1_E_S_2any_E_idempotent";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
@@ -319,7 +319,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_S_1em1_2em1_E_S_1em1_2em1_3em1_E_idempotancy_fail()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_S_1em1_2em1_E_S_1em1_2em1_3em1_E_idempotancy_fail";
-            using (var store = EventStoreConnection.Create(ConnectionSettings.Create().UseCustomLogger(ClientApiLoggerBridge.Default)))
+            using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
