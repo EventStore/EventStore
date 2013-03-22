@@ -90,9 +90,9 @@ namespace EventStore.Core.Tests.TransactionLog
 
             chunk.Complete();
 
-            _db.Config.WriterCheckpoint.Write(chunk.ChunkHeader.ChunkSize);
+            _db.Config.WriterCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
             _db.Config.WriterCheckpoint.Flush();
-            _db.Config.ChaserCheckpoint.Write(chunk.ChunkHeader.ChunkSize);
+            _db.Config.ChaserCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
             _db.Config.ChaserCheckpoint.Flush();
 
             var scavenger = new TFChunkScavenger(_db, new FakeReadIndex(x => x == "es-to-scavenge"));

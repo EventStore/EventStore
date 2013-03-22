@@ -38,7 +38,6 @@ namespace EventStore.Core.TransactionLog.Chunks
     {
         public const int Size = 128;
 
-        public long ChunkFullSize { get { return (ChunkEndNumber - ChunkStartNumber + 1) * (long)ChunkSize; } }
         public long ChunkStartPosition { get { return ChunkStartNumber * (long)ChunkSize; } }
         public long ChunkEndPosition { get { return (ChunkEndNumber + 1) * (long)ChunkSize; } }
 
@@ -113,16 +112,16 @@ namespace EventStore.Core.TransactionLog.Chunks
         public override string ToString()
         {
             return string.Format("Version: {0}, ChunkSize: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, IsScavenged: {4}, ChunkId: {5}\n" +
-                                 "ChunkFullSize: {6}, ChunkStartPosition: {7}, ChunkEndPosition: {8}",
+                                 "ChunkStartPosition: {6}, ChunkEndPosition: {7}, ChunkFullSize: {8}",
                                  Version,
                                  ChunkSize,
                                  ChunkStartNumber,
                                  ChunkEndNumber,
                                  IsScavenged,
                                  ChunkId,
-                                 ChunkFullSize,
                                  ChunkStartPosition,
-                                 ChunkEndPosition);
+                                 ChunkEndPosition,
+                                 ChunkEndPosition - ChunkStartPosition);
         }
     }
 }

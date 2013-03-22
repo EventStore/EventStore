@@ -457,13 +457,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 if (writerWorkItem != null)
                     writerWorkItem.UnmanagedMemoryStream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite);
 
-                Log.Trace("CACHED TFChunk #{0} at {1} in {2}.", _chunkHeader.ChunkStartNumber, Path.GetFileName(_filename), sw.Elapsed);
-            }
-            else
-            {
-                Log.Trace("CACHING SKIPPED as chunk is cached or caching already in (TFChunk #{0}-{1} at {2}).",
-                          _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
-
+                Log.Trace("CACHED TFChunk #{0}-{1} ({2}) in {3}.", 
+                          _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename), sw.Elapsed);
             }
         }
 
@@ -540,7 +535,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
                 TryDestructMemStreams();
 
-                Log.Trace("UNCACHED TFChunk #{0} at {1}", _chunkHeader.ChunkStartNumber, Path.GetFileName(_filename));
+                Log.Trace("UNCACHED TFChunk #{0}-{1} ({2})", _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
             }
         }
 

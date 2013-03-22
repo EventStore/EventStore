@@ -131,7 +131,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                             mergedSomething = true;
                     }
 
-                    Log.Trace("SCAVENGING: merge pass #{0} completed in {1}. {2} merged.", passNum, sw.Elapsed, mergedSomething ? "Nothing" : "Some chunks");
+                    Log.Trace("SCAVENGING: merge pass #{0} completed in {1}. {2} merged.", passNum, sw.Elapsed, mergedSomething ? "Some chunks" : "Nothing");
                 } while (mergedSomething);
             }
 
@@ -147,10 +147,9 @@ namespace EventStore.Core.TransactionLog.Chunks
             int chunkStartNumber = oldChunks.First().ChunkHeader.ChunkStartNumber;
             long chunkStartPosition = oldChunks.First().ChunkHeader.ChunkStartPosition;
             int chunkEndNumber = oldChunks.Last().ChunkHeader.ChunkEndNumber;
-            long chunkEndPosition = oldChunks.Last().ChunkHeader.ChunkEndPosition;
 
             var tmpChunkPath = Path.Combine(_db.Config.Path, Guid.NewGuid() + ".scavenge.tmp");
-            Log.Trace("SCAVENGING: started to scavenge&merge chunks {0}. Resulting temp chunk file: {1}.",
+            Log.Trace("SCAVENGING: started to scavenge & merge chunks {0}. Resulting temp chunk file: {1}.",
                       string.Join(", ", oldChunks.Select(x => string.Format("#{0}-{1} ({2})", 
                             x.ChunkHeader.ChunkStartNumber, x.ChunkHeader.ChunkEndNumber, Path.GetFileName(x.FileName)))),
                       Path.GetFileName(tmpChunkPath));

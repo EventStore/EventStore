@@ -35,7 +35,7 @@ namespace EventStore.Core.TransactionLog.Chunks
     {
         public readonly string Path;
         public readonly int ChunkSize;
-        public readonly int CachedChunkCount;
+        public readonly long MaxChunksCacheSize;
         public readonly ICheckpoint WriterCheckpoint;
         public readonly ICheckpoint ChaserCheckpoint;
         public readonly ICheckpoint EpochCheckpoint;
@@ -45,7 +45,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public TFChunkDbConfig(string path, 
                                IFileNamingStrategy fileNamingStrategy, 
                                int chunkSize,
-                               int cachedChunkCount,
+                               long maxChunksCacheSize,
                                ICheckpoint writerCheckpoint, 
                                ICheckpoint chaserCheckpoint,
                                ICheckpoint epochCheckpoint,
@@ -54,7 +54,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             Ensure.NotNullOrEmpty(path, "path");
             Ensure.NotNull(fileNamingStrategy, "fileNamingStrategy");
             Ensure.Positive(chunkSize, "chunkSize");
-            Ensure.Nonnegative(cachedChunkCount, "cachedChunkCount");
+            Ensure.Nonnegative(maxChunksCacheSize, "maxChunksCacheSize");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
             Ensure.NotNull(epochCheckpoint, "epochCheckpoint");
@@ -62,7 +62,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             
             Path = path;
             ChunkSize = chunkSize;
-            CachedChunkCount = cachedChunkCount;
+            MaxChunksCacheSize = maxChunksCacheSize;
             WriterCheckpoint = writerCheckpoint;
             ChaserCheckpoint = chaserCheckpoint;
             EpochCheckpoint = epochCheckpoint;
