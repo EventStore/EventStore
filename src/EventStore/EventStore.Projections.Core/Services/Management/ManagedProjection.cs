@@ -680,11 +680,12 @@ namespace EventStore.Projections.Core.Services.Management
                             IProjectionStateHandler stateHandler = null;
                             try
                             {
-                                stateHandler = handlerFactory.Create(HandlerType, Query, logger: Console.WriteLine,
-                                                                     cancelCallbackFactory:
-                                                                         _timeoutScheduler == null
-                                                                             ? (Action<int, Action>) null
-                                                                             : _timeoutScheduler.Schedule
+                                stateHandler = handlerFactory.Create(
+                                    HandlerType, Query, logger: Console.WriteLine,
+                                    cancelCallbackFactory:
+                                        _timeoutScheduler == null
+                                            ? (Action<int, Action>) null
+                                            : _timeoutScheduler.Schedule);
                                 var checkpointStrategyBuilder = new CheckpointStrategy.Builder();
                                 stateHandler.ConfigureSourceProcessingStrategy(checkpointStrategyBuilder);
                                 checkpointStrategyBuilder.Validate(config); // avoid future exceptions in coreprojection

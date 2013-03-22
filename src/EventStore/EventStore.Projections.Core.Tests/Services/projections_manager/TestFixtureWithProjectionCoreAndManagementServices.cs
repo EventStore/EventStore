@@ -44,6 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         protected ProjectionManager _manager;
         private ProjectionCoreService _coreService;
+        private ProjectionReaderCoreService _readerService;
 
         [SetUp]
         public void Setup()
@@ -53,7 +54,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe(_consumer);
 
             _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, _timeProvider);
-            _coreService = new ProjectionCoreService(_bus, _bus, 10, new InMemoryCheckpoint(1000));
+            ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
+            _readerService = new ProjectionReaderCoreService(_bus, 10, writerCheckpoint);
+            _coreService = new ProjectionCoreService(_bus, _bus);
             _bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.Started>(_manager);
@@ -88,18 +91,20 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_coreService);
             _bus.Subscribe<ProjectionCoreServiceMessage.Start>(_coreService);
             _bus.Subscribe<ProjectionCoreServiceMessage.Stop>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.Start>(_readerService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.Stop>(_readerService);
             _bus.Subscribe<ProjectionCoreServiceMessage.Tick>(_coreService);
-            _bus.Subscribe<ProjectionCoreServiceMessage.CommittedEventDistributed>(_coreService);
-            _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderEof>(_coreService);
-            _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderIdle>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.CommittedEventDistributed>(_readerService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderEof>(_readerService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderIdle>(_readerService);
             _bus.Subscribe<ProjectionSubscriptionMessage.CommittedEventReceived>(_coreService);
             _bus.Subscribe<ProjectionSubscriptionMessage.CheckpointSuggested>(_coreService);
             _bus.Subscribe<ProjectionSubscriptionMessage.EofReached>(_coreService);
             _bus.Subscribe<ProjectionSubscriptionMessage.ProgressChanged>(_coreService);
-            _bus.Subscribe<ProjectionSubscriptionManagement.Pause>(_coreService);
-            _bus.Subscribe<ProjectionSubscriptionManagement.Resume>(_coreService);
-            _bus.Subscribe<ProjectionSubscriptionManagement.Subscribe>(_coreService);
-            _bus.Subscribe<ProjectionSubscriptionManagement.Unsubscribe>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionManagement.Pause>(_readerService);
+            _bus.Subscribe<ProjectionSubscriptionManagement.Resume>(_readerService);
+            _bus.Subscribe<ProjectionSubscriptionManagement.Subscribe>(_readerService);
+            _bus.Subscribe<ProjectionSubscriptionManagement.Unsubscribe>(_readerService);
             
             Given();
             When();
