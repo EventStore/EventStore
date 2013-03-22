@@ -62,31 +62,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             _event8 = WriteStreamCreated("ES2");
             _event9 = WriteSingleEvent("ES2", 1, new string('.', 5000), retryOnFail: true); //chunk 3
 
-            Scavenge(completeLast: false);
-        }
-
-        private PrepareLogRecord WriteDeletePrepare(string eventStreamId)
-        {
-            var prepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(),
-                                                    Guid.NewGuid(),
-                                                    eventStreamId,
-                                                    ExpectedVersion.Any);
-            long pos;
-            Assert.IsTrue(Writer.Write(prepare, out pos));
-
-            return prepare;
-        }
-
-        private CommitLogRecord WriteDeleteCommit(PrepareLogRecord prepare)
-        {
-            long pos;
-            var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(),
-                                          prepare.CorrelationId,
-                                          prepare.LogPosition,
-                                          EventNumber.DeletedStream);
-            Assert.IsTrue(Writer.Write(commit, out pos));
-
-            return commit;
+            Scavenge(completeLast: false, mergeChunks: false);
         }
 
         [Test]

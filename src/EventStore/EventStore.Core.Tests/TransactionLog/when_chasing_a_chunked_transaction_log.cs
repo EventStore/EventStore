@@ -27,7 +27,6 @@
 // 
 using System;
 using System.IO;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -47,9 +46,8 @@ namespace EventStore.Core.Tests.TransactionLog
         public void try_read_returns_false_when_writer_checkpoint_is_zero()
         {
             var writerchk = new InMemoryCheckpoint(0);
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
                                                        0,
                                                        writerchk,
@@ -73,10 +71,8 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             var writerchk = new InMemoryCheckpoint();
             var chaserchk = new InMemoryCheckpoint(Checkpoint.Chaser, 0);
-            ICheckpoint[] namedCheckpoints = new[] {writerchk, chaserchk};
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
                                                        0,
                                                        writerchk,
@@ -116,7 +112,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                      data: new byte[] { 1, 2, 3, 4, 5 },
                                                      metadata: new byte[] { 7, 17 });
 
-            using (var fs = new FileStream(GetFilePathFor("prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
+            using (var fs = new FileStream(GetFilePathFor("chunk-000000.000000"), FileMode.CreateNew, FileAccess.Write))
             {
                 fs.SetLength(ChunkHeader.Size + ChunkFooter.Size + 10000);
                 var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid()).AsByteArray();
@@ -128,10 +124,8 @@ namespace EventStore.Core.Tests.TransactionLog
             
             var writerchk = new InMemoryCheckpoint(128);
             var chaserchk = new InMemoryCheckpoint(Checkpoint.Chaser, 0);
-            ICheckpoint[] namedCheckpoints = new[] {chaserchk};
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
                                                        0,
                                                        writerchk,
@@ -163,7 +157,7 @@ namespace EventStore.Core.Tests.TransactionLog
             ICheckpoint[] namedCheckpoints = new[] {chaserchk};
             ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
                                                        0,
                                                        writerchk,
@@ -214,7 +208,7 @@ namespace EventStore.Core.Tests.TransactionLog
             ICheckpoint[] namedCheckpoints = new[] {chaserchk};
             ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
                                                        0,
                                                        writerchk,

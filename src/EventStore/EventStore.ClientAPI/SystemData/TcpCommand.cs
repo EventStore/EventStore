@@ -44,8 +44,8 @@ namespace EventStore.ClientAPI.SystemData
         SubscribeReplica = 0x10,
         ReplicaLogPositionAck = 0x11,
         CreateChunk = 0x12,
-        PhysicalChunkBulk = 0x13,
-        LogicalChunkBulk = 0x14,
+        RawChunkBulk = 0x13,
+        DataChunkBulk = 0x14,
         ReplicaSubscriptionRetry = 0x15,
         ReplicaSubscribed = 0x16,
 

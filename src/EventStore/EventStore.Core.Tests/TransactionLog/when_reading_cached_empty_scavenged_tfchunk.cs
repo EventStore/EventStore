@@ -25,55 +25,61 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.IO;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
+
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class prefix_filenaming_strategy
+    public class when_reading_cached_empty_scavenged_tfchunk: SpecificationWithFilePerTestFixture
     {
-        [Test]
-        public void when_constructed_with_null_path_should_throws_argumentnullexception()
+        private TFChunk _chunk;
+
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
         {
-            Assert.Throws<ArgumentNullException>(() => new PrefixFileNamingStrategy(null, "prefix"));
+            base.TestFixtureSetUp();
+            _chunk = TFChunk.CreateNew(Filename, 4096, 0, 0, isScavenged: true);
+            _chunk.CompleteScavenge(new PosMap[0]);
+            _chunk.CacheInMemory();
+        }
+
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
+        {
+            _chunk.Dispose();
+            base.TestFixtureTearDown();
         }
 
         [Test]
-        public void when_constructed_with_null_prefix_should_throws_argumentnullexception()
+        public void no_record_at_exact_position_can_be_read()
         {
-            Assert.Throws<ArgumentNullException>(() => new PrefixFileNamingStrategy("path", null));
+            Assert.IsFalse(_chunk.TryReadAt(0).Success);
         }
 
         [Test]
-        public void when_getting_file_for_positive_index_and_no_version_appends_index_to_name_with_no_version()
+        public void no_record_can_be_read_as_first_record()
         {
-            var strategy = new PrefixFileNamingStrategy("path", "prefix-");
-            Assert.AreEqual("path" + Path.DirectorySeparatorChar + "prefix-1", strategy.GetFilenameFor(1, 0));
+            Assert.IsFalse(_chunk.TryReadFirst().Success);
+        }
+        
+        [Test]
+        public void no_record_can_be_read_as_closest_forward_record()
+        {
+            Assert.IsFalse(_chunk.TryReadClosestForward(0).Success);
         }
 
         [Test]
-        public void when_getting_file_for_nonnegative_index_and_version_appends_just_value()
+        public void no_record_can_be_read_as_closest_backward_record()
         {
-            var strategy = new PrefixFileNamingStrategy("path", "prefix-");
-            Assert.AreEqual("path" + Path.DirectorySeparatorChar + "prefix-1", strategy.GetFilenameFor(1, 7));
+            Assert.IsFalse(_chunk.TryReadClosestBackward(0).Success);
         }
 
         [Test]
-        public void when_getting_file_for_negative_index_throws_argumentoutofrangeexception()
+        public void no_record_can_be_read_as_last_record()
         {
-            var strategy = new PrefixFileNamingStrategy("Path", "prefix-");
-            Assert.Throws<ArgumentOutOfRangeException>(() => strategy.GetFilenameFor(-1, 0));
-        }
-
-        [Test]
-        public void when_getting_file_for_negative_version_throws_argumentoutofrangeexception()
-        {
-            var strategy = new PrefixFileNamingStrategy("Path", "prefix-");
-            Assert.Throws<ArgumentOutOfRangeException>(() => strategy.GetFilenameFor(0, -1));
+            Assert.IsFalse(_chunk.TryReadLast().Success);
         }
     }
 }

@@ -25,15 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System.IO;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog.Chunks
+namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_marking_for_deletion_a_tfchunk_that_has_been_locked_and_unlocked: SpecificationWithFile
+    public class when_destroying_a_tfchunk: SpecificationWithFile
     {
         private TFChunk _chunk;
 
@@ -41,10 +41,8 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public override void SetUp()
         {
             base.SetUp();
-            _chunk = TFChunk.CreateNew(Filename, 1000, 0, false);
-            var reader = _chunk.AcquireReader();
+            _chunk = TFChunk.CreateNew(Filename, 1000, 0, 0, false);
             _chunk.MarkForDeletion();
-            reader.Release();
         }
 
         [Test]

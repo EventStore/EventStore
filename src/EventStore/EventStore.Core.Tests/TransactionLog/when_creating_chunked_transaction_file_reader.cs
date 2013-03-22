@@ -47,9 +47,8 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_null_checkpoint_throws_argument_null_exception()
         {
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
             var config = new TFChunkDbConfig(PathName,
-                                             new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(0),

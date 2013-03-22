@@ -154,7 +154,7 @@ namespace EventStore.Core
             return msg;
         }
 
-        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int chunksToCache)
+        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize)
         {
             if (!Directory.Exists(dbPath)) // mono crashes without this check
                 Directory.CreateDirectory(dbPath);
@@ -182,10 +182,14 @@ namespace EventStore.Core
                 epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
                 truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
             }
+
+            var cache = cachedChunks >= 0
+                                ? cachedChunks*(long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
+                                : chunksCacheSize;
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
                                                  TFConsts.ChunkSize,
-                                                 chunksToCache,
+                                                 cache,
                                                  writerChk,
                                                  chaserChk,
                                                  epochChk,

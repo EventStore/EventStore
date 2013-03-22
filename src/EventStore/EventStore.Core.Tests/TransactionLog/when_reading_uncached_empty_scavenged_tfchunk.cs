@@ -25,82 +25,60 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Chunks;
+
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog.Chunks
+namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_uncaching_a_tfchunk: SpecificationWithFilePerTestFixture
+    public class when_reading_uncached_empty_scavenged_tfchunk: SpecificationWithFilePerTestFixture
     {
         private TFChunk _chunk;
-        private readonly Guid _corrId = Guid.NewGuid();
-        private readonly Guid _eventId = Guid.NewGuid();
-        private RecordWriteResult _result;
-        private PrepareLogRecord _record;
-        private TFChunk _uncachedChunk;
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _record = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
-                                           PrepareFlags.None, "Foo", new byte[12], new byte[15]);
-            _chunk = TFChunk.CreateNew(Filename, 4096, 0, false);
-            _result = _chunk.TryAppend(_record);
-            _chunk.Flush();
-            _chunk.Complete();
-            _uncachedChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true);
-            _uncachedChunk.CacheInMemory();
-            _uncachedChunk.UnCacheFromMemory();
+            _chunk = TFChunk.CreateNew(Filename, 4096, 0, 0, isScavenged: true);
+            _chunk.CompleteScavenge(new PosMap[0]);
         }
 
         [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
             _chunk.Dispose();
-            _uncachedChunk.Dispose();
             base.TestFixtureTearDown();
         }
 
         [Test]
-        public void the_write_result_is_correct()
+        public void no_record_at_exact_position_can_be_read()
         {
-            Assert.IsTrue(_result.Success);
-            Assert.AreEqual(0, _result.OldPosition);
-            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _result.NewPosition);
+            Assert.IsFalse(_chunk.TryReadAt(0).Success);
         }
 
         [Test]
-        public void the_chunk_is_not_cached()
+        public void no_record_can_be_read_as_first_record()
         {
-            Assert.IsFalse(_uncachedChunk.IsCached);
+            Assert.IsFalse(_chunk.TryReadFirst().Success);
+        }
+        
+        [Test]
+        public void no_record_can_be_read_as_closest_forward_record()
+        {
+            Assert.IsFalse(_chunk.TryReadClosestForward(0).Success);
         }
 
         [Test]
-        public void the_record_was_written()
+        public void no_record_can_be_read_as_closest_backward_record()
         {
-            Assert.IsTrue(_result.Success);
+            Assert.IsFalse(_chunk.TryReadClosestBackward(0).Success);
         }
 
         [Test]
-        public void the_correct_position_is_returned()
+        public void no_record_can_be_read_as_last_record()
         {
-            Assert.AreEqual(0, _result.OldPosition);
-        }
-
-        [Test]
-        public void the_record_can_be_read()
-        {
-            var res = _uncachedChunk.TryReadAt(0);
-            Assert.IsTrue(res.Success);
-            Assert.AreEqual(_record, res.LogRecord);
-            Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
-            //Assert.AreEqual(_result.NewPosition, res.NewPosition);
+            Assert.IsFalse(_chunk.TryReadLast().Success);
         }
     }
 }

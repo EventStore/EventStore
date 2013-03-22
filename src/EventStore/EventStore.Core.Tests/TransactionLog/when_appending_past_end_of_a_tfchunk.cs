@@ -1,10 +1,10 @@
 // Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,31 +24,44 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
-using System.IO;
-using EventStore.Core.TransactionLog.Chunks;
+// 
+
+using System;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog.Chunks
+namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_destroying_a_tfchunk: SpecificationWithFile
+    public class when_appending_past_end_of_a_tfchunk: SpecificationWithFile
     {
         private TFChunk _chunk;
+        private readonly Guid _corrId = Guid.NewGuid();
+        private readonly Guid _eventId = Guid.NewGuid();
+        private bool _written;
 
-        [SetUp]
+        [SetUp] 
         public override void SetUp()
         {
             base.SetUp();
-            _chunk = TFChunk.CreateNew(Filename, 1000, 0, false);
-            _chunk.MarkForDeletion();
+            var record = new PrepareLogRecord(15556, _corrId, _eventId, 15556, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
+                                              PrepareFlags.None, "Foo", new byte[12], new byte[15]);
+            _chunk = TFChunk.CreateNew(Filename, 20, 0, 0, false);
+            _written = _chunk.TryAppend(record).Success;
+        }
+
+        [TearDown]
+        public override void TearDown()
+        {
+            _chunk.Dispose();
+            base.TearDown();
         }
 
         [Test]
-        public void the_file_is_deleted()
+        public void the_record_is_not_appended()
         {
-            Assert.IsFalse(File.Exists(Filename));
+            Assert.IsFalse(_written);
         }
     }
 }

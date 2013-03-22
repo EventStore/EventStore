@@ -1,10 +1,10 @@
 // Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,59 +24,43 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//  
 
-using System;
 using System.IO;
-using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
+using NUnit.Framework;
 
-namespace EventStore.Core.TransactionLog.FileNamingStrategy
+namespace EventStore.Core.Tests.TransactionLog
 {
-    public class PrefixFileNamingStrategy : IFileNamingStrategy 
+    [TestFixture]
+    public class when_destroying_a_tfchunk_that_is_locked: SpecificationWithFile
     {
-        private readonly string _path;
-        private readonly string _prefix;
+        private TFChunk _chunk;
+        private TFChunkBulkReader _reader;
 
-        public PrefixFileNamingStrategy(string path, string prefix)
+        [SetUp]
+        public override void SetUp()
         {
-            Ensure.NotNull(path, "path");
-            Ensure.NotNull(prefix, "prefix");
-
-            _path = path;
-            _prefix = prefix;
+            base.SetUp();
+            _chunk = TFChunk.CreateNew(Filename, 1000, 0, 0, false);
+            _reader = _chunk.AcquireReader();
+            _chunk.MarkForDeletion();
         }
 
-        public string GetFilenameFor(int index, int version)
+        [TearDown]
+        public override void TearDown()
         {
-            Ensure.Nonnegative(index, "index");
-            Ensure.Nonnegative(version, "version");
-
-            return Path.Combine(_path, _prefix + index);
+            _reader.Release();
+            _chunk.MarkForDeletion();
+            _chunk.WaitForDestroy(2000);
+            base.TearDown();
         }
 
-        public string DetermineBestVersionFilenameFor(int index)
+        [Test]
+        public void the_file_is_not_deleted()
         {
-            return GetFilenameFor(index, 0);
-        }
-
-        public string[] GetAllVersionsFor(int index)
-        {
-            return Directory.GetFiles(_path, _prefix + index);
-        }
-
-        public string[] GetAllPresentFiles()
-        {
-            return Directory.GetFiles(_path, _prefix + "*");
-        }
-
-        public string GetTempFilename()
-        {
-            return Path.Combine(_path, string.Format("{0}.tmp", Guid.NewGuid()));
-        }
-
-        public string[] GetAllTempFiles()
-        {
-            return Directory.GetFiles(_path, "*.tmp");
+            Assert.IsTrue(File.Exists(Filename));
         }
     }
 }

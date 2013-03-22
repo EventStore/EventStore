@@ -116,7 +116,7 @@ namespace EventStore.Core.Bus
                     if (!_queue.TryDequeue(out msg))
                     {
                         _queueStats.EnterIdle();
-                        Thread.Sleep(0);
+                        Thread.Sleep(1);
                     }
                     else
                     {
