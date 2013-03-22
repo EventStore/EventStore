@@ -48,9 +48,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         protected override void Given()
         {
-            ExistingEvent("$projections-$all", "ProjectionCreated", null, "projection1");
+            ExistingEvent("$projections-$all", "$ProjectionCreated", null, "projection1");
             ExistingEvent(
-                "$projections-projection1", "ProjectionUpdated", null,
+                "$projections-projection1", "$ProjectionUpdated", null,
                 @"{""Query"":""fromAll(); on_any(function(){});log('hello-from-projection-definition');"", ""Mode"":""3"", ""Enabled"":true, ""HandlerType"":""JS""}");
         }
 

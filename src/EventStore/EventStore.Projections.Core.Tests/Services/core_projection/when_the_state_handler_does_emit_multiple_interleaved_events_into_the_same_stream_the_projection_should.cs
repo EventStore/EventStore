@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             ExistingEvent(
                 "$projections-projection-result", "Result", @"{""c"": 100, ""p"": 50}", "{}");
             ExistingEvent(
-                "$projections-projection-result", "ProjectionCheckpoint",
+                "$projections-projection-result", "$ProjectionCheckpoint",
                 @"{""c"": 100, ""p"": 50}", "{}");
             NoStream(FakeProjectionStateHandler._emit1StreamId);
             NoStream(FakeProjectionStateHandler._emit2StreamId);

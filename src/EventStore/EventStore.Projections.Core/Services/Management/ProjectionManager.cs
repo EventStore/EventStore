@@ -467,7 +467,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 if (completed.NextEventNumber != -1)
                     BeginLoadProjectionList(@from: completed.NextEventNumber);
-                foreach (var @event in completed.Events.Where(v => v.Event.EventType == "ProjectionCreated"))
+                foreach (var @event in completed.Events.Where(v => v.Event.EventType == "$ProjectionCreated"))
                 {
                     var projectionName = Encoding.UTF8.GetString(@event.Event.Data);
                     if (string.IsNullOrEmpty(projectionName) // NOTE: workaround for a bug allowing to create such projections
@@ -556,7 +556,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
-                    new Event(Guid.NewGuid(), "ProjectionCreated", false, Encoding.UTF8.GetBytes(name), new byte[0])),
+                    new Event(Guid.NewGuid(), "$ProjectionCreated", false, Encoding.UTF8.GetBytes(name), new byte[0])),
                 m => WriteProjectionRegistrationCompleted(m, completed, name, eventStreamId));
         }
 

@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             Assert.IsTrue(
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(
-                    v => v.Events[0].EventType == "ProjectionUpdated"));
+                    v => v.Events[0].EventType == "$ProjectionUpdated"));
         }
 
         [Test, Category("v8")]

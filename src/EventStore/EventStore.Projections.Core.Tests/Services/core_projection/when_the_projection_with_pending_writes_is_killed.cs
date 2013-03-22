@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             AllWriteComplete();
             Assert.AreEqual(
                 0,
-                _writeEventHandler.HandledMessages.Count(v => v.Events.Any(e => e.EventType == "ProjectionCheckpoint")));
+                _writeEventHandler.HandledMessages.Count(v => v.Events.Any(e => e.EventType == "$ProjectionCheckpoint")));
         }
 
         [Test]

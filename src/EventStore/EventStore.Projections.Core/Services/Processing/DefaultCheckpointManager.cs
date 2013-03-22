@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _inCheckpointWriteAttempt = 1;
             //TODO: pass correct expected version
             _checkpointEventToBePublished = new Event(
-                Guid.NewGuid(), "ProjectionCheckpoint", true,
+                Guid.NewGuid(), "$ProjectionCheckpoint", true,
                 requestedCheckpointState == null ? null : Encoding.UTF8.GetBytes(requestedCheckpointState),
                 requestedCheckpointPosition.ToJsonBytes(projectionVersion: _projectionVersion));
             PublishWriteCheckpointEvent();
@@ -207,7 +207,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (message.Events.Length > 0)
             {
-                EventRecord checkpoint = message.Events.FirstOrDefault(v => v.Event.EventType == "ProjectionCheckpoint").Event;
+                EventRecord checkpoint = message.Events.FirstOrDefault(v => v.Event.EventType == "$ProjectionCheckpoint").Event;
                 if (checkpoint != null)
                 {
                     var parsed = checkpoint.Metadata.ParseCheckpointTagJson(_projectionVersion);
@@ -246,7 +246,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void BeginLoadPartitionStateAt(string statePartition,
                                               CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted)
         {
-            var stateEventType = "Checkpoint";
+            var stateEventType = "$Checkpoint";
             var partitionCheckpointStreamName = _namingBuilder.MakePartitionCheckpointStreamName(statePartition);
             _readRequestsInProgress++;
             var requestId =

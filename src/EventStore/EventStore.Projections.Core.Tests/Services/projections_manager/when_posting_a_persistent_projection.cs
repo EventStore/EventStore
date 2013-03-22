@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void a_projection_created_event_is_written()
         {
             Assert.AreEqual(
-                "ProjectionCreated",
+                "$ProjectionCreated",
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First().Events[0].EventType);
             Assert.AreEqual(
                 _projectionName,

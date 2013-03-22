@@ -42,9 +42,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void Given()
         {
             NoStream("$projections-test-projection-order");
-            ExistingEvent("$projections-$all", "ProjectionCreated", null, "test-projection");
+            ExistingEvent("$projections-$all", "$ProjectionCreated", null, "test-projection");
             ExistingEvent(
-                "$projections-test-projection", "ProjectionUpdated", null,
+                "$projections-test-projection", "$ProjectionUpdated", null,
                 @"{""Query"":""fromCategory('test').foreachStream().when({'e': function(s,e){}})"", 
                     ""Mode"":""3"", ""Enabled"":false, ""HandlerType"":""JS"",
                     ""SourceDefinition"":{
@@ -53,9 +53,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                         ""Streams"":[""$ce-test""]
                     }
                 }");    
-            ExistingEvent("$projections-test-projection-a-checkpoint", "Checkpoint", @"{""s"":{""$ce-test"": 9}}", @"{""data"":1}");
+            ExistingEvent("$projections-test-projection-a-checkpoint", "$Checkpoint", @"{""s"":{""$ce-test"": 9}}", @"{""data"":1}");
             NoStream("$projections-test-projection-b-checkpoint");
-            ExistingEvent("$projections-test-projection-checkpoint", "ProjectionCheckpoint", @"{""s"":{""$ce-test"": 10}}", @"{}");
+            ExistingEvent("$projections-test-projection-checkpoint", "$ProjectionCheckpoint", @"{""s"":{""$ce-test"": 10}}", @"{}");
             AllWritesSucceed();
         }
 

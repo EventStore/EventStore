@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         protected override void Given()
         {
-            ExistingEvent("$projections-$all", "ProjectionCreated", null, "projection1");
+            ExistingEvent("$projections-$all", "$ProjectionCreated", null, "projection1");
             NoStream("$projections-projection1");
         }
 

@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             base.Given();
             ExistingEvent(
-                "$projections-projection-checkpoint", "ProjectionCheckpoint",
+                "$projections-projection-checkpoint", "$ProjectionCheckpoint",
                 @"{""s"": {""a"": 0, ""b"": 0, ""c"": 0}}", "{}");
             ExistingEvent("a", "StreamCreated", "", "");
             ExistingEvent("b", "StreamCreated", "", "");

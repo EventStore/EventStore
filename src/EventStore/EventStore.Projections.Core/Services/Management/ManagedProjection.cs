@@ -554,7 +554,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
-                    new Event(Guid.NewGuid(), "ProjectionUpdated", true, managedProjectionSerializedState, new byte[0])),
+                    new Event(Guid.NewGuid(), "$ProjectionUpdated", true, managedProjectionSerializedState, new byte[0])),
                 m => WriteCompleted(m, completed, eventStreamId));
         }
 

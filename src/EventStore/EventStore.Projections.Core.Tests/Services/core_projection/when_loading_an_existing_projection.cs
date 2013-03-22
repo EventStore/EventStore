@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 "$projections-projection-result", "Result",
                 @"{""c"": 100, ""p"": 50}", _testProjectionState);
             ExistingEvent(
-                "$projections-projection-checkpoint", "ProjectionCheckpoint",
+                "$projections-projection-checkpoint", "$ProjectionCheckpoint",
                 @"{""c"": 100, ""p"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-result", "Result",
