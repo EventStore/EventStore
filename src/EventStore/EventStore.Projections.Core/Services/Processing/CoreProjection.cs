@@ -918,7 +918,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_tickPending)
                 return;
             _tickPending = true;
-            _publisher.Publish(new ProjectionCoreServiceMessage.Tick(Tick));
+            _publisher.Publish(new ProjectionCoreServiceMessage.CoreTick(Tick));
         }
 
         private void SetFaulted(Exception ex)

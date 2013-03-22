@@ -1,4 +1,5 @@
 using EventStore.Core.Bus;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Messages
 {

@@ -28,6 +28,7 @@
 
 using System;
 using EventStore.Core.Messaging;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages

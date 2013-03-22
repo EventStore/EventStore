@@ -51,7 +51,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     public abstract class TestFixtureWithExistingEvents : TestFixtureWithReadWriteDisaptchers,
                                                           IHandle<ClientMessage.ReadStreamEventsBackward>,
                                                           IHandle<ClientMessage.WriteEvents>,
-                                                          IHandle<ProjectionCoreServiceMessage.Tick>
+                                                          IHandle<ProjectionCoreServiceMessage.CoreTick>,
+                                                          IHandle<Messages.ProjectionCoreServiceMessage.ReaderTick>
     {
         protected TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 
@@ -135,7 +136,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(_listEventsHandler);
             _bus.Subscribe<ClientMessage.WriteEvents>(this);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
-            _bus.Subscribe<ProjectionCoreServiceMessage.Tick>(this);
+            _bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(this);
+            _bus.Subscribe<ProjectionCoreServiceMessage.ReaderTick>(this);
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             _lastMessageReplies.Clear();
@@ -254,7 +256,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length - add));
         }
 
-        public void Handle(ProjectionCoreServiceMessage.Tick message)
+        public void Handle(ProjectionCoreServiceMessage.CoreTick message)
+        {
+            if (_ticksAreHandledImmediately)
+                message.Action();
+        }
+
+        public void Handle(Messages.ProjectionCoreServiceMessage.ReaderTick message)
         {
             if (_ticksAreHandledImmediately)
                 message.Action();
