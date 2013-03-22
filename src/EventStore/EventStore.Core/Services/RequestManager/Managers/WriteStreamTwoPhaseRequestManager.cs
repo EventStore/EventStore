@@ -31,13 +31,11 @@ using System.Diagnostics;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
     public class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.WriteRequestCreated>
     {
-        private readonly TimeSpan _prepareTimeout;
         private int _expectedVersion;
         private StorageMessage.WriteRequestCreated _request;
 
@@ -46,9 +44,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                  int commitCount,
                                                  TimeSpan prepareTimeout,
                                                  TimeSpan commitTimeout)
-                : base(publisher, prepareCount, commitCount, commitTimeout)
+                : base(publisher, prepareCount, commitCount, prepareTimeout, commitTimeout)
         {
-            _prepareTimeout = prepareTimeout;
         }
 
         public void Handle(StorageMessage.WriteRequestCreated request)
@@ -59,14 +56,15 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_expectedVersion == ExpectedVersion.Any)
                 _request = request;
 
-            Publisher.Publish(new StorageMessage.WritePrepares(CorrelationId,
-                                                               PublishEnvelope,
-                                                               request.EventStreamId,
-                                                               _expectedVersion,
-                                                               request.Events,
-                                                               allowImplicitStreamCreation: true,
-                                                               liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks * 9 / 10)));
-            Publisher.Publish(TimerMessage.Schedule.Create(_prepareTimeout, PublishEnvelope, new StorageMessage.PreparePhaseTimeout(CorrelationId)));
+            Publisher.Publish(
+                new StorageMessage.WritePrepares(
+                    CorrelationId,
+                    PublishEnvelope,
+                    request.EventStreamId,
+                    _expectedVersion,
+                    request.Events,
+                    allowImplicitStreamCreation: true,
+                    liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
         }
 
         protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)

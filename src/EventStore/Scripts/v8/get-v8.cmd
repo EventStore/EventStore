@@ -1,6 +1,5 @@
 @echo off
-::0140fb7c08054e6ef1bdfeffebd2eff7b57749ab
-set v8version=trunk
+set v8version=3.17.11
 pushd %~dp0 || goto :error
 cd ..\.. || goto :error
 

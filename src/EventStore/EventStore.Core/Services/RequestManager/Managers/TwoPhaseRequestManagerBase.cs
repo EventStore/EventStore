@@ -31,7 +31,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
@@ -41,8 +40,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                        IHandle<StorageMessage.CommitAck>,
                                                        IHandle<StorageMessage.WrongExpectedVersion>,
                                                        IHandle<StorageMessage.StreamDeleted>,
-                                                       IHandle<StorageMessage.PreparePhaseTimeout>,
-                                                       IHandle<StorageMessage.CommitPhaseTimeout>
+                                                       IHandle<StorageMessage.RequestManagerTimerTick>
     {
 
         protected IEnvelope PublishEnvelope { get { return _publishEnvelope; } }
@@ -50,31 +48,37 @@ namespace EventStore.Core.Services.RequestManager.Managers
         protected Guid CorrelationId { get { return _correlationId; } }
         protected long TransactionPosition { get { return _transactionPos; } }
         protected readonly IPublisher Publisher;
-
         private readonly IEnvelope _publishEnvelope;
+        
+        protected readonly TimeSpan PrepareTimeout;
+        protected readonly TimeSpan CommitTimeout;
+
         private IEnvelope _responseEnvelope;
         private Guid _correlationId;
 
         private int _awaitingPrepare;
         private int _awaitingCommit;
-        private readonly TimeSpan _commitTimeout;
+        private DateTime _nextTimeoutTime;
 
         private long _transactionPos = -1;
 
         private bool _completed;
         private bool _initialized;
 
-        protected TwoPhaseRequestManagerBase(IPublisher publisher, int prepareCount, int commitCount, TimeSpan commitTimeout)
+        protected TwoPhaseRequestManagerBase(IPublisher publisher, int prepareCount, int commitCount, TimeSpan prepareTimeout, TimeSpan commitTimeout)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.Positive(prepareCount, "prepareCount");
             Ensure.Positive(commitCount, "commitCount");
 
             Publisher = publisher;
+            _publishEnvelope = new PublishEnvelope(publisher);
+
+            PrepareTimeout = prepareTimeout;
+            CommitTimeout = commitTimeout;
+
             _awaitingPrepare = prepareCount;
             _awaitingCommit = commitCount;
-            _commitTimeout = commitTimeout;
-            _publishEnvelope = new PublishEnvelope(publisher);
         }
 
         protected void Init(IEnvelope responseEnvelope, Guid correlationId, long preparePos)
@@ -87,6 +91,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _responseEnvelope = responseEnvelope;
             _correlationId = correlationId;
             _transactionPos = preparePos;
+        
+            _nextTimeoutTime = DateTime.UtcNow + PrepareTimeout;
         }
 
         public void Handle(StorageMessage.WrongExpectedVersion message)
@@ -105,22 +111,16 @@ namespace EventStore.Core.Services.RequestManager.Managers
             CompleteFailedRequest(message.CorrelationId, OperationResult.StreamDeleted, "Stream is deleted.");
         }
 
-        public void Handle(StorageMessage.PreparePhaseTimeout message)
+        public void Handle(StorageMessage.RequestManagerTimerTick message)
         {
-            if (_completed || _awaitingPrepare == 0)
+            if (_completed || DateTime.UtcNow < _nextTimeoutTime)
                 return;
 
-            CompleteFailedRequest(message.CorrelationId, OperationResult.PrepareTimeout, "Prepare phase timeout.");
+            if (_awaitingPrepare != 0)
+                CompleteFailedRequest(_correlationId, OperationResult.PrepareTimeout, "Prepare phase timeout.");
+            else 
+                CompleteFailedRequest(_correlationId, OperationResult.CommitTimeout, "Commit phase timeout.");
         }
-
-        public void Handle(StorageMessage.CommitPhaseTimeout message)
-        {
-            if (_completed || _awaitingCommit == 0 || _awaitingPrepare != 0)
-                return;
-
-            CompleteFailedRequest(message.CorrelationId, OperationResult.CommitTimeout, "Commit phase timeout.");
-        }
-
 
         public void Handle(StorageMessage.AlreadyCommitted message)
         {
@@ -141,10 +141,9 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 _awaitingPrepare -= 1;
                 if (_awaitingPrepare == 0)
                 {
-                    if (_transactionPos < 0)
-                        throw new Exception("PreparePos is not assigned.");
+                    if (_transactionPos < 0) throw new Exception("PreparePos is not assigned.");
                     Publisher.Publish(new StorageMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _transactionPos));
-                    Publisher.Publish(TimerMessage.Schedule.Create(_commitTimeout, _publishEnvelope, new StorageMessage.CommitPhaseTimeout(_correlationId)));
+                    _nextTimeoutTime = DateTime.UtcNow + CommitTimeout;
                 }
             }
         }
