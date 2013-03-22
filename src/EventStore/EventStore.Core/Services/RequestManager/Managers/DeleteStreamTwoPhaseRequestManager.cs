@@ -29,35 +29,32 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
     public class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.DeleteStreamRequestCreated>
     {
-        private readonly TimeSpan _prepareTimeout;
-
         public DeleteStreamTwoPhaseRequestManager(IPublisher publisher,  
                                                   int prepareCount, 
                                                   int commitCount, 
                                                   TimeSpan prepareTimeout,
                                                   TimeSpan commitTimeout) 
-            : base(publisher, prepareCount, commitCount, commitTimeout)
+            : base(publisher, prepareCount, commitCount, prepareTimeout, commitTimeout)
         {
-            _prepareTimeout = prepareTimeout;
         }
 
         public void Handle(StorageMessage.DeleteStreamRequestCreated request)
         {
             Init(request.Envelope, request.CorrelationId, -1);
 
-            Publisher.Publish(new StorageMessage.WriteDelete(request.CorrelationId,
-                                                             PublishEnvelope,
-                                                             request.EventStreamId,
-                                                             request.ExpectedVersion,
-                                                             allowImplicitStreamCreation: true,
-                                                             liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks * 9 / 10)));
-            Publisher.Publish(TimerMessage.Schedule.Create(_prepareTimeout, PublishEnvelope, new StorageMessage.PreparePhaseTimeout(CorrelationId)));
+            Publisher.Publish(
+                new StorageMessage.WriteDelete(
+                    request.CorrelationId,
+                    PublishEnvelope,
+                    request.EventStreamId,
+                    request.ExpectedVersion,
+                    allowImplicitStreamCreation: true,
+                    liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
         }
 
         protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
