@@ -1,5 +1,6 @@
 js1.*
 libjs1.*
 libv8.*
+/include
 /win32
 /x64
