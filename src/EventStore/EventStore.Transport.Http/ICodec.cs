@@ -35,7 +35,7 @@ namespace EventStore.Transport.Http
         string ContentType { get; }
         Encoding Encoding { get; }
         bool CanParse(MediaType format);
-        bool SuitableForReponse(MediaType component);
+        bool SuitableForResponse(MediaType component);
 
         T From<T>(string text);
         string To<T>(T value);

@@ -367,7 +367,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             throw new NotImplementedException();
         }
 
-        public bool SuitableForReponse(MediaType component)
+        public bool SuitableForResponse(MediaType component)
         {
             return component.Type == "*"
                    || (string.Equals(component.Type, "text", StringComparison.OrdinalIgnoreCase)

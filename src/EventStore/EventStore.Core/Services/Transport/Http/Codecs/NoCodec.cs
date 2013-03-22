@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
             return false;
         }
 
-        public bool SuitableForReponse(MediaType component)
+        public bool SuitableForResponse(MediaType component)
         {
             return false;
         }

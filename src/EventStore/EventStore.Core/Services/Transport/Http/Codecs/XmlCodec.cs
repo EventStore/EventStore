@@ -49,7 +49,7 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
             return format != null && format.Matches(ContentType, Encoding);
         }
 
-        public bool SuitableForReponse(MediaType component)
+        public bool SuitableForResponse(MediaType component)
         {
             return component.Type == "*"
                    || (string.Equals(component.Type, "text", StringComparison.OrdinalIgnoreCase)

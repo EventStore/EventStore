@@ -248,12 +248,12 @@ namespace EventStore.Core.Services.Transport.Http
                 return @default;
 
             if (requestedFormat != null)
-                return supported.FirstOrDefault(c => c.SuitableForReponse(MediaType.Parse(requestedFormat)));
+                return supported.FirstOrDefault(c => c.SuitableForResponse(MediaType.Parse(requestedFormat)));
 
             return acceptTypes.Select(MediaType.TryParse)
                               .Where(x => x != null)
                               .OrderByDescending(v => v.Priority)
-                              .Select(type => supported.FirstOrDefault(codec => codec.SuitableForReponse(type)))
+                              .Select(type => supported.FirstOrDefault(codec => codec.SuitableForResponse(type)))
                               .FirstOrDefault(corresponding => corresponding != null);
         }
 
