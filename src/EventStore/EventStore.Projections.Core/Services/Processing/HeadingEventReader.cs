@@ -45,8 +45,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly int _eventCacheSize;
 
-        private readonly Dictionary<Guid, IProjectionSubscription> _headSubscribers =
-            new Dictionary<Guid, IProjectionSubscription>();
+        private readonly Dictionary<Guid, IReaderSubscription> _headSubscribers =
+            new Dictionary<Guid, IReaderSubscription>();
 
         private bool _headEventReaderPaused;
         private Guid _eventReaderId;
@@ -121,7 +121,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public bool TrySubscribe(
-            Guid projectionId, IProjectionSubscription projectionSubscription, long fromTransactionFilePosition)
+            Guid projectionId, IReaderSubscription readerSubscription, long fromTransactionFilePosition)
         {
             EnsureStarted();
             if (_headSubscribers.ContainsKey(projectionId))
@@ -133,8 +133,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 _logger.Trace(
                     "The '{0}' subscription has joined the heading distribution point at '{1}'", projectionId,
                     fromTransactionFilePosition);
-                DispatchRecentMessagesTo(projectionSubscription, fromTransactionFilePosition);
-                AddSubscriber(projectionId, projectionSubscription);
+                DispatchRecentMessagesTo(readerSubscription, fromTransactionFilePosition);
+                AddSubscriber(projectionId, readerSubscription);
                 return true;
             }
             return false;
@@ -184,7 +184,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscribeFromPosition = lastAvailableCommittedevent.Data.Position;
         }
 
-        private void AddSubscriber(Guid publishWithCorrelationId, IProjectionSubscription subscription)
+        private void AddSubscriber(Guid publishWithCorrelationId, IReaderSubscription subscription)
         {
             _logger.Trace(
                 "The '{0}' projection subscribed to the '{1}' heading distribution point", publishWithCorrelationId,

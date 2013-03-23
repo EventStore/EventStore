@@ -26,43 +26,35 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
-using EventStore.Core.Data;
-using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.Tests.Services.projection_subscription;
-using NUnit.Framework;
-
-namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection_subscription
+namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class TestFixtureWithEventReorderingProjectionSubscription : TestFixtureWithProjectionSubscription
+    public class ReaderSubscriptionOptions
     {
-        protected int _timeBetweenEvents;
-        protected int _processingLagMs;
+        private readonly long _checkpointUnhandledBytesThreshold;
+        private readonly int? _checkpointProcessedEventsThreshold;
+        private readonly bool _stopOnEof;
 
-        protected override void Given()
+        public ReaderSubscriptionOptions(
+            long checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof)
         {
-            _timeBetweenEvents = 1100;
-            _processingLagMs = 500;
-            base.Given();
-            _source = builder =>
-                {
-                    builder.FromStream("a");
-                    builder.FromStream("b");
-                    builder.AllEvents();
-                    builder.SetReorderEvents(true);
-                    builder.SetProcessingLag(1000); // ms
-                };
+            _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
+            _checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
+            _stopOnEof = stopOnEof;
         }
 
-        protected override IReaderSubscription CreateProjectionSubscription()
+        public long CheckpointUnhandledBytesThreshold
         {
-            return new EventReorderingReaderSubscription(_bus, 
-                _projectionCorrelationId, 
-                CheckpointTag.FromStreamPositions(
-                    new Dictionary<string, int> {{"a", ExpectedVersion.NoStream}, {"b", ExpectedVersion.NoStream}}),
-                _checkpointStrategy,
-                _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold, _processingLagMs);
+            get { return _checkpointUnhandledBytesThreshold; }
+        }
+
+        public int? CheckpointProcessedEventsThreshold
+        {
+            get { return _checkpointProcessedEventsThreshold; }
+        }
+
+        public bool StopOnEof
+        {
+            get { return _stopOnEof; }
         }
     }
 }

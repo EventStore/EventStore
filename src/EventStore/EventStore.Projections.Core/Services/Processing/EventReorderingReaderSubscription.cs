@@ -34,14 +34,14 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EventReorderingProjectionSubscription : ProjectionSubscriptionBase, IProjectionSubscription
+    public class EventReorderingReaderSubscription : ProjectionSubscriptionBase, IReaderSubscription
     {
         private readonly SortedList<long, ReaderSubscriptionMessage.CommittedEventDistributed> _buffer =
             new SortedList<long, ReaderSubscriptionMessage.CommittedEventDistributed>();
 
         private readonly int _processingLagMs;
 
-        public EventReorderingProjectionSubscription(
+        public EventReorderingReaderSubscription(
             IPublisher publisher, Guid subscriptionId, CheckpointTag from,
             CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold,
             int? checkpointProcessedEventsThreshold, int processingLagMs, bool stopOnEof = false)

@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void try_subscribe_throws_invalid_operation_exception()
         {
-            _point.TrySubscribe(Guid.NewGuid(), new FakeProjectionSubscription(), 10);
+            _point.TrySubscribe(Guid.NewGuid(), new FakeReaderSubscription(), 10);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]

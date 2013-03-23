@@ -53,22 +53,17 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly CheckpointTag _fromPosition;
             private readonly CheckpointStrategy _checkpointStrategy;
-            private readonly long _checkpointUnhandledBytesThreshold;
-            private readonly int _checkpointProcessedEventsThreshold; 
-            private readonly bool _stopOnEof;
+            private readonly ReaderSubscriptionOptions _options;
 
             public Subscribe(
                 Guid subscriptionId, CheckpointTag from,
-                CheckpointStrategy checkpointStrategy, long checkpointUnhandledBytesThreshold,
-                int checkpointProcessedEventsThreshold, bool stopOnEof = false): base(subscriptionId)
+                CheckpointStrategy checkpointStrategy, ReaderSubscriptionOptions readerSubscriptionOptions): base(subscriptionId)
             {
                 if (@from == null) throw new ArgumentNullException("from");
                 if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
                 _fromPosition = @from;
                 _checkpointStrategy = checkpointStrategy;
-                _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
-                _checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
-                _stopOnEof = stopOnEof;
+                _options = readerSubscriptionOptions;
             }
 
             public CheckpointTag FromPosition
@@ -81,21 +76,10 @@ namespace EventStore.Projections.Core.Messages
                 get { return _checkpointStrategy; }
             }
 
-            public long CheckpointUnhandledBytesThreshold
+            public ReaderSubscriptionOptions Options
             {
-                get { return _checkpointUnhandledBytesThreshold; }
+                get { return _options; }
             }
-
-            public int CheckpointProcessedEventsThreshold 
-            {
-                get { return _checkpointProcessedEventsThreshold; }
-            }
-
-            public bool StopOnEof
-            {
-                get { return _stopOnEof; }
-            }
-
         }
 
         public class Pause : ReaderSubscriptionManagementMessage

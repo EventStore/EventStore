@@ -208,7 +208,7 @@
     <Compile Include="Services\core_projection\checkpoint_manager\when_starting_the_core_projection_checkpoint_manager.cs" />
     <Compile Include="Services\core_projection\when_receiving_a_committed_event_the_projection_with_partitioned_state_should.cs" />
     <Compile Include="Services\core_projection\when_receiving_committed_events_the_projection_with_partitioned_state_should.cs" />
-    <Compile Include="Services\event_reader\heading_event_reader\FakeProjectionSubscription.cs" />
+    <Compile Include="Services\event_reader\heading_event_reader\FakeReaderSubscription.cs" />
     <Compile Include="Services\event_reader\heading_event_reader\when_heading_event_reader_has_been_created.cs" />
     <Compile Include="Services\event_reader\heading_event_reader\when_starting_a_heading_event_reader.cs" />
     <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_handles_an_event.cs" />

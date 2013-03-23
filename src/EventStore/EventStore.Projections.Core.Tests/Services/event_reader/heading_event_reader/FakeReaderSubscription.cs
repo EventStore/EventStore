@@ -34,7 +34,7 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader
 {
-    class FakeProjectionSubscription : IProjectionSubscription
+    class FakeReaderSubscription : IReaderSubscription
     {
         private readonly List<ReaderSubscriptionMessage.CommittedEventDistributed> _receivedEvents =
             new List<ReaderSubscriptionMessage.CommittedEventDistributed>();

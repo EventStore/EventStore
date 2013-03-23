@@ -98,14 +98,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         [Test]
         public void a_projection_can_be_subscribed_after_event_position()
         {
-            var subscribed = _point.TrySubscribe(Guid.NewGuid(), new FakeProjectionSubscription(), 30);
+            var subscribed = _point.TrySubscribe(Guid.NewGuid(), new FakeReaderSubscription(), 30);
             Assert.AreEqual(true, subscribed);
         }
 
         [Test]
         public void a_projection_cannot_be_subscribed_at_earlier_position()
         {
-            var subscribed = _point.TrySubscribe(Guid.NewGuid(), new FakeProjectionSubscription(), 10);
+            var subscribed = _point.TrySubscribe(Guid.NewGuid(), new FakeReaderSubscription(), 10);
             Assert.AreEqual(false, subscribed);
         }
     }

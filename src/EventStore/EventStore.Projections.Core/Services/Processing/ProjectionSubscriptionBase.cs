@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ProjectionSubscriptionBase
     {
-        private readonly ILogger _logger = LogManager.GetLoggerFor<EventReorderingProjectionSubscription>();
+        private readonly ILogger _logger = LogManager.GetLoggerFor<EventReorderingReaderSubscription>();
         private readonly IPublisher _publisher;
         private readonly CheckpointStrategy _checkpointStrategy;
         private readonly long? _checkpointUnhandledBytesThreshold;

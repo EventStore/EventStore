@@ -190,7 +190,7 @@
     <Compile Include="Services\Processing\EmittedLinkTo.cs" />
     <Compile Include="Services\Processing\EventIndexEventReader.cs" />
     <Compile Include="Services\Processing\EventProcessedResult.cs" />
-    <Compile Include="Services\Processing\EventReorderingProjectionSubscription.cs" />
+    <Compile Include="Services\Processing\EventReorderingReaderSubscription.cs" />
     <Compile Include="Services\Processing\GetDataWorkItemBase.cs" />
     <Compile Include="Services\Processing\GetResultWorkItem.cs" />
     <Compile Include="Services\Processing\GetStateWorkItem.cs" />
@@ -203,7 +203,7 @@
     <Compile Include="Services\Processing\MultiStreamMultiOutputCheckpointManager.cs" />
     <Compile Include="Services\Processing\CoreProjectionQueue.cs" />
     <Compile Include="Services\Processing\EventReader.cs" />
-    <Compile Include="Services\Processing\IProjectionSubscription.cs" />
+    <Compile Include="Services\Processing\IReaderSubscription.cs" />
     <Compile Include="Services\Processing\MultiStreamEventFilter.cs" />
     <Compile Include="Services\Processing\MultiStreamPositionTagger.cs" />
     <Compile Include="Services\Processing\MultiStreamEventReader.cs" />
@@ -225,6 +225,7 @@
     <Compile Include="Services\Processing\EmittedEvent.cs" />
     <Compile Include="Services\Processing\EmittedStream.cs" />
     <Compile Include="Services\Processing\HeadingEventReader.cs" />
+    <Compile Include="Services\Processing\ReaderSubscriptionOptions.cs" />
     <Compile Include="Services\Processing\ResolvedEvent.cs" />
     <Compile Include="Services\Processing\ResultEmitter.cs" />
     <Compile Include="Services\Processing\SourceDefinitionRecorder.cs" />
@@ -240,7 +241,7 @@
     <Compile Include="Services\Processing\PrepareInfo.cs" />
     <Compile Include="Services\Processing\CoreProjection.cs" />
     <Compile Include="Services\Processing\ProjectionCheckpoint.cs" />
-    <Compile Include="Services\Processing\ProjectionSubscription.cs" />
+    <Compile Include="Services\Processing\ReaderSubscription.cs" />
     <Compile Include="Services\Processing\CheckpointStrategy.cs" />
     <Compile Include="Services\Processing\TransactionFileEventFilter.cs" />
     <Compile Include="Services\Processing\TransactionFilePositionTagger.cs" />

@@ -90,7 +90,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         [Test]
         public void cannot_suibscribe_even_from_reader_zero_position()
         {
-            var subscribed = _point.TrySubscribe(Guid.NewGuid(), new FakeProjectionSubscription(), -1);
+            var subscribed = _point.TrySubscribe(Guid.NewGuid(), new FakeReaderSubscription(), -1);
             Assert.AreEqual(false, subscribed);
         }
     }

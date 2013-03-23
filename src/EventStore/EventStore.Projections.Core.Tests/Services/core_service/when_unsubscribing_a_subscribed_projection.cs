@@ -52,11 +52,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_service
             _readerService.Handle(
                 new ReaderSubscriptionManagement.Subscribe(
                     _projectionCorrelationId, CheckpointTag.FromPosition(0, 0),
-                    CreateCheckpointStrategy(), 1000, 2000));
+                    CreateCheckpointStrategy(), new ReaderSubscriptionOptions(
+                                                                1000, 2000, false)));
             _readerService.Handle(
                 new ReaderSubscriptionManagement.Subscribe(
                     _projectionCorrelationId2, CheckpointTag.FromPosition(0, 0),
-                    CreateCheckpointStrategy(), 1000, 2000));
+                    CreateCheckpointStrategy(), new ReaderSubscriptionOptions(
+                                                                1000, 2000, false)));
             // when
             _readerService.Handle(new ReaderSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
         }

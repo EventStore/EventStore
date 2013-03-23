@@ -32,10 +32,25 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IProjectionSubscription : IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderEof>
+    public class ReaderSubscription : ProjectionSubscriptionBase, IReaderSubscription
     {
-        EventReader CreatePausedEventReader(IPublisher publisher, Guid forkedEventReaderId);
+        public ReaderSubscription(
+            IPublisher publisher, Guid subscriptionId, CheckpointTag from,
+            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof = false)
+            : base(
+                publisher, subscriptionId, from, checkpointStrategy,
+                checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold, stopOnEof)
+        {
+        }
+
+        public void Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
+        {
+            ProcessOne(message);
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderIdle message)
+        {
+            // ignore
+        }
     }
 }

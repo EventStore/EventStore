@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
         protected TestHandler<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
         protected TestHandler<ProjectionSubscriptionMessage.EofReached> _eofHandler;
-        protected IProjectionSubscription _subscription;
+        protected IReaderSubscription _subscription;
         protected EventReader ForkedReader;
         protected InMemoryBus _bus;
         protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
@@ -76,9 +76,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             When();
         }
 
-        protected virtual IProjectionSubscription CreateProjectionSubscription()
+        protected virtual IReaderSubscription CreateProjectionSubscription()
         {
-            return new ProjectionSubscription(_bus, 
+            return new ReaderSubscription(_bus, 
                 _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _checkpointStrategy, _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold);
         }
 

@@ -55,8 +55,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionCoreService>();
         private bool _stopped = true;
 
-        private readonly Dictionary<Guid, IProjectionSubscription> _subscriptions =
-            new Dictionary<Guid, IProjectionSubscription>();
+        private readonly Dictionary<Guid, IReaderSubscription> _subscriptions =
+            new Dictionary<Guid, IReaderSubscription>();
 
         private readonly Dictionary<Guid, EventReader> _eventReaders = new Dictionary<Guid, EventReader>();
 
@@ -115,9 +115,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var fromCheckpointTag = message.FromPosition;
             var subscriptionId = message.SubscriptionId;
-            var projectionSubscription = message.CheckpointStrategy.CreateProjectionSubscription(
-                _publisher, fromCheckpointTag, message.SubscriptionId,
-                message.CheckpointUnhandledBytesThreshold, message.CheckpointProcessedEventsThreshold, message.StopOnEof);
+            var projectionSubscription = message.CheckpointStrategy.CreateProjectionSubscription(_publisher, fromCheckpointTag, message.SubscriptionId, message.Options);
             _subscriptions.Add(subscriptionId, projectionSubscription);
 
             var distibutionPointCorrelationId = Guid.NewGuid();

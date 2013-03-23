@@ -32,7 +32,6 @@ using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
-using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -84,11 +83,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public bool DefinesStateTransform
         {
             get { return _definesStateTransform; }
-        }
-
-        public bool IsEmiEnabled()
-        {
-            return _streams == null || _streams.Count <= 1;
         }
 
         public EventReader CreatePausedEventReader(
@@ -248,8 +242,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
-            ICoreProjection coreProjection, Guid projectionCorrelationId, ProjectionVersion projectionVersion, 
-            IPublisher publisher,
+            Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPublisher publisher,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
@@ -266,38 +259,36 @@ namespace EventStore.Projections.Core.Services.Processing
             if (emitAny && _allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
-                    publisher, projectionCorrelationId, projectionVersion, readDispatcher,
-                    writeDispatcher, projectionConfig, name, PositionTagger, namingBuilder, resultEmitter,
-                    UseCheckpoints, emitPartitionCheckpoints);
+                    publisher, projectionCorrelationId, projectionVersion, readDispatcher, writeDispatcher,
+                    projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
+                    emitPartitionCheckpoints);
             }
             else if (emitAny && _streams != null && _streams.Count > 1)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
-                    publisher, projectionCorrelationId, projectionVersion, readDispatcher,
-                    writeDispatcher, projectionConfig, name, PositionTagger, namingBuilder, resultEmitter,
-                    UseCheckpoints, emitPartitionCheckpoints);
+                    publisher, projectionCorrelationId, projectionVersion, readDispatcher, writeDispatcher,
+                    projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
+                    emitPartitionCheckpoints);
             }
             else
             {
                 return new DefaultCheckpointManager(
-                    publisher, projectionCorrelationId, projectionVersion, readDispatcher,
-                    writeDispatcher, projectionConfig, name, PositionTagger, namingBuilder, resultEmitter,
-                    UseCheckpoints, emitPartitionCheckpoints);
+                    publisher, projectionCorrelationId, projectionVersion, readDispatcher, writeDispatcher,
+                    projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
+                    emitPartitionCheckpoints);
             }
         }
 
-        public IProjectionSubscription CreateProjectionSubscription(
-            IPublisher publisher, CheckpointTag fromCheckpointTag, Guid subscriptionId,
-            long checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof)
+        public IReaderSubscription CreateProjectionSubscription(IPublisher publisher, CheckpointTag fromCheckpointTag, Guid subscriptionId, ReaderSubscriptionOptions readerSubscriptionOptions)
         {
             if (_reorderEvents)
-                return new EventReorderingProjectionSubscription(
+                return new EventReorderingReaderSubscription(
                     publisher, subscriptionId, fromCheckpointTag, this,
-                    checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold, _processingLag, stopOnEof);
+                    readerSubscriptionOptions.CheckpointUnhandledBytesThreshold, readerSubscriptionOptions.CheckpointProcessedEventsThreshold, _processingLag, readerSubscriptionOptions.StopOnEof);
             else
-                return new ProjectionSubscription(
+                return new ReaderSubscription(
                     publisher, subscriptionId, fromCheckpointTag, this,
-                    checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold, stopOnEof);
+                    readerSubscriptionOptions.CheckpointUnhandledBytesThreshold, readerSubscriptionOptions.CheckpointProcessedEventsThreshold, readerSubscriptionOptions.StopOnEof);
         }
     }
 }

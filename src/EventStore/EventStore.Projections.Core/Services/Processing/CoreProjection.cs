@@ -203,8 +203,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
             if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
             if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
-            var coreProjectionCheckpointManager = checkpointStrategy.CreateCheckpointManager(
-                this, projectionCorrelationId, version, publisher, readDispatcher, writeDispatcher, projectionConfig, name,
+            var coreProjectionCheckpointManager = checkpointStrategy.CreateCheckpointManager(projectionCorrelationId, version, publisher, readDispatcher, writeDispatcher, projectionConfig, name,
                 namingBuilder);
             var projectionQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
@@ -889,11 +888,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _expectedSubscriptionMessageSequenceNumber = 0;
             _currentSubscriptionId = Guid.NewGuid();
             _processingQueue.Subscribed(_currentSubscriptionId);
-            bool stopOnEof = _projectionConfig.StopOnEof;
+            var subscriptionOptions = new ReaderSubscriptionOptions(
+                _projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold,
+                _projectionConfig.StopOnEof);
             _subscriptionDispatcher.PublishSubscribe(
                 new ReaderSubscriptionManagement.Subscribe(
-                    _currentSubscriptionId, checkpointTag, _checkpointStrategy,
-                    _projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold, stopOnEof), this);
+                    _currentSubscriptionId, checkpointTag, _checkpointStrategy, subscriptionOptions), this);
             _subscribed = true;
             try
             {
