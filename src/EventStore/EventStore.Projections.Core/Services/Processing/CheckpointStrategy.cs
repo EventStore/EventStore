@@ -80,11 +80,6 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _useCheckpoints; }
         }
 
-        public bool DefinesStateTransform
-        {
-            get { return _definesStateTransform; }
-        }
-
         public EventReader CreatePausedEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof)
         {

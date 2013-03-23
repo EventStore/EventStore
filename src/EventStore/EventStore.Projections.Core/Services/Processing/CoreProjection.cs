@@ -138,7 +138,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return new CoreProjection(
                 effectiveProjectionName, version, projectionCorrelationId, publisher, projectionStateHandler,
                 projectionConfig, readDispatcher, writeDispatcher, subscriptionDispatcher, logger, checkpointStrategy,
-                namingBuilder);
+                namingBuilder, preparedSourceDefinition.DefinesStateTransform);
         }
 
         [Flags]
@@ -165,6 +165,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ProjectionConfig _projectionConfig;
         private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage> _subscriptionDispatcher;
         private readonly CheckpointStrategy _checkpointStrategy;
+        private readonly bool _definesStateTransform;
         private readonly ILogger _logger;
 
         private readonly IProjectionStateHandler _projectionStateHandler;
@@ -194,8 +195,11 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage> subscriptionDispatcher,
-            ILogger logger, CheckpointStrategy checkpointStrategy, ProjectionNamesBuilder namingBuilder)
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.Subscribe,
+                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+                subscriptionDispatcher, ILogger logger, CheckpointStrategy checkpointStrategy,
+            ProjectionNamesBuilder namingBuilder, bool definesStateTransform)
         {
             if (name == null) throw new ArgumentNullException("name");
             if (name == "") throw new ArgumentException("name");
@@ -203,7 +207,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
             if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
             if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
-            var coreProjectionCheckpointManager = checkpointStrategy.CreateCheckpointManager(projectionCorrelationId, version, publisher, readDispatcher, writeDispatcher, projectionConfig, name,
+            var coreProjectionCheckpointManager = checkpointStrategy.CreateCheckpointManager(
+                projectionCorrelationId, version, publisher, readDispatcher, writeDispatcher, projectionConfig, name,
                 namingBuilder);
             var projectionQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
@@ -216,6 +221,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger = logger;
             _publisher = publisher;
             _checkpointStrategy = checkpointStrategy;
+            _definesStateTransform = definesStateTransform;
             _statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(projectionStateHandler);
             _partitionStateCache = new PartitionStateCache(_zeroCheckpointTag);
             _processingQueue = projectionQueue;
@@ -824,7 +830,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var oldState = _partitionStateCache.GetLockedPartitionState(partition);
                 if (oldState.State != newState)
                 {
-                    if (_checkpointStrategy.DefinesStateTransform)
+                    if (_definesStateTransform)
                     {
                         projectionResult = _projectionStateHandler.TransformStateToResult();
                     }
