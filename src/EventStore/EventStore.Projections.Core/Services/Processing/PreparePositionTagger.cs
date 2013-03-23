@@ -33,13 +33,13 @@ namespace EventStore.Projections.Core.Services.Processing
     public class PreparePositionTagger : PositionTagger
     {
         public override bool IsMessageAfterCheckpointTag(
-            CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
+            CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed comittedEvent)
         {
             return comittedEvent.Data.Position.PreparePosition > previous.PreparePosition;
         }
 
         public override CheckpointTag MakeCheckpointTag(
-            CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
+            CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed comittedEvent)
         {
             return CheckpointTag.FromPreparePosition(comittedEvent.Data.Position.PreparePosition);
         }

@@ -40,8 +40,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private EventReader _headEventReader;
         private EventPosition _subscribeFromPosition = new EventPosition(long.MaxValue, long.MaxValue);
 
-        private readonly Queue<ProjectionCoreServiceMessage.CommittedEventDistributed> _lastMessages =
-            new Queue<ProjectionCoreServiceMessage.CommittedEventDistributed>();
+        private readonly Queue<ReaderSubscriptionMessage.CommittedEventDistributed> _lastMessages =
+            new Queue<ReaderSubscriptionMessage.CommittedEventDistributed>();
 
         private readonly int _eventCacheSize;
 
@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventCacheSize = eventCacheSize;
         }
 
-        public bool Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        public bool Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             EnsureStarted();
             if (message.CorrelationId != _eventReaderId)
@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        public bool Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
+        public bool Handle(ReaderSubscriptionMessage.EventReaderIdle message)
         {
             EnsureStarted();
             if (message.CorrelationId != _eventReaderId)
@@ -86,12 +86,12 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        public bool Handle(ProjectionCoreServiceMessage.EventReaderEof message)
+        public bool Handle(ReaderSubscriptionMessage.EventReaderEof message)
         {
             throw new NotImplementedException();
         }
 
-        private void ValidateEventOrder(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        private void ValidateEventOrder(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             if (_lastEventPosition >= message.Data.Position)
                 throw new InvalidOperationException(
@@ -153,7 +153,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private void DispatchRecentMessagesTo(
-            IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed> subscription,
+            IHandle<ReaderSubscriptionMessage.CommittedEventDistributed> subscription,
             long fromTransactionFilePosition)
         {
             foreach (var m in _lastMessages)
@@ -161,19 +161,19 @@ namespace EventStore.Projections.Core.Services.Processing
                     subscription.Handle(m);
         }
 
-        private void DistributeMessage(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        private void DistributeMessage(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             foreach (var subscriber in _headSubscribers.Values)
                 subscriber.Handle(message);
         }
 
-        private void DistributeMessage(ProjectionCoreServiceMessage.EventReaderIdle message)
+        private void DistributeMessage(ReaderSubscriptionMessage.EventReaderIdle message)
         {
             foreach (var subscriber in _headSubscribers.Values)
                 subscriber.Handle(message);
         }
 
-        private void CacheRecentMessage(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        private void CacheRecentMessage(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             _lastMessages.Enqueue(message);
             if (_lastMessages.Count > _eventCacheSize)

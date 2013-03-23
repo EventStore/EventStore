@@ -38,15 +38,15 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected override void When()
         {
             _subscription.Handle(
-                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false, Guid.NewGuid(),
                     "bad-event-type", false, new byte[0], new byte[0]));
             _subscription.Handle(
-                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     Guid.NewGuid(), new EventPosition(100, 50), "test-stream", 0, false, Guid.NewGuid(),
                     "bad-event-type", false, new byte[0], new byte[0]));
             _subscription.Handle(
-                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false, Guid.NewGuid(),
                     "bad-event-type", false, new byte[0], new byte[0]));
         }

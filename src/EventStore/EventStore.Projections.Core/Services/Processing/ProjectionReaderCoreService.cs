@@ -40,16 +40,16 @@ using EventStore.Projections.Core.Messages;
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ProjectionReaderCoreService : 
-        IHandle<ProjectionCoreServiceMessage.StartReader>, 
-        IHandle<ProjectionCoreServiceMessage.StopReader>, 
-        IHandle<ProjectionSubscriptionManagement.Subscribe>, 
-        IHandle<ProjectionSubscriptionManagement.Unsubscribe>, 
-        IHandle<ProjectionSubscriptionManagement.Pause>, 
-        IHandle<ProjectionSubscriptionManagement.Resume>, 
-        IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>, 
-        IHandle<ProjectionCoreServiceMessage.EventReaderIdle>, 
-        IHandle<ProjectionCoreServiceMessage.EventReaderEof>, 
-        IHandle<ProjectionCoreServiceMessage.ReaderTick>
+        IHandle<ReaderCoreServiceMessage.StartReader>, 
+        IHandle<ReaderCoreServiceMessage.StopReader>, 
+        IHandle<ReaderSubscriptionManagement.Subscribe>, 
+        IHandle<ReaderSubscriptionManagement.Unsubscribe>, 
+        IHandle<ReaderSubscriptionManagement.Pause>, 
+        IHandle<ReaderSubscriptionManagement.Resume>, 
+        IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>, 
+        IHandle<ReaderSubscriptionMessage.EventReaderIdle>, 
+        IHandle<ReaderSubscriptionMessage.EventReaderEof>, 
+        IHandle<ReaderCoreServiceMessage.ReaderTick>
     {
         private readonly IPublisher _publisher;
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionCoreService>();
@@ -64,16 +64,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<Guid, Guid> _eventReaderSubscriptions = new Dictionary<Guid, Guid>();
         private readonly HashSet<Guid> _pausedSubscriptions = new HashSet<Guid>();
         private readonly HeadingEventReader _headingEventReader;
-        internal readonly ICheckpoint _writerCheckpoint;
+        private readonly ICheckpoint _writerCheckpoint;
 
-
-        private readonly
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-            _readDispatcher;
-
-        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
 
         public ProjectionReaderCoreService(
             IPublisher publisher, int eventCacheSize,
@@ -84,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _writerCheckpoint = writerCheckpoint;
         }
 
-        public void Handle(ProjectionSubscriptionManagement.Pause message)
+        public void Handle(ReaderSubscriptionManagement.Pause message)
         {
             if (!_pausedSubscriptions.Add(message.SubscriptionId))
                 throw new InvalidOperationException("Already paused projection");
@@ -100,7 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _eventReaderSubscriptions.Add(forkedEventReaderId, message.SubscriptionId);
                 _eventReaders.Add(forkedEventReaderId, forkedEventReader);
                 _publisher.Publish(
-                    new ProjectionSubscriptionManagement.ReaderAssignedReader(message.SubscriptionId, forkedEventReaderId));
+                    new ReaderSubscriptionManagement.ReaderAssignedReader(message.SubscriptionId, forkedEventReaderId));
             }
             else
             {
@@ -108,7 +100,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void Handle(ProjectionSubscriptionManagement.Resume message)
+        public void Handle(ReaderSubscriptionManagement.Resume message)
         {
             if (!_pausedSubscriptions.Remove(message.SubscriptionId))
                 throw new InvalidOperationException("Not a paused projection");
@@ -116,7 +108,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventReaders[eventReader].Resume();
         }
 
-        public void Handle(ProjectionSubscriptionManagement.Subscribe message)
+        public void Handle(ReaderSubscriptionManagement.Subscribe message)
         {
             if (_stopped)
                 return;
@@ -137,15 +129,15 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptionEventReaders.Add(subscriptionId, distibutionPointCorrelationId);
             _eventReaderSubscriptions.Add(distibutionPointCorrelationId, subscriptionId);
             _publisher.Publish(
-                new ProjectionSubscriptionManagement.ReaderAssignedReader(
+                new ReaderSubscriptionManagement.ReaderAssignedReader(
                     subscriptionId, distibutionPointCorrelationId));
             eventReader.Resume();
         }
 
-        public void Handle(ProjectionSubscriptionManagement.Unsubscribe message)
+        public void Handle(ReaderSubscriptionManagement.Unsubscribe message)
         {
             if (!_pausedSubscriptions.Contains(message.SubscriptionId))
-                Handle(new ProjectionSubscriptionManagement.Pause(message.SubscriptionId));
+                Handle(new ReaderSubscriptionManagement.Pause(message.SubscriptionId));
             var eventReaderId = _subscriptionEventReaders[message.SubscriptionId];
             if (eventReaderId != Guid.Empty)
             {
@@ -153,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _eventReaders.Remove(eventReaderId);
                 _eventReaderSubscriptions.Remove(eventReaderId);
                 _publisher.Publish(
-                    new ProjectionSubscriptionManagement.ReaderAssignedReader(message.SubscriptionId, Guid.Empty));
+                    new ReaderSubscriptionManagement.ReaderAssignedReader(message.SubscriptionId, Guid.Empty));
                 _logger.Trace(
                     "The '{0}' subscription has unsubscribed (reader: {1})", message.SubscriptionId,
                     eventReaderId);
@@ -178,7 +170,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 reader.Handle(message);
         }
 
-        public void Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        public void Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             Guid projectionId;
             if (_stopped)
@@ -193,7 +185,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _subscriptions[projectionId].Handle(message);
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
+        public void Handle(ReaderSubscriptionMessage.EventReaderIdle message)
         {
             Guid projectionId;
             if (_stopped)
@@ -205,7 +197,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptions[projectionId].Handle(message);
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventReaderEof message)
+        public void Handle(ReaderSubscriptionMessage.EventReaderEof message)
         {
             Guid projectionId;
             if (_stopped)
@@ -215,7 +207,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptions[projectionId].Handle(message);
 
             _pausedSubscriptions.Add(projectionId); // it is actually disposed -- workaround
-            Handle(new ProjectionSubscriptionManagement.Unsubscribe(projectionId));
+            Handle(new ReaderSubscriptionManagement.Unsubscribe(projectionId));
         }
 
         public void StartReaders()
@@ -270,7 +262,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private bool TrySubscribeHeadingEventReader(
-            ProjectionCoreServiceMessage.CommittedEventDistributed message, Guid projectionId)
+            ReaderSubscriptionMessage.CommittedEventDistributed message, Guid projectionId)
         {
             if (_pausedSubscriptions.Contains(projectionId))
                 return false;
@@ -294,22 +286,22 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventReaders.Remove(eventReaderId);
             _eventReaderSubscriptions.Remove(eventReaderId);
             _subscriptionEventReaders[projectionId] = Guid.Empty;
-            _publisher.Publish(new ProjectionSubscriptionManagement.ReaderAssignedReader(message.CorrelationId, Guid.Empty));
+            _publisher.Publish(new ReaderSubscriptionManagement.ReaderAssignedReader(message.CorrelationId, Guid.Empty));
             return true;
         }
 
-        public void Handle(ProjectionCoreServiceMessage.StartReader message)
+        public void Handle(ReaderCoreServiceMessage.StartReader message)
         {
             StartReaders();
         }
 
-        public void Handle(ProjectionCoreServiceMessage.StopReader message)
+        public void Handle(ReaderCoreServiceMessage.StopReader message)
         {
             StopReaders();
         }
 
 
-        public void Handle(ProjectionCoreServiceMessage.ReaderTick message)
+        public void Handle(ReaderCoreServiceMessage.ReaderTick message)
         {
             message.Action();
         }

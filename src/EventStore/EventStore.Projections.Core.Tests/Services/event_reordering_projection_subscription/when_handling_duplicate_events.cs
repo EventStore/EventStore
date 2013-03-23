@@ -41,19 +41,19 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         {
             _timestamp = DateTime.UtcNow;
             _subscription.Handle(
-                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     _projectionCorrelationId, new EventPosition(200, 150), "a", 1, false, Guid.NewGuid(),
                     "bad-event-type", false, new byte[0], new byte[0], _timestamp));
             _subscription.Handle(
-                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     _projectionCorrelationId, new EventPosition(100, 50), "a", 0, false, Guid.NewGuid(),
                     "bad-event-type", false, new byte[0], new byte[0], _timestamp.AddMilliseconds(1)));
             _subscription.Handle(
-                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     _projectionCorrelationId, new EventPosition(200, 150), "a", 1, false, Guid.NewGuid(),
                     "bad-event-type", false, new byte[0], new byte[0], _timestamp.AddMilliseconds(1)));
             _subscription.Handle(
-                new ProjectionCoreServiceMessage.EventReaderIdle(
+                new ReaderSubscriptionMessage.EventReaderIdle(
                     _projectionCorrelationId, _timestamp.AddMilliseconds(1100)));
         }
 

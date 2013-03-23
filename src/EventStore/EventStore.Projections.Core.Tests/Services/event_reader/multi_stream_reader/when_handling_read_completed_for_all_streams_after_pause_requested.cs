@@ -125,7 +125,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         public void publishes_correct_number_of_committed_event_received_messages()
         {
             Assert.AreEqual(
-                3, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
+                3, _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().Count());
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]

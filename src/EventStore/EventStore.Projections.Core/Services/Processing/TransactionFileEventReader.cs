@@ -125,7 +125,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void SendIdle()
         {
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
+                new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
         }
 
         private void RequestEvents(bool delay)
@@ -160,7 +160,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_stopOnEof)
                 return;
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                new ReaderSubscriptionMessage.CommittedEventDistributed(
                     EventReaderCorrelationId, null, lastPosition.PreparePosition, 100.0f));
                 //TODO: check was is passed here
         }
@@ -177,7 +177,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         currentFrom, receivedPosition));
 
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                new ReaderSubscriptionMessage.CommittedEventDistributed(
                     EventReaderCorrelationId,
                     new ResolvedEvent(
                         positionEvent.EventStreamId, positionEvent.EventNumber, @event.Event.EventStreamId,

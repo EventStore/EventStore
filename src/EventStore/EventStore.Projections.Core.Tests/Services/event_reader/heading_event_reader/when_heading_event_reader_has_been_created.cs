@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         public void handle_throws_invalid_operation_exception()
         {
             _point.Handle(
-                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     Guid.NewGuid(), new EventPosition(20, 10), "stream", 10, false, Guid.NewGuid(), "type", false,
                     new byte[0], new byte[0]));
         }

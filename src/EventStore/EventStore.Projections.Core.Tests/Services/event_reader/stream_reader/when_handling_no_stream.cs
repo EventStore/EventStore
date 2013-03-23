@@ -68,9 +68,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         public void publishes_correct_committed_event_received_messages()
         {
             Assert.AreEqual(
-                1, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
+                1, _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().Count());
             var first =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Single();
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().Single();
             Assert.IsNull(first.Data);
             Assert.AreEqual(200, first.SafeTransactionFileReaderJoinPosition);
         }

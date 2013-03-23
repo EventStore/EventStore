@@ -50,15 +50,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             {
                 base.When();
                 var readerAssignedMessage =
-                    _consumer.HandledMessages.OfType<ProjectionSubscriptionManagement.ReaderAssignedReader>().LastOrDefault();
+                    _consumer.HandledMessages.OfType<ReaderSubscriptionManagement.ReaderAssignedReader>().LastOrDefault();
                 Assert.IsNotNull(readerAssignedMessage);
                 _reader = readerAssignedMessage.ReaderId;
 
                 _bus.Publish(
-                    ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                    ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                         _reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
                         false, new byte[0], new byte[0], 100, 33.3f));
-                _bus.Publish(new ProjectionCoreServiceMessage.EventReaderEof(_reader));
+                _bus.Publish(new ReaderSubscriptionMessage.EventReaderEof(_reader));
             }
         }
 

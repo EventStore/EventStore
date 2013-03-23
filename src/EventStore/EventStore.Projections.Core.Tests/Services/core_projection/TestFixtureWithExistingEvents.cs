@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                                                           IHandle<ClientMessage.ReadStreamEventsBackward>,
                                                           IHandle<ClientMessage.WriteEvents>,
                                                           IHandle<ProjectionCoreServiceMessage.CoreTick>,
-                                                          IHandle<Messages.ProjectionCoreServiceMessage.ReaderTick>
+                                                          IHandle<Messages.ReaderCoreServiceMessage.ReaderTick>
     {
         protected TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 
@@ -137,7 +137,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe<ClientMessage.WriteEvents>(this);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
             _bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(this);
-            _bus.Subscribe<ProjectionCoreServiceMessage.ReaderTick>(this);
+            _bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(this);
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             _lastMessageReplies.Clear();
@@ -262,7 +262,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 message.Action();
         }
 
-        public void Handle(Messages.ProjectionCoreServiceMessage.ReaderTick message)
+        public void Handle(Messages.ReaderCoreServiceMessage.ReaderTick message)
         {
             if (_ticksAreHandledImmediately)
                 message.Action();

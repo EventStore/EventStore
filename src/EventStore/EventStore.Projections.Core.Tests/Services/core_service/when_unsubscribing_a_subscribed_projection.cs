@@ -50,31 +50,31 @@ namespace EventStore.Projections.Core.Tests.Services.core_service
             _projectionCorrelationId = Guid.NewGuid();
             _projectionCorrelationId2 = Guid.NewGuid();
             _readerService.Handle(
-                new ProjectionSubscriptionManagement.Subscribe(
+                new ReaderSubscriptionManagement.Subscribe(
                     _projectionCorrelationId, _projectionCorrelationId, CheckpointTag.FromPosition(0, 0),
                     CreateCheckpointStrategy(), 1000, 2000));
             _readerService.Handle(
-                new ProjectionSubscriptionManagement.Subscribe(
+                new ReaderSubscriptionManagement.Subscribe(
                     _projectionCorrelationId2, _projectionCorrelationId2, CheckpointTag.FromPosition(0, 0),
                     CreateCheckpointStrategy(), 1000, 2000));
             // when
-            _readerService.Handle(new ProjectionSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
+            _readerService.Handle(new ReaderSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
         }
 
         [Test]
         public void committed_events_are_no_longer_distributed_to_the_projection()
         {
             _readerService.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(_projectionCorrelationId, CreateEvent()));
+                new ReaderSubscriptionMessage.CommittedEventDistributed(_projectionCorrelationId, CreateEvent()));
             Assert.AreEqual(0, _committedeventHandler.HandledMessages.Count);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void the_projection_cannot_be_resumed()
         {
-            _readerService.Handle(new ProjectionSubscriptionManagement.Resume(_projectionCorrelationId));
+            _readerService.Handle(new ReaderSubscriptionManagement.Resume(_projectionCorrelationId));
             _readerService.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(_projectionCorrelationId, CreateEvent()));
+                new ReaderSubscriptionMessage.CommittedEventDistributed(_projectionCorrelationId, CreateEvent()));
             Assert.AreEqual(0, _committedeventHandler.HandledMessages.Count);
         }
     }

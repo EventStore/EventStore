@@ -121,15 +121,15 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         public void publishes_correct_committed_event_received_messages()
         {
             Assert.AreEqual(
-                6, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
+                6, _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().Count());
             var first =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().First();
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().First();
             var fifth =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>()
                          .Skip(4)
                          .First();
             var sixth =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>()
                          .Skip(5)
                          .First();
 
@@ -193,29 +193,29 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         public void publishes_committed_event_received_messages_in_correct_order()
         {
             Assert.AreEqual(
-                6, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
+                6, _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().Count());
             var first =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>()
                          .Skip(0)
                          .First();
             var second =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>()
                          .Skip(1)
                          .First();
             var third =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>()
                          .Skip(2)
                          .First();
             var fourth =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>()
                          .Skip(3)
                          .First();
             var fifth =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>()
                          .Skip(4)
                          .First();
             var sixth =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>()
                          .Skip(5)
                          .First();
 

@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Services
                 {
                     Console.WriteLine("Connection established: " + manager.EndPoint);
                     _bus.Publish(new ProjectionCoreServiceMessage.StartCore());
-                    _bus.Publish(new Messages.ProjectionCoreServiceMessage.StartReader());
+                    _bus.Publish(new Messages.ReaderCoreServiceMessage.StartReader());
                     _bus.Publish(new ProjectionCoreServiceMessage.Connected(connection: manager));
                     _connectionManager.ConnectionClosed += OnConnectionClosed;
                     _connectionManager.StartReceiving();
@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.Services
             if (_running)
             {
                 _bus.Publish(new ProjectionCoreServiceMessage.StopCore()); //TODO: duplicate stop sent here
-                _bus.Publish(new Messages.ProjectionCoreServiceMessage.StopReader()); //TODO: duplicate stop sent here
+                _bus.Publish(new Messages.ReaderCoreServiceMessage.StopReader()); //TODO: duplicate stop sent here
                 Thread.Sleep(1000); //TODO: use scheduler service
                 Connect();
             }
@@ -108,7 +108,7 @@ namespace EventStore.Projections.Core.Services
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
             _bus.Publish(new ProjectionCoreServiceMessage.StopCore());
-            _bus.Publish(new Messages.ProjectionCoreServiceMessage.StopReader());
+            _bus.Publish(new Messages.ReaderCoreServiceMessage.StopReader());
             _running = false;
             _connectionManager.Stop("Node is shutting down.");
         }

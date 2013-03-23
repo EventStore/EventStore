@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _positionTracker.UpdateByCheckpointTagInitial(@from);
         }
 
-        protected void ProcessOne(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        protected void ProcessOne(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             // NOTE: we may receive here messages from heading event distribution point 
             // and they may not pass out source filter.  Discard them first
@@ -141,7 +141,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
         }
 
-        private void SuggestCheckpoint(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        private void SuggestCheckpoint(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
             _publisher.Publish(
@@ -160,7 +160,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 eventReaderId, publisher, _positionTracker.LastTag, _stopOnEof);
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventReaderEof message)
+        public void Handle(ReaderSubscriptionMessage.EventReaderEof message)
         {
             if (_stopOnEof)
             {

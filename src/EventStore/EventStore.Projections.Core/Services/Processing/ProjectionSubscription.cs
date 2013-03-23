@@ -43,12 +43,12 @@ namespace EventStore.Projections.Core.Services.Processing
         {
         }
 
-        public void Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        public void Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             ProcessOne(message);
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
+        public void Handle(ReaderSubscriptionMessage.EventReaderIdle message)
         {
             // ignore
         }

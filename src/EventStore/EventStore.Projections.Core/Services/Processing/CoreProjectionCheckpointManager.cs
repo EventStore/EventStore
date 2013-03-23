@@ -390,7 +390,7 @@ namespace EventStore.Projections.Core.Services.Processing
             long prerecordedEventMessageSequenceNumber)
         {
             var position = pair.OriginalEvent;
-            var committedEvent = new ProjectionCoreServiceMessage.CommittedEventDistributed(
+            var committedEvent = new ReaderSubscriptionMessage.CommittedEventDistributed(
                 Guid.Empty,
                 new ResolvedEvent(
                     position.EventStreamId, position.EventNumber, pair.Event.EventStreamId, pair.Event.EventNumber,

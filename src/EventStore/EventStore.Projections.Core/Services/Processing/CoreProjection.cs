@@ -494,7 +494,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_subscribed)
             {
                 Unsubscribed();
-                _publisher.Publish(new ProjectionSubscriptionManagement.Unsubscribe(_currentSubscriptionId));
+                _publisher.Publish(new ReaderSubscriptionManagement.Unsubscribe(_currentSubscriptionId));
             }
         }
 
@@ -857,7 +857,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingQueue.Subscribed(_currentSubscriptionId);
             bool stopOnEof = _projectionConfig.StopOnEof;
             _publisher.Publish(
-                new ProjectionSubscriptionManagement.Subscribe(
+                new ReaderSubscriptionManagement.Subscribe(
                     _projectionCorrelationId, _currentSubscriptionId, checkpointTag, _checkpointStrategy,
                     _projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold, stopOnEof));
             _subscribed = true;

@@ -205,7 +205,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_eofs.All(v => v.Value))
                 _publisher.Publish(
-                    new ProjectionCoreServiceMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
+                    new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
         }
 
         private void ProcessBuffers()
@@ -292,7 +292,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             // deliver if already available
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                new ReaderSubscriptionMessage.CommittedEventDistributed(
                     EventReaderCorrelationId, null, PositionToSafeJoinPosition(_safePositionToJoin), 100.0f));
         }
 
@@ -316,7 +316,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var resolvedLinkTo = streamId != @event.EventStreamId || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(
                 //TODO: publish both link and event data
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                new ReaderSubscriptionMessage.CommittedEventDistributed(
                     EventReaderCorrelationId,
                     new ResolvedEvent(
                         streamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,

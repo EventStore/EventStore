@@ -132,7 +132,7 @@ namespace EventStore.Projections.Core.Services.Management
             _started = true;
             foreach (var queue in _queues)
             {
-                queue.Publish(new Messages.ProjectionCoreServiceMessage.StartReader());
+                queue.Publish(new Messages.ReaderCoreServiceMessage.StartReader());
                 queue.Publish(new ProjectionCoreServiceMessage.StartCore());
             }
             StartExistingProjections();
@@ -164,7 +164,7 @@ namespace EventStore.Projections.Core.Services.Management
             foreach (var queue in _queues)
             {
                 queue.Publish(new ProjectionCoreServiceMessage.StopCore());
-                queue.Publish(new Messages.ProjectionCoreServiceMessage.StopReader());
+                queue.Publish(new Messages.ReaderCoreServiceMessage.StopReader());
             }
 
             _writeDispatcher.CancelAll();

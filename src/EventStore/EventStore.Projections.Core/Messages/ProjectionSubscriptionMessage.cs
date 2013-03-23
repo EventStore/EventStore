@@ -131,7 +131,7 @@ namespace EventStore.Projections.Core.Messages
             }
 
             public static CommittedEventReceived FromCommittedEventDistributed(
-                ProjectionCoreServiceMessage.CommittedEventDistributed message, CheckpointTag checkpointTag,
+                ReaderSubscriptionMessage.CommittedEventDistributed message, CheckpointTag checkpointTag,
                 string eventCategory, Guid projectionId, Guid subscriptionId, long subscriptionMessageSequenceNumber)
             {
                 return new CommittedEventReceived(

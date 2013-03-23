@@ -100,11 +100,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         public void publishes_event_distribution_idle_messages()
         {
             Assert.AreEqual(
-                2, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>().Count());
+                2, _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderIdle>().Count());
             var first =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>().First();
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderIdle>().First();
             var second =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>()
+                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderIdle>()
                          .Skip(1)
                          .First();
 

@@ -36,41 +36,41 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 {
     class FakeProjectionSubscription : IProjectionSubscription
     {
-        private readonly List<ProjectionCoreServiceMessage.CommittedEventDistributed> _receivedEvents =
-            new List<ProjectionCoreServiceMessage.CommittedEventDistributed>();
+        private readonly List<ReaderSubscriptionMessage.CommittedEventDistributed> _receivedEvents =
+            new List<ReaderSubscriptionMessage.CommittedEventDistributed>();
 
-        private readonly List<ProjectionCoreServiceMessage.EventReaderIdle> _receivedIdleNotifications =
-            new List<ProjectionCoreServiceMessage.EventReaderIdle>();
+        private readonly List<ReaderSubscriptionMessage.EventReaderIdle> _receivedIdleNotifications =
+            new List<ReaderSubscriptionMessage.EventReaderIdle>();
 
-        private readonly List<ProjectionCoreServiceMessage.EventReaderEof> _receivedEofNotifications =
-            new List<ProjectionCoreServiceMessage.EventReaderEof>();
+        private readonly List<ReaderSubscriptionMessage.EventReaderEof> _receivedEofNotifications =
+            new List<ReaderSubscriptionMessage.EventReaderEof>();
 
-        public void Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        public void Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             _receivedEvents.Add(message);
         }
 
-        public List<ProjectionCoreServiceMessage.CommittedEventDistributed> ReceivedEvents
+        public List<ReaderSubscriptionMessage.CommittedEventDistributed> ReceivedEvents
         {
             get { return _receivedEvents; }
         }
 
-        public List<ProjectionCoreServiceMessage.EventReaderIdle> ReceivedIdleNotifications
+        public List<ReaderSubscriptionMessage.EventReaderIdle> ReceivedIdleNotifications
         {
             get { return _receivedIdleNotifications; }
         }
 
-        public List<ProjectionCoreServiceMessage.EventReaderEof> ReceivedEofNotifications
+        public List<ReaderSubscriptionMessage.EventReaderEof> ReceivedEofNotifications
         {
             get { return _receivedEofNotifications; }
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
+        public void Handle(ReaderSubscriptionMessage.EventReaderIdle message)
         {
             _receivedIdleNotifications.Add(message);
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventReaderEof message)
+        public void Handle(ReaderSubscriptionMessage.EventReaderEof message)
         {
             _receivedEofNotifications.Add(message);
         }

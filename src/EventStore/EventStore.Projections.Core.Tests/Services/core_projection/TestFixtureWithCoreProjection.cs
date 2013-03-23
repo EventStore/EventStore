@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     public abstract class TestFixtureWithCoreProjection : TestFixtureWithExistingEvents
     {
         protected CoreProjection _coreProjection;
-        protected TestHandler<ProjectionSubscriptionManagement.Subscribe> _subscribeProjectionHandler;
+        protected TestHandler<ReaderSubscriptionManagement.Subscribe> _subscribeProjectionHandler;
         protected TestHandler<ClientMessage.WriteEvents> _writeEventHandler;
         protected Guid _firstWriteCorrelationId;
         protected FakeProjectionStateHandler _stateHandler;
@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [SetUp]
         public void setup()
         {
-            _subscribeProjectionHandler = new TestHandler<ProjectionSubscriptionManagement.Subscribe>();
+            _subscribeProjectionHandler = new TestHandler<ReaderSubscriptionManagement.Subscribe>();
             _writeEventHandler = new TestHandler<ClientMessage.WriteEvents>();
             _bus.Subscribe(_subscribeProjectionHandler);
             _bus.Subscribe(_writeEventHandler);
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe<ProjectionSubscriptionMessage.EofReached>(_coreProjection);
             _bus.Subscribe<ProjectionSubscriptionMessage.ProgressChanged>(_coreProjection);
             _bus.Subscribe(new StubHandler<ProjectionCoreServiceMessage.CoreTick>(tick => tick.Action()));
-            _bus.Subscribe(new StubHandler<ProjectionCoreServiceMessage.ReaderTick>(tick => tick.Action()));
+            _bus.Subscribe(new StubHandler<ReaderCoreServiceMessage.ReaderTick>(tick => tick.Action()));
             PreWhen();
             When();
         }

@@ -37,20 +37,20 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_pos
     [TestFixture]
     public class stream_position_tagger
     {
-        private ProjectionCoreServiceMessage.CommittedEventDistributed _zeroEvent;
-        private ProjectionCoreServiceMessage.CommittedEventDistributed _firstEvent;
-        private ProjectionCoreServiceMessage.CommittedEventDistributed _secondEvent;
+        private ReaderSubscriptionMessage.CommittedEventDistributed _zeroEvent;
+        private ReaderSubscriptionMessage.CommittedEventDistributed _firstEvent;
+        private ReaderSubscriptionMessage.CommittedEventDistributed _secondEvent;
 
         [SetUp]
         public void setup()
         {
-            _zeroEvent = ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+            _zeroEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new EventPosition(10, 0), "stream1", 0, false, Guid.NewGuid(), "StreamCreated", false,
                 new byte[0], new byte[0]);
-            _firstEvent = ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+            _firstEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new EventPosition(30, 20), "stream1", 1, false, Guid.NewGuid(), "Data", true,
                 Encoding.UTF8.GetBytes("{}"), new byte[0]);
-            _secondEvent = ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+            _secondEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new EventPosition(50, 40), "stream1", 2, false, Guid.NewGuid(), "Data", true,
                 Encoding.UTF8.GetBytes("{}"), new byte[0]);
         }

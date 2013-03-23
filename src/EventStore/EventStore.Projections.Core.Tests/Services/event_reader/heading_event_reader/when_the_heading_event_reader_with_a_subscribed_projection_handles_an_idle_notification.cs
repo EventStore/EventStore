@@ -66,18 +66,18 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
                     _bus, _distibutionPointCorrelationId, new EventPosition(0, -1), new RealTimeProvider()));
             DateTime timestamp = DateTime.UtcNow;
             _point.Handle(
-                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     _distibutionPointCorrelationId, new EventPosition(20, 10), "stream", 10, false, Guid.NewGuid(),
                     "type", false, new byte[0], new byte[0], timestamp));
             _point.Handle(
-                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     _distibutionPointCorrelationId, new EventPosition(40, 30), "stream", 11, false, Guid.NewGuid(),
                     "type", false, new byte[0], new byte[0], timestamp.AddMilliseconds(1)));
             _subscription = new FakeProjectionSubscription();
             _projectionSubscriptionId = Guid.NewGuid();
             var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
             _point.Handle(
-                new ProjectionCoreServiceMessage.EventReaderIdle(
+                new ReaderSubscriptionMessage.EventReaderIdle(
                     _distibutionPointCorrelationId, timestamp.AddMilliseconds(1100)));
         }
 

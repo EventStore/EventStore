@@ -36,8 +36,8 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class EventReorderingProjectionSubscription : ProjectionSubscriptionBase, IProjectionSubscription
     {
-        private readonly SortedList<long, ProjectionCoreServiceMessage.CommittedEventDistributed> _buffer =
-            new SortedList<long, ProjectionCoreServiceMessage.CommittedEventDistributed>();
+        private readonly SortedList<long, ReaderSubscriptionMessage.CommittedEventDistributed> _buffer =
+            new SortedList<long, ReaderSubscriptionMessage.CommittedEventDistributed>();
 
         private readonly int _processingLagMs;
 
@@ -52,11 +52,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingLagMs = processingLagMs;
         }
 
-        public void Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        public void Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             if (message.Data == null)
                 throw new NotSupportedException();
-            ProjectionCoreServiceMessage.CommittedEventDistributed existing;
+            ReaderSubscriptionMessage.CommittedEventDistributed existing;
             // ignore duplicate messages (when replaying from heading event distribution point)
             if (!_buffer.TryGetValue(message.Data.Position.PreparePosition, out existing))
             {
@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
+        public void Handle(ReaderSubscriptionMessage.EventReaderIdle message)
         {
             ProcessAllFor(message.IdleTimestampUtc);
         }

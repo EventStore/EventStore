@@ -32,13 +32,13 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
-    public static class ProjectionSubscriptionManagement
+    public static class ReaderSubscriptionManagement
     {
-        public abstract class ProjectionSubscriptionManagementMessage : Message
+        public abstract class ReaderSubscriptionManagementMessage : Message
         {
             private readonly Guid _subscriptionId;
 
-            protected ProjectionSubscriptionManagementMessage(Guid subscriptionId)
+            protected ReaderSubscriptionManagementMessage(Guid subscriptionId)
             {
                 _subscriptionId = subscriptionId;
             }
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class Subscribe : ProjectionSubscriptionManagementMessage
+        public class Subscribe : ReaderSubscriptionManagementMessage
         {
             private readonly Guid _responseCorrelationId;
             private readonly CheckpointTag _fromPosition;
@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class Pause : ProjectionSubscriptionManagementMessage
+        public class Pause : ReaderSubscriptionManagementMessage
         {
 
             public Pause(Guid subscriptionId)
@@ -114,7 +114,7 @@ namespace EventStore.Projections.Core.Messages
 
         }
 
-        public class Resume : ProjectionSubscriptionManagementMessage
+        public class Resume : ReaderSubscriptionManagementMessage
         {
 
             public Resume(Guid subscriptionId)
@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Messages
 
         }
 
-        public class Unsubscribe : ProjectionSubscriptionManagementMessage
+        public class Unsubscribe : ReaderSubscriptionManagementMessage
         {
 
             public Unsubscribe(Guid subscriptionId)

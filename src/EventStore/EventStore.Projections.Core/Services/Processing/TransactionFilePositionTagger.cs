@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public override bool IsMessageAfterCheckpointTag(
-            CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
+            CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed comittedEvent)
         {
             if (previous.Mode_ != CheckpointTag.Mode.Position)
                 throw new ArgumentException("Mode.Position expected", "previous");
@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public override CheckpointTag MakeCheckpointTag(
-            CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
+            CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed comittedEvent)
         {
             return CheckpointTag.FromPosition(comittedEvent.Data.Position);
         }

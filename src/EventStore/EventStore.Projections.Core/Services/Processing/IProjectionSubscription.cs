@@ -32,9 +32,9 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IProjectionSubscription : IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>,
-                                               IHandle<ProjectionCoreServiceMessage.EventReaderIdle>,
-                                               IHandle<ProjectionCoreServiceMessage.EventReaderEof>
+    public interface IProjectionSubscription : IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>,
+                                               IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
+                                               IHandle<ReaderSubscriptionMessage.EventReaderEof>
     {
         EventReader CreatePausedEventReader(IPublisher publisher, Guid forkedEventReaderId);
     }

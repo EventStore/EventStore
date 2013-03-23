@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public override bool IsMessageAfterCheckpointTag(
-            CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
+            CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed comittedEvent)
         {
             if (previous.Mode_ != CheckpointTag.Mode.MultiStream)
                 throw new ArgumentException("Mode.MultiStream expected", "previous");
@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public override CheckpointTag MakeCheckpointTag(
-            CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
+            CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed comittedEvent)
         {
             if (!_streams.Contains(comittedEvent.Data.PositionStreamId))
                 throw new InvalidOperationException(

@@ -98,10 +98,10 @@ namespace EventStore.Projections.Core.Services.Processing
         protected abstract string FromAsText();
         protected abstract void RequestEvents();
 
-        protected ProjectionCoreServiceMessage.ReaderTick CreateTickMessage()
+        protected ReaderCoreServiceMessage.ReaderTick CreateTickMessage()
         {
             return
-                new ProjectionCoreServiceMessage.ReaderTick(
+                new ReaderCoreServiceMessage.ReaderTick(
                     () => { if (!_paused && !_disposed) RequestEvents(); });
         }
 
@@ -109,7 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_stopOnEof)
             {
-                _publisher.Publish(new ProjectionCoreServiceMessage.EventReaderEof(EventReaderCorrelationId));
+                _publisher.Publish(new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId));
                 Dispose();
             }
         }

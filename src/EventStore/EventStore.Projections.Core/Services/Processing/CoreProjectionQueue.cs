@@ -129,7 +129,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _subscriptionPaused = true;
                 _publisher.Publish(
-                    new ProjectionSubscriptionManagement.Pause(_subscriptionId));
+                    new ReaderSubscriptionManagement.Pause(_subscriptionId));
             }
         }
 
@@ -141,7 +141,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _subscriptionPaused = false;
                 _publisher.Publish(
-                    new ProjectionSubscriptionManagement.Resume(_subscriptionId));
+                    new ReaderSubscriptionManagement.Resume(_subscriptionId));
             }
         }
 

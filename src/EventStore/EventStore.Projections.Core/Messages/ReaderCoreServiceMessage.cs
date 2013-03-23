@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -27,26 +27,33 @@
 // 
 
 using System;
-using EventStore.Projections.Core.Messages;
-using NUnit.Framework;
+using EventStore.Core.Messaging;
 
-namespace EventStore.Projections.Core.Tests.Services.projection_subscription
+namespace EventStore.Projections.Core.Messages
 {
-    [TestFixture]
-    public class when_handling_committed_event_passing_the_filter : TestFixtureWithProjectionSubscription
+    public static class ReaderCoreServiceMessage
     {
-        protected override void When()
+        public class StartReader : Message
         {
-            _subscription.Handle(
-                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false, Guid.NewGuid(),
-                    "bad-event-type", false, new byte[0], new byte[0]));
         }
 
-        [Test]
-        public void event_is_passed_to_downstream_handler()
+        public class StopReader : Message
         {
-            Assert.AreEqual(1, _eventHandler.HandledMessages.Count);
+        }
+
+        public class ReaderTick : Message
+        {
+            private readonly Action _action;
+
+            public ReaderTick(Action action)
+            {
+                _action = action;
+            }
+
+            public Action Action
+            {
+                get { return _action; }
+            }
         }
     }
 }

@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         public void can_handle_events()
         {
             _point.Handle(
-                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     _distibutionPointCorrelationId, new EventPosition(20, 10), "stream", 10, false, Guid.NewGuid(),
                     "type", false, new byte[0], new byte[0]));
         }

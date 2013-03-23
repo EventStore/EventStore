@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void SendIdle()
         {
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
+                new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
         }
 
         public override void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
@@ -183,7 +183,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_stopOnEof || safeJoinPosition == null || safeJoinPosition == -1)
                 return; //TODO: this should not happen, but StorageReader does not return it now
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                new ReaderSubscriptionMessage.CommittedEventDistributed(
                     EventReaderCorrelationId, null, safeJoinPosition, 100.0f));
         }
 
@@ -200,7 +200,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                  || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(
                 //TODO: publish both link and event data
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                new ReaderSubscriptionMessage.CommittedEventDistributed(
                     EventReaderCorrelationId,
                     new ResolvedEvent(
                         positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,

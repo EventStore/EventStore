@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
             _readerService = new ProjectionReaderCoreService(_bus, 10, writerCheckpoint);
             _service = new ProjectionCoreService(_bus, _bus);
-            _readerService.Handle(new Messages.ProjectionCoreServiceMessage.StartReader());
+            _readerService.Handle(new Messages.ReaderCoreServiceMessage.StartReader());
             _service.Handle(new ProjectionCoreServiceMessage.StartCore());
         }
 

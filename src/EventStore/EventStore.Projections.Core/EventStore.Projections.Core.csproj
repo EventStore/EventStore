@@ -161,9 +161,10 @@
     <Compile Include="Messages\ICoreProjection.cs" />
     <Compile Include="Messages\IProjectionCheckpointManager.cs" />
     <Compile Include="Messages\ProjectionCoreServiceMessage.cs" />
-    <Compile Include="Messages\ProjectionReaderCoreServiceMessage.cs" />
-    <Compile Include="Messages\ProjectionSubscriptionManagement.cs" />
+    <Compile Include="Messages\ReaderCoreServiceMessage.cs" />
+    <Compile Include="Messages\ReaderSubscriptionManagement.cs" />
     <Compile Include="Messages\ProjectionSubscriptionMessage.cs" />
+    <Compile Include="Messages\ReaderSubscriptionMessage.cs" />
     <Compile Include="Messaging\PublishToWrapEnvelop.cs" />
     <Compile Include="Messaging\UnwrapEnvelopeHandler.cs" />
     <Compile Include="Messaging\UnwrapEnvelopeMessage.cs" />
