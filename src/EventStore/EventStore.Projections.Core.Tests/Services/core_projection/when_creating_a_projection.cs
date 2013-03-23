@@ -30,6 +30,7 @@ using System;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -50,6 +51,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
 
+        private
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.Subscribe,
+                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+            _subscriptionDispatcher;
+
         [SetUp]
         public void Setup()
         {
@@ -62,6 +69,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
                     new FakePublisher(), v => v.CorrelationId, v => v.CorrelationId,
                     new PublishEnvelope(new FakePublisher()));
+
+            _subscriptionDispatcher =
+                new PublishSubscribeDispatcher
+                    <ReaderSubscriptionManagement.Subscribe,
+                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+                    (new FakePublisher(), v => v.SubscriptionId, v => v.SubscriptionId);
+
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -69,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepare(null, new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler, _defaultProjectionConfig,
-                                         _readDispatcher, _writeDispatcher, null);
+                                         _readDispatcher, _writeDispatcher, _subscriptionDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -77,7 +91,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepare("", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler, _defaultProjectionConfig,
-                                         _readDispatcher, _writeDispatcher, null);
+                                         _readDispatcher, _writeDispatcher, _subscriptionDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -85,14 +99,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), null, projectionStateHandler, _defaultProjectionConfig,
-                                         _readDispatcher, _writeDispatcher, null);
+                                         _readDispatcher, _writeDispatcher, _subscriptionDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void a_null_projection_handler_throws_argument_null_exception()
         {
             var p = CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), null, _defaultProjectionConfig, _readDispatcher,
-                                         _writeDispatcher, null);
+                                         _writeDispatcher, _subscriptionDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentOutOfRangeException))]
@@ -101,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
                                          new ProjectionConfig(-1, 10, 1000, 250, true, true, false, false), _readDispatcher,
-                                         _writeDispatcher, null);
+                                         _writeDispatcher, _subscriptionDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentOutOfRangeException))]
@@ -110,7 +124,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
                                          new ProjectionConfig(0, 10, 1000, 250, true, true, false, false), _readDispatcher,
-                                         _writeDispatcher, null);
+                                         _writeDispatcher, _subscriptionDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -120,7 +134,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
                                          new ProjectionConfig(10, 5, 1000, 250, true, true, false, false), _readDispatcher,
-                                         _writeDispatcher, null);
+                                         _writeDispatcher, _subscriptionDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -128,7 +142,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
-                                         _defaultProjectionConfig, null, _writeDispatcher, null);
+                                         _defaultProjectionConfig, null, _writeDispatcher, _subscriptionDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -136,7 +150,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
-                                         _defaultProjectionConfig, _readDispatcher, null, null);
+                                         _defaultProjectionConfig, _readDispatcher, null, _subscriptionDispatcher, null);
+        }
+
+        [Test, ExpectedException(typeof(ArgumentNullException))]
+        public void a_null_subscription_dispatcher__throws_argument_null_exception()
+        {
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var p = CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
+                                         _defaultProjectionConfig, _readDispatcher, _writeDispatcher, null, null);
         }
     }
 }

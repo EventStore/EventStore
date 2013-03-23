@@ -30,6 +30,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
@@ -40,6 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
     {
         protected InMemoryBus _bus;
 
+        protected PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage> _subscriptionDispatcher;
         protected RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
         protected RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
 
@@ -57,6 +59,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
                     _bus, e => e.CorrelationId, e => e.CorrelationId, new PublishEnvelope(_bus));
+            _subscriptionDispatcher =
+                new PublishSubscribeDispatcher
+                    <ReaderSubscriptionManagement.Subscribe,
+                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+                    (_bus, v => v.SubscriptionId, v => v.SubscriptionId);
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<ProjectionSubscriptionMessage.CommittedEventReceived>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<ProjectionSubscriptionMessage.CheckpointSuggested>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<ProjectionSubscriptionMessage.EofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<ProjectionSubscriptionMessage.ProgressChanged>());
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             _consumer = new TestHandler<Message>();

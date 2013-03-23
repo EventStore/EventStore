@@ -35,10 +35,10 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ProjectionSubscription : ProjectionSubscriptionBase, IProjectionSubscription
     {
         public ProjectionSubscription(
-            IPublisher publisher, Guid projectionCorrelationId, Guid subscriptionId, CheckpointTag from,
+            IPublisher publisher, Guid subscriptionId, CheckpointTag from,
             CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof = false)
             : base(
-                publisher, projectionCorrelationId, subscriptionId, from, checkpointStrategy,
+                publisher, subscriptionId, from, checkpointStrategy,
                 checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold, stopOnEof)
         {
         }

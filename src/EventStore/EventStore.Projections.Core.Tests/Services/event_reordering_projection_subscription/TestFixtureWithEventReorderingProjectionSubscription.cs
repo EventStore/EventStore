@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         protected override IProjectionSubscription CreateProjectionSubscription()
         {
             return new EventReorderingProjectionSubscription(_bus, 
-                _projectionCorrelationId, Guid.NewGuid(),
+                _projectionCorrelationId, 
                 CheckpointTag.FromStreamPositions(
                     new Dictionary<string, int> {{"a", ExpectedVersion.NoStream}, {"b", ExpectedVersion.NoStream}}),
                 _checkpointStrategy,

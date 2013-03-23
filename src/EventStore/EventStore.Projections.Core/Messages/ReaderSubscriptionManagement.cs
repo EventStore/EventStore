@@ -51,21 +51,19 @@ namespace EventStore.Projections.Core.Messages
 
         public class Subscribe : ReaderSubscriptionManagementMessage
         {
-            private readonly Guid _responseCorrelationId;
             private readonly CheckpointTag _fromPosition;
             private readonly CheckpointStrategy _checkpointStrategy;
             private readonly long _checkpointUnhandledBytesThreshold;
             private readonly int _checkpointProcessedEventsThreshold; 
             private readonly bool _stopOnEof;
 
-            public Subscribe(Guid responseCorrelationId,
+            public Subscribe(
                 Guid subscriptionId, CheckpointTag from,
                 CheckpointStrategy checkpointStrategy, long checkpointUnhandledBytesThreshold,
                 int checkpointProcessedEventsThreshold, bool stopOnEof = false): base(subscriptionId)
             {
                 if (@from == null) throw new ArgumentNullException("from");
                 if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
-                _responseCorrelationId = responseCorrelationId;
                 _fromPosition = @from;
                 _checkpointStrategy = checkpointStrategy;
                 _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
@@ -98,10 +96,6 @@ namespace EventStore.Projections.Core.Messages
                 get { return _stopOnEof; }
             }
 
-            public Guid ResponseCorrelationId
-            {
-                get { return _responseCorrelationId; }
-            }
         }
 
         public class Pause : ReaderSubscriptionManagementMessage

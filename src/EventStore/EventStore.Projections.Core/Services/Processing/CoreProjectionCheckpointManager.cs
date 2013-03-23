@@ -399,7 +399,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     pair.Event.TimeStamp), null, -1);
             _publisher.Publish(
                 ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
-                    committedEvent, positionTag, null, _projectionCorrelationId, Guid.Empty,
+                    committedEvent, positionTag, null, _projectionCorrelationId, 
                     prerecordedEventMessageSequenceNumber));
         }
 

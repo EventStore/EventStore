@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(120, 110),
                         Guid.NewGuid(), "skip_this_type", false, new byte[0], new byte[0], null, default(DateTime)),
-                    Guid.Empty, _subscriptionId, 0));
+                    _subscriptionId, 0));
         }
 
         [Test]

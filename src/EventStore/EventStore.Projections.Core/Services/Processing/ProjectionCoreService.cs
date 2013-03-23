@@ -78,6 +78,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
 
+        private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+            _subscriptionDispatcher;
+
 
         public ProjectionCoreService(IPublisher inputQueue, IPublisher publisher)
         {
@@ -90,6 +93,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
                     _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+            _subscriptionDispatcher =
+                new PublishSubscribeDispatcher
+                    <ReaderSubscriptionManagement.Subscribe,
+                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+                    (_publisher, v => v.SubscriptionId, v => v.SubscriptionId);
         }
 
         public void Handle(ProjectionCoreServiceMessage.StartCore message)
@@ -130,7 +138,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 // constructor can fail if wrong source defintion
                 ProjectionSourceDefinition sourceDefinition;
                 var projection = CoreProjection.CreateAndPrepare(message.Name, message.Version, message.ProjectionId, _publisher, stateHandler, message.Config, _readDispatcher,
-                                                      _writeDispatcher, _logger, out sourceDefinition);
+                                                      _writeDispatcher, _subscriptionDispatcher, _logger, out sourceDefinition);
                 _projections.Add(message.ProjectionId, projection);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
@@ -151,7 +159,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 ProjectionSourceDefinition sourceDefinition;
                 var projection = CoreProjection.CreatePrepared(
                     message.Name, message.Version, message.ProjectionId, _publisher, message.SourceDefinition, message.Config,
-                    _readDispatcher, _writeDispatcher, _logger, out sourceDefinition);
+                    _readDispatcher, _writeDispatcher, _subscriptionDispatcher, _logger, out sourceDefinition);
                 _projections.Add(message.ProjectionId, projection);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
@@ -272,30 +280,26 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
-            CoreProjection projection;
-            if (_projections.TryGetValue(message.ProjectionId, out projection))
-                projection.Handle(message);
+            if (_subscriptionDispatcher.Handle(message))
+                return;
         }
 
         public void Handle(ProjectionSubscriptionMessage.CheckpointSuggested message)
         {
-            CoreProjection projection;
-            if (_projections.TryGetValue(message.ProjectionId, out projection))
-                projection.Handle(message);
+            if (_subscriptionDispatcher.Handle(message))
+                return;
         }
 
         public void Handle(ProjectionSubscriptionMessage.EofReached message)
         {
-            CoreProjection projection;
-            if (_projections.TryGetValue(message.ProjectionId, out projection))
-                projection.Handle(message);
+            if (_subscriptionDispatcher.Handle(message))
+                return;
         }
 
         public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
         {
-            CoreProjection projection;
-            if (_projections.TryGetValue(message.ProjectionId, out projection))
-                projection.Handle(message);
+            if (_subscriptionDispatcher.Handle(message))
+                return;
         }
 
     }

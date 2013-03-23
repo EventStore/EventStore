@@ -34,20 +34,28 @@ namespace EventStore.Projections.Core.Messages
 {
     public static class ReaderSubscriptionMessage
     {
-        public class EventReaderIdle : Message
+        public class SubscriptionMessage : Message
         {
             private readonly Guid _correlationId;
-            private readonly DateTime _idleTimestampUtc;
 
-            public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc)
+            public SubscriptionMessage(Guid correlationId)
             {
                 _correlationId = correlationId;
-                _idleTimestampUtc = idleTimestampUtc;
             }
 
             public Guid CorrelationId
             {
                 get { return _correlationId; }
+            }
+        }
+
+        public class EventReaderIdle : SubscriptionMessage
+        {
+            private readonly DateTime _idleTimestampUtc;
+
+            public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc): base(correlationId)
+            {
+                _idleTimestampUtc = idleTimestampUtc;
             }
 
             public DateTime IdleTimestampUtc
@@ -56,22 +64,16 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class EventReaderEof : Message
+        public class EventReaderEof : SubscriptionMessage
         {
-            private readonly Guid _correlationId;
-
             public EventReaderEof(Guid correlationId)
+                : base(correlationId)
             {
-                _correlationId = correlationId;
             }
 
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
-            }
         }
 
-        public class CommittedEventDistributed : Message
+        public class CommittedEventDistributed : SubscriptionMessage
         {
             public static CommittedEventDistributed Sample(
                 Guid correlationId, EventPosition position, string positionStreamId, int positionSequenceNumber,
@@ -99,8 +101,6 @@ namespace EventStore.Projections.Core.Messages
                     position.PreparePosition, 11.1f);
             }
 
-            private readonly Guid _correlationId;
-
             private readonly ResolvedEvent _data;
 
             private readonly long? _safeTransactionFileReaderJoinPosition;
@@ -111,9 +111,8 @@ namespace EventStore.Projections.Core.Messages
             // TODO: separate message?
 
             public CommittedEventDistributed(
-                Guid correlationId, ResolvedEvent data, long? safeTransactionFileReaderJoinPosition, float progress)
+                Guid correlationId, ResolvedEvent data, long? safeTransactionFileReaderJoinPosition, float progress): base(correlationId)
             {
-                _correlationId = correlationId;
                 _data = data;
                 _safeTransactionFileReaderJoinPosition = safeTransactionFileReaderJoinPosition;
                 _progress = progress;
@@ -127,11 +126,6 @@ namespace EventStore.Projections.Core.Messages
             public ResolvedEvent Data
             {
                 get { return _data; }
-            }
-
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
             }
 
             public long? SafeTransactionFileReaderJoinPosition

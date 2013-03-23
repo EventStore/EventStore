@@ -116,7 +116,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var fromCheckpointTag = message.FromPosition;
             var subscriptionId = message.SubscriptionId;
             var projectionSubscription = message.CheckpointStrategy.CreateProjectionSubscription(
-                _publisher, fromCheckpointTag, message.ResponseCorrelationId, message.SubscriptionId,
+                _publisher, fromCheckpointTag, message.SubscriptionId,
                 message.CheckpointUnhandledBytesThreshold, message.CheckpointProcessedEventsThreshold, message.StopOnEof);
             _subscriptions.Add(subscriptionId, projectionSubscription);
 

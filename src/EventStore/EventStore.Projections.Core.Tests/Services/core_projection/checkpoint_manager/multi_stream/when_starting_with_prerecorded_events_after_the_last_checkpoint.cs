@@ -148,9 +148,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             Assert.AreEqual("a", message2.Data.EventStreamId);
             Assert.AreEqual("b", message3.Data.EventStreamId);
 
-            Assert.AreEqual(Guid.Empty, message1.SubscriptionId);
-            Assert.AreEqual(Guid.Empty, message2.SubscriptionId);
-            Assert.AreEqual(Guid.Empty, message3.SubscriptionId);
+            Assert.AreEqual(_projectionCorrelationId, message1.SubscriptionId);
+            Assert.AreEqual(_projectionCorrelationId, message2.SubscriptionId);
+            Assert.AreEqual(_projectionCorrelationId, message3.SubscriptionId);
 
             Assert.AreEqual(true, message1.Data.ResolvedLinkTo);
             Assert.AreEqual(false, message2.Data.ResolvedLinkTo);

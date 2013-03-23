@@ -34,17 +34,15 @@ namespace EventStore.Projections.Core.Messages
 {
     public abstract class ProjectionSubscriptionMessage : Message
     {
-        private readonly Guid _projectionId;
         private readonly Guid _subscriptionId;
         private readonly long _subscriptionMessageSequenceNumber;
         private readonly CheckpointTag _checkpointTag;
         private readonly float _progress;
 
         private ProjectionSubscriptionMessage(
-            Guid projectionId, Guid subscriptionId, CheckpointTag checkpointTag, float progress,
+            Guid subscriptionId, CheckpointTag checkpointTag, float progress,
             long subscriptionMessageSequenceNumber)
         {
-            _projectionId = projectionId;
             _subscriptionId = subscriptionId;
             _checkpointTag = checkpointTag;
             _progress = progress;
@@ -60,9 +58,9 @@ namespace EventStore.Projections.Core.Messages
         public class CheckpointSuggested : ProjectionSubscriptionMessage
         {
             public CheckpointSuggested(
-                Guid projectionId, Guid subscriptionId, CheckpointTag checkpointTag, float progress,
+                Guid subscriptionId, CheckpointTag checkpointTag, float progress,
                 long subscriptionMessageSequenceNumber)
-                : base(projectionId, subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
             {
             }
         }
@@ -70,9 +68,9 @@ namespace EventStore.Projections.Core.Messages
         public class ProgressChanged : ProjectionSubscriptionMessage
         {
             public ProgressChanged(
-                Guid projectionId, Guid subscriptionId, CheckpointTag checkpointTag, float progress,
+                Guid subscriptionId, CheckpointTag checkpointTag, float progress,
                 long subscriptionMessageSequenceNumber)
-                : base(projectionId, subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
             {
             }
         }
@@ -80,9 +78,9 @@ namespace EventStore.Projections.Core.Messages
         public class EofReached : ProjectionSubscriptionMessage
         {
             public EofReached(
-                Guid projectionId, Guid subscriptionId, CheckpointTag checkpointTag,
+                Guid subscriptionId, CheckpointTag checkpointTag,
                 long subscriptionMessageSequenceNumber)
-                : base(projectionId, subscriptionId, checkpointTag, 100.0f, subscriptionMessageSequenceNumber)
+                : base(subscriptionId, checkpointTag, 100.0f, subscriptionMessageSequenceNumber)
             {
             }
         }
@@ -90,10 +88,10 @@ namespace EventStore.Projections.Core.Messages
         public class CommittedEventReceived : ProjectionSubscriptionMessage
         {
             public static CommittedEventReceived Sample(
-                ResolvedEvent data, Guid correlationId, Guid subscriptionId, long subscriptionMessageSequenceNumber)
+                ResolvedEvent data, Guid subscriptionId, long subscriptionMessageSequenceNumber)
             {
                 return new CommittedEventReceived(
-                    correlationId, subscriptionId, null, data, 77.7f, subscriptionMessageSequenceNumber);
+                    subscriptionId, null, data, 77.7f, subscriptionMessageSequenceNumber);
             }
 
             private readonly ResolvedEvent _data;
@@ -101,9 +99,9 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _eventCategory;
 
             private CommittedEventReceived(
-                Guid projectionId, Guid subscriptionId, CheckpointTag checkpointTag, string eventCategory,
+                Guid subscriptionId, CheckpointTag checkpointTag, string eventCategory,
                 ResolvedEvent data, float progress, long subscriptionMessageSequenceNumber)
-                : base(projectionId, subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
             {
                 if (data == null) throw new ArgumentNullException("data");
                 _data = data;
@@ -111,10 +109,10 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private CommittedEventReceived(
-                Guid projectionId, Guid subscriptionId, string eventCategory, ResolvedEvent data, float progress,
+                Guid subscriptionId, string eventCategory, ResolvedEvent data, float progress,
                 long subscriptionMessageSequenceNumber)
                 : this(
-                    projectionId, subscriptionId,
+                    subscriptionId,
                     CheckpointTag.FromPosition(data.Position.CommitPosition, data.Position.PreparePosition),
                     eventCategory, data, progress, subscriptionMessageSequenceNumber)
             {
@@ -132,10 +130,10 @@ namespace EventStore.Projections.Core.Messages
 
             public static CommittedEventReceived FromCommittedEventDistributed(
                 ReaderSubscriptionMessage.CommittedEventDistributed message, CheckpointTag checkpointTag,
-                string eventCategory, Guid projectionId, Guid subscriptionId, long subscriptionMessageSequenceNumber)
+                string eventCategory, Guid subscriptionId, long subscriptionMessageSequenceNumber)
             {
                 return new CommittedEventReceived(
-                    projectionId, subscriptionId, checkpointTag, eventCategory, message.Data, message.Progress,
+                    subscriptionId, checkpointTag, eventCategory, message.Data, message.Progress,
                     subscriptionMessageSequenceNumber);
             }
         }
@@ -160,9 +158,5 @@ namespace EventStore.Projections.Core.Messages
             get { return _subscriptionId; }
         }
 
-        public Guid ProjectionId
-        {
-            get { return _projectionId; }
-        }
     }
 }

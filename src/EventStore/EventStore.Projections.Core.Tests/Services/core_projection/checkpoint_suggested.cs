@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 //projection subscribes here
                 _coreProjection.Handle(
                     new ProjectionSubscriptionMessage.CheckpointSuggested(
-                        Guid.Empty, _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
+                        _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
             }
 
             [Test]
@@ -99,10 +99,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 //projection subscribes here
                 _coreProjection.Handle(
                     new ProjectionSubscriptionMessage.CheckpointSuggested(
-                        Guid.Empty, _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
+                        _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
                 _coreProjection.Handle(
                     new ProjectionSubscriptionMessage.CheckpointSuggested(
-                        Guid.Empty, _subscriptionId, CheckpointTag.FromPosition(160, 150), 55.6f, 1));
+                        _subscriptionId, CheckpointTag.FromPosition(160, 150), 55.6f, 1));
             }
 
             [Test]
@@ -140,10 +140,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 //projection subscribes here
                 _coreProjection.Handle(
                     new ProjectionSubscriptionMessage.CheckpointSuggested(
-                        Guid.Empty, _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
+                        _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
                 _coreProjection.Handle(
                     new ProjectionSubscriptionMessage.CheckpointSuggested(
-                        Guid.Empty, _subscriptionId, CheckpointTag.FromPosition(160, 150), 55.6f, 1));
+                        _subscriptionId, CheckpointTag.FromPosition(160, 150), 55.6f, 1));
             }
 
             [Test]

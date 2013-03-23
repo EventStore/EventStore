@@ -72,23 +72,23 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "account-01", 1, "account-01", 1, false, new EventPosition(120, 110), _eventId,
-                        "handle_this_type", false, "data1", "metadata"), Guid.Empty, _subscriptionId, 0));
+                        "handle_this_type", false, "data1", "metadata"), _subscriptionId, 0));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "account-02", 2, "account-02", 2, false, new EventPosition(140, 130), _eventId,
-                        "handle_this_type", false, "data2", "metadata"), Guid.Empty, _subscriptionId, 1));
+                        "handle_this_type", false, "data2", "metadata"), _subscriptionId, 1));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "account-01", 2, "account-01", 2, false, new EventPosition(160, 150), _eventId, "append", false,
-                        "$", "metadata"), Guid.Empty,
+                        "$", "metadata"), 
                     _subscriptionId, 2));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "account-02", 3, "account-02", 3, false, new EventPosition(180, 170), _eventId, "append", false,
-                        "$", "metadata"), Guid.Empty,
+                        "$", "metadata"), 
                     _subscriptionId, 3));
         }
 

@@ -36,7 +36,6 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ProjectionSubscriptionBase
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<EventReorderingProjectionSubscription>();
-        private readonly Guid _projectionCorrelationId;
         private readonly IPublisher _publisher;
         private readonly CheckpointStrategy _checkpointStrategy;
         private readonly long? _checkpointUnhandledBytesThreshold;
@@ -53,7 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _eofReached;
 
         protected ProjectionSubscriptionBase(
-            IPublisher publisher, Guid projectionCorrelationId, Guid subscriptionId, CheckpointTag from,
+            IPublisher publisher, Guid subscriptionId, CheckpointTag from,
             CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold,
             int? checkpointProcessedEventsThreshold, bool stopOnEof)
         {
@@ -64,7 +63,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
             _stopOnEof = stopOnEof;
-            _projectionCorrelationId = projectionCorrelationId;
             _subscriptionId = subscriptionId;
             _lastPassedOrCheckpointedEventPosition = null;
 
@@ -87,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (progressChanged)
                     _publisher.Publish(
                         new ProjectionSubscriptionMessage.ProgressChanged(
-                            _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, _progress,
+                            _subscriptionId, _positionTracker.LastTag, _progress,
                             _subscriptionMessageSequenceNumber++));
                 return;
             }
@@ -112,7 +110,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var convertedMessage =
                     ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
                         message, eventCheckpointTag, _eventFilter.GetCategory(message.Data.PositionStreamId),
-                        _projectionCorrelationId, _subscriptionId, _subscriptionMessageSequenceNumber++);
+                        _subscriptionId, _subscriptionMessageSequenceNumber++);
                 _publisher.Publish(convertedMessage);
                 _eventsSinceLastCheckpointSuggested++;
                 if (_eventsSinceLastCheckpointSuggested >= _checkpointProcessedEventsThreshold)
@@ -132,7 +130,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (progressChanged)
                         _publisher.Publish(
                             new ProjectionSubscriptionMessage.ProgressChanged(
-                                _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, _progress,
+                                _subscriptionId, _positionTracker.LastTag, _progress,
                                 _subscriptionMessageSequenceNumber++));
                 }
             }
@@ -146,7 +144,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
             _publisher.Publish(
                 new ProjectionSubscriptionMessage.CheckpointSuggested(
-                    _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, message.Progress,
+                    _subscriptionId, _positionTracker.LastTag, message.Progress,
                     _subscriptionMessageSequenceNumber++));
             _eventsSinceLastCheckpointSuggested = 0;
         }
@@ -168,7 +166,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 EofReached();
                 _publisher.Publish(
                     new ProjectionSubscriptionMessage.EofReached(
-                        _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag,
+                        _subscriptionId, _positionTracker.LastTag,
                         _subscriptionMessageSequenceNumber++));
             }
         }

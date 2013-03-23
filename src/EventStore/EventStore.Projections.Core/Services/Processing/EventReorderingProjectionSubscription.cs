@@ -42,11 +42,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly int _processingLagMs;
 
         public EventReorderingProjectionSubscription(
-            IPublisher publisher, Guid projectionCorrelationId, Guid subscriptionId, CheckpointTag from,
+            IPublisher publisher, Guid subscriptionId, CheckpointTag from,
             CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold,
             int? checkpointProcessedEventsThreshold, int processingLagMs, bool stopOnEof = false)
             : base(
-                publisher, projectionCorrelationId, subscriptionId, @from, checkpointStrategy,
+                publisher, subscriptionId, @from, checkpointStrategy,
                 checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold, stopOnEof)
         {
             _processingLagMs = processingLagMs;
