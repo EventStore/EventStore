@@ -515,7 +515,9 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_subscribed)
             {
                 Unsubscribed();
-                _publisher.Publish(new ReaderSubscriptionManagement.Unsubscribe(_currentSubscriptionId));
+                // this was we distinguish pre-recorded events subscription
+                if (_currentSubscriptionId != _projectionCorrelationId) 
+                    _publisher.Publish(new ReaderSubscriptionManagement.Unsubscribe(_currentSubscriptionId));
             }
         }
 
@@ -599,7 +601,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             // projectionCorrelationId is used as a subscription identifier for delivery
             // of pre-recorded order events recovered by checkpoint manager
+            _currentSubscriptionId = _projectionCorrelationId;
             _subscriptionDispatcher.Subscribed(_projectionCorrelationId, this);
+            _subscribed = true; // even if it is not a real subscription we need to unsubscribe 
+            
         }
 
         private void EnterStateLoaded()
