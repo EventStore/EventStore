@@ -11,7 +11,9 @@ function build-v8() {
 function copy-files() {
 
   cp out/x64.debug/lib.target/* -t ../libs || err
-
+  
+  mkdir ../libs/include
+  cp include/* -t ../libs/include || err
 }
 
 
