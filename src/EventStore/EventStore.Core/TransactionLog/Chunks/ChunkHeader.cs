@@ -38,8 +38,8 @@ namespace EventStore.Core.TransactionLog.Chunks
     {
         public const int Size = 128;
 
-        public long ChunkStartPosition { get { return ChunkStartNumber * (long)ChunkSize; } }
-        public long ChunkEndPosition { get { return (ChunkEndNumber + 1) * (long)ChunkSize; } }
+        public readonly long ChunkStartPosition; // return ChunkStartNumber * (long)ChunkSize;
+        public readonly long ChunkEndPosition; // return (ChunkEndNumber + 1) * (long)ChunkSize;
 
         public readonly byte Version;
         public readonly int ChunkSize;
@@ -63,6 +63,9 @@ namespace EventStore.Core.TransactionLog.Chunks
             ChunkEndNumber = chunkEndNumber;
             IsScavenged = isScavenged;
             ChunkId = chunkId;
+
+            ChunkStartPosition = ChunkStartNumber * (long)ChunkSize;
+            ChunkEndPosition = (ChunkEndNumber + 1) * (long)ChunkSize;
         }
 
         public byte[] AsByteArray()
