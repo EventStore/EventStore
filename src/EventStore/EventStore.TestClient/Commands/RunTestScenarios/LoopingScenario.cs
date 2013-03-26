@@ -93,7 +93,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             var nodeProcessId = StartNode();
 
-            var parallelWritesTimeout = TimeSpan.FromMinutes((EventsPerStream / 1000.0) * 7);
+            var parallelWritesTimeout = TimeSpan.FromMinutes((EventsPerStream / 1000.0) * 10);
 
             var parallelWriteTask = RunParallelWrites(runIndex);
 
@@ -118,7 +118,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             _stopParalleWrites = true;
             if (!parallelWriteTask.Wait(parallelWritesTimeout))
-                throw new ApplicationException("Parallel writes stop timed out.");
+                throw new ApplicationException("Parallel writes stop timed out, 1.");
 
             KillNode(nodeProcessId);
             nodeProcessId = StartNode();
@@ -168,7 +168,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             _stopParalleWrites = true;
             if (!parallelWriteTask.Wait(parallelWritesTimeout))
-                throw new ApplicationException("Parallel writes stop timed out.");
+                throw new ApplicationException("Parallel writes stop timed out, 2.");
 
             KillNode(nodeProcessId);
         }
@@ -179,8 +179,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             return Task.Factory.StartNew(() =>
             {
+                int index = 0;
                 while (!_stopParalleWrites)
                 {
+                    
+                    Log.Debug("Start RunParallelWrites #{0} for runIndex {1}", index, runIndex);
+
                     var parallelStreams = Enumerable.Range(0, 2)
                             .Select(x => string.Format("parallel-write-stream-in{0}-{1}-{2}",
                                                        runIndex,
@@ -191,10 +195,16 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     var wr = Write(WriteMode.SingleEventAtTime, parallelStreams, EventsPerStream);
                     wr.Wait();
 
+                    Log.Debug("Wrote RunParallelWrites #{0} for runIndex {1}", index, runIndex);
+
                     var rd1 = Read(parallelStreams, 0, EventsPerStream / 6);
                     var rd2 = Read(parallelStreams, EventsPerStream / 3, EventsPerStream / 6);
                     var rd3 = Read(parallelStreams, EventsPerStream - EventsPerStream / 10, EventsPerStream / 10);
                     Task.WaitAll(rd1, rd2, rd3);
+
+                    Log.Debug("Done RunParallelWrites #{0} for runIndex {0}", index, runIndex);
+
+                    index += 1;
                 }
             }, TaskCreationOptions.LongRunning);
         }
