@@ -202,7 +202,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     var rd3 = Read(parallelStreams, EventsPerStream - EventsPerStream / 10, EventsPerStream / 10);
                     Task.WaitAll(rd1, rd2, rd3);
 
-                    Log.Debug("Done RunParallelWrites #{0} for runIndex {0}", index, runIndex);
+                    Log.Debug("Done RunParallelWrites #{0} for runIndex {1}", index, runIndex);
 
                     index += 1;
                 }
