@@ -35,7 +35,8 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public class SingleAckRequestManager : IHandle<StorageMessage.TransactionStartRequestCreated>,
+    public class SingleAckRequestManager : IRequestManager,
+                                           IHandle<StorageMessage.TransactionStartRequestCreated>,
                                            IHandle<StorageMessage.TransactionWriteRequestCreated>,
                                            IHandle<StorageMessage.PrepareAck>,
                                            IHandle<StorageMessage.WrongExpectedVersion>,
@@ -83,7 +84,6 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                                   _publishEnvelope,
                                                                   message.EventStreamId,
                                                                   message.ExpectedVersion,
-                                                                  allowImplicitStreamCreation: true,
                                                                   liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks * 9 / 10)));
             _nextTimeoutTime = DateTime.UtcNow + _prepareTimeout;
         }
@@ -100,10 +100,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _transactionId = request.TransactionId;
 
-            _bus.Publish(new StorageMessage.WriteTransactionData(request.CorrelationId,
-                                                                 _publishEnvelope,
-                                                                 _transactionId,
-                                                                 request.Events));
+            _bus.Publish(new StorageMessage.WriteTransactionData(request.CorrelationId, _publishEnvelope, _transactionId, request.Events));
             CompleteSuccessRequest(request.CorrelationId, request.TransactionId);
         }
 

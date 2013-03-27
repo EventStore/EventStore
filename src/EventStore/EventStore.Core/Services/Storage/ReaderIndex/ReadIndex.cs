@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private bool _indexRebuild = true;
 
         private readonly BoundedCache<Guid, Tuple<string, int>> _committedEvents = 
-            new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, ESConsts.CommitedEventsMemCacheLimit, x => 16 + 4 + 2*x.Item1.Length);
+            new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, ESConsts.CommitedEventsMemCacheLimit, x => 16 + 4 + 2*x.Item1.Length + IntPtr.Size);
 
         public ReadIndex(IPublisher bus,
                          int initialReaderCount,
@@ -758,8 +758,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     {
                         var message = string.Format("Couldn't read first prepare of to-be-commited transaction. " 
                                                     + "Transaction pos: {0}, commit pos: {1}.",
-                                                    transactionPosition,
-                                                    commitPosition);
+                                                    transactionPosition, commitPosition);
                         Log.Error(message);
                         throw new InvalidOperationException(message);
                     }
@@ -791,9 +790,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         Tuple<string, int> prepInfo;
                         if (!_committedEvents.TryGetRecord(prepare.EventId, out prepInfo) || prepInfo.Item1 != prepare.EventStreamId)
                         {
-                            return first
-                                ? new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1)
-                                : new CommitCheckResult(CommitDecision.CorruptedIdempotency, streamId, curVersion, -1, -1);
+                            return new CommitCheckResult(
+                                first ? CommitDecision.Ok : CommitDecision.CorruptedIdempotency,
+                                streamId, curVersion, -1, -1);
                         }
                         if (first)
                             startEventNumber = prepInfo.Item2;
@@ -818,22 +817,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         EventRecord record;
                         if (!GetStreamRecord(reader, streamId, eventNumber, out record) || record.EventId != prepare.EventId)
                         {
-                            // if we are dealing with 0th event (stream created event)
-                            // and both events are $stream-created-implicit, then they always have different EventIDs,
-                            // but that doesn't matter and we should just skip them, as following prepares 
-                            // with actual data and EventIDs will allow us to arrive at idempotency decision
-                            if (eventNumber == 0
-                                && record.EventType == SystemEventTypes.StreamCreatedImplicit
-                                && prepare.EventType == SystemEventTypes.StreamCreatedImplicit)
-                            {
-                                // skip $stream-created-implicit prepares and don't set first=false, as 
-                                // essentially we pretend that we haven't checked anything yet :)
-                                continue;
-                            }
-                            
-                            return first
-                                ? new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1)
-                                : new CommitCheckResult(CommitDecision.CorruptedIdempotency, streamId, curVersion, -1, -1);
+                            return new CommitCheckResult(
+                                first ? CommitDecision.WrongExpectedVersion : CommitDecision.CorruptedIdempotency,
+                                streamId, curVersion, -1, -1);
                         }
 
                         first = false;
@@ -921,9 +907,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private StreamMetadata GetStreamMetadataUncached(ITransactionFileReader reader, string streamId)
         {
+            var metastreamId = SystemNames.MetastreamOf(streamId);
+            var metaEventNumber = GetLastStreamEventNumberCached(reader, metastreamId);
+            if (metaEventNumber == ExpectedVersion.NoStream || metaEventNumber == EventNumber.DeletedStream)
+                return new StreamMetadata(null, null);
+
             EventRecord record;
-            if (!GetStreamRecord(reader, streamId, 0, out record))
-                throw new Exception("GetStreamMetadata couldn't find 0th event on stream. That should never happen.");
+            if (!GetStreamRecord(reader, metastreamId, metaEventNumber, out record))
+                throw new Exception(string.Format("GetStreamRecord couldn't find metaevent #{0} on metastream '{1}'. That should never happen.", metaEventNumber, metastreamId));
 
             if (record.Metadata == null || record.Metadata.Length == 0 || (record.Flags & PrepareFlags.IsJson) == 0)
                 return new StreamMetadata(null, null);

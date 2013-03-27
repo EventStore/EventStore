@@ -28,9 +28,7 @@
 
 using System;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
@@ -49,6 +47,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
             Init(request.Envelope, request.CorrelationId, -1);
 
+            throw new NotImplementedException();
+/*
             Publisher.Publish(
                 new StorageMessage.WritePrepares(
                     request.CorrelationId,
@@ -58,6 +58,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     new[] { new Event(request.CreateStreamId, SystemEventTypes.StreamCreated, request.IsJson, LogRecord.NoData, request.Metadata) },
                     allowImplicitStreamCreation: false,
                     liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
+*/
         }
 
 

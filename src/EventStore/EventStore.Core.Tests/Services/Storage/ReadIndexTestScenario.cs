@@ -137,7 +137,9 @@ namespace EventStore.Core.Tests.Services.Storage
                                                  DateTime? timestamp = null,
                                                  Guid eventId = default(Guid))
         {
+            throw new NotImplementedException();
             var logPosition = WriterCheckpoint.ReadNonFlushed();
+/*
             var rec = LogRecord.Prepare(logPosition,
                                         eventId == default(Guid) ? Guid.NewGuid() : eventId,
                                         Guid.NewGuid(),
@@ -150,7 +152,6 @@ namespace EventStore.Core.Tests.Services.Storage
                                         LogRecord.NoData,
                                         metadata == null ? LogRecord.NoData : Encoding.UTF8.GetBytes(metadata),
                                         timestamp);
-
             long pos;
             Assert.IsTrue(Writer.Write(rec, out pos));
 
@@ -159,6 +160,7 @@ namespace EventStore.Core.Tests.Services.Storage
 
             var eventRecord = new EventRecord(0, rec);
             return eventRecord;
+*/
         }
 
         protected EventRecord WriteSingleEvent(string eventStreamId, 

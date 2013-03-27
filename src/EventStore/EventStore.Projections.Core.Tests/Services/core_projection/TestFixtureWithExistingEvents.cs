@@ -236,10 +236,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             {
                 list = new List<EventRecord>();
                 add = 1;
+                throw new NotImplementedException();
+/*
                 list.Add(new EventRecord(
                                             0, 0, message.CorrelationId, Guid.NewGuid(), 1, 0,
                                             message.EventStreamId, ExpectedVersion.Any, DateTime.UtcNow,
                                             PrepareFlags.SingleWrite, SystemEventTypes.StreamCreatedImplicit, new byte[0], new byte[0]));
+*/
                 _lastMessageReplies[message.EventStreamId] = list;
             }
             foreach (var eventRecord in from e in message.Events

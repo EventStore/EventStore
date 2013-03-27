@@ -53,7 +53,6 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     PublishEnvelope,
                     request.EventStreamId,
                     request.ExpectedVersion,
-                    allowImplicitStreamCreation: true,
                     liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
         }
 

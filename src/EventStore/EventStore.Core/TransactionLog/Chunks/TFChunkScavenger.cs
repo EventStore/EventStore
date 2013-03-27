@@ -249,7 +249,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 //commitInfo.StreamId = prepare.EventStreamId;
 
                 if ((prepare.Flags & PrepareFlags.StreamDelete) != 0                   // we always keep delete tombstones
-                    || prepare.EventType.StartsWith(SystemEventTypes.StreamCreated))   // we keep $stream-created
+                    /*|| prepare.EventType.StartsWith(SystemEventTypes.StreamCreated)*/)   // we keep $stream-created
                 {
                     commitInfo.KeepCommit = true; // see notes below
                     return true;
@@ -325,7 +325,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             else
             {
                 if ((prepare.Flags & PrepareFlags.StreamDelete) != 0                 // we always keep delete tombstones
-                    || prepare.EventType.StartsWith(SystemEventTypes.StreamCreated)) // we keep $stream-created
+                    /*|| prepare.EventType.StartsWith(SystemEventTypes.StreamCreated)*/) // we keep $stream-created
                 {
                     return true;
                 }

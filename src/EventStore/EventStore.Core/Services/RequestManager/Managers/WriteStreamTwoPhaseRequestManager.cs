@@ -27,18 +27,13 @@
 // 
 
 using System;
-using System.Diagnostics;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
     public class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.WriteRequestCreated>
     {
-        private int _expectedVersion;
-        private StorageMessage.WriteRequestCreated _request;
-
         public WriteStreamTwoPhaseRequestManager(IPublisher publisher, 
                                                  int prepareCount, 
                                                  int commitCount,
@@ -52,43 +47,26 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
             Init(request.Envelope, request.CorrelationId, -1);
 
-            _expectedVersion = request.ExpectedVersion;
-            if (_expectedVersion == ExpectedVersion.Any)
-                _request = request;
-
             Publisher.Publish(
                 new StorageMessage.WritePrepares(
                     CorrelationId,
                     PublishEnvelope,
                     request.EventStreamId,
-                    _expectedVersion,
+                    request.ExpectedVersion,
                     request.Events,
-                    allowImplicitStreamCreation: true,
                     liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
         }
 
         protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
         {
             base.CompleteSuccessRequest(correlationId, firstEventNumber);
-            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, firstEventNumber);
-            ResponseEnvelope.ReplyWith(responseMsg);
+            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(correlationId, firstEventNumber));
         }
 
         protected override void CompleteFailedRequest(Guid correlationId, OperationResult result, string error)
         {
             base.CompleteFailedRequest(correlationId, result, error);
-
-            if (result == OperationResult.WrongExpectedVersion && _expectedVersion == ExpectedVersion.Any)
-            {
-                // with ExpectedVersion.Any WrongExpectedVersion could happen only when multiple requests create implicitly streams
-                // so just one retry should be enough
-                Debug.Assert(_request != null);
-                Publisher.Publish(_request);
-                return;
-            }
-            
-            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, result, error);
-            ResponseEnvelope.ReplyWith(responseMsg);
+            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(correlationId, result, error));
         }
 
     }

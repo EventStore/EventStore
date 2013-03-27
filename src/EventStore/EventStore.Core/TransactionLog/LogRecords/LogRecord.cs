@@ -120,11 +120,14 @@ namespace EventStore.Core.TransactionLog.LogRecords
         public static PrepareLogRecord StreamCreated(long logPosition, Guid correlationId, long transactionPos, 
                                                      string eventStreamId, byte[] metadata, bool isImplicit, DateTime? timestamp = null)
         {
+            throw new NotImplementedException();
+/*
             return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionPos, 0, eventStreamId, 
                                         ExpectedVersion.NoStream, timestamp ?? DateTime.UtcNow, 
                                         PrepareFlags.Data | PrepareFlags.TransactionBegin, 
                                         isImplicit ? SystemEventTypes.StreamCreatedImplicit : SystemEventTypes.StreamCreated, 
                                         NoData, metadata);
+*/
         }
 
         protected LogRecord(LogRecordType recordType, byte version)

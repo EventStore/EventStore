@@ -37,6 +37,10 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager
 {
+    public interface IRequestManager: IHandle<StorageMessage.RequestManagerTimerTick>
+    {
+    }
+
     public class RequestManagementService : IHandle<SystemMessage.SystemInit>,
                                             IHandle<StorageMessage.CreateStreamRequestCreated>, 
                                             IHandle<StorageMessage.WriteRequestCreated>, 
@@ -55,7 +59,7 @@ namespace EventStore.Core.Services.RequestManager
     {
         private readonly IPublisher _bus;
         private readonly TimerMessage.Schedule _tickRequestMessage;
-        private readonly Dictionary<Guid, object> _currentRequests = new Dictionary<Guid, object>();
+        private readonly Dictionary<Guid, IRequestManager> _currentRequests = new Dictionary<Guid, IRequestManager>();
 
         private readonly int _prepareCount;
         private readonly int _commitCount;
@@ -166,16 +170,14 @@ namespace EventStore.Core.Services.RequestManager
         {
             foreach (var currentRequest in _currentRequests)
             {
-                var handler = currentRequest.Value as IHandle<StorageMessage.RequestManagerTimerTick>;
-                if (handler != null)
-                    handler.Handle(message);
+                currentRequest.Value.Handle(message);
             }
             _bus.Publish(_tickRequestMessage);
         }
 
         private void DispatchInternal<T>(Guid correlationId, T message) where T : Message
         {
-            object manager;
+            IRequestManager manager;
             if (_currentRequests.TryGetValue(correlationId, out manager))
             {
                 var x = manager as IHandle<T>;

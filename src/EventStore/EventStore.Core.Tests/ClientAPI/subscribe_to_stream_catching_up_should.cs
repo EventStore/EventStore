@@ -205,10 +205,13 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.AreEqual(21, events.Count);
                 for (int i = 0; i < 21; ++i)
                 {
+                    throw new NotImplementedException();
+/*
                     if (i == 0)
                         Assert.AreEqual(SystemEventTypes.StreamCreated, events[i].OriginalEvent.EventType);
                     else
                         Assert.AreEqual("et-" + (i-1).ToString(), events[i].OriginalEvent.EventType);
+*/
                 }
 
                 Assert.IsFalse(dropped.Wait(0));

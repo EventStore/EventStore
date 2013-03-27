@@ -306,12 +306,15 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
         public static Rec Create(int transaction, string stream, StreamMetadata? metadata = null, bool isImplicit = false, DateTime? timestamp = null)
         {
+            throw new NotImplementedException();
+/*
             return new Rec(RecType.Create,
                            transaction,
                            stream,
                            isImplicit ? SystemEventTypes.StreamCreatedImplicit : SystemEventTypes.StreamCreated,
                            timestamp,
                            metadata);
+*/
         }
 
         public static Rec TransSt(int transaction, string stream, DateTime? timestamp = null)

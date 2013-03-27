@@ -28,6 +28,24 @@
 
 namespace EventStore.Core.Services
 {
+    public static class SystemNames
+    {
+        public static string MetastreamOf(string streamId)
+        {
+            return "$$" + streamId;
+        }
+
+        public static bool IsMetastream(string streamId)
+        {
+            return streamId.StartsWith("$$");
+        }
+
+        public static string StreamOf(string metastreamId)
+        {
+            return metastreamId.Substring(2);
+        }
+    }
+
     public static class SystemStreams
     {
         public const string StreamsStream = "$streams";
@@ -42,8 +60,8 @@ namespace EventStore.Core.Services
 
     public static class SystemEventTypes
     {
-        public const string StreamCreated = "$stream-created";
-        public const string StreamCreatedImplicit = "$stream-created-implicit";
+        //public const string StreamCreated = "$stream-created";
+        //public const string StreamCreatedImplicit = "$stream-created-implicit";
         public const string StreamDeleted = "$stream-deleted";
         public const string StatsCollection = "$stats-collected";
         public const string LinkTo = "$>";

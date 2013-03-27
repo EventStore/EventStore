@@ -139,10 +139,13 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.AreEqual(40, events.Count); 
                 for (int i = 0; i < 40; ++i)
                 {
+                    throw new NotImplementedException();
+/*
                     if (i % 2 == 0)    
                         Assert.AreEqual(SystemEventTypes.StreamCreatedImplicit, events[i].OriginalEvent.EventType);
                     else
                         Assert.AreEqual("et-" + (i/2).ToString(), events[i].OriginalEvent.EventType);
+*/
                 }
 
                 Assert.IsFalse(dropped.Wait(0));
@@ -198,10 +201,13 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.AreEqual(20, events.Count);
                 for (int i = 0; i < 20; ++i)
                 {
+                    throw new NotImplementedException();
+/*
                     if (i % 2 == 0)
                         Assert.AreEqual(SystemEventTypes.StreamCreatedImplicit, events[i].OriginalEvent.EventType);
                     else
                         Assert.AreEqual("et-" + (10 + (i / 2)).ToString(), events[i].OriginalEvent.EventType);
+*/
                 }
 
                 Assert.IsFalse(dropped.Wait(0));

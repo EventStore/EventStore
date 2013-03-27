@@ -151,7 +151,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(2));
-                Assert.That(read.Result.Events.All(x => x.Event.EventType == SystemEventTypes.StreamCreated));
+                throw new NotImplementedException();
+                //Assert.That(read.Result.Events.All(x => x.Event.EventType == SystemEventTypes.StreamCreated));
             }
         }
 
