@@ -41,8 +41,6 @@ namespace EventStore.Core.Services.Transport.Http
         {
             public static string ReadEventCompletedEntry(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
-                Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
-
                 var completed = message as ClientMessage.ReadEventCompleted;
                 if (completed != null)
                 {
@@ -86,8 +84,6 @@ namespace EventStore.Core.Services.Transport.Http
 
             public static string ReadAllEventsBackwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
-                Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
-
                 var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
                 if (msg == null || msg.NotModified)
                     return string.Empty;
@@ -96,8 +92,6 @@ namespace EventStore.Core.Services.Transport.Http
 
             public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
-                Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
-
                 var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
                 if (msg == null || msg.NotModified)
                     return string.Empty;
@@ -106,35 +100,28 @@ namespace EventStore.Core.Services.Transport.Http
 
             public static string CreateStreamCompleted(HttpResponseFormatterArgs entity, Message message)
             {
-                Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
                 return string.Empty;
             }
 
             public static string DeleteStreamCompleted(HttpResponseFormatterArgs entity, Message message)
             {
-                Debug.Assert(message.GetType() == typeof(ClientMessage.DeleteStreamCompleted));
                 return string.Empty;
             }
         }
 
         public static string TextMessage(HttpResponseFormatterArgs entity, Message message)
         {
-            Debug.Assert(message.GetType() == typeof(HttpMessage.TextMessage));
-
             var textMessage = message as HttpMessage.TextMessage;
             return textMessage != null ? entity.ResponseCodec.To(textMessage) : string.Empty;
         }
 
         public static string WriteEventsCompleted(HttpResponseFormatterArgs entity, Message message)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.WriteEventsCompleted));
             return string.Empty;
         }
 
         public static string ReadEventCompleted(HttpResponseFormatterArgs entity, Message message)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
-
             var completed = message as ClientMessage.ReadEventCompleted;
             if (completed != null)
             {
@@ -156,8 +143,6 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static string GetFreshStatsCompleted(HttpResponseFormatterArgs entity, Message message)
         {
-            Debug.Assert(message.GetType() == typeof(MonitoringMessage.GetFreshStatsCompleted));
-
             var completed = message as MonitoringMessage.GetFreshStatsCompleted;
             if (completed == null || !completed.Success)
                 return string.Empty;
