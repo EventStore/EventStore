@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Net;
+using System.Security.Principal;
 using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http.EntityManagement
@@ -43,6 +44,7 @@ namespace EventStore.Transport.Http.EntityManagement
 
         public readonly HttpListenerRequest Request;
         internal readonly HttpListenerResponse Response;
+        public readonly IPrincipal User;
 
         public HttpEntity(DateTime timeStamp,
                           ICodec requestCodec,
@@ -65,6 +67,7 @@ namespace EventStore.Transport.Http.EntityManagement
 
             Request = context.Request;
             Response = context.Response;
+            User = context.User;
 
             Manager = new HttpEntityManager(this, allowedMethods, onRequestSatisfied);
         }

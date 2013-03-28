@@ -121,6 +121,7 @@ namespace EventStore.Web.Playground
             HttpService.SetupController(new ReadEventDataController(MainQueue, _networkSendService));
             HttpService.SetupController(new AtomController(MainQueue, _networkSendService));
             HttpService.SetupController(new WebSiteController(MainQueue, _enabledNodeSubsystems));
+            HttpService.SetupController(new TestController(MainQueue, _networkSendService));
 
 
             // TIMER
