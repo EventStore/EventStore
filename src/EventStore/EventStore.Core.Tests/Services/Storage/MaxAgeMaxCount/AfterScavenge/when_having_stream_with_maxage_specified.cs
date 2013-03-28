@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
 
             var metadata = string.Format(@"{{""$maxAge"":{0}}}", (int)TimeSpan.FromMinutes(10).TotalSeconds);
 
-            _r1 = WriteStreamCreated("ES", metadata, now.AddMinutes(-100));
+            _r1 = WriteStreamMetadata("ES", 0, metadata, now.AddMinutes(-100));
                   WriteSingleEvent("ES", 1, "bla1",  now.AddMinutes(-50));
                   WriteSingleEvent("ES", 2, "bla1",  now.AddMinutes(-20));
                   WriteSingleEvent("ES", 3, "bla1",  now.AddMinutes(-11));

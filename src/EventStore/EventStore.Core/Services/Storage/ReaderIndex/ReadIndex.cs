@@ -916,12 +916,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (!GetStreamRecord(reader, metastreamId, metaEventNumber, out record))
                 throw new Exception(string.Format("GetStreamRecord couldn't find metaevent #{0} on metastream '{1}'. That should never happen.", metaEventNumber, metastreamId));
 
-            if (record.Metadata == null || record.Metadata.Length == 0 || (record.Flags & PrepareFlags.IsJson) == 0)
+            if (record.Data.Length == 0 || (record.Flags & PrepareFlags.IsJson) == 0)
                 return new StreamMetadata(null, null);
 
             try
             {
-                var json = Encoding.UTF8.GetString(record.Metadata);
+                var json = Encoding.UTF8.GetString(record.Data);
                 var jObj = JObject.Parse(json);
 
                 int maxAge = -1;

@@ -32,7 +32,6 @@ using System.IO;
 using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -248,8 +247,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 //commitInfo.StreamId = prepare.EventStreamId;
 
-                if ((prepare.Flags & PrepareFlags.StreamDelete) != 0                   // we always keep delete tombstones
-                    /*|| prepare.EventType.StartsWith(SystemEventTypes.StreamCreated)*/)   // we keep $stream-created
+                if ((prepare.Flags & PrepareFlags.StreamDelete) != 0) // we always keep delete tombstones
                 {
                     commitInfo.KeepCommit = true; // see notes below
                     return true;
@@ -324,8 +322,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             else
             {
-                if ((prepare.Flags & PrepareFlags.StreamDelete) != 0                 // we always keep delete tombstones
-                    /*|| prepare.EventType.StartsWith(SystemEventTypes.StreamCreated)*/) // we keep $stream-created
+                if ((prepare.Flags & PrepareFlags.StreamDelete) != 0) // we always keep delete tombstones
                 {
                     return true;
                 }

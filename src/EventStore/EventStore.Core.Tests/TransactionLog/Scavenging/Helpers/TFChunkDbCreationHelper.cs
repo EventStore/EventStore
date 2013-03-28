@@ -107,8 +107,13 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                     var logPos = _db.Config.WriterCheckpoint.ReadNonFlushed();
 
                     int streamVersion = streamUncommitedVersion[rec.StreamId];
-                    if (streamVersion == -1 && rec.Type != Rec.RecType.TransStart && rec.Type != Rec.RecType.Create)
-                        throw new Exception(string.Format("Stream {0} is empty and we are not creating it with stream created.", rec.StreamId));
+                    if (streamVersion == -1
+                        && rec.Type != Rec.RecType.TransStart
+                        && rec.Type != Rec.RecType.Prepare
+                        && rec.Type != Rec.RecType.Delete)
+                    {
+                        throw new Exception(string.Format("Stream {0} is empty.", rec.StreamId));
+                    }
                     if (streamVersion == EventNumber.DeletedStream && rec.Type != Rec.RecType.Commit)
                         throw new Exception(string.Format("Stream {0} was deleted, but we need to write some more prepares.", rec.StreamId));
 
@@ -125,7 +130,6 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                     switch (rec.Type)
                     {
                         case Rec.RecType.Prepare:
-                        case Rec.RecType.Create:
                         {
                             int transOffset = transInfo.TransactionOffset;
                             transInfo.TransactionOffset += 1;
@@ -144,7 +148,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                                                        rec.Id.ToByteArray(),
                                                        null,
                                                        rec.TimeStamp);
-                            if (rec.Type == Rec.RecType.Create)
+                            if (SystemNames.IsMetastream(rec.StreamId))
                                 transInfo.StreamMetadata = rec.Metadata;
 
                             streamUncommitedVersion[rec.StreamId] += 1;
@@ -197,7 +201,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                             record = LogRecord.Commit(logPos, Guid.NewGuid(), transInfo.TransactionPosition, transInfo.TransactionEventNumber);
 
                             if (transInfo.StreamMetadata.HasValue)
-                                streams[rec.StreamId].StreamMetadata = transInfo.StreamMetadata.Value;
+                            {
+                                var streamId = SystemNames.StreamOf(rec.StreamId);
+                                if (!streams.ContainsKey(streamId))
+                                    streams.Add(streamId, new StreamInfo(-1));
+                                streams[streamId].StreamMetadata = transInfo.StreamMetadata.Value;
+                            }
 
                             if (transInfo.IsDelete)
                                 streams[rec.StreamId].StreamVersion = EventNumber.DeletedStream;
@@ -275,7 +284,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
     public class Rec
     {
-        public enum RecType { Prepare, Delete, Create, TransStart, TransEnd, Commit }
+        public enum RecType { Prepare, Delete, TransStart, TransEnd, Commit }
 
         public readonly RecType Type;
         public readonly Guid Id;
@@ -304,27 +313,14 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             return new Rec(RecType.Delete, transaction, stream, SystemEventTypes.StreamDeleted, timestamp);
         }
 
-        public static Rec Create(int transaction, string stream, StreamMetadata? metadata = null, bool isImplicit = false, DateTime? timestamp = null)
-        {
-            throw new NotImplementedException();
-/*
-            return new Rec(RecType.Create,
-                           transaction,
-                           stream,
-                           isImplicit ? SystemEventTypes.StreamCreatedImplicit : SystemEventTypes.StreamCreated,
-                           timestamp,
-                           metadata);
-*/
-        }
-
         public static Rec TransSt(int transaction, string stream, DateTime? timestamp = null)
         {
             return new Rec(RecType.TransStart, transaction, stream, null, timestamp);
         }
 
-        public static Rec Prepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null)
+        public static Rec Prepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null, StreamMetadata? metadata = null)
         {
-            return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp);
+            return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, metadata);
         }
 
         public static Rec TransEnd(int transaction, string stream, DateTime? timestamp = null)

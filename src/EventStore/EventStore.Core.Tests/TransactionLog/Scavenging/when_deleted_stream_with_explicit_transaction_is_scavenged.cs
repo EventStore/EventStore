@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,55 +24,45 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
-
+// 
+using System.Linq;
+using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.DeletingStream
+namespace EventStore.Core.Tests.TransactionLog.Scavenging
 {
     [TestFixture]
-    public class when_deleting_stream_with_1_hash_collision_and_1_stream_with_other_hash_read_index_should : ReadIndexTestScenario
+    public class when_deleted_stream_with_explicit_transaction_is_scavenged : ScavengeTestScenario
     {
-        protected override void WriteTestScenario()
+        protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {
-            WriteSingleEvent("S1", 0, "bla1");
-            WriteSingleEvent("S1", 1, "bla1");
-            WriteSingleEvent("S2", 0, "bla1");
-            WriteSingleEvent("S2", 1, "bla1");
-            WriteSingleEvent("S1", 2, "bla1");
-            WriteSingleEvent("SSS", 0, "bla1");
+            return dbCreator
+                    .Chunk(Rec.TransSt(0, "bla"),
+                           Rec.Prepare(0, "bla"), 
+                           Rec.Prepare(0, "bla"),
+                           Rec.Prepare(0, "bla"),
+                           Rec.Prepare(0, "bla"),
+                           Rec.TransEnd(0, "bla"),
+                           Rec.Commit(0, "bla"),
+                           Rec.Delete(1, "bla"),
+                           Rec.Commit(1, "bla"))
+                    .CompleteLastChunk()
+                    .CreateDb();
+        }
 
-            WriteDelete("S1");
+        protected override LogRecord[][] KeptRecords(DbResult dbResult)
+        {
+            return new[]
+            {
+                dbResult.Recs[0].Where((x, i) => new[] {7,8}.Contains(i)).ToArray(),
+            };
         }
 
         [Test]
-        public void indicate_that_stream_is_deleted()
+        public void only_delete_tombstone_records_with_their_commits_are_kept()
         {
-            Assert.That(ReadIndex.IsStreamDeleted("S1"));
-        }
-
-        [Test]
-        public void indicate_that_other_stream_with_same_hash_is_not_deleted()
-        {
-            Assert.That(ReadIndex.IsStreamDeleted("S2"), Is.False);
-        }
-
-        [Test]
-        public void indicate_that_other_stream_with_different_hash_is_not_deleted()
-        {
-            Assert.That(ReadIndex.IsStreamDeleted("SSS"), Is.False);
-        }
-
-        [Test]
-        public void indicate_that_not_existing_stream_with_same_hash_is_not_deleted()
-        {
-            Assert.That(ReadIndex.IsStreamDeleted("XX"), Is.False);
-        }
-
-        [Test]
-        public void indicate_that_not_existing_stream_with_different_hash_is_not_deleted()
-        {
-            Assert.That(ReadIndex.IsStreamDeleted("XXX"), Is.False);
+            CheckRecords();
         }
     }
 }

@@ -565,8 +565,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (message.Result == OperationResult.Success)
             {
-                //NOTE: account for $stream-created-implicit
-                if (completed != null) completed(message.FirstEventNumber == 0 ? 1 : message.FirstEventNumber);
+                if (completed != null) completed(message.FirstEventNumber);
                 return;
             }
             _logger.Info(

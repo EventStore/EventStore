@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 
             const string metadata = @"{""$maxAge"": 1.5, ""$maxCount"":4}";
             
-            _r1 = WriteStreamCreated("ES", metadata, now.AddSeconds(-100));
+            _r1 = WriteStreamMetadata("ES", 0, metadata, now.AddSeconds(-100));
             _r2 = WriteSingleEvent("ES", 1, "bla1", now.AddSeconds(-50));
             _r3 = WriteSingleEvent("ES", 2, "bla1", now.AddSeconds(-20));
             _r4 = WriteSingleEvent("ES", 3, "bla1", now.AddSeconds(-11));

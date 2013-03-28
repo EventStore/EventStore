@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
             var now = DateTime.UtcNow;
 
             var metadata = string.Format(@"{{""$maxAge"":{0},""$maxCount"":4}}", (int)TimeSpan.FromMinutes(10).TotalSeconds);
-            _r1 = WriteStreamCreated("ES", metadata, now.AddMinutes(-100));
+            _r1 = WriteStreamMetadata("ES", 0, metadata, now.AddMinutes(-100));
                   WriteSingleEvent("ES", 1, "bla1", now.AddMinutes(-50));
                   WriteSingleEvent("ES", 2, "bla1", now.AddMinutes(-20));
                   WriteSingleEvent("ES", 3, "bla1", now.AddMinutes(-11));
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
         }
 
         [Test]
-        public void single_event_read_doesnt_return_stream_created_event()
+        public void single_event_read_doesnt_return_first_event()
         {
             var result = ReadIndex.ReadEvent("ES", 0);
             Assert.AreEqual(ReadEventResult.NotFound, result.Result);

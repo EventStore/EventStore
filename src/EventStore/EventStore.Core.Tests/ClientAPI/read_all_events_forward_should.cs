@@ -120,9 +120,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 Assert.That(EventDataComparer.Equal(
                     testEvents.Concat(testEvents).ToArray(),
-                    read.Result.Events.Skip(1).Take(testEvents.Length)
-                        .Concat(read.Result.Events.Skip(testEvents.Length + 2).Take(testEvents.Length))
-                        .Select(x => x.Event).ToArray()));
+                    read.Result.Events.Select(x => x.Event).ToArray()));
             }
         }
 
@@ -149,7 +147,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     position = slice.NextPosition;
                 }
 
-                Assert.That(EventDataComparer.Equal(testEvents, all.Skip(1).ToArray()));
+                Assert.That(EventDataComparer.Equal(testEvents, all.ToArray()));
             }
         }
 
@@ -176,7 +174,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     position = slice.NextPosition;
                 }
 
-                Assert.That(EventDataComparer.Equal(testEvents, all.Skip(1).ToArray()));
+                Assert.That(EventDataComparer.Equal(testEvents, all.ToArray()));
             }
         }
 
@@ -196,7 +194,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var read = store.ReadAllEventsForwardAsync(Position.Start, 25, false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(read.Result.Events.Length, Is.EqualTo(testEvents.Length + 1));
+                Assert.That(read.Result.Events.Length, Is.EqualTo(testEvents.Length));
             }
         }
 
@@ -303,7 +301,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                       dropped.Set();
                                                                   }).Result)
                 {
-                    var testEvents = Enumerable.Range(1, 5).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
+                    var testEvents = Enumerable.Range(0, 5).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
                     store.AppendToStream(stream, ExpectedVersion.EmptyStream, testEvents);
 
                     Assert.IsTrue(subscribed.Wait(5000), "Subscription haven't happened in time.");
@@ -313,10 +311,11 @@ namespace EventStore.Core.Tests.ClientAPI
                     subscription.Unsubscribe();
                     Assert.That(dropped.WaitOne(Timeout), "Couldn't unsubscribe in time.");
 
-                    store.AppendToStream(stream, testEvents.Length, testEvents);
+                    store.AppendToStream(stream, testEvents.Length - 1, testEvents);
                     var missed = store.ReadAllEventsForwardAsync(lastKnownPosition.Value, int.MaxValue, false);
                     var expected = testEvents.Concat(testEvents).ToArray();
-                    var actual = catched.Concat(missed.Result.Events.Skip(1).Select(x => x.Event)).ToArray();//skip 1 because readallforward is inclusive
+                    //skip 1 because ReadAllEventsForward is inclusive
+                    var actual = catched.Concat(missed.Result.Events.Skip(1).Select(x => x.Event)).ToArray();
                     Assert.That(EventDataComparer.Equal(expected, actual));
                 }
             }

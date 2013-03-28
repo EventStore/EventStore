@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
+                var testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
 
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write.Wait);
@@ -109,7 +109,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var read = store.ReadAllEventsBackwardAsync(Position.End, 25, false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(read.Result.Events.Length, Is.EqualTo(testEvents.Length + 1));
+                Assert.That(read.Result.Events.Length, Is.EqualTo(testEvents.Length));
             }
         }
 

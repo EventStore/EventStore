@@ -98,20 +98,21 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
+                using (var transaction = store.StartTransaction(stream, 1))
                 {
                     transaction.Write(TestEvent.NewTestEvent());
-                    Assert.That(() => transaction.Commit(),  Throws.Exception.TypeOf<AggregateException>()
-                                                                   .With.InnerException.TypeOf<WrongExpectedVersionException>());
+                    Assert.That(() => transaction.Commit(),
+                                Throws.Exception.TypeOf<AggregateException>()
+                                .With.InnerException.TypeOf<WrongExpectedVersionException>());
                 }
             }
         }
 
         [Test]
         [Category("Network")]
-        public void should_create_stream_if_commits_no_events_to_empty_stream()
+        public void should_do_nothing_if_commits_no_events_to_empty_stream()
         {
-            const string stream = "should_create_stream_if_commits_no_events_to_empty_stream";
+            const string stream = "should_do_nothing_if_commits_no_events_to_empty_stream";
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
@@ -121,7 +122,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 }
 
                 var result = store.ReadStreamEventsForward(stream, 0, 1, resolveLinkTos: false);
-                Assert.That(result.Events.Length, Is.EqualTo(1)); //stream created event
+                Assert.That(result.Events.Length, Is.EqualTo(0));
             }
         }
 
@@ -167,7 +168,7 @@ namespace EventStore.Core.Tests.ClientAPI
                             var writes = new List<Task>();
                             for (int i = 0; i < totalTranWrites; i++)
                             {
-                                writes.Add(transaction.WriteAsync(TestEvent.NewTestEvent((i + 1).ToString(), "trans write")));
+                                writes.Add(transaction.WriteAsync(TestEvent.NewTestEvent(i.ToString(), "trans write")));
                             }
 
                             Task.WaitAll(writes.ToArray());
@@ -190,7 +191,7 @@ namespace EventStore.Core.Tests.ClientAPI
                         {
                             writes.Add(store.AppendToStreamAsync(stream,
                                                                  ExpectedVersion.Any,
-                                                                 new[] {TestEvent.NewTestEvent((i + 1).ToString(), "plain write")}));
+                                                                 new[] {TestEvent.NewTestEvent(i.ToString(), "plain write")}));
                         }
                         Task.WaitAll(writes.ToArray());
                         writesToSameStreamCompleted.Set();
@@ -205,8 +206,8 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var slice = store.ReadStreamEventsForward(stream, 0, totalTranWrites + totalPlainWrites + 1, false);
-                Assert.That(slice.Events.Length, Is.EqualTo(totalTranWrites + totalPlainWrites + 1));
+                var slice = store.ReadStreamEventsForward(stream, 0, totalTranWrites + totalPlainWrites, false);
+                Assert.That(slice.Events.Length, Is.EqualTo(totalTranWrites + totalPlainWrites));
 
                 Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Event.Metadata) == "trans write"), Is.EqualTo(totalTranWrites));
                 Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Event.Metadata) == "plain write"), Is.EqualTo(totalPlainWrites));
@@ -238,7 +239,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                using (var transaction = store.StartTransaction(stream, 1))
+                using (var transaction = store.StartTransaction(stream, 0))
                 {
                     store.AppendToStream(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()});
                     transaction.Write(TestEvent.NewTestEvent());
@@ -283,7 +284,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 transaction2.Write(new[] {e});
                 transaction2.Commit();
 
-                var res = store.ReadStreamEventsForward(streamId, 1, 100, false);
+                var res = store.ReadStreamEventsForward(streamId, 0, 100, false);
                 Assert.AreEqual(1, res.Events.Length);
                 Assert.AreEqual(e.EventId, res.Events[0].Event.EventId);
             }

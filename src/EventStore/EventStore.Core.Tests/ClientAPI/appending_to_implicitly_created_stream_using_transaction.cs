@@ -57,199 +57,203 @@ namespace EventStore.Core.Tests.ClientAPI
 
         /*
          * sequence - events written so stream
-         * 1em1 - event number 1 written with exp version -1 (minus 1)
+         * 0em1 - event number 0 written with exp version -1 (minus 1)
          * 1any - event number 1 written with exp version any
-         * S_1em1_2em1_E - START bucket, two events in bucket, END bucket
+         * S_0em1_1em1_E - START bucket, two events in bucket, END bucket
         */
 
         [Test]
         [Category("Network")]
-        public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1em1_idempotent()
+        public void sequence_0em1_1e0_2e1_3e2_4e3_5e4_0em1_idempotent()
         {
-            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_1em1_2e1_3e2_4e3_5e4_6e5_1em1_idempotent";
+            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_0em1_1e0_2e1_3e2_4e3_5e4_0em1_idempotent";
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(0, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events.First()).Commit());
 
                 var total = EventsStream.Count(store, stream);
-                Assert.That(total, Is.EqualTo(events.Length + 1));
+                Assert.That(total, Is.EqualTo(events.Length));
             }
         }
 
         [Test]
         [Category("Network")]
-        public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1any_idempotent()
+        public void sequence_0em1_1e0_2e1_3e2_4e3_5e4_0any_idempotent()
         {
-            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_1em1_2e1_3e2_4e3_5e4_6e5_1any_idempotent";
+            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_0em1_1e0_2e1_3e2_4e3_5e4_0any_idempotent";
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(0, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
                 Assert.DoesNotThrow(() => writer.StartTransaction(ExpectedVersion.Any).Write(events.First()).Commit());
 
                 var total = EventsStream.Count(store, stream);
+                Assert.That(total, Is.EqualTo(events.Length));
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e5_non_idempotent()
+        {
+            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e5_non_idempotent";
+            using (var store = TestConnection.Create())
+            {
+                store.Connect(_node.TcpEndPoint);
+
+                var events = Enumerable.Range(0, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
+                var writer = new TransactionalWriter(store, stream);
+
+                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
+                Assert.DoesNotThrow(() => writer.StartTransaction(5).Write(events.First()).Commit());
+
+                var total = EventsStream.Count(store, stream);
                 Assert.That(total, Is.EqualTo(events.Length + 1));
             }
         }
 
         [Test]
         [Category("Network")]
-        public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e6_non_idempotent()
+        public void sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e6_wev()
         {
-            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e6_non_idempotent";
+            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e6_wev";
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(0, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.DoesNotThrow(() => writer.StartTransaction(6).Write(events.First()).Commit());
+                Assert.That(() => writer.StartTransaction(6).Write(events.First()).Commit(), 
+                            Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e4_wev()
+        {
+            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e4_wev";
+            using (var store = TestConnection.Create())
+            {
+                store.Connect(_node.TcpEndPoint);
+
+                var events = Enumerable.Range(0, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
+                var writer = new TransactionalWriter(store, stream);
+
+                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
+                Assert.That(() => writer.StartTransaction(4).Write(events.First()).Commit(), 
+                            Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void sequence_0em1_0e0_non_idempotent()
+        {
+            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_0em1_0e0_non_idempotent";
+            using (var store = TestConnection.Create())
+            {
+                store.Connect(_node.TcpEndPoint);
+
+                var events = Enumerable.Range(0, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
+                var writer = new TransactionalWriter(store, stream);
+
+                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
+                Assert.DoesNotThrow(() => writer.StartTransaction(0).Write(events.First()).Commit());
 
                 var total = EventsStream.Count(store, stream);
-                Assert.That(total, Is.EqualTo(events.Length + 1 + 1));
+                Assert.That(total, Is.EqualTo(events.Length + 1));
             }
         }
 
         [Test]
         [Category("Network")]
-        public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e7_wev()
+        public void sequence_0em1_0any_idempotent()
         {
-            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e7_wev";
+            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_0em1_0any_idempotent";
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
-                var writer = new TransactionalWriter(store, stream);
-
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.That(() => writer.StartTransaction(7).Write(events.First()).Commit(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
-            }
-        }
-
-        [Test]
-        [Category("Network")]
-        public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e5_wev()
-        {
-            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e5_wev";
-            using (var store = TestConnection.Create())
-            {
-                store.Connect(_node.TcpEndPoint);
-
-                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
-                var writer = new TransactionalWriter(store, stream);
-
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.That(() => writer.StartTransaction(5).Write(events.First()).Commit(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
-            }
-        }
-
-        [Test]
-        [Category("Network")]
-        public void sequence_1em1_1e1_non_idempotent()
-        {
-            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_1em1_1e1_non_idempotent";
-            using (var store = TestConnection.Create())
-            {
-                store.Connect(_node.TcpEndPoint);
-
-                var events = Enumerable.Range(1, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
-                var writer = new TransactionalWriter(store, stream);
-
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.DoesNotThrow(() => writer.StartTransaction(1).Write(events.First()).Commit());
-
-                var total = EventsStream.Count(store, stream);
-                Assert.That(total, Is.EqualTo(events.Length + 1 + 1));
-            }
-        }
-
-        [Test]
-        [Category("Network")]
-        public void sequence_1em1_1any_idempotent()
-        {
-            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_1em1_1any_idempotent";
-            using (var store = TestConnection.Create())
-            {
-                store.Connect(_node.TcpEndPoint);
-
-                var events = Enumerable.Range(1, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(0, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
                 Assert.DoesNotThrow(() => writer.StartTransaction(ExpectedVersion.Any).Write(events.First()).Commit());
 
                 var total = EventsStream.Count(store, stream);
-                Assert.That(total, Is.EqualTo(events.Length + 1));
+                Assert.That(total, Is.EqualTo(events.Length));
             }
         }
 
         [Test]
         [Category("Network")]
-        public void sequence_1em1_1em1_idempotent()
+        public void sequence_0em1_0em1_idempotent()
         {
-            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_1em1_1em1_idempotent";
+            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_0em1_0em1_idempotent";
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(0, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events.First()).Commit());
 
                 var total = EventsStream.Count(store, stream);
-                Assert.That(total, Is.EqualTo(events.Length + 1));
+                Assert.That(total, Is.EqualTo(events.Length));
             }
         }
 
         [Test]
         [Category("Network")]
-        public void sequence_1em1_2e1_3e2_2any_2any_idempotent()
+        public void sequence_0em1_1e0_2e1_1any_1any_idempotent()
         {
-            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_1em1_2e1_3e2_2any_2any_idempotent";
+            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_0em1_1e0_2e1_1any_1any_idempotent";
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 3).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(0, 3).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
                 Assert.DoesNotThrow(() => writer.StartTransaction(ExpectedVersion.Any).Write(events[1]).Write(events[1]).Commit());
 
                 var total = EventsStream.Count(store, stream);
-                Assert.That(total, Is.EqualTo(events.Length + 1));
+                Assert.That(total, Is.EqualTo(events.Length));
             }
         }
 
         [Test]
         [Category("Network")]
-        public void sequence_S_1em1_2em1_E_S_1em1_2em1_3em1_E_idempotancy_fail()
+        public void sequence_S_0em1_1em1_E_S_0em1_1em1_2em1_E_idempotancy_fail()
         {
-            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_S_1em1_2em1_E_S_1em1_2em1_3em1_E_idempotancy_fail";
+            const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_S_0em1_1em1_E_S_0em1_1em1_2em1_E_idempotancy_fail";
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 2).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(0, 2).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.That(() => writer.StartTransaction(-1).Write(events.Concat(new[] { TestEvent.NewTestEvent(Guid.NewGuid()) }).ToArray()).Commit(),
+                Assert.That(() => writer.StartTransaction(-1)
+                                        .Write(events.Concat(new[] { TestEvent.NewTestEvent(Guid.NewGuid()) }).ToArray())
+                                        .Commit(),
                             Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }

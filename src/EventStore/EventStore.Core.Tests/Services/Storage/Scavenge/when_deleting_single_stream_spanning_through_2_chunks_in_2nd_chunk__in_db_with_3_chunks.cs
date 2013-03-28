@@ -36,19 +36,15 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
     [TestFixture]
     public class when_deleting_single_stream_spanning_through_2_chunks_in_2nd_chunk_in_db_with_3_chunks : ReadIndexTestScenario
     {
-        private EventRecord _event1;
         private EventRecord _event7;
         private PrepareLogRecord _event7prepare;
         private CommitLogRecord _event7commit;
 
-        private EventRecord _event8;
         private EventRecord _event9;
 
         protected override void WriteTestScenario()
         {
-            _event1 = WriteStreamCreated("ES");                                            // chunk 1
-
-            WriteSingleEvent("ES", 1, new string('.', 3000));
+            WriteSingleEvent("ES", 1, new string('.', 3000)); // chunk 1
             WriteSingleEvent("ES", 2, new string('.', 3000));
             WriteSingleEvent("ES", 3, new string('.', 3000));
 
@@ -59,7 +55,6 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             _event7commit = WriteDeleteCommit(_event7prepare);
             _event7 = new EventRecord(EventNumber.DeletedStream, _event7prepare);
 
-            _event8 = WriteStreamCreated("ES2");
             _event9 = WriteSingleEvent("ES2", 1, new string('.', 5000), retryOnFail: true); //chunk 3
 
             Scavenge(completeLast: false, mergeChunks: false);
@@ -69,21 +64,17 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
         public void read_all_forward_does_not_return_scavenged_deleted_stream_events_and_return_remaining()
         {
             var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(4, events.Length);
-            Assert.AreEqual(_event1, events[0]);
-            Assert.AreEqual(_event7, events[1]);
-            Assert.AreEqual(_event8, events[2]);
-            Assert.AreEqual(_event9, events[3]);
+            Assert.AreEqual(2, events.Length);
+            Assert.AreEqual(_event7, events[0]);
+            Assert.AreEqual(_event9, events[1]);
         }
 
         [Test]
         public void read_all_backward_does_not_return_scavenged_deleted_stream_events_and_return_remaining()
         {
             var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(4, events.Length);
-            Assert.AreEqual(_event1, events[3]);
-            Assert.AreEqual(_event7, events[2]);
-            Assert.AreEqual(_event8, events[1]);
+            Assert.AreEqual(2, events.Length);
+            Assert.AreEqual(_event7, events[1]);
             Assert.AreEqual(_event9, events[0]);
         }
 
@@ -92,8 +83,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
         {
             var pos = new TFPos(10000, 10000);
             var events = ReadIndex.ReadAllEventsBackward(pos, 100).Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(1, events.Length);
-            Assert.AreEqual(_event1, events[0]);
+            Assert.AreEqual(0, events.Length);
         }
 
         [Test]
@@ -102,18 +92,16 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             var events = ReadIndex.ReadAllEventsForward(new TFPos(10000, 10000), 2).Records.Select(r => r.Event).ToArray();
             Assert.AreEqual(2, events.Length);
             Assert.AreEqual(_event7, events[0]);
-            Assert.AreEqual(_event8, events[1]);
+            Assert.AreEqual(_event9, events[1]);
         }
 
         [Test]
-        public void read_all_forward_with_max_5_records_returns_3_records_from_2nd_chunk()
+        public void read_all_forward_with_max_5_records_returns_2_records_from_2nd_chunk()
         {
             var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 5).Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(4, events.Length);
-            Assert.AreEqual(_event1, events[0]);
-            Assert.AreEqual(_event7, events[1]);
-            Assert.AreEqual(_event8, events[2]);
-            Assert.AreEqual(_event9, events[3]);
+            Assert.AreEqual(2, events.Length);
+            Assert.AreEqual(_event7, events[0]);
+            Assert.AreEqual(_event9, events[1]);
         }
 
         [Test]

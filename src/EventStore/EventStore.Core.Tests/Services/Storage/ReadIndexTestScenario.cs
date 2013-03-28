@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.Services.Storage
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       2,
                                       2,
-                                      () => new TFChunkReader(Db, Db.Config.WriterCheckpoint, 0),
+                                      () => new TFChunkReader(Db, Db.Config.WriterCheckpoint),
                                       TableIndex,
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamCacheInfo>());
@@ -131,37 +131,6 @@ namespace EventStore.Core.Tests.Services.Storage
         }
 
         protected abstract void WriteTestScenario();
-
-        protected EventRecord WriteStreamCreated(string eventStreamId,
-                                                 string metadata = null, 
-                                                 DateTime? timestamp = null,
-                                                 Guid eventId = default(Guid))
-        {
-            throw new NotImplementedException();
-            var logPosition = WriterCheckpoint.ReadNonFlushed();
-/*
-            var rec = LogRecord.Prepare(logPosition,
-                                        eventId == default(Guid) ? Guid.NewGuid() : eventId,
-                                        Guid.NewGuid(),
-                                        logPosition,
-                                        0,
-                                        eventStreamId,
-                                        ExpectedVersion.NoStream,
-                                        PrepareFlags.Data | PrepareFlags.IsJson | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                        SystemEventTypes.StreamCreated,
-                                        LogRecord.NoData,
-                                        metadata == null ? LogRecord.NoData : Encoding.UTF8.GetBytes(metadata),
-                                        timestamp);
-            long pos;
-            Assert.IsTrue(Writer.Write(rec, out pos));
-
-            var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), rec.CorrelationId, rec.LogPosition, 0);
-            Assert.IsTrue(Writer.Write(commit, out pos));
-
-            var eventRecord = new EventRecord(0, rec);
-            return eventRecord;
-*/
-        }
 
         protected EventRecord WriteSingleEvent(string eventStreamId, 
                                                int eventNumber, 
@@ -203,6 +172,28 @@ namespace EventStore.Core.Tests.Services.Storage
                         Assert.Fail("Second write try failed when first writing prepare at {0}, then at {1}.", firstPos, prepare.LogPosition);
                 }
             }
+
+            var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition, eventNumber);
+            Assert.IsTrue(Writer.Write(commit, out pos));
+
+            var eventRecord = new EventRecord(eventNumber, prepare);
+            return eventRecord;
+        }
+
+        protected EventRecord WriteStreamMetadata(string eventStreamId, int eventNumber, string metadata, DateTime? timestamp = null)
+        {
+            var prepare = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),
+                                                Guid.NewGuid(),
+                                                Guid.NewGuid(),
+                                                SystemNames.MetastreamOf(eventStreamId),
+                                                eventNumber - 1,
+                                                SystemEventTypes.StreamMetadata,
+                                                Encoding.UTF8.GetBytes(metadata),
+                                                null,
+                                                timestamp ?? DateTime.UtcNow,
+                                                PrepareFlags.IsJson);
+            long pos;
+            Assert.IsTrue(Writer.Write(prepare, out pos));
 
             var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition, eventNumber);
             Assert.IsTrue(Writer.Write(commit, out pos));

@@ -289,6 +289,8 @@
     <Compile Include="Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
     <Compile Include="TestsInitFixture.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_deleted_stream_with_metadata_is_scavenged.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_metastream_with_multiple_metaevents_is_scavenged.cs" />
     <Compile Include="TransactionLog\when_reading_cached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\when_reading_uncached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\FlushTimeMeter.cs" />
@@ -317,8 +319,8 @@
     <Compile Include="TransactionLog\Scavenging\Helpers\ScavengeReadIndex.cs" />
     <Compile Include="TransactionLog\Scavenging\Helpers\ScavengeTestScenario.cs" />
     <Compile Include="TransactionLog\Scavenging\Helpers\TFChunkDbCreationHelper.cs" />
-    <Compile Include="TransactionLog\Scavenging\when_deleting_stream_with_a_lot_of_data.cs" />
-    <Compile Include="TransactionLog\Scavenging\when_deleting_stream_with_explicit_transaction.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_deleted_stream_with_a_lot_of_data_is_scavenged.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_deleted_stream_with_explicit_transaction_is_scavenged.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_nothing_to_scavenge.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_stream_with_both_max_age_and_max_count_with_stricted_max_age_specified.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_stream_with_both_max_age_and_max_count_with_stricted_max_count_specified.cs" />

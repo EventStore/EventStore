@@ -44,16 +44,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             _survivors = new List<LogRecord>();
             _scavenged = new List<LogRecord>();
 
-            long tmp;
-
             var transPos = WriterCheckpoint.ReadNonFlushed();
             
-            var r1 = LogRecord.StreamCreated(transPos, Guid.NewGuid(), transPos, "s1", null, isImplicit: true);
-            Assert.IsTrue(Writer.Write(r1, out tmp));
-            _survivors.Add(r1);
-
-            Writer.CompleteChunk();
-
             for (int i = 0; i < 10; ++i)
             {
                 var r = LogRecord.Prepare(WriterCheckpoint.ReadNonFlushed(),
@@ -67,6 +59,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
                                           "event-type",
                                           new byte[3],
                                           new byte[3]);
+
+                long tmp;
                 Assert.IsTrue(Writer.Write(r, out tmp));
                 Writer.CompleteChunk();
 
@@ -90,7 +84,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
 
             Scavenge(completeLast: false, mergeChunks: true);
 
-            Assert.AreEqual(14, _survivors.Count + _scavenged.Count);
+            Assert.AreEqual(13, _survivors.Count + _scavenged.Count);
         }
 
         [Test]

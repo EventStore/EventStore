@@ -178,7 +178,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 0; i < 10; ++i)
                 {
-                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 var subscription = store.SubscribeToStreamFrom(stream,
@@ -192,7 +192,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                (x, y, z) => dropped.Signal());
                 for (int i = 10; i < 20; ++i)
                 {
-                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 if (!appeared.Wait(Timeout))
@@ -201,16 +201,10 @@ namespace EventStore.Core.Tests.ClientAPI
                     Assert.Fail("Couldn't wait for all events.");
                 }
 
-                Assert.AreEqual(21, events.Count);
-                for (int i = 0; i < 21; ++i)
+                Assert.AreEqual(20, events.Count);
+                for (int i = 0; i < 20; ++i)
                 {
-                    throw new NotImplementedException();
-/*
-                    if (i == 0)
-                        Assert.AreEqual(SystemEventTypes.StreamCreated, events[i].OriginalEvent.EventType);
-                    else
-                        Assert.AreEqual("et-" + (i-1).ToString(), events[i].OriginalEvent.EventType);
-*/
+                    Assert.AreEqual("et-" + i.ToString(), events[i].OriginalEvent.EventType);
                 }
 
                 Assert.IsFalse(dropped.Wait(0));
@@ -233,11 +227,11 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 0; i < 20; ++i)
                 {
-                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 var subscription = store.SubscribeToStreamFrom(stream,
-                                                               10,
+                                                               9,
                                                                false,
                                                                (x, y) =>
                                                                {
@@ -247,7 +241,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                (x, y, z) => dropped.Signal());
                 for (int i = 20; i < 30; ++i)
                 {
-                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 if (!appeared.Wait(Timeout))
@@ -284,11 +278,11 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 0; i < 20; ++i)
                 {
-                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 var subscription = store.SubscribeToStreamFrom(stream,
-                                                               10,
+                                                               9,
                                                                false,
                                                                (x, y) =>
                                                                {

@@ -57,8 +57,8 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
             var metadata1 = string.Format(@"{{""$maxAge"":{0}}}", (int)TimeSpan.FromMinutes(25).TotalSeconds);
             const string metadata2 = @"{""$maxCount"":2}";
 
-            _r11 = WriteStreamCreated("ES1", metadata1, now.AddMinutes(-100));
-            _r21 = WriteStreamCreated("ES2", metadata2, now.AddMinutes(-99));
+            _r11 = WriteStreamMetadata("ES1", 0, metadata1, now.AddMinutes(-100));
+            _r21 = WriteStreamMetadata("ES2", 0, metadata2, now.AddMinutes(-99));
 
             _r12 = WriteSingleEvent("ES1", 1, "bla1", now.AddMinutes(-50));
             _r13 = WriteSingleEvent("ES1", 2, "bla1", now.AddMinutes(-20));

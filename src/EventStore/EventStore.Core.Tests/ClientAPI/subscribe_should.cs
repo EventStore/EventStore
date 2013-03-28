@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var appeared = new CountdownEvent(2);
+                var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
                 using (store.SubscribeToStream(stream, false, x => appeared.Signal(), () => dropped.Signal()).Result)
                 {
