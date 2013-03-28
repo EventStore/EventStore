@@ -121,7 +121,6 @@
     <Compile Include="Exceptions\NoResultException.cs" />
     <Compile Include="Exceptions\OperationTimedOutException.cs" />
     <Compile Include="Exceptions\RetriesLimitReachedException.cs" />
-    <Compile Include="ClientOperations\CreateStreamOperation.cs" />
     <Compile Include="Common\Log\LogManager.cs" />
     <Compile Include="ClientOperations\DeleteStreamOperation.cs" />
     <Compile Include="ClientOperations\IClientOperation.cs" />

@@ -154,13 +154,6 @@ namespace EventStore.Core.Tests.ClientAPI
             const int totalTranWrites = 500;
             const int totalPlainWrites = 500;
 
-            //explicitly creating stream
-            using (var store = TestConnection.Create())
-            {
-                store.Connect(_node.TcpEndPoint);
-                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
-            }
-
             //500 events during transaction
             ThreadPool.QueueUserWorkItem(_ =>
             {
@@ -228,7 +221,6 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
                 {
                     store.AppendToStream(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()});
@@ -246,7 +238,6 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
                 using (var transaction = store.StartTransaction(stream, 1))
                 {
                     store.AppendToStream(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()});
@@ -264,7 +255,6 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
                 {
                     transaction.Write(TestEvent.NewTestEvent());

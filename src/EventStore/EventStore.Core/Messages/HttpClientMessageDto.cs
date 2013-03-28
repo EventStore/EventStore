@@ -166,23 +166,6 @@ namespace EventStore.Core.Messages
             }
         }
 
-        [XmlRoot(ElementName = "create-stream")]
-        public class CreateStreamText
-        {
-            public string EventStreamId { get; set; }
-            public string Metadata { get; set; }
-
-            public CreateStreamText()
-            {
-            }
-
-            public CreateStreamText(string eventStreamId, string metadata)
-            {
-                EventStreamId = eventStreamId;
-                Metadata = metadata;
-            }
-        }
-
         [XmlRoot(ElementName = "delete-stream")]
         public class DeleteStreamText
         {

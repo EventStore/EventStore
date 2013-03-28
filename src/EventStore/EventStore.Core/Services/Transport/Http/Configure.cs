@@ -199,42 +199,6 @@ namespace EventStore.Core.Services.Transport.Http
             return completed.Success ? OkNoCache(entity.ResponseCodec.ContentType, Encoding.UTF8) : NotFound();
         }
 
-        public static ResponseConfiguration CreateStreamCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)
-        {
-            // Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
-
-            var completed = message as ClientMessage.CreateStreamCompleted;
-            if (completed == null)
-                return InternalServerError();
-
-            switch (completed.Result)
-            {
-                case OperationResult.Success:
-                {
-                    return new ResponseConfiguration(
-                        HttpStatusCode.Created,
-                        "Stream created",
-                        null,
-                        Encoding.UTF8,
-                        new KeyValuePair<string, string>("Location",
-                                                         HostName.Combine(entity.UserHostName,
-                                                                          "/streams/{0}",
-                                                                          Uri.EscapeDataString(eventStreamId))));
-                }
-                case OperationResult.PrepareTimeout:
-                case OperationResult.CommitTimeout:
-                case OperationResult.ForwardTimeout:
-                    return InternalServerError("Create timeout");
-
-                case OperationResult.WrongExpectedVersion:
-                case OperationResult.StreamDeleted:
-                case OperationResult.InvalidTransaction:
-                    return BadRequest(string.Format("Error code : {0}. Reason : {1}", completed.Result, completed.Message));
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
         public static ResponseConfiguration DeleteStreamCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
             // Debug.Assert(message.GetType() == typeof(ClientMessage.DeleteStreamCompleted));

@@ -61,8 +61,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
                                                           Codec.CreateCustom(Codec.Xml, ContentType.Atom, Encoding.UTF8),
-                                                          Codec.Json,
-                                                          
+                                                          Codec.Json
                                                       };
         private static readonly ICodec[] AtomWithHtmlCodecs = new[]
                                                               {
@@ -77,48 +76,28 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private readonly GenericController _genericController;
         private readonly AllEventsController _allEventsController;
-        private readonly IPublisher _networkSendQueue;
 
         public AtomController(IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
         {
-            _networkSendQueue = networkSendQueue;
             _genericController = new GenericController(publisher, networkSendQueue);
             _allEventsController = new AllEventsController(publisher, networkSendQueue);
         }
 
         protected override void SubscribeCore(IHttpService http, HttpMessagePipe pipe)
         {
-            Register(http, "/streams", HttpMethod.Post, OnCreateStream, AtomCodecs, AtomCodecs);
             Register(http, "/streams/{stream}", HttpMethod.Delete, OnDeleteStream, AtomCodecs, AtomCodecs);
-            Register(
-                http, "/streams/{stream}?embed={embed}", HttpMethod.Get, OnGetStreamFeedLatest, Codec.NoCodecs,
-                AtomWithHtmlCodecs);
-            Register(
-                http, "/streams/{stream}/range/{start}/{count}?embed={embed}", HttpMethod.Get, OnGetStreamRangeFeedPage,
-                Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/{stream}?embed={embed}", HttpMethod.Get, OnGetStreamFeedLatest, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/{stream}/range/{start}/{count}?embed={embed}", HttpMethod.Get, OnGetStreamRangeFeedPage, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/{stream}/{id}", HttpMethod.Get, OnGetEntry, Codec.NoCodecs, AtomWithHtmlCodecs);
-            Register(http, "/streams/{stream}", HttpMethod.Post, OnPostEntry, AtomCodecs, AtomCodecs);
-            Register(
-                http, "/streams/$all?embed={embed}", HttpMethod.Get, OnGetAllFeedBeforeHead, Codec.NoCodecs,
-                AtomWithHtmlCodecs);
-            Register(
-                http, "/streams/$all/{count}?embed={embed}", HttpMethod.Get, OnGetAllFeedBeforeHead, Codec.NoCodecs,
-                AtomWithHtmlCodecs);
-            Register(
-                http, "/streams/$all/before/{pos}/{count}?embed={embed}", HttpMethod.Get, OnGetAllFeedBefore,
-                Codec.NoCodecs, AtomWithHtmlCodecs);
-            Register(
-                http, "/streams/$all/after/{pos}/{count}?embed={embed}", HttpMethod.Get, OnGetAllAfterFeed,
-                Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/{stream}", HttpMethod.Post, OnPostEntry, AtomCodecs, AtomCodecs); 
+            Register(http, "/streams/$all?embed={embed}", HttpMethod.Get, OnGetAllFeedBeforeHead, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/$all/{count}?embed={embed}", HttpMethod.Get, OnGetAllFeedBeforeHead, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/$all/before/{pos}/{count}?embed={embed}", HttpMethod.Get, OnGetAllFeedBefore, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/$all/after/{pos}/{count}?embed={embed}", HttpMethod.Get, OnGetAllAfterFeed, Codec.NoCodecs, AtomWithHtmlCodecs);
         }
 
         //FEED
-
-        private void OnCreateStream(HttpEntity entity, UriTemplateMatch match)
-        {
-            _genericController.CreateStream(entity);
-        }
 
         private void OnDeleteStream(HttpEntity entity, UriTemplateMatch match)
         {
@@ -401,38 +380,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
             //no direct subscriptions
-        }
-
-        public void CreateStream(HttpEntity entity)
-        {
-            entity.Manager.ReadTextRequestAsync(CreateStreamBodyRead,
-                                                e => Log.ErrorException(e, "Error while reading request (CREATE stream)."));
-        }
-
-        private void CreateStreamBodyRead(HttpEntityManager manager, string body)
-        {
-            var entity = manager.HttpEntity;
-
-            var create = entity.RequestCodec.From<HttpClientMessageDto.CreateStreamText>(body);
-            if (create == null)
-            {
-                SendBadRequest(entity, "Create stream request body cannot be deserialized");
-                return;
-            }
-
-            var eventStreamId = create.EventStreamId;
-            var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                  entity,
-                                                  Format.Atom.CreateStreamCompleted,
-                                                  (a, m) => Configure.CreateStreamCompleted(a, m, eventStreamId));
-            var msg = new ClientMessage.CreateStream(Guid.NewGuid(),
-                                                     envelope,
-                                                     true, 
-                                                     create.EventStreamId,
-                                                     Guid.NewGuid(), 
-                                                     false,//TODO TR discover
-                                                     Encoding.UTF8.GetBytes(create.Metadata ?? string.Empty));
-            Publish(msg);
         }
 
         public void DeleteStream(HttpEntity entity, string stream)

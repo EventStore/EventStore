@@ -104,12 +104,6 @@ namespace EventStore.Core.Services.Transport.Http
                 return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg.Result, entity.UserHostName, embed)); 
             }
 
-            public static string CreateStreamCompleted(HttpResponseFormatterArgs entity, Message message)
-            {
-                Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
-                return string.Empty;
-            }
-
             public static string DeleteStreamCompleted(HttpResponseFormatterArgs entity, Message message)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.DeleteStreamCompleted));

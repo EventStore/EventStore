@@ -32,7 +32,8 @@ using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.TransactionCommitRequestCreated>
+    public class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
+                                                           IHandle<ClientMessage.TransactionCommit>
     {
         public TransactionCommitTwoPhaseRequestManager(IPublisher publisher, 
                                                        int prepareCount, 
@@ -43,7 +44,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
         }
 
-        public void Handle(StorageMessage.TransactionCommitRequestCreated request)
+        public void Handle(ClientMessage.TransactionCommit request)
         {
             Init(request.Envelope, request.CorrelationId, request.TransactionId);
 

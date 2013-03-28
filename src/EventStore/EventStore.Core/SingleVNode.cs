@@ -27,7 +27,6 @@
 // 
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using EventStore.Core.Bus;
@@ -110,11 +109,11 @@ namespace EventStore.Core
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
-            Bus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.CreateStreamCompleted, Message>());
+            Bus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.WriteEventsCompleted, Message>());
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
-            monitoringInnerBus.Subscribe<ClientMessage.CreateStreamCompleted>(monitoring);
+            monitoringInnerBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 
             // STORAGE SUBSYSTEM
@@ -183,12 +182,11 @@ namespace EventStore.Core
             // REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(MainQueue, 1, 1, vNodeSettings.PrepareTimeout, vNodeSettings.CommitTimeout);
             Bus.Subscribe<SystemMessage.SystemInit>(requestManagement);
-            Bus.Subscribe<StorageMessage.CreateStreamRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.WriteRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.TransactionStartRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.TransactionWriteRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.TransactionCommitRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.DeleteStreamRequestCreated>(requestManagement);
+            Bus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
+            Bus.Subscribe<ClientMessage.TransactionStart>(requestManagement);
+            Bus.Subscribe<ClientMessage.TransactionWrite>(requestManagement);
+            Bus.Subscribe<ClientMessage.TransactionCommit>(requestManagement);
+            Bus.Subscribe<ClientMessage.DeleteStream>(requestManagement);
             Bus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
             Bus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
             Bus.Subscribe<StorageMessage.CommitAck>(requestManagement);

@@ -106,11 +106,6 @@ namespace EventStore.Core.Tests.ClientAPI
             var events = new[] { TestEvent.NewTestEvent() };
             var bytes = new byte[0];
 
-            Assert.That(() => connection.CreateStream(s, Guid.NewGuid(), false, bytes),
-                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
-            Assert.That(() => connection.CreateStreamAsync(s, Guid.NewGuid(), false, bytes).Wait(),
-                        Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
-
             Assert.That(() => connection.DeleteStream(s, 0),
                         Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
             Assert.That(() => connection.DeleteStreamAsync(s, 0).Wait(),

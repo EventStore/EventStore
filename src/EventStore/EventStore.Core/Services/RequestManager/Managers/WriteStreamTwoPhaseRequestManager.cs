@@ -32,7 +32,8 @@ using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.WriteRequestCreated>
+    public class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
+                                                     IHandle<ClientMessage.WriteEvents>
     {
         public WriteStreamTwoPhaseRequestManager(IPublisher publisher, 
                                                  int prepareCount, 
@@ -43,7 +44,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
         }
 
-        public void Handle(StorageMessage.WriteRequestCreated request)
+        public void Handle(ClientMessage.WriteEvents request)
         {
             Init(request.Envelope, request.CorrelationId, -1);
 

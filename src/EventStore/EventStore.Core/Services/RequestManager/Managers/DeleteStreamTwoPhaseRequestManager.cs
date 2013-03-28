@@ -32,7 +32,8 @@ using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.DeleteStreamRequestCreated>
+    public class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
+                                                      IHandle<ClientMessage.DeleteStream>
     {
         public DeleteStreamTwoPhaseRequestManager(IPublisher publisher,  
                                                   int prepareCount, 
@@ -43,7 +44,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
         }
 
-        public void Handle(StorageMessage.DeleteStreamRequestCreated request)
+        public void Handle(ClientMessage.DeleteStream request)
         {
             Init(request.Envelope, request.CorrelationId, -1);
 

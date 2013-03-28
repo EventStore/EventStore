@@ -175,37 +175,6 @@ namespace EventStore.ClientAPI
             _handler.EnqueueMessage(new CloseConnectionMessage());
         }
 
-
-        /// <summary>
-        /// Creates a new Stream in the Event Store synchronously
-        /// </summary>
-        /// <param name="stream">The name of the stream to create.</param>
-        /// <param name="id"></param>
-        /// <param name="isJson">A bool whether the metadata is json or not</param>
-        /// <param name="metadata">The metadata to associate with the created stream</param>
-        public void CreateStream(string stream, Guid id, bool isJson, byte[] metadata)
-        {
-            CreateStreamAsync(stream, id, isJson, metadata).Wait();
-        }
-
-        /// <summary>
-        /// Creates a new Stream in the Event Store asynchronously
-        /// </summary>
-        /// <param name="stream">The name of the stream to create</param>
-        /// <param name="id"></param>
-        /// <param name="isJson">A bool whether the metadata is json or not.</param>
-        /// <param name="metadata">The metadata to associate with the created stream.</param>
-        /// <returns>A <see cref="Task"></see> that can be waited upon by the caller.</returns>
-        public Task CreateStreamAsync(string stream, Guid id, bool isJson, byte[] metadata)
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
-            Ensure.NotEmptyGuid(id, "id");
-
-            var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new CreateStreamOperation(_settings.Log, source, _settings.AllowForwarding, stream, id, isJson, metadata));
-            return source.Task;
-        }
-
         /// <summary>
         /// Deletes a stream from the Event Store synchronously
         /// </summary>

@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new StorageMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4);
+            yield return new ClientMessage.TransactionCommit(CorrelationId, Envelope, false, 4);
         }
 
         protected override Message When()

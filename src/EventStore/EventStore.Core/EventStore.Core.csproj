@@ -140,7 +140,6 @@
     <Compile Include="Services\Storage\ReaderIndex\TransactionInfo.cs" />
     <Compile Include="Services\SubscriptionsService.cs" />
     <Compile Include="Services\NetworkSendService.cs" />
-    <Compile Include="Services\RequestManager\Managers\CreateStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\RequestManager\Managers\DeleteStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\Monitoring\StatsCollectorEnvelope.cs" />
     <Compile Include="Services\Monitoring\Stats\StatsContainer.cs" />
