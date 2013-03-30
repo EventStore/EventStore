@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _firstEvent = TestEvent.NewTestEvent();
 
-            _connection = EventStoreConnection.Create();
+            _connection = TestConnection.Create();
             _connection.Connect(_node.TcpEndPoint);
 
             _connection.AppendToStream("test-stream",
