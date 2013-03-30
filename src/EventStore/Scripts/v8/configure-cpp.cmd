@@ -1,4 +1,4 @@
-rem @echo off
+@echo off
     if [%ProgramFiles(x86)%] == [] (
       set progfiles=%ProgramFiles%
     ) else (
