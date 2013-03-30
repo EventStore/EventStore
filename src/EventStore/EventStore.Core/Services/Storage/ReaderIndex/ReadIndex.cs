@@ -27,7 +27,7 @@
 // 
 
 #if DEBUG
-//#define CHECK_COMMIT_DUPLICATES
+#define CHECK_COMMIT_DUPLICATES
 #endif
 
 using System;
@@ -188,7 +188,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !_indexRebuild))
                 return;  // already committed
 
-            bool first = true;
             int eventNumber = -1;
             uint streamHash = 0;
             string streamId = null;
@@ -198,11 +197,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition))
             {
-                if (first)
+                if (streamId == null)
                 {
-                    streamHash = _hasher.Hash(prepare.EventStreamId);
                     streamId = prepare.EventStreamId;
-                    first = false;
+                    streamHash = _hasher.Hash(prepare.EventStreamId);
                 }
                 else
                     Debug.Assert(prepare.EventStreamId == streamId);
@@ -228,22 +226,26 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (addToIndex)
                 {
 #if CHECK_COMMIT_DUPLICATES
-                    long pos;
-                    if (_tableIndex.TryGetOneValue(streamHash, eventNumber, out pos))
+                    var reader = GetReader();
+                    try
                     {
-                        var res = ((IReadIndex)this).ReadEvent(streamId, eventNumber);
-                        if (res.Result == ReadEventResult.Success)
+                        foreach (var indexEntry in _tableIndex.GetRange(streamHash, eventNumber, eventNumber))
                         {
-                            Debugger.Break();
-                            throw new Exception(
-                                string.Format(
-                                    "Trying to add duplicate event #{0} for stream {1}(hash {2})\nCommit: {3}\nPrepare: {4}.",
-                                    eventNumber,
-                                    streamId,
-                                    streamHash,
-                                    commit,
-                                    prepare));
+                            var res = GetEventRecord(reader, indexEntry);
+                            if (res.Success && res.Record.EventStreamId == streamId)
+                            {
+                                if (Debugger.IsAttached)
+                                    Debugger.Break();
+                                else
+                                    throw new Exception(string.Format(
+                                            "Trying to add duplicate event #{0} for stream {1}(hash {2})\nCommit: {3}\nPrepare: {4}\nPresent record: {5}.",
+                                            eventNumber, streamId, streamHash, commit, prepare, res.Record));
+                            }
                         }
+                    }
+                    finally
+                    {
+                        ReturnReader(reader);
                     }
 #endif
                     indexEntries.Add(new IndexEntry(streamHash, eventNumber, prepare.LogPosition));
@@ -264,7 +266,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) != lastCommitPosition)
                 throw new Exception("Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
 
-            if (first)
+            if (indexEntries.Count == 0)
             {
                 // we got here because all prepares of this commit was scavenged, 
                 // so we don't add anything to cache, to table index, anywhere
