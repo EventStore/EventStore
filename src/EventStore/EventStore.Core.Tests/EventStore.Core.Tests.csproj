@@ -99,6 +99,7 @@
     <Compile Include="ClientAPI\connect.cs" />
     <Compile Include="ClientAPI\subscribe_to_stream_catching_up_should.cs" />
     <Compile Include="ClientAPI\subscribe_to_all_catching_up_should.cs" />
+    <Compile Include="ClientAPI\when_committing_empty_transaction.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
     <Compile Include="ClientAPI\creating_stream.cs" />
     <Compile Include="ClientAPI\event_store_connection_should.cs" />
