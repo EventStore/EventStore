@@ -43,10 +43,11 @@ namespace EventStore.Core.Tests
             Console.WriteLine("Initializing tests (setting console loggers)...");
             LogManager.SetLogFactory(x => new ConsoleLogger(x));
 
-            LogEnvironemntInfo();
+            LogEnvironmentInfo();
+            Application.AddDefines(new[] {Application.AdditionalCommitChecks});
         }
 
-        private void LogEnvironemntInfo()
+        private void LogEnvironmentInfo()
         {
             var log = LogManager.GetLoggerFor<TestsInitFixture>();
 

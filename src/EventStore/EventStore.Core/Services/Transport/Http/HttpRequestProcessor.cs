@@ -85,7 +85,7 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     var request = _pending.Dequeue();
                     
-                    if (Application.IsDefined("DO_NOT_TIMEOUT_REQUESTS"))
+                    if (Application.IsDefined(Application.DoNotTimeoutRequests))
                         continue;
 
                     if (!request.Manager.IsProcessing)
