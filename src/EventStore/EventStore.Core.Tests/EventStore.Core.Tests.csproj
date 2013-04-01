@@ -217,7 +217,8 @@
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_age.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_count.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_no_max_age_max_count.cs" />
-    <Compile Include="Services\Storage\Scavenge\Copy of when_having_commits_spanning_multiple_chunks.cs" />
+    <Compile Include="Services\Storage\SimpleDbTestScenario.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_having_commit_spanning_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_having_commits_spanning_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_2nd_chunk__in_db_with_3_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_writing_delete_prepare_without_commit_on_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />

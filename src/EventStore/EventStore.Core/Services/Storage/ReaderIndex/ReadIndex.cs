@@ -132,7 +132,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         case LogRecordType.System:
                             break;
                         default:
-                            throw new ArgumentOutOfRangeException("recordType", string.Format("Unknown RecordType: {0}", result.LogRecord.RecordType));
+                            throw new Exception(string.Format("Unknown RecordType: {0}", result.LogRecord.RecordType));
                     }
 
                     processed += 1;
@@ -284,10 +284,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private IndexReadEventResult ReadEventInternal(ITransactionFileReader reader, string streamId, int version)
+        private IndexReadEventResult ReadEventInternal(ITransactionFileReader reader, string streamId, int eventNumber)
         {
             Ensure.NotNull(streamId, "streamId");
-            Ensure.Nonnegative(version, "eventNumber");
+            if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
 
             var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
             if (lastEventNumber == EventNumber.DeletedStream)
@@ -295,16 +295,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (lastEventNumber == ExpectedVersion.NoStream)
                 return new IndexReadEventResult(ReadEventResult.NoStream);
 
+            if (eventNumber == -1) 
+                eventNumber = lastEventNumber;
+
             var metadata = GetStreamMetadataCached(reader, streamId);
             if (metadata.MaxCount.HasValue)
             {
                 var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
-                if (version < minEventNumber || version > lastEventNumber)
+                if (eventNumber < minEventNumber || eventNumber > lastEventNumber)
                     return new IndexReadEventResult(ReadEventResult.NotFound);
             }
 
             EventRecord record;
-            var success = GetStreamRecord(reader, streamId, version, out record);
+            var success = GetStreamRecord(reader, streamId, eventNumber, out record);
             if (success)
             {
                 if (metadata.MaxAge.HasValue && record.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)

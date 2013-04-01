@@ -45,9 +45,10 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             _scavenged = new List<LogRecord>();
 
             var transPos = WriterCheckpoint.ReadNonFlushed();
-            
+
             for (int i = 0; i < 10; ++i)
             {
+                long tmp;
                 var r = LogRecord.Prepare(WriterCheckpoint.ReadNonFlushed(),
                                           Guid.NewGuid(),
                                           Guid.NewGuid(),
@@ -59,8 +60,6 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
                                           "event-type",
                                           new byte[3],
                                           new byte[3]);
-
-                long tmp;
                 Assert.IsTrue(Writer.Write(r, out tmp));
                 Writer.CompleteChunk();
 
