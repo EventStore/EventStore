@@ -198,6 +198,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             if (eventNumber != int.MinValue)
             {
+                if (eventNumber < 0) throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
                 _streamInfoCache.Put(streamId,
                                      key => new StreamCacheInfo(eventNumber, null),
                                      (key, old) => new StreamCacheInfo(eventNumber, old.Metadata));

@@ -171,7 +171,7 @@ namespace EventStore.Core.Services.Transport.Http
                                                          HostName.Combine(entity.UserHostName,
                                                                           "/streams/{0}/{1}",
                                                                           Uri.EscapeDataString(eventStreamId),
-                                                                          completed.FirstEventNumber == 0 ? 1 : completed.FirstEventNumber)));
+                                                                          completed.FirstEventNumber)));
                 }
                 case OperationResult.PrepareTimeout:
                 case OperationResult.CommitTimeout:

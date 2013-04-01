@@ -47,22 +47,14 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
 
             var metadata = string.Format(@"{{""$maxAge"":{0}}}", (int)TimeSpan.FromMinutes(10).TotalSeconds);
 
-            _r1 = WriteStreamMetadata("ES", 0, metadata, now.AddMinutes(-100));
-                  WriteSingleEvent("ES", 1, "bla1",  now.AddMinutes(-50));
-                  WriteSingleEvent("ES", 2, "bla1",  now.AddMinutes(-20));
-                  WriteSingleEvent("ES", 3, "bla1",  now.AddMinutes(-11));
-            _r5 = WriteSingleEvent("ES", 4, "bla1",  now.AddMinutes(-5));
-            _r6 = WriteSingleEvent("ES", 5, "bla1",  now.AddMinutes(-1));
+            _r1 = WriteStreamMetadata("ES", 0, metadata);
+                  WriteSingleEvent("ES", 0, "bla1",  now.AddMinutes(-50));
+                  WriteSingleEvent("ES", 1, "bla1",  now.AddMinutes(-20));
+                  WriteSingleEvent("ES", 2, "bla1",  now.AddMinutes(-11));
+            _r5 = WriteSingleEvent("ES", 3, "bla1",  now.AddMinutes(-5));
+            _r6 = WriteSingleEvent("ES", 4, "bla1",  now.AddMinutes(-1));
 
             Scavenge(completeLast: true, mergeChunks: false);
-        }
-
-        [Test]
-        public void single_event_read_doesnt_return_stream_created_event()
-        {
-            var result = ReadIndex.ReadEvent("ES", 0);
-            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
-            Assert.IsNull(result.Record);
         }
 
         [Test]
@@ -81,14 +73,10 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
             Assert.IsNull(result.Record);
 
             result = ReadIndex.ReadEvent("ES", 3);
-            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
-            Assert.IsNull(result.Record);
-
-            result = ReadIndex.ReadEvent("ES", 4);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r5, result.Record);
 
-            result = ReadIndex.ReadEvent("ES", 5);
+            result = ReadIndex.ReadEvent("ES", 4);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r6, result.Record);
         }

@@ -44,18 +44,18 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
 
         protected override void WriteTestScenario()
         {
-            WriteSingleEvent("ES", 1, new string('.', 3000)); // chunk 1
+            WriteSingleEvent("ES", 0, new string('.', 3000)); // chunk 1
+            WriteSingleEvent("ES", 1, new string('.', 3000));
             WriteSingleEvent("ES", 2, new string('.', 3000));
-            WriteSingleEvent("ES", 3, new string('.', 3000));
 
-            WriteSingleEvent("ES", 4, new string('.', 3000), retryOnFail: true); // chunk 2
-            WriteSingleEvent("ES", 5, new string('.', 3000));
+            WriteSingleEvent("ES", 3, new string('.', 3000), retryOnFail: true); // chunk 2
+            WriteSingleEvent("ES", 4, new string('.', 3000));
 
             _event7prepare = WriteDeletePrepare("ES");
             _event7commit = WriteDeleteCommit(_event7prepare);
             _event7 = new EventRecord(EventNumber.DeletedStream, _event7prepare);
 
-            _event9 = WriteSingleEvent("ES2", 1, new string('.', 5000), retryOnFail: true); //chunk 3
+            _event9 = WriteSingleEvent("ES2", 0, new string('.', 5000), retryOnFail: true); //chunk 3
 
             Scavenge(completeLast: false, mergeChunks: false);
         }
