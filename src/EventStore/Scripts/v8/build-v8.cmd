@@ -16,8 +16,6 @@ echo FAILED. See previous messages
 exit /b 1
 
 
-
-
 :generate-project-files
 
     call git clean -fx -- build || goto :error

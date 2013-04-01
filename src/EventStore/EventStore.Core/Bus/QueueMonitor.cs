@@ -59,7 +59,7 @@ namespace EventStore.Core.Bus
         public QueueStats[] GetStats()
         {
             var stats = _queues.Keys.OrderBy(x => x.Name).Select(queue => queue.GetStatistics()).ToArray();
-            if (Application.IsDefined("DUMP_STATISTICS"))
+            if (Application.IsDefined(Application.DumpStatistics))
                 Log.Trace(Environment.NewLine + string.Join(Environment.NewLine, stats.Select(x => x.ToString())));
             return stats;
         }
