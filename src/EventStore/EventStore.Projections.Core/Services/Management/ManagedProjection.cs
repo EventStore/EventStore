@@ -563,7 +563,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (message.Result == OperationResult.Success)
             {
                 _logger.Info("'{0}' projection source has been written", _name);
-                var writtenEventNumber = (message.FirstEventNumber == 0 ? 1 : message.FirstEventNumber);
+                var writtenEventNumber = message.FirstEventNumber;
                 if (writtenEventNumber != (_persistedState.Version ?? writtenEventNumber))
                     throw new Exception("Projection version and event number mismatch");
                 _lastWrittenVersion = (_persistedState.Version ?? writtenEventNumber);

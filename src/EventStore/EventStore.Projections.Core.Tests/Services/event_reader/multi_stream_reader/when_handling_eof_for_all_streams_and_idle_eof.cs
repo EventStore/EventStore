@@ -110,14 +110,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         [Test]
         public void publishes_event_distribution_idle_messages()
         {
-            Assert.AreEqual(
-                2, _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderIdle>().Count());
-            var first =
-                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderIdle>().First();
-            var second =
-                _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderIdle>()
-                         .Skip(1)
-                         .First();
+            Assert.AreEqual(2, _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderIdle>().Count());
+            var first = _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderIdle>().First();
+            var second = _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderIdle>().Skip(1).First();
 
             Assert.AreEqual(first.CorrelationId, _distibutionPointCorrelationId);
             Assert.AreEqual(second.CorrelationId, _distibutionPointCorrelationId);

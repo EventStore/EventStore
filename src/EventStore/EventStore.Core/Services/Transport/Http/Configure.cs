@@ -167,11 +167,12 @@ namespace EventStore.Core.Services.Transport.Http
                         "Created",
                         null,
                         Encoding.UTF8,
-                        new KeyValuePair<string, string>("Location",
-                                                         HostName.Combine(entity.UserHostName,
-                                                                          "/streams/{0}/{1}",
-                                                                          Uri.EscapeDataString(eventStreamId),
-                                                                          completed.FirstEventNumber)));
+                        new KeyValuePair<string, string>(
+                            "Location",
+                            HostName.Combine(entity.UserHostName, 
+                                             "/streams/{0}/{1}", 
+                                             Uri.EscapeDataString(eventStreamId), 
+                                             completed.FirstEventNumber)));
                 }
                 case OperationResult.PrepareTimeout:
                 case OperationResult.CommitTimeout:

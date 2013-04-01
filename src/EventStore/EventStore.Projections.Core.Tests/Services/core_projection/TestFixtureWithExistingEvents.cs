@@ -231,18 +231,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private void ProcessWrite(ClientMessage.WriteEvents message)
         {
             List<EventRecord> list;
-            int add = 0;
             if (!_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || list == null)
             {
                 list = new List<EventRecord>();
-                add = 1;
-                throw new NotImplementedException();
-/*
-                list.Add(new EventRecord(
-                                            0, 0, message.CorrelationId, Guid.NewGuid(), 1, 0,
-                                            message.EventStreamId, ExpectedVersion.Any, DateTime.UtcNow,
-                                            PrepareFlags.SingleWrite, SystemEventTypes.StreamCreatedImplicit, new byte[0], new byte[0]));
-*/
                 _lastMessageReplies[message.EventStreamId] = list;
             }
             foreach (var eventRecord in from e in message.Events
@@ -256,7 +247,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 list.Add(eventRecord);
             }
 
-            message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length - add));
+            message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length));
         }
 
         public void Handle(ProjectionCoreServiceMessage.CoreTick message)

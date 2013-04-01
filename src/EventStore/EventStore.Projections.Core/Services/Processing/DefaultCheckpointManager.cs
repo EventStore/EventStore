@@ -100,14 +100,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (message.Result == OperationResult.Success)
             {
                 if (_logger != null)
-                    _logger.Trace(
-                        "Checkpoint has be written for projection {0} at sequence number {1} (current)", _name,
-                        message.FirstEventNumber);
-                _lastWrittenCheckpointEventNumber = message.FirstEventNumber
-                                                    + (_lastWrittenCheckpointEventNumber == ExpectedVersion.NoStream
-                                                       // account for StreamCreated
-                                                           ? 1
-                                                           : 0);
+                    _logger.Trace("Checkpoint has be written for projection {0} at sequence number {1} (current)", _name, message.FirstEventNumber);
+                _lastWrittenCheckpointEventNumber = message.FirstEventNumber;
 
                 _inCheckpointWriteAttempt = 0;
                 CheckpointWritten();

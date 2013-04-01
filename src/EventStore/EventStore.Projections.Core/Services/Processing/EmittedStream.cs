@@ -169,9 +169,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             if (message.Result == OperationResult.Success)
             {
-                var firstEventNumber = message.FirstEventNumber + (_lastKnownEventNumber == ExpectedVersion.NoStream ? 1 : 0); // account for stream crated
-                _lastKnownEventNumber = firstEventNumber + _submittedToWriteEvents.Length - 1;
-                NotifyEventsCommitted(_submittedToWriteEmittedEvents, firstEventNumber);
+                _lastKnownEventNumber = message.FirstEventNumber + _submittedToWriteEvents.Length - 1;
+                NotifyEventsCommitted(_submittedToWriteEmittedEvents, message.FirstEventNumber);
                 OnWriteCompleted();
                 return;
             }
