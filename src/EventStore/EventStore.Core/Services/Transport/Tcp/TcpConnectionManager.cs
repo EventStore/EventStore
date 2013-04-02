@@ -234,7 +234,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             Ensure.NotNull(message, "message");
 
-            SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Encoding.UTF8.GetBytes(message)));
+            SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Encoding.UTF8.GetBytes(message)), checkQueueSize: false);
             Log.Error("Closing connection '{0}' [{1}, {2:B}] due to error. Reason: {3}", ConnectionName, EndPoint, ConnectionId, message);
             _connection.Close();
         }
@@ -254,14 +254,14 @@ namespace EventStore.Core.Services.Transport.Tcp
                 SendPackage(package.Value);
         }
 
-        private void SendPackage(TcpPackage package)
+        private void SendPackage(TcpPackage package, bool checkQueueSize = true)
         {
             var data = package.AsArraySegment();  
             var framed = _framer.FrameData(data);
             _connection.EnqueueSend(framed);
 
             int queueSize;
-            if ((queueSize = _connection.SendQueueSize) > ConnectionQueueSizeThreshold)
+            if (checkQueueSize && (queueSize = _connection.SendQueueSize) > ConnectionQueueSizeThreshold)
                 SendBadRequestAndClose(Guid.Empty, string.Format("Connection queue size is too large: {0}.", queueSize));
         }
 
