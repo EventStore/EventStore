@@ -96,11 +96,12 @@ namespace EventStore.Core.Services.Transport.Http
 
         public void Handle(IncomingHttpRequestMessage message)
         {
-            if (Authenticate(message))
-                ProcessRequest(message.Context.Request, message.Context.Response);
+            var entity = Authenticate(message);
+            if (entity != null)
+                ProcessRequest(entity);
         }
 
-        private bool Authenticate(IncomingHttpRequestMessage message)
+        private HttpEntity Authenticate(IncomingHttpRequestMessage message)
         {
             var basicIdentity = message.Context.User != null
                                     ? message.Context.User.Identity as HttpListenerBasicIdentity
@@ -108,18 +109,18 @@ namespace EventStore.Core.Services.Transport.Http
             if (basicIdentity != null)
             {
                 if (basicIdentity.Name == basicIdentity.Password)
-                    return true;
-                var httpEntity = new HttpEntity(message.Context.Request, message.Context.Response);
+                    return new HttpEntity(message.Context.Request, message.Context.Response, message.Context.User);
+                var httpEntity = new HttpEntity(message.Context.Request, message.Context.Response, null);
                 var manager = httpEntity.CreateManager();
                 manager.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", exception => { });
-                return false;
+                return null;
             }
-            return true;
+            return new HttpEntity(message.Context.Request, message.Context.Response, null);
         }
 
-        private void ProcessRequest(HttpListenerRequest request, HttpListenerResponse response)
+        private void ProcessRequest(HttpEntity httpEntity)
         {
-            var httpEntity = new HttpEntity(request, response);
+            var request = httpEntity.Request;
             try
             {
                 //TODO: probably we should pass HttpVerb into matches

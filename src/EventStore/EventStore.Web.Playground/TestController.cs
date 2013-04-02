@@ -60,7 +60,10 @@ namespace EventStore.Web.Playground
 
         private void Test1Handler(HttpEntityManager http, UriTemplateMatch match)
         {
-            http.Reply("Please authenticate yourself", 401, "Unauthorized", "text/plain");
+            if (http.User != null) 
+                http.Reply("OK", 200, "OK", "text/plain");
+            else 
+                http.Reply("Please authenticate yourself", 401, "Unauthorized", "text/plain");
         }
     }
 }

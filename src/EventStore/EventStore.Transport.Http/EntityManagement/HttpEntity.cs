@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Net;
+using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.Codecs;
 
@@ -39,8 +40,9 @@ namespace EventStore.Transport.Http.EntityManagement
 
         public readonly HttpListenerRequest Request;
         internal readonly HttpListenerResponse Response;
+        public readonly IPrincipal User;
 
-        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response)
+        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response, IPrincipal user)
         {
             Ensure.NotNull(request, "request");
             Ensure.NotNull(response, "response");
@@ -50,7 +52,7 @@ namespace EventStore.Transport.Http.EntityManagement
 
             Request = request;
             Response = response;
-
+            User = user;
         }
 
         public HttpEntityManager CreateManager(
