@@ -26,43 +26,47 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Runtime.InteropServices;
-using EventStore.Common.Log;
-using EventStore.Common.Utils;
+using System.Linq;
+using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests
+namespace EventStore.Core.Tests.TransactionLog.Scavenging
 {
-    [SetUpFixture]
-    public class TestsInitFixture
+    [TestFixture]
+    public class when_metastream_is_scavenged_and_read_index_is_set_to_keep_last_3_metaevents : ScavengeTestScenario
     {
-        [SetUp]
-        public void SetUp()
+        public when_metastream_is_scavenged_and_read_index_is_set_to_keep_last_3_metaevents() :
+                base(metastreamMaxCount: 3)
         {
-            Console.WriteLine("Initializing tests (setting console loggers)...");
-            LogManager.SetLogFactory(x => new ConsoleLogger(x));
-
-            LogEnvironmentInfo();
         }
 
-        private void LogEnvironmentInfo()
+        protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {
-            var log = LogManager.GetLoggerFor<TestsInitFixture>();
-
-            log.Info("\n{0,-25} {1} ({2})\n"
-                     + "{3,-25} {4} ({5}-bit)\n"
-                     + "{6,-25} {7}\n\n",
-                     "OS:", OS.IsLinux ? "Linux" : "Windows", Environment.OSVersion,
-                     "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
-                     "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1)
-                     );
+            return dbCreator
+                .Chunk(Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(10, null)),
+                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(9, null)),
+                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(8, null)),
+                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(5, null)),
+                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(2, null)),
+                       Rec.Commit(0, "$$bla"))
+                .CompleteLastChunk()
+                .CreateDb();
         }
 
-        [TearDown]
-        public void TearDown()
+        protected override LogRecord[][] KeptRecords(DbResult dbResult)
         {
-            LogManager.Finish();
+            return new[]
+            {
+                dbResult.Recs[0].Where((x, i) => i >= 2).ToArray()
+            };
+        }
+
+        [Test]
+        public void metastream_is_scavenged_correctly()
+        {
+            CheckRecords();
         }
     }
 }

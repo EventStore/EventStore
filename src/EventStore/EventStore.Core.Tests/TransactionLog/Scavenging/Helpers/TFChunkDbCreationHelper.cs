@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
@@ -143,9 +144,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                                                        expectedVersion,
                                                        PrepareFlags.Data
                                                        | (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
-                                                       | (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None), 
+                                                       | (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
+                                                       | (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson),
                                                        rec.EventType,
-                                                       rec.Id.ToByteArray(),
+                                                       rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
                                                        null,
                                                        rec.TimeStamp);
                             if (SystemNames.IsMetastream(rec.StreamId))
@@ -228,9 +230,22 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
                 if (i < _chunkRecs.Count-1 || (_completeLast && i == _chunkRecs.Count - 1))
                     chunk.Complete();
+                else
+                    chunk.Flush();
             }
-
             return new DbResult(_db, records, streams);
+        }
+
+        private byte[] FormatRecordMetadata(Rec rec)
+        {
+            if (rec.Metadata == null) return null;
+
+            var meta = rec.Metadata.Value;
+            return Encoding.UTF8.GetBytes(
+                string.Format("{{{0}{1}{2}}}",
+                              meta.MaxCount == null ? "" : string.Format("$maxCount:{0}", meta.MaxCount),
+                              meta.MaxCount.HasValue ? "," : "",
+                              meta.MaxAge == null ? "" : string.Format("$maxAge:{0}", (int)meta.MaxAge.Value.TotalSeconds)));
         }
     }
 

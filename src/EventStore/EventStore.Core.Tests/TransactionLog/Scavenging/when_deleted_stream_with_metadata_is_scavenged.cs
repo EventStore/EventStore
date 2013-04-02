@@ -34,7 +34,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging
 {
-    [TestFixture, Ignore("Not yet implemented logic is checked.")]
+    [TestFixture]
     public class when_deleted_stream_with_metadata_is_scavenged : ScavengeTestScenario
     {
         protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)

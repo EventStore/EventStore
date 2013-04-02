@@ -217,6 +217,10 @@
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_age.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_count.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_no_max_age_max_count.cs" />
+    <Compile Include="Services\Storage\Metastreams\when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_last_2.cs" />
+    <Compile Include="Services\Storage\Metastreams\when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_just_last.cs" />
+    <Compile Include="Services\Storage\Metastreams\when_having_deleted_stream_and_no_metastream_metastream_is_declared_deleted_as_well.cs" />
+    <Compile Include="Services\Storage\Metastreams\when_having_deleted_stream_its_metastream_is_deleted_as_well.cs" />
     <Compile Include="Services\Storage\SimpleDbTestScenario.cs" />
     <Compile Include="Services\Storage\Scavenge\when_having_commit_spanning_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_having_commits_spanning_multiple_chunks.cs" />
@@ -290,8 +294,9 @@
     <Compile Include="Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
     <Compile Include="TestsInitFixture.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_metastream_is_scavenged_and_read_index_is_set_to_keep_last_3_metaevents.cs" />
     <Compile Include="TransactionLog\Scavenging\when_deleted_stream_with_metadata_is_scavenged.cs" />
-    <Compile Include="TransactionLog\Scavenging\when_metastream_with_multiple_metaevents_is_scavenged.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_metastream_is_scavenged_and_read_index_is_set_to_keep_just_last_metaevent.cs" />
     <Compile Include="TransactionLog\when_reading_cached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\when_reading_uncached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\FlushTimeMeter.cs" />

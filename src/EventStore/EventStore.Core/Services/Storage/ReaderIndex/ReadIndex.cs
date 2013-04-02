@@ -73,6 +73,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, ESConsts.CommitedEventsMemCacheLimit, x => 16 + 4 + 2*x.Item1.Length + IntPtr.Size);
 
         private readonly bool _additionalCommitChecks;
+        private readonly int _metastreamMaxCount;
 
         public ReadIndex(IPublisher bus,
                          int initialReaderCount,
@@ -80,7 +81,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                          Func<ITransactionFileReader> readerFactory,
                          ITableIndex tableIndex,
                          IHasher hasher,
-                         ILRUCache<string, StreamCacheInfo> streamInfoCache)
+                         ILRUCache<string, StreamCacheInfo> streamInfoCache,
+                         bool additionalCommitChecks,
+                         int metastreamMaxCount)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.Positive(initialReaderCount, "initialReaderCount");
@@ -91,6 +94,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(hasher, "hasher");
             Ensure.NotNull(streamInfoCache, "streamInfoCache");
+            Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
 
             _tableIndex = tableIndex;
             _hasher = hasher;
@@ -99,7 +103,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             _readers = new ObjectPool<ITransactionFileReader>("ReadIndex readers pool", initialReaderCount, maxReaderCount, readerFactory);
 
-            _additionalCommitChecks = Application.IsDefined(Application.AdditionalCommitChecks);
+            _additionalCommitChecks = additionalCommitChecks;
+            _metastreamMaxCount = metastreamMaxCount;
         }
 
         public void Init(long writerCheckpoint, long buildToPosition)
@@ -537,6 +542,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         {
             Ensure.NotNull(streamId, "streamId");
 
+            // if this is metastream -- check if original stream was deleted, if yes -- metastream is deleted as well
+            if (SystemNames.IsMetastream(streamId) 
+                && GetLastStreamEventNumberCached(reader, SystemNames.StreamOf(streamId)) == EventNumber.DeletedStream)
+                return EventNumber.DeletedStream;
+
             StreamCacheInfo streamCacheInfo;
             if (_streamInfoCache.TryGet(streamId, out streamCacheInfo) && streamCacheInfo.LastEventNumber.HasValue)
                 return streamCacheInfo.LastEventNumber.Value;
@@ -923,6 +933,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private StreamMetadata GetStreamMetadataCached(ITransactionFileReader reader, string streamId)
         {
+            if (SystemNames.IsMetastream(streamId))
+                return new StreamMetadata(_metastreamMaxCount, null);
+
             StreamCacheInfo streamCacheInfo;
             if (_streamInfoCache.TryGet(streamId, out streamCacheInfo) && streamCacheInfo.Metadata.HasValue)
                 return streamCacheInfo.Metadata.Value;

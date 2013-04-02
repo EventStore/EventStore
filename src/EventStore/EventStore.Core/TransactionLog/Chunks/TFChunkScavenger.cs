@@ -245,8 +245,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             CommitInfo commitInfo;
             if (commits.TryGetValue(prepare.TransactionPosition, out commitInfo))
             {
-                //commitInfo.StreamId = prepare.EventStreamId;
-
                 if ((prepare.Flags & PrepareFlags.StreamDelete) != 0) // we always keep delete tombstones
                 {
                     commitInfo.KeepCommit = true; // see notes below

@@ -46,6 +46,7 @@ namespace EventStore.Core.Tests.Services.Storage
     public abstract class ReadIndexTestScenario : SpecificationWithDirectoryPerTestFixture
     {
         protected readonly int MaxEntriesInMemTable;
+        protected readonly int MetastreamMaxCount;
         protected TableIndex TableIndex;
         protected IReadIndex ReadIndex;
 
@@ -59,10 +60,11 @@ namespace EventStore.Core.Tests.Services.Storage
         private bool _completeLastChunkOnScavenge;
         private bool _mergeChunks;
 
-        protected ReadIndexTestScenario(int maxEntriesInMemTable = 20)
+        protected ReadIndexTestScenario(int maxEntriesInMemTable = 20, int metastreamMaxCount = 1)
         {
             Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
             MaxEntriesInMemTable = maxEntriesInMemTable;
+            MetastreamMaxCount = metastreamMaxCount;
         }
 
         public override void TestFixtureSetUp()
@@ -103,7 +105,9 @@ namespace EventStore.Core.Tests.Services.Storage
                                       () => new TFChunkReader(Db, Db.Config.WriterCheckpoint),
                                       TableIndex,
                                       new ByLengthHasher(),
-                                      new NoLRUCache<string, StreamCacheInfo>());
+                                      new NoLRUCache<string, StreamCacheInfo>(),
+                                      additionalCommitChecks: true,
+                                      metastreamMaxCount: MetastreamMaxCount);
 
             ReadIndex.Init(WriterCheckpoint.Read(), ChaserCheckpoint.Read());
 

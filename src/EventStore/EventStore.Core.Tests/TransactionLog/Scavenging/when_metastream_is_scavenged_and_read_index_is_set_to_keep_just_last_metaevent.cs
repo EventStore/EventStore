@@ -34,8 +34,8 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging
 {
-    [TestFixture, Ignore("Not yet implemented logic is checked.")]
-    public class when_metastream_with_multiple_metaevents_is_scavenged : ScavengeTestScenario
+    [TestFixture]
+    public class when_metastream_is_scavenged_and_read_index_is_set_to_keep_just_last_metaevent : ScavengeTestScenario
     {
         protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {

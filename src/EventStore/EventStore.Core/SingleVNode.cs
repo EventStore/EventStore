@@ -129,7 +129,9 @@ namespace EventStore.Core
                                           () => new TFChunkReader(db, db.Config.WriterCheckpoint), 
                                           tableIndex, 
                                           new XXHashUnsafe(),
-                                          new LRUCache<string, StreamCacheInfo>(ESConsts.StreamMetadataCacheCapacity));
+                                          new LRUCache<string, StreamCacheInfo>(ESConsts.StreamMetadataCacheCapacity),
+                                          Application.IsDefined(Application.AdditionalCommitChecks),
+                                          Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1);
             var writer = new TFChunkWriter(db);
             var epochManager = new EpochManager(ESConsts.CachedEpochCount,
                                                 db.Config.EpochCheckpoint,

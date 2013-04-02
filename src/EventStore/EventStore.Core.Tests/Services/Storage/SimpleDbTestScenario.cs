@@ -22,10 +22,13 @@ namespace EventStore.Core.Tests.Services.Storage
 
         protected abstract DbResult CreateDb(TFChunkDbCreationHelper dbCreator);
 
-        protected SimpleDbTestScenario(int maxEntriesInMemTable = 20)
+        private readonly int _metastreamMaxCount;
+
+        protected SimpleDbTestScenario(int maxEntriesInMemTable = 20, int metastreamMaxCount = 1)
         {
             Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
             MaxEntriesInMemTable = maxEntriesInMemTable;
+            _metastreamMaxCount = metastreamMaxCount;
         }
 
         public override void TestFixtureSetUp()
@@ -55,10 +58,12 @@ namespace EventStore.Core.Tests.Services.Storage
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       2,
                                       2,
-                                      () => new TFChunkReader(DbRes.Db, DbRes.Db.Config.WriterCheckpoint, 0),
+                                      () => new TFChunkReader(DbRes.Db, DbRes.Db.Config.WriterCheckpoint),
                                       TableIndex,
                                       new ByLengthHasher(),
-                                      new NoLRUCache<string, StreamCacheInfo>());
+                                      new NoLRUCache<string, StreamCacheInfo>(),
+                                      additionalCommitChecks: true,
+                                      metastreamMaxCount: _metastreamMaxCount);
 
             ReadIndex.Init(DbRes.Db.Config.WriterCheckpoint.Read(), DbRes.Db.Config.ChaserCheckpoint.Read());
         }

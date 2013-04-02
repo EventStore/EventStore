@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -11,10 +12,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         public long LastCommitPosition { get { throw new NotImplementedException(); } }
 
         private readonly Dictionary<string, StreamInfo> _streams;
+        private readonly int _metastreamMaxCount;
 
-        public ScavengeReadIndex(Dictionary<string, StreamInfo> streams)
+        public ScavengeReadIndex(Dictionary<string, StreamInfo> streams, int metastreamMaxCount)
         {
             _streams = streams;
+            _metastreamMaxCount = metastreamMaxCount;
         }
 
         public void Init(long writerCheckpoint, long buildToPosition)
@@ -58,6 +61,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
         public bool IsStreamDeleted(string streamId)
         {
+            if (SystemNames.IsMetastream(streamId))
+                streamId = SystemNames.StreamOf(streamId);
+
             StreamInfo streamInfo;
             return _streams.TryGetValue(streamId, out streamInfo) && streamInfo.StreamVersion == EventNumber.DeletedStream;
         }
@@ -72,6 +78,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
         public StreamMetadata GetStreamMetadata(string streamId)
         {
+            if (SystemNames.IsMetastream(streamId))
+                return new StreamMetadata(_metastreamMaxCount, null);
+
             StreamInfo streamInfo;
             if (_streams.TryGetValue(streamId, out streamInfo))
                 return streamInfo.StreamMetadata;

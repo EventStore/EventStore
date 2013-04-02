@@ -31,9 +31,9 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream
 {
     [TestFixture]
-    public class when_deleting_stream_spanning_through_multiple_chunks_and_1_stream_with_same_hash_and_1_stream_with_different_hash_read_index_should : ReadIndexTestScenario
+    public class when_deleting_stream_spanning_through_multiple_chunks_and_1_stream_with_same_hash_and_1_stream_with_different_hash_read_index_should 
+        : ReadIndexTestScenario
     {
-
         protected override void WriteTestScenario()
         {
             WriteSingleEvent("ES1", 0, new string('.', 3000));
