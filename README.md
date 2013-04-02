@@ -12,9 +12,9 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 
 ####Prerequisites
 
-	- Visual Studio 2010 (with .NET 4 and 64-bit C++ support)
-	- git on PATH
-	- svn on PATH
+- Visual Studio 2010 (with .NET 4 and 64-bit C++ support)
+- git on PATH
+- svn on PATH
 
 ####Environment
 
