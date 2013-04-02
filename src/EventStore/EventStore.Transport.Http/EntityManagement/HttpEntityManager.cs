@@ -62,6 +62,20 @@ namespace EventStore.Transport.Http.EntityManagement
             _onRequestSatisfied = onRequestSatisfied;
         }
 
+        public ICodec RequestCodec {
+            get { return HttpEntity.RequestCodec; }
+        }
+
+        public ICodec ResponseCodec
+        {
+            get { return HttpEntity.ResponseCodec; }
+        }
+
+        public string UserHostName 
+        {
+            get { return HttpEntity.UserHostName; }
+        }
+
         private void SetResponseCode(int code)
         {
             try

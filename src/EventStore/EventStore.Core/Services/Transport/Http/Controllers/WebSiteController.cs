@@ -69,9 +69,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 OnListNodeSubsystems);
         }
 
-        private void OnListNodeSubsystems(HttpEntity http, UriTemplateMatch match)
+        private void OnListNodeSubsystems(HttpEntityManager http, UriTemplateMatch match)
         {
-            http.Manager.ReplyTextContent(
+            http.ReplyTextContent(
             Codec.Json.To(_enabledNodeSubsystems),
             200,
             "OK",

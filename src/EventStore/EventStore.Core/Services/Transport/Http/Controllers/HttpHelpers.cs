@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     HttpMethod.Get,
                     Codec.NoCodecs,
                     new ICodec[] { Codec.ManualEncoding }),
-                    (http, match) => http.Manager.ReplyTextContent(
+                    (http, match) => http.ReplyTextContent(
                         "Moved", 302, "Found", "text/plain",
                         new[]
                             {

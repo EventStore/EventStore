@@ -115,12 +115,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         //FEED
 
-        private void OnCreateStream(HttpEntity entity, UriTemplateMatch match)
+        private void OnCreateStream(HttpEntityManager entity, UriTemplateMatch match)
         {
             _genericController.CreateStream(entity);
         }
 
-        private void OnDeleteStream(HttpEntity entity, UriTemplateMatch match)
+        private void OnDeleteStream(HttpEntityManager entity, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
             if (string.IsNullOrEmpty(stream))
@@ -132,7 +132,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _genericController.DeleteStream(entity, stream);
         }
 
-        private void OnGetStreamFeedLatest(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetStreamFeedLatest(HttpEntityManager entity, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
             var embed = GetEmbed(entity, match);
@@ -145,7 +145,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             OnGetStreamFeedCore(entity, stream, -1, AtomSpecs.FeedPageSize, embed, headOfStream: true);
         }
 
-        private void OnGetStreamRangeFeedPage(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetStreamRangeFeedPage(HttpEntityManager entity, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
             var start = match.BoundVariables["start"];
@@ -173,9 +173,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             OnGetStreamFeedCore(entity, stream, startIdx, cnt, embed, headOfStream: startIdx == -1);
         }
 
-        private void OnGetStreamFeedCore(HttpEntity entity, string stream, int start, int count, EmbedLevel embed, bool headOfStream)
+        private void OnGetStreamFeedCore(HttpEntityManager entity, string stream, int start, int count, EmbedLevel embed, bool headOfStream)
         {
-            var etag = entity.Request.Headers["If-None-Match"];
+            var etag = entity.HttpEntity.Request.Headers["If-None-Match"];
             int? validationStreamVersion = null;
             //TODO: extract 
             // etag format is version;contenttypehash
@@ -197,7 +197,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 entity, stream, start, count, embed, validationStreamVersion, headOfStream);
         }
 
-        private static EmbedLevel GetEmbed(HttpEntity entity, UriTemplateMatch match, EmbedLevel htmlLevel = EmbedLevel.PrettyBody)
+        private static EmbedLevel GetEmbed(HttpEntityManager entity, UriTemplateMatch match, EmbedLevel htmlLevel = EmbedLevel.PrettyBody)
         {
             if (entity.ResponseCodec is IRichAtomCodec)
                 return htmlLevel;
@@ -214,7 +214,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         //$ALL
 
-        private void OnGetAllFeedBeforeHead(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetAllFeedBeforeHead(HttpEntityManager entity, UriTemplateMatch match)
         {
             var c = match.BoundVariables["count"];
             var embed = GetEmbed(entity, match);
@@ -233,7 +233,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _allEventsController.GetAllBeforeFeed(entity, TFPos.Invalid, count, embed, headOfTf: true);
         }
 
-        private void OnGetAllFeedBefore(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetAllFeedBefore(HttpEntityManager entity, UriTemplateMatch match)
         {
             var p = match.BoundVariables["pos"];
             var c = match.BoundVariables["count"];
@@ -265,7 +265,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _allEventsController.GetAllBeforeFeed(entity, position, count, embed, headOfTf: false);
         }
 
-        private void OnGetAllAfterFeed(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetAllAfterFeed(HttpEntityManager entity, UriTemplateMatch match)
         {
             var p = match.BoundVariables["pos"];
             var c = match.BoundVariables["count"];
@@ -290,7 +290,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         //ENTRY MANIPULATION
 
-        private void OnGetEntry(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetEntry(HttpEntityManager entity, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
             var id = match.BoundVariables["id"];
@@ -305,7 +305,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _genericController.GetEntry(entity, stream, version, embed);
         }
 
-        private void OnPostEntry(HttpEntity entity, UriTemplateMatch match)
+        private void OnPostEntry(HttpEntityManager entity, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
             if (string.IsNullOrEmpty(stream))
@@ -403,26 +403,24 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             //no direct subscriptions
         }
 
-        public void CreateStream(HttpEntity entity)
+        public void CreateStream(HttpEntityManager entity)
         {
-            entity.Manager.ReadTextRequestAsync(CreateStreamBodyRead,
+            entity.ReadTextRequestAsync(CreateStreamBodyRead,
                                                 e => Log.ErrorException(e, "Error while reading request (CREATE stream)."));
         }
 
         private void CreateStreamBodyRead(HttpEntityManager manager, string body)
         {
-            var entity = manager.HttpEntity;
-
-            var create = entity.RequestCodec.From<HttpClientMessageDto.CreateStreamText>(body);
+            var create = manager.RequestCodec.From<HttpClientMessageDto.CreateStreamText>(body);
             if (create == null)
             {
-                SendBadRequest(entity, "Create stream request body cannot be deserialized");
+                SendBadRequest(manager, "Create stream request body cannot be deserialized");
                 return;
             }
 
             var eventStreamId = create.EventStreamId;
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                  entity,
+                                                  manager,
                                                   Format.Atom.CreateStreamCompleted,
                                                   (a, m) => Configure.CreateStreamCompleted(a, m, eventStreamId));
             var msg = new ClientMessage.CreateStream(Guid.NewGuid(),
@@ -435,34 +433,33 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(msg);
         }
 
-        public void DeleteStream(HttpEntity entity, string stream)
+        public void DeleteStream(HttpEntityManager entity, string stream)
         {
-            entity.Manager.AsyncState = stream;
-            entity.Manager.ReadTextRequestAsync(DeleteStreamBodyRead,
+            entity.AsyncState = stream;
+            entity.ReadTextRequestAsync(DeleteStreamBodyRead,
                                                 e => Log.ErrorException(e, "Error while reading request (DELETE stream)."));
         }
 
         private void DeleteStreamBodyRead(HttpEntityManager manager, string body)
         {
-            var entity = manager.HttpEntity;
             var stream = (string)manager.AsyncState;
 
-            var delete = entity.RequestCodec.From<HttpClientMessageDto.DeleteStreamText>(body);
+            var delete = manager.RequestCodec.From<HttpClientMessageDto.DeleteStreamText>(body);
             if (delete == null)
             {
-                SendBadRequest(entity, "Delete stream request body cannot be deserialized");
+                SendBadRequest(manager, "Delete stream request body cannot be deserialized");
                 return;
             }
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                  entity,
+                                                  manager,
                                                   Format.Atom.DeleteStreamCompleted,
                                                   Configure.DeleteStreamCompleted);
             var msg = new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, true, stream, delete.ExpectedVersion);
             Publish(msg);
         }
 
-        public void GetStreamFeedPage(HttpEntity entity, 
+        public void GetStreamFeedPage(HttpEntityManager entity, 
                                       string stream, 
                                       int start, 
                                       int count, 
@@ -470,7 +467,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                       int? validationStreamVersion,
                                       bool headOfStream)
         {
-            entity.Manager.AsyncState = start;
+            entity.AsyncState = start;
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
                                                   (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, embed, headOfStream),
@@ -484,7 +481,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                validationStreamVersion: validationStreamVersion));
         }
 
-        public void GetEntry(HttpEntity entity, string stream, int version, EmbedLevel embed)
+        public void GetEntry(HttpEntityManager entity, string stream, int version, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue, entity,
                                                   (args, message) => Format.Atom.ReadEventCompletedEntry(args, message, embed), 
@@ -492,30 +489,29 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(new ClientMessage.ReadEvent(Guid.NewGuid(), envelope, stream, version, true));
         }
 
-        public void PostEntry(HttpEntity entity, string stream)
+        public void PostEntry(HttpEntityManager entity, string stream)
         {
-            entity.Manager.AsyncState = stream;
-            entity.Manager.ReadTextRequestAsync(OnPostEntryRequestRead, 
+            entity.AsyncState = stream;
+            entity.ReadTextRequestAsync(OnPostEntryRequestRead, 
                                                 e => Log.ErrorException(e, "Error while reading request (POST entry)."));
         }
 
         private void OnPostEntryRequestRead(HttpEntityManager manager, string body)
         {
-            var entity = manager.HttpEntity;
             var eventStreamId = (string)manager.AsyncState;
 
-            var parsed = AutoEventConverter.SmartParse(body, entity.RequestCodec);
+            var parsed = AutoEventConverter.SmartParse(body, manager.RequestCodec);
             var expectedVersion = parsed.Item1;
             var events = parsed.Item2;
 
             if (events.IsEmpty())
             {
-                SendBadRequest(entity, "Write request body invalid");
+                SendBadRequest(manager, "Write request body invalid");
                 return;
             }
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                  entity,
+                                                  manager,
                                                   Format.WriteEventsCompleted,
                                                   (a, m) => Configure.WriteEventsCompleted(a, m, eventStreamId));
             var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, true, eventStreamId, expectedVersion, events);
@@ -539,7 +535,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             //no direct subscriptions
         }
 
-        public void GetAllBeforeFeed(HttpEntity entity, TFPos position, int count, EmbedLevel embed, bool headOfTf)
+        public void GetAllBeforeFeed(HttpEntityManager entity, TFPos position, int count, EmbedLevel embed, bool headOfTf)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
@@ -554,7 +550,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                             validationTfEofPosition: GetValidationTfEofPosition(entity, headOfTf)));
         }
 
-        public void GetAllAfterFeed(HttpEntity entity, TFPos position, int count, EmbedLevel embed, bool headOfTf)
+        public void GetAllAfterFeed(HttpEntityManager entity, TFPos position, int count, EmbedLevel embed, bool headOfTf)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
@@ -569,12 +565,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                            validationTfEofPosition: GetValidationTfEofPosition(entity, headOfTf)));
         }
 
-        private static long? GetValidationTfEofPosition(HttpEntity entity, bool headOfTf)
+        private static long? GetValidationTfEofPosition(HttpEntityManager entity, bool headOfTf)
         {
             if (headOfTf)
                 return null;
             long tfEofPosition;
-            var etag = entity.Request.Headers["If-None-Match"];
+            var etag = entity.HttpEntity.Request.Headers["If-None-Match"];
             return etag.IsNotEmptyString() && long.TryParse(etag.Trim('\"'), out tfEofPosition) ? (long?) tfEofPosition : null;
         }
     }

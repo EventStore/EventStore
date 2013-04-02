@@ -160,7 +160,7 @@ namespace EventStore.Core.Services.Transport.Http
 
                 var entity = CreateEntity(DateTime.UtcNow, context, requestCodec, responseCodec, allowedMethods, satisfied => { });
                 _pending.Enqueue(entity);
-                match.RequestHandler(entity, match.TemplateMatch);
+                match.RequestHandler(entity.Manager, match.TemplateMatch);
             }
             catch (Exception exception)
             {

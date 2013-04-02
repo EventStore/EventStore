@@ -68,21 +68,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected abstract void SubscribeCore(IHttpService service, HttpMessagePipe pipe);
 
-        protected void SendBadRequest(HttpEntity entity, string reason)
+        protected void SendBadRequest(HttpEntityManager httpEntityManager, string reason)
         {
-            entity.Manager.ReplyStatus(HttpStatusCode.BadRequest,
+            httpEntityManager.ReplyStatus(HttpStatusCode.BadRequest,
                                        reason,
                                        e => Log.ErrorException(e, "Error while closing http connection (bad request)"));
         }
 
-        protected void SendOk(HttpEntity entity)
+        protected void SendOk(HttpEntityManager httpEntityManager)
         {
-            entity.Manager.ReplyStatus(HttpStatusCode.OK,
+            httpEntityManager.ReplyStatus(HttpStatusCode.OK,
                                        "OK",
                                        e => Log.ErrorException(e, "Error while closing http connection (ok)"));
         }
 
-        protected void Register(IHttpService service, string uriTemplate, string httpMethod, Action<HttpEntity, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs)
+        protected void Register(IHttpService service, string uriTemplate, string httpMethod, Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs)
         {
             service.RegisterControllerAction(
                 new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs),

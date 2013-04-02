@@ -34,11 +34,11 @@ namespace EventStore.Core.Services.Transport.Http
     {
         public readonly UriTemplateMatch TemplateMatch;
         public readonly ControllerAction ControllerAction;
-        public readonly Action<HttpEntity, UriTemplateMatch> RequestHandler;
+        public readonly Action<HttpEntityManager, UriTemplateMatch> RequestHandler;
 
         public UriToActionMatch(UriTemplateMatch templateMatch, 
                                 ControllerAction controllerAction, 
-                                Action<HttpEntity, UriTemplateMatch> requestHandler)
+                                Action<HttpEntityManager, UriTemplateMatch> requestHandler)
         {
             TemplateMatch = templateMatch;
             ControllerAction = controllerAction;
