@@ -47,7 +47,7 @@ namespace EventStore.Core.Services.Transport.Http
             ResponseCodec = responseCodec;
         }
 
-        public static implicit operator HttpResponseConfiguratorArgs(HttpEntity entity)
+        public static implicit operator HttpResponseConfiguratorArgs(HttpEntityManager entity)
         {
             return new HttpResponseConfiguratorArgs(entity.UserHostName, entity.ResponseCodec);
         }
@@ -64,7 +64,7 @@ namespace EventStore.Core.Services.Transport.Http
             ResponseCodec = responseCodec;
         }
 
-        public static implicit operator HttpResponseFormatterArgs(HttpEntity entity)
+        public static implicit operator HttpResponseFormatterArgs(HttpEntityManager entity)
         {
             return new HttpResponseFormatterArgs(entity.UserHostName, entity.ResponseCodec);
         }
@@ -73,12 +73,12 @@ namespace EventStore.Core.Services.Transport.Http
     public class SendToHttpEnvelope : IEnvelope
     {
         private readonly IPublisher _networkSendQueue;
-        private readonly HttpEntity _entity;
+        private readonly HttpEntityManager _entity;
         private readonly Func<HttpResponseFormatterArgs, Message, string> _formatter;
         private readonly Func<HttpResponseConfiguratorArgs, Message, ResponseConfiguration> _configurator;
 
         public SendToHttpEnvelope(IPublisher networkSendQueue, 
-                                  HttpEntity entity,
+                                  HttpEntityManager entity,
                                   Func<HttpResponseFormatterArgs, Message, string> formatter,
                                   Func<HttpResponseConfiguratorArgs, Message, ResponseConfiguration> configurator)
         {
@@ -98,7 +98,7 @@ namespace EventStore.Core.Services.Transport.Http
             Ensure.NotNull(message, "message");
             var responseConfiguration = _configurator(_entity, message);
             var data = _formatter(_entity, message);
-            _networkSendQueue.Publish(new HttpMessage.HttpSend(_entity.Manager, responseConfiguration, data, message));
+            _networkSendQueue.Publish(new HttpMessage.HttpSend(_entity, responseConfiguration, data, message));
         }
     }
 
@@ -111,7 +111,7 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly IEnvelope _httpEnvelope;
 
         public SendToHttpEnvelope(IPublisher networkSendQueue, 
-                                  HttpEntity entity, 
+                                  HttpEntityManager entity, 
                                   Func<ICodec, TExpectedResponseMessage, string> formatter, 
                                   Func<ICodec, TExpectedResponseMessage, ResponseConfiguration> configurator,
                                   IEnvelope notMatchingEnvelope)

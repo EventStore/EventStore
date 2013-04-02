@@ -60,19 +60,19 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                              OnPostShutdown);
         }
 
-        private void OnPostHalt(HttpEntity entity, UriTemplateMatch match)
+        private void OnPostHalt(HttpEntityManager entity, UriTemplateMatch match)
         {
             Log.Info("Request shut down of node because halt command has been received.");
             Publish(new ClientMessage.RequestShutdown(exitProcess: false));
-            entity.Manager.ReplyStatus(HttpStatusCode.OK,
+            entity.ReplyStatus(HttpStatusCode.OK,
                                  "OK",
                                  e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
         }
-        private void OnPostShutdown(HttpEntity entity, UriTemplateMatch match)
+        private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match)
         {
             Log.Info("Request shut down of node because shutdown command has been received.");
             Publish(new ClientMessage.RequestShutdown(exitProcess: true));
-            entity.Manager.ReplyStatus(HttpStatusCode.OK,
+            entity.ReplyStatus(HttpStatusCode.OK,
                                  "OK",
                                  e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
         }

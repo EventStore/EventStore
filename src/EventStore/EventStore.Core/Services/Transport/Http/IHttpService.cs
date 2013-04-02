@@ -32,6 +32,6 @@ namespace EventStore.Core.Services.Transport.Http
 {
     public interface IHttpService
     {
-        void RegisterControllerAction(ControllerAction action, Action<HttpEntity, UriTemplateMatch> handler);
+        void RegisterControllerAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler);
     }
 }

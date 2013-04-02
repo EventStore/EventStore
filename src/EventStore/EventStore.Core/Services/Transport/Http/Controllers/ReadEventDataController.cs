@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                              OnGetRead);
         }
 
-        private void OnGetRead(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetRead(HttpEntityManager entity, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
             var versionString = match.BoundVariables["version"];

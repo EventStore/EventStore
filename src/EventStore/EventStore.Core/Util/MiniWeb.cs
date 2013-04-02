@@ -63,13 +63,13 @@ namespace EventStore.Core.Util
                                              OnStaticContent);
         }
 
-        private void OnStaticContent(HttpEntity http, UriTemplateMatch match)
+        private void OnStaticContent(HttpEntityManager http, UriTemplateMatch match)
         {
             var contentLocalPath = match.BoundVariables["remaining_path"];
             ReplyWithContent(http, contentLocalPath);
         }
 
-        private void ReplyWithContent(HttpEntity http, string contentLocalPath)
+        private void ReplyWithContent(HttpEntityManager http, string contentLocalPath)
         {
             //NOTE: this is fix for Mono incompatibility in UriTemplate behavior for /a/b{*C}
             if (("/" + contentLocalPath).StartsWith(_localWebRootPath))
@@ -100,7 +100,7 @@ namespace EventStore.Core.Util
                     || !File.Exists(fullPath))
                 {
                     _logger.Info("Replying 404 for {0} ==> {1}", contentLocalPath, fullPath);
-                    http.Manager.ReplyTextContent(
+                    http.ReplyTextContent(
                         "Not Found", 404, "Not Found", "text/plain", null, 
                         ex => _logger.InfoException(ex, "Error while replying from MiniWeb"));
                 }
@@ -109,7 +109,7 @@ namespace EventStore.Core.Util
                     var config = GetWebPageConfig(contentType);
                     var content = File.ReadAllBytes(fullPath);
 
-                    http.Manager.Reply(content,
+                    http.Reply(content,
                                        config.Code,
                                        config.Description,
                                        config.ContentType,
@@ -120,7 +120,7 @@ namespace EventStore.Core.Util
             }
             catch (Exception ex)
             {
-                http.Manager.ReplyTextContent(ex.ToString(), 500, "Internal Server Error", "text/plain", null, Console.WriteLine);
+                http.ReplyTextContent(ex.ToString(), 500, "Internal Server Error", "text/plain", null, Console.WriteLine);
             }
         }
 

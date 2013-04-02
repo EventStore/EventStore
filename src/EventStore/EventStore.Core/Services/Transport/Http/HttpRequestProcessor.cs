@@ -83,7 +83,7 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     var request = _pending.Dequeue();
                     
-                    if (Application.IsDefined("DO_NOT_TIMEOUT_REQUESTS"))
+                    if (Application.IsDefined(Application.DoNotTimeoutRequests))
                         continue;
 
                     if (!request.Manager.IsProcessing)
@@ -165,7 +165,7 @@ namespace EventStore.Core.Services.Transport.Http
 
                 var entity = CreateEntity(DateTime.UtcNow, request, context.Response, context.User, requestCodec, responseCodec, allowedMethods, satisfied => { });
                 _pending.Enqueue(entity);
-                match.RequestHandler(entity, match.TemplateMatch);
+                match.RequestHandler(entity.Manager, match.TemplateMatch);
             }
             catch (Exception exception)
             {

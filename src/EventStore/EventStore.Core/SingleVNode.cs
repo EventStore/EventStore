@@ -154,8 +154,8 @@ namespace EventStore.Core
 
             var storageScavenger = new StorageScavenger(db,
                                                         readIndex,
-                                                        Application.IsDefined("ALWAYS_KEEP_SCAVENGED"),
-                                                        !Application.IsDefined("DISABLE_MERGE_CHUNKS"));
+                                                        Application.IsDefined(Application.AlwaysKeepScavenged),
+                                                        !Application.IsDefined(Application.DisableMergeChunks));
             _mainBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
 
             // NETWORK SEND

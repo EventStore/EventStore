@@ -31,7 +31,6 @@ using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
-using System.Diagnostics;
 
 namespace EventStore.Core.Bus
 {

@@ -39,6 +39,12 @@ namespace EventStore.Common.Utils
 
     public class Application
     {
+        public const string AdditionalCommitChecks = "ADDITIONAL_COMMIT_CHECKS";
+        public const string DumpStatistics = "DUMP_STATISTICS";
+        public const string DoNotTimeoutRequests = "DO_NOT_TIMEOUT_REQUESTS";
+        public const string AlwaysKeepScavenged = "ALWAYS_KEEP_SCAVENGED";
+        public const string DisableMergeChunks = "DISABLE_MERGE_CHUNKS";
+
         protected static readonly ILogger Log = LogManager.GetLoggerFor<Application>();
 
         private static Action<int> _exit;

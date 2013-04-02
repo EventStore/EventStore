@@ -66,7 +66,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                              OnGetFreshStats);
         }
 
-        private void OnGetFreshStats(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetFreshStats(HttpEntityManager entity, UriTemplateMatch match)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,

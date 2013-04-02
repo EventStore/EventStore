@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly IEnvelope _httpEnvelope;
 
         public SendToHttpWithConversionEnvelope(IPublisher networkSendQueue,
-                                                HttpEntity entity, 
+                                                HttpEntityManager entity, 
                                                 Func<ICodec, TExpectedHttpFormattedResponseMessage, string> formatter, 
                                                 Func<ICodec, TExpectedHttpFormattedResponseMessage, ResponseConfiguration> configurator, 
                                                 Func<TExpectedResponseMessage, TExpectedHttpFormattedResponseMessage> convertor, 

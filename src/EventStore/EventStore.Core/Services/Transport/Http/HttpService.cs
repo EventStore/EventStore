@@ -148,7 +148,7 @@ namespace EventStore.Core.Services.Transport.Http
             controller.Subscribe(this, _httpPipe);
         }
 
-        public void RegisterControllerAction(ControllerAction action, Action<HttpEntity, UriTemplateMatch> handler)
+        public void RegisterControllerAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
         {
             Ensure.NotNull(action, "action");
             Ensure.NotNull(handler, "handler");
@@ -174,10 +174,10 @@ namespace EventStore.Core.Services.Transport.Http
         private class HttpRoute
         {
             public readonly ControllerAction Action;
-            public readonly Action<HttpEntity, UriTemplateMatch> Handler;
+            public readonly Action<HttpEntityManager, UriTemplateMatch> Handler;
             public readonly UriTemplate UriTemplate;
 
-            public HttpRoute(ControllerAction action, Action<HttpEntity, UriTemplateMatch> handler)
+            public HttpRoute(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
             {
                 Action = action;
                 Handler = handler;
