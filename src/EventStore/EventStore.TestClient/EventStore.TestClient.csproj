@@ -58,6 +58,7 @@
     <Compile Include="ClientOptions.cs" />
     <Compile Include="CommandProcessorContext.cs" />
     <Compile Include="CommandsProcessor.cs" />
+    <Compile Include="Commands\SubscriptionStressTestProcessor.cs" />
     <Compile Include="Commands\RunTestScenarios\NodeConnectionInfo.cs" />
     <Compile Include="Commands\WriteFloodClientApiProcessor.cs" />
     <Compile Include="Commands\ReadAllProcessor.cs" />

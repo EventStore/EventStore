@@ -91,6 +91,7 @@ namespace EventStore.TestClient.Commands
             long all = 0;
 
             var streams = Enumerable.Range(0, streamsCnt).Select(x => Guid.NewGuid().ToString()).ToArray();
+            //var streams = Enumerable.Range(0, streamsCnt).Select(x => string.Format("stream-{0}", x)).ToArray();
             var sw2 = new Stopwatch();
             for (int i = 0; i < clientsCnt; i++)
             {

@@ -39,22 +39,25 @@ namespace EventStore.TestClient.Commands
 {
     internal class WriteFloodWaitingProcessor : ICmdProcessor
     {
-        public string Usage { get { return "WRFLW [<clients> <requests>]"; } }
+        public string Usage { get { return "WRFLW [<clients> <requests> [payload-size]]"; } }
         public string Keyword { get { return "WRFLW"; } }
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
             int clientsCnt = 1;
             int requestsCnt = 5000;
+            int payloadSize = 256 + 100;
             if (args.Length > 0)
             {
-                if (args.Length != 2)
+                if (args.Length > 3 || args.Length < 2)
                     return false;
 
                 try
                 {
                     clientsCnt = int.Parse(args[0]);
                     requestsCnt = int.Parse(args[1]);
+                    if (args.Length == 3)
+                        payloadSize = int.Parse(args[2]);
                 }
                 catch
                 {
@@ -62,13 +65,16 @@ namespace EventStore.TestClient.Commands
                 }
             }
 
-            WriteFlood(context, clientsCnt, requestsCnt);
+            WriteFlood(context, clientsCnt, requestsCnt, payloadSize);
             return true;
         }
 
-        private void WriteFlood(CommandProcessorContext context, int clientsCnt, int requestsCnt)
+        private void WriteFlood(CommandProcessorContext context, int clientsCnt, int requestsCnt, int payloadSize)
         {
             context.IsAsync();
+
+            var dataSize = Math.Max(0, payloadSize - 100);
+            var metadataSize = Math.Min(100, payloadSize);
 
             var clients = new List<TcpTypedConnection<byte[]>>();
             var threads = new List<Thread>();
@@ -125,8 +131,8 @@ namespace EventStore.TestClient.Commands
                                 new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
                                                                  "TakeSomeSpaceEvent",
                                                                  false,
-                                                                 Encoding.UTF8.GetBytes("DATA" + new string('*', 256)),
-                                                                 Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
+                                                                 Encoding.UTF8.GetBytes("DATA" + new string('*', dataSize)),
+                                                                 Encoding.UTF8.GetBytes("METADATA" + new string('$', metadataSize)))
                             },
                             true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
@@ -144,7 +150,8 @@ namespace EventStore.TestClient.Commands
 
             var reqPerSec = (all + 0.0)/sw.ElapsedMilliseconds*1000;
             context.Log.Info("Completed. Successes: {0}, failures: {1}", succ, fail);
-            context.Log.Info("{0} requests completed in {1}ms ({2:0.00} reqs per sec).", all, sw.ElapsedMilliseconds, reqPerSec);
+            context.Log.Info("{0} requests completed in {1}ms ({2:0.00} reqs per sec, latency: {3:0.00} ms).",
+                             all, sw.ElapsedMilliseconds, reqPerSec, (sw.ElapsedMilliseconds + 0.0) / requestsCnt);
             PerfUtils.LogData(Keyword,
                               PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
                                             PerfUtils.Col("requestsCnt", requestsCnt),
