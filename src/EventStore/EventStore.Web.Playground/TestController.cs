@@ -52,15 +52,15 @@ namespace EventStore.Web.Playground
         }
 
         private void Register(
-            IHttpService service, string uriTemplate, Action<HttpEntity, UriTemplateMatch> handler,
+            IHttpService service, string uriTemplate, Action<HttpEntityManager, UriTemplateMatch> handler,
             string httpMethod = HttpMethod.Get)
         {
             Register(service, uriTemplate, httpMethod, handler, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
         }
 
-        private void Test1Handler(HttpEntity http, UriTemplateMatch match)
+        private void Test1Handler(HttpEntityManager http, UriTemplateMatch match)
         {
-            http.Manager.Reply("Please authenticate yourself", 401, "Unauthorized", "text/plain");
+            http.Reply("Please authenticate yourself", 401, "Unauthorized", "text/plain");
         }
     }
 }

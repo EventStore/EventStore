@@ -49,8 +49,11 @@ namespace EventStore.Transport.Http.EntityManagement
         private readonly Action<HttpEntity> _onRequestSatisfied;
         private Stream _currentOutputStream;
         private AsyncQueuedBufferWriter _asyncWriter;
+        private readonly ICodec _requestCodec;
+        private readonly ICodec _responseCodec;
+        private readonly string _userHostName;
 
-        internal HttpEntityManager(HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
+        internal HttpEntityManager(HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied, ICodec requestCodec, ICodec responseCodec)
         {
             Ensure.NotNull(httpEntity, "httpEntity");
             Ensure.NotNull(allowedMethods, "allowedMethods");
@@ -60,20 +63,23 @@ namespace EventStore.Transport.Http.EntityManagement
 
             _allowedMethods = allowedMethods;
             _onRequestSatisfied = onRequestSatisfied;
+            _requestCodec = requestCodec;
+            _responseCodec = responseCodec;
+            _userHostName = httpEntity.UserHostName;
         }
 
         public ICodec RequestCodec {
-            get { return HttpEntity.RequestCodec; }
+            get { return _requestCodec; }
         }
 
         public ICodec ResponseCodec
         {
-            get { return HttpEntity.ResponseCodec; }
+            get { return _responseCodec; }
         }
 
         public string UserHostName 
         {
-            get { return HttpEntity.UserHostName; }
+            get { return _userHostName; }
         }
 
         private void SetResponseCode(int code)
