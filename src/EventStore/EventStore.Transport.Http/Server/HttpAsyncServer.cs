@@ -62,8 +62,8 @@ namespace EventStore.Transport.Http.Server
             try
             {
                 Logger.Info("Starting HTTP server on [{0}]...", string.Join(",", _listener.Prefixes));
-
                 _listener.Start();
+
                 _listener.BeginGetContext(ContextAcquired, null);
 
                 Logger.Info("HTTP server is up and listening on [{0}]", string.Join(",", _listener.Prefixes));

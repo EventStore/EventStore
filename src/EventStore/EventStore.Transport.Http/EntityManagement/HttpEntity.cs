@@ -46,28 +46,24 @@ namespace EventStore.Transport.Http.EntityManagement
         internal readonly HttpListenerResponse Response;
         public readonly IPrincipal User;
 
-        public HttpEntity(DateTime timeStamp,
-                          ICodec requestCodec,
-                          ICodec responseCodec,
-                          HttpListenerContext context,
-                          string[] allowedMethods,
-                          Action<HttpEntity> onRequestSatisfied)
+        public HttpEntity(DateTime timeStamp, HttpListenerRequest request, HttpListenerResponse response, IPrincipal user, ICodec requestCodec, ICodec responseCodec, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
         {
             Ensure.NotNull(requestCodec, "requestCodec");
             Ensure.NotNull(responseCodec, "responseCodec");
-            Ensure.NotNull(context, "context");
             Ensure.NotNull(allowedMethods, "allowedMethods");
             Ensure.NotNull(onRequestSatisfied, "onRequestSatisfied");
+            Ensure.NotNull(request, "request");
+            Ensure.NotNull(response, "response");
 
             TimeStamp = timeStamp;
-            UserHostName = context.Request.UserHostName;
+            UserHostName = request.UserHostName;
 
             RequestCodec = requestCodec;
             ResponseCodec = responseCodec;
 
-            Request = context.Request;
-            Response = context.Response;
-            User = context.User;
+            Request = request;
+            Response = response;
+            User = user;
 
             Manager = new HttpEntityManager(this, allowedMethods, onRequestSatisfied);
         }

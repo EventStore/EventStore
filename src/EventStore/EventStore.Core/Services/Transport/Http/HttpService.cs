@@ -121,7 +121,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
         {
-            _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(sender, context));
+            _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(context));
         }
 
         public void Handle(HttpMessage.PurgeTimedOutRequests message)
