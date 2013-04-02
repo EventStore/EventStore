@@ -61,8 +61,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
                                                           Codec.CreateCustom(Codec.Xml, ContentType.Atom, Encoding.UTF8),
-                                                          Codec.Json,
-                                                          
+                                                          Codec.Json
                                                       };
         private static readonly ICodec[] AtomWithHtmlCodecs = new[]
                                                               {
@@ -405,8 +404,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         public void CreateStream(HttpEntityManager entity)
         {
-            entity.ReadTextRequestAsync(CreateStreamBodyRead,
-                                                e => Log.ErrorException(e, "Error while reading request (CREATE stream)."));
+            entity.ReadTextRequestAsync(CreateStreamBodyRead, e => Log.ErrorException(e, "Error while reading request (CREATE stream)."));
         }
 
         private void CreateStreamBodyRead(HttpEntityManager manager, string body)
@@ -433,29 +431,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(msg);
         }
 
-        public void DeleteStream(HttpEntityManager entity, string stream)
+        public void DeleteStream(HttpEntityManager manager, string stream)
         {
-            entity.AsyncState = stream;
-            entity.ReadTextRequestAsync(DeleteStreamBodyRead,
-                                                e => Log.ErrorException(e, "Error while reading request (DELETE stream)."));
-        }
-
-        private void DeleteStreamBodyRead(HttpEntityManager manager, string body)
-        {
-            var stream = (string)manager.AsyncState;
-
-            var delete = manager.RequestCodec.From<HttpClientMessageDto.DeleteStreamText>(body);
-            if (delete == null)
-            {
-                SendBadRequest(manager, "Delete stream request body cannot be deserialized");
-                return;
-            }
-
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
                                                   Format.Atom.DeleteStreamCompleted,
                                                   Configure.DeleteStreamCompleted);
-            var msg = new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, true, stream, delete.ExpectedVersion);
+            var msg = new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, true, stream, ExpectedVersion.Any);
             Publish(msg);
         }
 
