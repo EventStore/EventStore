@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Projections.Core.Services.Processing

@@ -29,9 +29,8 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
 
-namespace EventStore.Projections.Core.Services
+namespace EventStore.Core.Messaging
 {
     public class RequestResponseDispatcher<TRequest, TResponse> : IHandle<TResponse>
         where TRequest : Message where TResponse : Message

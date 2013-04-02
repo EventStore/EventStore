@@ -134,6 +134,7 @@
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />
     <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
+    <Compile Include="Messaging\RequestResponseDispatcher.cs" />
     <Compile Include="Services\Storage\EpochManager\EpochManager.cs" />
     <Compile Include="Services\Storage\EpochManager\IEpochManager.cs" />
     <Compile Include="NodeSubsystems.cs" />
@@ -304,9 +305,7 @@
       <Name>EventStore.Transport.Tcp</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Services\Transport\Http\Codecs\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

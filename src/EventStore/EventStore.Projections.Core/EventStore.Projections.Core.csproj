@@ -260,7 +260,6 @@
     <Compile Include="Services\Http\ProjectionStatisticsHttpFormatted.cs" />
     <Compile Include="Services\ProjectionStatistics.cs" />
     <Compile Include="Services\PublishSubscribeDispatcher.cs" />
-    <Compile Include="Services\RequestResponseDispatcher.cs" />
     <Compile Include="Services\Processing\RequestResponseQueueForwarder.cs" />
     <Compile Include="Services\v8\DefaultV8ProjectionStateHandler.cs" />
     <Compile Include="Services\v8\V8ProjectionStateHandler.cs" />
