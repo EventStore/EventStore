@@ -163,18 +163,13 @@
     <Compile Include="Services\Storage\StorageScavenger.cs" />
     <Compile Include="Services\SystemNames.cs" />
     <Compile Include="Services\RequestManager\Managers\TransactionCommitTwoPhaseRequestManager.cs" />
-    <Compile Include="Services\Transport\Http\Codecs\CustomCodec.cs" />
-    <Compile Include="Services\Transport\Http\Codecs\JsonCodec.cs" />
-    <Compile Include="Services\Transport\Http\Codecs\ManualEncoding.cs" />
-    <Compile Include="Services\Transport\Http\Codecs\NoCodec.cs" />
-    <Compile Include="Services\Transport\Http\Codecs\TextCodec.cs" />
-    <Compile Include="Services\Transport\Http\Codecs\XmlCodec.cs" />
     <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\Transport\Http\HttpRequestProcessor.cs" />
     <Compile Include="Services\Transport\Http\IHttpService.cs" />
+    <Compile Include="Services\Transport\Http\Messages\IncomingHttpRequestMessage.cs" />
     <Compile Include="Services\Transport\Http\ServiceAccessibility.cs" />
     <Compile Include="Services\Transport\Http\UriToActionMatch.cs" />
     <Compile Include="Settings\ESConsts.cs" />
@@ -242,7 +237,6 @@
     <Compile Include="Services\Storage\ReaderIndex\ReadIndexStats.cs" />
     <Compile Include="Services\Storage\StorageChaser.cs" />
     <Compile Include="Services\Storage\StorageReaderService.cs" />
-    <Compile Include="Services\Transport\Http\Codecs\Codec.cs" />
     <Compile Include="Services\Transport\Http\ControllerAction.cs" />
     <Compile Include="Services\Transport\Http\Controllers\AdminController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\CommunicationController.cs" />
@@ -310,7 +304,9 @@
       <Name>EventStore.Transport.Tcp</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Services\Transport\Http\Codecs\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

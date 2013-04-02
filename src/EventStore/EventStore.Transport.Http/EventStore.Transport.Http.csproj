@@ -44,6 +44,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\bin\eventstore\debug\anycpu\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
@@ -52,6 +56,13 @@
     <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
       <Link>Properties\AssemblyVersion.cs</Link>
     </Compile>
+    <Compile Include="Codecs\Codec.cs" />
+    <Compile Include="Codecs\CustomCodec.cs" />
+    <Compile Include="Codecs\JsonCodec.cs" />
+    <Compile Include="Codecs\ManualEncoding.cs" />
+    <Compile Include="Codecs\NoCodec.cs" />
+    <Compile Include="Codecs\TextCodec.cs" />
+    <Compile Include="Codecs\XmlCodec.cs" />
     <Compile Include="MediaType.cs" />
     <Compile Include="AsyncQueuedBufferWriter.cs" />
     <Compile Include="Client\ClientOperationState.cs" />

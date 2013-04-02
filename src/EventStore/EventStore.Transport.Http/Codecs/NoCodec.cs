@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,25 +26,34 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Text;
-using EventStore.Transport.Http;
 
-namespace EventStore.Core.Services.Transport.Http.Codecs
+namespace EventStore.Transport.Http.Codecs
 {
-    public static class Codec
+    public class NoCodec : ICodec
     {
-        public static readonly NoCodec NoCodec = new NoCodec();
-        public static readonly ICodec[] NoCodecs = new ICodec[0];
-        public static readonly ManualEncoding ManualEncoding = new ManualEncoding();
+        public string ContentType { get { throw new NotSupportedException(); } }
+        public Encoding Encoding { get { throw new NotSupportedException(); } }
 
-        public static readonly JsonCodec Json = new JsonCodec();
-        public static readonly XmlCodec Xml = new XmlCodec();
-        public static readonly CustomCodec ApplicationXml = new CustomCodec(Xml, ContentType.ApplicationXml, Encoding.UTF8);
-        public static readonly TextCodec Text = new TextCodec();
-
-        public static ICodec CreateCustom(ICodec codec, string contentType, Encoding encoding)
+        public bool CanParse(MediaType format)
         {
-            return new CustomCodec(codec, contentType, encoding);
+            return false;
+        }
+
+        public bool SuitableForResponse(MediaType component)
+        {
+            return false;
+        }
+
+        public T From<T>(string text)
+        {
+            throw new NotSupportedException();
+        }
+
+        public string To<T>(T value)
+        {
+            throw new NotSupportedException();
         }
     }
 }

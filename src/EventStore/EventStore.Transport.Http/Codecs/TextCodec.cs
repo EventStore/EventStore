@@ -28,23 +28,25 @@
 
 using System;
 using System.Text;
-using EventStore.Transport.Http;
 
-namespace EventStore.Core.Services.Transport.Http.Codecs
+namespace EventStore.Transport.Http.Codecs
 {
-    public class NoCodec : ICodec
+    public class TextCodec : ICodec
     {
-        public string ContentType { get { throw new NotSupportedException(); } }
-        public Encoding Encoding { get { throw new NotSupportedException(); } }
+        public string ContentType { get { return EventStore.Transport.Http.ContentType.PlainText; } }
+        public Encoding Encoding { get { return Encoding.UTF8; } }
 
         public bool CanParse(MediaType format)
         {
-            return false;
+            return format != null && format.Matches(ContentType, Encoding);
         }
 
         public bool SuitableForResponse(MediaType component)
         {
-            return false;
+            return component.Type == "*"
+                   || (string.Equals(component.Type, "text", StringComparison.OrdinalIgnoreCase)
+                       && (component.Subtype == "*"
+                           || string.Equals(component.Subtype, "plain", StringComparison.OrdinalIgnoreCase)));
         }
 
         public T From<T>(string text)
@@ -54,7 +56,7 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
 
         public string To<T>(T value)
         {
-            throw new NotSupportedException();
+            return ((object) value) != null ? value.ToString() : null;
         }
     }
 }

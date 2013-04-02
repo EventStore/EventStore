@@ -28,24 +28,23 @@
 using System;
 using System.Net;
 using EventStore.Common.Utils;
+using EventStore.Transport.Http.Codecs;
 
 namespace EventStore.Transport.Http.EntityManagement
 {
     public class HttpEntity
     {
-        public readonly DateTime TimeStamp;
         public readonly string UserHostName;
 
 
         public readonly HttpListenerRequest Request;
         internal readonly HttpListenerResponse Response;
 
-        public HttpEntity(DateTime timeStamp, HttpListenerRequest request, HttpListenerResponse response)
+        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response)
         {
             Ensure.NotNull(request, "request");
             Ensure.NotNull(response, "response");
 
-            TimeStamp = timeStamp;
             UserHostName = request.UserHostName;
 
 
@@ -54,10 +53,16 @@ namespace EventStore.Transport.Http.EntityManagement
 
         }
 
-        public HttpEntityManager CreateEntityManager(
+        public HttpEntityManager CreateManager(
             ICodec requestCodec, ICodec responseCodec, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
         {
             return new HttpEntityManager(this, allowedMethods, onRequestSatisfied, requestCodec, responseCodec);
         }
+
+        public HttpEntityManager CreateManager()
+        {
+            return new HttpEntityManager(this, Empty.StringArray, entity => { }, Codec.NoCodec, Codec.NoCodec);
+        }
+
     }
 }

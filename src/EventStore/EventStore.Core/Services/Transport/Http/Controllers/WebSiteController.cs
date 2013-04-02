@@ -29,9 +29,9 @@ using System;
 using System.IO;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Core.Util;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers

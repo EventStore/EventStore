@@ -29,9 +29,9 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Web.Playground

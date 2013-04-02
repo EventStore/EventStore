@@ -28,37 +28,36 @@
 
 using System;
 using System.Text;
-using EventStore.Common.Log;
-using EventStore.Transport.Http;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Serialization;
+using EventStore.Common.Utils;
 
-namespace EventStore.Core.Services.Transport.Http.Codecs
+namespace EventStore.Transport.Http.Codecs
 {
-    public class JsonCodec : ICodec
+    public class CustomCodec : ICodec
     {
-        public static Formatting Formatting = Formatting.Indented;
+        public ICodec BaseCodec { get { return _codec; } }
+        public string ContentType { get { return _contentType; } }
+        public Encoding Encoding { get { return _encoding; } }
 
-        private static readonly ILogger Log = LogManager.GetLoggerFor<JsonCodec>();
+        private readonly ICodec _codec;
+        private readonly string _contentType;
+        private readonly string _type;
+        private readonly string _subtype;
+        private readonly Encoding _encoding;
 
-        public static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+        internal CustomCodec(ICodec codec, string contentType, Encoding encoding)
         {
-            ContractResolver = new CamelCasePropertyNamesContractResolver(),
-            DateFormatHandling = DateFormatHandling.IsoDateFormat,
-            NullValueHandling = NullValueHandling.Ignore,
-            DefaultValueHandling = DefaultValueHandling.Ignore,
-            MissingMemberHandling = MissingMemberHandling.Ignore,
-            TypeNameHandling = TypeNameHandling.None,
-            Converters = new JsonConverter[]
-            {
-                new StringEnumConverter()
-            }
-        };
+            Ensure.NotNull(codec, "codec");
+            Ensure.NotNull(contentType, "contentType");
 
-
-        public string ContentType { get { return EventStore.Transport.Http.ContentType.Json; } }
-        public Encoding Encoding { get { return Encoding.UTF8; } }
+            _codec = codec;
+            _contentType = contentType;
+            _encoding = encoding;
+            var parts = contentType.Split(new[] {'/'}, 2);
+            if (parts.Length != 2)
+                throw new ArgumentException("contentType");
+            _type = parts[0];
+            _subtype = parts[1];
+        }
 
         public bool CanParse(MediaType format)
         {
@@ -68,35 +67,19 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
         public bool SuitableForResponse(MediaType component)
         {
             return component.Type == "*"
-                   || (string.Equals(component.Type, "application", StringComparison.OrdinalIgnoreCase)
+                   || (string.Equals(component.Type, _type, StringComparison.OrdinalIgnoreCase)
                        && (component.Subtype == "*"
-                           || string.Equals(component.Subtype, "json", StringComparison.OrdinalIgnoreCase)));
+                           || string.Equals(component.Subtype, _subtype, StringComparison.OrdinalIgnoreCase)));
         }
 
         public T From<T>(string text)
         {
-            try
-            {
-                return JsonConvert.DeserializeObject<T>(text, JsonSettings);
-            }
-            catch (Exception e)
-            {
-                Log.ErrorException(e, "'{0}' is not a valid serialized {1}", text, typeof(T).FullName);
-                return default(T);
-            }
+            return _codec.From<T>(text);
         }
 
         public string To<T>(T value)
         {
-            try
-            {
-                return JsonConvert.SerializeObject(value, Formatting, JsonSettings);
-            }
-            catch (Exception ex)
-            {
-                Log.ErrorException(ex, "Error serializing object {0}", value);
-                return null;
-            }
+            return _codec.To(value);
         }
     }
 }

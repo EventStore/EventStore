@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,38 +26,18 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Text;
-using EventStore.Transport.Http;
+using System.Net;
+using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Services.Transport.Http.Codecs
+namespace EventStore.Core.Services.Transport.Http.Messages
 {
-    public class TextCodec : ICodec
+    class IncomingHttpRequestMessage : Message
     {
-        public string ContentType { get { return EventStore.Transport.Http.ContentType.PlainText; } }
-        public Encoding Encoding { get { return Encoding.UTF8; } }
+        public readonly HttpListenerContext Context;
 
-        public bool CanParse(MediaType format)
+        public IncomingHttpRequestMessage(HttpListenerContext context)
         {
-            return format != null && format.Matches(ContentType, Encoding);
-        }
-
-        public bool SuitableForResponse(MediaType component)
-        {
-            return component.Type == "*"
-                   || (string.Equals(component.Type, "text", StringComparison.OrdinalIgnoreCase)
-                       && (component.Subtype == "*"
-                           || string.Equals(component.Subtype, "plain", StringComparison.OrdinalIgnoreCase)));
-        }
-
-        public T From<T>(string text)
-        {
-            throw new NotSupportedException();
-        }
-
-        public string To<T>(T value)
-        {
-            return ((object) value) != null ? value.ToString() : null;
+            Context = context;
         }
     }
 }

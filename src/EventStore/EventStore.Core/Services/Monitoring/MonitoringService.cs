@@ -39,8 +39,9 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
-using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Transport.Http.Codecs;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Monitoring
 {
@@ -175,8 +176,8 @@ namespace EventStore.Core.Services.Monitoring
 
         private void SaveStatsToStream(Dictionary<string, object> rawStats)
         {
-            var data = Codec.Json.To(rawStats);
-            var @event = new Event(Guid.NewGuid(), SystemEventTypes.StatsCollection, true, Encoding.UTF8.GetBytes(data), null);
+            var data = rawStats.ToJsonBytes();
+            var @event = new Event(Guid.NewGuid(), SystemEventTypes.StatsCollection, true, data, null);
             var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), NoopEnvelope,  true, _nodeStatsStream, ExpectedVersion.Any, @event);
             _mainBus.Publish(msg);
         }

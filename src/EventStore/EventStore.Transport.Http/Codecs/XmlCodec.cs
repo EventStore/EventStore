@@ -32,9 +32,8 @@ using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using EventStore.Common.Log;
-using EventStore.Transport.Http;
 
-namespace EventStore.Core.Services.Transport.Http.Codecs
+namespace EventStore.Transport.Http.Codecs
 {
     public class XmlCodec : ICodec
     {

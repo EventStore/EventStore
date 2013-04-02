@@ -52,14 +52,18 @@ namespace EventStore.Transport.Http.EntityManagement
         private readonly ICodec _requestCodec;
         private readonly ICodec _responseCodec;
         private readonly string _userHostName;
+        public readonly DateTime TimeStamp;
 
-        internal HttpEntityManager(HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied, ICodec requestCodec, ICodec responseCodec)
+        internal HttpEntityManager(
+            HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied, ICodec requestCodec,
+            ICodec responseCodec)
         {
             Ensure.NotNull(httpEntity, "httpEntity");
             Ensure.NotNull(allowedMethods, "allowedMethods");
             Ensure.NotNull(onRequestSatisfied, "onRequestSatisfied");
 
             HttpEntity = httpEntity;
+            TimeStamp = DateTime.UtcNow;
 
             _allowedMethods = allowedMethods;
             _onRequestSatisfied = onRequestSatisfied;

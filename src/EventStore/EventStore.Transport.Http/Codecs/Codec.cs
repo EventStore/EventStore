@@ -26,26 +26,24 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
 using System.Text;
-using EventStore.ClientAPI;
-using EventStore.Transport.Http.Codecs;
 
-namespace EventStore.TestClient.Commands.RunTestScenarios
+namespace EventStore.Transport.Http.Codecs
 {
-    internal class BankAccountEvent
+    public static class Codec
     {
-        public static EventData FromEvent(object accountObject)
+        public static readonly NoCodec NoCodec = new NoCodec();
+        public static readonly ICodec[] NoCodecs = new ICodec[0];
+        public static readonly ManualEncoding ManualEncoding = new ManualEncoding();
+
+        public static readonly JsonCodec Json = new JsonCodec();
+        public static readonly XmlCodec Xml = new XmlCodec();
+        public static readonly CustomCodec ApplicationXml = new CustomCodec(Xml, ContentType.ApplicationXml, Encoding.UTF8);
+        public static readonly TextCodec Text = new TextCodec();
+
+        public static ICodec CreateCustom(ICodec codec, string contentType, Encoding encoding)
         {
-            if (accountObject == null)
-                throw new ArgumentNullException("accountObject");
-
-            var type = accountObject.GetType().Name;
-            var encodedData = Encoding.UTF8.GetBytes(Codec.Json.To(accountObject));
-            var encodedMetadata = Encoding.UTF8.GetBytes(Codec.Json.To(new Dictionary<string, object> { { "IsEmpty", true } }));
-
-            return new EventData(Guid.NewGuid(), type, true, encodedData, encodedMetadata);
+            return new CustomCodec(codec, contentType, encoding);
         }
     }
 }

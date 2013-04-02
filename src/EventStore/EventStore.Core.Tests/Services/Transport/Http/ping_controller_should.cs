@@ -30,8 +30,8 @@ using System;
 using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http

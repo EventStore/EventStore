@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using EventStore.ClientAPI;
-using EventStore.Core.Services.Transport.Http.Codecs;
+using EventStore.Transport.Http.Codecs;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {

@@ -25,39 +25,30 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.Transport.Http.Codecs;
+using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
 namespace EventStore.Core.Services.Transport.Http
 {
-    internal class IncomingHttpRequestMessage : Message
-    {
-        public readonly HttpListenerContext Context;
-
-        public IncomingHttpRequestMessage(HttpListenerContext context)
-        {
-            Context = context;
-        }
-    }
-
-    internal class HttpRequestProcessor : IHandle<IncomingHttpRequestMessage>, 
-                                          IHandle<HttpMessage.PurgeTimedOutRequests>
+    class HttpRequestProcessor : IHandle<IncomingHttpRequestMessage>, IHandle<HttpMessage.PurgeTimedOutRequests>
     {
         private static readonly TimeSpan MaxRequestDuration = TimeSpan.FromSeconds(10);
         private static readonly ILogger Log = LogManager.GetLoggerFor<HttpRequestProcessor>();
-        
+
         private readonly HttpService _httpService;
         private readonly Queue<HttpEntityManager> _pending = new Queue<HttpEntityManager>();
 
@@ -74,52 +65,64 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void PurgeTimedOutRequests()
         {
-            try 
+            try
             {
                 var now = DateTime.UtcNow;
                 // pending request are almost perfectly sorted by DateTime.UtcNow, no need to use SortedSet
-                while (_pending.Count > 0 && now - _pending.Peek().HttpEntity.TimeStamp > MaxRequestDuration)
+                while (_pending.Count > 0 && now - _pending.Peek().TimeStamp > MaxRequestDuration)
                 {
                     var request = _pending.Dequeue();
-                    
+
                     if (Application.IsDefined(Application.DoNotTimeoutRequests))
                         continue;
 
                     if (!request.IsProcessing)
                     {
                         request.ReplyStatus(
-                            HttpStatusCode.RequestTimeout,
-                            "Server was unable to handle request in time",
-                            e => Log.ErrorException(e, "Error occurred while closing timed out connection (http service core)."));
+                            HttpStatusCode.RequestTimeout, "Server was unable to handle request in time",
+                            e =>
+                            Log.ErrorException(
+                                e, "Error occurred while closing timed out connection (http service core)."));
                     }
                 }
             }
             catch (Exception exc)
             {
-                Log.ErrorException(exc,
-                                   "Error purging timed out requests in HTTP request processor at [{0}].",
-                                   string.Join(", ", _httpService.ListenPrefixes));
+                Log.ErrorException(
+                    exc, "Error purging timed out requests in HTTP request processor at [{0}].",
+                    string.Join(", ", _httpService.ListenPrefixes));
             }
         }
 
         public void Handle(IncomingHttpRequestMessage message)
         {
             if (Authenticate(message))
-                ProcessRequest(message.Context);
+                ProcessRequest(message.Context.Request, message.Context.Response);
         }
 
         private bool Authenticate(IncomingHttpRequestMessage message)
         {
+            var basicIdentity = message.Context.User != null
+                                    ? message.Context.User.Identity as HttpListenerBasicIdentity
+                                    : null;
+            if (basicIdentity != null)
+            {
+                if (basicIdentity.Name == basicIdentity.Password)
+                    return true;
+                var httpEntity = new HttpEntity(message.Context.Request, message.Context.Response);
+                var manager = httpEntity.CreateManager();
+                manager.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", exception => { });
+                return false;
+            }
             return true;
         }
 
-        private void ProcessRequest(HttpListenerContext context)
+        private void ProcessRequest(HttpListenerRequest request, HttpListenerResponse response)
         {
-            var httpEntity = new HttpEntity(DateTime.UtcNow, context.Request, context.Response);
+            var httpEntity = new HttpEntity(request, response);
             try
             {
                 //TODO: probably we should pass HttpVerb into matches
-                var request = context.Request;
                 var allMatches = _httpService.GetAllUriMatches(request.Url);
                 if (allMatches.Count == 0)
                 {
@@ -141,37 +144,38 @@ namespace EventStore.Core.Services.Transport.Http
                     return;
                 }
 
-                var match = allMatches.LastOrDefault(m =>
-                                                     m.ControllerAction.HttpMethod.Equals(request.HttpMethod, StringComparison.OrdinalIgnoreCase));
+                var match =
+                    allMatches.LastOrDefault(
+                        m =>
+                        m.ControllerAction.HttpMethod.Equals(request.HttpMethod, StringComparison.OrdinalIgnoreCase));
                 if (match == null)
                 {
                     MethodNotAllowed(httpEntity, allowedMethods);
                     return;
                 }
 
-                ICodec requestCodec = SelectRequestCodec(request.HttpMethod,
-                                                         request.ContentType,
-                                                         match.ControllerAction.SupportedRequestCodecs);
+                ICodec requestCodec = SelectRequestCodec(
+                    request.HttpMethod, request.ContentType, match.ControllerAction.SupportedRequestCodecs);
 
-                ICodec responseCodec = SelectResponseCodec(request.QueryString,
-                                                           request.AcceptTypes,
-                                                           match.ControllerAction.SupportedResponseCodecs,
-                                                           match.ControllerAction.DefaultResponseCodec);
+                ICodec responseCodec = SelectResponseCodec(
+                    request.QueryString, request.AcceptTypes, match.ControllerAction.SupportedResponseCodecs,
+                    match.ControllerAction.DefaultResponseCodec);
                 if (responseCodec == null)
                 {
                     BadCodec(httpEntity, "Requested URI is not available in requested format");
                     return;
                 }
 
-                var entity = httpEntity.CreateEntityManager(requestCodec, responseCodec, allowedMethods, satisfied => { });
-                _pending.Enqueue(entity);
-                match.RequestHandler(entity, match.TemplateMatch);
+                var manager = httpEntity.CreateManager(
+                    requestCodec, responseCodec, allowedMethods, satisfied => { });
+                _pending.Enqueue(manager);
+                match.RequestHandler(manager, match.TemplateMatch);
             }
             catch (Exception exception)
             {
-                Log.ErrorException(exception,
-                                   "Unhandled exception while processing http request at [{0}].",
-                                   string.Join(", ", _httpService.ListenPrefixes));
+                Log.ErrorException(
+                    exception, "Unhandled exception while processing http request at [{0}].",
+                    string.Join(", ", _httpService.ListenPrefixes));
                 InternalServerError(httpEntity);
             }
 
@@ -180,42 +184,42 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void RespondWithOptions(HttpEntity httpEntity, string[] allowed)
         {
-            var entity = httpEntity.CreateEntityManager(Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
-            entity.ReplyStatus(HttpStatusCode.OK,
-                                       "OK",
-                                       e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
+            var entity = httpEntity.CreateManager(Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
+            entity.ReplyStatus(
+                HttpStatusCode.OK, "OK",
+                e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
         }
 
         private void MethodNotAllowed(HttpEntity httpEntity, string[] allowed)
         {
-            var entity = httpEntity.CreateEntityManager(Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
-            entity.ReplyStatus(HttpStatusCode.MethodNotAllowed,
-                                       "Method Not Allowed",
-                                       e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
+            var entity = httpEntity.CreateManager(Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
+            entity.ReplyStatus(
+                HttpStatusCode.MethodNotAllowed, "Method Not Allowed",
+                e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
         }
 
         private void NotFound(HttpEntity httpEntity)
         {
-            var entity = httpEntity.CreateEntityManager(Codec.NoCodec, Codec.NoCodec, Empty.StringArray, _ => { });
-            entity.ReplyStatus(HttpStatusCode.NotFound,
-                                       "Not Found",
-                                       e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
+            var entity = httpEntity.CreateManager();
+            entity.ReplyStatus(
+                HttpStatusCode.NotFound, "Not Found",
+                e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
         }
 
         private void InternalServerError(HttpEntity httpEntity)
         {
-            var entity = httpEntity.CreateEntityManager(Codec.NoCodec, Codec.NoCodec, Empty.StringArray, _ => { });
-            entity.ReplyStatus(HttpStatusCode.InternalServerError,
-                                       "Internal Server Error",
-                                       e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
+            var entity = httpEntity.CreateManager();
+            entity.ReplyStatus(
+                HttpStatusCode.InternalServerError, "Internal Server Error",
+                e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
         }
 
         private void BadCodec(HttpEntity httpEntity, string reason)
         {
-            var entity = httpEntity.CreateEntityManager(Codec.NoCodec, Codec.NoCodec, Empty.StringArray, _ => { });
-            entity.ReplyStatus(HttpStatusCode.UnsupportedMediaType,
-                                       reason,
-                                       e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
+            var entity = httpEntity.CreateManager();
+            entity.ReplyStatus(
+                HttpStatusCode.UnsupportedMediaType, reason,
+                e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
         }
 
         private ICodec SelectRequestCodec(string method, string contentType, IEnumerable<ICodec> supportedCodecs)
@@ -244,11 +248,12 @@ namespace EventStore.Core.Services.Transport.Http
             if (requestedFormat != null)
                 return supported.FirstOrDefault(c => c.SuitableForResponse(MediaType.Parse(requestedFormat)));
 
-            return acceptTypes.Select(MediaType.TryParse)
-                              .Where(x => x != null)
-                              .OrderByDescending(v => v.Priority)
-                              .Select(type => supported.FirstOrDefault(codec => codec.SuitableForResponse(type)))
-                              .FirstOrDefault(corresponding => corresponding != null);
+            return
+                acceptTypes.Select(MediaType.TryParse)
+                           .Where(x => x != null)
+                           .OrderByDescending(v => v.Priority)
+                           .Select(type => supported.FirstOrDefault(codec => codec.SuitableForResponse(type)))
+                           .FirstOrDefault(corresponding => corresponding != null);
         }
 
         private string GetFormatOrDefault(NameValueCollection query)

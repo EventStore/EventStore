@@ -28,9 +28,8 @@
 
 using System;
 using System.Text;
-using EventStore.Transport.Http;
 
-namespace EventStore.Core.Services.Transport.Http.Codecs
+namespace EventStore.Transport.Http.Codecs
 {
     public class ManualEncoding : ICodec
     {
