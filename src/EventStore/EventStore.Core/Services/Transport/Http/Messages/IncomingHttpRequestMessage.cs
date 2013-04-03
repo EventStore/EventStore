@@ -29,17 +29,18 @@
 using System.Net;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Messages
 {
-    class IncomingHttpRequestMessage : Message
+    public class IncomingHttpRequestMessage : Message
     {
         public readonly IPublisher NextStagePublisher;
-        public readonly HttpListenerContext Context;
+        public readonly HttpEntity Entity;
 
-        public IncomingHttpRequestMessage(HttpListenerContext context, IPublisher nextStagePublisher)
+        public IncomingHttpRequestMessage(HttpEntity entity, IPublisher nextStagePublisher)
         {
-            Context = context;
+            Entity = entity;
             NextStagePublisher = nextStagePublisher;
         }
     }

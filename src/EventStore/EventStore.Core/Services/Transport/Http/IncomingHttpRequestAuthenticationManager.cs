@@ -54,7 +54,6 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void Authenticate(IncomingHttpRequestMessage message)
         {
-            var context = message.Context;
             foreach (var provider in _providers)
             {
                 if (provider.Authenticate(message))

@@ -55,6 +55,16 @@ namespace EventStore.Transport.Http.EntityManagement
             User = user;
         }
 
+        private HttpEntity(IPrincipal user)
+        {
+            UserHostName = "";
+
+
+            Request = null;
+            Response = null;
+            User = user;
+        }
+
         public HttpEntityManager CreateManager(
             ICodec requestCodec, ICodec responseCodec, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
         {
@@ -66,5 +76,14 @@ namespace EventStore.Transport.Http.EntityManagement
             return new HttpEntityManager(this, Empty.StringArray, entity => { }, Codec.NoCodec, Codec.NoCodec);
         }
 
+        public HttpEntity SetUser(IPrincipal user)
+        {
+            return new HttpEntity(Request, Response, user);
+        }
+
+        public static HttpEntity Test(IPrincipal user)
+        {
+            return new HttpEntity(user);
+        }
     }
 }

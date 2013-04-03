@@ -135,6 +135,8 @@
     <Compile Include="Helper\ClientApiLoggerBridge.cs" />
     <Compile Include="Helper\ReflectionDynamic.cs" />
     <Compile Include="Helper\TcpPortsHelper.cs" />
+    <Compile Include="Helper\TestFixtureWithExistingEvents.cs" />
+    <Compile Include="Helper\TestFixtureWithReadWriteDispatchers.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\create_index_map_from_non_existing_file.cs" />
@@ -286,6 +288,8 @@
     <Compile Include="Services\Storage\HashCollisions\with_two_collisioned_streams_one_event_each_read_index_should.cs" />
     <Compile Include="Services\Storage\HashCollisions\with_no_hash_collisions_read_index_should.cs" />
     <Compile Include="Services\Storage\HashCollisions\with_three_collisioned_streams_one_event_each_read_index_should.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\basic_http_authentication_provider.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\rfc_2898_password_hash_algorithm.cs" />
     <Compile Include="Services\Transport\Http\media_type.cs" />
     <Compile Include="Services\Transport\Http\atom_specs.cs" />
     <Compile Include="Services\Transport\Http\auto_convertion.cs" />
@@ -373,6 +377,10 @@
     <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj">
       <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>
       <Name>EventStore.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj">
+      <Project>{03E02082-E179-4730-81FF-CE914749D6E3}</Project>
+      <Name>EventStore.Projections.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj">
       <Project>{30AF4820-DC60-4674-9E19-C4518445545A}</Project>

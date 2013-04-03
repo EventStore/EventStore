@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,27 +26,43 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Net;
 using EventStore.Core.Bus;
-using EventStore.Core.Services.Transport.Http.Messages;
+using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
+using EventStore.Core.Tests.Bus.Helpers;
+using NUnit.Framework;
 
-namespace EventStore.Core.Services.Transport.Http.Authentication
+namespace EventStore.Core.Tests.Helper
 {
-    class AnonymousAuthenticationProvider : AuthenticationProvider
+    public class TestFixtureWithReadWriteDispatchers
     {
-        public AnonymousAuthenticationProvider()
-        {
-        }
+        protected InMemoryBus _bus;
 
-        public override bool Authenticate(IncomingHttpRequestMessage message)
+        protected RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
+            _writeDispatcher;
+
+        protected
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
+            _readDispatcher;
+
+        protected TestHandler<Message> _consumer;
+
+        [SetUp]
+        public void setup0()
         {
-            var entity = message.Entity;
-            if (entity.User == null)
-            {
-                Authenticated(message, user: null);
-                return true;
-            }
-            return false;
+            _bus = new InMemoryBus("bus");
+            _readDispatcher =
+                new RequestResponseDispatcher
+                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
+                    _bus, e => e.CorrelationId, e => e.CorrelationId, new PublishEnvelope(_bus));
+            _writeDispatcher =
+                new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
+                    _bus, e => e.CorrelationId, e => e.CorrelationId, new PublishEnvelope(_bus));
+            _bus.Subscribe(_readDispatcher);
+            _bus.Subscribe(_writeDispatcher);
+            _consumer = new TestHandler<Message>();
+            _bus.Subscribe(_consumer);
         }
     }
 }

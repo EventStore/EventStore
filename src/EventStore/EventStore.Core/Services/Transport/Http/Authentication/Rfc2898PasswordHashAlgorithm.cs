@@ -26,27 +26,34 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Net;
-using EventStore.Core.Bus;
-using EventStore.Core.Services.Transport.Http.Messages;
+using System;
+using System.Security.Cryptography;
+using System.Linq;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    class AnonymousAuthenticationProvider : AuthenticationProvider
+    class Rfc2898PasswordHashAlgorithm : PasswordHashAlgorithm
     {
-        public AnonymousAuthenticationProvider()
+        private const int HashSize = 20;
+        private const int SaltSize = 16;
+
+        public override Tuple<string, string> Hash(string password)
         {
+            var salt = new byte[SaltSize];
+            var randomProvider = new RNGCryptoServiceProvider();
+            randomProvider.GetBytes(salt);
+            var hash = new Rfc2898DeriveBytes(password, salt).GetBytes(HashSize);
+            return Tuple.Create(System.Convert.ToBase64String(hash), System.Convert.ToBase64String(salt));
         }
 
-        public override bool Authenticate(IncomingHttpRequestMessage message)
+        public override bool Verify(string password, Tuple<string, string> hashed)
         {
-            var entity = message.Entity;
-            if (entity.User == null)
-            {
-                Authenticated(message, user: null);
-                return true;
-            }
-            return false;
+            var salt = System.Convert.FromBase64String(hashed.Item2);
+            var hash = hashed.Item1;
+
+            var newHash = System.Convert.ToBase64String(new Rfc2898DeriveBytes(password, salt).GetBytes(HashSize));
+
+            return hash == newHash;
         }
     }
 }

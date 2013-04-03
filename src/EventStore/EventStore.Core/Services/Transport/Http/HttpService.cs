@@ -80,13 +80,13 @@ namespace EventStore.Core.Services.Transport.Http
             _httpPipe = new HttpMessagePipe();
             var queues = new IQueuedHandler[receiveHandlerCount];
 
-            // we need to create multi-handler before queues to resolve dependency into ioDispatcher
+            // we need to create multi-handler before queues to resolve dependency for ioDispatcher
             _requestsMultiHandler = new MultiQueuedHandler(queues, null);
 
             _ioDispatcher = new IODispatcher(inputBus, new PublishEnvelope(_requestsMultiHandler, crossThread: true));
             _providers = new AuthenticationProvider[]
                 {
-                    new BasicHttpAuthenticationProvider(_ioDispatcher),
+                    new BasicHttpAuthenticationProvider(_ioDispatcher, new Rfc2898PasswordHashAlgorithm()),
                     new AnonymousAuthenticationProvider()
                 };
 
@@ -145,7 +145,8 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
         {
-            _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(context, _requestsMultiHandler));
+            var entity = new HttpEntity(context.Request, context.Response, context.User);
+            _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(entity, _requestsMultiHandler));
         }
 
         public void Handle(HttpMessage.PurgeTimedOutRequests message)

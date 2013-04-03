@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Net;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -35,19 +36,21 @@ using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    class BasicHttpAuthenticationProvider : AuthenticationProvider
+    public class BasicHttpAuthenticationProvider : AuthenticationProvider
     {
         private readonly IODispatcher _ioDispatcher;
+        private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
 
-        public BasicHttpAuthenticationProvider(IODispatcher ioDispatcher)
+        public BasicHttpAuthenticationProvider(IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm)
         {
             _ioDispatcher = ioDispatcher;
+            _passwordHashAlgorithm = passwordHashAlgorithm;
         }
 
         public override bool Authenticate(IncomingHttpRequestMessage message)
         {
-            var context = message.Context;
-            var basicIdentity = context.User != null ? context.User.Identity as HttpListenerBasicIdentity : null;
+            var entity = message.Entity;
+            var basicIdentity = entity.User != null ? entity.User.Identity as HttpListenerBasicIdentity : null;
             if (basicIdentity != null)
             {
                 var userStreamId = "$user-" + basicIdentity.Name;
@@ -60,25 +63,30 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
         private void ReadUserDataCompleted(
             IncomingHttpRequestMessage message, ClientMessage.ReadStreamEventsBackwardCompleted completed)
         {
-            var context = message.Context;
+            var entity = message.Entity;
             if (completed.Result != ReadStreamResult.Success)
             {
-                ReplyUnauthorized(context);
+                ReplyUnauthorized(entity);
                 return;
             }
-            var basicIdentity = (HttpListenerBasicIdentity) context.User.Identity;
+            var basicIdentity = (HttpListenerBasicIdentity) entity.User.Identity;
             var userData = completed.Events[0].Event.Data.ParseJson<UserData>();
-            if (userData.Password != basicIdentity.Password)
+
+            var passwordHash = Tuple.Create(userData.Hash, userData.Salt);
+
+            if (_passwordHashAlgorithm.Verify(basicIdentity.Password, passwordHash))
             {
-                ReplyUnauthorized(context);
+                ReplyUnauthorized(entity);
                 return;
             }
-            Authenticated(message, context.User);
+
+            Authenticated(message, entity.User);
         }
 
-        private class UserData
+        public class UserData
         {
-            public string Password { get; set; }
+            public string Salt { get; set; }
+            public string Hash { get; set; }
         }
     }
 }

@@ -28,14 +28,16 @@
 
 using System;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests.Helper;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
+using TestFixtureWithReadWriteDispatchers = EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithReadWriteDispatchers;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection
 {
     [TestFixture]
-    public class when_creating_a_managed_projection : TestFixtureWithReadWriteDisaptchers
+    public class when_creating_a_managed_projection : TestFixtureWithReadWriteDispatchers
     {
         private ITimeProvider _timeProvider;
 

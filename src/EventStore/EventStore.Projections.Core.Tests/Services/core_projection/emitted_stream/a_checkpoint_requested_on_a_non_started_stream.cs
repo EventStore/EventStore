@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Tests.Helper;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
@@ -34,7 +35,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class a_checkpoint_requested_on_a_non_started_stream: TestFixtureWithReadWriteDisaptchers
+    public class a_checkpoint_requested_on_a_non_started_stream: TestFixtureWithReadWriteDispatchers
     {
         private EmittedStream _stream;
 

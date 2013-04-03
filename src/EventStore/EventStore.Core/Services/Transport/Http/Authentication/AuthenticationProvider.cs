@@ -35,7 +35,7 @@ using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    abstract class AuthenticationProvider
+    public abstract class AuthenticationProvider
     {
         protected AuthenticationProvider()
         {
@@ -45,15 +45,14 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
 
         protected void Authenticated(IncomingHttpRequestMessage message, IPrincipal user)
         {
-            var context = message.Context;
+            var entity = message.Entity;
             message.NextStagePublisher.Publish(
-                new AuthenticatedHttpRequestMessage(new HttpEntity(context.Request, context.Response, user)));
+                new AuthenticatedHttpRequestMessage(entity.SetUser(user)));
         }
 
-        protected void ReplyUnauthorized(HttpListenerContext context)
+        protected void ReplyUnauthorized(HttpEntity entity)
         {
-            var httpEntity = new HttpEntity(context.Request, context.Response, null);
-            var manager = httpEntity.CreateManager();
+            var manager = entity.CreateManager();
             manager.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", exception => { });
         }
 
