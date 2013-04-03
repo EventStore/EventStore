@@ -30,39 +30,30 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
-using System.Net;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
-using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
-using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.Core.Services.Transport.Http
 {
-    class HttpRequestProcessor : IHandle<IncomingHttpRequestMessage>, IHandle<HttpMessage.PurgeTimedOutRequests>, IHandle<AuthenticatedHttpRequestMessage>
+    class AuthenticatedHttpRequestProcessor : IHandle<HttpMessage.PurgeTimedOutRequests>, IHandle<AuthenticatedHttpRequestMessage>
     {
         private static readonly TimeSpan MaxRequestDuration = TimeSpan.FromSeconds(10);
-        private static readonly ILogger Log = LogManager.GetLoggerFor<HttpRequestProcessor>();
+        private static readonly ILogger Log = LogManager.GetLoggerFor<AuthenticatedHttpRequestProcessor>();
 
         private readonly HttpService _httpService;
-        private readonly IODispatcher _ioDispatcher;
-        private readonly IPublisher _publisher;
         private readonly Queue<HttpEntityManager> _pending = new Queue<HttpEntityManager>();
 
-        public HttpRequestProcessor(HttpService httpService, IODispatcher ioDispatcher, IPublisher publisher)
+        public AuthenticatedHttpRequestProcessor(HttpService httpService)
         {
             Ensure.NotNull(httpService, "httpService");
-            Ensure.NotNull(ioDispatcher, "ioDispatcher");
             _httpService = httpService;
-            _ioDispatcher = ioDispatcher;
-            _publisher = publisher;
         }
 
         public void Handle(HttpMessage.PurgeTimedOutRequests message)
@@ -99,57 +90,6 @@ namespace EventStore.Core.Services.Transport.Http
                     exc, "Error purging timed out requests in HTTP request processor at [{0}].",
                     string.Join(", ", _httpService.ListenPrefixes));
             }
-        }
-
-        public void Handle(IncomingHttpRequestMessage message)
-        {
-            var entity = Authenticate(message);
-            if (entity != null)
-                _publisher.Publish(new AuthenticatedHttpRequestMessage(entity));
-        }
-
-        private HttpEntity Authenticate(IncomingHttpRequestMessage message)
-        {
-            var context = message.Context;
-            var basicIdentity = context.User != null ? context.User.Identity as HttpListenerBasicIdentity : null;
-            if (basicIdentity != null)
-            {
-                var userStreamId = "$user-" + basicIdentity.Name;
-                _ioDispatcher.ReadBackward(userStreamId, -1, 1, false, m => ReadUserDataCompleted(context, m));
-                return null;
-            }
-            return new HttpEntity(context.Request, context.Response, null);
-        }
-
-        private class UserData
-        {
-            public string Password { get; set; }
-        }
-
-        private void ReadUserDataCompleted(HttpListenerContext context,
-            ClientMessage.ReadStreamEventsBackwardCompleted completed)
-        {
-            if (completed.Result != ReadStreamResult.Success)
-            {
-                ReplyUnauthorized(context);
-                return;
-            }
-            var basicIdentity = (HttpListenerBasicIdentity) context.User.Identity;
-            var userData = completed.Events[0].Event.Data.Deserialize<UserData>();
-            if (userData.Password != basicIdentity.Password)
-            {
-                ReplyUnauthorized(context);
-                return;
-            }
-            var authenticatedHttpEntity = new HttpEntity(context.Request, context.Response, context.User);
-            _publisher.Publish(new AuthenticatedHttpRequestMessage(authenticatedHttpEntity));
-        }
-
-        private static void ReplyUnauthorized(HttpListenerContext context)
-        {
-            var httpEntity = new HttpEntity(context.Request, context.Response, null);
-            var manager = httpEntity.CreateManager();
-            manager.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", exception => { });
         }
 
         private void ProcessRequest(HttpEntity httpEntity)

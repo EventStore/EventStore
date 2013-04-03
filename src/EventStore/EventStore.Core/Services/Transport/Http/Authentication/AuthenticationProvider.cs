@@ -27,20 +27,36 @@
 // 
 
 using System.Net;
+using System.Security.Principal;
 using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Http.Messages;
+using EventStore.Transport.Http.EntityManagement;
+using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
-namespace EventStore.Core.Services.Transport.Http.Messages
+namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    class IncomingHttpRequestMessage : Message
+    abstract class AuthenticationProvider
     {
-        public readonly IPublisher NextStagePublisher;
-        public readonly HttpListenerContext Context;
-
-        public IncomingHttpRequestMessage(HttpListenerContext context, IPublisher nextStagePublisher)
+        protected AuthenticationProvider()
         {
-            Context = context;
-            NextStagePublisher = nextStagePublisher;
         }
+
+        public abstract bool Authenticate(IncomingHttpRequestMessage message);
+
+        protected void Authenticated(IncomingHttpRequestMessage message, IPrincipal user)
+        {
+            var context = message.Context;
+            message.NextStagePublisher.Publish(
+                new AuthenticatedHttpRequestMessage(new HttpEntity(context.Request, context.Response, user)));
+        }
+
+        protected void ReplyUnauthorized(HttpListenerContext context)
+        {
+            var httpEntity = new HttpEntity(context.Request, context.Response, null);
+            var manager = httpEntity.CreateManager();
+            manager.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", exception => { });
+        }
+
+
     }
 }

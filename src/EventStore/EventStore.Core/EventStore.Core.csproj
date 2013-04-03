@@ -165,11 +165,15 @@
     <Compile Include="Services\Storage\StorageScavenger.cs" />
     <Compile Include="Services\SystemNames.cs" />
     <Compile Include="Services\RequestManager\Managers\TransactionCommitTwoPhaseRequestManager.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\AuthenticationProvider.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\BasicHttpAuthenticationProvider.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\AnonymousAuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
-    <Compile Include="Services\Transport\Http\HttpRequestProcessor.cs" />
+    <Compile Include="Services\Transport\Http\IncomingHttpRequestAuthenticationManager.cs" />
+    <Compile Include="Services\Transport\Http\AuthenticatedHttpRequestProcessor.cs" />
     <Compile Include="Services\Transport\Http\IHttpService.cs" />
     <Compile Include="Services\Transport\Http\Messages\AuthenticatedHttpRequestMessage.cs" />
     <Compile Include="Services\Transport\Http\Messages\IncomingHttpRequestMessage.cs" />
@@ -307,9 +311,7 @@
       <Name>EventStore.Transport.Tcp</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Services\Transport\Http\Authentication\Basic\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

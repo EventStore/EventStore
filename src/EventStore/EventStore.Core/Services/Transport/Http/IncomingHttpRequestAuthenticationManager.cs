@@ -28,19 +28,40 @@
 
 using System.Net;
 using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
+using EventStore.Core.Data;
+using EventStore.Core.Messages;
+using EventStore.Core.Services.Transport.Http.Authentication;
+using EventStore.Core.Services.Transport.Http.Messages;
+using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Transport.Http.EntityManagement;
+using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
-namespace EventStore.Core.Services.Transport.Http.Messages
+namespace EventStore.Core.Services.Transport.Http
 {
-    class IncomingHttpRequestMessage : Message
+    class IncomingHttpRequestAuthenticationManager : IHandle<IncomingHttpRequestMessage>
     {
-        public readonly IPublisher NextStagePublisher;
-        public readonly HttpListenerContext Context;
+        private readonly AuthenticationProvider[] _providers;
 
-        public IncomingHttpRequestMessage(HttpListenerContext context, IPublisher nextStagePublisher)
+        public IncomingHttpRequestAuthenticationManager(AuthenticationProvider[] providers)
         {
-            Context = context;
-            NextStagePublisher = nextStagePublisher;
+            _providers = providers;
         }
+
+        public void Handle(IncomingHttpRequestMessage message)
+        {
+            Authenticate(message);
+        }
+
+        private void Authenticate(IncomingHttpRequestMessage message)
+        {
+            var context = message.Context;
+            foreach (var provider in _providers)
+            {
+                if (provider.Authenticate(message))
+                    break;
+            }
+            
+        }
+
     }
 }

@@ -28,19 +28,25 @@
 
 using System.Net;
 using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Http.Messages;
 
-namespace EventStore.Core.Services.Transport.Http.Messages
+namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    class IncomingHttpRequestMessage : Message
+    class AnonymousAuthenticationProvider : AuthenticationProvider
     {
-        public readonly IPublisher NextStagePublisher;
-        public readonly HttpListenerContext Context;
-
-        public IncomingHttpRequestMessage(HttpListenerContext context, IPublisher nextStagePublisher)
+        public AnonymousAuthenticationProvider()
         {
-            Context = context;
-            NextStagePublisher = nextStagePublisher;
+        }
+
+        public override bool Authenticate(IncomingHttpRequestMessage message)
+        {
+            var context = message.Context;
+            if (context.User == null)
+            {
+                Authenticated(message, user: null);
+                return true;
+            }
+            return false;
         }
     }
 }

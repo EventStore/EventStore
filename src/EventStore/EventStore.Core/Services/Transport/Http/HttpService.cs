@@ -35,6 +35,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Transport.Http.EntityManagement;
 using EventStore.Transport.Http.Server;
@@ -62,6 +63,7 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly HttpAsyncServer _server;
         private readonly MultiQueuedHandler _requestsMultiHandler;
         private readonly IODispatcher _ioDispatcher;
+        private readonly AuthenticationProvider[] _providers;
 
         public HttpService(
             ServiceAccessibility accessibility, IPublisher inputBus, int receiveHandlerCount, params string[] prefixes)
@@ -76,8 +78,22 @@ namespace EventStore.Core.Services.Transport.Http
 
             _actions = new List<HttpRoute>();
             _httpPipe = new HttpMessagePipe();
-            _requestsMultiHandler = new MultiQueuedHandler(receiveHandlerCount, CreateQueuedHandler);
-            _ioDispatcher = new IODispatcher(inputBus, new PublishEnvelope(_requestsMultiHandler));
+            var queues = new IQueuedHandler[receiveHandlerCount];
+
+            // we need to create multi-handler before queues to resolve dependency into ioDispatcher
+            _requestsMultiHandler = new MultiQueuedHandler(queues, null);
+
+            _ioDispatcher = new IODispatcher(inputBus, new PublishEnvelope(_requestsMultiHandler, crossThread: true));
+            _providers = new AuthenticationProvider[]
+                {
+                    new BasicHttpAuthenticationProvider(_ioDispatcher),
+                    new AnonymousAuthenticationProvider()
+                };
+
+            for (var i = 0; i < receiveHandlerCount; i++)
+            {
+                queues[i] = CreateQueuedHandler(i);
+            }
 
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
@@ -86,8 +102,9 @@ namespace EventStore.Core.Services.Transport.Http
         private IQueuedHandler CreateQueuedHandler(int queueNum)
         {
             var bus = new InMemoryBus(string.Format("Incoming HTTP #{0} Bus", queueNum + 1), watchSlowMsg: false);
-            var requestProcessor = new HttpRequestProcessor(this, _ioDispatcher, bus);
-            bus.Subscribe<IncomingHttpRequestMessage>(requestProcessor);
+            var requestProcessor = new AuthenticatedHttpRequestProcessor(this);
+            var requestAuthenticationManager = new IncomingHttpRequestAuthenticationManager(_providers);
+            bus.Subscribe<IncomingHttpRequestMessage>(requestAuthenticationManager);
             bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
             bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
 
@@ -128,7 +145,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
         {
-            _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(context));
+            _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(context, _requestsMultiHandler));
         }
 
         public void Handle(HttpMessage.PurgeTimedOutRequests message)

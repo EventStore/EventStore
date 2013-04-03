@@ -60,7 +60,7 @@ namespace EventStore.Core.Bus
             Ensure.Positive(queues.Length, "queues.Length");
         }
 
-        public MultiQueuedHandler(QueuedHandler[] queues, Func<Message, int> queueHash)
+        public MultiQueuedHandler(IQueuedHandler[] queues, Func<Message, int> queueHash)
         {
             Ensure.NotNull(queues, "queues");
             Ensure.Positive(queues.Length, "queues.Length");
