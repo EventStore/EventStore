@@ -32,11 +32,11 @@ using EventStore.Core.Bus;
 
 namespace EventStore.Core.Messaging
 {
-    public class RequestResponseDispatcher<TRequest, TResponse> : IHandle<TResponse>
+    public sealed class RequestResponseDispatcher<TRequest, TResponse> : IHandle<TResponse>
         where TRequest : Message where TResponse : Message
     {
-        //NOTE: this class is not intened to be used from multiple threads, 
-        //however we support count requests from other threads for statistics purposes
+        //NOTE: this class is not intended to be used from multiple threads except from the QueuedHandlerThreadPool
+        //however it supports count requests from other threads for statistics purposes
         private readonly Dictionary<Guid, Action<TResponse>> _map = new Dictionary<Guid, Action<TResponse>>();
         private readonly IPublisher _publisher;
         private readonly Func<TRequest, Guid> _getRequestCorrelationId;
@@ -65,7 +65,8 @@ namespace EventStore.Core.Messaging
             _publisher.Publish(request);
             //NOTE: the following condition is required as publishing the message could also process the message 
             // and the correlationId is already invalid here
-            return _map.ContainsKey(requestCorrelationId) ? requestCorrelationId: Guid.Empty;
+            lock (_map)
+                return _map.ContainsKey(requestCorrelationId) ? requestCorrelationId : Guid.Empty;
         }
 
         void IHandle<TResponse>.Handle(TResponse message)

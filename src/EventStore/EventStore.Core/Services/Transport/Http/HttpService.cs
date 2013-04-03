@@ -31,6 +31,7 @@ using System.Diagnostics;
 using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -60,6 +61,7 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly HttpMessagePipe _httpPipe;
         private readonly HttpAsyncServer _server;
         private readonly MultiQueuedHandler _requestsMultiHandler;
+        private readonly IODispatcher _ioDispatcher;
 
         public HttpService(
             ServiceAccessibility accessibility, IPublisher inputBus, int receiveHandlerCount, params string[] prefixes)
@@ -74,24 +76,28 @@ namespace EventStore.Core.Services.Transport.Http
 
             _actions = new List<HttpRoute>();
             _httpPipe = new HttpMessagePipe();
-
-            _requestsMultiHandler = new MultiQueuedHandler(
-                    receiveHandlerCount,
-                    queueNum =>
-                    {
-                        var bus = new InMemoryBus(string.Format("Incoming HTTP #{0} Bus", queueNum + 1), watchSlowMsg: false);
-                        var requestProcessor = new HttpRequestProcessor(this);
-                        bus.Subscribe<IncomingHttpRequestMessage>(requestProcessor);
-                        bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
-                        return new QueuedHandlerThreadPool(bus,
-                                                           name: "Incoming HTTP #" + (queueNum + 1),
-                                                           groupName: "Incoming HTTP",
-                                                           watchSlowMsg: true,
-                                                           slowMsgThreshold: TimeSpan.FromMilliseconds(50));
-                    });
+            _requestsMultiHandler = new MultiQueuedHandler(receiveHandlerCount, CreateQueuedHandler);
+            _ioDispatcher = new IODispatcher(inputBus, new PublishEnvelope(_requestsMultiHandler));
 
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
+        }
+
+        private IQueuedHandler CreateQueuedHandler(int queueNum)
+        {
+            var bus = new InMemoryBus(string.Format("Incoming HTTP #{0} Bus", queueNum + 1), watchSlowMsg: false);
+            var requestProcessor = new HttpRequestProcessor(this, _ioDispatcher, bus);
+            bus.Subscribe<IncomingHttpRequestMessage>(requestProcessor);
+            bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
+            bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
+
+            bus.Subscribe(_ioDispatcher.ForwardReader);
+            bus.Subscribe(_ioDispatcher.BackwardReader);
+            bus.Subscribe(_ioDispatcher.Writer);
+
+            return new QueuedHandlerThreadPool(
+                bus, name: "Incoming HTTP #" + (queueNum + 1), groupName: "Incoming HTTP", watchSlowMsg: true,
+                slowMsgThreshold: TimeSpan.FromMilliseconds(50));
         }
 
         public void Handle(SystemMessage.SystemInit message)
