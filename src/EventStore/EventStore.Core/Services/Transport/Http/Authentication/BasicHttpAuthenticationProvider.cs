@@ -31,7 +31,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Messages;
-using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                 return;
             }
             var basicIdentity = (HttpListenerBasicIdentity) context.User.Identity;
-            var userData = completed.Events[0].Event.Data.Deserialize<UserData>();
+            var userData = completed.Events[0].Event.Data.ParseJson<UserData>();
             if (userData.Password != basicIdentity.Password)
             {
                 ReplyUnauthorized(context);
