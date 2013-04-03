@@ -26,18 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Net;
-using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http.Messages;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
     class AnonymousAuthenticationProvider : AuthenticationProvider
     {
-        public AnonymousAuthenticationProvider()
-        {
-        }
-
         public override bool Authenticate(IncomingHttpRequestMessage message)
         {
             var entity = message.Entity;

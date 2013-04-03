@@ -28,7 +28,6 @@
 
 using System;
 using System.Security.Cryptography;
-using System.Linq;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {

@@ -26,28 +26,21 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Net;
 using System.Security.Principal;
-using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http.Messages;
+using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
-using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
     public abstract class AuthenticationProvider
     {
-        protected AuthenticationProvider()
-        {
-        }
-
         public abstract bool Authenticate(IncomingHttpRequestMessage message);
 
         protected void Authenticated(IncomingHttpRequestMessage message, IPrincipal user)
         {
             var entity = message.Entity;
-            message.NextStagePublisher.Publish(
-                new AuthenticatedHttpRequestMessage(entity.SetUser(user)));
+            message.NextStagePublisher.Publish(new AuthenticatedHttpRequestMessage(entity.SetUser(user)));
         }
 
         protected void ReplyUnauthorized(HttpEntity entity)
@@ -55,7 +48,5 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             var manager = entity.CreateManager();
             manager.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", exception => { });
         }
-
-
     }
 }
