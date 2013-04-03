@@ -131,7 +131,7 @@ namespace EventStore.Core.Services.Transport.Http
                         request.HttpMethod, request.ContentType, supportedRequestCodecs);
                     if (requestCodec == null)
                     {
-                        BadRequest(httpEntity, "Invalid or missing Content-Type");
+                        BadContentType(httpEntity, "Invalid or missing Content-Type");
                         return;
                     }
                 }
@@ -207,15 +207,15 @@ namespace EventStore.Core.Services.Transport.Http
         {
             var entity = httpEntity.CreateManager();
             entity.ReplyStatus(
-                HttpStatusCode.UnsupportedMediaType, reason,
+                HttpStatusCode.NotAcceptable, reason,
                 e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
         }
 
-        private void BadRequest(HttpEntity httpEntity, string reason)
+        private void BadContentType(HttpEntity httpEntity, string reason)
         {
             var entity = httpEntity.CreateManager();
             entity.ReplyStatus(
-                HttpStatusCode.BadRequest, reason,
+                HttpStatusCode.UnsupportedMediaType, reason,
                 e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
         }
 
