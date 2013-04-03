@@ -28,13 +28,14 @@
 
 using System;
 using System.Net;
-using System.Text;
+using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Tests.Bus.Helpers;
+using EventStore.Core.Tests.Helper;
 using EventStore.Transport.Http.EntityManagement;
 using NUnit.Framework;
 using System.Linq;
@@ -43,20 +44,19 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
 {
     namespace basic_http_authentication_provider
     {
-        public class TestFixtureWithBasicHttpAuthenticationProvider
+        public class TestFixtureWithBasicHttpAuthenticationProvider: TestFixtureWithExistingEvents
         {
             protected BasicHttpAuthenticationProvider _provider;
             private IODispatcher _ioDispatcher;
-            protected InMemoryBus _bus;
             protected HttpEntity _entity;
-            protected TestHandler<Message> _consumer;
 
             protected void SetUpProvider()
             {
-                _bus = new InMemoryBus("test-bus");
-                _consumer = new TestHandler<Message>();
-                _bus.Subscribe(_consumer);
                 _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+                _bus.Subscribe(_ioDispatcher.BackwardReader);
+                _bus.Subscribe(_ioDispatcher.ForwardReader);
+                _bus.Subscribe(_ioDispatcher.Writer);
+
                 _provider = new BasicHttpAuthenticationProvider(_ioDispatcher, new StubPasswordHashAlgorithm());
             }
         }
@@ -86,7 +86,75 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
                 var authenticatedHttpRequestMessages = _consumer.HandledMessages.OfType<AuthenticatedHttpRequestMessage>().ToList();
                 Assert.AreEqual(authenticatedHttpRequestMessages.Count, 0);
             }
+        }
 
+        [TestFixture]
+        public class when_handling_a_request_with_correct_user_name_and_password : TestFixtureWithBasicHttpAuthenticationProvider
+        {
+            private bool _authenticateResult;
+
+            protected override void Given()
+            {
+                base.Given();
+                ExistingEvent("$user-user", "$user", null, "{Salt:'drowssap',Hash:'password'}");
+            }
+
+            [SetUp]
+            public void SetUp()
+            {
+                SetUpProvider();
+                _entity = HttpEntity.Test(new GenericPrincipal(new HttpListenerBasicIdentity("user", "password"), new string[0]));
+                _authenticateResult = _provider.Authenticate(new IncomingHttpRequestMessage(_entity, _bus));
+            }
+
+            [Test]
+            public void returns_true()
+            {
+                Assert.IsTrue(_authenticateResult);
+            }
+
+            [Test]
+            public void publishes_authenticated_http_request_message_with_user()
+            {
+                var authenticatedHttpRequestMessages = _consumer.HandledMessages.OfType<AuthenticatedHttpRequestMessage>().ToList();
+                Assert.AreEqual(authenticatedHttpRequestMessages.Count, 1);
+                var message = authenticatedHttpRequestMessages[0];
+                Assert.AreEqual("user", message.Entity.User.Identity.Name);
+                Assert.IsTrue(message.Entity.User.Identity.IsAuthenticated);
+            }
+        }
+
+        [TestFixture]
+        public class when_handling_a_request_with_incorrect_user_name_and_password : TestFixtureWithBasicHttpAuthenticationProvider
+        {
+            private bool _authenticateResult;
+
+            protected override void Given()
+            {
+                base.Given();
+                ExistingEvent("$user-user", "$user", null, "{Salt:'drowssap',Hash:'password'}");
+            }
+
+            [SetUp]
+            public void SetUp()
+            {
+                SetUpProvider();
+                _entity = HttpEntity.Test(new GenericPrincipal(new HttpListenerBasicIdentity("user", "password1"), new string[0]));
+                _authenticateResult = _provider.Authenticate(new IncomingHttpRequestMessage(_entity, _bus));
+            }
+
+            [Test]
+            public void returns_true()
+            {
+                Assert.IsTrue(_authenticateResult);
+            }
+
+            [Test]
+            public void publishes_authenticated_http_request_message_with_user()
+            {
+                var authenticatedHttpRequestMessages = _consumer.HandledMessages.OfType<AuthenticatedHttpRequestMessage>().ToList();
+                Assert.AreEqual(authenticatedHttpRequestMessages.Count, 0);
+            }
         }
     }
 

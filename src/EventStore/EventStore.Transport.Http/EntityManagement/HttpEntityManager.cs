@@ -218,6 +218,9 @@ namespace EventStore.Transport.Http.EntityManagement
             int code, string description, string contentType, Encoding encoding,
             IEnumerable<KeyValuePair<string, string>> headers)
         {
+            if (HttpEntity.Response == null) // test instance
+                return false;
+
             bool isAlreadyProcessing = Interlocked.CompareExchange(ref _processing, 1, 0) == 1;
             if (isAlreadyProcessing)
                 return false;

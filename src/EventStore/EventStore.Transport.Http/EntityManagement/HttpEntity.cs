@@ -65,6 +65,17 @@ namespace EventStore.Transport.Http.EntityManagement
             User = user;
         }
 
+        private HttpEntity(HttpEntity httpEntity, IPrincipal user)
+        {
+            UserHostName = httpEntity.UserHostName;
+
+
+            Request = httpEntity.Request;
+            Response = httpEntity.Response;
+            User = user;
+            
+        }
+
         public HttpEntityManager CreateManager(
             ICodec requestCodec, ICodec responseCodec, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
         {
@@ -78,7 +89,7 @@ namespace EventStore.Transport.Http.EntityManagement
 
         public HttpEntity SetUser(IPrincipal user)
         {
-            return new HttpEntity(Request, Response, user);
+            return new HttpEntity(this, user);
         }
 
         public static HttpEntity Test(IPrincipal user)

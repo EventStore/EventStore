@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
 
             var passwordHash = Tuple.Create(userData.Hash, userData.Salt);
 
-            if (_passwordHashAlgorithm.Verify(basicIdentity.Password, passwordHash))
+            if (!_passwordHashAlgorithm.Verify(basicIdentity.Password, passwordHash))
             {
                 ReplyUnauthorized(entity);
                 return;
