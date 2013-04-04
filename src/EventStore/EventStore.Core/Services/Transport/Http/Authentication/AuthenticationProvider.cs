@@ -43,7 +43,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             message.NextStagePublisher.Publish(new AuthenticatedHttpRequestMessage(entity.SetUser(user)));
         }
 
-        protected void ReplyUnauthorized(HttpEntity entity)
+        public static void ReplyUnauthorized(HttpEntity entity)
         {
             var manager = entity.CreateManager();
             manager.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", exception => { });

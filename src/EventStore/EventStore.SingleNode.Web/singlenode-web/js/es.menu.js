@@ -11,7 +11,8 @@
     var mainMenuLow = [
         { "name": "Charts", "link": "/web/charts.htm", "className": "" },
         { "name": "Health Charts", "link": "/web/health-charts.htm", "className": "" },
-        { "name": "Queues", "link": "/web/queues.htm", "className": "" }
+        { "name": "Queues", "link": "/web/queues.htm", "className": "" },
+        { "name": "Users", "link": "/web/users.htm", "className": "" },
     ];
 
     var buildMenuMaxTryCount = 60;

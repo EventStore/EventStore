@@ -63,24 +63,31 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
         private void ReadUserDataCompleted(
             IncomingHttpRequestMessage message, ClientMessage.ReadStreamEventsBackwardCompleted completed)
         {
-            var entity = message.Entity;
-            if (completed.Result != ReadStreamResult.Success)
+            try
             {
-                ReplyUnauthorized(entity);
-                return;
+                var entity = message.Entity;
+                if (completed.Result != ReadStreamResult.Success)
+                {
+                    ReplyUnauthorized(entity);
+                    return;
+                }
+                var basicIdentity = (HttpListenerBasicIdentity) entity.User.Identity;
+                var userData = completed.Events[0].Event.Data.ParseJson<UserData>();
+
+                var passwordHash = Tuple.Create(userData.Hash, userData.Salt);
+
+                if (!_passwordHashAlgorithm.Verify(basicIdentity.Password, passwordHash))
+                {
+                    ReplyUnauthorized(entity);
+                    return;
+                }
+
+                Authenticated(message, entity.User);
             }
-            var basicIdentity = (HttpListenerBasicIdentity) entity.User.Identity;
-            var userData = completed.Events[0].Event.Data.ParseJson<UserData>();
-
-            var passwordHash = Tuple.Create(userData.Hash, userData.Salt);
-
-            if (!_passwordHashAlgorithm.Verify(basicIdentity.Password, passwordHash))
+            catch
             {
-                ReplyUnauthorized(entity);
-                return;
+                ReplyUnauthorized(message.Entity);
             }
-
-            Authenticated(message, entity.User);
         }
 
         public class UserData

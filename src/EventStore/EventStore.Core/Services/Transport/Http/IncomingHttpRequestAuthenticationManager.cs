@@ -26,15 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Net;
+using System;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
-using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Transport.Http.EntityManagement;
-using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -54,12 +49,18 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void Authenticate(IncomingHttpRequestMessage message)
         {
-            foreach (var provider in _providers)
+            try
             {
-                if (provider.Authenticate(message))
-                    break;
+                foreach (var provider in _providers)
+                {
+                    if (provider.Authenticate(message))
+                        break;
+                }
             }
-            
+            catch 
+            {
+                AuthenticationProvider.ReplyUnauthorized(message.Entity);
+            }
         }
 
     }
