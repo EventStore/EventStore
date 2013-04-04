@@ -34,7 +34,7 @@ namespace EventStore.Core.Bus
     // on Windows AutoReset version is much slower, but on Linux ManualResetEventSlim version is much slower
     public class QueuedHandler: 
 #if __MonoCS__
-        QueuedHandlerAutoReset,
+        QueuedHandlerMRES,
 #else
         QueuedHandlerMRES,
 #endif
