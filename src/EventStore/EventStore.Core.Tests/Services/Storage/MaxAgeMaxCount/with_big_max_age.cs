@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         [Test]
         public void metastream_read_returns_metaevent()
         {
-            var result = ReadIndex.ReadEvent(SystemNames.MetastreamOf("ES"), 0);
+            var result = ReadIndex.ReadEvent(SystemStreams.MetastreamOf("ES"), 0);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r1, result.Record);
         }

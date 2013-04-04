@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,64 +25,59 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class TransactionalWriteOperation : OperationBase<object, ClientMessage.TransactionWriteCompleted>
+    internal class ReadEventOperation : OperationBase<ClientMessage.ReadEventCompleted, ClientMessage.ReadEventCompleted>
     {
-        private readonly bool _forward;
-        private readonly long _transactionId;
-        private readonly IEnumerable<EventData> _events;
+        private readonly string _stream;
+        private readonly int _eventNumber;
+        private readonly bool _resolveLinkTo;
 
-        public TransactionalWriteOperation(ILogger log, 
-                                           TaskCompletionSource<object> source,
-                                           bool forward,
-                                           long transactionId,
-                                           IEnumerable<EventData> events)
-                : base(log, source, TcpCommand.TransactionWrite, TcpCommand.TransactionWriteCompleted)
+        public ReadEventOperation(ILogger log,
+                                  TaskCompletionSource<ClientMessage.ReadEventCompleted> source,
+                                  string stream,
+                                  int eventNumber,
+                                  bool resolveLinkTo)
+            : base(log, source, TcpCommand.ReadEvent, TcpCommand.ReadEventCompleted)
         {
-            _forward = forward;
-            _transactionId = transactionId;
-            _events = events;
+            _stream = stream;
+            _eventNumber = eventNumber;
+            _resolveLinkTo = resolveLinkTo;
         }
 
         protected override object CreateRequestDto()
         {
-            var dtos = _events.Select(x => new ClientMessage.NewEvent(x.EventId.ToByteArray(), x.Type, x.IsJson, x.Data, x.Metadata)).ToArray();
-            return new ClientMessage.TransactionWrite(_transactionId, dtos, _forward);
+            return new ClientMessage.ReadEvent(_stream, _eventNumber, _resolveLinkTo);
         }
 
-        protected override InspectionResult InspectResponse(ClientMessage.TransactionWriteCompleted response)
+        protected override InspectionResult InspectResponse(ClientMessage.ReadEventCompleted response)
         {
             switch (response.Result)
             {
-                case ClientMessage.OperationResult.Success:
+                case ClientMessage.ReadEventCompleted.ReadEventResult.Success:
+                case ClientMessage.ReadEventCompleted.ReadEventResult.NotFound:
+                case ClientMessage.ReadEventCompleted.ReadEventResult.NoStream:
+                case ClientMessage.ReadEventCompleted.ReadEventResult.StreamDeleted:
                     Succeed();
                     return new InspectionResult(InspectionDecision.EndOperation);
-                case ClientMessage.OperationResult.PrepareTimeout:
-                case ClientMessage.OperationResult.CommitTimeout:
-                case ClientMessage.OperationResult.ForwardTimeout:
-                    return new InspectionResult(InspectionDecision.Retry);
                 default:
-                    throw new ArgumentOutOfRangeException(string.Format("Unexpected OperationResult: {0}.", response.Result));
+                    throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadEventResult: {0}.", response.Result));
             }
         }
 
-        protected override object TransformResponse(ClientMessage.TransactionWriteCompleted response)
+        protected override ClientMessage.ReadEventCompleted TransformResponse(ClientMessage.ReadEventCompleted response)
         {
-            return null;
+            return response;
         }
 
         public override string ToString()
         {
-            return string.Format("TransactionId: {0}", _transactionId);
+            return string.Format("Stream: {0}, EventNumber: {1}, ResolveLinkTo: {2}", _stream, _eventNumber, _resolveLinkTo);
         }
     }
 }

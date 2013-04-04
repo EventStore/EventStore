@@ -26,7 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-namespace EventStore.Core.Services
+namespace EventStore.ClientAPI.Common
 {
     public static class SystemStreams
     {

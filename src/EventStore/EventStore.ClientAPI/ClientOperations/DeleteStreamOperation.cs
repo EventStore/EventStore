@@ -36,8 +36,6 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class DeleteStreamOperation : OperationBase<object, ClientMessage.DeleteStreamCompleted>
     {
-        public override bool IsLongRunning { get { return false; } }
-
         private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;

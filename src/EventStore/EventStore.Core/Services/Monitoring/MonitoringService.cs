@@ -208,7 +208,7 @@ namespace EventStore.Core.Services.Monitoring
             _mainBus.Publish(new ClientMessage.WriteEvents(Guid.NewGuid(),
                                                            new PublishEnvelope(_monitoringBus),
                                                            true,
-                                                           SystemNames.MetastreamOf(_nodeStatsStream),
+                                                           SystemStreams.MetastreamOf(_nodeStatsStream),
                                                            -1,
                                                            new Event(Guid.NewGuid(), null, true, metadata, null)));
         }

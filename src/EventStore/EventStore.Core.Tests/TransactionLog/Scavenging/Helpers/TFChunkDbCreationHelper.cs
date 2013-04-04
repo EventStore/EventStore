@@ -150,7 +150,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                                                        rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
                                                        null,
                                                        rec.TimeStamp);
-                            if (SystemNames.IsMetastream(rec.StreamId))
+                            if (SystemStreams.IsMetastream(rec.StreamId))
                                 transInfo.StreamMetadata = rec.Metadata;
 
                             streamUncommitedVersion[rec.StreamId] += 1;
@@ -204,7 +204,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
                             if (transInfo.StreamMetadata.HasValue)
                             {
-                                var streamId = SystemNames.StreamOf(rec.StreamId);
+                                var streamId = SystemStreams.OriginalStreamOf(rec.StreamId);
                                 if (!streams.ContainsKey(streamId))
                                     streams.Add(streamId, new StreamInfo(-1));
                                 streams[streamId].StreamMetadata = transInfo.StreamMetadata.Value;

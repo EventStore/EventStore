@@ -61,8 +61,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
         public bool IsStreamDeleted(string streamId)
         {
-            if (SystemNames.IsMetastream(streamId))
-                streamId = SystemNames.StreamOf(streamId);
+            if (SystemStreams.IsMetastream(streamId))
+                streamId = SystemStreams.OriginalStreamOf(streamId);
 
             StreamInfo streamInfo;
             return _streams.TryGetValue(streamId, out streamInfo) && streamInfo.StreamVersion == EventNumber.DeletedStream;
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
         public StreamMetadata GetStreamMetadata(string streamId)
         {
-            if (SystemNames.IsMetastream(streamId))
+            if (SystemStreams.IsMetastream(streamId))
                 return new StreamMetadata(_metastreamMaxCount, null);
 
             StreamInfo streamInfo;

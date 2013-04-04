@@ -189,7 +189,7 @@ namespace EventStore.Core.Tests.Services.Storage
             var prepare = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),
                                                 Guid.NewGuid(),
                                                 Guid.NewGuid(),
-                                                SystemNames.MetastreamOf(eventStreamId),
+                                                SystemStreams.MetastreamOf(eventStreamId),
                                                 eventNumber - 1,
                                                 SystemEventTypes.StreamMetadata,
                                                 Encoding.UTF8.GetBytes(metadata),

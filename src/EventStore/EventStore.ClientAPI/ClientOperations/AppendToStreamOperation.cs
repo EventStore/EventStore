@@ -38,8 +38,6 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class AppendToStreamOperation : OperationBase<object, ClientMessage.WriteEventsCompleted>
     {
-        public override bool IsLongRunning { get { return false; } }
-
         private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;

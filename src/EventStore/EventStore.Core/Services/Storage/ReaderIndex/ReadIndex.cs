@@ -543,8 +543,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.NotNull(streamId, "streamId");
 
             // if this is metastream -- check if original stream was deleted, if yes -- metastream is deleted as well
-            if (SystemNames.IsMetastream(streamId) 
-                && GetLastStreamEventNumberCached(reader, SystemNames.StreamOf(streamId)) == EventNumber.DeletedStream)
+            if (SystemStreams.IsMetastream(streamId) 
+                && GetLastStreamEventNumberCached(reader, SystemStreams.OriginalStreamOf(streamId)) == EventNumber.DeletedStream)
                 return EventNumber.DeletedStream;
 
             StreamCacheInfo streamCacheInfo;
@@ -933,7 +933,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private StreamMetadata GetStreamMetadataCached(ITransactionFileReader reader, string streamId)
         {
-            if (SystemNames.IsMetastream(streamId))
+            if (SystemStreams.IsMetastream(streamId))
                 return new StreamMetadata(_metastreamMaxCount, null);
 
             StreamCacheInfo streamCacheInfo;
@@ -949,7 +949,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private StreamMetadata GetStreamMetadataUncached(ITransactionFileReader reader, string streamId)
         {
-            var metastreamId = SystemNames.MetastreamOf(streamId);
+            var metastreamId = SystemStreams.MetastreamOf(streamId);
             var metaEventNumber = GetLastStreamEventNumberCached(reader, metastreamId);
             if (metaEventNumber == ExpectedVersion.NoStream || metaEventNumber == EventNumber.DeletedStream)
                 return new StreamMetadata(null, null);

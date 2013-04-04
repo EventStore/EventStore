@@ -34,8 +34,6 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class ReadAllEventsBackwardOperation : OperationBase<AllEventsSlice, ClientMessage.ReadAllEventsCompleted>
     {
-        public override bool IsLongRunning { get { return false; } }
-
         private readonly Position _position;
         private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
