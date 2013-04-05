@@ -204,9 +204,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (eventNumber != int.MinValue)
             {
                 if (eventNumber < 0) throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
+                
                 _streamInfoCache.Put(streamId,
                                      key => new StreamCacheInfo(eventNumber, null),
                                      (key, old) => new StreamCacheInfo(eventNumber, old.Metadata));
+                if (SystemStreams.IsMetastream(streamId))
+                {
+                    // if we are committing to metastream, we need to invalidate metastream cache
+                    // TODO AN: race condition in setting/clearing metadata
+                    // in the meantime GetStreamMetadataCached could be trying to set stale metadata
+                    _streamInfoCache.Put(SystemStreams.OriginalStreamOf(streamId),
+                                         key => new StreamCacheInfo(-1, null),
+                                         (key, old) => new StreamCacheInfo(old.LastEventNumber, null));
+                }
             }
 
             var newLastCommitPosition = commit.LogPosition > lastCommitPosition ? commit.LogPosition : lastCommitPosition;

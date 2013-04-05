@@ -666,7 +666,7 @@ namespace EventStore.ClientAPI
             });
         }
 
-        public RawStreamMetadataResult GetStreamMetadataAsJson(string stream)
+        public RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream)
         {
             return GetStreamMetadataAsRawBytesAsync(stream).Result;
         }

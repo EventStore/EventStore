@@ -107,7 +107,7 @@ namespace EventStore.ClientAPI
             return new StreamMetadata(maxCount, maxAge, cacheControl);
         }
 
-        public static StreamMetadataBuilder WithBuilder()
+        public static StreamMetadataBuilder Build()
         {
             return new StreamMetadataBuilder();
         }
@@ -173,12 +173,12 @@ namespace EventStore.ClientAPI
                     if (MaxAge.HasValue)
                     {
                         jsonWriter.WritePropertyName(SystemMetadata.MaxAge);
-                        jsonWriter.WriteValue((int)MaxAge.Value.TotalSeconds);
+                        jsonWriter.WriteValue((long)MaxAge.Value.TotalSeconds);
                     }
                     if (CacheControl.HasValue)
                     {
                         jsonWriter.WritePropertyName(SystemMetadata.CacheControl);
-                        jsonWriter.WriteValue((int)CacheControl.Value.TotalSeconds);
+                        jsonWriter.WriteValue((long)CacheControl.Value.TotalSeconds);
                     }
                     foreach (var customMetadata in _customMetadata)
                     {
@@ -187,7 +187,7 @@ namespace EventStore.ClientAPI
                     }
                     jsonWriter.WriteEndObject();
                 }
-                return new MemoryStream().ToArray();
+                return memoryStream.ToArray();
             }
         }
 
@@ -216,21 +216,21 @@ namespace EventStore.ClientAPI
                         {
                             Check(reader.Read(), reader);
                             Check(JsonToken.Integer, reader);
-                            maxCount = (int) reader.Value;
+                            maxCount = (int)(long)reader.Value;
                             break;
                         }
                         case SystemMetadata.MaxAge:
                         {
                             Check(reader.Read(), reader);
                             Check(JsonToken.Integer, reader);
-                            maxAge = TimeSpan.FromSeconds((int)reader.Value);
+                            maxAge = TimeSpan.FromSeconds((long)reader.Value);
                             break;
                         }
                         case SystemMetadata.CacheControl:
                         {
                             Check(reader.Read(), reader);
                             Check(JsonToken.Integer, reader);
-                            cacheControl = TimeSpan.FromSeconds((int)reader.Value);
+                            cacheControl = TimeSpan.FromSeconds((long)reader.Value);
                             break;
                         }
                         default:
@@ -268,6 +268,10 @@ namespace EventStore.ClientAPI
         private TimeSpan? _cacheControl;
 
         private readonly IDictionary<string, JToken> _customMetadata = new Dictionary<string, JToken>();
+
+        internal StreamMetadataBuilder()
+        {
+        }
 
         public static implicit operator StreamMetadata(StreamMetadataBuilder builder)
         {
