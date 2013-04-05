@@ -132,7 +132,6 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 case ClientMessage.NotHandled.NotHandledReason.NotReady:
                 case ClientMessage.NotHandled.NotHandledReason.TooBusy:
-                    Log.Debug("Received NotHandled response: {0}", message.Reason);
                     return new InspectionResult(InspectionDecision.Retry, null);
 
                 case ClientMessage.NotHandled.NotHandledReason.NotMaster:

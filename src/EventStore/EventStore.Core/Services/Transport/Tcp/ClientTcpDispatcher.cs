@@ -90,8 +90,9 @@ namespace EventStore.Core.Services.Transport.Tcp
             AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStream);
             AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppeared);
             AddWrapper<ClientMessage.SubscriptionDropped>(WrapSubscriptionDropped);
-            
+
             AddWrapper<ClientMessage.NotHandled>(WrapNotHandled);
+            AddUnwrapper(TcpCommand.NotHandled, UnwrapNotHandled);
 
             AddUnwrapper(TcpCommand.ScavengeDatabase, UnwrapScavengeDatabase);
         }
@@ -457,6 +458,13 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = new TcpClientMessageDto.NotHandled(msg.Reason, msg.AdditionalInfo == null ? null : msg.AdditionalInfo.ToJsonBytes());
             return new TcpPackage(TcpCommand.NotHandled, msg.CorrelationId, dto.Serialize());
+        }
+
+        private ClientMessage.NotHandled UnwrapNotHandled(TcpPackage package, IEnvelope envelope, TcpConnectionManager connection)
+        {
+            var dto = package.Data.Deserialize<TcpClientMessageDto.NotHandled>();
+            if (dto == null) return null;
+            return new ClientMessage.NotHandled(package.CorrelationId, dto.Reason, dto.AdditionalInfo);
         }
 
         private SystemMessage.ScavengeDatabase UnwrapScavengeDatabase(TcpPackage package, IEnvelope envelope)
