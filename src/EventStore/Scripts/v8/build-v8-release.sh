@@ -12,6 +12,8 @@ function copy-files() {
 
   cp out/x64.release/lib.target/* -t ../libs || err
 
+  mkdir ../libs/include
+  cp include/* -t ../libs/include || err
 }
 
 
