@@ -25,8 +25,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using System.Collections.Generic;
 using System.Text;
+using EventStore.Transport.Http;
+using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -37,6 +41,27 @@ namespace EventStore.Core.Services.Transport.Http
         public readonly string ContentType;
         public readonly Encoding Encoding;
         public readonly IEnumerable<KeyValuePair<string, string>> Headers;
+
+        public ResponseConfiguration(int code, string contentType, Encoding encoding, params KeyValuePair<string, string>[] headers)
+                : this(code, GetHttpStatusDescription(code), contentType, encoding, headers as IEnumerable<KeyValuePair<string, string>>)
+        {
+        }
+
+        private static string GetHttpStatusDescription(int code)
+        {
+            if (code == 200)
+                return "OK";
+            var status = (HttpStatusCode) code;
+            var name = Enum.GetName(typeof (HttpStatusCode), status);
+            var result = new StringBuilder(name.Length + 5);
+            for (var i = 0; i < name.Length; i++)
+            {
+                if (i > 0 && char.IsUpper(name[i]))
+                    result.Append(' ');
+                result.Append(name[i]);
+            }
+            return result.ToString();
+        }
 
         public ResponseConfiguration(int code, string description, string contentType, Encoding encoding, params KeyValuePair<string, string>[] headers)
                 : this(code, description, contentType, encoding, headers as IEnumerable<KeyValuePair<string, string>>)

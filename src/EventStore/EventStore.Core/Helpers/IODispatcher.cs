@@ -77,7 +77,7 @@ namespace EventStore.Core.Helpers
         {
             ForwardReader.Publish(
                 new ClientMessage.ReadStreamEventsForward(
-                    Guid.NewGuid(), BackwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, null),
+                    Guid.NewGuid(), ForwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, null),
                 action);
         }
 
@@ -86,7 +86,7 @@ namespace EventStore.Core.Helpers
         {
             Writer.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), BackwardReader.Envelope, true, streamId, expectedVersion, events), action);
+                    Guid.NewGuid(), Writer.Envelope, true, streamId, expectedVersion, events), action);
         }
     }
 }

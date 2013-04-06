@@ -26,33 +26,28 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Security.Cryptography;
+using System.IO;
+using EventStore.Core.Bus;
+using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Services.Transport.Http.Controllers;
+using EventStore.Core.Util;
 
-namespace EventStore.Core.Services.Transport.Http.Authentication
+namespace EventStore.Web.Users
 {
-    public class Rfc2898PasswordHashAlgorithm : PasswordHashAlgorithm
+    public class UsersWebController : CommunicationController
     {
-        private const int HashSize = 20;
-        private const int SaltSize = 16;
+        private readonly MiniWeb _miniWeb;
 
-        public override Tuple<string, string> Hash(string password)
+        public UsersWebController(IPublisher publisher)
+            : base(publisher)
         {
-            var salt = new byte[SaltSize];
-            var randomProvider = new RNGCryptoServiceProvider();
-            randomProvider.GetBytes(salt);
-            var hash = new Rfc2898DeriveBytes(password, salt).GetBytes(HashSize);
-            return Tuple.Create(System.Convert.ToBase64String(hash), System.Convert.ToBase64String(salt));
+            string nodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Web");
+            _miniWeb = new MiniWeb("/web/users", Path.Combine(nodeFSRoot, "Users", "Web"));
         }
 
-        public override bool Verify(string password, Tuple<string, string> hashed)
+        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
-            var salt = System.Convert.FromBase64String(hashed.Item2);
-            var hash = hashed.Item1;
-
-            var newHash = System.Convert.ToBase64String(new Rfc2898DeriveBytes(password, salt).GetBytes(HashSize));
-
-            return hash == newHash;
+            _miniWeb.RegisterControllerActions(service);
         }
     }
 }

@@ -1,0 +1,180 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Users</title>
+    <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jquery/jquery-ui-1.8.23.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/lib/require-full.js" type="text/javascript"></script>
+    <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>
+    <style type="text/css">
+        .dialog
+        {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <h1>Users</h1>
+        <div id="commands-container">
+            <ul style="display: inline;">
+                <li><a href="#" id="btn-create" class="btn btn-info">New...</a></li>
+                <li></li>
+            </ul>
+        </div>
+        <script id="r-body">
+            es.tmpl.renderBody();
+        </script>
+    </div>
+    <div id="edit-user-details-dialog" class="dialog">
+        <form id="edit-user-details-form" class="form-horizontal">
+            <div class="control-group">
+                <label class="control-label add-on" for="input-login-name">Login</label>
+                <div class="controls">
+                    <input type="text" id="input-login-name" name="input-login-name" data-required/>
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label add-on" for="input-full-name">Full Name</label>
+                <div class="controls">
+                    <input type="text" id="input-full-name" name="input-full-name" data-required/>
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label add-on" for="input-password">Password</label>
+                <div class="controls">
+                    <input type="password" id="input-password" name="input-password" data-required/>
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label add-on" for="input-password">Confirm</label>
+                <div class="controls">
+                    <input type="password" id="input-password-confirm" name="input-password-confirm" data-confirm="input-password" />
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" id="button-ok" class="btn btn-primary">Create</button>
+                <button type="button" id="button-cancel" class="btn">Cancel</button>
+            </div>
+        </form>
+    </div>
+    <script type="text/javascript">
+        require.config({ baseUrl: "/web/users/js" });
+        require(['Controller'],
+            function (controller) {
+                var users = controller.create();
+                $(function () {
+
+
+                    $("#btn-create").click(function(e) {
+                        e.preventDefault();
+                        displayCreateUser();
+                    });
+
+                    $("form").submit(function(e) {
+                        e.preventDefault();
+                    });
+
+                    $("#button-ok").click(function (e) {
+                        createUser();
+                    });
+
+                });
+
+                function displayCreateUser() {
+                    $("#edit-user-details-dialog").dialog({
+                        modal: true,
+                        width: 600,
+                        height: 400,
+                        title: "New User",
+                        autoResize: true,
+                    });
+                }
+
+                function get(input) {
+                    var jInput = $("#" + input);
+                    return {
+                        val: jInput.val(),
+                        reset: function () {
+                            var group = jInput.closest(".control-group");
+                            group.removeClass("error");
+                            group.find(".help-inline").text("");
+                        },
+                        invalid: function (message) {
+                            var group = jInput.closest(".control-group");
+                            group.addClass("error");
+                            group.find(".help-inline").text(message);
+                        }
+                    };
+                }
+
+                function getInput() {
+
+                    function required(v) {
+                        if (!v.val) {
+                            v.invalid("required");
+                            return false;
+                        }
+                        return true;
+                    }
+
+                    function match(v1, v2) {
+                        if (v1.val != v2.val) {
+                            v1.invalid("does not match");
+                            return false;
+                        }
+                        return true;
+                    }
+
+                    return {
+                        loginName: get("input-login-name"),
+                        fullName: get("input-full-name"),
+                        password: get("input-password"),
+                        confirmPassword: get("input-password-confirm"),
+
+                        validate: function () {
+                            this.loginName.reset();
+                            this.fullName.reset();
+                            this.password.reset();
+                            this.confirmPassword.reset();
+
+                            if (!required(this.loginName))
+                                return false;
+                            if (!required(this.fullName))
+                                return false;
+                            if (!required(this.password))
+                                return false;
+                            if (!required(this.confirmPassword))
+                                return false;
+                            if (!match(this.password, this.confirmPassword))
+                                return false;
+                            return true;
+                        }
+                    };
+                }
+
+                function createUser() {
+                    var inputData = getInput();
+                    if (inputData.validate()) {
+                        var data = {
+                            loginName: inputData.loginName.val,
+                            fullName: inputData.fullName.val,
+                            password: inputData.password.val,
+                        };
+                        users.create(data, function () {
+                            alert("OK");
+                        });
+                    }
+                }
+            });
+    </script>
+</body>
+</html>

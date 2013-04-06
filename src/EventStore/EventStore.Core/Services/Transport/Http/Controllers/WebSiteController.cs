@@ -52,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             string commonFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Web");
             string singleNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.SingleNode.Web");
 
-            _singleNodeWeb = new MiniWeb("/web", Path.Combine(singleNodeFSRoot, @"singlenode-web"));
+            _singleNodeWeb = new MiniWeb("/web", Path.Combine(singleNodeFSRoot, @"", "singlenode-web"));
             _commonWeb = new MiniWeb("/web/es", Path.Combine(commonFSRoot, @"es-common-web"));
         }
 

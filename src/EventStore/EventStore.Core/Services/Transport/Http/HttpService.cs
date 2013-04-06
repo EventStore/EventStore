@@ -66,7 +66,8 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly AuthenticationProvider[] _providers;
 
         public HttpService(
-            ServiceAccessibility accessibility, IPublisher inputBus, int receiveHandlerCount, params string[] prefixes)
+            ServiceAccessibility accessibility, IPublisher inputBus, int receiveHandlerCount,
+            PasswordHashAlgorithm passwordHashAlgorithm, params string[] prefixes)
         {
             Ensure.NotNull(inputBus, "inputBus");
             Ensure.NotNull(prefixes, "prefixes");
@@ -86,7 +87,7 @@ namespace EventStore.Core.Services.Transport.Http
             _ioDispatcher = new IODispatcher(inputBus, new PublishEnvelope(_requestsMultiHandler, crossThread: true));
             _providers = new AuthenticationProvider[]
                 {
-                    new BasicHttpAuthenticationProvider(_ioDispatcher, new Rfc2898PasswordHashAlgorithm()),
+                    new BasicHttpAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm),
                     new AnonymousAuthenticationProvider()
                 };
 

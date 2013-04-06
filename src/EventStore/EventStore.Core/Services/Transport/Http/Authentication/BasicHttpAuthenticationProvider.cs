@@ -89,11 +89,5 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                 ReplyUnauthorized(message.Entity);
             }
         }
-
-        public class UserData
-        {
-            public string Salt { get; set; }
-            public string Hash { get; set; }
-        }
     }
 }

@@ -32,6 +32,7 @@ using System.IO;
 using System.Net;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
@@ -44,8 +45,10 @@ using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Services.VNode;
 using EventStore.Common.Utils;
 using EventStore.Core.Settings;
@@ -76,8 +79,7 @@ namespace EventStore.Core
         
         public SingleVNode(TFChunkDb db, 
                            SingleVNodeSettings vNodeSettings, 
-                           bool dbVerifyHashes,
-                           bool runProjections,
+                           bool dbVerifyHashes, NodeSubsystems[] enabledNodeSubsystems,
                            int memTableEntryCount = ESConsts.MemTableEntryCount)
         {
             Ensure.NotNull(db, "db");
@@ -93,7 +95,7 @@ namespace EventStore.Core
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             _controller.SetMainQueue(MainQueue);
 
-            _enabledNodeSubsystems = runProjections ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0];
+            _enabledNodeSubsystems = enabledNodeSubsystems;
 
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
@@ -168,7 +170,10 @@ namespace EventStore.Core
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             // HTTP
-            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, vNodeSettings.HttpPrefixes);
+            var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
+            _httpService = new HttpService(
+                ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, passwordHashAlgorithm,
+                vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
@@ -178,7 +183,7 @@ namespace EventStore.Core
             HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));
             HttpService.SetupController(new ReadEventDataController(MainQueue, _networkSendService));
             HttpService.SetupController(new AtomController(MainQueue, _networkSendService));
-            HttpService.SetupController(new WebSiteController(MainQueue, _enabledNodeSubsystems));
+            HttpService.SetupController(new UsersController(MainQueue, _networkSendService));
 
             // REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(MainQueue, 1, 1, vNodeSettings.PrepareTimeout, vNodeSettings.CommitTimeout);
@@ -199,6 +204,13 @@ namespace EventStore.Core
             Bus.Subscribe<StorageMessage.RequestManagerTimerTick>(requestManagement);
 
             new SubscriptionsService(_mainBus, readIndex); // subscribes internally
+
+            var ioDispatcher = new IODispatcher(MainQueue, new PublishEnvelope(MainQueue));
+            var userManagement = new UserManagementService(MainQueue, ioDispatcher, passwordHashAlgorithm);
+            Bus.Subscribe(ioDispatcher.BackwardReader);
+            Bus.Subscribe(ioDispatcher.ForwardReader);
+            Bus.Subscribe(ioDispatcher.Writer);
+            Bus.Subscribe<UserManagementMessage.Create>(userManagement);
 
             // TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));

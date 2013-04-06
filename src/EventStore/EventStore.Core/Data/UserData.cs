@@ -26,33 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Security.Cryptography;
-
-namespace EventStore.Core.Services.Transport.Http.Authentication
+namespace EventStore.Core.Data
 {
-    public class Rfc2898PasswordHashAlgorithm : PasswordHashAlgorithm
+    public class UserData
     {
-        private const int HashSize = 20;
-        private const int SaltSize = 16;
-
-        public override Tuple<string, string> Hash(string password)
-        {
-            var salt = new byte[SaltSize];
-            var randomProvider = new RNGCryptoServiceProvider();
-            randomProvider.GetBytes(salt);
-            var hash = new Rfc2898DeriveBytes(password, salt).GetBytes(HashSize);
-            return Tuple.Create(System.Convert.ToBase64String(hash), System.Convert.ToBase64String(salt));
-        }
-
-        public override bool Verify(string password, Tuple<string, string> hashed)
-        {
-            var salt = System.Convert.FromBase64String(hashed.Item2);
-            var hash = hashed.Item1;
-
-            var newHash = System.Convert.ToBase64String(new Rfc2898DeriveBytes(password, salt).GetBytes(HashSize));
-
-            return hash == newHash;
-        }
+        public string LoginName { get; set; }
+        public string FullName { get; set; }
+        public string Salt { get; set; }
+        public string Hash { get; set; }
     }
 }

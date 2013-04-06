@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                      "TCP ENDPOINT:", TcpEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
 
-            _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, dbVerifyHashes: true, runProjections: false, memTableEntryCount: 1000);
+            _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, dbVerifyHashes: true, enabledNodeSubsystems: false ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0], memTableEntryCount: 1000);
         }
 
         public void Start()

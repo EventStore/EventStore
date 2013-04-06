@@ -34,6 +34,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
 
@@ -73,7 +74,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             _bus = new InMemoryBus(string.Format("bus_{0}", _serverEndPoint.Port));
 
-            _service = new HttpService(ServiceAccessibility.Private, _bus, 1, _serverEndPoint.ToHttpUrl());
+            _service = new HttpService(ServiceAccessibility.Private, _bus, 1, new Rfc2898PasswordHashAlgorithm(), _serverEndPoint.ToHttpUrl());
             _client = new HttpAsyncClient();
 
             HttpBootstrap.Subscribe(_bus, _service);

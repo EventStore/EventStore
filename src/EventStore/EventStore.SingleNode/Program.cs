@@ -30,11 +30,13 @@ using System.IO;
 using System.Net;
 using EventStore.Core;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Common.Utils;
 using System.Linq;
 using EventStore.Web.Playground;
+using EventStore.Web.Users;
 
 namespace EventStore.SingleNode
 {
@@ -85,8 +87,9 @@ namespace EventStore.SingleNode
                      "EPOCH CHECKPOINT:", db.Config.EpochCheckpoint.Read(),
                      "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
 
-            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, runProjections);
-
+            var enabledNodeSubsystems = runProjections ? new[] {NodeSubsystems.Projections} : new NodeSubsystems[0];
+            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, enabledNodeSubsystems);
+            RegisterWebControllers(enabledNodeSubsystems);
             if (options.RunProjections)
             {
                 _projections = new Projections.Core.Projections(db,
@@ -97,6 +100,12 @@ namespace EventStore.SingleNode
                                                                 _node.NetworkSendService,
                                                                 options.ProjectionThreads);
             }
+        }
+
+        private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems)
+        {
+            _node.HttpService.SetupController(new WebSiteController(_node.MainQueue, enabledNodeSubsystems));
+            _node.HttpService.SetupController(new UsersWebController(_node.MainQueue));
         }
 
         private static SingleVNodeSettings GetVNodeSettings(SingleNodeOptions options)

@@ -35,6 +35,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Services.Transport.Tcp;
 
@@ -110,7 +111,7 @@ namespace EventStore.Web.Playground
 
             // HTTP
             _httpService = new HttpService(
-                ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, vNodeSettings.HttpPrefixes);
+                ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, new Rfc2898PasswordHashAlgorithm(), vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
