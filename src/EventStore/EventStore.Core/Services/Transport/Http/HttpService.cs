@@ -112,6 +112,7 @@ namespace EventStore.Core.Services.Transport.Http
             bus.Subscribe(_ioDispatcher.ForwardReader);
             bus.Subscribe(_ioDispatcher.BackwardReader);
             bus.Subscribe(_ioDispatcher.Writer);
+            bus.Subscribe(_ioDispatcher.StreamDeleter);
 
             return new QueuedHandlerThreadPool(
                 bus, name: "Incoming HTTP #" + (queueNum + 1), groupName: "Incoming HTTP", watchSlowMsg: true,

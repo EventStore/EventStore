@@ -37,13 +37,13 @@ using EventStore.Core.Util;
 namespace EventStore.Core.Services.UserManagement
 {
     public class UserManagementService : IHandle<UserManagementMessage.Create>,
-                                  IHandle<UserManagementMessage.Update>,
-                                  IHandle<UserManagementMessage.Enable>,
-                                  IHandle<UserManagementMessage.Disable>,
-                                  IHandle<UserManagementMessage.ResetPassword>,
-                                  IHandle<UserManagementMessage.ChangePassword>,
-                                  IHandle<UserManagementMessage.Delete>,
-                                  IHandle<UserManagementMessage.Get>
+                                         IHandle<UserManagementMessage.Update>,
+                                         IHandle<UserManagementMessage.Enable>,
+                                         IHandle<UserManagementMessage.Disable>,
+                                         IHandle<UserManagementMessage.ResetPassword>,
+                                         IHandle<UserManagementMessage.ChangePassword>,
+                                         IHandle<UserManagementMessage.Delete>,
+                                         IHandle<UserManagementMessage.Get>
     {
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
@@ -104,17 +104,42 @@ namespace EventStore.Core.Services.UserManagement
 
         public void Handle(UserManagementMessage.Delete message)
         {
-            throw new NotImplementedException();
-            ReadUserDetailsAnd(message, (completed, data) => { });
+            ReadUpdateCheckAnd(
+                message,
+                (completed, data) =>
+                _ioDispatcher.DeleteStream(
+                    "$user-" + message.LoginName, completed.FromEventNumber,
+                    streamCompleted => ReplyByWriteResult(message, streamCompleted.Result)));
         }
 
         public void Handle(UserManagementMessage.Get message)
         {
             ReadUserDetailsAnd(
-                message, (completed, data) => message.Envelope.ReplyWith(
-                    new UserManagementMessage.UserDetailsResult(
-                        new UserManagementMessage.UserData(
-                            message.LoginName, data.FullName, data.Disabled, completed.Events[0].Event.TimeStamp))));
+                message, (completed, data) =>
+                    {
+                        if (completed.Result == ReadStreamResult.Success && completed.Events.Length == 1)
+                            message.Envelope.ReplyWith(
+                                new UserManagementMessage.UserDetailsResult(
+                                    new UserManagementMessage.UserData(
+                                        message.LoginName, data.FullName, data.Disabled,
+                                        completed.Events[0].Event.TimeStamp)));
+                        else
+                        {
+                            switch (completed.Result)
+                            {
+                                case ReadStreamResult.NoStream:
+                                case ReadStreamResult.StreamDeleted:
+                                    message.Envelope.ReplyWith(
+                                        new UserManagementMessage.UserDetailsResult(
+                                            UserManagementMessage.Error.NotFound));
+                                    break;
+                                default:
+                                    message.Envelope.ReplyWith(
+                                        new UserManagementMessage.UserDetailsResult(UserManagementMessage.Error.Error));
+                                    break;
+                            }
+                        }
+                    });
         }
 
         private UserData CreateUserData(UserManagementMessage.Create message)
@@ -136,20 +161,14 @@ namespace EventStore.Core.Services.UserManagement
                         switch (completed.Result)
                         {
                             case ReadStreamResult.NoStream:
-                                message.Envelope.ReplyWith(
-                                    new UserManagementMessage.UpdateResult(
-                                        message.LoginName, UserManagementMessage.Error.NotFound));
+                                ReplyNotFound(message);
                                 break;
                             case ReadStreamResult.StreamDeleted:
-                                message.Envelope.ReplyWith(
-                                    new UserManagementMessage.UpdateResult(
-                                        message.LoginName, UserManagementMessage.Error.NotFound));
+                                ReplyNotFound(message);
                                 break;
                             case ReadStreamResult.Success:
                                 if (completed.Events.Length == 0)
-                                    message.Envelope.ReplyWith(
-                                        new UserManagementMessage.UpdateResult(
-                                            message.LoginName, UserManagementMessage.Error.NotFound));
+                                    ReplyNotFound(message);
                                 else
                                 {
                                     var data = completed.Events[0].Event.Data.ParseJson<UserData>();
@@ -157,9 +176,7 @@ namespace EventStore.Core.Services.UserManagement
                                 }
                                 break;
                             default:
-                                message.Envelope.ReplyWith(
-                                    new UserManagementMessage.UpdateResult(
-                                        message.LoginName, UserManagementMessage.Error.Error));
+                                ReplyInternalError(message);
                                 break;
                         }
                     });
@@ -168,7 +185,7 @@ namespace EventStore.Core.Services.UserManagement
         private void ReadUpdateWriteReply(
             UserManagementMessage.UserManagementRequestMessage message, Func<UserData, UserData> update)
         {
-            ReadUserDetailsAnd(
+            ReadUpdateCheckAnd(
                 message, (completed, data) =>
                     {
                         var updated = update(data);
@@ -177,14 +194,21 @@ namespace EventStore.Core.Services.UserManagement
                     });
         }
 
+        private void ReadUpdateCheckAnd(
+            UserManagementMessage.UserManagementRequestMessage message,
+            Action<ClientMessage.ReadStreamEventsBackwardCompleted, UserData> action)
+        {
+            ReadUserDetailsAnd(message, action);
+        }
+
         private void WriteUserEvent(
             UserManagementMessage.UserManagementRequestMessage message, UserData userData, string eventType,
             int expectedVersion)
         {
             var userCreatedEvent = new Event(Guid.NewGuid(), eventType, true, userData.ToJsonBytes(), null);
             _ioDispatcher.WriteEvents(
-                "$user-" + message.LoginName, completed => WriteUserCreatedCompleted(completed, message),
-                expectedVersion, new[] {userCreatedEvent});
+                "$user-" + message.LoginName, expectedVersion, new[] {userCreatedEvent},
+                completed => WriteUserCreatedCompleted(completed, message));
         }
 
         private static void WriteUserCreatedCompleted(
@@ -195,28 +219,19 @@ namespace EventStore.Core.Services.UserManagement
                 ReplyUpdated(message);
                 return;
             }
-
-            switch (completed.Result)
-            {
-                case OperationResult.CommitTimeout:
-                case OperationResult.ForwardTimeout:
-                case OperationResult.PrepareTimeout:
-                    ReplyTryAgain(message);
-                    break;
-                case OperationResult.WrongExpectedVersion:
-                case OperationResult.StreamDeleted:
-                    ReplyConflict(message);
-                    break;
-                default:
-                    ReplyInternalError(message);
-                    break;
-            }
+            ReplyByWriteResult(message, completed.Result);
         }
 
         private static void ReplyInternalError(UserManagementMessage.UserManagementRequestMessage message)
         {
             message.Envelope.ReplyWith(
                 new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.Error));
+        }
+
+        private static void ReplyNotFound(UserManagementMessage.UserManagementRequestMessage message)
+        {
+            message.Envelope.ReplyWith(
+                new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.NotFound));
         }
 
         private static void ReplyConflict(UserManagementMessage.UserManagementRequestMessage message)
@@ -242,6 +257,29 @@ namespace EventStore.Core.Services.UserManagement
         private static void ReplyUpdated(UserManagementMessage.UserManagementRequestMessage message)
         {
             message.Envelope.ReplyWith(new UserManagementMessage.UpdateResult(message.LoginName));
+        }
+
+        private static void ReplyByWriteResult(
+            UserManagementMessage.UserManagementRequestMessage message, OperationResult operationResult)
+        {
+            switch (operationResult)
+            {
+                case OperationResult.Success:
+                    ReplyUpdated(message);
+                    break;
+                case OperationResult.PrepareTimeout:
+                case OperationResult.CommitTimeout:
+                case OperationResult.ForwardTimeout:
+                    ReplyTryAgain(message);
+                    break;
+                case OperationResult.WrongExpectedVersion:
+                case OperationResult.StreamDeleted:
+                    ReplyConflict(message);
+                    break;
+                default:
+                    ReplyInternalError(message);
+                    break;
+            }
         }
     }
 }

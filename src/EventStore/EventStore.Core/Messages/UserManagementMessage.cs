@@ -185,11 +185,22 @@ namespace EventStore.Core.Messages
 
         public sealed class UserDetailsResult : ResponseMessage
         {
+            public readonly bool Success;
+            public readonly Error Error;
             public readonly UserData Data;
 
             public UserDetailsResult(UserData data)
             {
+                Success = true;
+                Error = Error.Success;
                 Data = data;
+            }
+
+            public UserDetailsResult(Error error)
+            {
+                Success = false;
+                Error = error;
+                Data = null;
             }
         }
     }

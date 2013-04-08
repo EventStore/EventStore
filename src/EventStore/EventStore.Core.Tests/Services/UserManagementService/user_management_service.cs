@@ -183,6 +183,50 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         }
 
         [TestFixture]
+        public class when_updating_non_existing_user_details : TestFixtureWithUserManagementService
+        {
+            protected override void GivenCommands()
+            {
+                base.GivenCommands();
+            }
+
+            protected override void When()
+            {
+                base.When();
+                _users.Handle(new UserManagementMessage.Update(_replyTo, "user1", "Doe John"));
+            }
+
+            [Test]
+            public void replies_not_found()
+            {
+                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                Assert.AreEqual(1, updateResults.Count);
+                Assert.IsFalse(updateResults[0].Success);
+                Assert.AreEqual(UserManagementMessage.Error.NotFound, updateResults[0].Error);
+            }
+
+            [Test]
+            public void reply_has_the_correct_login_name()
+            {
+                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                Assert.AreEqual(1, updateResults.Count);
+                Assert.AreEqual("user1", updateResults[0].LoginName);
+            }
+
+            [Test]
+            public void does_not_create_a_user_account()
+            {
+                _users.Handle(new UserManagementMessage.Get(_replyTo, "user1"));
+                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                Assert.NotNull(user);
+                Assert.IsFalse(user.Success);
+                Assert.AreEqual(UserManagementMessage.Error.NotFound, user.Error);
+                Assert.Null(user.Data);
+            }
+
+        }
+
+        [TestFixture]
         public class when_updating_a_disabled_user_account_details : TestFixtureWithUserManagementService
         {
             protected override void GivenCommands()
@@ -518,6 +562,50 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
+            }
+
+        }
+
+        [TestFixture]
+        public class when_deleting_an_existing_user_account : TestFixtureWithUserManagementService
+        {
+            protected override void GivenCommands()
+            {
+                base.GivenCommands();
+                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+            }
+
+            protected override void When()
+            {
+                base.When();
+                _users.Handle(new UserManagementMessage.Delete(_replyTo, "user1"));
+            }
+
+            [Test]
+            public void replies_success()
+            {
+                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                Assert.AreEqual(1, updateResults.Count);
+                Assert.IsTrue(updateResults[0].Success);
+            }
+
+            [Test]
+            public void reply_has_the_correct_login_name()
+            {
+                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                Assert.AreEqual(1, updateResults.Count);
+                Assert.AreEqual("user1", updateResults[0].LoginName);
+            }
+
+            [Test]
+            public void deletes_the_user_account()
+            {
+                _users.Handle(new UserManagementMessage.Get(_replyTo, "user1"));
+                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                Assert.NotNull(user);
+                Assert.IsFalse(user.Success);
+                Assert.AreEqual(UserManagementMessage.Error.NotFound, user.Error);
+                Assert.Null(user.Data);
             }
 
         }

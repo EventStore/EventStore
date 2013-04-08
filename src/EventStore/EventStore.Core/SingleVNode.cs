@@ -210,6 +210,7 @@ namespace EventStore.Core
             Bus.Subscribe(ioDispatcher.BackwardReader);
             Bus.Subscribe(ioDispatcher.ForwardReader);
             Bus.Subscribe(ioDispatcher.Writer);
+            Bus.Subscribe(ioDispatcher.StreamDeleter);
             Bus.Subscribe<UserManagementMessage.Create>(userManagement);
             Bus.Subscribe<UserManagementMessage.Update>(userManagement);
             Bus.Subscribe<UserManagementMessage.Enable>(userManagement);

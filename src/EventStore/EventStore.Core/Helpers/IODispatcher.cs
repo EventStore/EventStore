@@ -46,6 +46,8 @@ namespace EventStore.Core.Helpers
 
         public readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> Writer;
 
+        public readonly RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted> StreamDeleter;
+
         public IODispatcher(IPublisher publisher, IEnvelope envelope)
         {
             ForwardReader =
@@ -58,6 +60,10 @@ namespace EventStore.Core.Helpers
                     publisher, v => v.CorrelationId, v => v.CorrelationId, envelope);
             Writer =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
+                    publisher, v => v.CorrelationId, v => v.CorrelationId, envelope);
+
+            StreamDeleter =
+                new RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted>(
                     publisher, v => v.CorrelationId, v => v.CorrelationId, envelope);
         }
 
@@ -82,11 +88,18 @@ namespace EventStore.Core.Helpers
         }
 
         public void WriteEvents(
-            string streamId, Action<ClientMessage.WriteEventsCompleted> action, int expectedVersion, Event[] events)
+            string streamId, int expectedVersion, Event[] events, Action<ClientMessage.WriteEventsCompleted> action)
         {
             Writer.Publish(
-                new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), Writer.Envelope, true, streamId, expectedVersion, events), action);
+                new ClientMessage.WriteEvents(Guid.NewGuid(), Writer.Envelope, true, streamId, expectedVersion, events),
+                action);
+        }
+
+        public void DeleteStream(
+            string streamId, int expectedVersion, Action<ClientMessage.DeleteStreamCompleted> action)
+        {
+            StreamDeleter.Publish(
+                new ClientMessage.DeleteStream(Guid.NewGuid(), Writer.Envelope, true, streamId, expectedVersion), action);
         }
     }
 }

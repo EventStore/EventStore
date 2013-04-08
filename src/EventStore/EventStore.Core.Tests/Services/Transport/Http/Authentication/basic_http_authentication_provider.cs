@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
         public class TestFixtureWithBasicHttpAuthenticationProvider: TestFixtureWithExistingEvents
         {
             protected BasicHttpAuthenticationProvider _provider;
-            private IODispatcher _ioDispatcher;
+            protected IODispatcher _ioDispatcher;
             protected HttpEntity _entity;
 
             protected void SetUpProvider()
@@ -57,6 +57,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
                 _bus.Subscribe(_ioDispatcher.BackwardReader);
                 _bus.Subscribe(_ioDispatcher.ForwardReader);
                 _bus.Subscribe(_ioDispatcher.Writer);
+                _bus.Subscribe(_ioDispatcher.StreamDeleter);
 
                 _provider = new BasicHttpAuthenticationProvider(_ioDispatcher, new StubPasswordHashAlgorithm());
             }
