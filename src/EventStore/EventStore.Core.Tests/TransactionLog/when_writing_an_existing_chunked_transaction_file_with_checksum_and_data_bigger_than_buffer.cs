@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test, Ignore("On MONO something strange is happening when the record size is > 4096 bytes, the first bytes are not written into file. Will have to debug later.")]
         public void a_record_can_be_written()
         {
-            var filename = GetFilePathFor("prefix.tf0");
+            var filename = GetFilePathFor("chunk-000000.000000");
             var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid());
             var chunkBytes = chunkHeader.AsByteArray();
             var buf = new byte[ChunkHeader.Size + ChunkFooter.Size + chunkHeader.ChunkSize];
