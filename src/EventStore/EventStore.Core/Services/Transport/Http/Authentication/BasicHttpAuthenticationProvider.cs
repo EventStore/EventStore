@@ -29,6 +29,7 @@
 using System;
 using System.Net;
 using EventStore.Core.Data;
+using EventStore.Core.DataStructures;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Messages;
@@ -40,24 +41,41 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
     {
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
+        private readonly LRUCache<string, string> _userPasswordsCache;
 
-        public BasicHttpAuthenticationProvider(IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm)
+        public BasicHttpAuthenticationProvider(
+            IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm, int cacheSize = 1000)
         {
             _ioDispatcher = ioDispatcher;
             _passwordHashAlgorithm = passwordHashAlgorithm;
+            _userPasswordsCache = new LRUCache<string, string>(cacheSize);
         }
 
         public override bool Authenticate(IncomingHttpRequestMessage message)
         {
+            //NOTE: this method can be invoked on multiple threads - needs to be thread safe
             var entity = message.Entity;
             var basicIdentity = entity.User != null ? entity.User.Identity as HttpListenerBasicIdentity : null;
             if (basicIdentity != null)
             {
-                var userStreamId = "$user-" + basicIdentity.Name;
-                _ioDispatcher.ReadBackward(userStreamId, -1, 1, false, m => ReadUserDataCompleted(message, m));
+                HttpBasicAuthenticate(message, basicIdentity);
                 return true;
             }
             return false;
+        }
+
+        private void HttpBasicAuthenticate(IncomingHttpRequestMessage message, HttpListenerBasicIdentity basicIdentity)
+        {
+            string correctPassword;
+            if (_userPasswordsCache.TryGet(basicIdentity.Name, out correctPassword))
+            {
+                AuthenticateWithPassword(message, correctPassword, basicIdentity.Password);
+            }
+            else
+            {
+                var userStreamId = "$user-" + basicIdentity.Name;
+                _ioDispatcher.ReadBackward(userStreamId, -1, 1, false, m => ReadUserDataCompleted(message, m));
+            }
         }
 
         private void ReadUserDataCompleted(
@@ -74,20 +92,46 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                 var basicIdentity = (HttpListenerBasicIdentity) entity.User.Identity;
                 var userData = completed.Events[0].Event.Data.ParseJson<UserData>();
 
-                var passwordHash = Tuple.Create(userData.Hash, userData.Salt);
-
-                if (!_passwordHashAlgorithm.Verify(basicIdentity.Password, passwordHash))
-                {
-                    ReplyUnauthorized(entity);
-                    return;
-                }
-
-                Authenticated(message, entity.User);
+                AuthenticateWithPasswordHash(message, userData, basicIdentity);
             }
             catch
             {
                 ReplyUnauthorized(message.Entity);
             }
         }
+
+        private void AuthenticateWithPasswordHash(
+            IncomingHttpRequestMessage message, UserData userData, HttpListenerBasicIdentity basicHttpIdentity)
+        {
+            var entity = message.Entity;
+            var passwordHash = Tuple.Create(userData.Hash, userData.Salt);
+
+            if (!_passwordHashAlgorithm.Verify(basicHttpIdentity.Password, passwordHash))
+            {
+                ReplyUnauthorized(entity);
+                return;
+            }
+            CachePassword(basicHttpIdentity.Name, basicHttpIdentity.Password);
+            Authenticated(message, entity.User);
+        }
+
+        private void CachePassword(string loginName, string password)
+        {
+            _userPasswordsCache.Put(loginName, password);
+        }
+
+        private void AuthenticateWithPassword(
+            IncomingHttpRequestMessage message, string correctPassword, string suppliedPassword)
+        {
+            var entity = message.Entity;
+
+            if (suppliedPassword != correctPassword)
+            {
+                ReplyUnauthorized(entity);
+            }
+
+            Authenticated(message, entity.User);
+        }
+
     }
 }

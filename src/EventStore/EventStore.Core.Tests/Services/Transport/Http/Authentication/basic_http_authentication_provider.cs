@@ -31,6 +31,7 @@ using System.Net;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
@@ -121,6 +122,55 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
                 var message = authenticatedHttpRequestMessages[0];
                 Assert.AreEqual("user", message.Entity.User.Identity.Name);
                 Assert.IsTrue(message.Entity.User.Identity.IsAuthenticated);
+            }
+        }
+
+        [TestFixture]
+        public class when_handling_multiple_requests_with_the_same_correct_user_name_and_password : TestFixtureWithBasicHttpAuthenticationProvider
+        {
+            private bool _authenticateResult;
+
+            protected override void Given()
+            {
+                base.Given();
+                ExistingEvent("$user-user", "$user", null, "{Salt:'drowssap',Hash:'password'}");
+            }
+
+            [SetUp]
+            public void SetUp()
+            {
+                SetUpProvider();
+
+                var entity = HttpEntity.Test(new GenericPrincipal(new HttpListenerBasicIdentity("user", "password"), new string[0]));
+                _provider.Authenticate(new IncomingHttpRequestMessage(entity, _bus));
+
+                _consumer.HandledMessages.Clear();
+
+                _entity = HttpEntity.Test(new GenericPrincipal(new HttpListenerBasicIdentity("user", "password"), new string[0]));
+                _authenticateResult = _provider.Authenticate(new IncomingHttpRequestMessage(_entity, _bus));
+            }
+
+            [Test]
+            public void returns_true()
+            {
+                Assert.IsTrue(_authenticateResult);
+            }
+
+            [Test]
+            public void publishes_authenticated_http_request_message_with_user()
+            {
+                var authenticatedHttpRequestMessages = _consumer.HandledMessages.OfType<AuthenticatedHttpRequestMessage>().ToList();
+                Assert.AreEqual(authenticatedHttpRequestMessages.Count, 1);
+                var message = authenticatedHttpRequestMessages[0];
+                Assert.AreEqual("user", message.Entity.User.Identity.Name);
+                Assert.IsTrue(message.Entity.User.Identity.IsAuthenticated);
+            }
+
+            [Test]
+            public void does_not_publish_any_read_requests()
+            {
+                Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>().Count());
+                Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
             }
         }
 
