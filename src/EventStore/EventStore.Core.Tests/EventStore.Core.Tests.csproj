@@ -298,6 +298,7 @@
     <Compile Include="Services\Transport\Http\PortableServer.cs" />
     <Compile Include="Services\Transport\Http\ping_controller_should.cs" />
     <Compile Include="MightyMooseIgnoreAttribute.cs" />
+    <Compile Include="Services\UserManagementService\user_management_service.cs" />
     <Compile Include="Services\VNode\vnode_fsm_should.cs" />
     <Compile Include="SpecificationWithDirectoryPerTestFixture.cs" />
     <Compile Include="SpecificationWithFilePerTestFixture.cs" />
@@ -377,10 +378,6 @@
     <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj">
       <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>
       <Name>EventStore.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj">
-      <Project>{03E02082-E179-4730-81FF-CE914749D6E3}</Project>
-      <Name>EventStore.Projections.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj">
       <Project>{30AF4820-DC60-4674-9E19-C4518445545A}</Project>

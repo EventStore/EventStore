@@ -151,11 +151,13 @@ namespace EventStore.Core.Messages
             public readonly string LoginName;
             public readonly string FullName;
             public readonly DateTimeOffset DateLastUpdated;
+            public readonly bool Disabled;
 
-            public UserData(string loginName, string fullName, DateTimeOffset dateLastUpdated)
+            public UserData(string loginName, string fullName, bool disabled, DateTimeOffset dateLastUpdated)
             {
                 LoginName = loginName;
                 FullName = fullName;
+                Disabled = disabled;
                 DateLastUpdated = dateLastUpdated;
             }
         }

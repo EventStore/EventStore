@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -34,7 +35,10 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
 
-    public abstract class TestFixtureWithExistingEvents : EventStore.Core.Tests.Helper.TestFixtureWithExistingEvents
+    public abstract class TestFixtureWithExistingEvents : EventStore.Core.Tests.Helper.TestFixtureWithExistingEvents,
+                                                           IHandle<ProjectionCoreServiceMessage.CoreTick>,
+                                                           IHandle<ReaderCoreServiceMessage.ReaderTick>
+
     {
         protected
             PublishSubscribeDispatcher
@@ -43,10 +47,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _subscriptionDispatcher;
 
         protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
+        private bool _ticksAreHandledImmediately;
 
         [SetUp]
         public void SetUp()
         {
+            _ticksAreHandledImmediately = false;
             _subscriptionDispatcher =
                 new PublishSubscribeDispatcher
                     <ReaderSubscriptionManagement.Subscribe,
@@ -58,6 +64,26 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 _subscriptionDispatcher.CreateSubscriber<ProjectionSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<ProjectionSubscriptionMessage.EofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<ProjectionSubscriptionMessage.ProgressChanged>());
+            _bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(this);
+            _bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(this);
         }
+
+        public void Handle(ProjectionCoreServiceMessage.CoreTick message)
+        {
+            if (_ticksAreHandledImmediately)
+                message.Action();
+        }
+
+        public void Handle(ReaderCoreServiceMessage.ReaderTick message)
+        {
+            if (_ticksAreHandledImmediately)
+                message.Action();
+        }
+
+        protected void TicksAreHandledImmediately()
+        {
+            _ticksAreHandledImmediately = true;
+        }
+
     }
 }

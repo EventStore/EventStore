@@ -26,7 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.IO;
 using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
@@ -47,20 +49,20 @@ namespace EventStore.Core.Tests.Helper
             _readDispatcher;
 
         protected TestHandler<Message> _consumer;
+        protected IODispatcher _ioDispatcher;
 
         [SetUp]
         public void setup0()
         {
             _bus = new InMemoryBus("bus");
-            _readDispatcher =
-                new RequestResponseDispatcher
-                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
-                    _bus, e => e.CorrelationId, e => e.CorrelationId, new PublishEnvelope(_bus));
-            _writeDispatcher =
-                new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
-                    _bus, e => e.CorrelationId, e => e.CorrelationId, new PublishEnvelope(_bus));
-            _bus.Subscribe(_readDispatcher);
-            _bus.Subscribe(_writeDispatcher);
+            _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+            _readDispatcher = _ioDispatcher.BackwardReader;
+            _writeDispatcher = _ioDispatcher.Writer;
+
+            _bus.Subscribe(_ioDispatcher.ForwardReader);
+            _bus.Subscribe(_ioDispatcher.BackwardReader);
+            _bus.Subscribe(_ioDispatcher.Writer);
+
             _consumer = new TestHandler<Message>();
             _bus.Subscribe(_consumer);
         }

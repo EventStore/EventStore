@@ -38,16 +38,13 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Helper
 {
     public abstract class TestFixtureWithExistingEvents : TestFixtureWithReadWriteDispatchers,
                                                            IHandle<ClientMessage.ReadStreamEventsBackward>,
-                                                           IHandle<ClientMessage.WriteEvents>,
-                                                           IHandle<ProjectionCoreServiceMessage.CoreTick>,
-                                                           IHandle<ReaderCoreServiceMessage.ReaderTick>
+                                                           IHandle<ClientMessage.WriteEvents>
     {
         protected TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 
@@ -60,7 +57,6 @@ namespace EventStore.Core.Tests.Helper
         private bool _allWritesQueueUp;
         private Queue<ClientMessage.WriteEvents> _writesQueue;
         private long _lastPosition;
-        private bool _ticksAreHandledImmediately;
 
         protected void ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData)
         {
@@ -96,11 +92,6 @@ namespace EventStore.Core.Tests.Helper
             _writesToSucceed.Add(streamId);
         }
 
-        protected void TicksAreHandledImmediately()
-        {
-            _ticksAreHandledImmediately = true;
-        }
-
         protected void AllWritesQueueUp()
         {
             _allWritesQueueUp = true;
@@ -121,7 +112,6 @@ namespace EventStore.Core.Tests.Helper
         [SetUp]
         public void setup1()
         {
-            _ticksAreHandledImmediately = false;
             _writesQueue = new Queue<ClientMessage.WriteEvents>();
             _listEventsHandler = new TestHandler<ClientMessage.ReadStreamEventsBackward>();
             _readDispatcher =
@@ -134,8 +124,6 @@ namespace EventStore.Core.Tests.Helper
             _bus.Subscribe(_listEventsHandler);
             _bus.Subscribe<ClientMessage.WriteEvents>(this);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
-            _bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(this);
-            _bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(this);
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             _lastMessageReplies.Clear();
@@ -255,16 +243,5 @@ namespace EventStore.Core.Tests.Helper
                 new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length - add));
         }
 
-        public void Handle(ProjectionCoreServiceMessage.CoreTick message)
-        {
-            if (_ticksAreHandledImmediately)
-                message.Action();
-        }
-
-        public void Handle(ReaderCoreServiceMessage.ReaderTick message)
-        {
-            if (_ticksAreHandledImmediately)
-                message.Action();
-        }
     }
 }
