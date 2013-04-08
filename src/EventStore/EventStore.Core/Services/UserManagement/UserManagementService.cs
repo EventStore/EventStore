@@ -224,39 +224,43 @@ namespace EventStore.Core.Services.UserManagement
 
         private static void ReplyInternalError(UserManagementMessage.UserManagementRequestMessage message)
         {
-            message.Envelope.ReplyWith(
-                new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.Error));
+            ReplyError(message, UserManagementMessage.Error.Error);
         }
 
         private static void ReplyNotFound(UserManagementMessage.UserManagementRequestMessage message)
         {
-            message.Envelope.ReplyWith(
-                new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.NotFound));
+            ReplyError(message, UserManagementMessage.Error.NotFound);
         }
 
         private static void ReplyConflict(UserManagementMessage.UserManagementRequestMessage message)
         {
-            message.Envelope.ReplyWith(
-                new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.Conflict));
+            ReplyError(message, UserManagementMessage.Error.Conflict);
         }
 
         private static void ReplyUnauthorized(UserManagementMessage.UserManagementRequestMessage message)
         {
             //NOTE: probably unauthorized iis not correct reply here.  
             // been converted to http 401 status code it will prompt for authorization
-            message.Envelope.ReplyWith(
-                new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.Unauthorized));
+            ReplyError(message, UserManagementMessage.Error.Unauthorized);
         }
 
         private static void ReplyTryAgain(UserManagementMessage.UserManagementRequestMessage message)
         {
-            message.Envelope.ReplyWith(
-                new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.TryAgain));
+            ReplyError(message, UserManagementMessage.Error.TryAgain);
         }
 
         private static void ReplyUpdated(UserManagementMessage.UserManagementRequestMessage message)
         {
             message.Envelope.ReplyWith(new UserManagementMessage.UpdateResult(message.LoginName));
+        }
+
+        private static void ReplyError(UserManagementMessage.UserManagementRequestMessage message, UserManagementMessage.Error error)
+        {
+            //TODO: avoid 'is'
+            if (message is UserManagementMessage.Get)
+                message.Envelope.ReplyWith(new UserManagementMessage.UserDetailsResult(error));
+            else
+                message.Envelope.ReplyWith(new UserManagementMessage.UpdateResult(message.LoginName, error));
         }
 
         private static void ReplyByWriteResult(

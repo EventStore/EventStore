@@ -44,12 +44,15 @@ namespace EventStore.Core.Tests.Helper
 {
     public abstract class TestFixtureWithExistingEvents : TestFixtureWithReadWriteDispatchers,
                                                            IHandle<ClientMessage.ReadStreamEventsBackward>,
-                                                           IHandle<ClientMessage.WriteEvents>
+                                                           IHandle<ClientMessage.WriteEvents>,
+                                                           IHandle<ClientMessage.DeleteStream>
     {
         protected TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 
         protected readonly Dictionary<string, List<EventRecord>> _lastMessageReplies =
             new Dictionary<string, List<EventRecord>>();
+
+        protected readonly HashSet<string> _deletedStreams = new HashSet<string>();
 
         private int _fakePosition = 100;
         private bool _allWritesSucceed;
@@ -80,6 +83,11 @@ namespace EventStore.Core.Tests.Helper
         protected void NoStream(string streamId)
         {
             _lastMessageReplies[streamId] = null;
+        }
+
+        protected void DeletedStream(string streamId)
+        {
+            _deletedStreams.Add(streamId);
         }
 
         protected void AllWritesSucceed()
@@ -124,9 +132,12 @@ namespace EventStore.Core.Tests.Helper
             _bus.Subscribe(_listEventsHandler);
             _bus.Subscribe<ClientMessage.WriteEvents>(this);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
+            _bus.Subscribe<ClientMessage.DeleteStream>(this);
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
+            _bus.Subscribe(_ioDispatcher.StreamDeleter);
             _lastMessageReplies.Clear();
+            _deletedStreams.Clear();
             Given1();
             Given();
             _lastPosition =
@@ -145,7 +156,15 @@ namespace EventStore.Core.Tests.Helper
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)
         {
             List<EventRecord> list;
-            if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list))
+            if (_deletedStreams.Contains(message.EventStreamId))
+            {
+                message.Envelope.ReplyWith(
+                    new ClientMessage.ReadStreamEventsBackwardCompleted(
+                        message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
+                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], string.Empty, -1, -1, true, _lastPosition));
+                            
+            }
+            else if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list))
             {
                 if (list != null && list.Count > 0 && (list.Last().EventNumber >= message.FromEventNumber)
                     || (message.FromEventNumber == -1))
@@ -243,5 +262,21 @@ namespace EventStore.Core.Tests.Helper
                 new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length - add));
         }
 
+        public void Handle(ClientMessage.DeleteStream message)
+        {
+            List<EventRecord> list;
+            if (_deletedStreams.Contains(message.EventStreamId))
+            {
+                message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.StreamDeleted, string.Empty));
+                return;
+            }
+            if (!_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || list == null)
+            {
+                message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.WrongExpectedVersion, string.Empty));
+                return;
+            }
+            _deletedStreams.Add(message.EventStreamId);
+                message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.Success, string.Empty));
+        }
     }
 }

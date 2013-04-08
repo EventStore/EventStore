@@ -49,10 +49,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
         private bool _ticksAreHandledImmediately;
 
+        protected override void Given1()
+        {
+            base.Given1();
+            _ticksAreHandledImmediately = false;
+        }
+
         [SetUp]
         public void SetUp()
         {
-            _ticksAreHandledImmediately = false;
             _subscriptionDispatcher =
                 new PublishSubscribeDispatcher
                     <ReaderSubscriptionManagement.Subscribe,
