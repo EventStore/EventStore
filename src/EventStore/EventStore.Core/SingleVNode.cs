@@ -211,6 +211,13 @@ namespace EventStore.Core
             Bus.Subscribe(ioDispatcher.ForwardReader);
             Bus.Subscribe(ioDispatcher.Writer);
             Bus.Subscribe<UserManagementMessage.Create>(userManagement);
+            Bus.Subscribe<UserManagementMessage.Update>(userManagement);
+            Bus.Subscribe<UserManagementMessage.Enable>(userManagement);
+            Bus.Subscribe<UserManagementMessage.Disable>(userManagement);
+            Bus.Subscribe<UserManagementMessage.Delete>(userManagement);
+            Bus.Subscribe<UserManagementMessage.ResetPassword>(userManagement);
+            Bus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
+            Bus.Subscribe<UserManagementMessage.Get>(userManagement);
 
             // TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));

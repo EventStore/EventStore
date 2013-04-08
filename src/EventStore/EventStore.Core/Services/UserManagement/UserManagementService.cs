@@ -36,29 +36,29 @@ using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.UserManagement
 {
-    class UserManagementService : IHandle<UserManagementMessage.Create>
+    class UserManagementService : IHandle<UserManagementMessage.Create>,
+                                  IHandle<UserManagementMessage.Update>,
+                                  IHandle<UserManagementMessage.Enable>,
+                                  IHandle<UserManagementMessage.Disable>,
+                                  IHandle<UserManagementMessage.ResetPassword>,
+                                  IHandle<UserManagementMessage.ChangePassword>,
+                                  IHandle<UserManagementMessage.Delete>,
+                                  IHandle<UserManagementMessage.Get>
     {
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
 
-        public UserManagementService(IPublisher publisher, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm)
+        public UserManagementService(
+            IPublisher publisher, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm)
         {
             _publisher = publisher;
             _ioDispatcher = ioDispatcher;
             _passwordHashAlgorithm = passwordHashAlgorithm;
         }
 
-        public void Handle(UserManagementMessage.Create message)
-        {
-            var userData = CreateUserData(message);
-            var userCreatedEvent = new Event(Guid.NewGuid(), "$UserCreated", true, userData.ToJsonBytes(), null);
-            _ioDispatcher.WriteEvents(
-                "$user-" + message.LoginName, completed => WriteUserCreatedCompleted(completed, message), ExpectedVersion.NoStream, new[] {userCreatedEvent});
-        }
-
         private static void WriteUserCreatedCompleted(
-            ClientMessage.WriteEventsCompleted completed, UserManagementMessage.Create message)
+            ClientMessage.WriteEventsCompleted completed, UserManagementMessage.UserManagementRequestMessage message)
         {
             if (completed.Result == OperationResult.Success)
                 ReplyUpdated(message);
@@ -82,17 +82,28 @@ namespace EventStore.Core.Services.UserManagement
 
         private static void ReplyInternalError(UserManagementMessage.UserManagementRequestMessage message)
         {
-            message.Envelope.ReplyWith(new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.Error));
+            message.Envelope.ReplyWith(
+                new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.Error));
         }
 
         private static void ReplyConflict(UserManagementMessage.UserManagementRequestMessage message)
         {
-            message.Envelope.ReplyWith(new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.Conflict));
+            message.Envelope.ReplyWith(
+                new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.Conflict));
+        }
+
+        private static void ReplyUnauthorized(UserManagementMessage.UserManagementRequestMessage message)
+        {
+            //NOTE: probably unauthorized iis not correct reply here.  
+            // been converted to http 401 status code it will prompt for authorization
+            message.Envelope.ReplyWith(
+                new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.Unauthorized));
         }
 
         private static void ReplyTryAgain(UserManagementMessage.UserManagementRequestMessage message)
         {
-            message.Envelope.ReplyWith(new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.TryAgain));
+            message.Envelope.ReplyWith(
+                new UserManagementMessage.UpdateResult(message.LoginName, UserManagementMessage.Error.TryAgain));
         }
 
         private static void ReplyUpdated(UserManagementMessage.UserManagementRequestMessage message)
@@ -102,10 +113,122 @@ namespace EventStore.Core.Services.UserManagement
 
         private UserData CreateUserData(UserManagementMessage.Create message)
         {
-            var hashedPassword = _passwordHashAlgorithm.Hash(message.Password);
-            var hash = hashedPassword.Item1;
-            var salt = hashedPassword.Item2;
-            return new UserData {LoginName = message.LoginName, FullName = message.FullName, Salt = salt, Hash = hash};
+            string hash;
+            string salt;
+            _passwordHashAlgorithm.Hash(message.Password, out hash, out salt);
+            return new UserData(message.LoginName, message.FullName, hash, salt, disabled: false);
+        }
+
+        private void ReadUserDetailsAnd(
+            UserManagementMessage.UserManagementRequestMessage message,
+            Action<ClientMessage.ReadStreamEventsBackwardCompleted, UserData> action)
+        {
+            var streamId = "$user-" + message.LoginName;
+            _ioDispatcher.ReadBackward(
+                streamId, -1, 1, false, completed =>
+                    {
+                        switch (completed.Result)
+                        {
+                            case ReadStreamResult.NoStream:
+                                message.Envelope.ReplyWith(
+                                    new UserManagementMessage.UpdateResult(
+                                        message.LoginName, UserManagementMessage.Error.NotFound));
+                                break;
+                            case ReadStreamResult.StreamDeleted:
+                                message.Envelope.ReplyWith(
+                                    new UserManagementMessage.UpdateResult(
+                                        message.LoginName, UserManagementMessage.Error.NotFound));
+                                break;
+                            case ReadStreamResult.Success:
+                                var data = completed.Events[0].Event.Data.ParseJson<UserData>();
+                                action(completed, data);
+                                break;
+                            default:
+                                message.Envelope.ReplyWith(
+                                    new UserManagementMessage.UpdateResult(
+                                        message.LoginName, UserManagementMessage.Error.Error));
+                                break;
+                        }
+                    });
+        }
+
+        private void WriteUserEvent(
+            UserManagementMessage.UserManagementRequestMessage message, UserData userData, string eventType,
+            int expectedVersion)
+        {
+            var userCreatedEvent = new Event(Guid.NewGuid(), eventType, true, userData.ToJsonBytes(), null);
+            _ioDispatcher.WriteEvents(
+                "$user-" + message.LoginName, completed => WriteUserCreatedCompleted(completed, message),
+                expectedVersion, new[] {userCreatedEvent});
+        }
+
+        private void ReadUpdateWriteReply(
+            UserManagementMessage.UserManagementRequestMessage message, Func<UserData, UserData> update)
+        {
+            ReadUserDetailsAnd(
+                message, (completed, data) =>
+                    {
+                        var updated = update(data);
+                        if (updated != null)
+                            WriteUserEvent(message, updated, "$UserUpdated", completed.FromEventNumber);
+                    });
+        }
+
+        public void Handle(UserManagementMessage.Create message)
+        {
+            var userData = CreateUserData(message);
+            WriteUserEvent(message, userData, "$UserCreated", ExpectedVersion.NoStream);
+        }
+
+        public void Handle(UserManagementMessage.Update message)
+        {
+            ReadUpdateWriteReply(message, data => data.SetFullName(message.FullName));
+        }
+
+        public void Handle(UserManagementMessage.Enable message)
+        {
+            ReadUpdateWriteReply(message, data => data.SetEnabled());
+        }
+
+        public void Handle(UserManagementMessage.Disable message)
+        {
+            ReadUpdateWriteReply(message, data => data.SetDisabled());
+        }
+
+        public void Handle(UserManagementMessage.ResetPassword message)
+        {
+            string hash;
+            string salt;
+            _passwordHashAlgorithm.Hash(message.NewPassword, out hash, out salt);
+            ReadUpdateWriteReply(message, data => data.SetPassword(hash, salt));
+        }
+
+        public void Handle(UserManagementMessage.ChangePassword message)
+        {
+            string hash;
+            string salt;
+            _passwordHashAlgorithm.Hash(message.NewPassword, out hash, out salt);
+            ReadUpdateWriteReply(
+                message, data =>
+                    {
+                        if (_passwordHashAlgorithm.Verify(message.CurrentPassword, data.Hash, data.Salt))
+                            return data.SetPassword(hash, salt);
+
+                        ReplyUnauthorized(message);
+                        return null;
+                    });
+        }
+
+        public void Handle(UserManagementMessage.Delete message)
+        {
+            throw new NotImplementedException();
+            ReadUserDetailsAnd(message, (completed, data) => { });
+        }
+
+        public void Handle(UserManagementMessage.Get message)
+        {
+            throw new NotImplementedException();
+            ReadUserDetailsAnd(message, (completed, data) => { });
         }
     }
 }

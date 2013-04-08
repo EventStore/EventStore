@@ -104,9 +104,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             IncomingHttpRequestMessage message, UserData userData, HttpListenerBasicIdentity basicHttpIdentity)
         {
             var entity = message.Entity;
-            var passwordHash = Tuple.Create(userData.Hash, userData.Salt);
-
-            if (!_passwordHashAlgorithm.Verify(basicHttpIdentity.Password, passwordHash))
+            
+            if (!_passwordHashAlgorithm.Verify(basicHttpIdentity.Password, userData.Hash, userData.Salt))
             {
                 ReplyUnauthorized(entity);
                 return;

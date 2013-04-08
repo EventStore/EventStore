@@ -210,14 +210,15 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
 
     public class StubPasswordHashAlgorithm : PasswordHashAlgorithm
     {
-        public override Tuple<string, string> Hash(string password)
+        public override void Hash(string password, out string hash, out string salt)
         {
-            return Tuple.Create(password, ReverseString(password));
+            hash = password;
+            salt = ReverseString(password);
         }
 
-        public override bool Verify(string password, Tuple<string, string> hashed)
+        public override bool Verify(string password, string hash, string salt)
         {
-            return password == hashed.Item1 && ReverseString(password) == hashed.Item2;
+            return password == hash && ReverseString(password) == salt;
         }
 
         private static string ReverseString(string s)

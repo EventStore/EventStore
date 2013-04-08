@@ -32,7 +32,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
 {
     public abstract class PasswordHashAlgorithm
     {
-        public abstract Tuple<string, string> Hash(string password);
-        public abstract bool Verify(string password, Tuple<string, string> hashed);
+        public abstract void Hash(string password, out string hash, out string salt);
+        public abstract bool Verify(string password, string hash, string salt);
     }
 }

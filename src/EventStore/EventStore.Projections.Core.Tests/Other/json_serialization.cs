@@ -33,6 +33,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using EventStore.Core.Util;
 
 namespace EventStore.Projections.Core.Tests.Other
 {
@@ -137,6 +138,51 @@ namespace EventStore.Projections.Core.Tests.Other
             Assert.AreEqual("b", (string) ((JValue) v).Value);
             Assert.IsTrue(back.ExtraMetadata.TryGetValue("$$c", out v));
             Assert.AreEqual("d", (string)((JValue)v).Value);
+        }
+
+        [Test]
+        public void can_deserialize_readonly_fields()
+        {
+            TestData data = new TestData("123");
+            byte[] bytes = data.ToJsonBytes();
+            string instring = Encoding.UTF8.GetString(bytes);
+            Console.WriteLine(instring);
+
+            TestData back = instring.ParseJson<TestData>();
+            Assert.AreEqual(data, back);
+        }
+
+        private class TestData
+        {
+            public readonly string Data;
+
+            public TestData(string data)
+            {
+                Data = data;
+            }
+
+            protected bool Equals(TestData other)
+            {
+                return string.Equals(Data, other.Data);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != this.GetType()) return false;
+                return Equals((TestData) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return (Data != null ? Data.GetHashCode() : 0);
+            }
+
+            public override string ToString()
+            {
+                return string.Format("Data: {0}", Data);
+            }
         }
     }
 }

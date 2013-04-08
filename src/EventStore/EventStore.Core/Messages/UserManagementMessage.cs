@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages
@@ -49,52 +50,144 @@ namespace EventStore.Core.Messages
 
         public class UserManagementRequestMessage : RequestMessage
         {
-            public string LoginName;
+            public readonly string LoginName;
 
-            protected UserManagementRequestMessage(IEnvelope envelope)
+            protected UserManagementRequestMessage(IEnvelope envelope, string loginName)
                 : base(envelope)
             {
+                LoginName = loginName;
             }
         }
 
-        public class Create : UserManagementRequestMessage
+        public sealed class Create : UserManagementRequestMessage
         {
             public readonly string FullName;
             public readonly string Password;
 
             public Create(IEnvelope envelope, string loginName, string fullName, string password)
-                : base(envelope)
+                : base(envelope, loginName)
             {
-                LoginName = loginName;
                 FullName = fullName;
                 Password = password;
+            }
+        }
+
+        public sealed class Update : UserManagementRequestMessage
+        {
+            public readonly string FullName;
+
+            public Update(IEnvelope envelope, string loginName, string fullName)
+                : base(envelope, loginName)
+            {
+                FullName = fullName;
+            }
+        }
+
+        public sealed class Disable : UserManagementRequestMessage
+        {
+            public Disable(IEnvelope envelope, string loginName)
+                : base(envelope, loginName)
+            {
+            }
+        }
+
+        public sealed class Enable : UserManagementRequestMessage
+        {
+            public Enable(IEnvelope envelope, string loginName)
+                : base(envelope, loginName)
+            {
+            }
+        }
+
+        public sealed class Delete : UserManagementRequestMessage
+        {
+            public Delete(IEnvelope envelope, string loginName)
+                : base(envelope, loginName)
+            {
+            }
+        }
+
+        public sealed class ResetPassword : UserManagementRequestMessage
+        {
+            public readonly string NewPassword;
+
+            public ResetPassword(IEnvelope envelope, string loginName, string newPassword)
+                : base(envelope, loginName)
+            {
+                NewPassword = newPassword;
+            }
+        }
+
+        public sealed class ChangePassword : UserManagementRequestMessage
+        {
+            public readonly string CurrentPassword;
+            public readonly string NewPassword;
+
+            public ChangePassword(IEnvelope envelope, string loginName, string currentPassword, string newPassword)
+                : base(envelope, loginName)
+            {
+                CurrentPassword = currentPassword;
+                NewPassword = newPassword;
+            }
+        }
+
+        public sealed class Get : UserManagementRequestMessage
+        {
+            public Get(IEnvelope envelope, string loginName)
+                : base(envelope, loginName)
+            {
             }
         }
 
         public enum Error
         {
             Success, NotFound, Conflict,
-            Error, TryAgain
+            Error, TryAgain,
+            Unauthorized
         }
 
-        public class UpdateResult : ResponseMessage
+        public sealed class UserData
         {
-            public readonly string _loginName;
+            public readonly string LoginName;
+            public readonly string FullName;
+            public readonly DateTimeOffset DateLastUpdated;
+
+            public UserData(string loginName, string fullName, DateTimeOffset dateLastUpdated)
+            {
+                LoginName = loginName;
+                FullName = fullName;
+                DateLastUpdated = dateLastUpdated;
+            }
+        }
+
+        public sealed class UpdateResult : ResponseMessage
+        {
+            public readonly string LoginName;
             public readonly bool Success;
             public readonly Error Error;
 
 
             public UpdateResult(string loginName)
             {
-                _loginName = loginName;
+                LoginName = loginName;
                 Success = true;
             }
 
             public UpdateResult(string loginName, Error error)
             {
                 Success = false;
-                _loginName = loginName;
+                LoginName = loginName;
                 Error = error;
+            }
+        }
+
+        public sealed class UserDetailsResult : ResponseMessage
+        {
+            public readonly UserData Data;
+
+            public UserDetailsResult(UserData data)
+            {
+                Data = data;
             }
         }
     }

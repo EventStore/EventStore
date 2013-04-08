@@ -90,6 +90,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     return HttpStatusCode.InternalServerError;
                 case UserManagementMessage.Error.TryAgain:
                     return HttpStatusCode.RequestTimeout;
+                case UserManagementMessage.Error.Unauthorized:
+                    return HttpStatusCode.Unauthorized;
                 default:
                     return HttpStatusCode.InternalServerError;
             }

@@ -30,9 +30,39 @@ namespace EventStore.Core.Data
 {
     public class UserData
     {
-        public string LoginName { get; set; }
-        public string FullName { get; set; }
-        public string Salt { get; set; }
-        public string Hash { get; set; }
+        public readonly string LoginName;
+        public readonly string FullName;
+        public readonly string Salt;
+        public readonly string Hash;
+        public readonly bool Disabled;
+
+        public UserData(string loginName, string fullName, string hash, string salt, bool disabled)
+        {
+            LoginName = loginName;
+            FullName = fullName;
+            Salt = salt;
+            Hash = hash;
+            Disabled = disabled;
+        }
+
+        public UserData SetFullName(string fullName)
+        {
+            return new UserData(LoginName, fullName, Hash, Salt, Disabled);
+        }
+
+        public UserData SetPassword(string hash, string salt)
+        {
+            return new UserData(LoginName, FullName, hash, salt, Disabled);
+        }
+
+        public UserData SetEnabled()
+        {
+            return new UserData(LoginName, FullName, Hash, Salt, disabled: false);
+        }
+
+        public UserData SetDisabled()
+        {
+            return new UserData(LoginName, FullName, Hash, Salt, disabled: true);
+        }
     }
 }
