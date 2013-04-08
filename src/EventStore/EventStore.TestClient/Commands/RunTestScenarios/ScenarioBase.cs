@@ -158,6 +158,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                       .UseCustomLogger(ApiLogger)
                                       .LimitConcurrentOperationsTo(MaxConcurrentRequests)
                                       .KeepRetrying()
+                                      .FailOnNoServerResponse()
                                       .OnClosed((c, s) => Log.Debug("[SCENARIO] {0} closed.", c.ConnectionName))
                                       .OnConnected(c => Log.Debug("[SCENARIO] {0} connected.", c.ConnectionName))
                                       .OnDisconnected(c => Log.Debug("[SCENARIO] {0} disconnected.", c.ConnectionName))

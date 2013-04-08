@@ -54,6 +54,13 @@ namespace EventStore.TestClient.Commands
                     {
                         switch (pkg.Command)
                         {
+                            case TcpCommand.SubscriptionConfirmation:
+                            {
+                                var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionConfirmation>();
+                                context.Log.Info("Subscription to <{0}> WAS CONFIRMED! Subscribed at {1} ({2})", 
+                                                 streamByCorrId[pkg.CorrelationId], dto.LastCommitPosition, dto.LastEventNumber);
+                                break;
+                            }
                             case TcpCommand.StreamEventAppeared:
                             {
                                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.StreamEventAppeared>();
@@ -72,6 +79,7 @@ namespace EventStore.TestClient.Commands
                             }
                             case TcpCommand.SubscriptionDropped:
                             {
+                                var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
                                 context.Log.Error("Subscription to <{0}> WAS DROPPED!", streamByCorrId[pkg.CorrelationId]);
                                 break;
                             }

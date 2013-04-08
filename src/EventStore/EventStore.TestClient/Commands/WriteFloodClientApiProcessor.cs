@@ -100,7 +100,8 @@ namespace EventStore.TestClient.Commands
                     .LimitOperationsQueueTo(10000)
                     .LimitConcurrentOperationsTo(context.Client.Options.WriteWindow/clientsCnt)
                     .OnClosed((conn, reason) => { })
-                    .OnErrorOccurred((conn, exc) => context.Fail(exc, "Error on connection."));
+                    .OnErrorOccurred((conn, exc) => context.Fail(exc, "Error on connection."))
+                    .FailOnNoServerResponse();
 
                 var client = EventStoreConnection.Create(settings);
                 clients.Add(client);

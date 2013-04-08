@@ -40,7 +40,8 @@ namespace EventStore.Core.Tests.ClientAPI
                                              .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .LimitReconnectionsTo(0)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
-                                             .OnClosed((x, r) => closed.Set());
+                                             .OnClosed((x, r) => closed.Set())
+                                             .FailOnNoServerResponse();
 
             using (var connection = EventStoreConnection.Create(settings))
             {
@@ -78,7 +79,8 @@ namespace EventStore.Core.Tests.ClientAPI
                                              .OnConnected(x => Console.WriteLine("Connected..."))
                                              .OnReconnecting(x => Console.WriteLine("Reconnecting..."))
                                              .OnDisconnected(x => Console.WriteLine("Disconnected..."))
-                                             .OnErrorOccurred((x, exc) => Console.WriteLine("Error: {0}", exc));
+                                             .OnErrorOccurred((x, exc) => Console.WriteLine("Error: {0}", exc))
+                                             .FailOnNoServerResponse();
 
             using (var connection = EventStoreConnection.Create(settings))
             {

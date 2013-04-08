@@ -111,6 +111,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         public Action<EventStoreConnection> Reconnecting;
 
+        public readonly bool FailOnNoServerResponse;
+        public readonly TimeSpan HeartbeatInterval = TimeSpan.FromMilliseconds(1000);
+        public readonly TimeSpan HeartbeatTimeout = TimeSpan.FromMilliseconds(4000);
+
         internal ConnectionSettings(ILogger log,
                                     bool verboseLogging,
                                     int maxQueueSize,
@@ -125,7 +129,10 @@ namespace EventStore.ClientAPI
                                     Action<EventStoreConnection, string> closed,
                                     Action<EventStoreConnection> connected,
                                     Action<EventStoreConnection> disconnected,
-                                    Action<EventStoreConnection> reconnecting)
+                                    Action<EventStoreConnection> reconnecting,
+                                    bool failOnNoServerResponse,
+                                    TimeSpan heartbeatInterval,
+                                    TimeSpan heartbeatTimeout)
         {
             Ensure.NotNull(log, "log");
             Ensure.Positive(maxQueueSize, "maxQueueSize");
@@ -151,6 +158,10 @@ namespace EventStore.ClientAPI
             Connected = connected;
             Disconnected = disconnected;
             Reconnecting = reconnecting;
+
+            FailOnNoServerResponse = failOnNoServerResponse;
+            HeartbeatInterval = heartbeatInterval;
+            HeartbeatTimeout = heartbeatTimeout;
         }
     }
 }

@@ -76,6 +76,11 @@ namespace EventStore.ClientAPI.Core
         private int _operationCount;
         private int _operationsInProgressCount;
 
+        private int _packageNumber;
+        private int _lastPackageNumber;
+        private bool _heartbeatIntervalStage;
+        private readonly Stopwatch _heartbeatStopwatch = new Stopwatch();
+
         public EventStoreConnectionLogicHandler(EventStoreConnection esConnection, ConnectionSettings settings)
         {
             Ensure.NotNull(esConnection, "esConnection");
@@ -225,6 +230,8 @@ namespace EventStore.ClientAPI.Core
             _reconnectionStopwatch.Stop();
             _connectionStopwatch.Restart();
 
+            ScheduleHeartbeat(_packageNumber);
+
             if (_settings.Connected != null)
                 _settings.Connected(_esConnection);
         }
@@ -276,8 +283,6 @@ namespace EventStore.ClientAPI.Core
             // operations timeouts are checked only if connection is established and check period time passed
             if (_connectionStopwatch.IsRunning && _connectionStopwatch.Elapsed >= _settings.OperationTimeoutCheckPeriod)
             {
-                if (_verbose) _log.Debug("EventStoreConnection '{0}': TimerTick checking timeouts...", _esConnection.ConnectionName);
-
                 // On mono even impossible connection first says that it is established
                 // so clearing of reconnection count on ConnectionEstablished event causes infinite reconnections.
                 // So we reset reconnection count to zero on each timeout check period when connection is established
@@ -305,6 +310,8 @@ namespace EventStore.ClientAPI.Core
                 }
                 _reconnectionStopwatch.Stop();
             }
+
+            ManageHeartbeats();
         }
 
         private void CheckOperationsTimeouts()
@@ -326,8 +333,15 @@ namespace EventStore.ClientAPI.Core
                                             _esConnection.ConnectionName, operation, operation.LastUpdated, DateTime.UtcNow);
                     _log.Error(err);
 
-                    operation.Operation.Fail(new OperationTimedOutException(err));
-                    removeOperations.Add(operation);
+                    if (_settings.FailOnNoServerResponse)
+                    {
+                        operation.Operation.Fail(new OperationTimedOutException(err));
+                        removeOperations.Add(operation);
+                    }
+                    else
+                    {
+                        retryOperations.Add(operation);
+                    }
                 }
             }
 
@@ -377,8 +391,15 @@ namespace EventStore.ClientAPI.Core
                                             _esConnection.ConnectionName, subscription, subscription.LastUpdated, DateTime.UtcNow);
                     _log.Error(err);
 
-                    subscription.Operation.Fail(new OperationTimedOutException(err));
-                    removeSubscriptions.Add(subscription);
+                    if (_settings.FailOnNoServerResponse)
+                    {
+                        subscription.Operation.Fail(new OperationTimedOutException(err));
+                        removeSubscriptions.Add(subscription);
+                    }
+                    else
+                    {
+                        retrySubscriptions.Add(subscription);
+                    }
                 }
             }
 
@@ -402,6 +423,52 @@ namespace EventStore.ClientAPI.Core
                     StartSubscription(subscription);
                 }
                 _retryPendingSubscriptions.Clear();
+            }
+        }
+
+        private void ScheduleHeartbeat(int packageNumber)
+        {
+            _lastPackageNumber = packageNumber;
+            _heartbeatIntervalStage = true;
+            _heartbeatStopwatch.Restart();
+        }
+
+        private void ManageHeartbeats()
+        {
+            if (!_connectionStopwatch.IsRunning) // no heartbeats if no connection established
+                return;
+
+            if (_heartbeatIntervalStage)
+            {
+                if (_heartbeatStopwatch.Elapsed >= _settings.HeartbeatInterval)
+                {
+                    // TcpMessage.Heartbeat analog
+                    var packageNumber = _packageNumber;
+                    if (_lastPackageNumber != packageNumber)
+                        ScheduleHeartbeat(packageNumber);
+                    else
+                    {
+                        _connection.EnqueueSend(new TcpPackage(TcpCommand.HeartbeatRequestCommand, Guid.NewGuid(), null));
+                        _heartbeatIntervalStage = false;
+                        _heartbeatStopwatch.Restart();
+                    }
+                }
+            }
+            else
+            {
+                if (_heartbeatStopwatch.Elapsed >= _settings.HeartbeatTimeout)
+                {
+                    // TcpMessage.HeartbeatTimeout analog
+                    var packageNumber = _packageNumber;
+                    if (_lastPackageNumber != packageNumber)
+                        ScheduleHeartbeat(packageNumber);
+                    else
+                    {
+                        _log.Info("EventStoreConnection '{0}': closing TCP connection [{1}, {2:B}] due to HEARTBEAT TIMEOUT at pkgNum {3}.",
+                                  _esConnection.ConnectionName, _tcpEndPoint, _connection.ConnectionId, packageNumber);
+                        _connection.Close();
+                    }
+                }
             }
         }
 
@@ -460,6 +527,14 @@ namespace EventStore.ClientAPI.Core
 
             if (_verbose) _log.Debug("EventStoreConnection '{0}': HandleTcpPackage connId {1}, package {2}, {3}.", _esConnection.ConnectionName, connection.ConnectionId, package.Command, package.CorrelationId);
 
+            _packageNumber += 1;
+            if (package.Command == TcpCommand.HeartbeatResponseCommand)
+                return;
+            if (package.Command == TcpCommand.HeartbeatRequestCommand)
+            {
+                _connection.EnqueueSend(new TcpPackage(TcpCommand.HeartbeatResponseCommand, package.CorrelationId, null));
+                return;
+            }
             if (package.Command == TcpCommand.BadRequest && package.CorrelationId == Guid.Empty)
             {
                 if (_settings.ErrorOccurred != null)

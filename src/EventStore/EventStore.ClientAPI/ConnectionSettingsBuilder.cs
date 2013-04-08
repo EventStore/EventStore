@@ -56,6 +56,10 @@ namespace EventStore.ClientAPI
         private Action<EventStoreConnection> _disconnected;
         private Action<EventStoreConnection> _reconnecting;
 
+        private bool _failOnNoServerResponse;
+        private TimeSpan _heartbeatInterval = TimeSpan.FromMilliseconds(950);
+        private TimeSpan _heartbeatTimeout = TimeSpan.FromMilliseconds(1950);
+
         internal ConnectionSettingsBuilder()
         {
         }
@@ -313,6 +317,30 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+        public ConnectionSettingsBuilder FailOnNoServerResponse()
+        {
+            _failOnNoServerResponse = true;
+            return this;
+        }
+
+        public ConnectionSettingsBuilder DoNotFailOnNoServerResponse()
+        {
+            _failOnNoServerResponse = false;
+            return this;
+        }
+
+        public ConnectionSettingsBuilder SetHeartbeatInterval(TimeSpan interval)
+        {
+            _heartbeatInterval = interval;
+            return this;
+        }
+
+        public ConnectionSettingsBuilder SetHeartbeatTimeout(TimeSpan timeout)
+        {
+            _heartbeatTimeout = timeout;
+            return this;
+        }
+
         public static implicit operator ConnectionSettings(ConnectionSettingsBuilder builder)
         {
             return new ConnectionSettings(builder._log,
@@ -329,7 +357,10 @@ namespace EventStore.ClientAPI
                                           builder._closed,
                                           builder._connected,
                                           builder._disconnected,
-                                          builder._reconnecting);
+                                          builder._reconnecting,
+                                          builder._failOnNoServerResponse,
+                                          builder._heartbeatInterval,
+                                          builder._heartbeatTimeout);
         }
     }
 }

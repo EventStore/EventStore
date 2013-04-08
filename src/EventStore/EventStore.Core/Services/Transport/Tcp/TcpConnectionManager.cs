@@ -50,8 +50,8 @@ namespace EventStore.Core.Services.Transport.Tcp
     {
         public const int ConnectionQueueSizeThreshold = 50000;
 
-        private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromMilliseconds(2000);
-        private static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromMilliseconds(4000);
+        private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromMilliseconds(2000);
+        private static readonly TimeSpan HeartbeatTimeout = TimeSpan.FromMilliseconds(4000);
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionManager>();
 
@@ -278,7 +278,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                 SendPackage(new TcpPackage(TcpCommand.HeartbeatRequestCommand, Guid.NewGuid(), null));
 
                 _publisher.Publish(TimerMessage.Schedule.Create(
-                    KeepAliveTimeout,
+                    HeartbeatTimeout,
                     new SendToWeakThisEnvelope(this), 
                     new TcpMessage.HeartbeatTimeout(EndPoint, msgNum)));
             }
@@ -292,12 +292,15 @@ namespace EventStore.Core.Services.Transport.Tcp
             var msgNum = _messageNumber;
             if (message.MessageNumber != msgNum)
                 ScheduleHeartbeat(msgNum);
-            else 
-            {
-                Log.Info("Closing connection '{0}' [{1}, {2:B}] due to HEARTBEAT TIMEOUT at msgNum {3}.", 
-                         ConnectionName, EndPoint, ConnectionId, msgNum);
-                _connection.Close();
-            }
+            else
+                Stop(string.Format("HEARTBEAT TIMEOUT at msgNum {0}", msgNum));
+        }
+
+        private void ScheduleHeartbeat(int msgNum)
+        {
+            _publisher.Publish(TimerMessage.Schedule.Create(HeartbeatInterval,
+                                                            new SendToWeakThisEnvelope(this),
+                                                            new TcpMessage.Heartbeat(EndPoint, msgNum)));
         }
 
         private void OnConnectionClosed(ITcpConnection connection, SocketError socketError)
@@ -310,13 +313,6 @@ namespace EventStore.Core.Services.Transport.Tcp
             var handler = ConnectionClosed;
             if (handler != null)
                 handler(this, socketError);
-        }
-
-        private void ScheduleHeartbeat(int msgNum)
-        {
-            _publisher.Publish(TimerMessage.Schedule.Create(KeepAliveInterval,
-                                                            new SendToWeakThisEnvelope(this),
-                                                            new TcpMessage.Heartbeat(EndPoint, msgNum)));
         }
 
         private class SendToWeakThisEnvelope : IEnvelope

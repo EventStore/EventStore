@@ -136,13 +136,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
             {
                 package = TcpPackage.FromArraySegment(data);
                 valid = true;
-
-                if (package.Command == TcpCommand.HeartbeatRequestCommand)
-                {
-                    _connection.EnqueueSend(HeartbeatResponse);
-                    return;
-                }
-
                 _handlePackage(this, package);
             }
             catch (Exception e)

@@ -42,7 +42,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             return ConnectionSettings.Create()
                                      .UseCustomLogger(ClientApiLoggerBridge.Default)
                                      .EnableVerboseLogging()
-                                     .DisableVerboseLogging();
+                                     .DisableVerboseLogging()
+                                     .FailOnNoServerResponse();
         }
     }
 }
