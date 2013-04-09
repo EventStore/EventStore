@@ -53,6 +53,8 @@ namespace EventStore.Core.Tests
                 Assert.AreEqual(pos, file.Position); // !!! here it says position is correct, but writes at different position !!!
                 // file.Position = pos; // !!! this fixes test !!!
                 file.Write(bytes, 0, bytes.Length);
+
+                //Assert.AreEqual(pos + bytes.Length, file.Length); -- fails
             }
 
             using (var filestream = File.Open(filename, FileMode.Open, FileAccess.Read))
