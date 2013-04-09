@@ -120,11 +120,13 @@ namespace EventStore.Projections.Core
                 _projectionManagerNode.Output.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
                 _projectionManagerNode.Output.Subscribe<ClientMessage.ReadStreamEventsForward>(forwarder);
                 _projectionManagerNode.Output.Subscribe<ClientMessage.WriteEvents>(forwarder);
+                _projectionManagerNode.Output.Subscribe(
+                    Forwarder.Create<ProjectionManagementMessage.RequestSystemProjections>(mainQueue));
                 _projectionManagerNode.Output.Subscribe(Forwarder.Create<Message>(_managerInputQueue));
 
                 _projectionManagerNode.Output.Subscribe(timerService);
 
-                    // self forward all
+                // self forward all
 
                 mainBus.Subscribe(Forwarder.Create<SystemMessage.StateChangeMessage>(_managerInputQueue));
                 _managerInputBus.Subscribe(new UnwrapEnvelopeHandler());

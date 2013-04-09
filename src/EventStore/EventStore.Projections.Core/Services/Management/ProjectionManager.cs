@@ -68,7 +68,8 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<CoreProjectionManagementMessage.StateReport>,
                                      IHandle<CoreProjectionManagementMessage.ResultReport>,
                                      IHandle<CoreProjectionManagementMessage.DebugState>,
-                                     IHandle<CoreProjectionManagementMessage.StatisticsReport>
+                                     IHandle<CoreProjectionManagementMessage.StatisticsReport>, 
+                                     IHandle<ProjectionManagementMessage.RegisterSystemProjection>
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
 
@@ -490,6 +491,12 @@ namespace EventStore.Projections.Core.Services.Management
                     CreatePredefinedProjections();
                 }
             }
+            RequestSystemProjections();
+        }
+
+        private void RequestSystemProjections()
+        {
+            _publisher.Publish(new ProjectionManagementMessage.RequestSystemProjections(new PublishEnvelope(_inputQueue)));
         }
 
         private void CreatePredefinedProjections()
@@ -604,5 +611,15 @@ namespace EventStore.Projections.Core.Services.Management
             _projectionsMap.Remove(message.Id);
         }
 
+        public void Handle(ProjectionManagementMessage.RegisterSystemProjection message)
+        {
+            if (!_projections.ContainsKey(message.Name))
+            {
+                Handle(
+                    new ProjectionManagementMessage.Post(
+                        new PublishEnvelope(_inputQueue), ProjectionMode.Continuous, message.Name, message.Handler,
+                        message.Query, true, true, true));
+            }
+        }
     }
 }

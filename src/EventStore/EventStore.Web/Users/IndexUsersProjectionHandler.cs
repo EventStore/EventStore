@@ -26,28 +26,54 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.IO;
-using EventStore.Core.Bus;
-using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Core.Util;
+using System;
+using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Web.Users
 {
-    public sealed class UsersWebController : CommunicationController
+    public sealed class IndexUsersProjectionHandler : IProjectionStateHandler
     {
-        private readonly MiniWeb _miniWeb;
-
-        public UsersWebController(IPublisher publisher)
-            : base(publisher)
+        public IndexUsersProjectionHandler(string query, Action<string> logger)
         {
-            string nodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Web");
-            _miniWeb = new MiniWeb("/web/users", Path.Combine(nodeFSRoot, "Users", "Web"));
         }
 
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
+        public void Dispose()
         {
-            _miniWeb.RegisterControllerActions(service);
+        }
+
+        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        {
+            builder.FromAll();
+            builder.IncludeEvent("$user-created");
+            builder.IncludeEvent("$user-updated");
+        }
+
+        public void Load(string state)
+        {
+        }
+
+        public void Initialize()
+        {
+        }
+
+        public string GetStatePartition(
+            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
+            int sequenceNumber, string metadata, string data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool ProcessEvent(
+            string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
+            out EmittedEvent[] emittedEvents)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string TransformStateToResult()
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -26,28 +26,20 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.IO;
 using EventStore.Core.Bus;
-using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Core.Util;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Web.Users
 {
-    public sealed class UsersWebController : CommunicationController
+    public sealed class UserManagementProjectionsRegistration :
+        IHandle<ProjectionManagementMessage.RequestSystemProjections>
     {
-        private readonly MiniWeb _miniWeb;
-
-        public UsersWebController(IPublisher publisher)
-            : base(publisher)
+        public void Handle(ProjectionManagementMessage.RequestSystemProjections message)
         {
-            string nodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Web");
-            _miniWeb = new MiniWeb("/web/users", Path.Combine(nodeFSRoot, "Users", "Web"));
-        }
-
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
-        {
-            _miniWeb.RegisterControllerActions(service);
+            var handlerType = typeof (IndexUsersProjectionHandler);
+            var handler = "native:" + handlerType.Namespace + "." + handlerType.Name;
+            message.Envelope.ReplyWith(
+                new ProjectionManagementMessage.RegisterSystemProjection("$users", handler, ""));
         }
     }
 }

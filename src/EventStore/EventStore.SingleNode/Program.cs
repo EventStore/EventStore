@@ -90,6 +90,7 @@ namespace EventStore.SingleNode
             var enabledNodeSubsystems = runProjections ? new[] {NodeSubsystems.Projections} : new NodeSubsystems[0];
             _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, enabledNodeSubsystems);
             RegisterWebControllers(enabledNodeSubsystems);
+            RegisterUIProjections();
             if (options.RunProjections)
             {
                 _projections = new Projections.Core.Projections(db,
@@ -100,6 +101,12 @@ namespace EventStore.SingleNode
                                                                 _node.NetworkSendService,
                                                                 options.ProjectionThreads);
             }
+        }
+
+        private void RegisterUIProjections()
+        {
+            var users = new UserManagementProjectionsRegistration();
+            _node.Bus.Subscribe(users);
         }
 
         private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems)

@@ -26,8 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -611,6 +609,30 @@ namespace EventStore.Projections.Core.Messages
                 {
                     get { return _id; }
                 }
+            }
+        }
+
+        public sealed class RequestSystemProjections : Message
+        {
+            public readonly IEnvelope Envelope;
+
+            public RequestSystemProjections(IEnvelope envelope)
+            {
+                Envelope = envelope;
+            }
+        }
+
+        public sealed class RegisterSystemProjection : Message
+        {
+            public readonly string Name;
+            public readonly string Handler;
+            public readonly string Query;
+
+            public RegisterSystemProjection(string name, string handler, string query)
+            {
+                Name = name;
+                Handler = handler;
+                Query = query;
             }
         }
     }
