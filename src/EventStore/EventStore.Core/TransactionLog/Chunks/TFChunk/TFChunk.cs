@@ -318,8 +318,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 throw;
             }
             var realPosition = GetRawPosition(writePosition);
-            stream.Position = realPosition;
             MD5Hash.ContinuousHashFor(md5, stream, 0, realPosition);
+            stream.Position = realPosition; // this reordering fixes bug in Mono implementation of FileStream
             _writerWorkItem = new WriterWorkItem(stream, writer, md5);
         }
 
