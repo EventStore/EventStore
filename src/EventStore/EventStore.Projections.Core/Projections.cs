@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core
         private ProjectionManagerNode _projectionManagerNode;
 
         public Projections(
-            TFChunkDb db, QueuedHandler mainQueue, InMemoryBus mainBus, TimerService timerService,
+            TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService,
             HttpService httpService, IPublisher networkSendQueue,
             int projectionWorkerThreadCount)
         {
@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core
         }
 
         private void SetupMessaging(
-            TFChunkDb db, QueuedHandler mainQueue, InMemoryBus mainBus, TimerService timerService,
+            TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService,
             HttpService httpService, IPublisher networkSendQueue)
         {
             _coreQueues = new List<QueuedHandler>();

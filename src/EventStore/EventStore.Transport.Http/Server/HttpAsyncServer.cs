@@ -90,6 +90,9 @@ namespace EventStore.Transport.Http.Server
 
         private void ContextAcquired(IAsyncResult ar)
         {
+            if (!IsListening)
+                return;
+
             HttpListenerContext context = null;
             bool success = false;
             try

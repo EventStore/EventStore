@@ -59,7 +59,10 @@ namespace EventStore.Core.Services.VNode
 
         private bool _storageReaderInitialized;
         private bool _storageWriterInitialized;
-        private int _serviceShutdownsToExpect = 3;
+        private int _serviceShutdownsToExpect = 1 /* StorageChaser */ 
+                                              + 1 /* StorageReader */ 
+                                              + 1 /* StorageWriter */ 
+                                              + 1 /* HttpService*/;
         private bool _exitProcessOnShutdown;
 
         public SingleVNodeController(IPublisher outputBus, IPEndPoint httpEndPoint, TFChunkDb db)

@@ -302,6 +302,14 @@
     <Compile Include="Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
     <Compile Include="TestsInitFixture.cs" />
+    <Compile Include="TransactionLog\Truncation\TruncateAndReOpenDbScenario.cs" />
+    <Compile Include="TransactionLog\Truncation\TruncateScenario.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_few_chunks_with_index_on_disk.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_few_chunks_with_index_on_disk_and_then_reopening_db.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_in_a_middle_of_scavenged_chunk_with_index_in_memory.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_in_a_middle_of_scavenged_chunk_with_index_in_memory_and_then_reopening_db.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_single_uncompleted_chunk_with_index_in_memory_and_then_reopening_db.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_single_uncompleted_chunk_with_index_on_disk.cs" />
     <Compile Include="TransactionLog\when_reading_cached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\when_reading_uncached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\FlushTimeMeter.cs" />
@@ -314,6 +322,7 @@
     <Compile Include="TransactionLog\when_destroying_a_tfchunk.cs" />
     <Compile Include="TransactionLog\when_destroying_a_tfchunk_that_is_locked.cs" />
     <Compile Include="TransactionLog\when_marking_for_deletion_a_tfchunk_that_has_been_locked_and_unlocked.cs" />
+    <Compile Include="TransactionLog\when_truncating_database.cs" />
     <Compile Include="TransactionLog\when_unlocking_a_tfchunk_that_has_been_marked_for_deletion.cs" />
     <Compile Include="TransactionLog\commit_log_record_should.cs" />
     <Compile Include="TransactionLog\when_validating_tfchunk_db_with_multi_chunks.cs" />

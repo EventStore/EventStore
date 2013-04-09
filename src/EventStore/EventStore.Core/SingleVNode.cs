@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -55,8 +56,10 @@ namespace EventStore.Core
 {
     public class SingleVNode
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<SingleVNode>();
+
         public QueuedHandler MainQueue { get { return _mainQueue; } }
-        public InMemoryBus Bus { get { return _mainBus; } } 
+        public ISubscriber MainBus { get { return _mainBus; } } 
         public HttpService HttpService { get { return _httpService; } }
         public TimerService TimerService { get { return _timerService; } }
         public IPublisher NetworkSendService { get { return _networkSendService; } }
@@ -83,13 +86,11 @@ namespace EventStore.Core
             Ensure.NotNull(db, "db");
             Ensure.NotNull(vNodeSettings, "vNodeSettings");
 
-            db.Open(dbVerifyHashes);
-
             _tcpEndPoint = vNodeSettings.ExternalTcpEndPoint;
             _httpEndPoint = vNodeSettings.ExternalHttpEndPoint;
 
             _mainBus = new InMemoryBus("MainBus");
-            _controller = new SingleVNodeController(Bus, _httpEndPoint, db);
+            _controller = new SingleVNodeController(_mainBus, _httpEndPoint, db);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             _controller.SetMainQueue(MainQueue);
 
@@ -107,15 +108,26 @@ namespace EventStore.Core
                                                    vNodeSettings.StatsPeriod, 
                                                    _httpEndPoint,
                                                    vNodeSettings.StatsStorage);
-            Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
-            Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
-            Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
-            Bus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.CreateStreamCompleted, Message>());
+            _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
+            _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
+            _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
+            _mainBus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.CreateStreamCompleted, Message>());
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
             monitoringInnerBus.Subscribe<ClientMessage.CreateStreamCompleted>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
+
+            var truncPos = db.Config.TruncateCheckpoint.Read();
+            if (truncPos != -1)
+            {
+                Log.Info("Truncate checkpoint is present. Truncate: {0} (0x{0:X}), Writer: {1} (0x{1:X}), Chaser: {2} (0x{2:X}), Epoch: {3} (0x{3:X})",
+                         truncPos, db.Config.WriterCheckpoint.Read(), db.Config.ChaserCheckpoint.Read(), db.Config.EpochCheckpoint.Read());
+                var truncator = new TFChunkDbTruncator(db.Config);
+                truncator.TruncateDb(truncPos);
+            }
+
+            db.Open(dbVerifyHashes);
 
             // STORAGE SUBSYSTEM
             var indexPath = Path.Combine(db.Config.Path, "index");
@@ -163,16 +175,16 @@ namespace EventStore.Core
 
             // TCP
             var tcpService = new TcpService(MainQueue, _tcpEndPoint, _networkSendService, TcpServiceType.External, new ClientTcpDispatcher());
-            Bus.Subscribe<SystemMessage.SystemInit>(tcpService);
-            Bus.Subscribe<SystemMessage.SystemStart>(tcpService);
-            Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
+            _mainBus.Subscribe<SystemMessage.SystemInit>(tcpService);
+            _mainBus.Subscribe<SystemMessage.SystemStart>(tcpService);
+            _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             // HTTP
             _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, vNodeSettings.HttpPrefixes);
-            Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
-            Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
-            Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
-            Bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(HttpService);
+            _mainBus.Subscribe<SystemMessage.SystemInit>(HttpService);
+            _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
+            _mainBus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
+            _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(HttpService);
             HttpService.SetupController(new AdminController(MainQueue));
             HttpService.SetupController(new PingController());
             HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));
@@ -182,27 +194,27 @@ namespace EventStore.Core
 
             // REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(MainQueue, 1, 1, vNodeSettings.PrepareTimeout, vNodeSettings.CommitTimeout);
-            Bus.Subscribe<SystemMessage.SystemInit>(requestManagement);
-            Bus.Subscribe<StorageMessage.CreateStreamRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.WriteRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.TransactionStartRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.TransactionWriteRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.TransactionCommitRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.DeleteStreamRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
-            Bus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
-            Bus.Subscribe<StorageMessage.CommitAck>(requestManagement);
-            Bus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
-            Bus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
-            Bus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
-            Bus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
-            Bus.Subscribe<StorageMessage.RequestManagerTimerTick>(requestManagement);
+            _mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.CreateStreamRequestCreated>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.WriteRequestCreated>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.TransactionStartRequestCreated>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.TransactionWriteRequestCreated>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.TransactionCommitRequestCreated>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.DeleteStreamRequestCreated>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.CommitAck>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.RequestManagerTimerTick>(requestManagement);
 
             new SubscriptionsService(_mainBus, readIndex); // subscribes internally
 
             // TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
-            Bus.Subscribe<TimerMessage.Schedule>(TimerService);
+            _mainBus.Subscribe<TimerMessage.Schedule>(TimerService);
 
             monitoringQueue.Start();
             MainQueue.Start();

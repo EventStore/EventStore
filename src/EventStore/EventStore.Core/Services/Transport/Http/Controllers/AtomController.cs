@@ -90,26 +90,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             Register(http, "/streams", HttpMethod.Post, OnCreateStream, AtomCodecs, AtomCodecs);
             Register(http, "/streams/{stream}", HttpMethod.Delete, OnDeleteStream, AtomCodecs, AtomCodecs);
-            Register(
-                http, "/streams/{stream}?embed={embed}", HttpMethod.Get, OnGetStreamFeedLatest, Codec.NoCodecs,
-                AtomWithHtmlCodecs);
-            Register(
-                http, "/streams/{stream}/range/{start}/{count}?embed={embed}", HttpMethod.Get, OnGetStreamRangeFeedPage,
-                Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/{stream}?embed={embed}", HttpMethod.Get, OnGetStreamFeedLatest, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/{stream}/range/{start}/{count}?embed={embed}", HttpMethod.Get, OnGetStreamRangeFeedPage, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/{stream}/{id}", HttpMethod.Get, OnGetEntry, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/{stream}", HttpMethod.Post, OnPostEntry, AtomCodecs, AtomCodecs);
-            Register(
-                http, "/streams/$all?embed={embed}", HttpMethod.Get, OnGetAllFeedBeforeHead, Codec.NoCodecs,
-                AtomWithHtmlCodecs);
-            Register(
-                http, "/streams/$all/{count}?embed={embed}", HttpMethod.Get, OnGetAllFeedBeforeHead, Codec.NoCodecs,
-                AtomWithHtmlCodecs);
-            Register(
-                http, "/streams/$all/before/{pos}/{count}?embed={embed}", HttpMethod.Get, OnGetAllFeedBefore,
-                Codec.NoCodecs, AtomWithHtmlCodecs);
-            Register(
-                http, "/streams/$all/after/{pos}/{count}?embed={embed}", HttpMethod.Get, OnGetAllAfterFeed,
-                Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/$all?embed={embed}", HttpMethod.Get, OnGetAllFeedBeforeHead, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/$all/{count}?embed={embed}", HttpMethod.Get, OnGetAllFeedBeforeHead, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/$all/before/{pos}/{count}?embed={embed}", HttpMethod.Get, OnGetAllFeedBefore, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/$all/after/{pos}/{count}?embed={embed}", HttpMethod.Get, OnGetAllAfterFeed, Codec.NoCodecs, AtomWithHtmlCodecs);
         }
 
         //FEED

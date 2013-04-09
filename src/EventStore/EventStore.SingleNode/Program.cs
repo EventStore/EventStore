@@ -90,7 +90,7 @@ namespace EventStore.SingleNode
             {
                 _projections = new Projections.Core.Projections(db,
                                                                 _node.MainQueue,
-                                                                _node.Bus,
+                                                                _node.MainBus,
                                                                 _node.TimerService,
                                                                 _node.HttpService,
                                                                 _node.NetworkSendService,

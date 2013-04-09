@@ -134,6 +134,7 @@
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />
     <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
+    <Compile Include="Messaging\CallbackEnvelope.cs" />
     <Compile Include="Services\Storage\EpochManager\EpochManager.cs" />
     <Compile Include="Services\Storage\EpochManager\IEpochManager.cs" />
     <Compile Include="NodeSubsystems.cs" />
@@ -180,6 +181,7 @@
     <Compile Include="Settings\ESConsts.cs" />
     <Compile Include="Settings\VNodeSettings.cs" />
     <Compile Include="TransactionLog\Checkpoint\Checkpoint.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkDbTruncator.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk\BulkReadResult.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk\PosMap.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk\TFChunkReadSide.cs" />
