@@ -369,6 +369,7 @@
     <Compile Include="TransactionLog\when_writing_a_new_chunked_transaction_file.cs" />
     <Compile Include="TransactionLog\when_writing_commit_record_to_file.cs" />
     <Compile Include="TransactionLog\when_writing_prepare_record_to_file.cs" />
+    <Compile Include="mono_filestream_bug.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
