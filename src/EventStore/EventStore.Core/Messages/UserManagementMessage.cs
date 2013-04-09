@@ -46,6 +46,14 @@ namespace EventStore.Core.Messages
 
         public class ResponseMessage : Message
         {
+            public readonly bool Success;
+            public readonly Error Error;
+
+            public ResponseMessage(bool success, Error error)
+            {
+                Success = success;
+                Error = error;
+            }
         }
 
         public class UserManagementRequestMessage : RequestMessage
@@ -165,41 +173,34 @@ namespace EventStore.Core.Messages
         public sealed class UpdateResult : ResponseMessage
         {
             public readonly string LoginName;
-            public readonly bool Success;
-            public readonly Error Error;
 
 
             public UpdateResult(string loginName)
+                : base (true, Error.Success)
             {
                 LoginName = loginName;
-                Success = true;
             }
 
             public UpdateResult(string loginName, Error error)
+                : base (false, error)
             {
-                Success = false;
                 LoginName = loginName;
-                Error = error;
             }
         }
 
         public sealed class UserDetailsResult : ResponseMessage
         {
-            public readonly bool Success;
-            public readonly Error Error;
             public readonly UserData Data;
 
             public UserDetailsResult(UserData data)
+                : base(true, Error.Success)
             {
-                Success = true;
-                Error = Error.Success;
                 Data = data;
             }
 
             public UserDetailsResult(Error error)
+                : base(false, error)
             {
-                Success = false;
-                Error = error;
                 Data = null;
             }
         }

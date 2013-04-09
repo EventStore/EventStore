@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Transport.Http;
@@ -45,25 +46,95 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
+            RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, GetUser);
             RegisterTextBody(service, "/users/", HttpMethod.Post, PostUser);
+            RegisterTextBody(service, "/users/{login}", HttpMethod.Put, PutUser);
+            RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, DeleteUser);
+            RegisterUrlBased(service, "/users/{login}/command/enable", HttpMethod.Post, PostCommandEnable);
+            RegisterUrlBased(service, "/users/{login}/command/disable", HttpMethod.Post, PostCommandDisable);
+            RegisterTextBody(
+                service, "/users/{login}/command/reset-password", HttpMethod.Post, PostCommandResetPassword);
+            RegisterTextBody(
+                service, "/users/{login}/command/change-password", HttpMethod.Post, PostCommandChangePassword);
+        }
+
+        private void GetUser(HttpEntityManager http, UriTemplateMatch match)
+        {
+            var envelope = CreateReplyEnvelope<UserManagementMessage.UserDetailsResult>(http);
+            var login = match.BoundVariables["login"];
+            var message = new UserManagementMessage.Get(envelope, login);
+            Publish(message);
         }
 
         private void PostUser(HttpEntityManager http, string s)
         {
-            var envelope = CreateReplyEnvelope(http);
+            var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var data = http.RequestCodec.From<PostUserData>(s);
-            var createUserMessage = new UserManagementMessage.Create(
+            var message = new UserManagementMessage.Create(
                 envelope, data.LoginName, data.FullName, data.Password);
-            Publish(createUserMessage);
+            Publish(message);
         }
 
-        private SendToHttpEnvelope<UserManagementMessage.UpdateResult> CreateReplyEnvelope(HttpEntityManager http)
+        private void PutUser(HttpEntityManager http, UriTemplateMatch match, string s)
         {
-            return new SendToHttpEnvelope<UserManagementMessage.UpdateResult>(
-                _networkSendQueue, http, AutoFormatter, AutoConfigurator, null);
+            var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
+            var login = match.BoundVariables["login"];
+            var data = http.RequestCodec.From<PutUserData>(s);
+            var message = new UserManagementMessage.Update(envelope, login, data.FullName);
+            Publish(message);
         }
 
-        private ResponseConfiguration AutoConfigurator(ICodec codec, UserManagementMessage.UpdateResult result)
+        private void DeleteUser(HttpEntityManager http, UriTemplateMatch match)
+        {
+            var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
+            var login = match.BoundVariables["login"];
+            var message = new UserManagementMessage.Delete(envelope, login);
+            Publish(message);
+        }
+
+        private void PostCommandEnable(HttpEntityManager http, UriTemplateMatch match)
+        {
+            var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
+            var login = match.BoundVariables["login"];
+            var message = new UserManagementMessage.Enable(envelope, login);
+            Publish(message);
+        }
+
+        private void PostCommandDisable(HttpEntityManager http, UriTemplateMatch match)
+        {
+            var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
+            var login = match.BoundVariables["login"];
+            var message = new UserManagementMessage.Disable(envelope, login);
+            Publish(message);
+        }
+
+        private void PostCommandResetPassword(HttpEntityManager http, UriTemplateMatch match, string s)
+        {
+            var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
+            var login = match.BoundVariables["login"];
+            var data = http.RequestCodec.From<ResetPasswordData>(s);
+            var message = new UserManagementMessage.ResetPassword(envelope, login, data.NewPassword);
+            Publish(message);
+        }
+
+        private void PostCommandChangePassword(HttpEntityManager http, UriTemplateMatch match, string s)
+        {
+            var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
+            var login = match.BoundVariables["login"];
+            var data = http.RequestCodec.From<ChangePasswordData>(s);
+            var message = new UserManagementMessage.ChangePassword(
+                envelope, login, data.CurrentPassword, data.NewPassword);
+            Publish(message);
+        }
+
+        private SendToHttpEnvelope<T> CreateReplyEnvelope<T>(HttpEntityManager http)
+            where T : UserManagementMessage.ResponseMessage
+        {
+            return new SendToHttpEnvelope<T>(_networkSendQueue, http, AutoFormatter, AutoConfigurator, null);
+        }
+
+        private ResponseConfiguration AutoConfigurator<T>(ICodec codec, T result)
+            where T : UserManagementMessage.ResponseMessage
         {
             return result.Success
                        ? new ResponseConfiguration(HttpStatusCode.OK, codec.ContentType, codec.Encoding)
@@ -102,6 +173,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public string LoginName { get; set; }
             public string FullName { get; set; }
             public string Password { get; set; }
+        }
+
+        private class PutUserData
+        {
+            public string FullName { get; set; }
+        }
+
+        private class ResetPasswordData
+        {
+            public string NewPassword { get; set; }
+        }
+
+        private class ChangePasswordData
+        {
+            public string CurrentPassword { get; set; }
+            public string NewPassword { get; set; }
         }
     }
 }

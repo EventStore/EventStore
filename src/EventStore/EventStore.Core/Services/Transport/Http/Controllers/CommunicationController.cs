@@ -103,5 +103,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 service, uriTemplate, httpMethod, (http, match) => http.ReadTextRequestAsync(action, LogError),
                 DefaultCodecs, DefaultCodecs);
         }
+
+        protected void RegisterTextBody(
+            IHttpService service, string uriTemplate, string httpMethod,
+            Action<HttpEntityManager, UriTemplateMatch, string> action)
+        {
+            Register(
+                service, uriTemplate, httpMethod,
+                (http, match) => http.ReadTextRequestAsync((manager, s) => action(manager, match, s), LogError),
+                DefaultCodecs, DefaultCodecs);
+        }
+
+        protected void RegisterUrlBased(
+            IHttpService service, string uriTemplate, string httpMethod, Action<HttpEntityManager, UriTemplateMatch> action)
+        {
+            Register(service, uriTemplate, httpMethod, action, DefaultCodecs, DefaultCodecs);
+        }
     }
 }
