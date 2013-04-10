@@ -46,7 +46,6 @@ namespace EventStore.Web.Users
         {
             builder.FromAll();
             builder.IncludeEvent("$user-created");
-            builder.IncludeEvent("$user-updated");
         }
 
         public void Load(string state)
