@@ -111,7 +111,8 @@ namespace EventStore.Core.Services.Transport.Http
 
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
-            _server.Shutdown();
+            if (message.ExitProcess)
+                Shutdown();
             _inputBus.Publish(new SystemMessage.ServiceShutdown(string.Format("HttpServer [{0}]", string.Join(", ", _server.ListenPrefixes))));
         }
 

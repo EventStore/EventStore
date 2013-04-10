@@ -33,7 +33,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
-using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
 namespace EventStore.Core.Tests.TransactionLog
 {
