@@ -25,12 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.IO;
-using NUnit.Framework;
 
 namespace EventStore.Core.Tests
 {
+    using System;
+    using System.IO;
+    using NUnit.Framework;
+
     [TestFixture]
     public class mono_filestream_bug
     {
@@ -43,7 +44,7 @@ namespace EventStore.Core.Tests
             var filename = Path.GetTempFileName();
             File.WriteAllBytes(filename, new byte[pos + 1]); // init file with zeros
 
-            byte[] bytes = new byte[bufferSize + 1 /* THIS IS WHAT MAKES A BIG DIFFERENCE */];
+            var bytes = new byte[bufferSize + 1 /* THIS IS WHAT MAKES A BIG DIFFERENCE */];
             new Random().NextBytes(bytes);
 
             using (var file = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read,

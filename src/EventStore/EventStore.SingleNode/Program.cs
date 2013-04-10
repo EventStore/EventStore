@@ -42,6 +42,7 @@ namespace EventStore.SingleNode
         private SingleVNode _node;
         private Projections.Core.Projections _projections;
         private readonly DateTime _startupTimeStamp = DateTime.UtcNow;
+        private ExclusiveDbLock _dbLock;
 
         public static int Main(string[] args)
         {
@@ -72,6 +73,11 @@ namespace EventStore.SingleNode
         protected override void Create(SingleNodeOptions options)
         {
             var dbPath = Path.GetFullPath(ResolveDbPath(options.DbPath, options.HttpPort));
+
+            _dbLock = new ExclusiveDbLock(dbPath);
+            if (!_dbLock.Acquire())
+                throw new Exception(string.Format("Couldn't acquire exclusive lock on DB at '{0}'.", dbPath));
+
             var db = new TFChunkDb(CreateDbConfig(dbPath, options.CachedChunks, options.ChunksCacheSize));
             var vnodeSettings = GetVNodeSettings(options);
             var dbVerifyHashes = !options.SkipDbVerify;
@@ -127,6 +133,14 @@ namespace EventStore.SingleNode
         public override void Stop()
         {
             _node.Stop(exitProcess: true);
+        }
+
+        protected override void OnProgramExit()
+        {
+            base.OnProgramExit();
+
+            if (_dbLock != null && _dbLock.IsAcquired)
+                _dbLock.Release();
         }
     }
 }

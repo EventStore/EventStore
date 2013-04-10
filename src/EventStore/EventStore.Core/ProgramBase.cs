@@ -90,7 +90,7 @@ namespace EventStore.Core
                 Console.Error.WriteLine("Error while parsing options:");
                 Console.Error.WriteLine(FormatExceptionMessage(exc));
                 Console.Error.WriteLine();
-                Console.Error.WriteLine("Usage:");
+                Console.Error.WriteLine("Options:");
                 Console.Error.WriteLine(options.GetUsage());
             }
             catch (ApplicationInitializationException ex)
@@ -114,6 +114,10 @@ namespace EventStore.Core
         {
             _exitCode = exitCode;
             _exitEvent.Set();
+        }
+
+        protected virtual void OnProgramExit()
+        {
         }
 
         private void Init(TOptions options)

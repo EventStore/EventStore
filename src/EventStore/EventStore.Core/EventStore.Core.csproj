@@ -115,6 +115,7 @@
     <Compile Include="Exceptions\ReaderCheckpointHigherThanWriterException.cs" />
     <Compile Include="Exceptions\SystemStreamNotFoundException.cs" />
     <Compile Include="Exceptions\UnableToAcquireLockInReasonableTimeException.cs" />
+    <Compile Include="ExclusiveDbLock.cs" />
     <Compile Include="Index\GuidFilenameProvider.cs" />
     <Compile Include="Index\Hashes\IHasher.cs" />
     <Compile Include="Index\Hashes\Murmur2Unsafe.cs" />
