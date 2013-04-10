@@ -42,7 +42,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     {
         protected override void Given()
         {
-            NoStream("$projections-$all");
             NoStream("$projections-test-projection");
             NoStream("$projections-test-projection-result");
             NoStream("$projections-test-projection-order");
