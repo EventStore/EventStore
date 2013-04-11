@@ -55,13 +55,10 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionManager>();
 
-        public event Action<TcpConnectionManager, SocketError> ConnectionClosed;
-        public event Action<TcpConnectionManager> ConnectionEstablished;
-
         public readonly Guid ConnectionId;
         public readonly string ConnectionName;
         public readonly IPEndPoint EndPoint;
-        public bool IsClosed { get { return _isClosed; } }
+        public bool IsClosed { get { return _isClosed != 0; } }
         public int SendQueueSize { get { return _connection.SendQueueSize; } }
 
         private readonly TcpConnection _connection;
@@ -70,13 +67,17 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly ITcpDispatcher _dispatcher;
         private readonly IMessageFramer _framer;
         private int _messageNumber;
-        private bool _isClosed;
+        private int _isClosed;
+
+        private readonly Action<TcpConnectionManager, SocketError> _connectionClosed;
+        private readonly Action<TcpConnectionManager> _connectionEstablished;
 
         public TcpConnectionManager(string connectionName, 
                                     ITcpDispatcher dispatcher, 
                                     IPublisher publisher, 
                                     TcpConnection openedConnection,
-                                    IPublisher networkSendQueue)
+                                    IPublisher networkSendQueue,
+                                    Action<TcpConnectionManager, SocketError> onConnectionClosed)
         {
             Ensure.NotNull(dispatcher, "dispatcher");
             Ensure.NotNull(publisher, "publisher");
@@ -94,8 +95,12 @@ namespace EventStore.Core.Services.Transport.Tcp
             _framer = new LengthPrefixMessageFramer();
             _framer.RegisterMessageArrivedCallback(OnMessageArrived);
 
+            _connectionClosed = onConnectionClosed;
+
             _connection = openedConnection;
             _connection.ConnectionClosed += OnConnectionClosed;
+            if (_connection.IsClosed)
+                OnConnectionClosed(_connection, SocketError.Success);
 
             ScheduleHeartbeat(0);
         }
@@ -106,7 +111,9 @@ namespace EventStore.Core.Services.Transport.Tcp
                                     IPublisher publisher, 
                                     IPEndPoint remoteEndPoint, 
                                     TcpClientConnector connector,
-                                    IPublisher networkSendQueue)
+                                    IPublisher networkSendQueue,
+                                    Action<TcpConnectionManager> onConnectionEstablished,
+                                    Action<TcpConnectionManager, SocketError> onConnectionClosed)
         {
             Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(dispatcher, "dispatcher");
@@ -126,8 +133,13 @@ namespace EventStore.Core.Services.Transport.Tcp
             _framer = new LengthPrefixMessageFramer();
             _framer.RegisterMessageArrivedCallback(OnMessageArrived);
 
+            _connectionEstablished = onConnectionEstablished;
+            _connectionClosed = onConnectionClosed;
+
             _connection = connector.ConnectTo(ConnectionId, remoteEndPoint, OnConnectionEstablished, OnConnectionFailed);
             _connection.ConnectionClosed += OnConnectionClosed;
+            if (_connection.IsClosed)
+                OnConnectionClosed(_connection, SocketError.Success);
         }
 
         private void OnConnectionEstablished(TcpConnection connection)
@@ -136,21 +148,29 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             ScheduleHeartbeat(0);
 
-            var handler = ConnectionEstablished;
+            var handler = _connectionEstablished;
             if (handler != null)
                 handler(this);
         }
 
         private void OnConnectionFailed(TcpConnection connection, SocketError socketError)
         {
-            Log.Info("Connection '{0}' ({1:B}) to [{2}] failed: {3}.", ConnectionName, ConnectionId, connection.EffectiveEndPoint, socketError);
+            if (Interlocked.CompareExchange(ref _isClosed, 1, 0) == 0)
+            {
+                Log.Info("Connection '{0}' ({1:B}) to [{2}] failed: {3}.", ConnectionName, ConnectionId, connection.EffectiveEndPoint, socketError);
+                if (_connectionClosed != null)
+                    _connectionClosed(this, socketError);
+            }
+        }
 
-            _isClosed = true;
-            connection.ConnectionClosed -= OnConnectionClosed;
-
-            var handler = ConnectionClosed;
-            if (handler != null)
-                handler(this, socketError);
+        private void OnConnectionClosed(ITcpConnection connection, SocketError socketError)
+        {
+            if (Interlocked.CompareExchange(ref _isClosed, 1, 0) == 0)
+            {
+                Log.Info("Connection '{0}' [{1}, {2:B}] closed: {3}.", ConnectionName, connection.EffectiveEndPoint, ConnectionId, socketError);
+                if (_connectionClosed != null)
+                    _connectionClosed(this, socketError);
+            }
         }
 
         public void StartReceiving()
@@ -267,8 +287,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         public void Handle(TcpMessage.Heartbeat message)
         {
-            if (_isClosed)
-                return;
+            if (IsClosed) return;
 
             var msgNum = _messageNumber;
             if (message.MessageNumber != msgNum)
@@ -286,8 +305,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         public void Handle(TcpMessage.HeartbeatTimeout message)
         {
-            if (_isClosed)
-                return;
+            if (IsClosed) return;
 
             var msgNum = _messageNumber;
             if (message.MessageNumber != msgNum)
@@ -298,18 +316,6 @@ namespace EventStore.Core.Services.Transport.Tcp
                          ConnectionName, EndPoint, ConnectionId, msgNum);
                 _connection.Close();
             }
-        }
-
-        private void OnConnectionClosed(ITcpConnection connection, SocketError socketError)
-        {
-            Log.Info("Connection '{0}' [{1}, {2:B}] closed: {3}.", ConnectionName, connection.EffectiveEndPoint, ConnectionId, socketError);
-
-            _isClosed = true;
-            connection.ConnectionClosed -= OnConnectionClosed;
-
-            var handler = ConnectionClosed;
-            if (handler != null)
-                handler(this, socketError);
         }
 
         private void ScheduleHeartbeat(int msgNum)
