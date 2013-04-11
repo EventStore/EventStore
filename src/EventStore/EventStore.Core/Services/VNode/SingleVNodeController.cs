@@ -257,7 +257,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(SystemMessage.ShutdownTimeout message)
         {
-            Debug.Assert(_state == VNodeState.ShuttingDown);
+            if (_state != VNodeState.ShuttingDown) throw new Exception();
 
             Log.Info("========== [{0}] Shutdown Timeout.", _httpEndPoint);
             Shutdown();
@@ -265,7 +265,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Shutdown()
         {
-            Debug.Assert(_state == VNodeState.ShuttingDown);
+            if (_state != VNodeState.ShuttingDown) throw new Exception();
 
             _db.Close();
             _fsm.Handle(new SystemMessage.BecomeShutdown(Guid.NewGuid()));

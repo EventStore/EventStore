@@ -246,7 +246,6 @@
     <Compile Include="Services\Transport\Http\Controllers\AdminController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\CommunicationController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\PingController.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\ReadEventDataController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\StatController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\AtomController.cs" />
     <Compile Include="Services\Transport\Http\Convert.cs" />

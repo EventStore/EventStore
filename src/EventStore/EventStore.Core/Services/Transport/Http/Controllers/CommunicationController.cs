@@ -82,11 +82,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                        e => Log.ErrorException(e, "Error while closing http connection (ok)"));
         }
 
-        protected void Register(IHttpService service, string uriTemplate, string httpMethod, Action<HttpEntity, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs)
+        protected void Register(IHttpService service, string uriTemplate, string httpMethod, 
+                                Action<HttpEntity, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs)
         {
-            service.RegisterControllerAction(
-                new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs),
-                handler);
+            service.RegisterControllerAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs), handler);
         }
     }
 }

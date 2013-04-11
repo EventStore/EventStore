@@ -177,7 +177,6 @@ namespace EventStore.Core
             HttpService.SetupController(new AdminController(MainQueue));
             HttpService.SetupController(new PingController());
             HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));
-            HttpService.SetupController(new ReadEventDataController(MainQueue, _networkSendService));
             HttpService.SetupController(new AtomController(MainQueue, _networkSendService));
             HttpService.SetupController(new WebSiteController(MainQueue, _enabledNodeSubsystems));
 
