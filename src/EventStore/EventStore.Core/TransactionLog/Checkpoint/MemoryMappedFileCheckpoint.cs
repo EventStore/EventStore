@@ -73,6 +73,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
                                                     HandleInheritability.None,
                                                     false);
             _accessor = _file.CreateViewAccessor(0, 8);
+
             if (old)
                 _last = _lastFlushed = ReadCurrent();
             else
@@ -103,7 +104,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _accessor.Write(0, last);
             _accessor.Flush();
 
-            FlushViewOfFile(_file.SafeMemoryMappedFileHandle.DangerousGetHandle(), (UIntPtr)sizeof (long));
+            FlushViewOfFile(_accessor.SafeMemoryMappedViewHandle.DangerousGetHandle(), (UIntPtr)sizeof (long));
 
             Interlocked.Exchange(ref _lastFlushed, last);
 
