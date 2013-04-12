@@ -37,6 +37,9 @@ namespace EventStore.Core.TransactionLog.Checkpoint
     public class MemoryMappedFileCheckpoint : ICheckpoint
     {
         [DllImport("kernel32.dll")]
+        static extern bool FlushFileBuffers(IntPtr hFile);
+
+        [DllImport("kernel32.dll")]
         static extern bool FlushViewOfFile(IntPtr lpBaseAddress, UIntPtr dwNumberOfBytesToFlush);
 
         public string Name { get { return _name; } }
@@ -44,6 +47,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         private readonly string _filename;
         private readonly string _name;
         private readonly bool _cached;
+        private readonly FileStream _fileStream;
         private readonly MemoryMappedFile _file;
         private long _last;
         private long _lastFlushed;
@@ -61,11 +65,11 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _name = name;
             _cached = cached;
             var old = File.Exists(_filename);
-            var filestream = new FileStream(_filename,
+            _fileStream = new FileStream(_filename,
                                             mustExist ? FileMode.Open : FileMode.OpenOrCreate,
                                             FileAccess.ReadWrite,
                                             FileShare.ReadWrite);
-            _file = MemoryMappedFile.CreateFromFile(filestream,
+            _file = MemoryMappedFile.CreateFromFile(_fileStream,
                                                     Guid.NewGuid().ToString(),
                                                     sizeof(long),
                                                     MemoryMappedFileAccess.ReadWrite,
@@ -104,7 +108,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _accessor.Write(0, last);
             _accessor.Flush();
 
-            FlushViewOfFile(_accessor.SafeMemoryMappedViewHandle.DangerousGetHandle(), (UIntPtr)sizeof (long));
+            FlushViewOfFile(_accessor.SafeMemoryMappedViewHandle.DangerousGetHandle(), (UIntPtr)sizeof(long));
+            FlushFileBuffers(_fileStream.SafeFileHandle.DangerousGetHandle());
 
             Interlocked.Exchange(ref _lastFlushed, last);
 
