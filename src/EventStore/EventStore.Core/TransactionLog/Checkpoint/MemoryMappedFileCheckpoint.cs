@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -39,8 +40,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         [DllImport("kernel32.dll")]
         static extern bool FlushFileBuffers(IntPtr hFile);
 
-        [DllImport("kernel32.dll")]
-        static extern bool FlushViewOfFile(IntPtr lpBaseAddress, UIntPtr dwNumberOfBytesToFlush);
+        //[DllImport("kernel32.dll")]
+        //static extern bool FlushViewOfFile(IntPtr lpBaseAddress, UIntPtr dwNumberOfBytesToFlush);
 
         public string Name { get { return _name; } }
 
@@ -108,7 +109,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _accessor.Write(0, last);
             _accessor.Flush();
 
-            FlushViewOfFile(_accessor.SafeMemoryMappedViewHandle.DangerousGetHandle(), (UIntPtr)sizeof(long));
+            //FlushViewOfFile(_accessor.SafeMemoryMappedViewHandle.DangerousGetHandle(), (UIntPtr)sizeof(long));
             FlushFileBuffers(_fileStream.SafeFileHandle.DangerousGetHandle());
 
             Interlocked.Exchange(ref _lastFlushed, last);
