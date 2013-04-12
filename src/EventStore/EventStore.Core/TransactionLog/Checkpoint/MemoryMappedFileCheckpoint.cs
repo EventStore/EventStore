@@ -37,12 +37,9 @@ namespace EventStore.Core.TransactionLog.Checkpoint
     public class MemoryMappedFileCheckpoint : ICheckpoint
     {
         [DllImport("kernel32.dll")]
-        static extern bool FlushFileBuffers(IntPtr hFile);
+        static extern bool FlushViewOfFile(IntPtr lpBaseAddress, UIntPtr dwNumberOfBytesToFlush);
 
-        public string Name
-        {
-            get { return _name; }
-        }
+        public string Name { get { return _name; } }
 
         private readonly string _filename;
         private readonly string _name;
@@ -54,8 +51,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 
         private readonly object _flushLocker = new object();
 
-        public MemoryMappedFileCheckpoint(string filename)
-            : this(filename, Guid.NewGuid().ToString(), false)
+        public MemoryMappedFileCheckpoint(string filename): this(filename, Guid.NewGuid().ToString(), false)
         {
         }
 
@@ -71,7 +67,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
                                             FileShare.ReadWrite);
             _file = MemoryMappedFile.CreateFromFile(filestream,
                                                     Guid.NewGuid().ToString(),
-                                                    8,
+                                                    sizeof(long),
                                                     MemoryMappedFileAccess.ReadWrite,
                                                     new MemoryMappedFileSecurity(),
                                                     HandleInheritability.None,
@@ -107,7 +103,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _accessor.Write(0, last);
             _accessor.Flush();
 
-            FlushFileBuffers(_file.SafeMemoryMappedFileHandle.DangerousGetHandle());
+            FlushViewOfFile(_file.SafeMemoryMappedFileHandle.DangerousGetHandle(), (UIntPtr)sizeof (long));
 
             Interlocked.Exchange(ref _lastFlushed, last);
 
