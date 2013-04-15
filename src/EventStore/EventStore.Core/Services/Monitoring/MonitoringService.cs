@@ -211,7 +211,7 @@ namespace EventStore.Core.Services.Monitoring
                                                            true,
                                                            SystemStreams.MetastreamOf(_nodeStatsStream),
                                                            -1,
-                                                           new Event(Guid.NewGuid(), null, true, metadata, null)));
+                                                           new Event(Guid.NewGuid(), "$stats-metadata", true, metadata, null)));
         }
 
         public void Handle(ClientMessage.WriteEventsCompleted message)

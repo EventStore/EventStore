@@ -165,22 +165,6 @@ namespace EventStore.Core.Messages
                                      Metadata);
             }
         }
-
-        [XmlRoot(ElementName = "delete-stream")]
-        public class DeleteStreamText
-        {
-            public int ExpectedVersion { get; set; }
-
-            public DeleteStreamText()
-            {
-            }
-
-            public DeleteStreamText(int expectedVersion)
-            {
-                ExpectedVersion = expectedVersion;
-            }
-        }
-
         #endregion
     }
 }

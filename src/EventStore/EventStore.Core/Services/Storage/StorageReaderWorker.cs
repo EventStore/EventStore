@@ -270,7 +270,7 @@ namespace EventStore.Core.Services.Storage
         void IHandle<ClientMessage.ReadAllEventsBackward>.Handle(ClientMessage.ReadAllEventsBackward message)
         {
             var pos = new TFPos(message.CommitPosition, message.PreparePosition);
-            if (pos == TFPos.Invalid)
+            if (pos == TFPos.HeadOfTf)
             {
                 var checkpoint = _writerCheckpoint.Read();
                 pos = new TFPos(checkpoint, checkpoint);

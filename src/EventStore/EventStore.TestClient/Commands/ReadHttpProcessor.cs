@@ -53,7 +53,7 @@ namespace EventStore.TestClient.Commands
             context.IsAsync();
 
             var client = new HttpAsyncClient();
-            var readUrl = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}/event/{1}?format=json", eventStreamId, version);
+            var readUrl = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}/{1}?format=json", eventStreamId, version);
 
             context.Log.Info("[{0}]: Reading...", context.Client.HttpEndpoint);
 

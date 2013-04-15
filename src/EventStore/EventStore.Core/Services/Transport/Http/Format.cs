@@ -26,11 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Diagnostics;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Http.Controllers;
+using EventStore.Transport.Http;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Transport.Http
@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Http
     {
         public static class Atom
         {
-            public static string ReadEventCompletedEntry(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
+            public static string EventEntry(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
                 var completed = message as ClientMessage.ReadEventCompleted;
                 if (completed != null)
@@ -47,7 +47,17 @@ namespace EventStore.Core.Services.Transport.Http
                     switch (completed.Result)
                     {
                         case ReadEventResult.Success:
-                            return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.UserHostName, embed));
+                        {
+                            switch (entity.ResponseCodec.ContentType)
+                            {
+                                case ContentType.Atom:
+                                case ContentType.AtomJson:
+                                case ContentType.Html:
+                                    return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.UserHostName, embed));
+                                default:
+                                    return AutoEventConverter.SmartFormat(completed, entity.ResponseCodec);
+                            }
+                        }
                         case ReadEventResult.NotFound:
                         case ReadEventResult.NoStream:
                         case ReadEventResult.StreamDeleted:
@@ -59,7 +69,7 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
             }
 
-            public static string ReadStreamEventsBackwardCompletedFeed(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed, bool headOfStream)
+            public static string GetStreamEventsBackward(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed, bool headOfStream)
             {
                 // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 
@@ -69,7 +79,8 @@ namespace EventStore.Core.Services.Transport.Http
                     switch (completed.Result)
                     {
                         case ReadStreamResult.Success:
-                            return entity.ResponseCodec.To(Convert.ToReadStreamFeed(completed, entity.UserHostName, embed, headOfStream));
+                            // TODO AN: better head of stream discovery
+                            return entity.ResponseCodec.To(Convert.ToStreamEventBackwardFeed(completed, entity.UserHostName, embed, headOfStream));
                         case ReadStreamResult.NoStream:
                         case ReadStreamResult.StreamDeleted:
                         case ReadStreamResult.NotModified:
@@ -80,6 +91,26 @@ namespace EventStore.Core.Services.Transport.Http
                     }
                 }
                 return string.Empty;
+            }
+
+            public static string GetStreamEventsForward(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
+            {
+                var completed = message as ClientMessage.ReadStreamEventsForwardCompleted;
+                if (completed == null)
+                    return string.Empty;
+
+                switch (completed.Result)
+                {
+                    case ReadStreamResult.Success:
+                        return entity.ResponseCodec.To(Convert.ToStreamEventForwardFeed(completed, entity.UserHostName, embed));
+                    case ReadStreamResult.NoStream:
+                    case ReadStreamResult.StreamDeleted:
+                    case ReadStreamResult.NotModified:
+                    case ReadStreamResult.Error:
+                        return string.Empty;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
 
             public static string ReadAllEventsBackwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
@@ -112,27 +143,6 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static string WriteEventsCompleted(HttpResponseFormatterArgs entity, Message message)
         {
-            return string.Empty;
-        }
-
-        public static string ReadEventCompleted(HttpResponseFormatterArgs entity, Message message)
-        {
-            var completed = message as ClientMessage.ReadEventCompleted;
-            if (completed != null)
-            {
-                switch (completed.Result)
-                {
-                    case ReadEventResult.Success:
-                        return AutoEventConverter.SmartFormat(completed, entity.ResponseCodec);
-
-                    case ReadEventResult.NotFound:
-                    case ReadEventResult.NoStream:
-                    case ReadEventResult.StreamDeleted:
-                        return string.Empty;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
             return string.Empty;
         }
 

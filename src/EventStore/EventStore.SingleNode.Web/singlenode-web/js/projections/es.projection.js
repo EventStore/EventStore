@@ -308,7 +308,7 @@ es.projection = function (settings) {
         Entry.isOnPage = function (pageUrl, entry) {
             var entryId = Entry.getId(entry);
 
-            // example: http://127.0.0.1:2114/streams/$stats-127.0.0.1:2114/range/39/20
+            // example: http://127.0.0.1:2114/streams/$stats-127.0.0.1:2114/39/20
             var urlParts = pageUrl.split('/');
             var start = parseInt(urlParts[urlParts.length - 2]); // before last
             var backwardCount = parseInt(urlParts[urlParts.length - 1]); // last

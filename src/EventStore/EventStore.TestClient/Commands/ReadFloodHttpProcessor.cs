@@ -88,7 +88,7 @@ namespace EventStore.TestClient.Commands
                 threads.Add(new Thread(() =>
                 {
                     var client = new HttpAsyncClient();
-                    var url = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}/event/{1}", eventStreamId, 0);
+                    var url = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}/{1}?format=json", eventStreamId, 0);
 
                     Action onReceived = () =>
                     {

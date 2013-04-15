@@ -99,10 +99,13 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.InternalServerError, description ?? "Internal Server Error", null, Encoding.UTF8);
         }
 
-        public static ResponseConfiguration ReadEventCompleted(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration NotImplemented(string description = null)
         {
-            // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
+            return new ResponseConfiguration(HttpStatusCode.NotImplemented, description ?? "Not Implemented", null, Encoding.UTF8);
+        }
 
+        public static ResponseConfiguration EventEntry(HttpResponseConfiguratorArgs entity, Message message)
+        {
             var completed = message as ClientMessage.ReadEventCompleted;
             if (completed == null)
                 return InternalServerError();
@@ -121,10 +124,13 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public static ResponseConfiguration ReadStreamEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfStream)
+        public static ResponseConfiguration EventMetadata(HttpResponseConfiguratorArgs entity)
         {
-            // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
+            return NotImplemented();
+        }
 
+        public static ResponseConfiguration GetStreamEventsBackward(HttpResponseConfiguratorArgs entity, Message message, bool headOfStream)
+        {
             var msg = message as ClientMessage.ReadStreamEventsBackwardCompleted;
             if (msg == null)
                 return InternalServerError();
@@ -150,6 +156,32 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
+        public static ResponseConfiguration GetStreamEventsForward(HttpResponseConfiguratorArgs entity, Message message)
+        {
+            var msg = message as ClientMessage.ReadStreamEventsForwardCompleted;
+            if (msg == null)
+                return InternalServerError();
+
+            switch (msg.Result)
+            {
+                case ReadStreamResult.Success:
+                {
+                    if (msg.LastEventNumber >= msg.FromEventNumber + msg.MaxCount)
+                        return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
+                    return OkNoCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, msg.LastEventNumber.ToString(CultureInfo.InvariantCulture));
+                }
+                case ReadStreamResult.NoStream:
+                    return NotFound();
+                case ReadStreamResult.StreamDeleted:
+                    return Gone();
+                case ReadStreamResult.NotModified:
+                    return NotModified();
+                case ReadStreamResult.Error:
+                    return InternalServerError(msg.Message);
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
         public static ResponseConfiguration WriteEventsCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)
         {
             // Debug.Assert(message.GetType() == typeof(ClientMessage.WriteEventsCompleted));
