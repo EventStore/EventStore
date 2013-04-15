@@ -41,11 +41,6 @@ namespace EventStore.Core.Services.Transport.Tcp
             AddUnwrapper(TcpCommand.Ping, UnwrapPing);
             AddWrapper<TcpMessage.PongMessage>(WrapPong);
 
-            AddUnwrapper(TcpCommand.CreateStream, UnwrapCreateStream);
-            AddWrapper<ClientMessage.CreateStream>(WrapCreateStream);
-            AddUnwrapper(TcpCommand.CreateStreamCompleted, UnwrapCreateStreamCompleted);
-            AddWrapper<ClientMessage.CreateStreamCompleted>(WrapCreateStreamCompleted);
-
             AddUnwrapper(TcpCommand.WriteEvents, UnwrapWriteEvents);
             AddWrapper<ClientMessage.WriteEvents>(WrapWriteEvents);
             AddUnwrapper(TcpCommand.WriteEventsCompleted, UnwrapWriteEventCompleted);
@@ -108,32 +103,6 @@ namespace EventStore.Core.Services.Transport.Tcp
         private static TcpPackage WrapPong(TcpMessage.PongMessage message)
         {
             return new TcpPackage(TcpCommand.Pong, message.CorrelationId, message.Payload);
-        }
-
-        private static ClientMessage.CreateStream UnwrapCreateStream(TcpPackage package, IEnvelope envelope)
-        {
-            var dto = package.Data.Deserialize<TcpClientMessageDto.CreateStream>();
-            if (dto == null) return null;
-            return new ClientMessage.CreateStream(package.CorrelationId, envelope, dto.AllowForwarding, dto.EventStreamId, new Guid(dto.RequestId), dto.IsJson, dto.Metadata);
-        }
-
-        private static TcpPackage WrapCreateStream(ClientMessage.CreateStream msg)
-        {
-            var dto = new TcpClientMessageDto.CreateStream(msg.EventStreamId, msg.RequestId.ToByteArray(), msg.Metadata, msg.AllowForwarding, msg.IsJson);
-            return new TcpPackage(TcpCommand.CreateStream, msg.CorrelationId, dto.Serialize());
-        }
-
-        private static ClientMessage.CreateStreamCompleted UnwrapCreateStreamCompleted(TcpPackage package, IEnvelope envelope)
-        {
-            var dto = package.Data.Deserialize<TcpClientMessageDto.CreateStreamCompleted>();
-            if (dto == null) return null;
-            return new ClientMessage.CreateStreamCompleted(package.CorrelationId, (OperationResult)dto.Result, dto.Message);
-        }
-
-        private static TcpPackage WrapCreateStreamCompleted(ClientMessage.CreateStreamCompleted msg)
-        {
-            var dto = new TcpClientMessageDto.CreateStreamCompleted((TcpClientMessageDto.OperationResult) msg.Result, msg.Message);
-            return new TcpPackage(TcpCommand.CreateStreamCompleted, msg.CorrelationId, dto.Serialize());
         }
 
         private static ClientMessage.WriteEvents UnwrapWriteEvents(TcpPackage package, IEnvelope envelope)

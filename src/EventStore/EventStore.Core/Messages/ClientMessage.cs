@@ -139,41 +139,6 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class CreateStream: WriteRequestMessage
-        {
-            public readonly string EventStreamId;
-            public readonly Guid RequestId;
-            public readonly bool IsJson;
-            public readonly byte[] Metadata;
-
-            public CreateStream(Guid correlationId, IEnvelope envelope, bool allowForwarding, 
-                                string eventStreamId, Guid requestId, bool isJson, byte[] metadata)
-                : base(correlationId, envelope, allowForwarding)
-            {
-                Ensure.NotNull(eventStreamId, "eventStreamId");
-                Ensure.NotEmptyGuid(requestId, "requestId");
-                
-                EventStreamId = eventStreamId;
-                RequestId = requestId;
-                IsJson = isJson;
-                Metadata = metadata;
-            }
-        }
-
-        public class CreateStreamCompleted : WriteResponseMessage
-        {
-            public readonly Guid CorrelationId;
-            public readonly OperationResult Result;
-            public readonly string Message;
-
-            public CreateStreamCompleted(Guid correlationId, OperationResult result, string message)
-            {
-                CorrelationId = correlationId;
-                Result = result;
-                Message = message;
-            }
-        }
-
         public class WriteEvents : WriteRequestMessage
         {
             public readonly string EventStreamId;
@@ -184,7 +149,8 @@ namespace EventStore.Core.Messages
                                string eventStreamId, int expectedVersion, Event[] events)
                 : base(correlationId, envelope, allowForwarding)
             {
-                Ensure.NotNull(eventStreamId, "eventStreamId");
+                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                if (expectedVersion < Data.ExpectedVersion.Any) throw new ArgumentOutOfRangeException("expectedVersion");
                 Ensure.NotNull(events, "events");
                 Ensure.Positive(events.Length, "events.Length");
 
@@ -210,9 +176,6 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly OperationResult Result;
             public readonly string Message;
-            /// <summary>
-            /// NOTE: FirstEventNumber may account for ImplicitStreamCreated event
-            /// </summary>
             public readonly int FirstEventNumber;
 
             public WriteEventsCompleted(Guid correlationId, int firstEventNumber)
@@ -245,6 +208,9 @@ namespace EventStore.Core.Messages
             public TransactionStart(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, int expectedVersion)
                 : base(correlationId, envelope, allowForwarding)
             {
+                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                if (expectedVersion < Data.ExpectedVersion.Any) throw new ArgumentOutOfRangeException("expectedVersion");
+
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
             }
@@ -274,6 +240,10 @@ namespace EventStore.Core.Messages
             public TransactionWrite(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId, Event[] events)
                 : base(correlationId, envelope, allowForwarding)
             {
+                Ensure.Nonnegative(transactionId, "transactionId");
+                Ensure.NotNull(events, "events");
+                Ensure.Positive(events.Length, "events.Length");
+
                 TransactionId = transactionId;
                 Events = events;
             }
@@ -302,6 +272,7 @@ namespace EventStore.Core.Messages
             public TransactionCommit(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId)
                 : base(correlationId, envelope, allowForwarding)
             {
+                Ensure.Nonnegative(transactionId, "transactionId");
                 TransactionId = transactionId;
             }
         }
@@ -330,7 +301,8 @@ namespace EventStore.Core.Messages
             public DeleteStream(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, int expectedVersion)
                 : base(correlationId, envelope, allowForwarding)
             {
-                Ensure.NotNull(eventStreamId, "eventStreamId");
+                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                if (expectedVersion < Data.ExpectedVersion.Any) throw new ArgumentOutOfRangeException("expectedVersion");
 
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
@@ -360,6 +332,9 @@ namespace EventStore.Core.Messages
             public ReadEvent(Guid correlationId, IEnvelope envelope, string eventStreamId, int eventNumber, bool resolveLinkTos)
                 : base(correlationId, envelope)
             {
+                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
+
                 EventStreamId = eventStreamId;
                 EventNumber = eventNumber;
                 ResolveLinkTos = resolveLinkTos;
@@ -415,6 +390,9 @@ namespace EventStore.Core.Messages
                                            int? validationStreamVersion)
                 : base(correlationId, envelope)
             {
+                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                if (fromEventNumber < -1) throw new ArgumentOutOfRangeException("fromEventNumber");
+
                 EventStreamId = eventStreamId;
                 FromEventNumber = fromEventNumber;
                 MaxCount = maxCount;
@@ -518,6 +496,9 @@ namespace EventStore.Core.Messages
                                             int? validationStreamVersion)
                 : base(correlationId, envelope)
             {
+                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                if (fromEventNumber < -1) throw new ArgumentOutOfRangeException("fromEventNumber");
+
                 EventStreamId = eventStreamId;
                 FromEventNumber = fromEventNumber;
                 MaxCount = maxCount;

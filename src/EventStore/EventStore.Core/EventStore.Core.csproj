@@ -143,7 +143,6 @@
     <Compile Include="Services\Storage\ReaderIndex\TransactionInfo.cs" />
     <Compile Include="Services\SubscriptionsService.cs" />
     <Compile Include="Services\NetworkSendService.cs" />
-    <Compile Include="Services\RequestManager\Managers\CreateStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\RequestManager\Managers\DeleteStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\Monitoring\StatsCollectorEnvelope.cs" />
     <Compile Include="Services\Monitoring\Stats\StatsContainer.cs" />
@@ -254,7 +253,6 @@
     <Compile Include="Services\Transport\Http\Controllers\AdminController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\CommunicationController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\PingController.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\ReadEventDataController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\StatController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\AtomController.cs" />
     <Compile Include="Services\Transport\Http\Convert.cs" />

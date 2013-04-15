@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
+using System;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.Helper;
 
@@ -41,7 +43,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         {
             return ConnectionSettings.Create()
                                      .UseCustomLogger(ClientApiLoggerBridge.Default)
-                                     .EnableVerboseLogging();
+                                     .EnableVerboseLogging()
+                                     .SetOperationTimeoutTo(TimeSpan.FromDays(1));
         }
     }
 }

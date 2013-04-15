@@ -31,7 +31,7 @@ namespace EventStore.Core.Data
     {
         public const int Any = -2;
         public const int NoStream = -1;
-        public const int EmptyStream = 0;
+        //public const int EmptyStream = 0;
         public const int Invalid = -3;
     }
 }

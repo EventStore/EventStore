@@ -29,7 +29,6 @@
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 
 namespace EventStore.Core.Util

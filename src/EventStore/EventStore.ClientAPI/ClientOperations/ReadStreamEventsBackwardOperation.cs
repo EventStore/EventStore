@@ -27,6 +27,7 @@
 //  
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 
@@ -34,8 +35,6 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class ReadStreamEventsBackwardOperation : OperationBase<StreamEventsSlice, ClientMessage.ReadStreamEventsCompleted>
     {
-        public override bool IsLongRunning { get { return false; } }
-
         private readonly string _stream;
         private readonly int _fromEventNumber;
         private readonly int _maxCount;
@@ -68,6 +67,9 @@ namespace EventStore.ClientAPI.ClientOperations
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.StreamDeleted:
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.NoStream:
                     Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation);
+                case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.Error:
+                    Fail(new ServerErrorException("Unexpected error occurred on server. See server logs for more information."));
                     return new InspectionResult(InspectionDecision.EndOperation);
                 default:
                     throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadStreamResult: {0}.", response.Result));

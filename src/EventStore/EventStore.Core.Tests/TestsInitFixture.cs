@@ -44,7 +44,6 @@ namespace EventStore.Core.Tests
             LogManager.SetLogFactory(x => new ConsoleLogger(x));
 
             LogEnvironmentInfo();
-            Application.AddDefines(new[] {Application.AdditionalCommitChecks});
         }
 
         private void LogEnvironmentInfo()

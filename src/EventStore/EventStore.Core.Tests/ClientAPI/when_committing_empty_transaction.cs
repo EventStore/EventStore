@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                        TestEvent.NewTestEvent(),
                                        TestEvent.NewTestEvent());
 
-            using (var transaction = _connection.StartTransaction("test-stream", 3))
+            using (var transaction = _connection.StartTransaction("test-stream", 2))
             {
                 transaction.Commit();
             }
@@ -76,12 +76,12 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test]
         public void following_append_with_correct_expected_version_are_commited_correctly()
         {
-            _connection.AppendToStream("test-stream", 3, TestEvent.NewTestEvent(), TestEvent.NewTestEvent());
+            _connection.AppendToStream("test-stream", 2, TestEvent.NewTestEvent(), TestEvent.NewTestEvent());
 
             var res = _connection.ReadStreamEventsForward("test-stream", 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
-            Assert.AreEqual(5+1, res.Events.Length);
-            for (int i=0; i<6; ++i)
+            Assert.AreEqual(5, res.Events.Length);
+            for (int i=0; i<5; ++i)
             {
                 Assert.AreEqual(i, res.Events[i].OriginalEventNumber);
             }
@@ -94,8 +94,8 @@ namespace EventStore.Core.Tests.ClientAPI
 
             var res = _connection.ReadStreamEventsForward("test-stream", 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
-            Assert.AreEqual(5 + 1, res.Events.Length);
-            for (int i = 0; i < 6; ++i)
+            Assert.AreEqual(5, res.Events.Length);
+            for (int i = 0; i < 5; ++i)
             {
                 Assert.AreEqual(i, res.Events[i].OriginalEventNumber);
             }
@@ -108,8 +108,8 @@ namespace EventStore.Core.Tests.ClientAPI
 
             var res = _connection.ReadStreamEventsForward("test-stream", 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
-            Assert.AreEqual(3 + 1, res.Events.Length);
-            for (int i = 0; i < 4; ++i)
+            Assert.AreEqual(3, res.Events.Length);
+            for (int i = 0; i < 3; ++i)
             {
                 Assert.AreEqual(i, res.Events[i].OriginalEventNumber);
             }

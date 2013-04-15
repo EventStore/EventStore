@@ -37,8 +37,6 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class TransactionalWriteOperation : OperationBase<object, ClientMessage.TransactionWriteCompleted>
     {
-        public override bool IsLongRunning { get { return false; } }
-
         private readonly bool _forward;
         private readonly long _transactionId;
         private readonly IEnumerable<EventData> _events;

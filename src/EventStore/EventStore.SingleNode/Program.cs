@@ -35,7 +35,6 @@ using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Common.Utils;
 using System.Linq;
-using EventStore.Web.Playground;
 using EventStore.Web.Users;
 
 namespace EventStore.SingleNode
@@ -137,7 +136,8 @@ namespace EventStore.SingleNode
         {
             _node.Start();
             
-            _node.HttpService.SetupController(new TestController(_node.MainQueue, _node.NetworkSendService));
+            //TODO AN: remove this?
+            //_node.HttpService.SetupController(new TestController(_node.MainQueue, _node.NetworkSendService));
 
             if (_projections != null)
                 _projections.Start();

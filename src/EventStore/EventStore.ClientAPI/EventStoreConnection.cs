@@ -33,9 +33,11 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
+using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Core;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
 {
@@ -173,37 +175,6 @@ namespace EventStore.ClientAPI
         public void Close()
         {
             _handler.EnqueueMessage(new CloseConnectionMessage());
-        }
-
-
-        /// <summary>
-        /// Creates a new Stream in the Event Store synchronously
-        /// </summary>
-        /// <param name="stream">The name of the stream to create.</param>
-        /// <param name="id"></param>
-        /// <param name="isJson">A bool whether the metadata is json or not</param>
-        /// <param name="metadata">The metadata to associate with the created stream</param>
-        public void CreateStream(string stream, Guid id, bool isJson, byte[] metadata)
-        {
-            CreateStreamAsync(stream, id, isJson, metadata).Wait();
-        }
-
-        /// <summary>
-        /// Creates a new Stream in the Event Store asynchronously
-        /// </summary>
-        /// <param name="stream">The name of the stream to create</param>
-        /// <param name="id"></param>
-        /// <param name="isJson">A bool whether the metadata is json or not.</param>
-        /// <param name="metadata">The metadata to associate with the created stream.</param>
-        /// <returns>A <see cref="Task"></see> that can be waited upon by the caller.</returns>
-        public Task CreateStreamAsync(string stream, Guid id, bool isJson, byte[] metadata)
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
-            Ensure.NotEmptyGuid(id, "id");
-
-            var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new CreateStreamOperation(_settings.Log, source, _settings.AllowForwarding, stream, id, isJson, metadata));
-            return source.Task;
         }
 
         /// <summary>
@@ -642,6 +613,86 @@ namespace EventStore.ClientAPI
                                                                            subscriptionDropped);
             catchUpSubscription.Start();
             return catchUpSubscription;
+        }
+
+
+        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata)
+        {
+            SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata).Wait();
+        }
+
+        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata)
+        {
+            return SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata.AsJsonBytes());
+        }
+
+        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata)
+        {
+            SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata).Wait();
+        }
+
+        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            if (SystemStreams.IsMetastream(stream)) 
+                throw new ArgumentException(string.Format("Setting metadata for metastream '{0}' is not supported.", stream), "stream");
+
+            var source = new TaskCompletionSource<object>();
+
+            var metaevent = new EventData(idempotencyId, SystemEventTypes.StreamMetadata, true, metadata ?? Empty.ByteArray, null);
+            EnqueueOperation(new AppendToStreamOperation(_settings.Log,
+                                                         source,
+                                                         _settings.AllowForwarding,
+                                                         SystemStreams.MetastreamOf(stream),
+                                                         expectedMetastreamVersion,
+                                                         new[] { metaevent }));
+            return source.Task;
+        }
+
+        public StreamMetadataResult GetStreamMetadata(string stream)
+        {
+            return GetStreamMetadataAsync(stream).Result;
+        }
+
+        public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream)
+        {
+            return GetStreamMetadataAsRawBytesAsync(stream).ContinueWith(t =>
+            {
+                var res = t.Result;
+                if (res.StreamMetadata == null || res.StreamMetadata.Length == 0)
+                    return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion, StreamMetadata.Create());
+                var metadata = StreamMetadata.FromJsonBytes(res.StreamMetadata);
+                return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion, metadata);
+            });
+        }
+
+        public RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream)
+        {
+            return GetStreamMetadataAsRawBytesAsync(stream).Result;
+        }
+
+        public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var source = new TaskCompletionSource<ClientMessage.ReadEventCompleted>();
+            EnqueueOperation(new ReadEventOperation(_settings.Log, source, SystemStreams.MetastreamOf(stream), -1, false));
+            return source.Task.ContinueWith(t =>
+            {
+                var res = t.Result;
+                switch (res.Result)
+                {
+                    case ClientMessage.ReadEventCompleted.ReadEventResult.Success:
+                        return new RawStreamMetadataResult(stream, false, res.Event.Event.EventNumber, res.Event.Event.Data);
+                    case ClientMessage.ReadEventCompleted.ReadEventResult.NotFound:
+                    case ClientMessage.ReadEventCompleted.ReadEventResult.NoStream:
+                        return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
+                    case ClientMessage.ReadEventCompleted.ReadEventResult.StreamDeleted:
+                        return new RawStreamMetadataResult(stream, true, int.MaxValue, Empty.ByteArray);
+                    default:
+                        throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadEventResult: {0}.", res.Result));
+                }
+            });
         }
     }
 }

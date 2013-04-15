@@ -81,10 +81,6 @@
       <Project>{03e02082-e179-4730-81ff-ce914749d6e3}</Project>
       <Name>EventStore.Projections.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\EventStore.Web.Playground\EventStore.Web.Playground.csproj">
-      <Project>{7A5DFCF1-3FFE-480F-82E4-EBE73AAE7D6A}</Project>
-      <Name>EventStore.Web.Playground</Name>
-    </ProjectReference>
     <ProjectReference Include="..\EventStore.Web\EventStore.Web.csproj">
       <Project>{68065b8c-0fdc-473f-9c32-54078e32fd5c}</Project>
       <Name>EventStore.Web</Name>

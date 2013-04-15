@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
                         Assert.Fail("Connection timeout took too long.");
 
-                    Assert.That(() => connection.CreateStream("stream", Guid.NewGuid(), false, new byte[0]),
+                    Assert.That(() => connection.AppendToStream("stream", ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()),
                                 Throws.Exception.InstanceOf<AggregateException>()
                                 .With.InnerException.InstanceOf<InvalidOperationException>());
                 }

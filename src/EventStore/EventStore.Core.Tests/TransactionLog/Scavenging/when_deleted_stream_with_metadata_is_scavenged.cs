@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,50 +26,41 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Fakes;
+using System.Linq;
+using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.CreateStream
+namespace EventStore.Core.Tests.TransactionLog.Scavenging
 {
     [TestFixture]
-    public class when_creating_create_stream_request_manager
+    public class when_deleted_stream_with_metadata_is_scavenged : ScavengeTestScenario
     {
-        [Test]
-        public void null_publisher_throws_argument_null_exception()
+        protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {
-            Assert.Throws<ArgumentNullException>(() => new CreateStreamTwoPhaseRequestManager(null, 3, 3, TimeSpan.Zero, TimeSpan.Zero));
+            return dbCreator
+                .Chunk(Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(10, null)),
+                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(2, null)),
+                       Rec.Commit(0, "$$bla"),
+                       Rec.Delete(1, "bla"),
+                       Rec.Commit(1, "bla"))
+                .CompleteLastChunk()
+                .CreateDb();
+        }
+
+        protected override LogRecord[][] KeptRecords(DbResult dbResult)
+        {
+            return new[]
+            {
+                dbResult.Recs[0].Where((x, i) => i >= 3).ToArray()
+            };
         }
 
         [Test]
-        public void zero_prepare_ack_count_throws_argument_out_range()
+        public void metastream_is_scavenged_as_well()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new CreateStreamTwoPhaseRequestManager(new FakePublisher(), 0, 3, TimeSpan.Zero, TimeSpan.Zero));
-        }
-
-        [Test]
-        public void zero_commit_ack_count_throws_argument_out_range()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new CreateStreamTwoPhaseRequestManager(new FakePublisher(), 3, 0, TimeSpan.Zero, TimeSpan.Zero));
-        }
-
-
-        [Test]
-        public void negative_commit_ack_count_throws_argument_out_range()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new CreateStreamTwoPhaseRequestManager(new FakePublisher(), 3, -1, TimeSpan.Zero, TimeSpan.Zero));
-        }
-
-
-        [Test]
-        public void negative_prepare_ack_count_throws_argument_out_range()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => new CreateStreamTwoPhaseRequestManager(new FakePublisher(), -1, 3, TimeSpan.Zero, TimeSpan.Zero));
+            CheckRecords();
         }
     }
 }

@@ -64,7 +64,6 @@ namespace EventStore.TestClient.Commands
 
             var commandsToCkeck = new[]
                                       {
-                                          (byte) TcpCommand.CreateStream,
                                           (byte) TcpCommand.WriteEvents,
                                           (byte) TcpCommand.TransactionStart,
                                           (byte) TcpCommand.TransactionWrite,

@@ -31,9 +31,7 @@ using System.Linq;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.Common.Log;
-using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 using ILogger = EventStore.Common.Log.ILogger;
 
@@ -109,7 +107,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
 
                 var events = new List<ResolvedEvent>();
-                var appeared = new CountdownEvent(40); // event and $stream-created-implicit per operation
+                var appeared = new CountdownEvent(20);
                 var dropped = new CountdownEvent(1);
 
                 for (int i = 0; i < 10; ++i)
@@ -136,13 +134,10 @@ namespace EventStore.Core.Tests.ClientAPI
                     Assert.Fail("Couldn't wait for all events.");
                 }
 
-                Assert.AreEqual(40, events.Count); 
-                for (int i = 0; i < 40; ++i)
+                Assert.AreEqual(20, events.Count); 
+                for (int i = 0; i < 20; ++i)
                 {
-                    if (i % 2 == 0)    
-                        Assert.AreEqual(SystemEventTypes.StreamCreatedImplicit, events[i].OriginalEvent.EventType);
-                    else
-                        Assert.AreEqual("et-" + (i/2).ToString(), events[i].OriginalEvent.EventType);
+                    Assert.AreEqual("et-" + i.ToString(), events[i].OriginalEvent.EventType);
                 }
 
                 Assert.IsFalse(dropped.Wait(0));
@@ -159,7 +154,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
 
                 var events = new List<ResolvedEvent>();
-                var appeared = new CountdownEvent(20); // event and $stream-created-implicit per operation
+                var appeared = new CountdownEvent(10);
                 var dropped = new CountdownEvent(1);
 
                 for (int i = 0; i < 10; ++i)
@@ -195,13 +190,10 @@ namespace EventStore.Core.Tests.ClientAPI
                     Assert.Fail("Couldn't wait for all events.");
                 }
                 Log.Info("Events appeared...");
-                Assert.AreEqual(20, events.Count);
-                for (int i = 0; i < 20; ++i)
+                Assert.AreEqual(10, events.Count);
+                for (int i = 0; i < 10; ++i)
                 {
-                    if (i % 2 == 0)
-                        Assert.AreEqual(SystemEventTypes.StreamCreatedImplicit, events[i].OriginalEvent.EventType);
-                    else
-                        Assert.AreEqual("et-" + (10 + (i / 2)).ToString(), events[i].OriginalEvent.EventType);
+                    Assert.AreEqual("et-" + (10 + i).ToString(), events[i].OriginalEvent.EventType);
                 }
 
                 Assert.IsFalse(dropped.Wait(0));

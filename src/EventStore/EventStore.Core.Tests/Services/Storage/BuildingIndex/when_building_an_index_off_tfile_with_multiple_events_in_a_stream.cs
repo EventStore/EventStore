@@ -89,6 +89,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         }
 
         [Test]
+        public void the_last_event_is_returned()
+        {
+            var result = ReadIndex.ReadEvent("test1", -1);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
+            Assert.AreEqual(_id2, result.Record.EventId);
+        }
+
+        [Test]
         public void the_stream_can_be_read_with_two_events_in_right_order_when_starting_from_specified_event_number()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test1", 1, 10);

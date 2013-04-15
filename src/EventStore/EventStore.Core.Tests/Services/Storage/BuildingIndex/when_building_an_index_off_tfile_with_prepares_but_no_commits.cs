@@ -70,6 +70,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         }
 
         [Test]
+        public void the_last_event_is_not_returned_for_stream()
+        {
+            var result = ReadIndex.ReadEvent("test2", -1);
+            Assert.AreEqual(ReadEventResult.NoStream, result.Result);
+            Assert.IsNull(result.Record);
+        }
+
+        [Test]
         public void read_all_events_forward_returns_no_events()
         {
             var result = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10);
@@ -77,7 +85,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         }
 
         [Test]
-        public void read_all_events_backward_returns_no_events_()
+        public void read_all_events_backward_returns_no_events()
         {
             var result = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10);
             Assert.AreEqual(0, result.Records.Count);

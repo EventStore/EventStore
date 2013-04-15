@@ -125,9 +125,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 var store = GetConnection();
 
-                store.CreateStream(streamA, Guid.NewGuid(), true, new byte[0]);
-                store.CreateStream(streamB, Guid.NewGuid(), true, new byte[0]);
-
                 var writtenCountA = 0;
                 var writtenCountB = 0;
                 while (writtenCountA + writtenCountB < EventsPerStream)

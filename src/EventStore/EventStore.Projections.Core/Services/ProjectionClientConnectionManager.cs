@@ -69,34 +69,32 @@ namespace EventStore.Projections.Core.Services
             var endPoint = new IPEndPoint(IPAddress.Parse(_ip), _port);
 
             var clientConnector = new TcpClientConnector();
-            _connectionManager = new TcpConnectionManager("projection", 
-                                                          Guid.NewGuid(),
-                                                          new ClientTcpDispatcher(),
-                                                          _bus,
-                                                          endPoint,
-                                                          clientConnector,
-                                                          _networkSendQueue);
-
-            _connectionManager.ConnectionEstablished += manager =>
+            _connectionManager = new TcpConnectionManager(
+                "projection", 
+                Guid.NewGuid(),
+                new ClientTcpDispatcher(),
+                _bus,
+                endPoint,
+                clientConnector,
+                _networkSendQueue,
+                onConnectionEstablished: manager =>
                 {
                     Console.WriteLine("Connection established: " + manager.EndPoint);
                     _bus.Publish(new ProjectionCoreServiceMessage.StartCore());
                     _bus.Publish(new Messages.ReaderCoreServiceMessage.StartReader());
                     _bus.Publish(new ProjectionCoreServiceMessage.Connected(connection: manager));
-                    _connectionManager.ConnectionClosed += OnConnectionClosed;
                     _connectionManager.StartReceiving();
-                };
-        }
-
-        private void OnConnectionClosed(TcpConnectionManager connectionManager, SocketError error)
-        {
-            if (_running)
-            {
-                _bus.Publish(new ProjectionCoreServiceMessage.StopCore()); //TODO: duplicate stop sent here
-                _bus.Publish(new Messages.ReaderCoreServiceMessage.StopReader()); //TODO: duplicate stop sent here
-                Thread.Sleep(1000); //TODO: use scheduler service
-                Connect();
-            }
+                },
+                onConnectionClosed: (manager, error) =>
+                {
+                    if (_running)
+                    {
+                        _bus.Publish(new ProjectionCoreServiceMessage.StopCore()); //TODO: duplicate stop sent here
+                        _bus.Publish(new Messages.ReaderCoreServiceMessage.StopReader()); //TODO: duplicate stop sent here
+                        Thread.Sleep(1000); //TODO: use scheduler service
+                        Connect();
+                    }
+                });
         }
 
         public void Handle(SystemMessage.SystemInit message)

@@ -51,7 +51,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         private static readonly string _jsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Prelude");
-        private int _cancelToken;
         private Action<int, Action> _cancelCallbackFactory;
         private Js1.CommandHandlerRegisteredDelegate _commandHandlerRegisteredCallback;
         private Js1.ReverseCommandHandlerDelegate _reverseCommandHandlerDelegate;
