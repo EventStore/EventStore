@@ -35,10 +35,10 @@
         <div id="user-details-dialog-content"></div>
         <div class="commands-container" style="text-align: right;">
             <ul style="display: inline">
-                <li><a href="#" class="btn btn-info">Edit...</a></li>
-                <li><a href="#" class="btn btn-danger">Delete...</a></li>
-                <li><a href="#" class="btn btn-info">Reset Password...</a></li>
-                <li><a href="#" class="btn">Cancel</a></li>
+                <li><a href="#" class="btn btn-info" id="button-details-edit">Edit...</a></li>
+                <li><a href="#" class="btn btn-danger" id="button-details-delete">Delete...</a></li>
+                <li><a href="#" class="btn btn-info" id="button-details-reset-password">Reset Password...</a></li>
+                <li><a href="#" class="btn" id="button-details-cancel">Cancel</a></li>
             </ul>
         </div>
     </div>
@@ -58,14 +58,14 @@
                     <span class="help-inline"></span>
                 </div>
             </div>
-            <div class="control-group">
+            <div class="control-group create-only">
                 <label class="control-label add-on" for="input-password">Password</label>
                 <div class="controls">
                     <input type="password" id="input-password" name="input-password" data-required/>
                     <span class="help-inline"></span>
                 </div>
             </div>
-            <div class="control-group">
+            <div class="control-group create-only">
                 <label class="control-label add-on" for="input-password">Confirm</label>
                 <div class="controls">
                     <input type="password" id="input-password-confirm" name="input-password-confirm" data-confirm="input-password" />
@@ -153,16 +153,6 @@
                     });
 
                 });
-
-                function displayCreateUser() {
-                    $("#edit-user-details-dialog").dialog({
-                        modal: true,
-                        width: 600,
-                        height: 400,
-                        title: "New User",
-                        autoResize: true,
-                    });
-                }
 
                 function get(input) {
                     var jInput = $("#" + input);
@@ -253,16 +243,52 @@
                     $("#user-details-dialog").dialog({
                         modal: true,
                         width: 600,
-                        height: 400,
+                        height: 300,
                         title: "User Details",
                         autoResize: true,
                         open: function (event, ui) {
                             users.get(login, function (userData) {
                                 $("#user-details-dialog-content").html($.render.userTemplate(userData.data));
+                                $("#button-details-edit").click(function (e) {
+                                    e.preventDefault();
+                                    displayEditUser(userData);
+                                });
                             });
+
                         }
                     });
                 }
+
+                function displayCreateUser() {
+                    $("#edit-user-details-dialog").dialog({
+                        modal: true,
+                        width: 600,
+                        height: 400,
+                        title: "New User",
+                        autoResize: true,
+                        open: function (event, ui) {
+                            var inputs = getInput();
+                            $(".create-only").show();
+                            $("#button-ok").text("Create");
+                        }
+                    });
+                }
+
+                function displayEditUser(userData) {
+                    $("#edit-user-details-dialog").dialog({
+                        modal: true,
+                        width: 600,
+                        height: 220,
+                        title: "Edit User",
+                        autoResize: true,
+                        open: function (event, ui) {
+                            var inputs = getInput();
+                            $(".create-only").hide();
+                            $("#button-ok").text("Update");
+                        }
+                    });
+                }
+
             });
     </script>
 </body>
