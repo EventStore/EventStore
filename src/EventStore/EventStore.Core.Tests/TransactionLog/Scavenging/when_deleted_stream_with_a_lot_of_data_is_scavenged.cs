@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,49 +25,45 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-
-using System;
-using System.Collections.Generic;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Fakes;
+using System.Linq;
+using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.CreateStream
+namespace EventStore.Core.Tests.TransactionLog.Scavenging
 {
-    [Ignore("Due to changed timeout mechanism and addind dependency on time, it is not easy to test this anymore.")]
-    public class when_create_stream_gets_commit_timeout_before_commit_stage : RequestManagerSpecification
+    [TestFixture]
+    public class when_deleted_stream_with_a_lot_of_data_is_scavenged : ScavengeTestScenario
     {
-        protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
+        protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {
-            return new CreateStreamTwoPhaseRequestManager(publisher, 3, 3, TimeSpan.Zero, TimeSpan.Zero);
+            return dbCreator
+                    .Chunk(Rec.Prepare(0, "bla"),
+                           Rec.Prepare(0, "bla"),
+                           Rec.Commit(0, "bla"),
+                           Rec.Prepare(1, "bla"),
+                           Rec.Prepare(1, "bla"),
+                           Rec.Prepare(1, "bla"),
+                           Rec.Prepare(1, "bla"),
+                           Rec.Commit(1, "bla"),
+                           Rec.Delete(2, "bla"),
+                           Rec.Commit(2, "bla"))
+                    .CompleteLastChunk()
+                    .CreateDb();
         }
 
-        protected override IEnumerable<Message> WithInitialMessages()
+        protected override LogRecord[][] KeptRecords(DbResult dbResult)
         {
-            yield return new StorageMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Guid.NewGuid(), false, Metadata);
-            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
-        }
-
-        protected override Message When()
-        {
-            throw new InvalidOperationException();
-            //return new StorageMessage.CommitPhaseTimeout(CorrelationId);
+            return new[]
+            {
+                    dbResult.Recs[0].Where((x, i) => new[]{8,9}.Contains(i)).ToArray(),
+            };
         }
 
         [Test]
-        public void no_messages_are_published()
+        public void only_delete_tombstone_records_with_their_commits_are_kept()
         {
-            Assert.AreEqual(0, produced.Count);
-        }
-
-        [Test]
-        public void the_envelope_is_not_replied_to()
-        {
-            Assert.AreEqual(0, Envelope.Replies.Count);
+            CheckRecords();
         }
     }
 }

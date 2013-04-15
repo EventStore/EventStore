@@ -129,8 +129,6 @@ namespace EventStore.Web.Playground
                                                  .WhenOther()
                                                  .ForwardTo(_outputBus)
                                                  .InState(VNodeState.Master)
-                                                 .When<ClientMessage.CreateStream>()
-                                                 .Do(Handle)
                                                  .When<ClientMessage.WriteEvents>()
                                                  .Do(Handle)
                                                  .When<ClientMessage.TransactionStart>()
@@ -273,48 +271,29 @@ namespace EventStore.Web.Playground
             _fsm.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
         }
 
-        private void Handle(ClientMessage.CreateStream message)
-        {
-            _outputBus.Publish(
-                new StorageMessage.CreateStreamRequestCreated(
-                    message.CorrelationId, message.Envelope, message.EventStreamId, message.RequestId, message.IsJson,
-                    message.Metadata));
-        }
-
         private void Handle(ClientMessage.WriteEvents message)
         {
-            _outputBus.Publish(
-                new StorageMessage.WriteRequestCreated(
-                    message.CorrelationId, message.Envelope, message.EventStreamId, message.ExpectedVersion,
-                    message.Events));
+            _outputBus.Publish(message);
         }
 
         private void Handle(ClientMessage.TransactionStart message)
         {
-            _outputBus.Publish(
-                new StorageMessage.TransactionStartRequestCreated(
-                    message.CorrelationId, message.Envelope, message.EventStreamId, message.ExpectedVersion));
+            _outputBus.Publish(message);
         }
 
         private void Handle(ClientMessage.TransactionWrite message)
         {
-            _outputBus.Publish(
-                new StorageMessage.TransactionWriteRequestCreated(
-                    message.CorrelationId, message.Envelope, message.TransactionId, message.Events));
+            _outputBus.Publish(message);
         }
 
         private void Handle(ClientMessage.TransactionCommit message)
         {
-            _outputBus.Publish(
-                new StorageMessage.TransactionCommitRequestCreated(
-                    message.CorrelationId, message.Envelope, message.TransactionId));
+            _outputBus.Publish(message);
         }
 
         private void Handle(ClientMessage.DeleteStream message)
         {
-            _outputBus.Publish(
-                new StorageMessage.DeleteStreamRequestCreated(
-                    message.CorrelationId, message.Envelope, message.EventStreamId, message.ExpectedVersion));
+            _outputBus.Publish(message);
         }
 
         private void DenyRequestBecauseNotReady(IEnvelope envelope, Guid correlationId)

@@ -37,13 +37,16 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager
 {
+    public interface IRequestManager: IHandle<StorageMessage.RequestManagerTimerTick>
+    {
+    }
+
     public class RequestManagementService : IHandle<SystemMessage.SystemInit>,
-                                            IHandle<StorageMessage.CreateStreamRequestCreated>, 
-                                            IHandle<StorageMessage.WriteRequestCreated>, 
-                                            IHandle<StorageMessage.DeleteStreamRequestCreated>,
-                                            IHandle<StorageMessage.TransactionStartRequestCreated>,
-                                            IHandle<StorageMessage.TransactionWriteRequestCreated>,
-                                            IHandle<StorageMessage.TransactionCommitRequestCreated>,
+                                            IHandle<ClientMessage.WriteEvents>, 
+                                            IHandle<ClientMessage.DeleteStream>,
+                                            IHandle<ClientMessage.TransactionStart>,
+                                            IHandle<ClientMessage.TransactionWrite>,
+                                            IHandle<ClientMessage.TransactionCommit>,
                                             IHandle<StorageMessage.RequestCompleted>,
                                             IHandle<StorageMessage.AlreadyCommitted>,
                                             IHandle<StorageMessage.PrepareAck>,
@@ -55,7 +58,7 @@ namespace EventStore.Core.Services.RequestManager
     {
         private readonly IPublisher _bus;
         private readonly TimerMessage.Schedule _tickRequestMessage;
-        private readonly Dictionary<Guid, object> _currentRequests = new Dictionary<Guid, object>();
+        private readonly Dictionary<Guid, IRequestManager> _currentRequests = new Dictionary<Guid, IRequestManager>();
 
         private readonly int _prepareCount;
         private readonly int _commitCount;
@@ -84,42 +87,35 @@ namespace EventStore.Core.Services.RequestManager
             _bus.Publish(_tickRequestMessage);   
         }
 
-        public void Handle(StorageMessage.CreateStreamRequestCreated message)
-        {
-            var manager = new CreateStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
-            _currentRequests.Add(message.CorrelationId, manager);
-            manager.Handle(message);
-        }
-
-        public void Handle(StorageMessage.WriteRequestCreated message)
+        public void Handle(ClientMessage.WriteEvents message)
         {
             var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
-        public void Handle(StorageMessage.DeleteStreamRequestCreated message)
+        public void Handle(ClientMessage.DeleteStream message)
         {
             var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
-        public void Handle(StorageMessage.TransactionStartRequestCreated message)
+        public void Handle(ClientMessage.TransactionStart message)
         {
             var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
         
-        public void Handle(StorageMessage.TransactionWriteRequestCreated message)
+        public void Handle(ClientMessage.TransactionWrite message)
         {
             var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
-        public void Handle(StorageMessage.TransactionCommitRequestCreated message)
+        public void Handle(ClientMessage.TransactionCommit message)
         {
             var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
             _currentRequests.Add(message.CorrelationId, manager);
@@ -166,16 +162,14 @@ namespace EventStore.Core.Services.RequestManager
         {
             foreach (var currentRequest in _currentRequests)
             {
-                var handler = currentRequest.Value as IHandle<StorageMessage.RequestManagerTimerTick>;
-                if (handler != null)
-                    handler.Handle(message);
+                currentRequest.Value.Handle(message);
             }
             _bus.Publish(_tickRequestMessage);
         }
 
         private void DispatchInternal<T>(Guid correlationId, T message) where T : Message
         {
-            object manager;
+            IRequestManager manager;
             if (_currentRequests.TryGetValue(correlationId, out manager))
             {
                 var x = manager as IHandle<T>;

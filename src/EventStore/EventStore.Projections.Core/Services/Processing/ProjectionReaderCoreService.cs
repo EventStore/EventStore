@@ -220,12 +220,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 deliverEndOfTFPosition: false);
             _eventReaders.Add(distributionPointCorrelationId, transactionFileReader);
             _headingEventReader.Start(distributionPointCorrelationId, transactionFileReader);
-            //NOTE: writing any event to avoid empty database which we don not handle properly
-            // and write it after startAtCurrent to fill buffer
-            _publisher.Publish(
-                new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), new NoopEnvelope(), true, "$temp", ExpectedVersion.Any,
-                    new Event(Guid.NewGuid(), "Starting", false, new byte[0], new byte[0])));
         }
 
         public void StopReaders()

@@ -90,7 +90,6 @@ namespace EventStore.Core.Tests.Bus
                     .WhenOther().ForwardTo(outputBus)
 
                 .InState(VNodeState.Master)
-                    .When<ClientMessage.CreateStream>().Do(msg => { })
                     .When<ClientMessage.WriteEvents>().Do(msg => { })
                     .When<ClientMessage.TransactionStart>().Do(msg => { })
                     .When<ClientMessage.TransactionWrite>().Do(msg => { })

@@ -67,6 +67,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         {
             var result = ReadIndex.ReadEvent("test1", 0);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
+            Assert.AreEqual(_id1, result.Record.EventId);
         }
 
         [Test]
@@ -82,6 +83,31 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         {
             var result = ReadIndex.ReadEvent("test2", 0);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
+            Assert.AreEqual(_id2, result.Record.EventId);
+        }
+
+        [Test]
+        public void the_last_event_of_first_stream_can_be_read()
+        {
+            var result = ReadIndex.ReadEvent("test1", -1);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
+            Assert.AreEqual(_id1, result.Record.EventId);
+        }
+
+        [Test]
+        public void the_last_event_of_second_stream_can_be_read()
+        {
+            var result = ReadIndex.ReadEvent("test2", -1);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
+            Assert.AreEqual(_id3, result.Record.EventId);
+        }
+
+        [Test]
+        public void the_last_event_of_nonexistent_stream_cant_be_read()
+        {
+            var result = ReadIndex.ReadEvent("test7", -1);
+            Assert.AreEqual(ReadEventResult.NoStream, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]

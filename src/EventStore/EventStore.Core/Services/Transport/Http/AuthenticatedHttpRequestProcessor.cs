@@ -127,8 +127,7 @@ namespace EventStore.Core.Services.Transport.Http
                 var supportedRequestCodecs = match.ControllerAction.SupportedRequestCodecs;
                 if (supportedRequestCodecs != null && supportedRequestCodecs.Length > 0)
                 {
-                    requestCodec = SelectRequestCodec(
-                        request.HttpMethod, request.ContentType, supportedRequestCodecs);
+                    requestCodec = SelectRequestCodec(request.HttpMethod, request.ContentType, supportedRequestCodecs);
                     if (requestCodec == null)
                     {
                         BadContentType(httpEntity, "Invalid or missing Content-Type");

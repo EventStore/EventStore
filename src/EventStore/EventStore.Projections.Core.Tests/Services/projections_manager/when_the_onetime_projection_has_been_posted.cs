@@ -26,7 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Linq;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
@@ -42,6 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void When()
         {
             _projectionQuery = @"fromAll(); on_any(function(){});log(1);";
+            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
             _manager.Handle(new ProjectionManagementMessage.Post(new PublishEnvelope(_bus), _projectionQuery, enabled: true));
             _projectionName = _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Single().Name;
         }

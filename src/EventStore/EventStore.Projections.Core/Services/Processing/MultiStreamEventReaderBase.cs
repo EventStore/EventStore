@@ -46,7 +46,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private CheckpointTag _fromPositions;
         private readonly bool _resolveLinkTos;
         private readonly ITimeProvider _timeProvider;
-        private readonly bool _skipStreamCreated;
 
         private readonly HashSet<string> _eventsRequested = new HashSet<string>();
         private readonly Dictionary<string, TPosition?> _preparePositions = new Dictionary<string, TPosition?>();
@@ -55,14 +54,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, Queue<Tuple<EventRecord, EventRecord, float>>> _buffers =
             new Dictionary<string, Queue<Tuple<EventRecord, EventRecord, float>>>();
 
-        private int _maxReadCount = 111;
+        private const int _maxReadCount = 111;
         private TPosition? _safePositionToJoin;
         private readonly Dictionary<string, bool> _eofs;
 
         protected MultiStreamEventReaderBase(
             IPublisher publisher, Guid eventReaderCorrelationId, string[] streams,
-            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
-            bool stopOnEof = false, bool skipStreamCreated = false)
+            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider, bool stopOnEof = false)
             : base(publisher, eventReaderCorrelationId, stopOnEof)
         {
             if (streams == null) throw new ArgumentNullException("streams");
@@ -75,7 +73,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _fromPositions = positions;
             _resolveLinkTos = resolveLinkTos;
             _timeProvider = timeProvider;
-            _skipStreamCreated = skipStreamCreated;
             foreach (var stream in streams)
             {
                 _preparePositions.Add(stream, null);
@@ -112,8 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected abstract TPosition? EventPairToPosition(EventStore.Core.Data.ResolvedEvent resolvedEvent);
 
-        protected abstract TPosition? MessageToLastCommitPosition(
-            ClientMessage.ReadStreamEventsForwardCompleted message);
+        protected abstract TPosition? MessageToLastCommitPosition(ClientMessage.ReadStreamEventsForwardCompleted message);
 
         protected abstract TPosition GetItemPosition(Tuple<EventRecord, EventRecord, float> head);
 
@@ -163,10 +159,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             var @event = message.Events[index].Event;
                             var @link = message.Events[index].Link;
                             EventRecord positionEvent = (link ?? @event);
-                            if (_skipStreamCreated && positionEvent.EventNumber == 0)
-                                continue;
-                            UpdateSafePositionToJoin(
-                                positionEvent.EventStreamId, EventPairToPosition(message.Events[index]));
+                            UpdateSafePositionToJoin(positionEvent.EventStreamId, EventPairToPosition(message.Events[index]));
                             Queue<Tuple<EventRecord, EventRecord, float>> queue;
                             if (!_buffers.TryGetValue(positionEvent.EventStreamId, out queue))
                             {
@@ -307,7 +300,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             string streamId = positionEvent.EventStreamId;
             int fromPosition = _fromPositions.Streams[streamId];
-            if (positionEvent.EventNumber != fromPosition && !(_skipStreamCreated && positionEvent.EventNumber == 1))
+            if (positionEvent.EventNumber != fromPosition)
                 throw new InvalidOperationException(
                     string.Format(
                         "Event number {0} was expected in the stream {1}, but event number {2} was received",

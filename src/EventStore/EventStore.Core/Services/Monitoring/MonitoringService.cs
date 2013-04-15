@@ -57,13 +57,13 @@ namespace EventStore.Core.Services.Monitoring
     public class MonitoringService : IHandle<SystemMessage.SystemInit>,
                                      IHandle<SystemMessage.StateChangeMessage>,
                                      IHandle<SystemMessage.BecomeShuttingDown>,
-                                     IHandle<MonitoringMessage.GetFreshStats>,
-                                     IHandle<ClientMessage.CreateStreamCompleted>
+                                     IHandle<ClientMessage.WriteEventsCompleted>,
+                                     IHandle<MonitoringMessage.GetFreshStats>
     {
         private static readonly ILogger RegularLog = LogManager.GetLogger("REGULAR-STATS-LOGGER");
         private static readonly ILogger Log = LogManager.GetLoggerFor<MonitoringService>();
 
-        private static readonly string StreamMetadata = string.Format("{{\"$maxAge\":{0}}}", (int)TimeSpan.FromDays(10).TotalMilliseconds);
+        private static readonly string StreamMetadata = string.Format("{{\"$maxAge\":{0}}}", (int)TimeSpan.FromDays(10).TotalSeconds);
         private static readonly TimeSpan MemoizePeriod = TimeSpan.FromSeconds(1);
         private static readonly IEnvelope NoopEnvelope = new NoopEnvelope();
 
@@ -197,25 +197,24 @@ namespace EventStore.Core.Services.Monitoring
                 case VNodeState.Slave:
                 case VNodeState.Master:
                 {
-                    CreateStatsStream();
+                    SetStatsStreamMetadata();
                     break;
                 }
             }
         }
 
-        private void CreateStatsStream()
+        private void SetStatsStreamMetadata()
         {
             var metadata = Encoding.UTF8.GetBytes(StreamMetadata);
-            _mainBus.Publish(new ClientMessage.CreateStream(Guid.NewGuid(),
-                                                            new PublishEnvelope(_monitoringBus),
-                                                            true,
-                                                            _nodeStatsStream,
-                                                            Guid.NewGuid(),
-                                                            true,
-                                                            metadata));
+            _mainBus.Publish(new ClientMessage.WriteEvents(Guid.NewGuid(),
+                                                           new PublishEnvelope(_monitoringBus),
+                                                           true,
+                                                           SystemStreams.MetastreamOf(_nodeStatsStream),
+                                                           -1,
+                                                           new Event(Guid.NewGuid(), "$stats-metadata", true, metadata, null)));
         }
 
-        public void Handle(ClientMessage.CreateStreamCompleted message)
+        public void Handle(ClientMessage.WriteEventsCompleted message)
         {
             switch (message.Result)
             {
@@ -231,7 +230,7 @@ namespace EventStore.Core.Services.Monitoring
                 case OperationResult.ForwardTimeout:
                 {
                     Log.Debug("Failed to create stats stream '{0}'. Reason : {1}({2}). Retrying...", _nodeStatsStream, message.Result, message.Message);
-                    CreateStatsStream();
+                    SetStatsStreamMetadata();
                     break;
                 }
                 case OperationResult.StreamDeleted:

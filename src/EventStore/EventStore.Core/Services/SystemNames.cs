@@ -32,20 +32,35 @@ namespace EventStore.Core.Services
     {
         public const string StreamsStream = "$streams";
         public const string StatsStreamPrefix = "$stats";
+
+        public static string MetastreamOf(string streamId)
+        {
+            return "$$" + streamId;
+        }
+
+        public static bool IsMetastream(string streamId)
+        {
+            return streamId.StartsWith("$$");
+        }
+
+        public static string OriginalStreamOf(string metastreamId)
+        {
+            return metastreamId.Substring(2);
+        }
     }
 
     public static class SystemMetadata
     {
         public const string MaxAge = "$maxAge";
         public const string MaxCount = "$maxCount";
+        public const string CacheControl = "$cacheControl";
     }
 
     public static class SystemEventTypes
     {
-        public const string StreamCreated = "$stream-created";
-        public const string StreamCreatedImplicit = "$stream-created-implicit";
         public const string StreamDeleted = "$stream-deleted";
         public const string StatsCollection = "$stats-collected";
         public const string LinkTo = "$>";
+        public const string StreamMetadata = "$metadata";
     }
 }

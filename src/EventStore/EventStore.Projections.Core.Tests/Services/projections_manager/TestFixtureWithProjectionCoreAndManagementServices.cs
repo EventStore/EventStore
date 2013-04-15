@@ -46,6 +46,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         private ProjectionCoreService _coreService;
         private ProjectionReaderCoreService _readerService;
 
+        protected override void Given1()
+        {
+            base.Given1();
+            ExistingEvent("$projections-$all", "$ProjectionsInitialized", "", "");
+        }
+
         [SetUp]
         public void Setup()
         {

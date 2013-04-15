@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,26 +24,43 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//  
 
-using System;
-using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
-
-namespace EventStore.Core.Tests.Bus.Helpers
+namespace EventStore.ClientAPI.Common
 {
-    public class StubHandler<T> : IHandle<T> where T : Message
+    public static class SystemStreams
     {
-        private readonly Action<T> _onHandle;
+        public const string StreamsStream = "$streams";
+        public const string StatsStreamPrefix = "$stats";
 
-        public StubHandler(Action<T> onHandle)
+        public static string MetastreamOf(string streamId)
         {
-            _onHandle = onHandle;
+            return "$$" + streamId;
         }
 
-        public void Handle(T message)
+        public static bool IsMetastream(string streamId)
         {
-            _onHandle(message);
+            return streamId.StartsWith("$$");
         }
+
+        public static string OriginalStreamOf(string metastreamId)
+        {
+            return metastreamId.Substring(2);
+        }
+    }
+
+    public static class SystemMetadata
+    {
+        public const string MaxAge = "$maxAge";
+        public const string MaxCount = "$maxCount";
+        public const string CacheControl = "$cacheControl";
+    }
+
+    public static class SystemEventTypes
+    {
+        public const string StreamDeleted = "$stream-deleted";
+        public const string StatsCollection = "$stats-collected";
+        public const string LinkTo = "$>";
+        public const string StreamMetadata = "$metadata";
     }
 }

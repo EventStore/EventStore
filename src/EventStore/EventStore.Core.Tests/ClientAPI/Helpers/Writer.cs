@@ -47,20 +47,19 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         {
             var appends = new Task[events.Length];
 
-            switch (_version)
+            if (_version == ExpectedVersion.Any)
             {
-                case ExpectedVersion.Any:
-                    for (var i = 0; i < events.Length; i++)
-                        appends[i] = _store.AppendToStreamAsync(_stream, ExpectedVersion.Any, new[] { events[i] });
-                    break;
-                case -1:
-                    for (var i = 0; i < events.Length; i++)
-                        appends[i] = _store.AppendToStreamAsync(_stream, i == 0 ? -1 : i, new[] {events[i]});
-                    break;
-                default:
-                    for (var i = 0; i < events.Length; i++)
-                        appends[i] = _store.AppendToStreamAsync(_stream, _version + i, new[] {events[i]});
-                    break;
+                for (var i = 0; i < events.Length; i++)
+                {
+                    appends[i] = _store.AppendToStreamAsync(_stream, ExpectedVersion.Any, new[] {events[i]});
+                }
+            }
+            else
+            {
+                for (var i = 0; i < events.Length; i++)
+                {
+                    appends[i] = _store.AppendToStreamAsync(_stream, _version + i, new[] {events[i]});
+                }
             }
 
             Task.WaitAll(appends);

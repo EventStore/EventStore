@@ -12,9 +12,15 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
     [TestFixture]
     public abstract class ScavengeTestScenario: SpecificationWithDirectoryPerTestFixture
     {
+        private readonly int _metastreamMaxCount;
         private DbResult _dbResult;
         private LogRecord[][] _keptRecords;
         private bool _checked;
+
+        protected ScavengeTestScenario(int metastreamMaxCount = 1)
+        {
+            _metastreamMaxCount = metastreamMaxCount;
+        }
 
         public override void TestFixtureSetUp()
         {
@@ -36,7 +42,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             _dbResult.Db.Config.ChaserCheckpoint.Write(_dbResult.Db.Config.WriterCheckpoint.Read());
             _dbResult.Db.Config.ChaserCheckpoint.Flush();
 
-            var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams);
+            var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams, _metastreamMaxCount);
             var scavenger = new TFChunkScavenger(_dbResult.Db, scavengeReadIndex);
             scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
         }

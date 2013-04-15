@@ -36,7 +36,7 @@
                 var dataUrl = data.selfUrl + "?embed=tryharder";
                 $.ajax(dataUrl, {
                     headers: {
-                        'Accept': 'application/json',
+                        'Accept': 'application/vnd.eventstore.atom+json',
                         'If-None-Match': eTag,
                     },
                     success: function(d, statusText, jqXHR) {

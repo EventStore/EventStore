@@ -65,6 +65,10 @@
     <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="protobuf-net">
       <HintPath>..\libs\protobuf-v2\protobuf-net.dll</HintPath>
     </Reference>
@@ -78,6 +82,7 @@
   <ItemGroup>
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="ClientOperations\CommitTransactionOperation.cs" />
+    <Compile Include="ClientOperations\ReadEventOperation.cs" />
     <Compile Include="ClientOperations\SubscriptionOperation.cs" />
     <Compile Include="ClientOperations\OperationBase.cs" />
     <Compile Include="ClientOperations\ReadAllEventsBackwardOperation.cs" />
@@ -90,9 +95,11 @@
     <Compile Include="Common\Log\ConsoleLogger.cs" />
     <Compile Include="Common\Log\NoopLogger.cs" />
     <Compile Include="Common\Log\DebugLogger.cs" />
+    <Compile Include="Common\SystemNames.cs" />
     <Compile Include="Common\Utils\Helper.cs" />
     <Compile Include="ConnectionSettings.cs" />
     <Compile Include="ConnectionSettingsBuilder.cs" />
+    <Compile Include="StreamMetadata.cs" />
     <Compile Include="Core\ClusterExplorer.cs" />
     <Compile Include="Core\EventStoreConnectionLogicHandler.cs" />
     <Compile Include="Core\Messages.cs" />
@@ -121,7 +128,6 @@
     <Compile Include="Exceptions\NoResultException.cs" />
     <Compile Include="Exceptions\OperationTimedOutException.cs" />
     <Compile Include="Exceptions\RetriesLimitReachedException.cs" />
-    <Compile Include="ClientOperations\CreateStreamOperation.cs" />
     <Compile Include="Common\Log\LogManager.cs" />
     <Compile Include="ClientOperations\DeleteStreamOperation.cs" />
     <Compile Include="ClientOperations\IClientOperation.cs" />

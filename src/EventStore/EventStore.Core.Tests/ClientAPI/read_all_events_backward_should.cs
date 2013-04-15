@@ -60,12 +60,11 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void return_empty_slice_if_asked_to_read_from_start()
         {
-            const string stream = "read_all_events_backward_should_return_empty_slice_if_asked_to_read_from_start";
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
+
+                store.AppendToStream(Guid.NewGuid().ToString(), ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
 
                 var read = store.ReadAllEventsBackwardAsync(Position.Start, 1, false);
                 Assert.DoesNotThrow(read.Wait);
@@ -101,10 +100,8 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
 
-                var testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
+                var testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
 
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write.Wait);
@@ -112,7 +109,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var read = store.ReadAllEventsBackwardAsync(Position.End, 25, false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(read.Result.Events.Length, Is.EqualTo(testEvents.Length + 1));
+                Assert.That(read.Result.Events.Length, Is.EqualTo(testEvents.Length));
             }
         }
 
@@ -125,38 +122,14 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
                 var testEvents = Enumerable.Range(0, 5).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
 
-                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
-
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write.Wait);
 
-                var read = store.ReadAllEventsBackwardAsync(Position.End, testEvents.Length + 1, false);
+                var read = store.ReadAllEventsBackwardAsync(Position.End, testEvents.Length, false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(EventDataComparer.Equal(testEvents.Reverse().ToArray(), 
                                                      read.Result.Events.Select(x => x.Event).Take(testEvents.Length).ToArray()));
-            }
-        }
-
-        [Test, Category("LongRunning")]
-        public void read_stream_created_events_as_well()
-        {
-            const string stream = "read_all_events_backward_should_read_system_events_as_well";
-            using (var store = TestConnection.Create())
-            {
-                store.Connect(_node.TcpEndPoint);
-                var create1 = store.CreateStreamAsync(stream + 1, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create1.Wait);
-
-                var create2 = store.CreateStreamAsync(stream + 2, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create2.Wait);
-
-                var read = store.ReadAllEventsBackwardAsync(Position.End, 2, false);
-                Assert.DoesNotThrow(read.Wait);
-
-                Assert.That(read.Result.Events.Length, Is.EqualTo(2));
-                Assert.That(read.Result.Events.All(x => x.Event.EventType == SystemEventTypes.StreamCreated));
             }
         }
 
@@ -167,8 +140,6 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
 
                 var testEvents = Enumerable.Range(0, 5).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
 
@@ -196,8 +167,6 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
 
                 var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
 
@@ -227,8 +196,6 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                store.CreateStream(stream + 1, Guid.NewGuid(), false, new byte[0]);
-                store.CreateStream(stream + 2, Guid.NewGuid(), false, new byte[0]);
 
                 var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
                 store.AppendToStream(stream + 1, ExpectedVersion.EmptyStream, testEvents);
@@ -257,13 +224,11 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                store.CreateStream(stream + 1, Guid.NewGuid(), false, new byte[0]);
-                store.CreateStream(stream + 2, Guid.NewGuid(), false, new byte[0]);
 
                 store.DeleteStream(stream + 1, ExpectedVersion.EmptyStream);
 
                 var res = store.ReadAllEventsBackward(Position.End, 3, false);
-                Assert.That(res.Events.Length, Is.EqualTo(3));
+                Assert.That(res.Events.Length, Is.EqualTo(1));
             }
         }
 
@@ -276,8 +241,6 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
 
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.DoesNotThrow(delete.Wait);

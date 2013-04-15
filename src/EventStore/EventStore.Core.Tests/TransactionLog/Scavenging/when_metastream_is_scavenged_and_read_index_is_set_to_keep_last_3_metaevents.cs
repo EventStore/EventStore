@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,49 +26,47 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Fakes;
+using System.Linq;
+using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.CreateStream
+namespace EventStore.Core.Tests.TransactionLog.Scavenging
 {
-    [Ignore("Due to changed timeout mechanism and adding dependency on time, it is not easy to test this anymore.")]
-    public class when_create_stream_gets_prepare_timeout_after_prepares : RequestManagerSpecification
+    [TestFixture]
+    public class when_metastream_is_scavenged_and_read_index_is_set_to_keep_last_3_metaevents : ScavengeTestScenario
     {
-        protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
+        public when_metastream_is_scavenged_and_read_index_is_set_to_keep_last_3_metaevents() :
+                base(metastreamMaxCount: 3)
         {
-            return new CreateStreamTwoPhaseRequestManager(publisher, 3, 3, TimeSpan.Zero, TimeSpan.Zero);
         }
 
-        protected override IEnumerable<Message> WithInitialMessages()
+        protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {
-            yield return new StorageMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Guid.NewGuid(), false, Metadata);
-            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
+            return dbCreator
+                .Chunk(Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(10, null)),
+                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(9, null)),
+                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(8, null)),
+                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(5, null)),
+                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(2, null)),
+                       Rec.Commit(0, "$$bla"))
+                .CompleteLastChunk()
+                .CreateDb();
         }
 
-        protected override Message When()
+        protected override LogRecord[][] KeptRecords(DbResult dbResult)
         {
-            throw new InvalidOperationException();
-            //return new StorageMessage.PreparePhaseTimeout(CorrelationId);
+            return new[]
+            {
+                dbResult.Recs[0].Where((x, i) => i >= 2).ToArray()
+            };
         }
 
         [Test]
-        public void no_messages_are_published()
+        public void metastream_is_scavenged_correctly()
         {
-            Assert.That(produced.Count == 0);
-        }
-
-        [Test]
-        public void the_envelope_is_not_replied_to()
-        {
-            Assert.AreEqual(0, Envelope.Replies.Count);
+            CheckRecords();
         }
     }
 }

@@ -27,7 +27,6 @@
 // 
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using EventStore.Core.Bus;
@@ -112,11 +111,11 @@ namespace EventStore.Core
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
-            Bus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.CreateStreamCompleted, Message>());
+            Bus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.WriteEventsCompleted, Message>());
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
-            monitoringInnerBus.Subscribe<ClientMessage.CreateStreamCompleted>(monitoring);
+            monitoringInnerBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 
             // STORAGE SUBSYSTEM
@@ -132,7 +131,9 @@ namespace EventStore.Core
                                           () => new TFChunkReader(db, db.Config.WriterCheckpoint), 
                                           tableIndex, 
                                           new XXHashUnsafe(),
-                                          new LRUCache<string, StreamCacheInfo>(ESConsts.StreamMetadataCacheCapacity));
+                                          new LRUCache<string, StreamCacheInfo>(ESConsts.StreamMetadataCacheCapacity),
+                                          Application.IsDefined(Application.AdditionalCommitChecks),
+                                          Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1);
             var writer = new TFChunkWriter(db);
             var epochManager = new EpochManager(ESConsts.CachedEpochCount,
                                                 db.Config.EpochCheckpoint,
@@ -171,9 +172,8 @@ namespace EventStore.Core
 
             // HTTP
             var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
-            _httpService = new HttpService(
-                ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, passwordHashAlgorithm,
-                vNodeSettings.HttpPrefixes);
+            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, 
+                                           new TrieUriRouter(), passwordHashAlgorithm, vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
@@ -181,19 +181,17 @@ namespace EventStore.Core
             HttpService.SetupController(new AdminController(MainQueue));
             HttpService.SetupController(new PingController());
             HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));
-            HttpService.SetupController(new ReadEventDataController(MainQueue, _networkSendService));
             HttpService.SetupController(new AtomController(MainQueue, _networkSendService));
             HttpService.SetupController(new UsersController(MainQueue, _networkSendService));
 
             // REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(MainQueue, 1, 1, vNodeSettings.PrepareTimeout, vNodeSettings.CommitTimeout);
             Bus.Subscribe<SystemMessage.SystemInit>(requestManagement);
-            Bus.Subscribe<StorageMessage.CreateStreamRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.WriteRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.TransactionStartRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.TransactionWriteRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.TransactionCommitRequestCreated>(requestManagement);
-            Bus.Subscribe<StorageMessage.DeleteStreamRequestCreated>(requestManagement);
+            Bus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
+            Bus.Subscribe<ClientMessage.TransactionStart>(requestManagement);
+            Bus.Subscribe<ClientMessage.TransactionWrite>(requestManagement);
+            Bus.Subscribe<ClientMessage.TransactionCommit>(requestManagement);
+            Bus.Subscribe<ClientMessage.DeleteStream>(requestManagement);
             Bus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
             Bus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
             Bus.Subscribe<StorageMessage.CommitAck>(requestManagement);

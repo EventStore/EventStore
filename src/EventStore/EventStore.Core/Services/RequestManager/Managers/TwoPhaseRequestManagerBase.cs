@@ -35,7 +35,8 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public abstract class TwoPhaseRequestManagerBase : IHandle<StorageMessage.AlreadyCommitted>,
+    public abstract class TwoPhaseRequestManagerBase : IRequestManager,
+                                                       IHandle<StorageMessage.AlreadyCommitted>,
                                                        IHandle<StorageMessage.PrepareAck>,
                                                        IHandle<StorageMessage.CommitAck>,
                                                        IHandle<StorageMessage.WrongExpectedVersion>,

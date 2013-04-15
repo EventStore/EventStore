@@ -63,6 +63,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -73,7 +74,6 @@
     <Compile Include="Bus\Helpers\BusTestMessages.cs" />
     <Compile Include="Bus\Helpers\NoopConsumer.cs" />
     <Compile Include="Bus\Helpers\QueuedHandlerTestWithWaitingConsumer.cs" />
-    <Compile Include="Bus\Helpers\StubHandler.cs" />
     <Compile Include="Bus\Helpers\TestMultiHandler.cs" />
     <Compile Include="Bus\Helpers\TestHandler.cs" />
     <Compile Include="Bus\Helpers\TimeoutHelper.cs" />
@@ -88,21 +88,20 @@
     <Compile Include="Bus\when_publishing_into_memory_bus.cs" />
     <Compile Include="Bus\when_subscribing_to_memory_bus.cs" />
     <Compile Include="Bus\when_unsubscribing_from_memory_bus.cs" />
+    <Compile Include="ClientAPI\when_having_max_count_set_for_stream.cs" />
+    <Compile Include="ClientAPI\when_working_with_stream_metadata_as_structured_info.cs" />
     <Compile Include="ClientAPI\Helpers\TestConnection.cs" />
     <Compile Include="ClientAPI\read_all_events_backward_should.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\subscribe_to_all_should.cs" />
-    <Compile Include="ClientAPI\appending_to_explicitly_created_stream_using_transaction.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
     <Compile Include="ClientAPI\append_to_stream.cs" />
-    <Compile Include="ClientAPI\appending_to_explicitly_created_stream.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />
     <Compile Include="ClientAPI\subscribe_to_stream_catching_up_should.cs" />
     <Compile Include="ClientAPI\subscribe_to_all_catching_up_should.cs" />
     <Compile Include="ClientAPI\when_committing_empty_transaction.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
-    <Compile Include="ClientAPI\creating_stream.cs" />
     <Compile Include="ClientAPI\event_store_connection_should.cs" />
     <Compile Include="ClientAPI\Helpers\TestEvent.cs" />
     <Compile Include="ClientAPI\Helpers\Writer.cs" />
@@ -112,6 +111,7 @@
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
     <Compile Include="ClientAPI\subscribe_should.cs" />
     <Compile Include="ClientAPI\transaction.cs" />
+    <Compile Include="ClientAPI\when_working_with_stream_metadata_as_byte_array.cs" />
     <Compile Include="Common\Options\OptsHelperTestBase.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_array.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_custom_type.cs" />
@@ -192,15 +192,6 @@
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_stream_deleted.cs" />
     <Compile Include="Services\Replication\FakeEnvelope.cs" />
     <Compile Include="Services\Replication\RequestManagerSpecification.cs" />
-    <Compile Include="Services\Replication\CreateStream\when_create_stream_accepts_request.cs" />
-    <Compile Include="Services\Replication\CreateStream\when_create_stream_completes_successfully.cs" />
-    <Compile Include="Services\Replication\CreateStream\when_create_stream_gets_already_committed.cs" />
-    <Compile Include="Services\Replication\CreateStream\when_create_stream_gets_commit_timeout_before_commit_stage.cs" />
-    <Compile Include="Services\Replication\CreateStream\when_create_stream_gets_commit_timeout_before_final_commit.cs" />
-    <Compile Include="Services\Replication\CreateStream\when_create_stream_gets_prepare_timeout_after_prepares.cs" />
-    <Compile Include="Services\Replication\CreateStream\when_create_stream_gets_prepare_timeout_before_prepares.cs" />
-    <Compile Include="Services\Replication\CreateStream\when_create_stream_gets_stream_deleted.cs" />
-    <Compile Include="Services\Replication\CreateStream\when_creating_create_stream_request_manager.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_creating_transaction_commit_request_manager.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_completes_successfully.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_already_committed.cs" />
@@ -232,7 +223,12 @@
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_age.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_count.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_no_max_age_max_count.cs" />
-    <Compile Include="Services\Storage\Scavenge\Copy of when_having_commits_spanning_multiple_chunks.cs" />
+    <Compile Include="Services\Storage\Metastreams\when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_last_2.cs" />
+    <Compile Include="Services\Storage\Metastreams\when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_just_last.cs" />
+    <Compile Include="Services\Storage\Metastreams\when_having_deleted_stream_and_no_metastream_metastream_is_declared_deleted_as_well.cs" />
+    <Compile Include="Services\Storage\Metastreams\when_having_deleted_stream_its_metastream_is_deleted_as_well.cs" />
+    <Compile Include="Services\Storage\SimpleDbTestScenario.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_having_commit_spanning_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_having_commits_spanning_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_2nd_chunk__in_db_with_3_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_writing_delete_prepare_without_commit_on_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />
@@ -298,6 +294,8 @@
     <Compile Include="Services\Transport\Http\PortableServer.cs" />
     <Compile Include="Services\Transport\Http\ping_controller_should.cs" />
     <Compile Include="MightyMooseIgnoreAttribute.cs" />
+    <Compile Include="Services\Transport\Http\speed_test.cs" />
+    <Compile Include="Services\Transport\Http\uri_router_should.cs" />
     <Compile Include="Services\UserManagementService\user_management_service.cs" />
     <Compile Include="Services\VNode\vnode_fsm_should.cs" />
     <Compile Include="SpecificationWithDirectoryPerTestFixture.cs" />
@@ -307,6 +305,9 @@
     <Compile Include="Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
     <Compile Include="TestsInitFixture.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_metastream_is_scavenged_and_read_index_is_set_to_keep_last_3_metaevents.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_deleted_stream_with_metadata_is_scavenged.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_metastream_is_scavenged_and_read_index_is_set_to_keep_just_last_metaevent.cs" />
     <Compile Include="TransactionLog\when_reading_cached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\when_reading_uncached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\FlushTimeMeter.cs" />
@@ -335,8 +336,8 @@
     <Compile Include="TransactionLog\Scavenging\Helpers\ScavengeReadIndex.cs" />
     <Compile Include="TransactionLog\Scavenging\Helpers\ScavengeTestScenario.cs" />
     <Compile Include="TransactionLog\Scavenging\Helpers\TFChunkDbCreationHelper.cs" />
-    <Compile Include="TransactionLog\Scavenging\when_deleting_stream_with_a_lot_of_data.cs" />
-    <Compile Include="TransactionLog\Scavenging\when_deleting_stream_with_explicit_transaction.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_deleted_stream_with_a_lot_of_data_is_scavenged.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_deleted_stream_with_explicit_transaction_is_scavenged.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_nothing_to_scavenge.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_stream_with_both_max_age_and_max_count_with_stricted_max_age_specified.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_stream_with_both_max_age_and_max_count_with_stricted_max_count_specified.cs" />
@@ -384,9 +385,7 @@
       <Name>EventStore.Transport.Http</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="ClientAPI\AllEvents\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
