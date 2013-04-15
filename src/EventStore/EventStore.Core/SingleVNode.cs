@@ -172,9 +172,8 @@ namespace EventStore.Core
 
             // HTTP
             var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
-            _httpService = new HttpService(
-                ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, passwordHashAlgorithm,
-                vNodeSettings.HttpPrefixes);
+            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, 
+                                           new TrieUriRouter(), passwordHashAlgorithm, vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);

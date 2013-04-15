@@ -63,6 +63,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -293,6 +294,8 @@
     <Compile Include="Services\Transport\Http\PortableServer.cs" />
     <Compile Include="Services\Transport\Http\ping_controller_should.cs" />
     <Compile Include="MightyMooseIgnoreAttribute.cs" />
+    <Compile Include="Services\Transport\Http\speed_test.cs" />
+    <Compile Include="Services\Transport\Http\uri_router_should.cs" />
     <Compile Include="Services\UserManagementService\user_management_service.cs" />
     <Compile Include="Services\VNode\vnode_fsm_should.cs" />
     <Compile Include="SpecificationWithDirectoryPerTestFixture.cs" />
