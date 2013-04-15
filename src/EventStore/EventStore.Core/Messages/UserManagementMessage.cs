@@ -175,6 +175,10 @@ namespace EventStore.Core.Messages
                 Disabled = disabled;
                 DateLastUpdated = dateLastUpdated;
             }
+
+            internal UserData()
+            {
+            }
         }
 
         public sealed class UpdateResult : ResponseMessage
@@ -215,6 +219,11 @@ namespace EventStore.Core.Messages
         public sealed class AllUserDetailsResult : ResponseMessage
         {
             public readonly UserData[] Data;
+
+            internal AllUserDetailsResult()
+                : base(true, Error.Success)
+            {
+            }
 
             public AllUserDetailsResult(UserData[] data)
                 : base(true, Error.Success)
