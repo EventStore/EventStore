@@ -184,6 +184,7 @@
     <Compile Include="Services\Transport\Http\Messages\IncomingHttpRequestMessage.cs" />
     <Compile Include="Services\Transport\Http\ServiceAccessibility.cs" />
     <Compile Include="Services\Transport\Http\UriToActionMatch.cs" />
+    <Compile Include="Services\UserManagement\AllUsersReader.cs" />
     <Compile Include="Services\UserManagement\UserManagementService.cs" />
     <Compile Include="Settings\ESConsts.cs" />
     <Compile Include="Settings\VNodeSettings.cs" />

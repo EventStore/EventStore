@@ -139,6 +139,14 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public sealed class GetAll : RequestMessage
+        {
+            public GetAll(IEnvelope envelope)
+                : base(envelope)
+            {
+            }
+        }
+
         public sealed class Get : UserManagementRequestMessage
         {
             public Get(IEnvelope envelope, string loginName)
@@ -146,7 +154,6 @@ namespace EventStore.Core.Messages
             {
             }
         }
-
         public enum Error
         {
             Success, NotFound, Conflict,
@@ -158,10 +165,10 @@ namespace EventStore.Core.Messages
         {
             public readonly string LoginName;
             public readonly string FullName;
-            public readonly DateTimeOffset DateLastUpdated;
+            public readonly DateTimeOffset? DateLastUpdated;
             public readonly bool Disabled;
 
-            public UserData(string loginName, string fullName, bool disabled, DateTimeOffset dateLastUpdated)
+            public UserData(string loginName, string fullName, bool disabled, DateTimeOffset? dateLastUpdated)
             {
                 LoginName = loginName;
                 FullName = fullName;
@@ -199,6 +206,23 @@ namespace EventStore.Core.Messages
             }
 
             public UserDetailsResult(Error error)
+                : base(false, error)
+            {
+                Data = null;
+            }
+        }
+
+        public sealed class AllUserDetailsResult : ResponseMessage
+        {
+            public readonly UserData[] Data;
+
+            public AllUserDetailsResult(UserData[] data)
+                : base(true, Error.Success)
+            {
+                Data = data;
+            }
+
+            public AllUserDetailsResult(Error error)
                 : base(false, error)
             {
                 Data = null;

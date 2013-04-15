@@ -46,6 +46,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
+            RegisterUrlBased(service, "/users/", HttpMethod.Get, GetUsers);
             RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, GetUser);
             RegisterTextBody(service, "/users/", HttpMethod.Post, PostUser);
             RegisterTextBody(service, "/users/{login}", HttpMethod.Put, PutUser);
@@ -57,6 +58,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             RegisterTextBody(
                 service, "/users/{login}/command/change-password", HttpMethod.Post, PostCommandChangePassword);
         }
+
+        private void GetUsers(HttpEntityManager http, UriTemplateMatch match)
+        {
+            var envelope = CreateReplyEnvelope<UserManagementMessage.AllUserDetailsResult>(http);
+            var message = new UserManagementMessage.GetAll(envelope);
+            Publish(message);
+        }
+
 
         private void GetUser(HttpEntityManager http, UriTemplateMatch match)
         {
