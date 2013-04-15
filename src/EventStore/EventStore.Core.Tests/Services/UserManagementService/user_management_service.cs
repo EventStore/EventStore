@@ -607,7 +607,60 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.AreEqual(UserManagementMessage.Error.NotFound, user.Error);
                 Assert.Null(user.Data);
             }
+        }
 
+        [TestFixture]
+        public class when_getting_all_iusers: TestFixtureWithUserManagementService
+        {
+            protected override void Given()
+            {
+                base.Given();
+                // simulate index-users projection
+                ExistingEvent("$users", "$User", null, "user1");
+                ExistingEvent("$users", "$User", null, "user2");
+                ExistingEvent("$users", "$User", null, "user3");
+                ExistingEvent("$users", "$User", null, "another_user");
+            }
+
+            protected override void GivenCommands()
+            {
+                base.GivenCommands();
+                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe 1", "Johny123!"));
+                _users.Handle(new UserManagementMessage.Create(_replyTo, "user2", "John Doe 2", "Johny123!"));
+                _users.Handle(new UserManagementMessage.Create(_replyTo, "user3", "Another Doe 1", "Johny123!"));
+                _users.Handle(new UserManagementMessage.Create(_replyTo, "another_user", "Another Doe 2", "Johny123!"));
+            }
+
+            protected override void When()
+            {
+                base.When();
+                _users.Handle(new UserManagementMessage.GetAll(_replyTo));
+            }
+
+            [Test]
+            public void returns_all_user_accounts()
+            {
+                var users = _consumer.HandledMessages.OfType<UserManagementMessage.AllUserDetailsResult>().Single().Data;
+
+                Assert.AreEqual(4, users.Length);
+            }
+
+            [Test]
+            public void returns_in_the_login_name_order()
+            {
+                var users = _consumer.HandledMessages.OfType<UserManagementMessage.AllUserDetailsResult>().Single().Data;
+
+                Assert.That(
+                    new[] {"another_user", "user1", "user2", "user3"}.SequenceEqual(users.Select(v => v.LoginName)));
+            }
+
+            [Test]
+            public void returns_full_names()
+            {
+                var users = _consumer.HandledMessages.OfType<UserManagementMessage.AllUserDetailsResult>().Single().Data;
+
+                Assert.That(users.Any(v => v.LoginName == "user2" && v.FullName == "John Doe 2"));
+            }
         }
 
     }

@@ -33,17 +33,19 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Util;
+using System.Linq;
 
 namespace EventStore.Core.Services.UserManagement
 {
-    public class UserManagementService : IHandle<UserManagementMessage.Create>,
+    public class UserManagementService : IHandle<UserManagementMessage.Get>,
+                                         IHandle<UserManagementMessage.GetAll>,
+                                         IHandle<UserManagementMessage.Create>,
                                          IHandle<UserManagementMessage.Update>,
                                          IHandle<UserManagementMessage.Enable>,
                                          IHandle<UserManagementMessage.Disable>,
                                          IHandle<UserManagementMessage.ResetPassword>,
                                          IHandle<UserManagementMessage.ChangePassword>,
-                                         IHandle<UserManagementMessage.Delete>,
-                                         IHandle<UserManagementMessage.Get>
+                                         IHandle<UserManagementMessage.Delete>
     {
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
@@ -140,6 +142,17 @@ namespace EventStore.Core.Services.UserManagement
                             }
                         }
                     });
+        }
+
+        public void Handle(UserManagementMessage.GetAll message)
+        {
+            var allUsersReader = new AllUsersReader(_ioDispatcher);
+            allUsersReader.Run(
+                (error, data) =>
+                message.Envelope.ReplyWith(
+                    error == UserManagementMessage.Error.Success
+                        ? new UserManagementMessage.AllUserDetailsResult(data.OrderBy(v => v.LoginName).ToArray())
+                        : new UserManagementMessage.AllUserDetailsResult(error)));
         }
 
         private UserData CreateUserData(UserManagementMessage.Create message)
@@ -254,7 +267,8 @@ namespace EventStore.Core.Services.UserManagement
             message.Envelope.ReplyWith(new UserManagementMessage.UpdateResult(message.LoginName));
         }
 
-        private static void ReplyError(UserManagementMessage.UserManagementRequestMessage message, UserManagementMessage.Error error)
+        private static void ReplyError(
+            UserManagementMessage.UserManagementRequestMessage message, UserManagementMessage.Error error)
         {
             //TODO: avoid 'is'
             if (message is UserManagementMessage.Get)

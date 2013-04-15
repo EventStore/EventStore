@@ -44,6 +44,7 @@ namespace EventStore.Core.Tests.Helper
 {
     public abstract class TestFixtureWithExistingEvents : TestFixtureWithReadWriteDispatchers,
                                                            IHandle<ClientMessage.ReadStreamEventsBackward>,
+                                                           IHandle<ClientMessage.ReadStreamEventsForward>,
                                                            IHandle<ClientMessage.WriteEvents>,
                                                            IHandle<ClientMessage.DeleteStream>
     {
@@ -132,6 +133,7 @@ namespace EventStore.Core.Tests.Helper
             _bus.Subscribe(_listEventsHandler);
             _bus.Subscribe<ClientMessage.WriteEvents>(this);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
+            _bus.Subscribe<ClientMessage.ReadStreamEventsForward>(this);
             _bus.Subscribe<ClientMessage.DeleteStream>(this);
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
@@ -186,6 +188,57 @@ namespace EventStore.Core.Tests.Helper
                             nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber - 1 : -1,
                             lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
                             isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == 0,
+                            lastCommitPosition: _lastPosition));
+                }
+                else
+                {
+                    throw new NotImplementedException();
+/*
+                    message.Envelope.ReplyWith(
+                            new ClientMessage.ReadStreamEventsBackwardCompleted(
+                                    message.CorrelationId,
+                                    message.EventStreamId,
+                                    new EventLinkPair[0],
+                                    ReadStreamResult.Success,
+                                    nextEventNumber: -1,
+                                    lastEventNumber: list.Safe().Last().EventNumber,
+                                    isEndOfStream: true,// NOTE AN: don't know how to correctly determine this here
+                                    lastCommitPosition: _lastPosition));
+*/
+                }
+            }
+        }
+
+
+        public void Handle(ClientMessage.ReadStreamEventsForward message)
+        {
+            List<EventRecord> list;
+            if (_deletedStreams.Contains(message.EventStreamId))
+            {
+                message.Envelope.ReplyWith(
+                    new ClientMessage.ReadStreamEventsBackwardCompleted(
+                        message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
+                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], string.Empty, -1, -1, true, _lastPosition));
+                            
+            }
+            else if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list))
+            {
+                if (list != null && list.Count > 0 && message.FromEventNumber >= 0)
+                {
+                    ResolvedEvent[] records =
+                        list.Safe()
+                            .SkipWhile(v => v.EventNumber < message.FromEventNumber)
+                            .Take(message.MaxCount)
+                            .Select(v => BuildEvent(v, message.ResolveLinks))
+                            .ToArray();
+                    message.Envelope.ReplyWith(
+                        new ClientMessage.ReadStreamEventsForwardCompleted(
+                            message.CorrelationId, message.EventStreamId,
+                            message.FromEventNumber, message.MaxCount, ReadStreamResult.Success, records,
+                            string.Empty,
+                            nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber + 1 : -1,
+                            lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
+                            isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == list.Last().EventNumber,
                             lastCommitPosition: _lastPosition));
                 }
                 else
@@ -270,5 +323,6 @@ namespace EventStore.Core.Tests.Helper
             _deletedStreams.Add(message.EventStreamId);
                 message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.Success, string.Empty));
         }
+
     }
 }

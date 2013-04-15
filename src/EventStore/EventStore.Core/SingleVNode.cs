@@ -218,6 +218,7 @@ namespace EventStore.Core
             Bus.Subscribe<UserManagementMessage.ResetPassword>(userManagement);
             Bus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
             Bus.Subscribe<UserManagementMessage.Get>(userManagement);
+            Bus.Subscribe<UserManagementMessage.GetAll>(userManagement);
 
             // TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));

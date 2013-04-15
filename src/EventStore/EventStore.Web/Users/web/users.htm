@@ -26,6 +26,7 @@
                 <li></li>
             </ul>
         </div>
+        <div id="user-list-container"></div>
         <script id="r-body">
             es.tmpl.renderBody();
         </script>
@@ -66,12 +67,39 @@
             </div>
         </form>
     </div>
+    <script id="users-template" type="text/x-jsrender">
+             <table class="table table-bordered table-striped queue-stats" style="table-layout: fixed; ">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">Login Name</th>
+                        <th style="width: 120px;">Full Name</th>
+                        <th style="width: 50px;">Disabled</th>
+                        <th style="width: 50px;">Updated</th>
+                    </tr>
+                </thead>
+                <tbody class="stats-body">
+                    {{for data}}
+                    <tr>
+                      <td>{{>loginName}}</td>
+                      <td>{{>fullName}}</td>
+                      <td>{{>disabled}}</td>
+                      <td>{{>dateLastUpdated}}</td>
+                    </tr>
+                    {{/for}}
+                </tbody>
+            </table>
+        
+    </script>
     <script type="text/javascript">
         require.config({ baseUrl: "/web/users/js" });
         require(['Controller'],
             function (controller) {
                 var users = controller.create();
                 $(function () {
+
+                    $.templates({
+                        usersTemplate: "#users-template"
+                    });
 
 
                     $("#btn-create").click(function(e) {
@@ -85,6 +113,10 @@
 
                     $("#button-ok").click(function (e) {
                         createUser();
+                    });
+
+                    users.getAll(function (usersMessage) {
+                        displayUsers(usersMessage);
                     });
 
                 });
@@ -173,6 +205,10 @@
                             alert("OK");
                         });
                     }
+                }
+
+                function displayUsers(users) {
+                    $("#user-list-container").html($.render.usersTemplate(users));
                 }
             });
     </script>

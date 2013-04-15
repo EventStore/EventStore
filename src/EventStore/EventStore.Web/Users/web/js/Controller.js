@@ -31,6 +31,18 @@ define(function () {
             });
         }
 
+        function getAll(success) {
+            $.ajax("/users/", {
+                headers: {
+                    Accept: "application/json",
+                },
+                dataType: "json",
+                type: "GET",
+                success: successGet(success),
+                error: errorGet(),
+            });
+        }
+
         function successPostCommand(success) {
             return function (data, status, xhr) {
                 if (success)
@@ -79,6 +91,9 @@ define(function () {
             },
             get: function (loginName, success) {
                 get(loginName, success);
+            },
+            getAll: function (success) {
+                getAll(success);
             }
         };
     }

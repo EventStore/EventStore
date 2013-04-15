@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private readonly IPublisher _publisher;
         protected readonly HttpAsyncClient Client;
-        private readonly ICodec[] DefaultCodecs = new ICodec[] {Codec.Xml, Codec.Json};
+        private readonly ICodec[] DefaultCodecs = new ICodec[] {Codec.Json, Codec.Xml};
 
         protected CommunicationController(IPublisher publisher)
         {
