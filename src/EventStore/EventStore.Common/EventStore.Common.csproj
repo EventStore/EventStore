@@ -49,15 +49,12 @@
       <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="NLog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c">
       <HintPath>..\libs\NLog.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandLine\lib\CommandLine.cs" />
-    <Compile Include="CommandLine\lib\CommandLineText.cs" />
     <Compile Include="Concurrent\ConcurrentQueue.cs" />
     <Compile Include="Concurrent\ConcurrentStack.cs" />
     <Compile Include="Locks\SpinLock2.cs" />
