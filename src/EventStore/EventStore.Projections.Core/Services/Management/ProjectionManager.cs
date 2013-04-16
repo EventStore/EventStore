@@ -37,6 +37,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
@@ -483,7 +484,8 @@ namespace EventStore.Projections.Core.Services.Management
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, "$projections-$all", from, _readEventsBatchSize,
-                    resolveLinks: false, validationStreamVersion: null), m => LoadProjectionListCompleted(m, from, completedAction));
+                    resolveLinks: false, validationStreamVersion: null, principal: SystemAccount.Principal), 
+                m => LoadProjectionListCompleted(m, from, completedAction));
         }
 
         private void LoadProjectionListCompleted(
@@ -529,7 +531,9 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, "$projections-$all", ExpectedVersion.NoStream, 
-                    new Event(Guid.NewGuid(), "$ProjectionsInitialized", false, new byte[0], new byte[0])), completed => WriteFakeProjectionCompleted(completed, action));
+                    new Event(Guid.NewGuid(), "$ProjectionsInitialized", false, new byte[0], new byte[0]),
+                    SystemAccount.Principal), 
+                completed => WriteFakeProjectionCompleted(completed, action));
         }
 
         private void WriteFakeProjectionCompleted(ClientMessage.WriteEventsCompleted completed, Action action)
@@ -615,7 +619,8 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
-                    new Event(Guid.NewGuid(), "$ProjectionCreated", false, Encoding.UTF8.GetBytes(name), new byte[0])),
+                    new Event(Guid.NewGuid(), "$ProjectionCreated", false, Encoding.UTF8.GetBytes(name), new byte[0]),
+                    SystemAccount.Principal),
                 m => WriteProjectionRegistrationCompleted(m, completed, name, eventStreamId));
         }
 

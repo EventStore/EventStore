@@ -1,10 +1,10 @@
 ﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,49 +24,34 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
-namespace EventStore.ClientAPI.Common
+using System.Security.Principal;
+
+namespace EventStore.Core.Services.UserManagement
 {
-    public static class SystemStreams
+    public class SystemAccount: IPrincipal
     {
-        public const string StreamsStream = "$streams";
-        public const string StatsStreamPrefix = "$stats";
+        public static readonly SystemAccount Principal = new SystemAccount();
 
-        public static string MetastreamOf(string streamId)
+        public IIdentity Identity { get { return _identity; } }
+
+        private readonly IIdentity _identity = new SystemAccountIdentity();
+
+        private SystemAccount()
         {
-            return "$$" + streamId;
         }
 
-        public static bool IsMetastream(string streamId)
+        public bool IsInRole(string role)
         {
-            return streamId.StartsWith("$$");
+            return true;
         }
 
-        public static string OriginalStreamOf(string metastreamId)
+        private class SystemAccountIdentity: IIdentity
         {
-            return metastreamId.Substring(2);
+            public string Name { get { return "system"; } }
+            public string AuthenticationType { get { return "system"; } }
+            public bool IsAuthenticated { get { return true; } }
         }
-    }
-
-    public static class SystemMetadata
-    {
-        public const string MaxAge = "$maxAge";
-        public const string MaxCount = "$maxCount";
-        public const string CacheControl = "$cacheControl";
-        
-        public const string Acl = "$acl";
-        public const string AclRead = "$r";
-        public const string AclWrite = "$w";
-        public const string AclMetaRead = "$mr";
-        public const string AclMetaWrite = "$mw";
-    }
-
-    public static class SystemEventTypes
-    {
-        public const string StreamDeleted = "$stream-deleted";
-        public const string StatsCollection = "$stats-collected";
-        public const string LinkTo = "$>";
-        public const string StreamMetadata = "$metadata";
     }
 }

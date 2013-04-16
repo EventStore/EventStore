@@ -29,7 +29,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -42,7 +41,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
-using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
@@ -944,7 +942,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private StreamMetadata GetStreamMetadataCached(ITransactionFileReader reader, string streamId)
         {
             if (SystemStreams.IsMetastream(streamId))
-                return new StreamMetadata(_metastreamMaxCount, null);
+                return new StreamMetadata(_metastreamMaxCount, null, null, null);
 
             StreamCacheInfo streamCacheInfo;
             if (_streamInfoCache.TryGet(streamId, out streamCacheInfo) && streamCacheInfo.Metadata.HasValue)
@@ -953,7 +951,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var metadata = GetStreamMetadataUncached(reader, streamId);
             _streamInfoCache.Put(streamId,
                                  key => new StreamCacheInfo(null, metadata),
-                                 (key, oldValue) => new StreamCacheInfo(oldValue.LastEventNumber, metadata));
+                                 // we keep previous metadata, if present by this time, because it was added on commit and is more up to date
+                                 (key, oldValue) => new StreamCacheInfo(oldValue.LastEventNumber, oldValue.Metadata ?? metadata));
             return metadata;
         }
 
@@ -962,35 +961,22 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var metastreamId = SystemStreams.MetastreamOf(streamId);
             var metaEventNumber = GetLastStreamEventNumberCached(reader, metastreamId);
             if (metaEventNumber == ExpectedVersion.NoStream || metaEventNumber == EventNumber.DeletedStream)
-                return new StreamMetadata(null, null);
+                return StreamMetadata.Empty;
 
             EventRecord record;
             if (!GetStreamRecord(reader, metastreamId, metaEventNumber, out record))
                 throw new Exception(string.Format("GetStreamRecord couldn't find metaevent #{0} on metastream '{1}'. That should never happen.", metaEventNumber, metastreamId));
 
             if (record.Data.Length == 0 || (record.Flags & PrepareFlags.IsJson) == 0)
-                return new StreamMetadata(null, null);
+                return StreamMetadata.Empty;
 
             try
             {
-                var json = Encoding.UTF8.GetString(record.Data);
-                var jObj = JObject.Parse(json);
-
-                int maxAge = -1;
-                int maxCount = -1;
-
-                JToken prop;
-                if (jObj.TryGetValue(SystemMetadata.MaxAge, out prop) && prop.Type == JTokenType.Integer)
-                    maxAge = prop.Value<int>();
-                if (jObj.TryGetValue(SystemMetadata.MaxCount, out prop) && prop.Type == JTokenType.Integer)
-                    maxCount = prop.Value<int>();
-
-                return new StreamMetadata(maxCount > 0 ? maxCount : (int?) null,
-                                          maxAge > 0 ? TimeSpan.FromSeconds(maxAge) : (TimeSpan?) null);
+                return StreamMetadata.FromJsonBytes(record.Data);
             }
             catch (Exception)
             {
-                return new StreamMetadata(null, null);
+                return StreamMetadata.Empty;
             }
         }
 

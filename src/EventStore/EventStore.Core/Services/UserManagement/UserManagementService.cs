@@ -110,7 +110,7 @@ namespace EventStore.Core.Services.UserManagement
                 message,
                 (completed, data) =>
                 _ioDispatcher.DeleteStream(
-                    "$user-" + message.LoginName, completed.FromEventNumber,
+                    "$user-" + message.LoginName, completed.FromEventNumber, SystemAccount.Principal,
                     streamCompleted => ReplyByWriteResult(message, streamCompleted.Result)));
         }
 
@@ -169,7 +169,7 @@ namespace EventStore.Core.Services.UserManagement
         {
             var streamId = "$user-" + message.LoginName;
             _ioDispatcher.ReadBackward(
-                streamId, -1, 1, false, completed =>
+                streamId, -1, 1, false, SystemAccount.Principal, completed =>
                     {
                         switch (completed.Result)
                         {
@@ -220,7 +220,7 @@ namespace EventStore.Core.Services.UserManagement
         {
             var userCreatedEvent = new Event(Guid.NewGuid(), eventType, true, userData.ToJsonBytes(), null);
             _ioDispatcher.WriteEvents(
-                "$user-" + message.LoginName, expectedVersion, new[] {userCreatedEvent},
+                "$user-" + message.LoginName, expectedVersion, new[] { userCreatedEvent }, SystemAccount.Principal,
                 completed => WriteUserCreatedCompleted(completed, message));
         }
 

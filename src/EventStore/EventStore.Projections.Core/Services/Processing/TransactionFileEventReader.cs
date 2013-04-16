@@ -32,6 +32,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
@@ -152,7 +153,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new ClientMessage.ReadAllEventsForward(
                 EventReaderCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
-                _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, _resolveLinkTos, null);
+                _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, 
+                _resolveLinkTos, null, SystemAccount.Principal);
         }
 
         private void DeliverLastCommitPosition(EventPosition lastPosition)

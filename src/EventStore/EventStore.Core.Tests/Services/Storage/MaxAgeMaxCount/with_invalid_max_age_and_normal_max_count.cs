@@ -33,7 +33,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 {
-    [TestFixture]
+    [TestFixture, Ignore("Metadata must be valid.")]
     public class with_invalid_max_age_and_normal_max_count : ReadIndexTestScenario
     {
         private EventRecord _r1;

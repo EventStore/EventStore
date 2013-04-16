@@ -34,6 +34,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -299,8 +300,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     //TODO: reading events history in batches of 1 event (slow?)
-                    Guid.NewGuid(), _readDispatcher.Envelope, _streamId, fromEventNumber, 1, resolveLinks: false, validationStreamVersion: null), 
-                        completed => ReadStreamEventsBackwardCompleted(completed, upTo));
+                    Guid.NewGuid(), _readDispatcher.Envelope, _streamId, fromEventNumber, 1, 
+                    resolveLinks: false, validationStreamVersion: null, principal: SystemAccount.Principal), 
+                completed => ReadStreamEventsBackwardCompleted(completed, upTo));
         }
 
         private void SubmitWriteEvents()
@@ -363,9 +365,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private void PublishWriteEvents()
         {
             _writeDispatcher.Publish(
-                new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, true, _streamId,
-                    _lastKnownEventNumber, _submittedToWriteEvents), Handle);
+                new ClientMessage.WriteEvents(Guid.NewGuid(), _writeDispatcher.Envelope, true, _streamId,
+                                              _lastKnownEventNumber, _submittedToWriteEvents, SystemAccount.Principal), 
+                Handle);
         }
 
         private void EnsureCheckpointNotRequested()

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -68,38 +69,40 @@ namespace EventStore.Core.Helpers
         }
 
         public void ReadBackward(
-            string streamId, int fromEventNumber, int maxCount, bool resolveLinks,
+            string streamId, int fromEventNumber, int maxCount, bool resolveLinks, IPrincipal principal,
             Action<ClientMessage.ReadStreamEventsBackwardCompleted> action)
         {
             BackwardReader.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), BackwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, null),
+                    Guid.NewGuid(), BackwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, null, principal),
                 action);
         }
 
         public void ReadForward(
-            string streamId, int fromEventNumber, int maxCount, bool resolveLinks,
+            string streamId, int fromEventNumber, int maxCount, bool resolveLinks, IPrincipal principal,
             Action<ClientMessage.ReadStreamEventsForwardCompleted> action)
         {
             ForwardReader.Publish(
                 new ClientMessage.ReadStreamEventsForward(
-                    Guid.NewGuid(), ForwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, null),
+                    Guid.NewGuid(), ForwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, null, principal),
                 action);
         }
 
         public void WriteEvents(
-            string streamId, int expectedVersion, Event[] events, Action<ClientMessage.WriteEventsCompleted> action)
+            string streamId, int expectedVersion, Event[] events, IPrincipal principal, 
+            Action<ClientMessage.WriteEventsCompleted> action)
         {
             Writer.Publish(
-                new ClientMessage.WriteEvents(Guid.NewGuid(), Writer.Envelope, true, streamId, expectedVersion, events),
+                new ClientMessage.WriteEvents(Guid.NewGuid(), Writer.Envelope, true, streamId, expectedVersion, events, principal),
                 action);
         }
 
         public void DeleteStream(
-            string streamId, int expectedVersion, Action<ClientMessage.DeleteStreamCompleted> action)
+            string streamId, int expectedVersion, IPrincipal principal, 
+            Action<ClientMessage.DeleteStreamCompleted> action)
         {
             StreamDeleter.Publish(
-                new ClientMessage.DeleteStream(Guid.NewGuid(), Writer.Envelope, true, streamId, expectedVersion), action);
+                new ClientMessage.DeleteStream(Guid.NewGuid(), Writer.Envelope, true, streamId, expectedVersion, principal), action);
         }
     }
 }

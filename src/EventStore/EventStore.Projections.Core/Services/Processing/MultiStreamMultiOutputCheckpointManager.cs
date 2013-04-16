@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -126,7 +127,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, _namingBuilder.GetOrderStreamName(), fromEventNumber, 100,
-                    resolveLinks: false, validationStreamVersion: null), completed =>
+                    resolveLinks: false, validationStreamVersion: null, principal: SystemAccount.Principal), 
+                    completed =>
                         {
                             switch (completed.Result)
                             {
@@ -192,7 +194,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), _readDispatcher.Envelope, streamId, eventNumber, 1, true, null), completed =>
+                    Guid.NewGuid(), _readDispatcher.Envelope, streamId, eventNumber, 1, true, null, SystemAccount.Principal),
+                    completed =>
                         {
                             switch (completed.Result)
                             {

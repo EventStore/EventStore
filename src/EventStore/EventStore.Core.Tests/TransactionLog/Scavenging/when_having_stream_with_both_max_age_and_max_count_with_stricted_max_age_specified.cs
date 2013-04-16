@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging
         protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {
             return dbCreator
-                    .Chunk(Rec.Prepare(3, "$$bla", metadata: new StreamMetadata(5, TimeSpan.FromMinutes(5))),
+                    .Chunk(Rec.Prepare(3, "$$bla", metadata: new StreamMetadata(5, TimeSpan.FromMinutes(5), null, null)),
                            Rec.Commit(3, "$$bla"),
                            Rec.Prepare(0, "bla"),
                            Rec.Commit(0, "bla"),

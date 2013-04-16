@@ -54,6 +54,12 @@ namespace EventStore.Core.Services
         public const string MaxAge = "$maxAge";
         public const string MaxCount = "$maxCount";
         public const string CacheControl = "$cacheControl";
+
+        public const string Acl = "$acl";
+        public const string AclRead = "$r";
+        public const string AclWrite = "$w";
+        public const string AclMetaRead = "$mr";
+        public const string AclMetaWrite = "$mw";
     }
 
     public static class SystemEventTypes

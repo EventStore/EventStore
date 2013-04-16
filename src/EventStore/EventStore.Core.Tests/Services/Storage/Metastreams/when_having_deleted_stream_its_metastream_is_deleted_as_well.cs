@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams
         {
             return dbCreator.Chunk(Rec.Prepare(0, "test"),
                                    Rec.Commit(0, "test"),
-                                   Rec.Prepare(1, "$$test", metadata: new StreamMetadata(2, null)),
+                                   Rec.Prepare(1, "$$test", metadata: new StreamMetadata(2, null, null, null)),
                                    Rec.Commit(1, "$$test"),
                                    Rec.Delete(2, "test"),
                                    Rec.Commit(2, "test"))

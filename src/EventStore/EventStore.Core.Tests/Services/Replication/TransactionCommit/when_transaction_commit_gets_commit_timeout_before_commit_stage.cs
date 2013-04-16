@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ClientMessage.TransactionCommit(CorrelationId, Envelope, false, 4);
+            yield return new ClientMessage.TransactionCommit(CorrelationId, Envelope, false, 4, null);
             yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
             yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
         }

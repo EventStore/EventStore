@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Net;
+using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
@@ -64,7 +65,9 @@ namespace EventStore.Core.Messages
             public readonly IEnvelope Envelope;
             public readonly bool AllowForwarding;
 
-            protected WriteRequestMessage(Guid correlationId, IEnvelope envelope, bool allowForwarding)
+            public readonly IPrincipal Principal;
+
+            protected WriteRequestMessage(Guid correlationId, IEnvelope envelope, bool allowForwarding, IPrincipal principal)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -72,6 +75,8 @@ namespace EventStore.Core.Messages
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 AllowForwarding = allowForwarding;
+
+                Principal = principal;
             }
         }
 
@@ -84,13 +89,17 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
 
-            protected ReadRequestMessage(Guid correlationId, IEnvelope envelope)
+            public readonly IPrincipal Principal;
+
+            protected ReadRequestMessage(Guid correlationId, IEnvelope envelope, IPrincipal principal)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
 
                 CorrelationId = correlationId;
                 Envelope = envelope;
+
+                Principal = principal;
             }
         }
 
@@ -146,8 +155,8 @@ namespace EventStore.Core.Messages
             public readonly Event[] Events;
 
             public WriteEvents(Guid correlationId, IEnvelope envelope, bool allowForwarding, 
-                               string eventStreamId, int expectedVersion, Event[] events)
-                : base(correlationId, envelope, allowForwarding)
+                               string eventStreamId, int expectedVersion, Event[] events, IPrincipal principal)
+                : base(correlationId, envelope, allowForwarding, principal)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (expectedVersion < Data.ExpectedVersion.Any) throw new ArgumentOutOfRangeException("expectedVersion");
@@ -159,9 +168,9 @@ namespace EventStore.Core.Messages
                 Events = events;
             }
 
-            public WriteEvents(Guid correlationId, IEnvelope envelope, bool allowForwarding, 
-                               string eventStreamId, int expectedVersion, Event @event)
-                : this(correlationId, envelope, allowForwarding, eventStreamId, expectedVersion, new[]{@event})
+            public WriteEvents(Guid correlationId, IEnvelope envelope, bool allowForwarding,
+                               string eventStreamId, int expectedVersion, Event @event, IPrincipal principal)
+                : this(correlationId, envelope, allowForwarding, eventStreamId, expectedVersion, new[] { @event }, principal)
             {
             }
 
@@ -205,8 +214,9 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
 
-            public TransactionStart(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, int expectedVersion)
-                : base(correlationId, envelope, allowForwarding)
+            public TransactionStart(Guid correlationId, IEnvelope envelope, bool allowForwarding,
+                                    string eventStreamId, int expectedVersion, IPrincipal principal)
+                : base(correlationId, envelope, allowForwarding, principal)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (expectedVersion < Data.ExpectedVersion.Any) throw new ArgumentOutOfRangeException("expectedVersion");
@@ -237,8 +247,9 @@ namespace EventStore.Core.Messages
             public readonly long TransactionId;
             public readonly Event[] Events;
 
-            public TransactionWrite(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId, Event[] events)
-                : base(correlationId, envelope, allowForwarding)
+            public TransactionWrite(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId,
+                                    Event[] events, IPrincipal principal)
+                : base(correlationId, envelope, allowForwarding, principal)
             {
                 Ensure.Nonnegative(transactionId, "transactionId");
                 Ensure.NotNull(events, "events");
@@ -269,8 +280,9 @@ namespace EventStore.Core.Messages
         {
             public readonly long TransactionId;
 
-            public TransactionCommit(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId)
-                : base(correlationId, envelope, allowForwarding)
+            public TransactionCommit(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId, 
+                                     IPrincipal principal)
+                : base(correlationId, envelope, allowForwarding, principal)
             {
                 Ensure.Nonnegative(transactionId, "transactionId");
                 TransactionId = transactionId;
@@ -298,8 +310,9 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
 
-            public DeleteStream(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, int expectedVersion)
-                : base(correlationId, envelope, allowForwarding)
+            public DeleteStream(Guid correlationId, IEnvelope envelope, bool allowForwarding,
+                                string eventStreamId, int expectedVersion, IPrincipal principal)
+                : base(correlationId, envelope, allowForwarding, principal)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (expectedVersion < Data.ExpectedVersion.Any) throw new ArgumentOutOfRangeException("expectedVersion");
@@ -329,8 +342,9 @@ namespace EventStore.Core.Messages
             public readonly int EventNumber;
             public readonly bool ResolveLinkTos;
 
-            public ReadEvent(Guid correlationId, IEnvelope envelope, string eventStreamId, int eventNumber, bool resolveLinkTos)
-                : base(correlationId, envelope)
+            public ReadEvent(Guid correlationId, IEnvelope envelope, string eventStreamId, int eventNumber,
+                             bool resolveLinkTos, IPrincipal principal)
+                : base(correlationId, envelope, principal)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
@@ -375,20 +389,10 @@ namespace EventStore.Core.Messages
                                            string eventStreamId,
                                            int fromEventNumber,
                                            int maxCount,
-                                           bool resolveLinks)
-                : this(correlationId, envelope, eventStreamId, fromEventNumber, maxCount, resolveLinks, null)
-            {
-                
-            }
-
-            public ReadStreamEventsForward(Guid correlationId,
-                                           IEnvelope envelope,
-                                           string eventStreamId,
-                                           int fromEventNumber,
-                                           int maxCount,
                                            bool resolveLinks,
-                                           int? validationStreamVersion)
-                : base(correlationId, envelope)
+                                           int? validationStreamVersion,
+                                           IPrincipal principal)
+                : base(correlationId, envelope, principal)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (fromEventNumber < -1) throw new ArgumentOutOfRangeException("fromEventNumber");
@@ -493,8 +497,9 @@ namespace EventStore.Core.Messages
                                             int fromEventNumber,
                                             int maxCount,
                                             bool resolveLinks,
-                                            int? validationStreamVersion)
-                : base(correlationId, envelope)
+                                            int? validationStreamVersion,
+                                            IPrincipal principal)
+                : base(correlationId, envelope, principal)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (fromEventNumber < -1) throw new ArgumentOutOfRangeException("fromEventNumber");
@@ -593,8 +598,9 @@ namespace EventStore.Core.Messages
                                         long preparePosition,
                                         int maxCount,
                                         bool resolveLinks,
-                                        long? validationTfEofPosition)
-                : base(correlationId, envelope)
+                                        long? validationTfEofPosition, 
+                                        IPrincipal principal)
+                : base(correlationId, envelope, principal)
             {
                 CommitPosition = commitPosition;
                 PreparePosition = preparePosition;
@@ -634,8 +640,9 @@ namespace EventStore.Core.Messages
                                          long preparePosition,
                                          int maxCount,
                                          bool resolveLinks,
-                                         long? validationTfEofPosition)
-                : base(correlationId, envelope)
+                                         long? validationTfEofPosition, 
+                                         IPrincipal principal)
+                : base(correlationId, envelope, principal)
             {
                 CommitPosition = commitPosition;
                 PreparePosition = preparePosition;
@@ -666,8 +673,9 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId; // should be empty to subscribe to all
             public readonly bool ResolveLinkTos;
 
-            public SubscribeToStream(Guid correlationId, IEnvelope envelope, Guid connectionId, string eventStreamId, bool resolveLinkTos)
-                : base(correlationId, envelope)
+            public SubscribeToStream(Guid correlationId, IEnvelope envelope, Guid connectionId, string eventStreamId,
+                                     bool resolveLinkTos, IPrincipal principal)
+                : base(correlationId, envelope, principal)
             {
                 Ensure.NotEmptyGuid(connectionId, "connectionId");
                 ConnectionId = connectionId;
@@ -678,8 +686,8 @@ namespace EventStore.Core.Messages
 
         public class UnsubscribeFromStream : ReadRequestMessage
         {
-            public UnsubscribeFromStream(Guid correlationId, IEnvelope envelope)
-                : base(correlationId, envelope)
+            public UnsubscribeFromStream(Guid correlationId, IEnvelope envelope, IPrincipal principal)
+                : base(correlationId, envelope, principal)
             {
             }
         }

@@ -79,12 +79,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         public StreamMetadata GetStreamMetadata(string streamId)
         {
             if (SystemStreams.IsMetastream(streamId))
-                return new StreamMetadata(_metastreamMaxCount, null);
+                return new StreamMetadata(_metastreamMaxCount, null, null, null);
 
             StreamInfo streamInfo;
             if (_streams.TryGetValue(streamId, out streamInfo))
                 return streamInfo.StreamMetadata;
-            return new StreamMetadata(null, null);
+            return new StreamMetadata(null, null, null, null);
         }
 
         public CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition)

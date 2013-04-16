@@ -33,6 +33,7 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Messages;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
@@ -74,7 +75,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             else
             {
                 var userStreamId = "$user-" + basicIdentity.Name;
-                _ioDispatcher.ReadBackward(userStreamId, -1, 1, false, m => ReadUserDataCompleted(message, m));
+                _ioDispatcher.ReadBackward(userStreamId, -1, 1, false, SystemAccount.Principal, m => ReadUserDataCompleted(message, m));
             }
         }
 

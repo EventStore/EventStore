@@ -75,7 +75,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   Codec.Json,
                                                                   HtmlFeedCodec // initialization order matters
                                                               };
-        private static readonly ICodec[] EventDataSupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
 
         private readonly IPublisher _networkSendQueue;
 
@@ -146,7 +145,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.Atom.DeleteStreamCompleted, Configure.DeleteStreamCompleted);
             // TODO AN: get expected version from X-ES-EXPECTEDVERSION
-            Publish(new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, true, stream, ExpectedVersion.Any));
+            Publish(new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, true, stream, ExpectedVersion.Any, manager.User));
         }
 
         private void GetStreamEvent(HttpEntityManager manager, UriTemplateMatch match)
@@ -405,14 +404,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
                                                   (args, msg) => Format.Atom.ReadAllEventsBackwardCompleted(args, msg, embed),
-                                                  (args, msg) => Configure.ReadAllEventsBackwardCompleted(args, msg, headOfTf: position == TFPos.HeadOfTf));
-            Publish(new ClientMessage.ReadAllEventsBackward(Guid.NewGuid(),
-                                                            envelope,
-                                                            position.CommitPosition,
-                                                            position.PreparePosition,
-                                                            count,
-                                                            resolveLinks: true,
-                                                            validationTfEofPosition: GetETagTFPosition(manager)));
+                                                  (args, msg) => Configure.ReadAllEventsBackwardCompleted(args, msg, position == TFPos.HeadOfTf));
+            Publish(new ClientMessage.ReadAllEventsBackward(Guid.NewGuid(), envelope,
+                                                            position.CommitPosition, position.PreparePosition, count,
+                                                            true, GetETagTFPosition(manager), manager.User));
         }
 
         private void GetAllEventsForward(HttpEntityManager manager, UriTemplateMatch match)
@@ -439,13 +434,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   manager,
                                                   (args, msg) => Format.Atom.ReadAllEventsForwardCompleted(args, msg, embed),
                                                   (args, msg) => Configure.ReadAllEventsForwardCompleted(args, msg, headOfTf: false));
-            Publish(new ClientMessage.ReadAllEventsForward(Guid.NewGuid(),
-                                                           envelope,
-                                                           position.CommitPosition,
-                                                           position.PreparePosition,
-                                                           count,
-                                                           resolveLinks: true,
-                                                           validationTfEofPosition: GetETagTFPosition(manager)));
+            Publish(new ClientMessage.ReadAllEventsForward(Guid.NewGuid(), envelope,
+                                                           position.CommitPosition, position.PreparePosition, count,
+                                                           true, GetETagTFPosition(manager), manager.User));
         }
 
         // HELPERS
@@ -475,7 +466,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   manager,
                                                   Format.WriteEventsCompleted,
                                                   (a, m) => Configure.WriteEventsCompleted(a, m, streamId));
-            var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, true, streamId, expectedVersion, events);
+            var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, true, streamId, expectedVersion, events, manager.User);
             Publish(msg);
         }
 
@@ -485,7 +476,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   manager,
                                                   (args, message) => Format.Atom.EventEntry(args, message, embed),
                                                   Configure.EventEntry);
-            Publish(new ClientMessage.ReadEvent(Guid.NewGuid(), envelope, stream, eventNumber, true));
+            Publish(new ClientMessage.ReadEvent(Guid.NewGuid(), envelope, stream, eventNumber, true, manager.User));
         }
 
         private void GetStreamEventData(HttpEntityManager manager, string stream, int eventNumber, bool shouldResolve)
@@ -503,13 +494,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   (ent, msg) =>
                                                   Format.Atom.GetStreamEventsBackward(ent, msg, embed, headOfStream),
                                                   (args, msg) => Configure.GetStreamEventsBackward(args, msg, headOfStream));
-            Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(),
-                                                               envelope,
-                                                               stream,
-                                                               eventNumber,
-                                                               count,
-                                                               resolveLinks: true,
-                                                               validationStreamVersion: GetETagStreamVersion(manager)));
+            Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), envelope, stream, eventNumber, count,
+                                                               true, GetETagStreamVersion(manager), manager.User));
         }
 
         private void GetStreamEventsForward(HttpEntityManager manager, string stream, int eventNumber, int count, EmbedLevel embed)
@@ -518,13 +504,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   manager,
                                                   (ent, msg) => Format.Atom.GetStreamEventsForward(ent, msg, embed),
                                                   Configure.GetStreamEventsForward);
-            Publish(new ClientMessage.ReadStreamEventsForward(Guid.NewGuid(),
-                                                              envelope,
-                                                              stream,
-                                                              eventNumber,
-                                                              count,
-                                                              resolveLinks: true,
-                                                              validationStreamVersion: GetETagStreamVersion(manager)));
+            Publish(new ClientMessage.ReadStreamEventsForward(Guid.NewGuid(), envelope, stream, eventNumber, count,
+                                                              true, GetETagStreamVersion(manager), manager.User));
         }
 
         private int? GetETagStreamVersion(HttpEntityManager manager)

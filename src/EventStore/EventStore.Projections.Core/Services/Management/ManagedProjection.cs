@@ -34,6 +34,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -457,8 +458,9 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), _readDispatcher.Envelope, "$projections-" + name, -1, 1, resolveLinks: false,
-                    validationStreamVersion: null), LoadCompleted);
+                    Guid.NewGuid(), _readDispatcher.Envelope, "$projections-" + name, -1, 1, 
+                    resolveLinks: false, validationStreamVersion: null, principal: SystemAccount.Principal), 
+                LoadCompleted);
         }
 
         private void LoadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed)
@@ -554,7 +556,8 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
-                    new Event(Guid.NewGuid(), "$ProjectionUpdated", true, managedProjectionSerializedState, new byte[0])),
+                    new Event(Guid.NewGuid(), "$ProjectionUpdated", true, managedProjectionSerializedState, new byte[0]),
+                    SystemAccount.Principal),
                 m => WriteCompleted(m, completed, eventStreamId));
         }
 
