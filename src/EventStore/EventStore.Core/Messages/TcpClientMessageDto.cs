@@ -306,7 +306,10 @@ namespace EventStore.Core.Messages
       NoStream = 2,
             
       [ProtoEnum(Name=@"StreamDeleted", Value=3)]
-      StreamDeleted = 3
+      StreamDeleted = 3,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=4)]
+      AccessDenied = 4
     }
   
     private ReadEventCompleted() {}
@@ -382,7 +385,10 @@ namespace EventStore.Core.Messages
       NotModified = 3,
             
       [ProtoEnum(Name=@"Error", Value=4)]
-      Error = 4
+      Error = 4,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=5)]
+      AccessDenied = 5
     }
   
     private ReadStreamEventsCompleted() {}
@@ -729,7 +735,10 @@ namespace EventStore.Core.Messages
       StreamDeleted = 5,
             
       [ProtoEnum(Name=@"InvalidTransaction", Value=6)]
-      InvalidTransaction = 6
+      InvalidTransaction = 6,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=7)]
+      AccessDenied = 7
     }
   
   }

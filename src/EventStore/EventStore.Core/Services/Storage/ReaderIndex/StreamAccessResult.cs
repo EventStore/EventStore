@@ -28,12 +28,9 @@
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
-    public enum ReadEventResult
+    public enum StreamAccessResult
     {
-        Success = 0,
-        NotFound = 1,
-        NoStream = 2,
-        StreamDeleted = 3,
-        AccessDenied = 4
+        Granted = 0,
+        Denied = 1,
     }
 }

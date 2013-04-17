@@ -7,6 +7,7 @@ namespace EventStore.Core.Data
         StreamDeleted = 2,
 
         NotModified = 3,
-        Error = 4
+        Error = 4,
+        AccessDenied = 5
     }
 }

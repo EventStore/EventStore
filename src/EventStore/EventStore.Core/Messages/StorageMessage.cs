@@ -27,9 +27,11 @@
 // 
 using System;
 using System.Net;
+using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages
@@ -317,6 +319,40 @@ namespace EventStore.Core.Messages
                 ForwardingId = forwardingId;
                 CorrelationId = correlationId;
                 TimeoutMessage = timeoutMessage;
+            }
+        }
+
+        public class CheckStreamAccess: Message
+        {
+            public readonly IEnvelope Envelope;
+            public readonly Guid CorrelationId;
+            public readonly string EventStreamId;
+            public readonly StreamAccessType AccessType;
+            public readonly IPrincipal User;
+
+            public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, StreamAccessType accessType, IPrincipal user)
+            {
+                Envelope = envelope;
+                CorrelationId = correlationId;
+                EventStreamId = eventStreamId;
+                AccessType = accessType;
+                User = user;
+            }
+        }
+
+        public class CheckStreamAccessCompleted: Message
+        {
+            public readonly Guid CorrelationId;
+            public readonly string EventStreamId;
+            public readonly StreamAccessType AccessType;
+            public readonly StreamAccessResult AccessResult;
+
+            public CheckStreamAccessCompleted(Guid correlationId, string eventStreamId, StreamAccessType accessType, StreamAccessResult accessResult)
+            {
+                CorrelationId = correlationId;
+                EventStreamId = eventStreamId;
+                AccessType = accessType;
+                AccessResult = accessResult;
             }
         }
     }

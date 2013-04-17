@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using EventStore.Common.Utils;
@@ -104,6 +103,11 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.NotImplemented, description ?? "Not Implemented", null, Encoding.UTF8);
         }
 
+        public static ResponseConfiguration Unauthorized(string description = null)
+        {
+            return new ResponseConfiguration(HttpStatusCode.Unauthorized, description ?? "Unauthorized", null, Encoding.UTF8);
+        }
+
         public static ResponseConfiguration EventEntry(HttpResponseConfiguratorArgs entity, Message message)
         {
             var completed = message as ClientMessage.ReadEventCompleted;
@@ -119,6 +123,8 @@ namespace EventStore.Core.Services.Transport.Http
                     return NotFound();
                 case ReadEventResult.StreamDeleted:
                     return Gone();
+                case ReadEventResult.AccessDenied:
+                    return Unauthorized();
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -151,6 +157,8 @@ namespace EventStore.Core.Services.Transport.Http
                     return NotModified();
                 case ReadStreamResult.Error:
                     return InternalServerError(msg.Message);
+                case ReadStreamResult.AccessDenied:
+                    return Unauthorized();
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -178,6 +186,8 @@ namespace EventStore.Core.Services.Transport.Http
                     return NotModified();
                 case ReadStreamResult.Error:
                     return InternalServerError(msg.Message);
+                case ReadStreamResult.AccessDenied:
+                    return Unauthorized();
                 default:
                     throw new ArgumentOutOfRangeException();
             }

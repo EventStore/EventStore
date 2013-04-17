@@ -301,7 +301,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ClientMessage.ReadStreamEventsBackward(
                     //TODO: reading events history in batches of 1 event (slow?)
                     Guid.NewGuid(), _readDispatcher.Envelope, _streamId, fromEventNumber, 1, 
-                    resolveLinks: false, validationStreamVersion: null, principal: SystemAccount.Principal), 
+                    resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 completed => ReadStreamEventsBackwardCompleted(completed, upTo));
         }
 

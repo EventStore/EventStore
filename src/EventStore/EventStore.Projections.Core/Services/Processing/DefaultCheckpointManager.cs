@@ -196,7 +196,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readRequestId = _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, _projectionCheckpointStreamId, _nextStateIndexToRequest,
-                    recordsToRequest, resolveLinks: false, validationStreamVersion: null, principal: SystemAccount.Principal), 
+                    recordsToRequest, resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 OnLoadStateReadRequestCompleted);
         }
 
@@ -250,7 +250,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _readDispatcher.Publish(
                     new ClientMessage.ReadStreamEventsBackward(
                         Guid.NewGuid(), _readDispatcher.Envelope, partitionCheckpointStreamName, -1, 1, 
-                        resolveLinks: false, validationStreamVersion: null, principal: SystemAccount.Principal),
+                        resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal),
                     m =>
                     OnLoadPartitionStateReadStreamEventsBackwardCompleted(
                         m, requestedStateCheckpointTag, loadCompleted,
@@ -306,7 +306,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _readDispatcher.Publish(
                     new ClientMessage.ReadStreamEventsBackward(
                         Guid.NewGuid(), _readDispatcher.Envelope, partitionStreamName, message.NextEventNumber, 1,
-                        resolveLinks: false, validationStreamVersion: null, principal: SystemAccount.Principal),
+                        resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal),
                     m =>
                     OnLoadPartitionStateReadStreamEventsBackwardCompleted(m, requestedStateCheckpointTag, loadCompleted, partitionStreamName, stateEventType));
             if (requestId != Guid.Empty)

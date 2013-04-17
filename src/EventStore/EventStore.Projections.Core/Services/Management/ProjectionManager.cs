@@ -484,7 +484,7 @@ namespace EventStore.Projections.Core.Services.Management
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, "$projections-$all", from, _readEventsBatchSize,
-                    resolveLinks: false, validationStreamVersion: null, principal: SystemAccount.Principal), 
+                    resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 m => LoadProjectionListCompleted(m, from, completedAction));
         }
 

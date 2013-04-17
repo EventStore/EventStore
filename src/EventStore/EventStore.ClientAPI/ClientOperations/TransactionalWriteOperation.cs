@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 
@@ -70,6 +71,9 @@ namespace EventStore.ClientAPI.ClientOperations
                 case ClientMessage.OperationResult.CommitTimeout:
                 case ClientMessage.OperationResult.ForwardTimeout:
                     return new InspectionResult(InspectionDecision.Retry);
+                case ClientMessage.OperationResult.AccessDenied:
+                    Fail(new AccessDeniedException("Write access denied."));
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 default:
                     throw new ArgumentOutOfRangeException(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }

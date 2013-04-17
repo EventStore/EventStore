@@ -127,7 +127,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, _namingBuilder.GetOrderStreamName(), fromEventNumber, 100,
-                    resolveLinks: false, validationStreamVersion: null, principal: SystemAccount.Principal), 
+                    resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                     completed =>
                         {
                             switch (completed.Result)

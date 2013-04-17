@@ -72,6 +72,9 @@ namespace EventStore.ClientAPI.ClientOperations
                 case ClientMessage.OperationResult.InvalidTransaction:
                     Fail(new InvalidTransactionException());
                     return new InspectionResult(InspectionDecision.EndOperation);
+                case ClientMessage.OperationResult.AccessDenied:
+                    Fail(new AccessDeniedException("Write access denied."));
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 default:
                     throw new ArgumentOutOfRangeException(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }

@@ -61,6 +61,7 @@ namespace EventStore.Core.Services.Transport.Http
                         case ReadEventResult.NotFound:
                         case ReadEventResult.NoStream:
                         case ReadEventResult.StreamDeleted:
+                        case ReadEventResult.AccessDenied:
                             return string.Empty;
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -85,6 +86,7 @@ namespace EventStore.Core.Services.Transport.Http
                         case ReadStreamResult.StreamDeleted:
                         case ReadStreamResult.NotModified:
                         case ReadStreamResult.Error:
+                        case ReadStreamResult.AccessDenied:
                             return string.Empty;
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -107,6 +109,7 @@ namespace EventStore.Core.Services.Transport.Http
                     case ReadStreamResult.StreamDeleted:
                     case ReadStreamResult.NotModified:
                     case ReadStreamResult.Error:
+                    case ReadStreamResult.AccessDenied:
                         return string.Empty;
                     default:
                         throw new ArgumentOutOfRangeException();

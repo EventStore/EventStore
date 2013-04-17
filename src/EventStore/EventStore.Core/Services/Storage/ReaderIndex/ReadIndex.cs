@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Principal;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -544,6 +545,55 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 _readers.Return(reader);
             }
+        }
+
+        StreamAccessResult IReadIndex.CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
+        {
+            var reader = _readers.Get();
+            try
+            {
+                return CheckStreamAccessInternal(reader, streamId, streamAccessType, user);
+            }
+            finally
+            {
+                _readers.Return(reader);
+            }
+        }
+
+        private StreamAccessResult CheckStreamAccessInternal(ITransactionFileReader reader, string streamId, 
+                                                             StreamAccessType streamAccessType, IPrincipal user)
+        {
+            if (SystemStreams.IsMetastream(streamId))
+            {
+                switch (streamAccessType)
+                {
+                    case StreamAccessType.Read:
+                        return CheckStreamAccessInternal(reader, SystemStreams.OriginalStreamOf(streamId), StreamAccessType.MetaRead, user);
+                    case StreamAccessType.Write:
+                        return CheckStreamAccessInternal(reader, SystemStreams.OriginalStreamOf(streamId), StreamAccessType.MetaWrite, user);
+                    case StreamAccessType.MetaRead:
+                    case StreamAccessType.MetaWrite:
+                        return StreamAccessResult.Denied;
+                    default:
+                        throw new ArgumentOutOfRangeException("streamAccessType");
+                }
+            }
+
+            var meta = GetStreamMetadataCached(reader, streamId);
+            if (meta.Acl == null) return StreamAccessResult.Granted;
+            switch (streamAccessType)
+            {
+                case StreamAccessType.Read: return CheckRoleAccess(meta.Acl.ReadRole, user);
+                case StreamAccessType.Write: return CheckRoleAccess(meta.Acl.WriteRole, user);
+                case StreamAccessType.MetaRead: return CheckRoleAccess(meta.Acl.MetaReadRole, user);
+                case StreamAccessType.MetaWrite: return CheckRoleAccess(meta.Acl.MetaWriteRole, user);
+                default: throw new ArgumentOutOfRangeException("streamAccessType");
+            }
+        }
+
+        private StreamAccessResult CheckRoleAccess(string role, IPrincipal user)
+        {
+            return role == null || (user != null && user.IsInRole(role)) ? StreamAccessResult.Granted : StreamAccessResult.Denied;
         }
 
         private int GetLastStreamEventNumberCached(ITransactionFileReader reader, string streamId)

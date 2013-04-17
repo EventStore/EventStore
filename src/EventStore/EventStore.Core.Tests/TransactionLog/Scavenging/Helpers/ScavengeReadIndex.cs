@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Principal;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -74,6 +75,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             if (_streams.TryGetValue(streamId, out streamInfo))
                 return streamInfo.StreamVersion;
             return -1;
+        }
+
+        public StreamAccessResult CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
+        {
+            throw new NotImplementedException();
         }
 
         public StreamMetadata GetStreamMetadata(string streamId)

@@ -9,6 +9,7 @@ enum OperationResult
 	WrongExpectedVersion = 4;
 	StreamDeleted = 5;
 	InvalidTransaction = 6;
+	AccessDenied = 7;
 }
 
 message NewEvent {
@@ -90,6 +91,7 @@ message ReadEventCompleted {
 		NotFound = 1;
 		NoStream = 2;
 		StreamDeleted = 3;
+		AccessDenied = 4;
 	}
 
 	required ReadEventResult result = 1;
@@ -111,6 +113,7 @@ message ReadStreamEventsCompleted {
 		StreamDeleted = 2;
 		NotModified = 3;
 		Error = 4;
+		AccessDenied = 5;
 	}
 
 	repeated ResolvedIndexedEvent events = 1;

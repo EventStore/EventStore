@@ -99,6 +99,7 @@
     <Compile Include="Common\Utils\Helper.cs" />
     <Compile Include="ConnectionSettings.cs" />
     <Compile Include="ConnectionSettingsBuilder.cs" />
+    <Compile Include="Exceptions\AccessDeniedException.cs" />
     <Compile Include="StreamMetadata.cs" />
     <Compile Include="Core\ClusterExplorer.cs" />
     <Compile Include="Core\EventStoreConnectionLogicHandler.cs" />

@@ -27,6 +27,7 @@
 //  
 
 using System;
+using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -92,6 +93,11 @@ namespace EventStore.Core.Tests.TransactionLog
         }
 
         public int GetLastStreamEventNumber(string streamId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public StreamAccessResult CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
         {
             throw new NotImplementedException();
         }

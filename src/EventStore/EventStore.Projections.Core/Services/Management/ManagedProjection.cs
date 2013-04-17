@@ -459,7 +459,7 @@ namespace EventStore.Projections.Core.Services.Management
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, "$projections-" + name, -1, 1, 
-                    resolveLinks: false, validationStreamVersion: null, principal: SystemAccount.Principal), 
+                    resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 LoadCompleted);
         }
 
