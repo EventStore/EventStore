@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _router.RegisterControllerAction(new ControllerAction("/halt", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
             _router.RegisterControllerAction(new ControllerAction("/streams/{stream}/{event}/backward/{count}?embed={embed}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
             _router.RegisterControllerAction(new ControllerAction("/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
-            _router.RegisterControllerAction(new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
+            _router.RegisterControllerAction(new ControllerAction("/s/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
             _router.RegisterControllerAction(new ControllerAction("/streams/$all/", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
             _router.RegisterControllerAction(new ControllerAction("/streams/$$all", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
 
@@ -229,17 +229,47 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void match_greedy_route_with_bare_minimum_of_uri()
         {
-            var match = _router.GetAllUriMatches(Uri("/stats/test"));
+            var match = _router.GetAllUriMatches(Uri("/s/stats/test"));
             Assert.AreEqual(1, match.Count);
-            Assert.AreEqual("/stats/{*statPath}", match[0].ControllerAction.UriTemplate);
+            Assert.AreEqual("/s/stats/{*statPath}", match[0].ControllerAction.UriTemplate);
         }
 
         [Test]
         public void match_greedy_route_and_catch_long_uri()
         {
-            var match = _router.GetAllUriMatches(Uri("/stats/some/long/stat/path"));
+            var match = _router.GetAllUriMatches(Uri("/s/stats/some/long/stat/path"));
             Assert.AreEqual(1, match.Count);
-            Assert.AreEqual("/stats/{*statPath}", match[0].ControllerAction.UriTemplate);
+            Assert.AreEqual("/s/stats/{*statPath}", match[0].ControllerAction.UriTemplate);
+        }
+
+        [Test]
+        public void match_greedy_route_with_empty_path_part_starting_with_slash()
+        {
+            var match = _router.GetAllUriMatches(Uri("/s/stats/"));
+            Assert.AreEqual(1, match.Count);
+            Assert.AreEqual("/s/stats/{*statPath}", match[0].ControllerAction.UriTemplate);
+        }
+
+        [Test]
+        public void not_match_greedy_route_with_empty_path_part_without_slash()
+        {
+            var match = _router.GetAllUriMatches(Uri("/s/stats"));
+            Assert.AreEqual(0, match.Count);
+        }
+
+        [Test]
+        public void match_greedy_route_in_the_root_to_any_path()
+        {
+            var tmpRouter = _uriRouterFactory();
+            tmpRouter.RegisterControllerAction(new ControllerAction("/{*greedy}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
+
+            var match = tmpRouter.GetAllUriMatches(Uri("/"));
+            Assert.AreEqual(1, match.Count);
+            Assert.AreEqual("/{*greedy}", match[0].ControllerAction.UriTemplate);
+
+            match = tmpRouter.GetAllUriMatches(Uri("/something"));
+            Assert.AreEqual(1, match.Count);
+            Assert.AreEqual("/{*greedy}", match[0].ControllerAction.UriTemplate);
         }
 
         private Uri Uri(string relativePath)

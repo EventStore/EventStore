@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.EntityManagement;
 
@@ -86,25 +85,35 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void GetAllUriMatches(RouterNode node, Uri baseAddress, Uri uri, string[] segments, int index, List<UriToActionMatch> matches)
         {
+            RouterNode child;
+
             if (index == segments.Length)
             {
-                for (int i = 0; i < node.LeafRoutes.Count; ++i)
-                {
-                    var route = node.LeafRoutes[i];
-                    var match = route.UriTemplate.Match(baseAddress, uri);
-                    if (match != null)
-                        matches.Add(new UriToActionMatch(match, route.Action, route.Handler));
-                }
+                // /stats/ should match /stats/{*greedyStatsPath}
+                if (uri.OriginalString.EndsWith("/") && node.Children.TryGetValue(GreedyPlaceholder, out child))
+                    AddMatchingRoutes(child.LeafRoutes, baseAddress, uri, matches);
+
+                AddMatchingRoutes(node.LeafRoutes, baseAddress, uri, matches);
                 return;
             }
 
-            RouterNode child;
             if (node.Children.TryGetValue(GreedyPlaceholder, out child))
                 GetAllUriMatches(child, baseAddress, uri, segments, segments.Length, matches);
             if (node.Children.TryGetValue(Placeholder, out child))
                 GetAllUriMatches(child, baseAddress, uri, segments, index + 1, matches);
             if (node.Children.TryGetValue(segments[index], out child))
                 GetAllUriMatches(child, baseAddress, uri, segments, index + 1, matches);
+        }
+
+        private static void AddMatchingRoutes(IList<HttpRoute> routes, Uri baseAddress, Uri uri, List<UriToActionMatch> matches)
+        {
+            for (int i = 0; i < routes.Count; ++i)
+            {
+                var route = routes[i];
+                var match = route.UriTemplate.Match(baseAddress, uri);
+                if (match != null)
+                    matches.Add(new UriToActionMatch(match, route.Action, route.Handler));
+            }
         }
 
         private class RouterNode
