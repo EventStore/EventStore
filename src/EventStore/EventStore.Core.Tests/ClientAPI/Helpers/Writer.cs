@@ -25,7 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using System.Threading.Tasks;
 using EventStore.ClientAPI;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
@@ -45,24 +44,10 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
         public TailWriter Append(params EventData[] events)
         {
-            var appends = new Task[events.Length];
-
-            if (_version == ExpectedVersion.Any)
+            for (var i = 0; i < events.Length; i++)
             {
-                for (var i = 0; i < events.Length; i++)
-                {
-                    appends[i] = _store.AppendToStreamAsync(_stream, ExpectedVersion.Any, new[] {events[i]});
-                }
+                _store.AppendToStream(_stream, _version == ExpectedVersion.Any ? ExpectedVersion.Any : _version + i, new[] {events[i]});
             }
-            else
-            {
-                for (var i = 0; i < events.Length; i++)
-                {
-                    appends[i] = _store.AppendToStreamAsync(_stream, _version + i, new[] {events[i]});
-                }
-            }
-
-            Task.WaitAll(appends);
             return new TailWriter(_store, _stream);
         }
     }
@@ -102,7 +87,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         }
     }
 
-    //TODO GFY this should be removed and megrged with the public idea of a transaction.
+    //TODO GFY this should be removed and merged with the public idea of a transaction.
     internal class OngoingTransaction
     {
         private readonly EventStoreTransaction _transaction;
