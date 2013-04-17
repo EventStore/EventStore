@@ -95,7 +95,7 @@ namespace EventStore.SingleNode
             {
                 _projections = new Projections.Core.Projections(db,
                                                                 _node.MainQueue,
-                                                                _node.Bus,
+                                                                _node.MainBus,
                                                                 _node.TimerService,
                                                                 _node.HttpService,
                                                                 _node.NetworkSendService,
@@ -106,7 +106,7 @@ namespace EventStore.SingleNode
         private void RegisterUIProjections()
         {
             var users = new UserManagementProjectionsRegistration();
-            _node.Bus.Subscribe(users);
+            _node.MainBus.Subscribe(users);
         }
 
         private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems)

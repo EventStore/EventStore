@@ -181,7 +181,7 @@
     <Compile Include="Services\Transport\Http\IncomingHttpRequestAuthenticationManager.cs" />
     <Compile Include="Services\Transport\Http\AuthenticatedHttpRequestProcessor.cs" />
     <Compile Include="Services\Transport\Http\IHttpService.cs" />
-    <Compile Include="Services\Transport\Http\IUriRouter.cs" />
+    <Compile Include="Services\Transport\Http\UriRouters.cs" />
     <Compile Include="Services\Transport\Http\Messages\AuthenticatedHttpRequestMessage.cs" />
     <Compile Include="Services\Transport\Http\Messages\IncomingHttpRequestMessage.cs" />
     <Compile Include="Services\Transport\Http\ServiceAccessibility.cs" />

@@ -68,22 +68,22 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _publishEnvelope = new PublishEnvelope(_bus);
         }
 
-        public void Handle(ClientMessage.TransactionStart message)
+        public void Handle(ClientMessage.TransactionStart request)
         {
             if (_initialized)
                 throw new InvalidOperationException();
 
             _initialized = true;
             _requestType = RequestType.TransactionStart;
-            _responseEnvelope = message.Envelope;
-            _correlationId = message.CorrelationId;
+            _responseEnvelope = request.Envelope;
+            _correlationId = request.CorrelationId;
 
             _transactionId = -1; // not known yet
 
             _bus.Publish(new StorageMessage.WriteTransactionStart(_correlationId,
                                                                   _publishEnvelope,
-                                                                  message.EventStreamId,
-                                                                  message.ExpectedVersion,
+                                                                  request.EventStreamId,
+                                                                  request.ExpectedVersion,
                                                                   liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks * 9 / 10)));
             _nextTimeoutTime = DateTime.UtcNow + _prepareTimeout;
         }

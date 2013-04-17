@@ -48,6 +48,7 @@ namespace EventStore.Core.Services.RequestManager
                                             IHandle<ClientMessage.TransactionWrite>,
                                             IHandle<ClientMessage.TransactionCommit>,
                                             IHandle<StorageMessage.RequestCompleted>,
+                                            IHandle<StorageMessage.CheckStreamAccessCompleted>,
                                             IHandle<StorageMessage.AlreadyCommitted>,
                                             IHandle<StorageMessage.PrepareAck>,
                                             IHandle<StorageMessage.CommitAck>,
@@ -126,6 +127,11 @@ namespace EventStore.Core.Services.RequestManager
         {
             if (!_currentRequests.Remove(message.CorrelationId))
                 throw new InvalidOperationException("Should never complete request twice.");
+        }
+
+        public void Handle(StorageMessage.CheckStreamAccessCompleted message)
+        {
+            DispatchInternal(message.CorrelationId, message);
         }
 
         public void Handle(StorageMessage.AlreadyCommitted message)

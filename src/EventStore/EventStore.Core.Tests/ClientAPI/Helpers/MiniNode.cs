@@ -106,7 +106,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         public void Start()
         {
             var startedEvent = new ManualResetEventSlim(false);
-            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(m => startedEvent.Set()));
+            _node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(m => startedEvent.Set()));
 
             _node.Start();
 
@@ -117,7 +117,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         public void Shutdown()
         {
             var shutdownEvent = new ManualResetEventSlim(false);
-            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(m => shutdownEvent.Set()));
+            _node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(m => shutdownEvent.Set()));
 
             _node.Stop(exitProcess: true);
 

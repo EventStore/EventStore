@@ -35,6 +35,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
     public class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
                                                      IHandle<ClientMessage.WriteEvents>
     {
+        private ClientMessage.WriteEvents _request;
+
         public WriteStreamTwoPhaseRequestManager(IPublisher publisher, 
                                                  int prepareCount, 
                                                  int commitCount,
@@ -46,16 +48,21 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(ClientMessage.WriteEvents request)
         {
-            Init(request.Envelope, request.CorrelationId, -1);
+            _request = request;
+            Init(request.Envelope, request.CorrelationId, request.EventStreamId, request.User, -1);
+        }
 
+        protected override void OnSecurityAccessGranted()
+        {
             Publisher.Publish(
                 new StorageMessage.WritePrepares(
                     CorrelationId,
                     PublishEnvelope,
-                    request.EventStreamId,
-                    request.ExpectedVersion,
-                    request.Events,
+                    _request.EventStreamId,
+                    _request.ExpectedVersion,
+                    _request.Events,
                     liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
+            _request = null;
         }
 
         protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)

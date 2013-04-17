@@ -35,6 +35,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
     public class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
                                                       IHandle<ClientMessage.DeleteStream>
     {
+        private ClientMessage.DeleteStream _request;
+
         public DeleteStreamTwoPhaseRequestManager(IPublisher publisher,  
                                                   int prepareCount, 
                                                   int commitCount, 
@@ -46,15 +48,20 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(ClientMessage.DeleteStream request)
         {
-            Init(request.Envelope, request.CorrelationId, -1);
+            _request = request;
+            Init(request.Envelope, request.CorrelationId, request.EventStreamId, request.User, -1);
+        }
 
+        protected override void OnSecurityAccessGranted()
+        {
             Publisher.Publish(
                 new StorageMessage.WriteDelete(
-                    request.CorrelationId,
+                    _request.CorrelationId,
                     PublishEnvelope,
-                    request.EventStreamId,
-                    request.ExpectedVersion,
+                    _request.EventStreamId,
+                    _request.ExpectedVersion,
                     liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
+            _request = null;
         }
 
         protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
@@ -70,6 +77,5 @@ namespace EventStore.Core.Services.RequestManager.Managers
             var responseMsg = new ClientMessage.DeleteStreamCompleted(correlationId, result, error);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
-
     }
 }
