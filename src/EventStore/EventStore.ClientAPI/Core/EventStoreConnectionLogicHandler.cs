@@ -173,7 +173,7 @@ namespace EventStore.ClientAPI.Core
 
             foreach (var operation in _operations.Values.Concat(_waitingOperations).Concat(_retryPendingOperations))
             {
-                operation.Operation.Fail(new ConnectionClosingException(string.Format("Connection '{0}' was closed.", _esConnection.ConnectionName)));
+                operation.Operation.Fail(new ConnectionClosedException(string.Format("Connection '{0}' was closed.", _esConnection.ConnectionName)));
             }
             _operations.Clear();
             _waitingOperations.Clear();
@@ -183,7 +183,9 @@ namespace EventStore.ClientAPI.Core
 
             foreach (var subscription in _subscriptions.Values.Concat(_retryPendingSubscriptions))
             {
-                subscription.Operation.Fail(new ConnectionClosingException(string.Format("Connection '{0}' was closed.", _esConnection.ConnectionName)));
+                subscription.Operation.DropSubscription(
+                    SubscriptionDropReason.ConnectionClosed, 
+                    new ConnectionClosedException(string.Format("Connection '{0}' was closed.", _esConnection.ConnectionName)));
             }
             _subscriptions.Clear();
             _retryPendingSubscriptions.Clear();
@@ -377,7 +379,7 @@ namespace EventStore.ClientAPI.Core
                                             _esConnection.ConnectionName, subscription, subscription.LastUpdated, DateTime.UtcNow);
                     _log.Error(err);
 
-                    subscription.Operation.Fail(new OperationTimedOutException(err));
+                    subscription.Operation.DropSubscription(SubscriptionDropReason.SubscribingError, new OperationTimedOutException(err));
                     removeSubscriptions.Add(subscription);
                 }
             }
@@ -445,7 +447,8 @@ namespace EventStore.ClientAPI.Core
                                                       msg.StreamId,
                                                       msg.ResolveLinkTos,
                                                       msg.EventAppeared,
-                                                      msg.SubscriptionDropped);
+                                                      msg.SubscriptionDropped,
+                                                      _settings.VerboseLogging);
             if (_verbose) _log.Debug("EventStoreConnection '{0}': handling StartSubscriptionMessage. {1}, {2}, {3}, {4}.", _esConnection.ConnectionName, operation.GetType().Name, operation, msg.MaxRetries, msg.Timeout);
             StartSubscription(new SubscriptionItem(operation, msg.MaxRetries, msg.Timeout));
         }
@@ -630,7 +633,9 @@ namespace EventStore.ClientAPI.Core
             if (subscription.MaxRetries >= 0 && subscription.RetryCount >= subscription.MaxRetries)
             {
                 if (_verbose) _log.Debug("EventStoreConnection '{0}': RETRIES LIMIT REACHED when trying to retry {1}.", _esConnection.ConnectionName, subscription);
-                subscription.Operation.Fail(new RetriesLimitReachedException(subscription.ToString(), subscription.RetryCount));
+                subscription.Operation.DropSubscription(
+                    SubscriptionDropReason.SubscribingError, 
+                    new RetriesLimitReachedException(subscription.ToString(), subscription.RetryCount));
                 return;
             }
 

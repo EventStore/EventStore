@@ -38,6 +38,12 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services
 {
+    public enum SubscriptionDropReason
+    {
+        Unsubscribed = 0,
+        AccessDenied = 1
+    }
+
     public class SubscriptionsService : IHandle<TcpMessage.ConnectionClosed>,
                                         IHandle<ClientMessage.SubscribeToStream>,
                                         IHandle<ClientMessage.UnsubscribeFromStream>,
@@ -107,14 +113,29 @@ namespace EventStore.Core.Services
             }
         }
 
-        public void Handle(ClientMessage.SubscribeToStream message)
+        public void Handle(ClientMessage.SubscribeToStream msg)
         {
-            var lastEventNumber = message.EventStreamId.IsEmptyString() ? (int?) null : _readIndex.GetLastStreamEventNumber(message.EventStreamId);
-            var lastCommitPos = _readIndex.LastCommitPosition;
-            var subscribedMessage = new ClientMessage.SubscriptionConfirmation(message.CorrelationId, lastCommitPos, lastEventNumber);
-            SubscribeToStream(message.CorrelationId, message.Envelope, message.ConnectionId,
-                              message.EventStreamId, message.ResolveLinkTos, lastCommitPos, lastEventNumber);
-            message.Envelope.ReplyWith(subscribedMessage);
+            var streamAccess = _readIndex.CheckStreamAccess(
+                msg.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : msg.EventStreamId, StreamAccessType.Read, null);
+
+            switch (streamAccess)
+            {
+                case StreamAccessResult.Granted:
+                    var lastEventNumber = msg.EventStreamId.IsEmptyString()
+                                                  ? (int?) null
+                                                  : _readIndex.GetLastStreamEventNumber(msg.EventStreamId);
+                    var lastCommitPos = _readIndex.LastCommitPosition;
+                    SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId, 
+                                      msg.ResolveLinkTos, lastCommitPos, lastEventNumber);
+                    var subscribedMessage = new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
+                    msg.Envelope.ReplyWith(subscribedMessage);
+                    break;
+                case StreamAccessResult.Denied:
+                    msg.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(msg.CorrelationId, SubscriptionDropReason.AccessDenied));
+                    break;
+                default: throw new Exception(string.Format("Unknown StreamAccessResult '{0}'.", streamAccess));
+            }
+
         }
 
         public void Handle(ClientMessage.UnsubscribeFromStream message)
@@ -154,7 +175,8 @@ namespace EventStore.Core.Services
         private void DropSubscription(Subscription subscription, bool sendDropNotification)
         {
             if (sendDropNotification)
-                subscription.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(subscription.CorrelationId));
+                subscription.Envelope.ReplyWith(
+                    new ClientMessage.SubscriptionDropped(subscription.CorrelationId, SubscriptionDropReason.Unsubscribed));
 
             List<Subscription> subscriptions;
             if (_subscriptionGroupsByStream.TryGetValue(subscription.EventStreamId, out subscriptions))

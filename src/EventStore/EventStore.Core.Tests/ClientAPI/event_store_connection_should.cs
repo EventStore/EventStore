@@ -141,10 +141,10 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.That(() => connection.StartTransactionAsync(s, 0).Wait(),
                         Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.That(() => connection.SubscribeToStream(s, false, _ => { }, () => { }).Wait(),
+            Assert.That(() => connection.SubscribeToStream(s, false, (_, __) => { }, (_, __, ___) => { }).Wait(),
                         Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.That(() => connection.SubscribeToAll(false, _ => { }, () => { }).Wait(),
+            Assert.That(() => connection.SubscribeToAll(false, (_, __) => { }, (_, __, ___) => { }).Wait(),
                         Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
         }
     }

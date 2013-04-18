@@ -31,6 +31,7 @@ using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
@@ -708,10 +709,12 @@ namespace EventStore.Core.Messages
         public class SubscriptionDropped: Message
         {
             public readonly Guid CorrelationId;
+            public readonly SubscriptionDropReason Reason;
 
-            public SubscriptionDropped(Guid correlationId)
+            public SubscriptionDropped(Guid correlationId, SubscriptionDropReason reason)
             {
                 CorrelationId = correlationId;
+                Reason = reason;
             }
         }
     }

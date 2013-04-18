@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,28 +25,23 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-
-using System;
-using System.Runtime.Serialization;
-
-namespace EventStore.ClientAPI.Exceptions
+namespace EventStore.ClientAPI
 {
-    public class ConnectionClosingException : EventStoreConnectionException
+    /// <summary>
+    /// Represents the reason subscription drop happened
+    /// </summary>
+    public enum SubscriptionDropReason
     {
-        public ConnectionClosingException()
-        {
-        }
+        UserInitiated,
+        AccessDenied,
+        SubscribingError,
+        ServerError,
+        ConnectionClosed,
 
-        public ConnectionClosingException(string message) : base(message)
-        {
-        }
+        CatchUpError,
+        ProcessingQueueOverflow,
+        EventHandlerException,
 
-        public ConnectionClosingException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected ConnectionClosingException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+        Unknown = 100
     }
 }

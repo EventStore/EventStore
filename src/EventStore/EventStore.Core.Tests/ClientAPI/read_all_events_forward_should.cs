@@ -26,14 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using EventStore.ClientAPI;
-using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
@@ -287,14 +284,14 @@ namespace EventStore.Core.Tests.ClientAPI
                 bool wasSubscribed = false;
                 using (var subscription = store.SubscribeToStream(stream,
                                                                   false,
-                                                                  @event =>
+                                                                  (s, @event) =>
                                                                   {
                                                                       catched.Add(@event.Event);
                                                                       lastKnownPosition = @event.OriginalPosition;
                                                                       wasSubscribed = true;
                                                                       subscribed.Set();
                                                                   },
-                                                                  () =>
+                                                                  (s, r, e) =>
                                                                   {
                                                                       wasSubscribed = false;
                                                                       subscribed.Set();

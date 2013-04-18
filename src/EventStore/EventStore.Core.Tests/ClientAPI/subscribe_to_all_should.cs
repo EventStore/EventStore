@@ -26,11 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
@@ -67,11 +65,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
-                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
-                Action subscriptionDropped = () => dropped.Signal();
-
-                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped).Result)
-                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped).Result)
+                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
                 {
                     var create = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
                     Assert.IsTrue(create.Wait(Timeout), "StreamCreateAsync timed out.");
@@ -91,10 +86,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
-                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
-                Action subscriptionDropped = () => dropped.Signal();
-
-                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped).Result)
+                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
                 {
                     var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                     Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");

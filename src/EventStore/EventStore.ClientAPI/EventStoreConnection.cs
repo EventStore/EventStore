@@ -518,36 +518,18 @@ namespace EventStore.ClientAPI
             _handler.EnqueueMessage(new StartOperationMessage(operation, _settings.MaxRetries, _settings.OperationTimeout));
         }
 
-        public Task<EventStoreSubscription> SubscribeToStream(string stream, 
-                                                              bool resolveLinkTos, 
-                                                              Action<ResolvedEvent> eventAppeared, 
-                                                              Action subscriptionDropped = null)
-        {
-            Ensure.NotNull(eventAppeared, "eventAppeared");
-            return SubscribeToStream(stream,
-                                     resolveLinkTos,
-                                     (subscr, e) => eventAppeared(e),
-                                     subscriptionDropped == null
-                                             ? (Action<EventStoreSubscription, string, Exception>)null
-                                             : (s, r, e) => subscriptionDropped());
-        }
-
         public Task<EventStoreSubscription> SubscribeToStream(string stream,
                                                               bool resolveLinkTos,
                                                               Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-                                                              Action<EventStoreSubscription, string, Exception> subscriptionDropped = null)
+                                                              Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var source = new TaskCompletionSource<EventStoreSubscription>();
-            _handler.EnqueueMessage(new StartSubscriptionMessage(source,
-                                                                 stream,
-                                                                 resolveLinkTos,
-                                                                 eventAppeared,
-                                                                 subscriptionDropped,
-                                                                 _settings.MaxRetries,
-                                                                 _settings.OperationTimeout));
+            _handler.EnqueueMessage(
+                new StartSubscriptionMessage(source, stream, resolveLinkTos, eventAppeared, subscriptionDropped, 
+                                             _settings.MaxRetries, _settings.OperationTimeout));
             return source.Task;
         }
 
@@ -555,62 +537,42 @@ namespace EventStore.ClientAPI
                                                                          int? fromEventNumberExclusive,
                                                                          bool resolveLinkTos,
                                                                          Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
-                                                                         Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped = null)
+                                                                         Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+                                                                         Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
-            var catchUpSubscription = new EventStoreStreamCatchUpSubscription(this,
-                                                                              _settings.Log,
-                                                                              stream,
-                                                                              fromEventNumberExclusive,
-                                                                              resolveLinkTos,
-                                                                              eventAppeared,
-                                                                              subscriptionDropped);
+            var catchUpSubscription = 
+                new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, fromEventNumberExclusive, 
+                                                        resolveLinkTos, eventAppeared, liveProcessingStarted, 
+                                                        subscriptionDropped, _settings.VerboseLogging);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
 
-        public Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos,
-                                                           Action<ResolvedEvent> eventAppeared,
-                                                           Action subscriptionDropped = null)
-        {
-            Ensure.NotNull(eventAppeared, "eventAppeared");
-            return SubscribeToAll(resolveLinkTos,
-                                  (subscr, e) => eventAppeared(e),
-                                  subscriptionDropped == null
-                                          ? (Action<EventStoreSubscription, string, Exception>) null
-                                          : (s, r, e) => subscriptionDropped());
-        }
-
         public Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos, 
                                                            Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                                                           Action<EventStoreSubscription, string, Exception> subscriptionDropped = null)
+                                                           Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var source = new TaskCompletionSource<EventStoreSubscription>();
-            _handler.EnqueueMessage(new StartSubscriptionMessage(source,
-                                                                 string.Empty,
-                                                                 resolveLinkTos,
-                                                                 eventAppeared,
-                                                                 subscriptionDropped,
-                                                                 _settings.MaxRetries,
-                                                                 _settings.OperationTimeout));
+            _handler.EnqueueMessage(
+                new StartSubscriptionMessage(source, string.Empty, resolveLinkTos, eventAppeared, subscriptionDropped,
+                                             _settings.MaxRetries, _settings.OperationTimeout));
             return source.Task;
         }
 
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? fromPositionExclusive,
                                                                    bool resolveLinkTos,
                                                                    Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
-                                                                   Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped = null)
+                                                                   Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+                                                                   Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
-            var catchUpSubscription = new EventStoreAllCatchUpSubscription(this,
-                                                                           _settings.Log,
-                                                                           fromPositionExclusive,
-                                                                           resolveLinkTos,
-                                                                           eventAppeared,
-                                                                           subscriptionDropped);
+            var catchUpSubscription = 
+                new EventStoreAllCatchUpSubscription(this, _settings.Log, fromPositionExclusive, resolveLinkTos,
+                                                     eventAppeared, liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }

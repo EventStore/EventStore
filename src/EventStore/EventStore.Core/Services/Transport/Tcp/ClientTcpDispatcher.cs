@@ -393,7 +393,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private TcpPackage WrapSubscriptionDropped(ClientMessage.SubscriptionDropped msg)
         {
-            var dto = new TcpClientMessageDto.SubscriptionDropped();
+            var dto = new TcpClientMessageDto.SubscriptionDropped((TcpClientMessageDto.SubscriptionDropped.SubscriptionDropReason) msg.Reason);
             return new TcpPackage(TcpCommand.SubscriptionDropped, msg.CorrelationId, dto.Serialize());
         }
 

@@ -649,8 +649,25 @@ namespace EventStore.ClientAPI.Messages
   [Serializable, ProtoContract(Name=@"SubscriptionDropped")]
   public partial class SubscriptionDropped
   {
-    public SubscriptionDropped()
+    [ProtoMember(1, IsRequired = true, Name=@"reason", DataFormat = DataFormat.TwosComplement)]
+    public readonly SubscriptionDropped.SubscriptionDropReason Reason;
+  
+    [ProtoContract(Name=@"SubscriptionDropReason")]
+    public enum SubscriptionDropReason
     {
+            
+      [ProtoEnum(Name=@"Unsubscribed", Value=0)]
+      Unsubscribed = 0,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=1)]
+      AccessDenied = 1
+    }
+  
+    private SubscriptionDropped() {}
+  
+    public SubscriptionDropped(SubscriptionDropped.SubscriptionDropReason reason)
+    {
+        Reason = reason;
     }
   }
   

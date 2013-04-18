@@ -192,8 +192,14 @@ message UnsubscribeFromStream {
 }
 
 message SubscriptionDropped {
-}
 
+	enum SubscriptionDropReason {
+		Unsubscribed = 0;
+		AccessDenied = 1;
+	}
+	
+	required SubscriptionDropReason reason = 1;
+}
 
 message NotHandled {
 	

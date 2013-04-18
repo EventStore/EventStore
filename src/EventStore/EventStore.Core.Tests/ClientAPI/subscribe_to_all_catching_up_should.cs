@@ -68,7 +68,11 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
 
                 var dropped = new CountdownEvent(1);
-                var subscription = store.SubscribeToAllFrom(null, false, (x, y) => { }, (x, y, z) => dropped.Signal());
+                var subscription = store.SubscribeToAllFrom(null,
+                                                            false,
+                                                            (x, y) => { },
+                                                            _ => Log.Info("Live processing started."),
+                                                            (x, y, z) => dropped.Signal());
 
                 Assert.IsFalse(dropped.Wait(0));
                 subscription.Stop(Timeout);
@@ -86,10 +90,14 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new ManualResetEventSlim(false);
                 var dropped = new CountdownEvent(1);
 
-                var subscription = store.SubscribeToAllFrom(null, false, (_, x) => appeared.Set(), (_, __, ___) => dropped.Signal());
+                var subscription = store.SubscribeToAllFrom(null,
+                                                            false,
+                                                            (_, x) => appeared.Set(),
+                                                            _ => Log.Info("Live processing started."),
+                                                            (_, __, ___) => dropped.Signal());
 
                 Thread.Sleep(100); // give time for first pull phase
-                var dummySubscr = store.SubscribeToAll(false, x => { }, () => { }).Result; // wait for dummy subscription to complete
+                var dummySubscr = store.SubscribeToAll(false, (s, x) => { }, (s, r, e) => { }).Result; // wait for dummy subscription to complete
                 Thread.Sleep(100);
 
                 Assert.IsFalse(appeared.Wait(0), "Some event appeared!");
@@ -122,6 +130,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 events.Add(y);
                                                                 appeared.Signal();
                                                             },
+                                                            _ => Log.Info("Live processing started."),
                                                             (x, y, z) => dropped.Signal());
                 for (int i = 10; i < 20; ++i)
                 {
@@ -165,19 +174,19 @@ namespace EventStore.Core.Tests.ClientAPI
                 var allSlice = store.ReadAllEventsForward(Position.Start, 100, false);
                 var lastEvent = allSlice.Events.Last();
 
-                var subscription = store.SubscribeToAllFrom(
-                    lastEvent.OriginalPosition,
-                    false,
-                    (x, y) =>
-                    {
-                        events.Add(y);
-                        appeared.Signal();
-                    },
-                    (x, y, z) =>
-                    {
-                        Log.Info("Subscription dropped: {0}, {1}.", y, z);
-                        dropped.Signal();
-                    });
+                var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,
+                                                            false,
+                                                            (x, y) =>
+                                                            {
+                                                                events.Add(y);
+                                                                appeared.Signal();
+                                                            },
+                                                            _ => Log.Info("Live processing started."),
+                                                            (x, y, z) =>
+                                                            {
+                                                                Log.Info("Subscription dropped: {0}, {1}.", y, z);
+                                                                dropped.Signal();
+                                                            });
 
                 for (int i = 10; i < 20; ++i)
                 {
@@ -223,19 +232,19 @@ namespace EventStore.Core.Tests.ClientAPI
                 var allSlice = store.ReadAllEventsForward(Position.Start, 100, false);
                 var lastEvent = allSlice.Events[allSlice.Events.Length - 2];
 
-                var subscription = store.SubscribeToAllFrom(
-                    lastEvent.OriginalPosition,
-                    false,
-                    (x, y) =>
-                    {
-                        events.Add(y);
-                        appeared.Signal();
-                    },
-                    (x, y, z) =>
-                    {
-                        Log.Info("Subscription dropped: {0}, {1}.", y, z);
-                        dropped.Signal();
-                    });
+                var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,
+                                                            false,
+                                                            (x, y) =>
+                                                            {
+                                                                events.Add(y);
+                                                                appeared.Signal();
+                                                            },
+                                                            _ => Log.Info("Live processing started."),
+                                                            (x, y, z) =>
+                                                            {
+                                                                Log.Info("Subscription dropped: {0}, {1}.", y, z);
+                                                                dropped.Signal();
+                                                            });
 
                 Log.Info("Waiting for events...");
                 if (!appeared.Wait(Timeout))

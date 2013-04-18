@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -26,48 +26,27 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-namespace EventStore.Core.Services
+using System;
+using System.Runtime.Serialization;
+
+namespace EventStore.ClientAPI.Exceptions
 {
-    public static class SystemStreams
+    public class ConnectionClosedException : EventStoreConnectionException
     {
-        public const string AllStream = "$all";
-        public const string StreamsStream = "$streams";
-        public const string StatsStreamPrefix = "$stats";
-
-        public static string MetastreamOf(string streamId)
+        public ConnectionClosedException()
         {
-            return "$$" + streamId;
         }
 
-        public static bool IsMetastream(string streamId)
+        public ConnectionClosedException(string message) : base(message)
         {
-            return streamId.StartsWith("$$");
         }
 
-        public static string OriginalStreamOf(string metastreamId)
+        public ConnectionClosedException(string message, Exception innerException) : base(message, innerException)
         {
-            return metastreamId.Substring(2);
         }
-    }
 
-    public static class SystemMetadata
-    {
-        public const string MaxAge = "$maxAge";
-        public const string MaxCount = "$maxCount";
-        public const string CacheControl = "$cacheControl";
-
-        public const string Acl = "$acl";
-        public const string AclRead = "$r";
-        public const string AclWrite = "$w";
-        public const string AclMetaRead = "$mr";
-        public const string AclMetaWrite = "$mw";
-    }
-
-    public static class SystemEventTypes
-    {
-        public const string StreamDeleted = "$stream-deleted";
-        public const string StatsCollection = "$stats-collected";
-        public const string LinkTo = "$>";
-        public const string StreamMetadata = "$metadata";
+        protected ConnectionClosedException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
     }
 }
