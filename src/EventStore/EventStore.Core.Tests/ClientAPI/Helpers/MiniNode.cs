@@ -47,7 +47,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
-    internal class MiniNode
+    public class MiniNode
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<MiniNode>();
 

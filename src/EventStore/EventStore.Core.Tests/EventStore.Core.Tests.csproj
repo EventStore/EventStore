@@ -64,6 +64,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -137,6 +138,9 @@
     <Compile Include="Helper\TcpPortsHelper.cs" />
     <Compile Include="Helper\TestFixtureWithExistingEvents.cs" />
     <Compile Include="Helper\TestFixtureWithReadWriteDispatchers.cs" />
+    <Compile Include="Http\Users\HttpBehaviorSpecification.cs" />
+    <Compile Include="Http\Users\StreamHelpers.cs" />
+    <Compile Include="Http\Users\users.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\create_index_map_from_non_existing_file.cs" />

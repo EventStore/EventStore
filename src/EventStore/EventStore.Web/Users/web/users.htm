@@ -158,6 +158,9 @@
                     var jInput = $("#" + input);
                     return {
                         val: jInput.val(),
+                        set: function(v) {
+                            jInput.val(v);
+                        },
                         reset: function () {
                             var group = jInput.closest(".control-group");
                             group.removeClass("error");
@@ -283,6 +286,8 @@
                         autoResize: true,
                         open: function (event, ui) {
                             var inputs = getInput();
+                            inputs.loginName.set(userData.data.loginName);
+                            inputs.fullName.set(userData.data.fullName);
                             $(".create-only").hide();
                             $("#button-ok").text("Update");
                         }
