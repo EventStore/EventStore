@@ -32,7 +32,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Messages
@@ -363,8 +362,9 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
             public readonly ReadEventResult Result;
             public readonly ResolvedEvent Record;
+            public readonly string Error;
 
-            public ReadEventCompleted(Guid correlationId, string eventStreamId, ReadEventResult result, ResolvedEvent record)
+            public ReadEventCompleted(Guid correlationId, string eventStreamId, ReadEventResult result, ResolvedEvent record, string error)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (result == ReadEventResult.Success)
@@ -374,6 +374,7 @@ namespace EventStore.Core.Messages
                 EventStreamId = eventStreamId;
                 Result = result;
                 Record = record;
+                Error = error;
             }
         }
 
@@ -427,7 +428,7 @@ namespace EventStore.Core.Messages
             
             public readonly ReadStreamResult Result;
             public readonly ResolvedEvent[] Events;
-            public readonly string Message;
+            public readonly string Error;
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
             public readonly bool IsEndOfStream;
@@ -439,7 +440,7 @@ namespace EventStore.Core.Messages
                                                     int maxCount,
                                                     ReadStreamResult result,
                                                     ResolvedEvent[] events,
-                                                    string message,
+                                                    string error,
                                                     int nextEventNumber,
                                                     int lastEventNumber,
                                                     bool isEndOfStream,
@@ -461,7 +462,7 @@ namespace EventStore.Core.Messages
 
                 Result = result;
                 Events = events;
-                Message = message;
+                Error = error;
                 NextEventNumber = nextEventNumber;
                 LastEventNumber = lastEventNumber;
                 IsEndOfStream = isEndOfStream;
@@ -521,7 +522,7 @@ namespace EventStore.Core.Messages
 
             public readonly ReadStreamResult Result;
             public readonly ResolvedEvent[] Events;
-            public readonly string Message;
+            public readonly string Error;
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
             public readonly bool IsEndOfStream;
@@ -533,7 +534,7 @@ namespace EventStore.Core.Messages
                                                      int maxCount,
                                                      ReadStreamResult result,
                                                      ResolvedEvent[] events,
-                                                     string message,
+                                                     string error,
                                                      int nextEventNumber,
                                                      int lastEventNumber,
                                                      bool isEndOfStream,
@@ -555,7 +556,7 @@ namespace EventStore.Core.Messages
 
                 Result = result;
                 Events = events;
-                Message = message;
+                Error = error;
                 NextEventNumber = nextEventNumber;
                 LastEventNumber = lastEventNumber;
                 IsEndOfStream = isEndOfStream;
@@ -602,14 +603,31 @@ namespace EventStore.Core.Messages
         public class ReadAllEventsForwardCompleted : ReadResponseMessage
         {
             public readonly Guid CorrelationId;
-            public readonly ReadAllResult Result;
-            public readonly bool NotModified;
 
-            public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result, bool notModified)
+            public readonly ReadAllResult Result;
+            public readonly string Error;
+
+            public readonly ResolvedEvent[] Events;
+            public readonly int MaxCount;
+            public readonly TFPos CurrentPos;
+            public readonly TFPos NextPos;
+            public readonly TFPos PrevPos;
+            public readonly long TfEofPosition;
+
+            public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events, 
+                                                 int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
             {
+                Ensure.NotNull(events, "events");
+
                 CorrelationId = correlationId;
-                NotModified = notModified;
                 Result = result;
+                Error = error;
+                Events = events;
+                MaxCount = maxCount;
+                CurrentPos = currentPos;
+                NextPos = nextPos;
+                PrevPos = prevPos;
+                TfEofPosition = tfEofPosition;
             }
         }
 
@@ -644,14 +662,31 @@ namespace EventStore.Core.Messages
         public class ReadAllEventsBackwardCompleted : ReadResponseMessage
         {
             public readonly Guid CorrelationId;
-            public readonly ReadAllResult Result;
-            public readonly bool NotModified;
 
-            public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result, bool notModified)
+            public readonly ReadAllResult Result;
+            public readonly string Error;
+
+            public readonly ResolvedEvent[] Events;
+            public readonly int MaxCount;
+            public readonly TFPos CurrentPos;
+            public readonly TFPos NextPos;
+            public readonly TFPos PrevPos;
+            public readonly long TfEofPosition;
+
+            public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events, 
+                                                  int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
             {
+                Ensure.NotNull(events, "events");
+
                 CorrelationId = correlationId;
-                NotModified = notModified;
                 Result = result;
+                Error = error;
+                Events = events;
+                MaxCount = maxCount;
+                CurrentPos = currentPos;
+                NextPos = nextPos;
+                PrevPos = prevPos;
+                TfEofPosition = tfEofPosition;
             }
         }
 

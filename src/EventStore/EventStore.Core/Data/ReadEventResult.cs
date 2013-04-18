@@ -26,7 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-namespace EventStore.Core.Services.Storage.ReaderIndex
+namespace EventStore.Core.Data
 {
     public enum ReadEventResult
     {
@@ -34,6 +34,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         NotFound = 1,
         NoStream = 2,
         StreamDeleted = 3,
-        AccessDenied = 4
+        Error = 4,
+        AccessDenied = 5
     }
 }

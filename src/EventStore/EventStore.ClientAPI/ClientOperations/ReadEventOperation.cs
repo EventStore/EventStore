@@ -66,11 +66,14 @@ namespace EventStore.ClientAPI.ClientOperations
                 case ClientMessage.ReadEventCompleted.ReadEventResult.StreamDeleted:
                     Succeed();
                     return new InspectionResult(InspectionDecision.EndOperation);
+                case ClientMessage.ReadEventCompleted.ReadEventResult.Error:
+                    Fail(new ServerErrorException(string.IsNullOrEmpty(response.Error) ? "<no message>" : response.Error));
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 case ClientMessage.ReadEventCompleted.ReadEventResult.AccessDenied:
                     Fail(new AccessDeniedException(string.Format("Read access denied for stream '{0}'.", _stream)));
                     return new InspectionResult(InspectionDecision.EndOperation);
-                default:
-                    throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadEventResult: {0}.", response.Result));
+                default: 
+                    throw new Exception(string.Format("Unexpected ReadEventResult: {0}.", response.Result));
             }
         }
 

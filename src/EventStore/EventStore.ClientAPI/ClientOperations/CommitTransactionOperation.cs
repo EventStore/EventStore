@@ -76,7 +76,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     Fail(new AccessDeniedException("Write access denied."));
                     return new InspectionResult(InspectionDecision.EndOperation);
                 default:
-                    throw new ArgumentOutOfRangeException(string.Format("Unexpected OperationResult: {0}.", response.Result));
+                    throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }
         }
 

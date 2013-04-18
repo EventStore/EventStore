@@ -91,11 +91,14 @@ message ReadEventCompleted {
 		NotFound = 1;
 		NoStream = 2;
 		StreamDeleted = 3;
-		AccessDenied = 4;
+		Error = 4;
+		AccessDenied = 5;
 	}
 
 	required ReadEventResult result = 1;
 	required ResolvedIndexedEvent event = 2;
+
+	optional string error = 3;
 }
 
 message ReadStreamEvents {
@@ -122,6 +125,8 @@ message ReadStreamEventsCompleted {
 	required int32 last_event_number = 4;
 	required bool is_end_of_stream = 5;
 	required int64 last_commit_position = 6;
+
+	optional string error = 7;
 }
 
 message ReadAllEvents {
@@ -132,11 +137,22 @@ message ReadAllEvents {
 }
 
 message ReadAllEventsCompleted {
+
+	enum ReadAllResult {
+		Success = 0;
+		NotModified = 1;
+		Error = 2;
+		AccessDenied = 3;
+	}
+
 	required int64 commit_position = 1;
 	required int64 prepare_position = 2;
 	repeated ResolvedEvent events = 3;
 	required int64 next_commit_position = 4;
 	required int64 next_prepare_position = 5;
+
+	optional ReadAllResult result = 6 [default = Success];
+	optional string error = 7;
 }
 
 message TransactionStart {
@@ -198,7 +214,7 @@ message SubscriptionDropped {
 		AccessDenied = 1;
 	}
 	
-	required SubscriptionDropReason reason = 1;
+	optional SubscriptionDropReason reason = 1 [default = Unsubscribed];
 }
 
 message NotHandled {

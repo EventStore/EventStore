@@ -359,6 +359,8 @@ namespace EventStore.TestClient.Commands.DvuBasic
                     case ReadEventResult.NotFound:
                     case ReadEventResult.NoStream:
                     case ReadEventResult.StreamDeleted:
+                    case ReadEventResult.Error:
+                    case ReadEventResult.AccessDenied:
                         fails++;
                         status.ReportNotFoundOnRead(readerIdx, _streams[streamIdx], eventidx);
                         break;
