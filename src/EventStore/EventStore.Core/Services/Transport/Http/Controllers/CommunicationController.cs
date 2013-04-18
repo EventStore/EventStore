@@ -116,7 +116,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         protected void RegisterUrlBased(
             IHttpService service, string uriTemplate, string httpMethod, Action<HttpEntityManager, UriTemplateMatch> action)
         {
-            Register(service, uriTemplate, httpMethod, action, DefaultCodecs, DefaultCodecs);
+            Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs);
         }
     }
 }

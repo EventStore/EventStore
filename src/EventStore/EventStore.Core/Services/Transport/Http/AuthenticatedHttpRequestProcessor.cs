@@ -218,10 +218,10 @@ namespace EventStore.Core.Services.Transport.Http
                 e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
         }
 
-        private ICodec SelectRequestCodec(string method, string contentType, IEnumerable<ICodec> supportedCodecs)
+        private ICodec SelectRequestCodec(string method, string contentType, ICodec[] supportedCodecs)
         {
             if (string.IsNullOrEmpty(contentType))
-                return Codec.NoCodec;
+                return supportedCodecs != null && supportedCodecs.Length > 0 ? null : Codec.NoCodec;
             switch (method.ToUpper())
             {
                 case HttpMethod.Post:
