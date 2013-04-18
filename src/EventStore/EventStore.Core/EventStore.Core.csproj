@@ -160,7 +160,7 @@
     <Compile Include="Services\Storage\ReaderIndex\ReadIndex.cs" />
     <Compile Include="Index\TableIndex.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexReadStreamResult.cs" />
-    <Compile Include="Services\Storage\ReaderIndex\ReadEventResult.cs" />
+    <Compile Include="Data\ReadEventResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\StreamCacheInfo.cs" />
     <Compile Include="Services\Storage\ReaderIndex\StreamMetadata.cs" />
     <Compile Include="Services\Storage\StorageReaderWorker.cs" />

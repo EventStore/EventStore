@@ -202,14 +202,14 @@ namespace EventStore.Projections.Core.Services.Processing
                                 case ReadStreamResult.Success:
                                     if (completed.Events.Length != 1)
                                         throw new Exception(
-                                            string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Message));
+                                            string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Error));
                                     item.SetLoadedEvent(completed.Events[0]);
                                     _loadingItemsCount--;
                                     CheckAllEventsLoaded();
                                     break;
                                 default:
                                     throw new Exception(
-                                        string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Message));
+                                        string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Error));
                             }
                         });
         }

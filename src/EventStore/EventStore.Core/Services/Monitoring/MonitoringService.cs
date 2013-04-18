@@ -237,6 +237,7 @@ namespace EventStore.Core.Services.Monitoring
                 }
                 case OperationResult.StreamDeleted:
                 case OperationResult.InvalidTransaction: // should not happen at all
+                case OperationResult.AccessDenied: // should not happen at all
                 {
                     Log.Error("Monitoring service got unexpected response code when trying to create stats stream ({0}).", message.Result);
                     break;

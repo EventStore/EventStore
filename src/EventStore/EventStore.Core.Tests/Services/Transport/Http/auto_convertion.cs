@@ -377,24 +377,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         private ClientMessage.ReadEventCompleted GenereteReadCompleted(byte[] data, byte[] metadata)
         {
-            return new ClientMessage.ReadEventCompleted(Guid.Empty,
-                                                        "stream",
-                                                        ReadEventResult.Success,
-                                                        new ResolvedEvent(
-                                                            new EventRecord(
-                                                                0,
-                                                                0,
-                                                                Guid.NewGuid(),
-                                                                Guid.NewGuid(),
-                                                                0,
-                                                                0,
-                                                                "stream",
-                                                                0,
-                                                                DateTime.MinValue,
-                                                                PrepareFlags.IsJson,
-                                                                "type",
-                                                                data,
-                                                                metadata)));
+            return new ClientMessage.ReadEventCompleted(
+                Guid.Empty, "stream", ReadEventResult.Success,
+                new ResolvedEvent(new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, 
+                                  DateTime.MinValue, PrepareFlags.IsJson, "type", data, metadata)), null);
         }
     }
 
@@ -531,24 +517,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         private ClientMessage.ReadEventCompleted GenereteReadCompleted(byte[] data, byte[] metadata)
         {
-            return new ClientMessage.ReadEventCompleted(Guid.Empty,
-                                                        "stream",
-                                                        ReadEventResult.Success,
-                                                        new ResolvedEvent(
-                                                            new EventRecord(
-                                                                0,
-                                                                0,
-                                                                Guid.NewGuid(),
-                                                                Guid.NewGuid(),
-                                                                0,
-                                                                0,
-                                                                "stream",
-                                                                0,
-                                                                DateTime.MinValue,
-                                                                PrepareFlags.IsJson,
-                                                                "type",
-                                                                data,
-                                                                metadata)));
+            return new ClientMessage.ReadEventCompleted(
+                Guid.Empty, "stream", ReadEventResult.Success,
+                new ResolvedEvent(new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, 
+                                  DateTime.MinValue, PrepareFlags.IsJson, "type", data, metadata)), null);
         }
     }
 }

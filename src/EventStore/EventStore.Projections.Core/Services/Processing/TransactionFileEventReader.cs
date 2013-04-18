@@ -89,10 +89,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested = false;
 
 
-            var eof = message.Result.Events.Length == 0;
+            var eof = message.Events.Length == 0;
             var willDispose = _stopOnEof && eof;
             var oldFrom = _from;
-            _from = message.Result.NextPos;
+            _from = message.NextPos;
 
             if (!willDispose)
             {
@@ -115,10 +115,10 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                for (int index = 0; index < message.Result.Events.Length; index++)
+                for (int index = 0; index < message.Events.Length; index++)
                 {
-                    var @event = message.Result.Events[index];
-                    DeliverEvent(@event, message.Result.TfEofPosition, oldFrom);
+                    var @event = message.Events[index];
+                    DeliverEvent(@event, message.TfEofPosition, oldFrom);
                 }
             }
         }

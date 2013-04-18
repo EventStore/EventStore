@@ -69,13 +69,13 @@ namespace EventStore.ClientAPI.ClientOperations
                     Succeed();
                     return new InspectionResult(InspectionDecision.EndOperation);
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.Error:
-                    Fail(new ServerErrorException("Unexpected error occurred on server. See server logs for more information."));
+                    Fail(new ServerErrorException(string.IsNullOrEmpty(response.Error) ? "<no message>" : response.Error));
                     return new InspectionResult(InspectionDecision.EndOperation);
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.AccessDenied:
                     Fail(new AccessDeniedException(string.Format("Read access denied for stream '{0}'.", _stream)));
                     return new InspectionResult(InspectionDecision.EndOperation);
                 default:
-                    throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadStreamResult: {0}.", response.Result));
+                    throw new Exception(string.Format("Unexpected ReadStreamResult: {0}.", response.Result));
             }
         }
 

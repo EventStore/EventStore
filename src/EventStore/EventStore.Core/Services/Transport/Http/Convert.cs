@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using EventStore.Common.Utils;
@@ -111,48 +110,48 @@ namespace EventStore.Core.Services.Transport.Http
             return feed;
         }
 
-        public static FeedElement ToAllEventsForwardFeed(ReadAllResult result, string userHostName, EmbedLevel embedContent)
+        public static FeedElement ToAllEventsForwardFeed(ClientMessage.ReadAllEventsForwardCompleted msg, string userHostName, EmbedLevel embedContent)
         {
             var self = HostName.Combine(userHostName, "/streams/{0}", AllEscaped);
             var feed = new FeedElement();
             feed.SetTitle("All events");
             feed.SetId(self);
-            feed.SetUpdated(result.Events.Length > 0 ? result.Events[result.Events.Length - 1].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[msg.Events.Length - 1].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
             feed.SetSelfUrl(self);
 
             feed.AddLink("self", self);
-            feed.AddLink("first", HostName.Combine(userHostName, "/streams/{0}/head/backward/{1}", AllEscaped, result.MaxCount));
-            feed.AddLink("last", HostName.Combine(userHostName, "/streams/{0}/{1}/forward/{2}", AllEscaped, new TFPos(0, 0).AsString(), result.MaxCount));
-            feed.AddLink("previous", HostName.Combine(userHostName, "/streams/{0}/{1}/forward/{2}", AllEscaped, result.NextPos.AsString(), result.MaxCount));
-            feed.AddLink("next", HostName.Combine(userHostName, "/streams/{0}/{1}/backward/{2}", AllEscaped, result.PrevPos.AsString(), result.MaxCount));
+            feed.AddLink("first", HostName.Combine(userHostName, "/streams/{0}/head/backward/{1}", AllEscaped, msg.MaxCount));
+            feed.AddLink("last", HostName.Combine(userHostName, "/streams/{0}/{1}/forward/{2}", AllEscaped, new TFPos(0, 0).AsString(), msg.MaxCount));
+            feed.AddLink("previous", HostName.Combine(userHostName, "/streams/{0}/{1}/forward/{2}", AllEscaped, msg.NextPos.AsString(), msg.MaxCount));
+            feed.AddLink("next", HostName.Combine(userHostName, "/streams/{0}/{1}/backward/{2}", AllEscaped, msg.PrevPos.AsString(), msg.MaxCount));
 
-            for (int i = result.Events.Length - 1; i >= 0; --i)
+            for (int i = msg.Events.Length - 1; i >= 0; --i)
             {
-                feed.AddEntry(ToEntry(new ResolvedEvent(result.Events[i].Event, result.Events[i].Link), userHostName, embedContent));
+                feed.AddEntry(ToEntry(new ResolvedEvent(msg.Events[i].Event, msg.Events[i].Link), userHostName, embedContent));
             }
             return feed;
         }
 
-        public static FeedElement ToAllEventsBackwardFeed(ReadAllResult result, string userHostName, EmbedLevel embedContent)
+        public static FeedElement ToAllEventsBackwardFeed(ClientMessage.ReadAllEventsBackwardCompleted msg, string userHostName, EmbedLevel embedContent)
         {
             var self = HostName.Combine(userHostName, "/streams/{0}", AllEscaped);
             var feed = new FeedElement();
             feed.SetTitle(string.Format("All events"));
             feed.SetId(self);
-            feed.SetUpdated(result.Events.Length > 0 ? result.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
             feed.SetSelfUrl(self);
 
             feed.AddLink("self", self);
-            feed.AddLink("first", HostName.Combine(userHostName, "/streams/{0}/head/backward/{1}", AllEscaped, result.MaxCount));
-            feed.AddLink("last", HostName.Combine(userHostName, "/streams/{0}/{1}/forward/{2}", AllEscaped, new TFPos(0, 0).AsString(), result.MaxCount));
-            feed.AddLink("previous", HostName.Combine(userHostName, "/streams/{0}/{1}/forward/{2}", AllEscaped, result.PrevPos.AsString(), result.MaxCount));
-            feed.AddLink("next", HostName.Combine(userHostName, "/streams/{0}/{1}/backward/{2}", AllEscaped, result.NextPos.AsString(), result.MaxCount));
+            feed.AddLink("first", HostName.Combine(userHostName, "/streams/{0}/head/backward/{1}", AllEscaped, msg.MaxCount));
+            feed.AddLink("last", HostName.Combine(userHostName, "/streams/{0}/{1}/forward/{2}", AllEscaped, new TFPos(0, 0).AsString(), msg.MaxCount));
+            feed.AddLink("previous", HostName.Combine(userHostName, "/streams/{0}/{1}/forward/{2}", AllEscaped, msg.PrevPos.AsString(), msg.MaxCount));
+            feed.AddLink("next", HostName.Combine(userHostName, "/streams/{0}/{1}/backward/{2}", AllEscaped, msg.NextPos.AsString(), msg.MaxCount));
 
-            for (int i = 0; i < result.Events.Length; ++i)
+            for (int i = 0; i < msg.Events.Length; ++i)
             {
-                feed.AddEntry(ToEntry(new ResolvedEvent(result.Events[i].Event, result.Events[i].Link), userHostName, embedContent));
+                feed.AddEntry(ToEntry(new ResolvedEvent(msg.Events[i].Event, msg.Events[i].Link), userHostName, embedContent));
             }
             return feed;
         }
@@ -181,6 +180,7 @@ namespace EventStore.Core.Services.Transport.Http
                     if (richEntry.IsJson)
                     {
                         if (embedContent >= EmbedLevel.PrettyBody)
+                        {
                             try
                             {
                                 richEntry.Data = Encoding.UTF8.GetString(evnt.Data);
@@ -191,7 +191,8 @@ namespace EventStore.Core.Services.Transport.Http
                             {
                                 // ignore - we tried
                             }
-                        else 
+                        }
+                        else
                             richEntry.Data = Encoding.UTF8.GetString(evnt.Data);
                     }
                     else if (embedContent >= EmbedLevel.TryHarder)

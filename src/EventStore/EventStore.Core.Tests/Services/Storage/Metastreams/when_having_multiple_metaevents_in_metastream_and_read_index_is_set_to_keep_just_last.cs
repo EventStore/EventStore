@@ -26,9 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
+using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.Metastreams
 {

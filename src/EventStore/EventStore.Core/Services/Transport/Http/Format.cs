@@ -26,9 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Transport.Http;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
@@ -61,6 +61,7 @@ namespace EventStore.Core.Services.Transport.Http
                         case ReadEventResult.NotFound:
                         case ReadEventResult.NoStream:
                         case ReadEventResult.StreamDeleted:
+                        case ReadEventResult.Error:
                         case ReadEventResult.AccessDenied:
                             return string.Empty;
                         default:
@@ -72,39 +73,35 @@ namespace EventStore.Core.Services.Transport.Http
 
             public static string GetStreamEventsBackward(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed, bool headOfStream)
             {
-                // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
+                var msg = message as ClientMessage.ReadStreamEventsBackwardCompleted;
+                if (msg == null)
+                    return string.Empty;
 
-                var completed = message as ClientMessage.ReadStreamEventsBackwardCompleted;
-                if (completed != null)
+                switch (msg.Result)
                 {
-                    switch (completed.Result)
-                    {
-                        case ReadStreamResult.Success:
-                            // TODO AN: better head of stream discovery
-                            return entity.ResponseCodec.To(Convert.ToStreamEventBackwardFeed(completed, entity.UserHostName, embed, headOfStream));
-                        case ReadStreamResult.NoStream:
-                        case ReadStreamResult.StreamDeleted:
-                        case ReadStreamResult.NotModified:
-                        case ReadStreamResult.Error:
-                        case ReadStreamResult.AccessDenied:
-                            return string.Empty;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
+                    case ReadStreamResult.Success:
+                        return entity.ResponseCodec.To(Convert.ToStreamEventBackwardFeed(msg, entity.UserHostName, embed, headOfStream));
+                    case ReadStreamResult.NoStream:
+                    case ReadStreamResult.StreamDeleted:
+                    case ReadStreamResult.NotModified:
+                    case ReadStreamResult.Error:
+                    case ReadStreamResult.AccessDenied:
+                        return string.Empty;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
-                return string.Empty;
             }
 
             public static string GetStreamEventsForward(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
-                var completed = message as ClientMessage.ReadStreamEventsForwardCompleted;
-                if (completed == null)
+                var msg = message as ClientMessage.ReadStreamEventsForwardCompleted;
+                if (msg == null)
                     return string.Empty;
 
-                switch (completed.Result)
+                switch (msg.Result)
                 {
                     case ReadStreamResult.Success:
-                        return entity.ResponseCodec.To(Convert.ToStreamEventForwardFeed(completed, entity.UserHostName, embed));
+                        return entity.ResponseCodec.To(Convert.ToStreamEventForwardFeed(msg, entity.UserHostName, embed));
                     case ReadStreamResult.NoStream:
                     case ReadStreamResult.StreamDeleted:
                     case ReadStreamResult.NotModified:
@@ -119,17 +116,39 @@ namespace EventStore.Core.Services.Transport.Http
             public static string ReadAllEventsBackwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
                 var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
-                if (msg == null || msg.NotModified)
+                if (msg == null || msg.Result != ReadAllResult.Success)
                     return string.Empty;
-                return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg.Result, entity.UserHostName, embed));
+
+                switch (msg.Result)
+                {
+                    case ReadAllResult.Success:
+                        return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg, entity.UserHostName, embed));
+                    case ReadAllResult.NotModified:
+                    case ReadAllResult.Error:
+                    case ReadAllResult.AccessDenied:
+                        return string.Empty;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
 
             public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
                 var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
-                if (msg == null || msg.NotModified)
+                if (msg == null)
                     return string.Empty;
-                return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg.Result, entity.UserHostName, embed)); 
+
+                switch (msg.Result)
+                {
+                    case ReadAllResult.Success:
+                        return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg, entity.UserHostName, embed)); 
+                    case ReadAllResult.NotModified:
+                    case ReadAllResult.Error:
+                    case ReadAllResult.AccessDenied:
+                        return string.Empty;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
 
             public static string DeleteStreamCompleted(HttpResponseFormatterArgs entity, Message message)

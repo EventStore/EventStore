@@ -25,7 +25,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
+using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 
@@ -52,8 +55,20 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override InspectionResult InspectResponse(ClientMessage.ReadAllEventsCompleted response)
         {
-            Succeed();
-            return new InspectionResult(InspectionDecision.EndOperation);
+            switch (response.Result)
+            {
+                case ClientMessage.ReadAllEventsCompleted.ReadAllResult.Success:
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation);
+                case ClientMessage.ReadAllEventsCompleted.ReadAllResult.Error:
+                    Fail(new ServerErrorException(string.IsNullOrEmpty(response.Error) ? "<no message>" : response.Error));
+                    return new InspectionResult(InspectionDecision.EndOperation);
+                case ClientMessage.ReadAllEventsCompleted.ReadAllResult.AccessDenied:
+                    Fail(new AccessDeniedException("Read access denied for $all."));
+                    return new InspectionResult(InspectionDecision.EndOperation);
+                default:
+                    throw new Exception(string.Format("Unexpected ReadAllResult: {0}.", response.Result));
+            }
         }
 
         protected override AllEventsSlice TransformResponse(ClientMessage.ReadAllEventsCompleted response)

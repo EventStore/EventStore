@@ -257,8 +257,9 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private static TcpPackage WrapReadEventsCompleted(ClientMessage.ReadEventCompleted msg)
         {
-            var dto = new TcpClientMessageDto.ReadEventCompleted((TcpClientMessageDto.ReadEventCompleted.ReadEventResult) msg.Result,
-                                                                 new TcpClientMessageDto.ResolvedIndexedEvent(msg.Record.Event, msg.Record.Link));
+            var dto = new TcpClientMessageDto.ReadEventCompleted(
+                (TcpClientMessageDto.ReadEventCompleted.ReadEventResult) msg.Result,
+                new TcpClientMessageDto.ResolvedIndexedEvent(msg.Record.Event, msg.Record.Link), msg.Error);
             return new TcpPackage(TcpCommand.ReadEventCompleted, msg.CorrelationId, dto.Serialize());
         }
 
@@ -275,12 +276,9 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private static TcpPackage WrapReadStreamEventsForwardCompleted(ClientMessage.ReadStreamEventsForwardCompleted msg)
         {
-            var dto = new TcpClientMessageDto.ReadStreamEventsCompleted(ConvertToResolvedIndexedEvents(msg.Events),
-                                                                        (TcpClientMessageDto.ReadStreamEventsCompleted.ReadStreamResult) msg.Result,
-                                                                        msg.NextEventNumber,
-                                                                        msg.LastEventNumber,
-                                                                        msg.IsEndOfStream,
-                                                                        msg.LastCommitPosition);
+            var dto = new TcpClientMessageDto.ReadStreamEventsCompleted(
+                ConvertToResolvedIndexedEvents(msg.Events), (TcpClientMessageDto.ReadStreamEventsCompleted.ReadStreamResult) msg.Result,
+                msg.NextEventNumber, msg.LastEventNumber, msg.IsEndOfStream, msg.LastCommitPosition, msg.Error);
             return new TcpPackage(TcpCommand.ReadStreamEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 
@@ -297,12 +295,9 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private static TcpPackage WrapReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted msg)
         {
-            var dto = new TcpClientMessageDto.ReadStreamEventsCompleted(ConvertToResolvedIndexedEvents(msg.Events),
-                                                                        (TcpClientMessageDto.ReadStreamEventsCompleted.ReadStreamResult) msg.Result,
-                                                                        msg.NextEventNumber,
-                                                                        msg.LastEventNumber,
-                                                                        msg.IsEndOfStream,
-                                                                        msg.LastCommitPosition);
+            var dto = new TcpClientMessageDto.ReadStreamEventsCompleted(
+                ConvertToResolvedIndexedEvents(msg.Events), (TcpClientMessageDto.ReadStreamEventsCompleted.ReadStreamResult) msg.Result,
+                msg.NextEventNumber, msg.LastEventNumber, msg.IsEndOfStream, msg.LastCommitPosition, msg.Error);
             return new TcpPackage(TcpCommand.ReadStreamEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 
@@ -327,11 +322,10 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private static TcpPackage WrapReadAllEventsForwardCompleted(ClientMessage.ReadAllEventsForwardCompleted msg)
         {
-            var dto = new TcpClientMessageDto.ReadAllEventsCompleted(msg.Result.CurrentPos.CommitPosition,
-                                                                     msg.Result.CurrentPos.PreparePosition,
-                                                                     ConvertToResolvedEvents(msg.Result.Events),
-                                                                     msg.Result.NextPos.CommitPosition,
-                                                                     msg.Result.NextPos.PreparePosition);
+            var dto = new TcpClientMessageDto.ReadAllEventsCompleted(
+                msg.CurrentPos.CommitPosition, msg.CurrentPos.PreparePosition, ConvertToResolvedEvents(msg.Events), 
+                msg.NextPos.CommitPosition, msg.NextPos.PreparePosition, 
+                (TcpClientMessageDto.ReadAllEventsCompleted.ReadAllResult) msg.Result, msg.Error);
             return new TcpPackage(TcpCommand.ReadAllEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 
@@ -346,11 +340,10 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private static TcpPackage WrapReadAllEventsBackwardCompleted(ClientMessage.ReadAllEventsBackwardCompleted msg)
         {
-            var dto = new TcpClientMessageDto.ReadAllEventsCompleted(msg.Result.CurrentPos.CommitPosition,
-                                                                     msg.Result.CurrentPos.PreparePosition,
-                                                                     ConvertToResolvedEvents(msg.Result.Events),
-                                                                     msg.Result.NextPos.CommitPosition,
-                                                                     msg.Result.NextPos.PreparePosition);
+            var dto = new TcpClientMessageDto.ReadAllEventsCompleted(
+                msg.CurrentPos.CommitPosition, msg.CurrentPos.PreparePosition, ConvertToResolvedEvents(msg.Events),
+                msg.NextPos.CommitPosition, msg.NextPos.PreparePosition, 
+                (TcpClientMessageDto.ReadAllEventsCompleted.ReadAllResult) msg.Result, msg.Error);
             return new TcpPackage(TcpCommand.ReadAllEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 
