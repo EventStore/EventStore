@@ -157,7 +157,7 @@ namespace EventStore.Core.Tests.Http.Users
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_updating_user_detatils : HttpBehaviorSpecification
+        class when_updating_user_details : HttpBehaviorSpecification
         {
             private HttpWebResponse _response;
 
@@ -185,6 +185,38 @@ namespace EventStore.Core.Tests.Http.Users
                     new {Success = true, Error = "Success", Data = new {FullName = "User Full Name"}}, jsonResponse);
             }
         }
+
+
+        [TestFixture, Category("LongRunning")]
+        class when_resetting_a_password : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+                MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+            }
+
+            protected override void When()
+            {
+                _response = MakeJsonPost("/users/test1/command/reset-password", new {NewPassword = "NewPassword!" });
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
+            }
+
+            [Test]
+            public void can_change_password_using_the_new_password()
+            {
+                var response = MakeJsonPost("/users/test1/command/change-password", new {CurrentPassword = "NewPassword!", NewPassword = "TheVeryNewPassword!" });
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+
 
     }
 }
