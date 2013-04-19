@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -35,6 +36,7 @@ using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 using EventStore.Core.Util;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.Http.Users
 {
@@ -120,5 +122,62 @@ namespace EventStore.Core.Tests.Http.Users
 
         protected abstract void Given();
         protected abstract void When();
+
+        protected void AssertJObject(JObject expected, JObject response, string path)
+        {
+            foreach (KeyValuePair<string, JToken> v in expected)
+            {
+                JToken vv;
+                if (!response.TryGetValue(v.Key, out vv))
+                {
+                    Assert.Fail(string.Format("{0}/{1} not found", path, v.Key));
+                }
+                else
+                {
+                    Assert.AreEqual(
+                        v.Value.Type, vv.Type, "{0}/{1} type is {2}, but {3} is expected", path, v.Key, vv.Type,
+                        v.Value.Type);
+                    if (v.Value.Type == JTokenType.Object)
+                    {
+                        AssertJObject(v.Value as JObject, vv as JObject, path + "/" + v.Key);
+                    }
+                    else if (v.Value.Type == JTokenType.Array)
+                    {
+                        AssertJArray(v.Value as JArray, vv as JArray, path + "/" + v.Key);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(
+                            v.Value, vv, "{0}/{1} value is '{2}' but '{3}' is expected", path, v.Key, vv, v.Value);
+                    }
+                }
+            }
+        }
+
+        private void AssertJArray(JArray expected, JArray response, string path)
+        {
+            for (int index = 0; index < expected.Count; index++)
+            {
+                JToken v = expected[index];
+                JToken vv = response[index];
+                Assert.AreEqual(
+                    v.Type, vv.Type, "{0}/{1} type is {2}, but {3} is expected", path, index, vv.Type,
+                    v.Type);
+                if (v.Type == JTokenType.Object)
+                {
+                    AssertJObject(v as JObject, vv as JObject, path + "/" + index);
+                }
+                else if (v.Type == JTokenType.Array)
+                {
+                    AssertJArray(v as JArray, vv as JArray, path + "/" + index);
+                }
+                else
+                {
+                    Assert.AreEqual(
+                        v, vv, "{0}/{1} value is '{2}' but '{3}' is expected", path, index,
+                        vv, v);
+                }
+            }
+        }
     }
 }

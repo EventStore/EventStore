@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Net;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Http.Users
 {
@@ -69,7 +70,9 @@ namespace EventStore.Core.Tests.Http.Users
 
             protected override void When()
             {
-                _response = GetJson<JObject>("/users/test1");
+                JObject response = GetJson<JObject>("/users/test1");
+
+                _response = response;
             }
 
             [Test]
@@ -82,6 +85,22 @@ namespace EventStore.Core.Tests.Http.Users
             public void returns_valid_json()
             {
                 Assert.IsNull(_lastJsonException, "Is not a valid json object: \r\n" + _lastResponseBody);
+            }
+
+            [Test]
+            public void returns_valid_json_data()
+            {
+                AssertResponse(new {Data = new {FullName = "User Full Name"}});
+            }
+
+            private void AssertResponse<T>(T expected)
+            {
+                var serialized = expected.ToJson();
+                var jobject = serialized.ParseJson<JObject>();
+
+                var path = "/";
+
+                AssertJObject(jobject, _response, path);
             }
         }
     }
