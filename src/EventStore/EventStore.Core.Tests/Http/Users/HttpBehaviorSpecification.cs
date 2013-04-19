@@ -75,16 +75,36 @@ namespace EventStore.Core.Tests.Http.Users
             return httpWebRequest;
         }
 
+        protected HttpWebRequest CreateRequest(string path, string method)
+        {
+            var httpWebRequest = (HttpWebRequest) WebRequest.Create(MakeUrl(path));
+            httpWebRequest.Method = method;
+            return httpWebRequest;
+        }
+
         protected Uri MakeUrl(string path)
         {
             var httpEndPoint = _node.HttpEndPoint;
             return new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path).Uri;
         }
 
-        protected HttpWebResponse MakeJsonPost<T>(string users, T body)
+        protected HttpWebResponse MakeJsonPost<T>(string path, T body)
         {
-            var request = CreateJsonPostRequest(
-                users, body);
+            var request = CreateJsonPostRequest(path, "POST", body);
+            var httpWebResponse = (HttpWebResponse) request.GetResponse();
+            return httpWebResponse;
+        }
+
+        protected HttpWebResponse MakeJsonPut<T>(string path, T body)
+        {
+            var request = CreateJsonPostRequest(path, "PUT", body);
+            var httpWebResponse = (HttpWebResponse) request.GetResponse();
+            return httpWebResponse;
+        }
+
+        protected HttpWebResponse MakeJsonPost(string path)
+        {
+            var request = CreateJsonPostRequest(path);
             var httpWebResponse = (HttpWebResponse) request.GetResponse();
             return httpWebResponse;
         }
@@ -108,10 +128,17 @@ namespace EventStore.Core.Tests.Http.Users
             }
         }
 
-        private HttpWebRequest CreateJsonPostRequest<T>(string path, T body)
+        private HttpWebRequest CreateJsonPostRequest<T>(string path, string method, T body)
         {
-            var request = CreateRequest(path, "POST", "application/json");
+            var request = CreateRequest(path, method, "application/json");
             request.GetRequestStream().WriteJson(body);
+            return request;
+        }
+
+        private HttpWebRequest CreateJsonPostRequest(string path)
+        {
+            var request = CreateRequest(path, "POST");
+            request.ContentLength = 0;
             return request;
         }
 

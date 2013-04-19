@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Http.Users
             }
         }
 
-        [TestFixture]
+        [TestFixture, Category("LongRunning")]
         class when_retrieving_a_user_details : HttpBehaviorSpecification
         {
             private JObject _response;
@@ -86,9 +86,105 @@ namespace EventStore.Core.Tests.Http.Users
                         {
                             Success = true,
                             Error = "Success",
-                            Data = new {LoginName = "test1", FullName = "User Full Name", Password___ = false}
-                        }, _response);
+                            Data =
+                        new {LoginName = "test1", FullName = "User Full Name", Disabled = false, Password___ = false}
+                        },
+                    _response);
             }
         }
+
+        [TestFixture, Category("LongRunning")]
+        class when_disabling_an_enabled_user_account : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+                MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+            }
+
+            protected override void When()
+            {
+                _response = MakeJsonPost("/users/test1/command/disable");
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+            [Test]
+            public void enables_it()
+            {
+                var jsonResponse = GetJson<JObject>("/users/test1");
+                AssertJson(
+                    new {Success = true, Error = "Success", Data = new {LoginName = "test1", Disabled = true}},
+                    jsonResponse);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        class when_enabling_a_disabled_user_account : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+                MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                MakeJsonPost("/users/test1/command/disable");
+            }
+
+            protected override void When()
+            {
+                _response = MakeJsonPost("/users/test1/command/enable");
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
+            }
+
+            [Test]
+            public void disables_it()
+            {
+                var jsonResponse = GetJson<JObject>("/users/test1");
+                AssertJson(
+                    new {Success = true, Error = "Success", Data = new {LoginName = "test1", Disabled = false}},
+                    jsonResponse);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        class when_updating_user_detatils : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+                MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+            }
+
+            protected override void When()
+            {
+                _response = MakeJsonPut("/users/test1", new {FullName = "Updated Full Name"});
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
+            }
+
+            [Test]
+            public void updates_full_name()
+            {
+                var jsonResponse = GetJson<JObject>("/users/test1");
+                AssertJson(
+                    new {Success = true, Error = "Success", Data = new {FullName = "User Full Name"}}, jsonResponse);
+            }
+        }
+
     }
 }
