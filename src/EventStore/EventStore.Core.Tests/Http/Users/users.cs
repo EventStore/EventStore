@@ -199,7 +199,7 @@ namespace EventStore.Core.Tests.Http.Users
 
             protected override void When()
             {
-                _response = MakeJsonPost("/users/test1/command/reset-password", new {NewPassword = "NewPassword!" });
+                _response = MakeJsonPost("/users/test1/command/reset-password", new {NewPassword = "NewPassword!"});
             }
 
             [Test]
@@ -211,12 +211,41 @@ namespace EventStore.Core.Tests.Http.Users
             [Test]
             public void can_change_password_using_the_new_password()
             {
-                var response = MakeJsonPost("/users/test1/command/change-password", new {CurrentPassword = "NewPassword!", NewPassword = "TheVeryNewPassword!" });
+                var response = MakeJsonPost(
+                    "/users/test1/command/change-password",
+                    new {CurrentPassword = "NewPassword!", NewPassword = "TheVeryNewPassword!"});
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             }
         }
 
 
+        [TestFixture, Category("LongRunning")]
+        class when_deleting_a_user_account : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
 
+            protected override void Given()
+            {
+                MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+            }
+
+            protected override void When()
+            {
+                _response = MakeDelete("/users/test1");
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
+            }
+
+            [Test]
+            public void get_returns_not_found()
+            {
+                var jsonResponse = GetJson<JObject>("/users/test1");
+                Assert.AreEqual(HttpStatusCode.NotFound, _lastResponse.StatusCode);
+            }
+        }
     }
 }

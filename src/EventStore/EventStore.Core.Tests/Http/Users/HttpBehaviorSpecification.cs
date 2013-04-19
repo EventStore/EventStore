@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Web;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
@@ -57,6 +58,14 @@ namespace EventStore.Core.Tests.Http.Users
 
             _connection = TestConnection.Create();
             _connection.Connect(_node.TcpEndPoint);
+
+            _lastResponse = null;
+            _lastResponseBody = null;
+            _lastJsonException = null;
+
+            Given();
+            When();
+
         }
 
         [TestFixtureTearDown]
@@ -102,6 +111,13 @@ namespace EventStore.Core.Tests.Http.Users
             return httpWebResponse;
         }
 
+        protected HttpWebResponse MakeDelete(string path)
+        {
+            var request = CreateRequest(path, "DELETE");
+            var httpWebResponse = (HttpWebResponse) request.GetResponse();
+            return httpWebResponse;
+        }
+
         protected HttpWebResponse MakeJsonPost(string path)
         {
             var request = CreateJsonPostRequest(path);
@@ -112,7 +128,14 @@ namespace EventStore.Core.Tests.Http.Users
         protected T GetJson<T>(string path)
         {
             var request = CreateRequest(path, "GET", null);
-            _lastResponse = (HttpWebResponse) request.GetResponse();
+            try
+            {
+                _lastResponse = (HttpWebResponse) request.GetResponse();
+            }
+            catch (WebException ex)
+            {
+                _lastResponse = (HttpWebResponse) ex.Response;
+            }
             var memoryStream = new MemoryStream();
             _lastResponse.GetResponseStream().CopyTo(memoryStream);
             var bytes = memoryStream.ToArray();
@@ -140,13 +163,6 @@ namespace EventStore.Core.Tests.Http.Users
             var request = CreateRequest(path, "POST");
             request.ContentLength = 0;
             return request;
-        }
-
-        [SetUp]
-        public void SetUp()
-        {
-            Given();
-            When();
         }
 
         protected abstract void Given();
