@@ -118,5 +118,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs);
         }
+
+        protected static string MakeUrl(HttpEntityManager http, string path)
+        {
+            var hostUri = http.RequestedUrl;
+            return new UriBuilder(hostUri.Scheme, hostUri.Host, hostUri.Port, path).Uri.AbsoluteUri;
+        }
     }
 }

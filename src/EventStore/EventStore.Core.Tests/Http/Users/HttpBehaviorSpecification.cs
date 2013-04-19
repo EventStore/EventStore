@@ -69,14 +69,16 @@ namespace EventStore.Core.Tests.Http.Users
 
         protected HttpWebRequest CreateRequest(string path, string method, string contentType)
         {
-            var httpEndPoint = _node.HttpEndPoint;
-            var httpWebRequest =
-                (HttpWebRequest)
-                WebRequest.Create(
-                    new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path).Uri);
+            var httpWebRequest = (HttpWebRequest) WebRequest.Create(MakeUrl(path));
             httpWebRequest.Method = method;
             httpWebRequest.ContentType = contentType;
             return httpWebRequest;
+        }
+
+        protected Uri MakeUrl(string path)
+        {
+            var httpEndPoint = _node.HttpEndPoint;
+            return new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path).Uri;
         }
 
         protected HttpWebResponse MakeJsonPost<T>(string users, T body)
@@ -128,9 +130,16 @@ namespace EventStore.Core.Tests.Http.Users
             foreach (KeyValuePair<string, JToken> v in expected)
             {
                 JToken vv;
-                if (!response.TryGetValue(v.Key, out vv))
+                if (v.Key.EndsWith("___"))
                 {
-                    Assert.Fail(string.Format("{0}/{1} not found", path, v.Key));
+                    if (response.TryGetValue(v.Key.Substring(0, v.Key.Length - "___".Length), out vv))
+                    {
+                        Assert.Fail("{0}/{1} found, but it is explicitly forbidden", path, v.Key);
+                    }
+                }
+                else if (!response.TryGetValue(v.Key, out vv))
+                {
+                    Assert.Fail("{0}/{1} not found", path, v.Key);
                 }
                 else
                 {

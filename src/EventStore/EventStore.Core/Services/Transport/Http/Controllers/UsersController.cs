@@ -77,7 +77,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void PostUser(HttpEntityManager http, string s)
         {
-            var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
+            var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(
+                http,
+                configurator:
+                    (codec, result) =>
+                    AutoConfigurator(codec, result)
+                        .SetCreated(
+                            MakeUrl(http, "/users/" + Uri.EscapeDataString(result.LoginName))));
             var data = http.RequestCodec.From<PostUserData>(s);
             var message = new UserManagementMessage.Create(
                 envelope, data.LoginName, data.FullName, data.Password);
@@ -136,10 +142,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(message);
         }
 
-        private SendToHttpEnvelope<T> CreateReplyEnvelope<T>(HttpEntityManager http)
-            where T : UserManagementMessage.ResponseMessage
+        private SendToHttpEnvelope<T> CreateReplyEnvelope<T>(
+            HttpEntityManager http, Func<ICodec, T, string> formatter = null,
+            Func<ICodec, T, ResponseConfiguration> configurator = null) where T : UserManagementMessage.ResponseMessage
         {
-            return new SendToHttpEnvelope<T>(_networkSendQueue, http, AutoFormatter, AutoConfigurator, null);
+            return new SendToHttpEnvelope<T>(
+                _networkSendQueue, http, formatter ?? AutoFormatter, configurator ?? AutoConfigurator, null);
         }
 
         private ResponseConfiguration AutoConfigurator<T>(ICodec codec, T result)

@@ -263,7 +263,7 @@ namespace EventStore.Core.Services.Transport.Http
                         Encoding.UTF8,
                         new KeyValuePair<string, string>(
                             "Location",
-                            HostName.Combine(entity.UserHostName, 
+                            HostName.Combine(entity.RequestedUrl, 
                                              "/streams/{0}/{1}", 
                                              Uri.EscapeDataString(eventStreamId), 
                                              msg.FirstEventNumber)));

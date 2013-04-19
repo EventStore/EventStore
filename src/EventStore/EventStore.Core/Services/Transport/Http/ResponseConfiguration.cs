@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Text;
 using EventStore.Transport.Http;
 using HttpStatusCode = System.Net.HttpStatusCode;
+using System.Linq;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -45,6 +46,13 @@ namespace EventStore.Core.Services.Transport.Http
         public ResponseConfiguration(int code, string contentType, Encoding encoding, params KeyValuePair<string, string>[] headers)
                 : this(code, GetHttpStatusDescription(code), contentType, encoding, headers as IEnumerable<KeyValuePair<string, string>>)
         {
+        }
+
+        public ResponseConfiguration SetCreated(string location)
+        {
+            var headers = Headers.ToDictionary(v => v.Key, v=> v.Value);
+            headers["Location"] = location;
+            return new ResponseConfiguration(EventStore.Transport.Http.HttpStatusCode.Created, ContentType, Encoding, headers.ToArray());
         }
 
         private static string GetHttpStatusDescription(int code)

@@ -26,12 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
 using System.Net;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
-using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Http.Users
 {
@@ -48,13 +45,15 @@ namespace EventStore.Core.Tests.Http.Users
 
             protected override void When()
             {
-                _response = MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                _response = MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
             }
 
             [Test]
-            public void returns_ok_status_code()
+            public void returns_created_status_code_and_location()
             {
-                Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
+                Assert.AreEqual(MakeUrl("/users/test1"), _response.Headers[HttpResponseHeader.Location]);
             }
         }
 
@@ -80,15 +79,15 @@ namespace EventStore.Core.Tests.Http.Users
             }
 
             [Test]
-            public void returns_valid_json()
-            {
-                Assert.IsNull(_lastJsonException, "Is not a valid json object: \r\n" + _lastResponseBody);
-            }
-
-            [Test]
             public void returns_valid_json_data()
             {
-                AssertJson(new {Data = new {FullName = "User Full Name"}}, _response);
+                AssertJson(
+                    new
+                        {
+                            Success = true,
+                            Error = "Success",
+                            Data = new {LoginName = "test1", FullName = "User Full Name", Password___ = false}
+                        }, _response);
             }
         }
     }

@@ -57,7 +57,7 @@ namespace EventStore.Transport.Http.EntityManagement
         private AsyncQueuedBufferWriter _asyncWriter;
         private readonly ICodec _requestCodec;
         private readonly ICodec _responseCodec;
-        private readonly string _userHostName;
+        private readonly Uri _requestedUrl;
         public readonly DateTime TimeStamp;
 
         internal HttpEntityManager(
@@ -75,7 +75,7 @@ namespace EventStore.Transport.Http.EntityManagement
             _onRequestSatisfied = onRequestSatisfied;
             _requestCodec = requestCodec;
             _responseCodec = responseCodec;
-            _userHostName = httpEntity.UserHostName;
+            _requestedUrl = httpEntity.RequestedUrl;
         }
 
         public ICodec RequestCodec
@@ -88,9 +88,9 @@ namespace EventStore.Transport.Http.EntityManagement
             get { return _responseCodec; }
         }
 
-        public string UserHostName
+        public Uri RequestedUrl
         {
-            get { return _userHostName; }
+            get { return _requestedUrl; }
         }
 
         public IPrincipal User

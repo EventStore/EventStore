@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Services.Http
             Register(
                 service,
                 "/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}",
-                HttpMethod.Delete, OnProjectionDelete, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+                HttpMethod.Delete, OnProjectionDelete, Codec.NoCodecs, SupportedCodecs);
             Register(
                 service, "/projection/{name}/statistics", HttpMethod.Get, OnProjectionStatisticsGet, Codec.NoCodecs,
                 SupportedCodecs);
@@ -130,13 +130,13 @@ namespace EventStore.Projections.Core.Services.Http
                 Codec.NoCodecs, SupportedCodecs);
             Register(
                 service, "/projection/{name}/command/disable", HttpMethod.Post, OnProjectionCommandDisable,
-                new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+                Codec.NoCodecs, SupportedCodecs);
             Register(
                 service, "/projection/{name}/command/enable", HttpMethod.Post, OnProjectionCommandEnable,
-                new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+                Codec.NoCodecs, SupportedCodecs);
             Register(
                 service, "/projection/{name}/command/reset", HttpMethod.Post, OnProjectionCommandReset,
-                new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+                Codec.NoCodecs, SupportedCodecs);
         }
 
         private static void OnProjections(HttpEntityManager http, UriTemplateMatch match)

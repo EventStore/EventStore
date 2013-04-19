@@ -35,7 +35,7 @@ namespace EventStore.Transport.Http.EntityManagement
 {
     public class HttpEntity
     {
-        public readonly string UserHostName;
+        public readonly Uri RequestedUrl;
 
 
         public readonly HttpListenerRequest Request;
@@ -47,7 +47,7 @@ namespace EventStore.Transport.Http.EntityManagement
             Ensure.NotNull(request, "request");
             Ensure.NotNull(response, "response");
 
-            UserHostName = request.UserHostName;
+            RequestedUrl = request.Url;
 
 
             Request = request;
@@ -57,7 +57,7 @@ namespace EventStore.Transport.Http.EntityManagement
 
         private HttpEntity(IPrincipal user)
         {
-            UserHostName = "";
+            RequestedUrl = null;
 
 
             Request = null;
@@ -67,7 +67,7 @@ namespace EventStore.Transport.Http.EntityManagement
 
         private HttpEntity(HttpEntity httpEntity, IPrincipal user)
         {
-            UserHostName = httpEntity.UserHostName;
+            RequestedUrl = httpEntity.RequestedUrl;
 
 
             Request = httpEntity.Request;

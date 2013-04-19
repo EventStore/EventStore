@@ -53,7 +53,7 @@ namespace EventStore.Core.Services.Transport.Http
                                 case ContentType.Atom:
                                 case ContentType.AtomJson:
                                 case ContentType.Html:
-                                    return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.UserHostName, embed));
+                                    return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.RequestedUrl, embed));
                                 default:
                                     return AutoEventConverter.SmartFormat(completed, entity.ResponseCodec);
                             }
@@ -80,7 +80,7 @@ namespace EventStore.Core.Services.Transport.Http
                 switch (msg.Result)
                 {
                     case ReadStreamResult.Success:
-                        return entity.ResponseCodec.To(Convert.ToStreamEventBackwardFeed(msg, entity.UserHostName, embed, headOfStream));
+                        return entity.ResponseCodec.To(Convert.ToStreamEventBackwardFeed(msg, entity.RequestedUrl, embed, headOfStream));
                     case ReadStreamResult.NoStream:
                     case ReadStreamResult.StreamDeleted:
                     case ReadStreamResult.NotModified:
@@ -101,7 +101,7 @@ namespace EventStore.Core.Services.Transport.Http
                 switch (msg.Result)
                 {
                     case ReadStreamResult.Success:
-                        return entity.ResponseCodec.To(Convert.ToStreamEventForwardFeed(msg, entity.UserHostName, embed));
+                        return entity.ResponseCodec.To(Convert.ToStreamEventForwardFeed(msg, entity.RequestedUrl, embed));
                     case ReadStreamResult.NoStream:
                     case ReadStreamResult.StreamDeleted:
                     case ReadStreamResult.NotModified:
@@ -122,7 +122,7 @@ namespace EventStore.Core.Services.Transport.Http
                 switch (msg.Result)
                 {
                     case ReadAllResult.Success:
-                        return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg, entity.UserHostName, embed));
+                        return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg, entity.RequestedUrl, embed));
                     case ReadAllResult.NotModified:
                     case ReadAllResult.Error:
                     case ReadAllResult.AccessDenied:
@@ -141,7 +141,7 @@ namespace EventStore.Core.Services.Transport.Http
                 switch (msg.Result)
                 {
                     case ReadAllResult.Success:
-                        return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg, entity.UserHostName, embed)); 
+                        return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg, entity.RequestedUrl, embed)); 
                     case ReadAllResult.NotModified:
                     case ReadAllResult.Error:
                     case ReadAllResult.AccessDenied:
