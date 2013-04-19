@@ -70,9 +70,7 @@ namespace EventStore.Core.Tests.Http.Users
 
             protected override void When()
             {
-                JObject response = GetJson<JObject>("/users/test1");
-
-                _response = response;
+                _response = GetJson<JObject>("/users/test1");
             }
 
             [Test]
@@ -90,17 +88,7 @@ namespace EventStore.Core.Tests.Http.Users
             [Test]
             public void returns_valid_json_data()
             {
-                AssertResponse(new {Data = new {FullName = "User Full Name"}});
-            }
-
-            private void AssertResponse<T>(T expected)
-            {
-                var serialized = expected.ToJson();
-                var jobject = serialized.ParseJson<JObject>();
-
-                var path = "/";
-
-                AssertJObject(jobject, _response, path);
+                AssertJson(new {Data = new {FullName = "User Full Name"}}, _response);
             }
         }
     }

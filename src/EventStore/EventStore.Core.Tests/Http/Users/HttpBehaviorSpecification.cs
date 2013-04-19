@@ -179,5 +179,15 @@ namespace EventStore.Core.Tests.Http.Users
                 }
             }
         }
+
+        protected void AssertJson<T>(T expected, JObject response)
+        {
+            var serialized = expected.ToJson();
+            var jobject = serialized.ParseJson<JObject>();
+
+            var path = "/";
+
+            AssertJObject(jobject, response, path);
+        }
     }
 }
