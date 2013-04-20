@@ -120,6 +120,53 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         }
 
         [TestFixture]
+        public class when_creating_an_already_existing_user_account : TestFixtureWithUserManagementService
+        {
+            protected override void GivenCommands()
+            {
+                base.GivenCommands();
+                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "Existing John", "existing!"));
+            }
+
+            protected override void When()
+            {
+                base.When();
+                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+            }
+
+            [Test]
+            public void replies_conflict()
+            {
+                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                Assert.AreEqual(1, updateResults.Count);
+                Assert.IsFalse(updateResults[0].Success);
+                Assert.AreEqual(UserManagementMessage.Error.Conflict, updateResults[0].Error);
+            }
+
+            [Test]
+            public void does_not_override_user_details()
+            {
+                _users.Handle(new UserManagementMessage.Get(_replyTo, "user1"));
+                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                Assert.NotNull(user);
+                Assert.AreEqual("Existing John", user.Data.FullName);
+                Assert.AreEqual("user1", user.Data.LoginName);
+                Assert.AreEqual(false, user.Data.Disabled);
+            }
+
+            [Test]
+            public void does_not_override_user_password()
+            {
+                _consumer.HandledMessages.Clear();
+                _users.Handle(new UserManagementMessage.ChangePassword(_replyTo, "user1", "existing!", "new-password"));
+                var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
+                Assert.NotNull(updateResult);
+                Assert.IsTrue(updateResult.Success);
+            }
+
+        }
+
+        [TestFixture]
         public class when_updating_user_details : TestFixtureWithUserManagementService
         {
             protected override void GivenCommands()
@@ -610,7 +657,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         }
 
         [TestFixture]
-        public class when_getting_all_iusers: TestFixtureWithUserManagementService
+        public class when_getting_all_users: TestFixtureWithUserManagementService
         {
             protected override void Given()
             {

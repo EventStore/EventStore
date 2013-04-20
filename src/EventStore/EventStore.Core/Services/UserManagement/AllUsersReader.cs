@@ -141,6 +141,9 @@ namespace EventStore.Core.Services.UserManagement
                 case ReadStreamResult.NoStream:
                     AddLoadedUserDetails(loginName, "", true, null);
                     break;
+                case ReadStreamResult.StreamDeleted:
+                    // ignore - deleted
+                    break;
                 default:
                     Abort(UserManagementMessage.Error.Error);
                     break;

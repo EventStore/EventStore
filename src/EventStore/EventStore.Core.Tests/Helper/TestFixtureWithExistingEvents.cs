@@ -292,6 +292,14 @@ namespace EventStore.Core.Tests.Helper
                 list = new List<EventRecord>();
                 _lastMessageReplies[message.EventStreamId] = list;
             }
+            if (message.ExpectedVersion != EventStore.ClientAPI.ExpectedVersion.Any)
+            {
+                if (message.ExpectedVersion != list.Count - 1)
+                {
+                    message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
+                    return;
+                }
+            }
             foreach (var eventRecord in from e in message.Events
                                         let eventNumber = list.Count
                                         select
