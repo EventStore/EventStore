@@ -128,7 +128,7 @@ namespace EventStore.Core.Tests.Http
             return httpWebResponse;
         }
 
-        protected HttpWebResponse MakeJsonPost(string path)
+        protected HttpWebResponse MakePost(string path)
         {
             var request = CreateJsonPostRequest(path);
             var httpWebResponse = GetRequestResponse(request);

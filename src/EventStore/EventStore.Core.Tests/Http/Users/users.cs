@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.Http.Users
 
             protected override void When()
             {
-                _response = MakeJsonPost("/users/test1/command/disable");
+                _response = MakePost("/users/test1/command/disable");
             }
 
             [Test]
@@ -157,12 +157,12 @@ namespace EventStore.Core.Tests.Http.Users
             protected override void Given()
             {
                 MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
-                MakeJsonPost("/users/test1/command/disable");
+                MakePost("/users/test1/command/disable");
             }
 
             protected override void When()
             {
-                _response = MakeJsonPost("/users/test1/command/enable");
+                _response = MakePost("/users/test1/command/enable");
             }
 
             [Test]

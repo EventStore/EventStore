@@ -101,5 +101,58 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
                 Assert.AreEqual(HttpStatusCode.Unauthorized, _lastResponse.StatusCode);
             }
         }
+
+        [TestFixture, Category("LongRunning")]
+        class when_requesting_a_protected_resource_with_credentials_of_disabled_user_account : HttpBehaviorSpecification
+        {
+            private JObject _json;
+
+            protected override void Given()
+            {
+                var response = MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                response = MakePost("/users/test1/command/disable");
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            protected override void When()
+            {
+                _json = GetJson<JObject>("/test1", new NetworkCredential("test1", "Pa55w0rd!"));
+            }
+
+            [Test]
+            public void returns_unauthorized_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.Unauthorized, _lastResponse.StatusCode);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        class when_requesting_a_protected_resource_with_credentials_of_deleted_user_account : HttpBehaviorSpecification
+        {
+            private JObject _json;
+
+            protected override void Given()
+            {
+                var response = MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                response = MakeDelete("/users/test1");
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            protected override void When()
+            {
+                _json = GetJson<JObject>("/test1", new NetworkCredential("test1", "Pa55w0rd!"));
+            }
+
+            [Test]
+            public void returns_unauthorized_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.Unauthorized, _lastResponse.StatusCode);
+            }
+        }
+
     }
 }
