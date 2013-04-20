@@ -5,7 +5,7 @@ define(function () {
 
     function internalCreate() {
 
-        function postCommand(command, data, success) {
+        function postCommand(command, data, success, error, login) {
             $.ajax("/users/" + command.endpoint, {
                 headers: {
                     Accept: "application/json",
@@ -14,8 +14,8 @@ define(function () {
                 dataType: "json",
                 type: command.method,
                 data: JSON.stringify(data),
-                success: successPostCommand(success),
-                error: errorPostCommand(),
+                success: successPostCommand(success, data.loginName),
+                error: errorPostCommand(error),
             });
         }
 
@@ -43,16 +43,19 @@ define(function () {
             });
         }
 
-        function successPostCommand(success) {
+        function successPostCommand(success, login) {
             return function (data, status, xhr) {
                 if (success)
-                    success();
+                    success(login);
             };
         }
 
-        function errorPostCommand(xhr, status, error) {
+        function errorPostCommand(error) {
             return function (xhr, data, status) {
-                reportError(data, status, xhr);
+                if (error)
+                    error(status);
+                else 
+                    reportError(data, status, xhr);
             };
         }
 
@@ -74,20 +77,23 @@ define(function () {
         }
 
         return {
-            create: function (data, success) {
-                postCommand({ method: "POST", endpoint: "" }, data, success);
+            create: function (data, success, error) {
+                postCommand({ method: "POST", endpoint: "" }, data, success, error);
             },
-            update: function (data, success) {
-                postCommand({ method: "PUT", endpoint: "" }, data, success);
+            update: function (data, success, error) {
+                postCommand({ method: "PUT", endpoint: data.loginName }, data, success, error);
             },
-            enable: function (data, success) {
-                postCommand({ method: "POST", endpoint: data.loginName + "/enable" }, data, success);
+            enable: function (data, success, error) {
+                postCommand({ method: "POST", endpoint: data.loginName + "/command/enable" }, data, success, error);
             },
-            disable: function (data, success) {
-                postCommand({ method: "POST", endpoint: data.disableName + "/enable" }, data, success);
+            disable: function (data, success, error) {
+                postCommand({ method: "POST", endpoint: data.loginName + "/command/disable" }, data, success, error);
             },
-            setPassword: function(data, success) {
-                postCommand({ method: "POST", endpoint: data.loginName + "/password" }, data, success);
+            delete: function (data, success, error) {
+                postCommand({ method: "DELETE", endpoint: data.loginName }, data, success, error);
+            },
+            setPassword: function (data, success, error) {
+                postCommand({ method: "POST", endpoint: data.loginName + "/command/reset-password" }, data, success, error);
             },
             get: function (loginName, success) {
                 get(loginName, success);

@@ -30,7 +30,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Security.Principal;
 using System.Text;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -111,42 +110,35 @@ namespace EventStore.Core.Tests.Http
         protected HttpWebResponse MakeJsonPost<T>(string path, T body)
         {
             var request = CreateJsonPostRequest(path, "POST", body);
-            var httpWebResponse = (HttpWebResponse) request.GetResponse();
+            var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }
 
         protected HttpWebResponse MakeJsonPut<T>(string path, T body)
         {
             var request = CreateJsonPostRequest(path, "PUT", body);
-            var httpWebResponse = (HttpWebResponse) request.GetResponse();
+            var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }
 
         protected HttpWebResponse MakeDelete(string path)
         {
             var request = CreateRequest(path, "DELETE");
-            var httpWebResponse = (HttpWebResponse) request.GetResponse();
+            var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }
 
         protected HttpWebResponse MakeJsonPost(string path)
         {
             var request = CreateJsonPostRequest(path);
-            var httpWebResponse = (HttpWebResponse) request.GetResponse();
+            var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }
 
         protected T GetJson<T>(string path, ICredentials credentials = null)
         {
             var request = CreateRequest(path, "GET", null, credentials);
-            try
-            {
-                _lastResponse = (HttpWebResponse) request.GetResponse();
-            }
-            catch (WebException ex)
-            {
-                _lastResponse = (HttpWebResponse) ex.Response;
-            }
+            _lastResponse = GetRequestResponse(request);
             var memoryStream = new MemoryStream();
             _lastResponse.GetResponseStream().CopyTo(memoryStream);
             var bytes = memoryStream.ToArray();
@@ -160,6 +152,20 @@ namespace EventStore.Core.Tests.Http
                 _lastJsonException = ex;
                 return default(T);
             }
+        }
+
+        private static HttpWebResponse GetRequestResponse(HttpWebRequest request)
+        {
+            HttpWebResponse response;
+            try
+            {
+                response = (HttpWebResponse) request.GetResponse();
+            }
+            catch (WebException ex)
+            {
+                response = (HttpWebResponse) ex.Response;
+            }
+            return response;
         }
 
         private HttpWebRequest CreateJsonPostRequest<T>(string path, string method, T body)

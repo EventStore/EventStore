@@ -37,8 +37,10 @@
             <ul style="display: inline">
                 <li><a href="#" class="btn btn-info" id="button-details-edit">Edit...</a></li>
                 <li><a href="#" class="btn btn-danger" id="button-details-delete">Delete...</a></li>
+                <li><a href="#" class="btn btn-info" id="button-details-disable">Disable...</a></li>
+                <li><a href="#" class="btn btn-info" id="button-details-enable">Enable...</a></li>
                 <li><a href="#" class="btn btn-info" id="button-details-reset-password">Reset Password...</a></li>
-                <li><a href="#" class="btn" id="button-details-cancel">Cancel</a></li>
+                <li><a href="#" class="btn" id="button-details-close">Close</a></li>
             </ul>
         </div>
     </div>
@@ -47,28 +49,35 @@
             <div class="control-group">
                 <label class="control-label add-on" for="input-login-name">Login</label>
                 <div class="controls">
-                    <input type="text" id="input-login-name" name="input-login-name" data-required/>
+                    <input type="text" id="input-login-name" name="input-login-name"/>
                     <span class="help-inline"></span>
                 </div>
             </div>
             <div class="control-group">
                 <label class="control-label add-on" for="input-full-name">Full Name</label>
                 <div class="controls">
-                    <input type="text" id="input-full-name" name="input-full-name" data-required/>
+                    <input type="text" id="input-full-name" name="input-full-name"/>
                     <span class="help-inline"></span>
                 </div>
             </div>
-            <div class="control-group create-only">
+            <div class="control-group">
+                <label class="control-label add-on" for="input-password">Current Password</label>
+                <div class="controls">
+                    <input type="password" id="input-password-current" name="input-password-current"/>
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="control-group">
                 <label class="control-label add-on" for="input-password">Password</label>
                 <div class="controls">
-                    <input type="password" id="input-password" name="input-password" data-required/>
+                    <input type="password" id="input-password" name="input-password"/>
                     <span class="help-inline"></span>
                 </div>
             </div>
-            <div class="control-group create-only">
+            <div class="control-group">
                 <label class="control-label add-on" for="input-password">Confirm</label>
                 <div class="controls">
-                    <input type="password" id="input-password-confirm" name="input-password-confirm" data-confirm="input-password" />
+                    <input type="password" id="input-password-confirm" name="input-password-confirm"/>
                     <span class="help-inline"></span>
                 </div>
             </div>
@@ -127,12 +136,13 @@
         require(['Controller'],
             function (controller) {
                 var users = controller.create();
+                var activeEditDialogOkfunction = null;
                 $(function () {
 
                     $.templates({
                         usersTemplate: "#users-template",
                         userTemplate: "#user-template",
-                });
+                    });
 
 
                     $("#btn-create").click(function(e) {
@@ -145,17 +155,31 @@
                     });
 
                     $("#button-ok").click(function (e) {
-                        createUser();
+                        activeEditDialogOkfunction();
                     });
 
-                    users.getAll(function (usersMessage) {
-                        displayUsers(usersMessage);
+                    $("#button-details-close").click(function (e) {
+                        $("#user-details-dialog").dialog("close");
+                        getAndDisplayUsers();
                     });
+
+                    $("#button-cancel").click(function (e) {
+                        $("#edit-user-details-dialog").dialog("close");
+                    });
+
+                    getAndDisplayUsers();
 
                 });
 
+                function getAndDisplayUsers() {
+                    users.getAll(function (usersMessage) {
+                        displayUsers(usersMessage);
+                    });
+                }
+
                 function get(input) {
                     var jInput = $("#" + input);
+                    var jControlGroup = jInput.closest(".control-group");
                     return {
                         val: jInput.val(),
                         set: function(v) {
@@ -170,6 +194,30 @@
                             var group = jInput.closest(".control-group");
                             group.addClass("error");
                             group.find(".help-inline").text(message);
+                        },
+
+                        enabled: function () {
+                            return jInput.attr("data-mode") == "normal";
+                        },
+
+                        configure: function (mode) {
+                            switch (mode) {
+                                case "normal":
+                                    jControlGroup.show();
+                                    jInput.removeAttr("readonly");
+                                    break;
+                                case "unused":
+                                    jControlGroup.hide();
+                                    jInput.removeAttr("readonly");
+                                    break;
+                                case "readonly":
+                                    jControlGroup.show();
+                                    jInput.attr("readonly", "readonly");
+                                    break;
+                                default:
+                                    throw "Unknown mode:in " + mode;
+                            }
+                            jInput.attr("data-mode", mode);
                         }
                     };
                 }
@@ -177,7 +225,7 @@
                 function getInput() {
 
                     function required(v) {
-                        if (!v.val) {
+                        if (v.enabled() && !v.val) {
                             v.invalid("required");
                             return false;
                         }
@@ -185,7 +233,7 @@
                     }
 
                     function match(v1, v2) {
-                        if (v1.val != v2.val) {
+                        if (v1.enabled() && v2.enabled() && v1.val != v2.val) {
                             v1.invalid("does not match");
                             return false;
                         }
@@ -195,6 +243,7 @@
                     return {
                         loginName: get("input-login-name"),
                         fullName: get("input-full-name"),
+                        currentPassword: get("input-password-current"),
                         password: get("input-password"),
                         confirmPassword: get("input-password-confirm"),
 
@@ -227,10 +276,79 @@
                             fullName: inputData.fullName.val,
                             password: inputData.password.val,
                         };
-                        users.create(data, function () {
-                            alert("OK");
-                        });
+                        users.create(data, createSucceeded, createFailed);
                     }
+                }
+
+                function editUser() {
+                    var inputData = getInput();
+                    if (inputData.validate()) {
+                        var data = {
+                            loginName: inputData.loginName.val,
+                            fullName: inputData.fullName.val,
+                        };
+                        users.update(data, succeeded, failed);
+                    }
+                }
+
+                function resetPassword() {
+                    var inputData = getInput();
+                    if (inputData.validate()) {
+                        var data = {
+                            loginName: inputData.loginName.val,
+                            password: inputData.password.val,
+                        };
+                        users.setPassword(data, succeeded, failed);
+                    }
+                }
+
+                function deleteUser() {
+                    var inputData = getInput();
+                    if (inputData.validate()) {
+                        var data = {
+                            loginName: inputData.loginName.val,
+                        };
+                        users.delete(data, succeeded, failed);
+                    }
+                }
+
+                function disableUserAccount() {
+                    var inputData = getInput();
+                    if (inputData.validate()) {
+                        var data = {
+                            loginName: inputData.loginName.val,
+                        };
+                        users.disable(data, succeeded, failed);
+                    }
+                }
+
+                function enableUserAccount() {
+                    var inputData = getInput();
+                    if (inputData.validate()) {
+                        var data = {
+                            loginName: inputData.loginName.val,
+                        };
+                        users.enable(data, succeeded, failed);
+                    }
+                }
+
+                function succeeded(login) {
+                    $("#edit-user-details-dialog").dialog("close");
+                    initializeUserDetails(login);
+                }
+
+                function failed(status) {
+                    alert(status);
+                    $("#edit-user-details-dialog").dialog("close");
+                }
+
+                function createSucceeded(login) {
+                    getAndDisplayUsers();
+                }
+
+                function createFailed(status) {
+                    alert(status);
+                    getAndDisplayUsers();
                 }
 
                 function displayUsers(users) {
@@ -242,54 +360,193 @@
                     });
                 }
 
+                function initializeUserDetails(login) {
+                    users.get(login, function (userData) {
+                        $("#user-details-dialog-content").html($.render.userTemplate(userData.data));
+                        $("#button-details-edit").click(function (e) {
+                            e.preventDefault();
+                            displayEditUser(userData);
+                        });
+                        $("#button-details-reset-password").click(function (e) {
+                            e.preventDefault();
+                            displayResetPassword(userData);
+                        });
+                        if (userData.data.disabled) {
+                            $("#button-details-disable").hide();
+                            $("#button-details-enable").show();
+                        } else {
+                            $("#button-details-disable").show();
+                            $("#button-details-enable").hide();
+                        }
+                        $("#button-details-disable").click(function (e) {
+                            e.preventDefault();
+                            displayDisableUserAccount(userData);
+                        });
+                        $("#button-details-enable").click(function (e) {
+                            e.preventDefault();
+                            displayEnableUserAccount(userData);
+                        });
+                        $("#button-details-delete").click(function (e) {
+                            e.preventDefault();
+                            displayDeleteUser(userData);
+                        });
+                    });
+                }
+
                 function displayUserDetails(login) {
                     $("#user-details-dialog").dialog({
                         modal: true,
                         width: 600,
                         height: 300,
-                        title: "User Details",
+                        title: "User Account Details",
                         autoResize: true,
                         open: function (event, ui) {
-                            users.get(login, function (userData) {
-                                $("#user-details-dialog-content").html($.render.userTemplate(userData.data));
-                                $("#button-details-edit").click(function (e) {
-                                    e.preventDefault();
-                                    displayEditUser(userData);
-                                });
-                            });
-
+                            initializeUserDetails(login);
                         }
                     });
                 }
 
                 function displayCreateUser() {
+                    activeEditDialogOkfunction = createUser;
                     $("#edit-user-details-dialog").dialog({
                         modal: true,
                         width: 600,
                         height: 400,
-                        title: "New User",
+                        title: "Create User Account",
                         autoResize: true,
                         open: function (event, ui) {
                             var inputs = getInput();
-                            $(".create-only").show();
+                            inputs.loginName.configure("normal");
+                            inputs.fullName.configure("normal");
+                            inputs.currentPassword.configure("unused");
+                            inputs.password.configure("normal");
+                            inputs.confirmPassword.configure("normal");
+
                             $("#button-ok").text("Create");
                         }
                     });
                 }
 
                 function displayEditUser(userData) {
+                    activeEditDialogOkfunction = editUser;
                     $("#edit-user-details-dialog").dialog({
                         modal: true,
                         width: 600,
                         height: 220,
-                        title: "Edit User",
+                        title: "Edit User Account",
                         autoResize: true,
                         open: function (event, ui) {
                             var inputs = getInput();
+                            inputs.loginName.configure("readonly");
+                            inputs.fullName.configure("normal");
+                            inputs.currentPassword.configure("unused");
+                            inputs.password.configure("unused");
+                            inputs.confirmPassword.configure("unused");
+
                             inputs.loginName.set(userData.data.loginName);
                             inputs.fullName.set(userData.data.fullName);
-                            $(".create-only").hide();
+
                             $("#button-ok").text("Update");
+                        }
+                    });
+                }
+
+
+                function displayResetPassword(userData) {
+                    activeEditDialogOkfunction = resetPassword;
+                    $("#edit-user-details-dialog").dialog({
+                        modal: true,
+                        width: 600,
+                        height: 310,
+                        title: "Reset Password",
+                        autoResize: true,
+                        open: function (event, ui) {
+                            var inputs = getInput();
+                            inputs.loginName.configure("readonly");
+                            inputs.fullName.configure("unused");
+                            inputs.currentPassword.configure("unused");
+                            inputs.password.configure("normal");
+                            inputs.confirmPassword.configure("normal");
+
+                            inputs.loginName.set(userData.data.loginName);
+                            inputs.fullName.set(userData.data.fullName);
+
+                            $("#button-ok").text("Reset");
+                        }
+                    });
+                }
+
+
+                function displayDeleteUser(userData) {
+                    activeEditDialogOkfunction = deleteUser;
+                    $("#edit-user-details-dialog").dialog({
+                        modal: true,
+                        width: 600,
+                        height: 220,
+                        title: "Delete User Account",
+                        autoResize: true,
+                        open: function (event, ui) {
+                            var inputs = getInput();
+                            inputs.loginName.configure("readonly");
+                            inputs.fullName.configure("readonly");
+                            inputs.currentPassword.configure("unused");
+                            inputs.password.configure("unused");
+                            inputs.confirmPassword.configure("unused");
+
+                            inputs.loginName.set(userData.data.loginName);
+                            inputs.fullName.set(userData.data.fullName);
+
+                            $("#button-ok").text("Delete");
+                        }
+                    });
+                }
+
+
+
+                function displayEnableUserAccount(userData) {
+                    activeEditDialogOkfunction = enableUserAccount;
+                    $("#edit-user-details-dialog").dialog({
+                        modal: true,
+                        width: 600,
+                        height: 220,
+                        title: "Enable User Account",
+                        autoResize: true,
+                        open: function (event, ui) {
+                            var inputs = getInput();
+                            inputs.loginName.configure("readonly");
+                            inputs.fullName.configure("readonly");
+                            inputs.currentPassword.configure("unused");
+                            inputs.password.configure("unused");
+                            inputs.confirmPassword.configure("unused");
+
+                            inputs.loginName.set(userData.data.loginName);
+                            inputs.fullName.set(userData.data.fullName);
+
+                            $("#button-ok").text("Enable");
+                        }
+                    });
+                }
+
+                function displayDisableUserAccount(userData) {
+                    activeEditDialogOkfunction = disableUserAccount;
+                    $("#edit-user-details-dialog").dialog({
+                        modal: true,
+                        width: 600,
+                        height: 220,
+                        title: "Disable User Account",
+                        autoResize: true,
+                        open: function (event, ui) {
+                            var inputs = getInput();
+                            inputs.loginName.configure("readonly");
+                            inputs.fullName.configure("readonly");
+                            inputs.currentPassword.configure("unused");
+                            inputs.password.configure("unused");
+                            inputs.confirmPassword.configure("unused");
+
+                            inputs.loginName.set(userData.data.loginName);
+                            inputs.fullName.set(userData.data.fullName);
+
+                            $("#button-ok").text("Disable");
                         }
                     });
                 }

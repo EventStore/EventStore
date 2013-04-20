@@ -94,6 +94,31 @@ namespace EventStore.Core.Tests.Http.Users
         }
 
         [TestFixture, Category("LongRunning")]
+        class when_creating_an_already_existing_user_account : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+                var response = MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            }
+       
+            protected override void When()
+            {
+                _response = MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+            }
+
+            [Test]
+            public void returns_created_status_code_and_location()
+            {
+                Assert.AreEqual(HttpStatusCode.Conflict, _response.StatusCode);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
         class when_disabling_an_enabled_user_account : HttpBehaviorSpecification
         {
             private HttpWebResponse _response;

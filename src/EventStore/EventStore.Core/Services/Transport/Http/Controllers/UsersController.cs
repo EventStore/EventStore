@@ -81,9 +81,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 http,
                 configurator:
                     (codec, result) =>
-                    AutoConfigurator(codec, result)
-                        .SetCreated(
-                            MakeUrl(http, "/users/" + Uri.EscapeDataString(result.LoginName))));
+                        {
+                            var configuration = AutoConfigurator(codec, result);
+                            return configuration.Code == HttpStatusCode.OK
+                                       ? configuration.SetCreated(
+                                           MakeUrl(http, "/users/" + Uri.EscapeDataString(result.LoginName)))
+                                       : configuration;
+                        });
             var data = http.RequestCodec.From<PostUserData>(s);
             var message = new UserManagementMessage.Create(
                 envelope, data.LoginName, data.FullName, data.Password);
