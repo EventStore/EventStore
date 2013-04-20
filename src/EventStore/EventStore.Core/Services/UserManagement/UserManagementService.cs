@@ -124,7 +124,7 @@ namespace EventStore.Core.Services.UserManagement
                                 new UserManagementMessage.UserDetailsResult(
                                     new UserManagementMessage.UserData(
                                         message.LoginName, data.FullName, data.Disabled,
-                                        completed.Events[0].Event.TimeStamp)));
+                                        new DateTimeOffset(completed.Events[0].Event.TimeStamp, TimeSpan.FromHours(0)))));
                         else
                         {
                             switch (completed.Result)

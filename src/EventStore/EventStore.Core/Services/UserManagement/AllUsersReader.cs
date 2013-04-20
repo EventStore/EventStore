@@ -130,7 +130,8 @@ namespace EventStore.Core.Services.UserManagement
                             var eventRecord = result.Events[0].Event;
                             var userData = eventRecord.Data.ParseJson<UserData>();
                             AddLoadedUserDetails(
-                                userData.LoginName, userData.FullName, userData.Disabled, eventRecord.TimeStamp);
+                                userData.LoginName, userData.FullName, userData.Disabled,
+                                new DateTimeOffset(eventRecord.TimeStamp, TimeSpan.FromHours(0)));
                         }
                         catch
                         {
@@ -158,7 +159,7 @@ namespace EventStore.Core.Services.UserManagement
                 _onCompleted(UserManagementMessage.Error.Success, _results.ToArray());
         }
 
-        private void AddLoadedUserDetails(string loginName, string fullName, bool disabled, DateTime? dateLastUpdated)
+        private void AddLoadedUserDetails(string loginName, string fullName, bool disabled, DateTimeOffset? dateLastUpdated)
         {
             _results.Add(new UserManagementMessage.UserData(loginName, fullName, disabled, dateLastUpdated));
         }

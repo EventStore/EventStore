@@ -105,7 +105,7 @@
                       <td><a href="#" class="user-login" data-login="{{>loginName}}">{{>loginName}}<a/></td>
                       <td>{{>fullName}}</td>
                       <td>{{>disabled}}</td>
-                      <td>{{>dateLastUpdated}}</td>
+                      <td>{{:~formatDate(dateLastUpdated)}}</td>
                     </tr>
                     {{/for}}
                 </tbody>
@@ -127,7 +127,7 @@
             </div>
             <div class="control-group">
                 <div class="control-label"><label>Last Updated:</label></div>
-                <div class="controls">{{>dateLastUpdated}}</div>
+                <div class="controls">{{:~formatDate(dateLastUpdated)}}</div>
             </div>
     
     </script>
@@ -352,7 +352,7 @@
                 }
 
                 function displayUsers(users) {
-                    $("#user-list-container").html($.render.usersTemplate(users));
+                    $("#user-list-container").html($.render.usersTemplate(users, {formatDate: formatDate}));
                     $(".user-login").click(function (e) {
                         var login = $(this).attr('data-login');
                         e.preventDefault();
@@ -362,7 +362,7 @@
 
                 function initializeUserDetails(login) {
                     users.get(login, function (userData) {
-                        $("#user-details-dialog-content").html($.render.userTemplate(userData.data));
+                        $("#user-details-dialog-content").html($.render.userTemplate(userData.data, { formatDate: formatDate }));
                         $("#button-details-edit").click(function (e) {
                             e.preventDefault();
                             displayEditUser(userData);
@@ -550,6 +550,20 @@
                         }
                     });
                 }
+
+
+                function formatDate(s) {
+                    function pad(num, size) {
+                        var s = num + "";
+                        while (s.length < size) s = "0" + s;
+                        return s;
+                    }
+
+                    var d = new Date(s);
+                    return (1900 + d.getYear()) + "-" + pad((1 + d.getMonth()), 2) + "-" + pad(d.getDate(), 2) + " " +
+                        pad(d.getHours(), 2) + ":" + pad(d.getMinutes(), 2) + ":" + pad(d.getSeconds(), 2);
+                }
+
 
             });
     </script>
