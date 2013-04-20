@@ -31,17 +31,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
-using System.Web;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.Tests.Http.Users;
 using NUnit.Framework;
 using EventStore.Core.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace EventStore.Core.Tests.Http.Users
+namespace EventStore.Core.Tests.Http
 {
-    internal abstract class HttpBehaviorSpecification : SpecificationWithDirectoryPerTestFixture
+    public abstract class HttpBehaviorSpecification : SpecificationWithDirectoryPerTestFixture
     {
         protected MiniNode _node;
         protected EventStoreConnection _connection;
@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Http.Users
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _node = new MiniNode(PathName);
+            _node = CreateMiniNode();
             _node.Start();
 
             _connection = TestConnection.Create();
@@ -66,6 +66,11 @@ namespace EventStore.Core.Tests.Http.Users
             Given();
             When();
 
+        }
+
+        protected virtual MiniNode CreateMiniNode()
+        {
+            return new MiniNode(PathName);
         }
 
         [TestFixtureTearDown]

@@ -54,15 +54,15 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         public IPEndPoint TcpEndPoint { get; private set; }
         public IPEndPoint HttpEndPoint { get; private set; }
 
-        private readonly SingleVNode _node;
-        private readonly TFChunkDb _tfChunkDb;
+        protected readonly SingleVNode _node;
+        protected readonly TFChunkDb _tfChunkDb;
         private ICheckpoint _writerChk;
         private ICheckpoint _chaserChk;
         private ICheckpoint _epochChk;
         private ICheckpoint _truncateChk;
         private readonly string _dbPath;
 
-        public MiniNode(string pathname)
+        public MiniNode(string pathname, bool enableProjections = false)
         {
             var ip = GetLocalIp();
 
@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                      "TCP ENDPOINT:", TcpEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
 
-            _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, dbVerifyHashes: true, enabledNodeSubsystems: false ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0], memTableEntryCount: 1000);
+            _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, dbVerifyHashes: true, enabledNodeSubsystems: enableProjections ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0], memTableEntryCount: 1000);
         }
 
         public void Start()
