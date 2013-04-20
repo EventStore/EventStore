@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests
     using System.IO;
     using NUnit.Framework;
 
-    [TestFixture]
+    [TestFixture, Ignore("Known bug in Mono, waiting for fix.")]
     public class mono_filestream_bug
     {
         [Test]

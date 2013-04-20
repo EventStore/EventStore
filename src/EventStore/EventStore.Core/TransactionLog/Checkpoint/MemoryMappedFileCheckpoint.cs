@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -39,14 +40,15 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         [DllImport("kernel32.dll")]
         static extern bool FlushFileBuffers(IntPtr hFile);
 
-        public string Name
-        {
-            get { return _name; }
-        }
+        //[DllImport("kernel32.dll")]
+        //static extern bool FlushViewOfFile(IntPtr lpBaseAddress, UIntPtr dwNumberOfBytesToFlush);
+
+        public string Name { get { return _name; } }
 
         private readonly string _filename;
         private readonly string _name;
         private readonly bool _cached;
+        private readonly FileStream _fileStream;
         private readonly MemoryMappedFile _file;
         private long _last;
         private long _lastFlushed;
@@ -54,8 +56,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 
         private readonly object _flushLocker = new object();
 
-        public MemoryMappedFileCheckpoint(string filename)
-            : this(filename, Guid.NewGuid().ToString(), false)
+        public MemoryMappedFileCheckpoint(string filename): this(filename, Guid.NewGuid().ToString(), false)
         {
         }
 
@@ -65,18 +66,19 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _name = name;
             _cached = cached;
             var old = File.Exists(_filename);
-            var filestream = new FileStream(_filename,
+            _fileStream = new FileStream(_filename,
                                             mustExist ? FileMode.Open : FileMode.OpenOrCreate,
                                             FileAccess.ReadWrite,
                                             FileShare.ReadWrite);
-            _file = MemoryMappedFile.CreateFromFile(filestream,
+            _file = MemoryMappedFile.CreateFromFile(_fileStream,
                                                     Guid.NewGuid().ToString(),
-                                                    8,
+                                                    sizeof(long),
                                                     MemoryMappedFileAccess.ReadWrite,
                                                     new MemoryMappedFileSecurity(),
                                                     HandleInheritability.None,
                                                     false);
             _accessor = _file.CreateViewAccessor(0, 8);
+
             if (old)
                 _last = _lastFlushed = ReadCurrent();
             else
@@ -107,7 +109,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _accessor.Write(0, last);
             _accessor.Flush();
 
-            FlushFileBuffers(_file.SafeMemoryMappedFileHandle.DangerousGetHandle());
+            //FlushViewOfFile(_accessor.SafeMemoryMappedViewHandle.DangerousGetHandle(), (UIntPtr)sizeof(long));
+            FlushFileBuffers(_fileStream.SafeFileHandle.DangerousGetHandle());
 
             Interlocked.Exchange(ref _lastFlushed, last);
 

@@ -37,9 +37,9 @@ using NUnit.Framework;
 [assembly: AssemblyTitle("EventStore.Projections.Core.Tests")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Event Store LLP")]
 [assembly: AssemblyProduct("EventStore.Projections.Core.Tests")]
-[assembly: AssemblyCopyright("Copyright ©  2012")]
+[assembly: AssemblyCopyright("Copyright © Event Store LLP. All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

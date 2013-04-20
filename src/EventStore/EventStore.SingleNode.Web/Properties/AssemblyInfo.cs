@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("EventStore")]
 [assembly: AssemblyProduct("EventStore.SingleNode.Web")]
-[assembly: AssemblyCopyright("Copyright © EventStore 2012")]
+[assembly: AssemblyCopyright("Copyright © Event Store LLP. All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

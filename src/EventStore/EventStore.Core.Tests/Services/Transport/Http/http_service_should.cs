@@ -73,16 +73,24 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         [Test]
         [Category("Network")]
-        public void ignore_any_shutdown_messages()
+        public void ignore_shutdown_message_that_does_not_cause_process_exit()
         {
             _portableServer.Publish(new SystemMessage.SystemInit());
             Assert.IsTrue(_portableServer.IsListening);
 
-            _portableServer.Publish(new ClientMessage.RequestShutdown(exitProcess: false));
-            _portableServer.Publish(new ClientMessage.RequestShutdown(exitProcess: true));
-            _portableServer.Publish(new SystemMessage.BecomeShutdown(Guid.NewGuid()));
             _portableServer.Publish(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), exitProcess: false));
             Assert.IsTrue(_portableServer.IsListening);
+        }
+
+        [Test]
+        [Category("Network")]
+        public void react_to_shutdown_message_that_cause_process_exit()
+        {
+            _portableServer.Publish(new SystemMessage.SystemInit());
+            Assert.IsTrue(_portableServer.IsListening);
+
+            _portableServer.Publish(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), exitProcess: true));
+            Assert.IsFalse(_portableServer.IsListening);
         }
 
         [Test]
