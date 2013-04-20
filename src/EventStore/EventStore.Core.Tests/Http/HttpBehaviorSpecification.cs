@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Security.Principal;
 using System.Text;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -81,11 +82,16 @@ namespace EventStore.Core.Tests.Http
             base.TestFixtureTearDown();
         }
 
-        protected HttpWebRequest CreateRequest(string path, string method, string contentType)
+        protected HttpWebRequest CreateRequest(
+            string path, string method, string contentType, ICredentials credentials = null)
         {
             var httpWebRequest = (HttpWebRequest) WebRequest.Create(MakeUrl(path));
             httpWebRequest.Method = method;
             httpWebRequest.ContentType = contentType;
+            if (credentials != null)
+            {
+                httpWebRequest.Credentials = credentials;
+            }
             return httpWebRequest;
         }
 
@@ -130,9 +136,9 @@ namespace EventStore.Core.Tests.Http
             return httpWebResponse;
         }
 
-        protected T GetJson<T>(string path)
+        protected T GetJson<T>(string path, ICredentials credentials = null)
         {
-            var request = CreateRequest(path, "GET", null);
+            var request = CreateRequest(path, "GET", null, credentials);
             try
             {
                 _lastResponse = (HttpWebResponse) request.GetResponse();

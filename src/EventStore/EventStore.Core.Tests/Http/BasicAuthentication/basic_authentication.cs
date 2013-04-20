@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Net;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
@@ -44,6 +45,54 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
             protected override void When()
             {
                 var json = GetJson<JObject>("/test1");
+            }
+
+            [Test]
+            public void returns_unauthorized_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.Unauthorized, _lastResponse.StatusCode);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        class when_requesting_a_protected_resource_with_credentials_provided: HttpBehaviorSpecification
+        {
+            private JObject _json;
+
+            protected override void Given()
+            {
+                var response = MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            }
+
+            protected override void When()
+            {
+                _json = GetJson<JObject>("/test1", new NetworkCredential("test1", "Pa55w0rd!"));
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        class when_requesting_a_protected_resource_with_invalid_credentials_provided: HttpBehaviorSpecification
+        {
+            private JObject _json;
+
+            protected override void Given()
+            {
+                var response = MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            }
+
+            protected override void When()
+            {
+                _json = GetJson<JObject>("/test1", new NetworkCredential("test1", "InvalidPassword!"));
             }
 
             [Test]
