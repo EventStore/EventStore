@@ -5,11 +5,18 @@
             $.templates({ renderTemplate: template });
             var html = $.render.renderTemplate(data,
                 {
-                    formatDate: function(s) {
-                        var d = new Date(s);
+                    formatDate: function formatDate(s) {
 
-                        return (1900 + d.getYear()) + "-" + (1 + d.getMonth()) + "-" + d.getDate() + " " +
-                            d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
+                        function pad(num, size) {
+                            var s = num + "";
+                            while (s.length < size) s = "0" + s;
+                            return s;
+                        }
+
+
+                        var d = new Date(s);
+                        return (1900 + d.getYear()) + "-" + pad((1 + d.getMonth()), 2) + "-" + pad(d.getDate(), 2) + " " +
+                            pad(d.getHours(), 2) + ":" + pad(d.getMinutes(), 2) + ":" + pad(d.getSeconds(), 2);
                     }
                 }
             );
