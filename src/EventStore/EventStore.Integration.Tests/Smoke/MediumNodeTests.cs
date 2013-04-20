@@ -37,12 +37,10 @@ namespace EventStore.Integration.Tests.Smoke
     {
         protected override void Given()
         {
-            throw new NotImplementedException();
         }
 
         protected override void When()
         {
-            throw new NotImplementedException();
         }
 
         [Test]

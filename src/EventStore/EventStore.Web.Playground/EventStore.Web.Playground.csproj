@@ -63,7 +63,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HttpHelpers.cs" />
     <Compile Include="PlaygroundVNode.cs" />
     <Compile Include="PlaygroundVNodeController.cs" />
     <Compile Include="PlaygroundVNodeSettings.cs" />

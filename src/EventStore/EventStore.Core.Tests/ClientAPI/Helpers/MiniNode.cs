@@ -41,6 +41,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Http;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -101,6 +102,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                      "HTTP ENDPOINT:", HttpEndPoint);
 
             _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, dbVerifyHashes: true, enabledNodeSubsystems: enableProjections ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0], memTableEntryCount: 1000);
+            _node.HttpService.SetupController(new TestController(_node.MainQueue, _node.NetworkSendService));
         }
 
         public void Start()

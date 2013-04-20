@@ -26,9 +26,31 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using NUnit.Framework;
+using Newtonsoft.Json.Linq;
+using HttpStatusCode = System.Net.HttpStatusCode;
+
 namespace EventStore.Core.Tests.Http.BasicAuthentication
 {
     namespace basic_authentication
     {
+        [TestFixture, Category("LongRunning")]
+        class when_requesting_a_protected_resource : HttpBehaviorSpecification
+        {
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                var json = GetJson<JObject>("/test1");
+            }
+
+            [Test]
+            public void returns_unauthorized_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.Unauthorized, _lastResponse.StatusCode);
+            }
+        }
     }
 }
