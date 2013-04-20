@@ -343,12 +343,16 @@
                 }
 
                 function createSucceeded(login) {
-                    getAndDisplayUsers();
+                    $("#edit-user-details-dialog").dialog("close");
+                    // timeout to wait for the projectuion to catch up
+                    setTimeout(getAndDisplayUsers, 500);
                 }
 
                 function createFailed(status) {
                     alert(status);
-                    getAndDisplayUsers();
+                    $("#edit-user-details-dialog").dialog("close");
+                    // timeout to wait for the projectuion to catch up
+                    setTimeout(getAndDisplayUsers, 500);
                 }
 
                 function displayUsers(users) {
