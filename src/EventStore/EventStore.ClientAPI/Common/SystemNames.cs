@@ -28,6 +28,11 @@
 
 namespace EventStore.ClientAPI.Common
 {
+    public static class SystemHeader
+    {
+        public const string ExpectedVersion = "X-ES-EXPECTEDVERSION";
+    }
+
     public static class SystemStreams
     {
         public const string StreamsStream = "$streams";
@@ -64,8 +69,8 @@ namespace EventStore.ClientAPI.Common
 
     public static class SystemEventTypes
     {
-        public const string StreamDeleted = "$stream-deleted";
-        public const string StatsCollection = "$stats-collected";
+        public const string StreamDeleted = "$streamDeleted";
+        public const string StatsCollection = "$statsCollected";
         public const string LinkTo = "$>";
         public const string StreamMetadata = "$metadata";
     }

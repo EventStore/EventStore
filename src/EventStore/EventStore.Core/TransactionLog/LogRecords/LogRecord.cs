@@ -27,6 +27,7 @@
 // 
 using System;
 using System.IO;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 
@@ -41,7 +42,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
     public abstract class LogRecord
     {
-        public static readonly byte[] NoData = new byte[0];
+        public static readonly byte[] NoData = Empty.ByteArray;
 
         public readonly LogRecordType RecordType;
         public readonly byte Version;

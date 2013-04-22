@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.Transport.Http
                                 case ContentType.Html:
                                     return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.RequestedUrl, embed));
                                 default:
-                                    return AutoEventConverter.SmartFormat(completed, entity.ResponseCodec);
+                                    return AutoEventConverter.SmartFormat(completed.Record, entity.ResponseCodec);
                             }
                         }
                         case ReadEventResult.NotFound:

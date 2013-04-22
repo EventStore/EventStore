@@ -34,8 +34,6 @@ namespace EventStore.Core.Util
 {
     public class MD5Hash
     {
-        private static readonly byte[] EmptyArray = new byte[0];
-
         public static byte[] GetHashFor(Stream s)
         {
             //when using this, it will calculate from this point to the END of the stream!
@@ -50,7 +48,7 @@ namespace EventStore.Core.Util
             using (MD5 md5 = MD5.Create())
             {
                 ContinuousHashFor(md5, s, startPosition, count);
-                md5.TransformFinalBlock(EmptyArray, 0, 0);
+                md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
                 return md5.Hash;
             }
         }

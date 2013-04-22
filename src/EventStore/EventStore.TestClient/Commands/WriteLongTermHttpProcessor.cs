@@ -186,7 +186,6 @@ namespace EventStore.TestClient.Commands
 
                         var dataResultingSize = dataSizeCoefficient * dataSize;
                         var write = new HttpClientMessageDto.WriteEventsText(
-                            ExpectedVersion.Any,
                             new[] { 
                                 new HttpClientMessageDto.ClientEventText(
                             Guid.NewGuid(),

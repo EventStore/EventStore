@@ -364,7 +364,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                                               workItem.Stream,
                                               ChunkHeader.Size + footer.PhysicalDataSize,
                                               footer.MapSize + ChunkFooter.Size - ChunkFooter.ChecksumSize);
-                    md5.TransformFinalBlock(new byte[0], 0, 0);
+                    md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
                     hash = md5.Hash;
                 }
 

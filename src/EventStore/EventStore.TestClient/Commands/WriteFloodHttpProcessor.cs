@@ -131,7 +131,6 @@ namespace EventStore.TestClient.Commands
                     {
                         var url = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}", esId);
                         var write = new HttpClientMessageDto.WriteEventsText(
-                            ExpectedVersion.Any,
                             new[] 
                             { 
                                 new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), 

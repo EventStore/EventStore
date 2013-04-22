@@ -26,10 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
@@ -67,7 +69,6 @@ namespace EventStore.TestClient.Commands
             context.Log.Info("Writing to {0}...", url);
 
             var request = Codec.Xml.To(new HttpClientMessageDto.WriteEventsText(
-                    expectedVersion,
                     new[] { new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), "type", data, metadata) }));
 
             var sw = Stopwatch.StartNew();
@@ -75,6 +76,7 @@ namespace EventStore.TestClient.Commands
                 url,
                 request,
                 Codec.Xml.ContentType,
+                new Dictionary<string, string> { {SystemHeader.ExpectedVersion, expectedVersion.ToString()} }, 
                 response =>
                 {
                     sw.Stop();

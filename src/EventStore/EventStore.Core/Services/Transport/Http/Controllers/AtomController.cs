@@ -130,16 +130,28 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("Invalid request. Stream must be non-empty string"));
                 return;
             }
+            int expectedVersion;
+            if (!GetExpectedVersion(manager, out expectedVersion))
+            {
+                SendBadRequest(manager, "Expected version in wrong format.");
+                return;
+            }
 
-            PostEntry(manager, stream);
+            PostEntry(manager, expectedVersion, stream);
         }
 
         private void DeleteStream(HttpEntityManager manager, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
+            int expectedVersion;
             if (stream.IsEmptyString())
             {
                 SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
+                return;
+            }
+            if (!GetExpectedVersion(manager, out expectedVersion))
+            {
+                SendBadRequest(manager, "Expected version in wrong format.");
                 return;
             }
 
@@ -261,13 +273,19 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void PostMetastreamEvent(HttpEntityManager manager, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
+            int expectedVersion;
             if (stream.IsEmptyString() || SystemStreams.IsMetastream(stream))
             {
                 SendBadRequest(manager, string.Format("Invalid request. Stream must be non-empty string and should not be metastream"));
                 return;
             }
+            if (!GetExpectedVersion(manager, out expectedVersion))
+            {
+                SendBadRequest(manager, "Expected version in wrong format.");
+                return;
+            }
 
-            PostEntry(manager, SystemStreams.MetastreamOf(stream));
+            PostEntry(manager, expectedVersion, SystemStreams.MetastreamOf(stream));
         }
 
         private void GetMetastreamEvent(HttpEntityManager manager, UriTemplateMatch match)
@@ -440,34 +458,37 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         }
 
         // HELPERS
-        public void PostEntry(HttpEntityManager manager, string stream)
+        private bool GetExpectedVersion(HttpEntityManager manager, out int expectedVersion)
         {
-            manager.AsyncState = stream;
-            manager.ReadTextRequestAsync(OnPostEntryRequestRead,
-                                         e => Log.ErrorException(e, "Error while reading request (POST entry)."));
+            var expVer = manager.HttpEntity.Request.Headers[SystemHeader.ExpectedVersion];
+            if (expVer == null)
+            {
+                expectedVersion = ExpectedVersion.Any;
+                return true;
+            }
+            return int.TryParse(expVer, out expectedVersion) && expectedVersion >= ExpectedVersion.Any;
         }
 
-        private void OnPostEntryRequestRead(HttpEntityManager manager, string body)
+        public void PostEntry(HttpEntityManager manager, int expectedVersion, string stream)
         {
-            var streamId = (string)manager.AsyncState;
-
-            var parsed = AutoEventConverter.SmartParse(body, manager.RequestCodec);
-            // TODO AN: get expected version from X-ES-EXPECTEDVERSION
-            var expectedVersion = parsed.Item1;
-            var events = parsed.Item2;
-
-            if (events.IsEmpty())
-            {
-                SendBadRequest(manager, "Write request body invalid");
-                return;
-            }
-
-            var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                  manager,
-                                                  Format.WriteEventsCompleted,
-                                                  (a, m) => Configure.WriteEventsCompleted(a, m, streamId));
-            var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, true, streamId, expectedVersion, events, manager.User);
-            Publish(msg);
+            manager.ReadTextRequestAsync(
+                (man, body) =>
+                {
+                    var events = AutoEventConverter.SmartParse(body, manager.RequestCodec);
+                    if (events.IsEmpty())
+                    {
+                        SendBadRequest(manager, "Write request body invalid.");
+                        return;
+                    }
+    
+                    var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                          manager,
+                                                          Format.WriteEventsCompleted,
+                                                          (a, m) => Configure.WriteEventsCompleted(a, m, stream));
+                    var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, true, stream, expectedVersion, events, manager.User);
+                    Publish(msg);
+                },
+                e => Log.ErrorException(e, "Error while reading request (POST entry)."));
         }
 
         private void GetStreamEvent(HttpEntityManager manager, string stream, int eventNumber, EmbedLevel embed)

@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -556,7 +557,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
-                    new Event(Guid.NewGuid(), "$ProjectionUpdated", true, managedProjectionSerializedState, new byte[0]),
+                    new Event(Guid.NewGuid(), "$ProjectionUpdated", true, managedProjectionSerializedState, Empty.ByteArray),
                     SystemAccount.Principal),
                 m => WriteCompleted(m, completed, eventStreamId));
         }

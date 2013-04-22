@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -52,13 +53,19 @@ namespace EventStore.Transport.Http.Client
 
         public void Post(string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
+            Post(url, body, contentType, null, onSuccess, onException);
+        }
+
+        public void Post(string url, string body, string contentType, IEnumerable<KeyValuePair<string,string>> headers, 
+                         Action<HttpResponse> onSuccess, Action<Exception> onException)
+        {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(body, "body");
             Ensure.NotNull(contentType, "contentType");
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Send(HttpMethod.Post, url, body, contentType, onSuccess, onException);
+            Send(HttpMethod.Post, url, body, contentType, headers, onSuccess, onException);
         }
 
         public void Delete(string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
@@ -78,7 +85,7 @@ namespace EventStore.Transport.Http.Client
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Send(HttpMethod.Put, url, body, contentType, onSuccess, onException);
+            Send(HttpMethod.Put, url, body, contentType, null, onSuccess, onException);
         }
 
         private void Receive(string method, string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
@@ -97,7 +104,9 @@ namespace EventStore.Transport.Http.Client
             request.BeginGetResponse(ResponseAcquired, new ClientOperationState(request, onSuccess, onException));
         }
 
-        private void Send(string method, string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        private void Send(string method, string url, string body, string contentType, 
+                          IEnumerable<KeyValuePair<string, string>> headers, 
+                          Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
             var bodyBytes = Encoding.UTF8.GetBytes(body);
@@ -107,6 +116,14 @@ namespace EventStore.Transport.Http.Client
             request.Pipelined = true;
             request.ContentLength = bodyBytes.Length;
             request.ContentType = contentType;
+
+            if (headers != null)
+            {
+                foreach (var header in headers)
+                {
+                    request.Headers.Add(header.Key, header.Value);
+                }
+            }
 
             var state = new ClientOperationState(request, onSuccess, onException)
             {

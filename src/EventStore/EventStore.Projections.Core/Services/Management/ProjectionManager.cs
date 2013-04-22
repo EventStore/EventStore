@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Data;
@@ -530,8 +531,8 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, true, "$projections-$all", ExpectedVersion.NoStream, 
-                    new Event(Guid.NewGuid(), "$ProjectionsInitialized", false, new byte[0], new byte[0]),
+                    Guid.NewGuid(), _writeDispatcher.Envelope, true, "$projections-$all", ExpectedVersion.NoStream,
+                    new Event(Guid.NewGuid(), "$ProjectionsInitialized", false, Empty.ByteArray, Empty.ByteArray),
                     SystemAccount.Principal), 
                 completed => WriteFakeProjectionCompleted(completed, action));
         }
@@ -619,7 +620,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
-                    new Event(Guid.NewGuid(), "$ProjectionCreated", false, Encoding.UTF8.GetBytes(name), new byte[0]),
+                    new Event(Guid.NewGuid(), "$ProjectionCreated", false, Encoding.UTF8.GetBytes(name), Empty.ByteArray),
                     SystemAccount.Principal),
                 m => WriteProjectionRegistrationCompleted(m, completed, name, eventStreamId));
         }

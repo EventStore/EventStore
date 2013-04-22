@@ -31,8 +31,6 @@ namespace EventStore.ClientAPI.SystemData
 {
     public struct TcpPackage
     {
-        private static readonly byte[] EmptyArray = new byte[0];
-
         public readonly TcpCommand Command;
         public readonly Guid CorrelationId;
         public readonly ArraySegment<byte> Data;
@@ -54,7 +52,7 @@ namespace EventStore.ClientAPI.SystemData
         {
             Command = command;
             CorrelationId = correlationId;
-            Data = new ArraySegment<byte>(data ?? EmptyArray);
+            Data = new ArraySegment<byte>(data ?? Empty.ByteArray);
         }
 
         public TcpPackage(TcpCommand command, Guid correlationId, ArraySegment<byte> data)
