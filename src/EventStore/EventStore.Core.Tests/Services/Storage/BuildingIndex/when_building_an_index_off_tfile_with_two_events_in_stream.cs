@@ -84,6 +84,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         }
 
         [Test]
+        public void the_last_event_can_be_read_and_is_correct()
+        {
+            var result = ReadIndex.ReadEvent("test1", -1);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
+            Assert.AreEqual(new EventRecord(1, _prepare2), result.Record);
+        }
+
+        [Test]
         public void the_first_event_can_be_read_through_range_query()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test1", 0, 1);

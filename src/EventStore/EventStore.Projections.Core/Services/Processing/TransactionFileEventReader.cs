@@ -32,6 +32,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
@@ -88,10 +89,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested = false;
 
 
-            var eof = message.Result.Events.Length == 0;
+            var eof = message.Events.Length == 0;
             var willDispose = _stopOnEof && eof;
             var oldFrom = _from;
-            _from = message.Result.NextPos;
+            _from = message.NextPos;
 
             if (!willDispose)
             {
@@ -114,10 +115,10 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                for (int index = 0; index < message.Result.Events.Length; index++)
+                for (int index = 0; index < message.Events.Length; index++)
                 {
-                    var @event = message.Result.Events[index];
-                    DeliverEvent(@event, message.Result.TfEofPosition, oldFrom);
+                    var @event = message.Events[index];
+                    DeliverEvent(@event, message.TfEofPosition, oldFrom);
                 }
             }
         }
@@ -152,7 +153,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new ClientMessage.ReadAllEventsForward(
                 EventReaderCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
-                _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, _resolveLinkTos, null);
+                _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, 
+                _resolveLinkTos, null, SystemAccount.Principal);
         }
 
         private void DeliverLastCommitPosition(EventPosition lastPosition)

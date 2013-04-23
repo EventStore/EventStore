@@ -46,7 +46,8 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly string _streamId;
         private readonly bool _resolveLinkTos;
         private readonly Action<EventStoreSubscription, ResolvedEvent> _eventAppeared;
-        private readonly Action<EventStoreSubscription, string, Exception> _subscriptionDropped;
+        private readonly Action<EventStoreSubscription, SubscriptionDropReason, Exception> _subscriptionDropped;
+        private readonly bool _verboseLogging;
 
         private readonly Common.Concurrent.ConcurrentQueue<Action> _actionQueue = new Common.Concurrent.ConcurrentQueue<Action>();
         private int _actionExecuting;
@@ -60,7 +61,8 @@ namespace EventStore.ClientAPI.ClientOperations
                                      string streamId,
                                      bool resolveLinkTos,
                                      Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-                                     Action<EventStoreSubscription, string, Exception> subscriptionDropped)
+                                     Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
+                                     bool verboseLogging)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotNull(sendPackage, "sendPackage");
@@ -74,6 +76,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _resolveLinkTos = resolveLinkTos;
             _eventAppeared = eventAppeared;
             _subscriptionDropped = subscriptionDropped ?? ((x, y, z) => { });
+            _verboseLogging = verboseLogging;
         }
 
         public bool Subscribe(Guid correlationId)
@@ -94,7 +97,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public void Unsubscribe()
         {
-            DropSubscription("Client requested subscription drop.", null, clientInitiated: true, shouldSubscriptionExist: true);
+            DropSubscription(SubscriptionDropReason.UserInitiated, null);
         }
 
         private TcpPackage CreateUnsubscriptionPackage()
@@ -124,16 +127,30 @@ namespace EventStore.ClientAPI.ClientOperations
 
                     case TcpCommand.SubscriptionDropped:
                     {
-                        DropSubscription("Subscription dropped by server.", null, clientInitiated: false, shouldSubscriptionExist: true);
+                        var dto = package.Data.Deserialize<ClientMessage.SubscriptionDropped>();
+                        switch (dto.Reason)
+                        {
+                            case ClientMessage.SubscriptionDropped.SubscriptionDropReason.Unsubscribed:
+                                DropSubscription(SubscriptionDropReason.UserInitiated, null);
+                                break;
+                            case ClientMessage.SubscriptionDropped.SubscriptionDropReason.AccessDenied:
+                                DropSubscription(SubscriptionDropReason.AccessDenied, 
+                                                 new AccessDeniedException(string.Format("Subscription to '{0}' failed due to access denied.", _streamId == string.Empty ? "<all>" : _streamId)));
+                                break;
+                            default: 
+                                if (_verboseLogging) _log.Debug("Subscription dropped by server. Reason: {0}.", dto.Reason);
+                                DropSubscription(SubscriptionDropReason.Unknown, 
+                                                 new CommandNotExpectedException(string.Format("Unsubscribe reason: '{0}'.", dto.Reason)));
+                                break;
+                        }
                         return new InspectionResult(InspectionDecision.EndOperation);
                     }
 
                     case TcpCommand.BadRequest:
                     {
                         string message = Helper.EatException(() => Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
-                        var exc = new ServerErrorException(string.IsNullOrEmpty(message) ? "<no message>" : message);
-                        Fail(exc);
-                        DropSubscription("Server error.", exc, clientInitiated: false, shouldSubscriptionExist: false);
+                        DropSubscription(SubscriptionDropReason.ServerError, 
+                                         new ServerErrorException(string.IsNullOrEmpty(message) ? "<no message>" : message));
                         return new InspectionResult(InspectionDecision.EndOperation);
                     }
 
@@ -161,44 +178,47 @@ namespace EventStore.ClientAPI.ClientOperations
 
                     default:
                     {
-                        var exc = new CommandNotExpectedException(package.Command.ToString());
-                        Fail(exc);
-                        DropSubscription("Unrecognized package error.", exc, clientInitiated: false, shouldSubscriptionExist: false);
+                        DropSubscription(SubscriptionDropReason.ServerError, 
+                                         new CommandNotExpectedException(package.Command.ToString()));
                         return new InspectionResult(InspectionDecision.EndOperation);
                     }
                 }
             }
             catch (Exception e)
             {
-                Fail(e);
+                DropSubscription(SubscriptionDropReason.Unknown, e);
                 return new InspectionResult(InspectionDecision.EndOperation);
             }
         }
 
         internal void ConnectionClosed()
         {
-            DropSubscription("Connection was closed.", null, clientInitiated: false, shouldSubscriptionExist: false);
+            DropSubscription(SubscriptionDropReason.ConnectionClosed, new ConnectionClosedException("Connection was closed."));
         }
 
         internal bool TimeOutSubscription()
         {
             if (_subscription != null)
                 return false;
-            DropSubscription("Subscribing timed out.", null, clientInitiated: false, shouldSubscriptionExist: false);
+            DropSubscription(SubscriptionDropReason.SubscribingError, null);
             return true;
         }
 
-        private void DropSubscription(string reason, Exception exc, bool clientInitiated, bool shouldSubscriptionExist)
+        internal void DropSubscription(SubscriptionDropReason reason, Exception exc)
         {
-            if (shouldSubscriptionExist && _subscription == null)
-                throw new InvalidOperationException("Subscription was not confirmed, but unsubscribing requested.");
-
             if (Interlocked.CompareExchange(ref _unsubscribed, 1, 0) == 0)
             {
-                _log.Debug("Subscription {0:B} to {1}: closing subscription, reason: {2}...",
-                           _correlationId, _streamId == string.Empty ? "<all>" : _streamId, reason);
+                if (_verboseLogging)
+                    _log.Debug("Subscription {0:B} to {1}: closing subscription, reason: {2}, exception: {3}...",
+                               _correlationId, _streamId == string.Empty ? "<all>" : _streamId, reason, exc);
 
-                if (clientInitiated && _subscription != null)
+                if (reason != SubscriptionDropReason.UserInitiated)
+                {
+                    if (exc == null) throw new Exception(string.Format("No exception provided for subscription drop reason '{0}", reason));
+                    _source.TrySetException(exc);
+                }
+
+                if (reason == SubscriptionDropReason.UserInitiated && _subscription != null)
                     _sendPackage(CreateUnsubscriptionPackage());
 
                 if (_subscription != null)
@@ -213,8 +233,9 @@ namespace EventStore.ClientAPI.ClientOperations
             if (_subscription != null) 
                 throw new Exception("Double confirmation of subscription.");
 
-            _log.Debug("Subscription {0:B} to {1}: subscribed at CommitPosition: {2}, EventNumber: {3}.",
-                       _correlationId, _streamId == string.Empty ? "<all>" : _streamId, lastCommitPosition, lastEventNumber);
+            if (_verboseLogging)
+                _log.Debug("Subscription {0:B} to {1}: subscribed at CommitPosition: {2}, EventNumber: {3}.",
+                           _correlationId, _streamId == string.Empty ? "<all>" : _streamId, lastCommitPosition, lastEventNumber);
 
             _subscription = new EventStoreSubscription(this, _streamId, lastCommitPosition, lastEventNumber);
             _source.SetResult(_subscription);
@@ -225,20 +246,14 @@ namespace EventStore.ClientAPI.ClientOperations
             if (_unsubscribed != 0)
                 return;
 
-            if (_subscription == null)
-                throw new Exception("Subscription not confirmed, but event appeared!");
+            if (_subscription == null) throw new Exception("Subscription not confirmed, but event appeared!");
 
-            _log.Debug("Subscription {0:B} to {1}: event appeared ({2}, {3}, {4} @ {5}).",
-                      _correlationId, _streamId == string.Empty ? "<all>" : _streamId,
-                      e.OriginalStreamId, e.OriginalEventNumber, e.OriginalEvent.EventType, e.OriginalPosition);
+            if (_verboseLogging)
+                _log.Debug("Subscription {0:B} to {1}: event appeared ({2}, {3}, {4} @ {5}).",
+                          _correlationId, _streamId == string.Empty ? "<all>" : _streamId,
+                          e.OriginalStreamId, e.OriginalEventNumber, e.OriginalEvent.EventType, e.OriginalPosition);
 
             ExecuteActionAsync(() => _eventAppeared(_subscription, e));
-        }
-
-        public void Fail(Exception exception)
-        {
-            _source.TrySetException(exception);
-            DropSubscription("Subscription failed.", exception, clientInitiated: false, shouldSubscriptionExist: false);
         }
 
         private void ExecuteActionAsync(Action action)

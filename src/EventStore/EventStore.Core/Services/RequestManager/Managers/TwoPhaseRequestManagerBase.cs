@@ -27,15 +27,19 @@
 //  
 using System;
 using System.Diagnostics;
+using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public abstract class TwoPhaseRequestManagerBase : IHandle<StorageMessage.AlreadyCommitted>,
+    public abstract class TwoPhaseRequestManagerBase : IRequestManager,
+                                                       IHandle<StorageMessage.CheckStreamAccessCompleted>,
+                                                       IHandle<StorageMessage.AlreadyCommitted>,
                                                        IHandle<StorageMessage.PrepareAck>,
                                                        IHandle<StorageMessage.CommitAck>,
                                                        IHandle<StorageMessage.WrongExpectedVersion>,
@@ -81,7 +85,9 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _awaitingCommit = commitCount;
         }
 
-        protected void Init(IEnvelope responseEnvelope, Guid correlationId, long preparePos)
+        protected abstract void OnSecurityAccessGranted();
+
+        protected void Init(IEnvelope responseEnvelope, Guid correlationId, string eventStreamId, IPrincipal user, long preparePos)
         {
             if (_initialized)
                 throw new InvalidOperationException();
@@ -93,6 +99,31 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _transactionPos = preparePos;
         
             _nextTimeoutTime = DateTime.UtcNow + PrepareTimeout;
+
+            if (eventStreamId != null)
+            {
+                Publisher.Publish(new StorageMessage.CheckStreamAccess(
+                    PublishEnvelope, correlationId, eventStreamId, StreamAccessType.Write, user));
+            }
+            else
+            {
+                Publisher.Publish(new StorageMessage.CheckStreamAccessCompleted(
+                    correlationId, null, StreamAccessType.Write, StreamAccessResult.Granted));
+            }
+        }
+
+        public void Handle(StorageMessage.CheckStreamAccessCompleted message)
+        {
+            switch (message.AccessResult)
+            {
+                case StreamAccessResult.Granted:
+                    OnSecurityAccessGranted();
+                    break;
+                case StreamAccessResult.Denied:
+                    CompleteFailedRequest(_correlationId, OperationResult.AccessDenied, "Access denied.");
+                    break;
+                default: throw new Exception(string.Format("Unexpected SecurityAccessResult '{0}'.", message.AccessResult));
+            }
         }
 
         public void Handle(StorageMessage.WrongExpectedVersion message)

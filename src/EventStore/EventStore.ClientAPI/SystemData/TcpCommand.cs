@@ -50,8 +50,8 @@ namespace EventStore.ClientAPI.SystemData
         ReplicaSubscribed = 0x16,
 
         // CLIENT COMMANDS
-        CreateStream = 0x80,
-        CreateStreamCompleted = 0x81,
+//        CreateStream = 0x80,
+//        CreateStreamCompleted = 0x81,
 
         WriteEvents = 0x82,
         WriteEventsCompleted = 0x83,

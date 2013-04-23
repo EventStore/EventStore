@@ -27,6 +27,7 @@
 // 
 using System;
 using System.IO;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 
@@ -41,7 +42,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
     public abstract class LogRecord
     {
-        public static readonly byte[] NoData = new byte[0];
+        public static readonly byte[] NoData = Empty.ByteArray;
 
         public readonly LogRecordType RecordType;
         public readonly byte Version;
@@ -82,11 +83,11 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
         public static PrepareLogRecord SingleWrite(long logPosition, Guid correlationId, Guid eventId, string eventStreamId, 
                                                    int expectedVersion, string eventType, byte[] data, byte[] metadata, 
-                                                   DateTime? timestamp = null)
+                                                   DateTime? timestamp = null, PrepareFlags? additionalFlags = null)
         {
             return new PrepareLogRecord(logPosition, correlationId, eventId, logPosition, 0, eventStreamId, expectedVersion, 
                                         timestamp ?? DateTime.UtcNow, 
-                                        PrepareFlags.Data | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, 
+                                        PrepareFlags.Data | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | (additionalFlags ?? PrepareFlags.None), 
                                         eventType, data, metadata);
         }
 
@@ -115,16 +116,6 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                         expectedVersion, DateTime.UtcNow, 
                                         PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, 
                                         SystemEventTypes.StreamDeleted, NoData, NoData);
-        }
-
-        public static PrepareLogRecord StreamCreated(long logPosition, Guid correlationId, long transactionPos, 
-                                                     string eventStreamId, byte[] metadata, bool isImplicit, DateTime? timestamp = null)
-        {
-            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionPos, 0, eventStreamId, 
-                                        ExpectedVersion.NoStream, timestamp ?? DateTime.UtcNow, 
-                                        PrepareFlags.Data | PrepareFlags.TransactionBegin, 
-                                        isImplicit ? SystemEventTypes.StreamCreatedImplicit : SystemEventTypes.StreamCreated, 
-                                        NoData, metadata);
         }
 
         protected LogRecord(LogRecordType recordType, byte version)

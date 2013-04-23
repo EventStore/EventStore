@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
+using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
@@ -43,6 +44,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private readonly IPublisher _publisher;
         protected readonly HttpAsyncClient Client;
+        private readonly ICodec[] DefaultCodecs = new ICodec[] {Codec.Json, Codec.Xml};
 
         protected CommunicationController(IPublisher publisher)
         {
@@ -82,11 +84,45 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                        e => Log.ErrorException(e, "Error while closing http connection (ok)"));
         }
 
-        protected void Register(IHttpService service, string uriTemplate, string httpMethod, Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs)
+        protected void Register(IHttpService service, string uriTemplate, string httpMethod, 
+                                Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs)
         {
-            service.RegisterControllerAction(
-                new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs),
-                handler);
+            service.RegisterControllerAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs), handler);
+        }
+
+        protected void LogError(Exception obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected void RegisterTextBody(
+            IHttpService service, string uriTemplate, string httpMethod, Action<HttpEntityManager, string> action)
+        {
+            Register(
+                service, uriTemplate, httpMethod, (http, match) => http.ReadTextRequestAsync(action, LogError),
+                DefaultCodecs, DefaultCodecs);
+        }
+
+        protected void RegisterTextBody(
+            IHttpService service, string uriTemplate, string httpMethod,
+            Action<HttpEntityManager, UriTemplateMatch, string> action)
+        {
+            Register(
+                service, uriTemplate, httpMethod,
+                (http, match) => http.ReadTextRequestAsync((manager, s) => action(manager, match, s), LogError),
+                DefaultCodecs, DefaultCodecs);
+        }
+
+        protected void RegisterUrlBased(
+            IHttpService service, string uriTemplate, string httpMethod, Action<HttpEntityManager, UriTemplateMatch> action)
+        {
+            Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs);
+        }
+
+        protected static string MakeUrl(HttpEntityManager http, string path)
+        {
+            var hostUri = http.RequestedUrl;
+            return new UriBuilder(hostUri.Scheme, hostUri.Host, hostUri.Port, path).Uri.AbsoluteUri;
         }
     }
 }

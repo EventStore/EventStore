@@ -26,23 +26,179 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
     public struct StreamMetadata
     {
+        public static readonly StreamMetadata Empty = new StreamMetadata(null, null, null, null);
+
         public readonly int? MaxCount;
         public readonly TimeSpan? MaxAge;
+        public readonly TimeSpan? CacheControl;
+        public readonly StreamAcl Acl;
 
-        public StreamMetadata(int? maxCount, TimeSpan? maxAge)
+        public StreamMetadata(int? maxCount, TimeSpan? maxAge, TimeSpan? cacheControl, StreamAcl acl)
         {
+            if (maxCount <= 0)
+                throw new ArgumentOutOfRangeException("maxCount", string.Format("{0} should be positive value.", SystemMetadata.MaxCount));
+            if (maxAge <= TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException("maxAge", string.Format("{0} should be positive time span.", SystemMetadata.MaxAge));
+            if (cacheControl <= TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException("cacheControl", string.Format("{0} should be positive time span.", SystemMetadata.CacheControl));
+
             MaxCount = maxCount;
             MaxAge = maxAge;
+            CacheControl = cacheControl;
+            Acl = acl;
         }
 
         public override string ToString()
         {
-            return string.Format("MaxCount: {0}, MaxAge: {1}", MaxCount, MaxAge);
+            return string.Format("MaxCount: {0}, MaxAge: {1}, CacheControl: {2}, Acl: {3}", MaxCount, MaxAge, CacheControl, Acl);
+        }
+
+        public static StreamMetadata FromJsonBytes(byte[] json)
+        {
+            using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(json))))
+            {
+                Check(reader.Read(), reader);
+                Check(JsonToken.StartObject, reader);
+
+                int? maxCount = null;
+                TimeSpan? maxAge = null;
+                TimeSpan? cacheControl = null;
+                StreamAcl acl = null;
+
+                while (true)
+                {
+                    Check(reader.Read(), reader);
+                    if (reader.TokenType == JsonToken.EndObject)
+                        break;
+                    Check(JsonToken.PropertyName, reader);
+                    var name = (string)reader.Value;
+                    switch (name)
+                    {
+                        case SystemMetadata.MaxCount:
+                        {
+                            Check(reader.Read(), reader);
+                            Check(JsonToken.Integer, reader);
+                            maxCount = (int)(long)reader.Value;
+                            break;
+                        }
+                        case SystemMetadata.MaxAge:
+                        {
+                            Check(reader.Read(), reader);
+                            Check(JsonToken.Integer, reader);
+                            maxAge = TimeSpan.FromSeconds((long)reader.Value);
+                            break;
+                        }
+                        case SystemMetadata.CacheControl:
+                        {
+                            Check(reader.Read(), reader);
+                            Check(JsonToken.Integer, reader);
+                            cacheControl = TimeSpan.FromSeconds((long)reader.Value);
+                            break;
+                        }
+                        case SystemMetadata.Acl:
+                        {
+                            acl = ReadAcl(reader);
+                            break;
+                        }
+                    }
+                }
+                return new StreamMetadata(maxCount > 0 ? maxCount : null,
+                                          maxAge > TimeSpan.Zero ? maxAge : null,
+                                          cacheControl > TimeSpan.Zero ? cacheControl : null,
+                                          acl);
+            }
+        }
+
+        private static StreamAcl ReadAcl(JsonTextReader reader)
+        {
+            Check(reader.Read(), reader);
+            Check(JsonToken.StartObject, reader);
+
+            string read = null;
+            string write = null;
+            string metaRead = null;
+            string metaWrite = null;
+
+            while (true)
+            {
+                Check(reader.Read(), reader);
+                if (reader.TokenType == JsonToken.EndObject)
+                    break;
+                Check(JsonToken.PropertyName, reader);
+                var name = (string)reader.Value;
+                switch (name)
+                {
+                    case SystemMetadata.AclRead:
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.String, reader);
+                        read = (string)reader.Value;
+                        break;
+                    }
+                    case SystemMetadata.AclWrite:
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.String, reader);
+                        write = (string)reader.Value;
+                        break;
+                    }
+                    case SystemMetadata.AclMetaRead:
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.String, reader);
+                        metaRead = (string)reader.Value;
+                        break;
+                    }
+                    case SystemMetadata.AclMetaWrite:
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.String, reader);
+                        metaWrite = (string)reader.Value;
+                        break;
+                    }
+                }
+            }
+            return new StreamAcl(read, write, metaRead, metaWrite);
+        }
+
+        private static void Check(JsonToken type, JsonTextReader reader)
+        {
+            if (reader.TokenType != type)
+                throw new Exception("Invalid JSON");
+        }
+
+        private static void Check(bool read, JsonTextReader reader)
+        {
+            if (!read)
+                throw new Exception("Invalid JSON");
+        }
+    }
+
+    public class StreamAcl
+    {
+        public readonly string ReadRole;
+        public readonly string WriteRole;
+        public readonly string MetaReadRole;
+        public readonly string MetaWriteRole;
+
+        public StreamAcl(string readRole, string writeRole, string metaReadRole, string metaWriteRole)
+        {
+            ReadRole = readRole;
+            WriteRole = writeRole;
+            MetaReadRole = metaReadRole;
+            MetaWriteRole = metaWriteRole;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Read: {0}, Write: {1}, MetaRead: {2}, MetaWrite: {3}", ReadRole, WriteRole, MetaReadRole, MetaWriteRole);
         }
     }
 }

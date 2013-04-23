@@ -31,8 +31,8 @@ using System.Net.Sockets;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Transport.Http.Codecs;
 
 namespace EventStore.TestClient.Commands
 {

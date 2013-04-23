@@ -33,8 +33,8 @@ using System.IO;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Util

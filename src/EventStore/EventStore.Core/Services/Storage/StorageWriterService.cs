@@ -230,38 +230,23 @@ namespace EventStore.Core.Services.Storage
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
                 var transactionPosition = logPosition;
 
-                var shouldCreateStream = ShouldCreateStreamFor(message);
-                if (shouldCreateStream)
-                {
-                    var res = WritePrepareWithRetry(LogRecord.StreamCreated(logPosition,
-                                                                            message.CorrelationId,
-                                                                            transactionPosition,
-                                                                            message.EventStreamId,
-                                                                            LogRecord.NoData,
-                                                                            isImplicit: true));
-                    transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
-                    logPosition = res.NewPos;
-                }
-
                 for (int i = 0; i < message.Events.Length; ++i)
                 {
                     var evnt = message.Events[i];
                     var flags = PrepareFlags.Data;
-                    if (i == 0 && !shouldCreateStream)
+                    if (i == 0) 
                         flags |= PrepareFlags.TransactionBegin;
-                    if (i == message.Events.Length - 1)
+                    if (i == message.Events.Length - 1) 
                         flags |= PrepareFlags.TransactionEnd;
                     if (evnt.IsJson)
                         flags |= PrepareFlags.IsJson;
 
-                    var expectedVersion = shouldCreateStream
-                                              ? ExpectedVersion.Any
-                                              : (i == 0 ? message.ExpectedVersion : ExpectedVersion.Any);
+                    var expectedVersion = i == 0 ? message.ExpectedVersion : ExpectedVersion.Any;
                     var res = WritePrepareWithRetry(LogRecord.Prepare(logPosition,
                                                                       message.CorrelationId,
                                                                       evnt.EventId,
                                                                       transactionPosition,
-                                                                      shouldCreateStream ? i + 1 : i,
+                                                                      i,
                                                                       message.EventStreamId,
                                                                       expectedVersion,
                                                                       flags,
@@ -269,7 +254,7 @@ namespace EventStore.Core.Services.Storage
                                                                       evnt.Data,
                                                                       evnt.Metadata));
                     logPosition = res.NewPos;
-                    if (i==0 && !shouldCreateStream)
+                    if (i == 0)
                         transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
                 }
             }
@@ -293,14 +278,11 @@ namespace EventStore.Core.Services.Storage
                     return;
 
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
-                bool shouldCreateStream = ShouldCreateStreamFor(message);
-                var record = shouldCreateStream
-                    ? LogRecord.StreamCreated(logPosition, message.CorrelationId, logPosition, message.EventStreamId, LogRecord.NoData, isImplicit: true)
-                    : LogRecord.TransactionBegin(logPosition, message.CorrelationId, message.EventStreamId, message.ExpectedVersion);
+                var record = LogRecord.TransactionBegin(logPosition, message.CorrelationId, message.EventStreamId, message.ExpectedVersion);
                 var res = WritePrepareWithRetry(record);
 
                 // we update cache to avoid non-cached look-up on next TransactionWrite
-                ReadIndex.UpdateTransactionInfo(res.WrittenPos, new TransactionInfo(shouldCreateStream ? 0 : -1, message.EventStreamId)); 
+                ReadIndex.UpdateTransactionInfo(res.WrittenPos, new TransactionInfo(-1, message.EventStreamId)); 
             }
             catch (Exception exc)
             {
@@ -458,37 +440,11 @@ namespace EventStore.Core.Services.Storage
                 if (message.LiveUntil < DateTime.UtcNow)
                     return;
 
-                if (ShouldCreateStreamFor(message))
-                {
-                    var transactionPos = Writer.Checkpoint.ReadNonFlushed();
-                    var res = WritePrepareWithRetry(LogRecord.StreamCreated(transactionPos,
-                                                                            message.CorrelationId,
-                                                                            transactionPos,
-                                                                            message.EventStreamId,
-                                                                            LogRecord.NoData,
-                                                                            isImplicit: true));
-                    transactionPos = res.WrittenPos;
-
-                    WritePrepareWithRetry(LogRecord.Prepare(res.NewPos,
-                                                            message.CorrelationId,
-                                                            Guid.NewGuid(),
-                                                            transactionPos,
-                                                            0,
-                                                            message.EventStreamId,
-                                                            message.ExpectedVersion,
-                                                            PrepareFlags.StreamDelete | PrepareFlags.TransactionEnd,
-                                                            SystemEventTypes.StreamDeleted,
-                                                            LogRecord.NoData,
-                                                            LogRecord.NoData));
-                }
-                else
-                {
-                    var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(),
-                                                           message.CorrelationId,
-                                                           message.EventStreamId,
-                                                           message.ExpectedVersion);
-                    WritePrepareWithRetry(record);
-                }
+                var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(),
+                                                       message.CorrelationId,
+                                                       message.EventStreamId,
+                                                       message.ExpectedVersion);
+                WritePrepareWithRetry(record);
             }
             catch (Exception exc)
             {
@@ -552,16 +508,6 @@ namespace EventStore.Core.Services.Storage
                 return record;
             }
             return commit;
-        }
-
-        private bool ShouldCreateStreamFor(StorageMessage.IPreconditionedWriteMessage message)
-        {
-            if (!message.AllowImplicitStreamCreation)
-                return false;
-
-            return message.ExpectedVersion == ExpectedVersion.NoStream
-                   || (message.ExpectedVersion == ExpectedVersion.Any
-                       && ReadIndex.GetLastStreamEventNumber(message.EventStreamId) == ExpectedVersion.NoStream);
         }
 
         protected bool Flush(bool force = false)

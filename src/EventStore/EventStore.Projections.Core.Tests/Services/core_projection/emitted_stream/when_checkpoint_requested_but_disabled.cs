@@ -28,6 +28,7 @@
 
 using System;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Helper;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
@@ -35,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class when_checkpoint_requested_but_disabled: TestFixtureWithReadWriteDisaptchers
+    public class when_checkpoint_requested_but_disabled: TestFixtureWithReadWriteDispatchers
     {
         private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;

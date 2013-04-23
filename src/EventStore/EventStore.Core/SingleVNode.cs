@@ -27,12 +27,12 @@
 // 
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
@@ -45,8 +45,10 @@ using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Services.VNode;
 using EventStore.Common.Utils;
 using EventStore.Core.Settings;
@@ -79,8 +81,7 @@ namespace EventStore.Core
         
         public SingleVNode(TFChunkDb db, 
                            SingleVNodeSettings vNodeSettings, 
-                           bool dbVerifyHashes,
-                           bool runProjections,
+                           bool dbVerifyHashes, NodeSubsystems[] enabledNodeSubsystems,
                            int memTableEntryCount = ESConsts.MemTableEntryCount)
         {
             Ensure.NotNull(db, "db");
@@ -92,9 +93,9 @@ namespace EventStore.Core
             _mainBus = new InMemoryBus("MainBus");
             _controller = new SingleVNodeController(_mainBus, _httpEndPoint, db);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
-            _controller.SetMainQueue(MainQueue);
+            _controller.SetMainQueue(_mainQueue);
 
-            _enabledNodeSubsystems = runProjections ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0];
+            _enabledNodeSubsystems = enabledNodeSubsystems;
 
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
@@ -102,7 +103,7 @@ namespace EventStore.Core
             var monitoringQueue = new QueuedHandler(monitoringInnerBus, "MonitoringQueue", true, TimeSpan.FromMilliseconds(100));
             var monitoring = new MonitoringService(monitoringQueue, 
                                                    monitoringRequestBus, 
-                                                   MainQueue, 
+                                                   _mainQueue, 
                                                    db.Config.WriterCheckpoint, 
                                                    db.Config.Path, 
                                                    vNodeSettings.StatsPeriod, 
@@ -111,11 +112,11 @@ namespace EventStore.Core
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
-            _mainBus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.CreateStreamCompleted, Message>());
+            _mainBus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.WriteEventsCompleted, Message>());
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
-            monitoringInnerBus.Subscribe<ClientMessage.CreateStreamCompleted>(monitoring);
+            monitoringInnerBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 
             var truncPos = db.Config.TruncateCheckpoint.Read();
@@ -142,7 +143,9 @@ namespace EventStore.Core
                                           () => new TFChunkReader(db, db.Config.WriterCheckpoint), 
                                           tableIndex, 
                                           new XXHashUnsafe(),
-                                          new LRUCache<string, StreamCacheInfo>(ESConsts.StreamMetadataCacheCapacity));
+                                          new LRUCache<string, StreamCacheInfo>(ESConsts.StreamMetadataCacheCapacity),
+                                          Application.IsDefined(Application.AdditionalCommitChecks),
+                                          Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1);
             var writer = new TFChunkWriter(db);
             var epochManager = new EpochManager(ESConsts.CachedEpochCount,
                                                 db.Config.EpochCheckpoint,
@@ -168,40 +171,43 @@ namespace EventStore.Core
                                                         readIndex,
                                                         Application.IsDefined(Application.AlwaysKeepScavenged),
                                                         !Application.IsDefined(Application.DisableMergeChunks));
+// ReSharper disable RedundantTypeArgumentsOfMethod
             _mainBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
+// ReSharper restore RedundantTypeArgumentsOfMethod
 
             // NETWORK SEND
             _networkSendService = new NetworkSendService(tcpQueueCount: vNodeSettings.TcpSendingThreads, httpQueueCount: vNodeSettings.HttpSendingThreads);
 
             // TCP
-            var tcpService = new TcpService(MainQueue, _tcpEndPoint, _networkSendService, TcpServiceType.External, new ClientTcpDispatcher());
+            var tcpService = new TcpService(_mainQueue, _tcpEndPoint, _networkSendService, TcpServiceType.External, new ClientTcpDispatcher());
             _mainBus.Subscribe<SystemMessage.SystemInit>(tcpService);
             _mainBus.Subscribe<SystemMessage.SystemStart>(tcpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             // HTTP
-            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, vNodeSettings.HttpPrefixes);
+            var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
+            _httpService = new HttpService(ServiceAccessibility.Private, _mainQueue, vNodeSettings.HttpReceivingThreads, 
+                                           new TrieUriRouter(), passwordHashAlgorithm, vNodeSettings.HttpPrefixes);
             _mainBus.Subscribe<SystemMessage.SystemInit>(HttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             _mainBus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
             _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(HttpService);
-            HttpService.SetupController(new AdminController(MainQueue));
+            HttpService.SetupController(new AdminController(_mainQueue));
             HttpService.SetupController(new PingController());
             HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));
-            HttpService.SetupController(new ReadEventDataController(MainQueue, _networkSendService));
-            HttpService.SetupController(new AtomController(MainQueue, _networkSendService));
-            HttpService.SetupController(new WebSiteController(MainQueue, _enabledNodeSubsystems));
+            HttpService.SetupController(new AtomController(_mainQueue, _networkSendService));
+            HttpService.SetupController(new UsersController(_mainQueue, _networkSendService));
 
             // REQUEST MANAGEMENT
-            var requestManagement = new RequestManagementService(MainQueue, 1, 1, vNodeSettings.PrepareTimeout, vNodeSettings.CommitTimeout);
+            var requestManagement = new RequestManagementService(_mainQueue, 1, 1, vNodeSettings.PrepareTimeout, vNodeSettings.CommitTimeout);
             _mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
-            _mainBus.Subscribe<StorageMessage.CreateStreamRequestCreated>(requestManagement);
-            _mainBus.Subscribe<StorageMessage.WriteRequestCreated>(requestManagement);
-            _mainBus.Subscribe<StorageMessage.TransactionStartRequestCreated>(requestManagement);
-            _mainBus.Subscribe<StorageMessage.TransactionWriteRequestCreated>(requestManagement);
-            _mainBus.Subscribe<StorageMessage.TransactionCommitRequestCreated>(requestManagement);
-            _mainBus.Subscribe<StorageMessage.DeleteStreamRequestCreated>(requestManagement);
+            _mainBus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
+            _mainBus.Subscribe<ClientMessage.TransactionStart>(requestManagement);
+            _mainBus.Subscribe<ClientMessage.TransactionWrite>(requestManagement);
+            _mainBus.Subscribe<ClientMessage.TransactionCommit>(requestManagement);
+            _mainBus.Subscribe<ClientMessage.DeleteStream>(requestManagement);
             _mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.CheckStreamAccessCompleted>(requestManagement);
             _mainBus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
             _mainBus.Subscribe<StorageMessage.CommitAck>(requestManagement);
             _mainBus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
@@ -212,22 +218,38 @@ namespace EventStore.Core
 
             new SubscriptionsService(_mainBus, readIndex); // subscribes internally
 
+            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
+            var userManagement = new UserManagementService(_mainQueue, ioDispatcher, passwordHashAlgorithm);
+            _mainBus.Subscribe(ioDispatcher.BackwardReader);
+            _mainBus.Subscribe(ioDispatcher.ForwardReader);
+            _mainBus.Subscribe(ioDispatcher.Writer);
+            _mainBus.Subscribe(ioDispatcher.StreamDeleter);
+            _mainBus.Subscribe<UserManagementMessage.Create>(userManagement);
+            _mainBus.Subscribe<UserManagementMessage.Update>(userManagement);
+            _mainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
+            _mainBus.Subscribe<UserManagementMessage.Disable>(userManagement);
+            _mainBus.Subscribe<UserManagementMessage.Delete>(userManagement);
+            _mainBus.Subscribe<UserManagementMessage.ResetPassword>(userManagement);
+            _mainBus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
+            _mainBus.Subscribe<UserManagementMessage.Get>(userManagement);
+            _mainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
+
             // TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
             _mainBus.Subscribe<TimerMessage.Schedule>(TimerService);
 
             monitoringQueue.Start();
-            MainQueue.Start();
+            _mainQueue.Start();
         }
 
         public void Start()
         {
-            MainQueue.Publish(new SystemMessage.SystemInit());
+            _mainQueue.Publish(new SystemMessage.SystemInit());
         }
 
         public void Stop(bool exitProcess)
         {
-            MainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess));
+            _mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess));
         }
 
         public override string ToString()

@@ -116,13 +116,11 @@ namespace EventStore.Core.Services.VNode
                     .WhenOther().ForwardTo(_outputBus)
 
                 .InState(VNodeState.Master)
-                    .When<ClientMessage.CreateStream>().Do(Handle)
-                    .When<ClientMessage.WriteEvents>().Do(Handle)
-                    .When<ClientMessage.TransactionStart>().Do(Handle)
-                    .When<ClientMessage.TransactionWrite>().Do(Handle)
-                    .When<ClientMessage.TransactionCommit>().Do(Handle)
-                    .When<ClientMessage.DeleteStream>().Do(Handle)
-
+                    .When<ClientMessage.WriteEvents>().ForwardTo(_outputBus)
+                    .When<ClientMessage.TransactionStart>().ForwardTo(_outputBus)
+                    .When<ClientMessage.TransactionWrite>().ForwardTo(_outputBus)
+                    .When<ClientMessage.TransactionCommit>().ForwardTo(_outputBus)
+                    .When<ClientMessage.DeleteStream>().ForwardTo(_outputBus)
                     .When<StorageMessage.WritePrepares>().ForwardTo(_outputBus)
                     .When<StorageMessage.WriteDelete>().ForwardTo(_outputBus)
                     .When<StorageMessage.WriteTransactionStart>().ForwardTo(_outputBus)
@@ -238,56 +236,6 @@ namespace EventStore.Core.Services.VNode
             _fsm.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));   
         }
 
-        private void Handle(ClientMessage.CreateStream message)
-        {
-            _outputBus.Publish(new StorageMessage.CreateStreamRequestCreated(message.CorrelationId,
-                                                                             message.Envelope,
-                                                                             message.EventStreamId,
-                                                                             message.RequestId,
-                                                                             message.IsJson,
-                                                                             message.Metadata));
-        }
-
-        private void Handle(ClientMessage.WriteEvents message)
-        {
-            _outputBus.Publish(new StorageMessage.WriteRequestCreated(message.CorrelationId,
-                                                                      message.Envelope,
-                                                                      message.EventStreamId,
-                                                                      message.ExpectedVersion,
-                                                                      message.Events));
-        }
-
-        private void Handle(ClientMessage.TransactionStart message)
-        {
-            _outputBus.Publish(new StorageMessage.TransactionStartRequestCreated(message.CorrelationId,
-                                                                                 message.Envelope,
-                                                                                 message.EventStreamId,
-                                                                                 message.ExpectedVersion));
-        }
-
-        private void Handle(ClientMessage.TransactionWrite message)
-        {
-            _outputBus.Publish(new StorageMessage.TransactionWriteRequestCreated(message.CorrelationId,
-                                                                                 message.Envelope,
-                                                                                 message.TransactionId,
-                                                                                 message.Events));
-        }
-
-        private void Handle(ClientMessage.TransactionCommit message)
-        {
-            _outputBus.Publish(new StorageMessage.TransactionCommitRequestCreated(message.CorrelationId,
-                                                                                  message.Envelope,
-                                                                                  message.TransactionId));
-        }
-
-        private void Handle(ClientMessage.DeleteStream message)
-        {
-            _outputBus.Publish(new StorageMessage.DeleteStreamRequestCreated(message.CorrelationId,
-                                                                             message.Envelope,
-                                                                             message.EventStreamId,
-                                                                             message.ExpectedVersion));
-        }
-
         private void DenyRequestBecauseNotReady(IEnvelope envelope, Guid correlationId)
         {
             envelope.ReplyWith(new ClientMessage.NotHandled(correlationId, TcpClientMessageDto.NotHandled.NotHandledReason.NotReady, null));
@@ -312,7 +260,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(SystemMessage.ShutdownTimeout message)
         {
-            Debug.Assert(_state == VNodeState.ShuttingDown);
+            if (_state != VNodeState.ShuttingDown) throw new Exception();
 
             Log.Info("========== [{0}] Shutdown Timeout.", _httpEndPoint);
             Shutdown();
@@ -320,7 +268,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Shutdown()
         {
-            Debug.Assert(_state == VNodeState.ShuttingDown);
+            if (_state != VNodeState.ShuttingDown) throw new Exception();
 
             _db.Close();
             _fsm.Handle(new SystemMessage.BecomeShutdown(Guid.NewGuid()));

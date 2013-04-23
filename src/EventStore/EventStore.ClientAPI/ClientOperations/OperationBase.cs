@@ -41,8 +41,6 @@ namespace EventStore.ClientAPI.ClientOperations
         where TResult: class
         where TResponse: class
     {
-        public abstract bool IsLongRunning { get; }
-
         private readonly TcpCommand _requestCommand;
         private readonly TcpCommand _responseCommand;
 

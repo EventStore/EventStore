@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests
 {
     public class SpecificationWithDirectoryPerTestFixture
     {
-        protected string PathName;
+        protected internal string PathName;
 
         protected string GetTempFilePath()
         {

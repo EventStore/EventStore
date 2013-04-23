@@ -292,6 +292,9 @@ namespace EventStore.Core.Messages
     [ProtoMember(2, IsRequired = true, Name=@"event", DataFormat = DataFormat.Default)]
     public readonly ResolvedIndexedEvent Event;
   
+    [ProtoMember(3, IsRequired = false, Name=@"error", DataFormat = DataFormat.Default)]
+    public readonly string Error;
+  
     [ProtoContract(Name=@"ReadEventResult")]
     public enum ReadEventResult
     {
@@ -306,15 +309,22 @@ namespace EventStore.Core.Messages
       NoStream = 2,
             
       [ProtoEnum(Name=@"StreamDeleted", Value=3)]
-      StreamDeleted = 3
+      StreamDeleted = 3,
+            
+      [ProtoEnum(Name=@"Error", Value=4)]
+      Error = 4,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=5)]
+      AccessDenied = 5
     }
   
     private ReadEventCompleted() {}
   
-    public ReadEventCompleted(ReadEventCompleted.ReadEventResult result, ResolvedIndexedEvent @event)
+    public ReadEventCompleted(ReadEventCompleted.ReadEventResult result, ResolvedIndexedEvent @event, string error)
     {
         Result = result;
         Event = @event;
+        Error = error;
     }
   }
   
@@ -365,6 +375,9 @@ namespace EventStore.Core.Messages
     [ProtoMember(6, IsRequired = true, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long LastCommitPosition;
   
+    [ProtoMember(7, IsRequired = false, Name=@"error", DataFormat = DataFormat.Default)]
+    public readonly string Error;
+  
     [ProtoContract(Name=@"ReadStreamResult")]
     public enum ReadStreamResult
     {
@@ -382,12 +395,15 @@ namespace EventStore.Core.Messages
       NotModified = 3,
             
       [ProtoEnum(Name=@"Error", Value=4)]
-      Error = 4
+      Error = 4,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=5)]
+      AccessDenied = 5
     }
   
     private ReadStreamEventsCompleted() {}
   
-    public ReadStreamEventsCompleted(ResolvedIndexedEvent[] events, ReadStreamEventsCompleted.ReadStreamResult result, int nextEventNumber, int lastEventNumber, bool isEndOfStream, long lastCommitPosition)
+    public ReadStreamEventsCompleted(ResolvedIndexedEvent[] events, ReadStreamEventsCompleted.ReadStreamResult result, int nextEventNumber, int lastEventNumber, bool isEndOfStream, long lastCommitPosition, string error)
     {
         Events = events;
         Result = result;
@@ -395,6 +411,7 @@ namespace EventStore.Core.Messages
         LastEventNumber = lastEventNumber;
         IsEndOfStream = isEndOfStream;
         LastCommitPosition = lastCommitPosition;
+        Error = error;
     }
   }
   
@@ -442,15 +459,40 @@ namespace EventStore.Core.Messages
     [ProtoMember(5, IsRequired = true, Name=@"next_prepare_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long NextPreparePosition;
   
+    [ProtoMember(6, IsRequired = false, Name=@"result", DataFormat = DataFormat.TwosComplement)]
+    public readonly ReadAllEventsCompleted.ReadAllResult Result;
+  
+    [ProtoMember(7, IsRequired = false, Name=@"error", DataFormat = DataFormat.Default)]
+    public readonly string Error;
+  
+    [ProtoContract(Name=@"ReadAllResult")]
+    public enum ReadAllResult
+    {
+            
+      [ProtoEnum(Name=@"Success", Value=0)]
+      Success = 0,
+            
+      [ProtoEnum(Name=@"NotModified", Value=1)]
+      NotModified = 1,
+            
+      [ProtoEnum(Name=@"Error", Value=2)]
+      Error = 2,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=3)]
+      AccessDenied = 3
+    }
+  
     private ReadAllEventsCompleted() {}
   
-    public ReadAllEventsCompleted(long commitPosition, long preparePosition, ResolvedEvent[] events, long nextCommitPosition, long nextPreparePosition)
+    public ReadAllEventsCompleted(long commitPosition, long preparePosition, ResolvedEvent[] events, long nextCommitPosition, long nextPreparePosition, ReadAllEventsCompleted.ReadAllResult result, string error)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
         Events = events;
         NextCommitPosition = nextCommitPosition;
         NextPreparePosition = nextPreparePosition;
+        Result = result;
+        Error = error;
     }
   }
   
@@ -643,8 +685,25 @@ namespace EventStore.Core.Messages
   [Serializable, ProtoContract(Name=@"SubscriptionDropped")]
   public partial class SubscriptionDropped
   {
-    public SubscriptionDropped()
+    [ProtoMember(1, IsRequired = false, Name=@"reason", DataFormat = DataFormat.TwosComplement)]
+    public readonly SubscriptionDropped.SubscriptionDropReason Reason;
+  
+    [ProtoContract(Name=@"SubscriptionDropReason")]
+    public enum SubscriptionDropReason
     {
+            
+      [ProtoEnum(Name=@"Unsubscribed", Value=0)]
+      Unsubscribed = 0,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=1)]
+      AccessDenied = 1
+    }
+  
+    private SubscriptionDropped() {}
+  
+    public SubscriptionDropped(SubscriptionDropped.SubscriptionDropReason reason)
+    {
+        Reason = reason;
     }
   }
   
@@ -729,7 +788,10 @@ namespace EventStore.Core.Messages
       StreamDeleted = 5,
             
       [ProtoEnum(Name=@"InvalidTransaction", Value=6)]
-      InvalidTransaction = 6
+      InvalidTransaction = 6,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=7)]
+      AccessDenied = 7
     }
   
   }

@@ -28,6 +28,7 @@
 
 using System;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests.Helper;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
@@ -36,7 +37,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader
 {
     [TestFixture]
-    public class when_the_heading_event_reader_handles_an_event : TestFixtureWithReadWriteDisaptchers
+    public class when_the_heading_event_reader_handles_an_event : TestFixtureWithReadWriteDispatchers
     {
         private HeadingEventReader _point;
         private Exception _exception;

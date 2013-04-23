@@ -33,6 +33,7 @@ namespace EventStore.Core.Data
     public struct TFPos : IEquatable<TFPos>
     {
         public static readonly TFPos Invalid = new TFPos(-1, -1);
+        public static readonly TFPos HeadOfTf = new TFPos(-1, -1);
 
         public readonly long CommitPosition;
         public readonly long PreparePosition;

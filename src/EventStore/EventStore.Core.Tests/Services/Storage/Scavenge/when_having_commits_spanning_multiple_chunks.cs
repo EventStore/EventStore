@@ -42,23 +42,21 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
         {
             long tmp;
 
-            var r1 = WriteStreamCreated("s1");
             var r2 = LogRecord.Prepare(WriterCheckpoint.ReadNonFlushed(),
                                        Guid.NewGuid(),
                                        Guid.NewGuid(),
                                        WriterCheckpoint.ReadNonFlushed(),
                                        0,
                                        "s1",
-                                       0,
+                                       -1,
                                        PrepareFlags.Data | PrepareFlags.TransactionBegin,
                                        "event-type",
                                        new byte[3],
                                        new byte[3]);
             Assert.IsTrue(Writer.Write(r2, out tmp));
 
-            var r3 = WriteStreamCreated("s2");
-            var r4 = WritePrepare("s2", 0);
-            var r5 = WriteCommit(r4.LogPosition, "s2", 1);
+            var r4 = WritePrepare("s2", -1);
+            var r5 = WriteCommit(r4.LogPosition, "s2", 0);
             var r6 = WriteDelete("s2");
 
             Writer.CompleteChunk();
@@ -76,22 +74,18 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
                                        new byte[3]);
             Assert.IsTrue(Writer.Write(r7, out tmp));
             
-            var r8 = WriteStreamCreated("s3");
-            var r9 = WritePrepare("s3", 0);
-            var r10 = WriteCommit(r9.LogPosition, "s3", 1);
+            var r9 = WritePrepare("s3", -1);
+            var r10 = WriteCommit(r9.LogPosition, "s3", 0);
             var r11 = WriteDelete("s3");
 
-            var r12 = WriteCommit(r2.LogPosition, "s1", 1);
+            var r12 = WriteCommit(r2.LogPosition, "s1", 0);
             var r13 = WriteDelete("s1");
 
             Writer.CompleteChunk();
 
             _survivors = new[]
                          {
-                                 r1.LogPosition,
-                                 r3.LogPosition,
                                  r6.LogPosition,
-                                 r8.LogPosition,
                                  r11.LogPosition,
                                  r13.LogPosition
                          };

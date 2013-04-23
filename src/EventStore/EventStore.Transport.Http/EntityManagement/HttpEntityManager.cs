@@ -25,10 +25,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
@@ -42,38 +44,58 @@ namespace EventStore.Transport.Http.EntityManagement
 
         public object AsyncState { get; set; }
         public readonly HttpEntity HttpEntity;
-        public bool IsProcessing { get { return _processing != 0; } }
+
+        public bool IsProcessing
+        {
+            get { return _processing != 0; }
+        }
 
         private int _processing;
         private readonly string[] _allowedMethods;
         private readonly Action<HttpEntity> _onRequestSatisfied;
         private Stream _currentOutputStream;
         private AsyncQueuedBufferWriter _asyncWriter;
+        private readonly ICodec _requestCodec;
+        private readonly ICodec _responseCodec;
+        private readonly Uri _requestedUrl;
+        public readonly DateTime TimeStamp;
 
-        internal HttpEntityManager(HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
+        internal HttpEntityManager(
+            HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied, ICodec requestCodec,
+            ICodec responseCodec)
         {
             Ensure.NotNull(httpEntity, "httpEntity");
             Ensure.NotNull(allowedMethods, "allowedMethods");
             Ensure.NotNull(onRequestSatisfied, "onRequestSatisfied");
 
             HttpEntity = httpEntity;
+            TimeStamp = DateTime.UtcNow;
 
             _allowedMethods = allowedMethods;
             _onRequestSatisfied = onRequestSatisfied;
+            _requestCodec = requestCodec;
+            _responseCodec = responseCodec;
+            _requestedUrl = httpEntity.RequestedUrl;
         }
 
-        public ICodec RequestCodec {
-            get { return HttpEntity.RequestCodec; }
+        public ICodec RequestCodec
+        {
+            get { return _requestCodec; }
         }
 
         public ICodec ResponseCodec
         {
-            get { return HttpEntity.ResponseCodec; }
+            get { return _responseCodec; }
         }
 
-        public string UserHostName 
+        public Uri RequestedUrl
         {
-            get { return HttpEntity.UserHostName; }
+            get { return _requestedUrl; }
+        }
+
+        public IPrincipal User
+        {
+            get { return HttpEntity.User; }
         }
 
         private void SetResponseCode(int code)
@@ -104,7 +126,8 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (ArgumentException e)
             {
-                Log.InfoException(e, "Description string '{0}' did not pass validation. Status description was not set.", desc);
+                Log.InfoException(
+                    e, "Description string '{0}' did not pass validation. Status description was not set.", desc);
             }
         }
 
@@ -112,7 +135,8 @@ namespace EventStore.Transport.Http.EntityManagement
         {
             try
             {
-                HttpEntity.Response.ContentType = contentType + (encoding != null ? ("; charset: " + encoding.WebName) : "");
+                HttpEntity.Response.ContentType = contentType
+                                                  + (encoding != null ? ("; charset: " + encoding.WebName) : "");
             }
             catch (ObjectDisposedException e)
             {
@@ -153,7 +177,8 @@ namespace EventStore.Transport.Http.EntityManagement
             try
             {
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Methods", string.Join(", ", _allowedMethods));
-                HttpEntity.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-PINGOTHER");
+                HttpEntity.Response.AddHeader(
+                    "Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-PINGOTHER");
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Origin", "*");
             }
             catch (Exception e)
@@ -182,13 +207,20 @@ namespace EventStore.Transport.Http.EntityManagement
             Ensure.NotNull(onReadSuccess, "OnReadSuccess");
             Ensure.NotNull(onError, "onError");
 
-            var state = new ManagerOperationState(HttpEntity.Request.InputStream, new MemoryStream(), onReadSuccess, onError);
-            var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state, RequestRead);
+            var state = new ManagerOperationState(
+                HttpEntity.Request.InputStream, new MemoryStream(), onReadSuccess, onError);
+            var copier = new AsyncStreamCopier<ManagerOperationState>(
+                state.InputStream, state.OutputStream, state, RequestRead);
             copier.Start();
         }
 
-        public bool BeginReply(int code, string description, string contentType, Encoding encoding, IEnumerable<KeyValuePair<string, string>> headers)
+        public bool BeginReply(
+            int code, string description, string contentType, Encoding encoding,
+            IEnumerable<KeyValuePair<string, string>> headers)
         {
+            if (HttpEntity.Response == null) // test instance
+                return false;
+
             bool isAlreadyProcessing = Interlocked.CompareExchange(ref _processing, 1, 0) == 1;
             if (isAlreadyProcessing)
                 return false;
@@ -222,13 +254,9 @@ namespace EventStore.Transport.Http.EntityManagement
             EndWriteResponse();
         }
 
-        public void Reply(byte[] response, 
-                          int code,
-                          string description, 
-                          string contentType, 
-                          Encoding encoding,  
-                          IEnumerable<KeyValuePair<string, string>> headers,
-                          Action<Exception> onError)
+        public void Reply(
+            byte[] response, int code, string description, string contentType, Encoding encoding,
+            IEnumerable<KeyValuePair<string, string>> headers, Action<Exception> onError)
         {
             Ensure.NotNull(onError, "onError");
 
@@ -259,20 +287,22 @@ namespace EventStore.Transport.Http.EntityManagement
             _currentOutputStream = HttpEntity.Response.OutputStream;
         }
 
-        private void ContinueWriteResponseAsync(byte[] response, Action onSuccess, Action<Exception> onError, Action onCompleted)
+        private void ContinueWriteResponseAsync(
+            byte[] response, Action onSuccess, Action<Exception> onError, Action onCompleted)
         {
             if (_asyncWriter == null)
                 _asyncWriter = new AsyncQueuedBufferWriter(
                     _currentOutputStream, () => DisposeStreamAndCloseConnection("Close connection error"));
 
-            _asyncWriter.Append(response, errorIfAny =>
-                {
-                    if (errorIfAny == null)
-                        onSuccess();
-                    else
-                        onError(errorIfAny);
-                    onCompleted();
-                });
+            _asyncWriter.Append(
+                response, errorIfAny =>
+                    {
+                        if (errorIfAny == null)
+                            onSuccess();
+                        else
+                            onError(errorIfAny);
+                        onCompleted();
+                    });
         }
 
         private void RequestRead(AsyncStreamCopier<ManagerOperationState> copier)
@@ -289,13 +319,13 @@ namespace EventStore.Transport.Http.EntityManagement
             }
 
             state.OutputStream.Seek(0, SeekOrigin.Begin);
-            var memory = (MemoryStream)state.OutputStream;
+            var memory = (MemoryStream) state.OutputStream;
 
             var request = memory.GetBuffer();
             if (memory.Length != memory.GetBuffer().Length)
             {
                 request = new byte[memory.Length];
-                Buffer.BlockCopy(memory.GetBuffer(), 0, request, 0, (int)memory.Length);
+                Buffer.BlockCopy(memory.GetBuffer(), 0, request, 0, (int) memory.Length);
             }
             state.OnReadSuccess(this, request);
         }

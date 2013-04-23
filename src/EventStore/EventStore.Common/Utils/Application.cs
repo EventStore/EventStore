@@ -40,6 +40,7 @@ namespace EventStore.Common.Utils
     public class Application
     {
         public const string AdditionalCommitChecks = "ADDITIONAL_COMMIT_CHECKS";
+        public const string InfiniteMetastreams = "INFINITE_METASTREAMS";
         public const string DumpStatistics = "DUMP_STATISTICS";
         public const string DoNotTimeoutRequests = "DO_NOT_TIMEOUT_REQUESTS";
         public const string AlwaysKeepScavenged = "ALWAYS_KEEP_SCAVENGED";

@@ -31,9 +31,12 @@ using System.Diagnostics;
 using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Transport.Http.Authentication;
+using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Transport.Http.EntityManagement;
 using EventStore.Transport.Http.Server;
 
@@ -53,44 +56,69 @@ namespace EventStore.Core.Services.Transport.Http
 
         private readonly ServiceAccessibility _accessibility;
         private readonly IPublisher _inputBus;
+        private readonly IUriRouter _uriRouter;
         private readonly IEnvelope _publishEnvelope;
-
-        private readonly List<HttpRoute> _actions;
 
         private readonly HttpMessagePipe _httpPipe;
         private readonly HttpAsyncServer _server;
         private readonly MultiQueuedHandler _requestsMultiHandler;
+        private readonly IODispatcher _ioDispatcher;
+        private readonly AuthenticationProvider[] _providers;
 
-        public HttpService(ServiceAccessibility accessibility, IPublisher inputBus, int receiveHandlerCount, params string[] prefixes)
+        public HttpService(
+            ServiceAccessibility accessibility, IPublisher inputBus, int receiveHandlerCount,
+            IUriRouter uriRouter, PasswordHashAlgorithm passwordHashAlgorithm, params string[] prefixes)
         {
             Ensure.NotNull(inputBus, "inputBus");
-            Ensure.NotNull(prefixes, "prefixes");
             Ensure.Positive(receiveHandlerCount, "receiveHandlerCount");
+            Ensure.NotNull(uriRouter, "uriRouter");
+            Ensure.NotNull(passwordHashAlgorithm, "passwordHashAlgorithm");
+            Ensure.NotNull(prefixes, "prefixes");
 
             _accessibility = accessibility;
             _inputBus = inputBus;
+            _uriRouter = uriRouter;
             _publishEnvelope = new PublishEnvelope(inputBus);
 
-            _actions = new List<HttpRoute>();
             _httpPipe = new HttpMessagePipe();
+            var queues = new IQueuedHandler[receiveHandlerCount];
 
-            _requestsMultiHandler = new MultiQueuedHandler(
-                    receiveHandlerCount,
-                    queueNum =>
-                    {
-                        var bus = new InMemoryBus(string.Format("Incoming HTTP #{0} Bus", queueNum + 1), watchSlowMsg: false);
-                        var requestProcessor = new HttpRequestProcessor(this);
-                        bus.Subscribe<IncomingHttpRequestMessage>(requestProcessor);
-                        bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
-                        return new QueuedHandlerThreadPool(bus,
-                                                           name: "Incoming HTTP #" + (queueNum + 1),
-                                                           groupName: "Incoming HTTP",
-                                                           watchSlowMsg: true,
-                                                           slowMsgThreshold: TimeSpan.FromMilliseconds(50));
-                    });
+            // we need to create multi-handler before queues to resolve dependency for ioDispatcher
+            _requestsMultiHandler = new MultiQueuedHandler(queues, null);
+
+            _ioDispatcher = new IODispatcher(inputBus, new PublishEnvelope(_requestsMultiHandler, crossThread: true));
+            _providers = new AuthenticationProvider[]
+                {
+                    new BasicHttpAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm),
+                    new AnonymousAuthenticationProvider()
+                };
+
+            for (var i = 0; i < receiveHandlerCount; i++)
+            {
+                queues[i] = CreateQueuedHandler(i);
+            }
 
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
+        }
+
+        private IQueuedHandler CreateQueuedHandler(int queueNum)
+        {
+            var bus = new InMemoryBus(string.Format("Incoming HTTP #{0} Bus", queueNum + 1), watchSlowMsg: false);
+            var requestProcessor = new AuthenticatedHttpRequestProcessor(this);
+            var requestAuthenticationManager = new IncomingHttpRequestAuthenticationManager(_providers);
+            bus.Subscribe<IncomingHttpRequestMessage>(requestAuthenticationManager);
+            bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
+            bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
+
+            bus.Subscribe(_ioDispatcher.ForwardReader);
+            bus.Subscribe(_ioDispatcher.BackwardReader);
+            bus.Subscribe(_ioDispatcher.Writer);
+            bus.Subscribe(_ioDispatcher.StreamDeleter);
+
+            return new QueuedHandlerThreadPool(
+                bus, name: "Incoming HTTP #" + (queueNum + 1), groupName: "Incoming HTTP", watchSlowMsg: true,
+                slowMsgThreshold: TimeSpan.FromMilliseconds(50));
         }
 
         public void Handle(SystemMessage.SystemInit message)
@@ -124,7 +152,8 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
         {
-            _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(sender, context));
+            var entity = new HttpEntity(context.Request, context.Response, context.User);
+            _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(entity, _requestsMultiHandler));
         }
 
         public void Handle(HttpMessage.PurgeTimedOutRequests message)
@@ -156,36 +185,12 @@ namespace EventStore.Core.Services.Transport.Http
             Ensure.NotNull(action, "action");
             Ensure.NotNull(handler, "handler");
 
-            Debug.Assert(!_actions.Contains(x => x.Action.Equals(action)), "Duplicate controller actions.");
-            _actions.Add(new HttpRoute(action, handler));
+            _uriRouter.RegisterControllerAction(action, handler);
         }
 
         public List<UriToActionMatch> GetAllUriMatches(Uri uri)
         {
-            var matches = new List<UriToActionMatch>();
-            var baseAddress = new UriBuilder(uri.Scheme, uri.Host, uri.Port).Uri;
-            for (int i = 0; i < _actions.Count; ++i)
-            {
-                var route = _actions[i];
-                var match = route.UriTemplate.Match(baseAddress, uri);
-                if (match != null)
-                    matches.Add(new UriToActionMatch(match, route.Action, route.Handler));
-            }
-            return matches;
-        }
-
-        private class HttpRoute
-        {
-            public readonly ControllerAction Action;
-            public readonly Action<HttpEntityManager, UriTemplateMatch> Handler;
-            public readonly UriTemplate UriTemplate;
-
-            public HttpRoute(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
-            {
-                Action = action;
-                Handler = handler;
-                UriTemplate = new UriTemplate(action.UriTemplate);
-            }
+            return _uriRouter.GetAllUriMatches(uri);
         }
     }
 }

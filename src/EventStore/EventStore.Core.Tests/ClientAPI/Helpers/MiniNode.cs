@@ -41,13 +41,14 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Http;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
-    internal class MiniNode
+    public class MiniNode
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<MiniNode>();
 
@@ -58,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         public readonly TFChunkDb Db;
         private readonly string _dbPath;
 
-        public MiniNode(string pathname, int? tcpPort = null, int? httpPort = null)
+        public MiniNode(string pathname, int? tcpPort = null, int? httpPort = null, bool enableProjections = false)
         {
             var ip = GetLocalIp();
 
@@ -96,7 +97,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                      "TCP ENDPOINT:", TcpEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
 
-            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, runProjections: false, memTableEntryCount: 1000);
+            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, enabledNodeSubsystems: enableProjections ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0], memTableEntryCount: 1000);
+            Node.HttpService.SetupController(new TestController(Node.MainQueue, Node.NetworkSendService));
         }
 
         public void Start()

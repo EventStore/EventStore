@@ -32,7 +32,7 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http.Server
 {
-    public class HttpAsyncServer
+    public sealed class HttpAsyncServer
     {
         private static readonly ILogger Logger = LogManager.GetLoggerFor<HttpAsyncServer>();
 
@@ -50,6 +50,7 @@ namespace EventStore.Transport.Http.Server
             ListenPrefixes = prefixes;
 
             _listener = new HttpListener();
+            _listener.AuthenticationSchemes = AuthenticationSchemes.Basic | AuthenticationSchemes.Anonymous;
             foreach (var prefix in prefixes)
             {
                 _listener.Prefixes.Add(prefix);
@@ -61,8 +62,8 @@ namespace EventStore.Transport.Http.Server
             try
             {
                 Logger.Info("Starting HTTP server on [{0}]...", string.Join(",", _listener.Prefixes));
-
                 _listener.Start();
+
                 _listener.BeginGetContext(ContextAcquired, null);
 
                 Logger.Info("HTTP server is up and listening on [{0}]", string.Join(",", _listener.Prefixes));
@@ -132,7 +133,7 @@ namespace EventStore.Transport.Http.Server
             OnRequestReceived(context);
         }
 
-        protected virtual void OnRequestReceived(HttpListenerContext context)
+        private void OnRequestReceived(HttpListenerContext context)
         {
             var handler = RequestReceived;
             if (handler != null)

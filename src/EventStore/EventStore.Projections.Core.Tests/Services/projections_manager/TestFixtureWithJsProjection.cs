@@ -36,7 +36,6 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
-    [MightyMooseIgnore]
     public abstract class TestFixtureWithJsProjection
     {
         private ProjectionStateHandlerFactory _stateHandlerFactory;

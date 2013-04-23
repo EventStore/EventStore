@@ -17,18 +17,16 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         protected override void WriteTestScenario()
         {
 
-            var rec1 =   WriteStreamCreated("ES1");                          // chunk 0
-            var rec2 =   WriteStreamCreated("ES2");
-            var rec3 =   WriteSingleEvent("ES1", 1, new string('.', 3000));
-            var rec4 =   WriteSingleEvent("ES1", 2, new string('.', 3000));
-            var rec5 =   WriteSingleEvent("ES2", 1, new string('.', 3000));
-            chunkEdge =  WriteSingleEvent("ES1", 3, new string('.', 3000), retryOnFail: true); // chunk 1
-            var ackRec = WriteSingleEvent("ES1", 4, new string('.', 3000));
-            var rec6 =   WriteSingleEvent("ES1", 5, new string('.', 3000));
-            var rec7 =   WriteSingleEvent("ES1", 6, new string('.', 3000), retryOnFail: true);  // chunk 2
-            var rec8 =   WriteSingleEvent("ES1", 7, new string('.', 3000));
-            var rec9 =   WriteSingleEvent("ES1", 8, new string('.', 3000));
-            var rec10 =  WriteSingleEvent("ES1", 9, new string('.', 3000), retryOnFail: true);  // chunk 3
+            WriteSingleEvent("ES1", 0, new string('.', 3000));                    // chunk 0
+            WriteSingleEvent("ES1", 1, new string('.', 3000));
+            WriteSingleEvent("ES2", 0, new string('.', 3000));
+            chunkEdge = WriteSingleEvent("ES1", 2, new string('.', 3000), retryOnFail: true); // chunk 1
+            var ackRec = WriteSingleEvent("ES1", 3, new string('.', 3000));
+            WriteSingleEvent("ES1", 4, new string('.', 3000));
+            WriteSingleEvent("ES1", 5, new string('.', 3000), retryOnFail: true);  // chunk 2
+            WriteSingleEvent("ES1", 6, new string('.', 3000));
+            WriteSingleEvent("ES1", 7, new string('.', 3000));
+            WriteSingleEvent("ES1", 8, new string('.', 3000), retryOnFail: true);  // chunk 3
 
             WriteDelete("ES1");
             Scavenge(completeLast: false, mergeChunks: false);
@@ -70,7 +68,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             Assert.IsFalse(File.Exists(chunk2));
             Assert.IsFalse(File.Exists(chunk3));
-        } 
+        }
 
         [Test]
         public void intersecting_chunk_should_be_deleted()

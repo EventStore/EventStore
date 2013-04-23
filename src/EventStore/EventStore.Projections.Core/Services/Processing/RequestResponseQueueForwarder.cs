@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messaging;
@@ -53,7 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadEvent(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.EventStreamId, message.EventNumber, message.ResolveLinkTos));
+                    message.EventStreamId, message.EventNumber, message.ResolveLinkTos, message.User));
         }
 
         public void Handle(ClientMessage.WriteEvents message)
@@ -61,7 +60,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _externalRequestQueue.Publish(
                 new ClientMessage.WriteEvents(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope), true, 
-                    message.EventStreamId, message.ExpectedVersion, message.Events));
+                    message.EventStreamId, message.ExpectedVersion, message.Events, message.User));
         }
 
         public void Handle(ClientMessage.ReadStreamEventsBackward message)
@@ -69,7 +68,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.EventStreamId, message.FromEventNumber, message.MaxCount, message.ResolveLinks, message.ValidationStreamVersion));
+                    message.EventStreamId, message.FromEventNumber, message.MaxCount, message.ResolveLinks, 
+                    message.ValidationStreamVersion, message.User));
         }
 
         public void Handle(ClientMessage.ReadStreamEventsForward message)
@@ -77,7 +77,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadStreamEventsForward(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.EventStreamId, message.FromEventNumber, message.MaxCount, message.ResolveLinks, message.ValidationStreamVersion));
+                    message.EventStreamId, message.FromEventNumber, message.MaxCount, message.ResolveLinks, 
+                    message.ValidationStreamVersion, message.User));
         }
 
         public void Handle(ClientMessage.ReadAllEventsForward message)
@@ -85,7 +86,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadAllEventsForward(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.CommitPosition, message.PreparePosition, message.MaxCount, message.ResolveLinks, message.ValidationTfEofPosition));
+                    message.CommitPosition, message.PreparePosition, message.MaxCount, message.ResolveLinks, 
+                    message.ValidationTfEofPosition, message.User));
         }
     }
 }

@@ -32,7 +32,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Util;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -44,7 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
             bool stopOnEof = false)
             : base(
                 publisher, eventReaderCorrelationId, streams, fromPositions, resolveLinkTos, timeProvider,
-                stopOnEof, skipStreamCreated: true)
+                stopOnEof)
         {
         }
 

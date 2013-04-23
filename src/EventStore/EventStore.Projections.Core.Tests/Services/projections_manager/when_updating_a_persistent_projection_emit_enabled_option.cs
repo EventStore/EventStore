@@ -26,7 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Linq;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -41,7 +43,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     {
         protected override void Given()
         {
-            NoStream("$projections-$all");
             NoStream("$projections-test-projection");
             NoStream("$projections-test-projection-result");
             NoStream("$projections-test-projection-order");
@@ -57,6 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             _projectionName = "test-projection";
             _source = @"fromAll(); on_any(function(){});log(1);";
+            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS", _source, enabled: true,

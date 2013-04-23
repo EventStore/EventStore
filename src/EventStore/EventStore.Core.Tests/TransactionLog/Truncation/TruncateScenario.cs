@@ -9,8 +9,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         protected TFChunkDbTruncator Truncator;
         protected long TruncateCheckpoint = long.MinValue;
 
-        protected TruncateScenario(int maxEntriesInMemTable = 100)
-            : base(maxEntriesInMemTable)
+        protected TruncateScenario(int maxEntriesInMemTable = 100, int metastreamMaxCount = 1)
+            : base(maxEntriesInMemTable, metastreamMaxCount)
         {
         }
 

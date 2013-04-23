@@ -27,6 +27,7 @@
 //  
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 
@@ -34,8 +35,6 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class ReadAllEventsBackwardOperation : OperationBase<AllEventsSlice, ClientMessage.ReadAllEventsCompleted>
     {
-        public override bool IsLongRunning { get { return false; } }
-
         private readonly Position _position;
         private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
@@ -55,8 +54,20 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override InspectionResult InspectResponse(ClientMessage.ReadAllEventsCompleted response)
         {
-            Succeed();
-            return new InspectionResult(InspectionDecision.EndOperation);
+            switch (response.Result)
+            {
+                case ClientMessage.ReadAllEventsCompleted.ReadAllResult.Success:
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation);
+                case ClientMessage.ReadAllEventsCompleted.ReadAllResult.Error:
+                    Fail(new ServerErrorException(string.IsNullOrEmpty(response.Error) ? "<no message>" : response.Error));
+                    return new InspectionResult(InspectionDecision.EndOperation);
+                case ClientMessage.ReadAllEventsCompleted.ReadAllResult.AccessDenied:
+                    Fail(new AccessDeniedException("Read access denied for $all."));
+                    return new InspectionResult(InspectionDecision.EndOperation);
+                default:
+                    throw new Exception(string.Format("Unexpected ReadAllResult: {0}.", response.Result));
+            }
         }
 
         protected override AllEventsSlice TransformResponse(ClientMessage.ReadAllEventsCompleted response)

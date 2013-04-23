@@ -1,7 +1,6 @@
 using System.IO;
 using System.Linq;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation
@@ -13,31 +12,25 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         // we lose the delete record, so we don't consider this stream as deleted, but still we have scavenged a lot of records, that are not scavenged in other replicas.
         // nonetheless this scenario is very very unlikely to happen, that's why it is not handled. if it still does happen - a whole db on truncated node should be deleted
 
-        private string chunk0;
-        private string chunk1;
-        private string chunk2;
-        private string chunk3;
-
-        private EventRecord _event0;
-        private EventRecord _event1;
+        private string _chunk0;
+        private string _chunk1;
+        private string _chunk2;
+        private string _chunk3;
         private EventRecord _event2;
-
-        private EventRecord chunkEdge;
+        private EventRecord _chunkEdge;
 
         protected override void WriteTestScenario()
         {
-            _event0 =   WriteStreamCreated("ES1");                          // chunk 0
-            _event1 =   WriteStreamCreated("ES2");
-                        WriteSingleEvent("ES1", 1, new string('.', 3000));
-                        WriteSingleEvent("ES1", 2, new string('.', 3000));
-            _event2 =   WriteSingleEvent("ES2", 1, new string('.', 3000));
-            chunkEdge = WriteSingleEvent("ES1", 3, new string('.', 3000), retryOnFail: true); // chunk 1
-            var rec =   WriteSingleEvent("ES1", 4, new string('.', 3000));
-                        WriteSingleEvent("ES1", 5, new string('.', 3000));
-                        WriteSingleEvent("ES1", 6, new string('.', 3000), retryOnFail: true);  // chunk 2
-                        WriteSingleEvent("ES1", 7, new string('.', 3000));
-                        WriteSingleEvent("ES1", 8, new string('.', 3000));
-                        WriteSingleEvent("ES1", 9, new string('.', 3000), retryOnFail: true);  // chunk 3
+            WriteSingleEvent("ES1", 0, new string('.', 3000));                     // chunk 0
+            WriteSingleEvent("ES1", 1, new string('.', 3000));
+            _event2 = WriteSingleEvent("ES2", 0, new string('.', 3000));
+            _chunkEdge = WriteSingleEvent("ES1", 2, new string('.', 3000), retryOnFail: true);  // chunk 1
+            var rec = WriteSingleEvent("ES1", 3, new string('.', 3000));
+            WriteSingleEvent("ES1", 4, new string('.', 3000));
+            WriteSingleEvent("ES1", 5, new string('.', 3000), retryOnFail: true);  // chunk 2
+            WriteSingleEvent("ES1", 6, new string('.', 3000));
+            WriteSingleEvent("ES1", 7, new string('.', 3000));
+            WriteSingleEvent("ES1", 8, new string('.', 3000), retryOnFail: true);  // chunk 3
 
             WriteDelete("ES1");
             Scavenge(completeLast: false, mergeChunks: false);
@@ -49,15 +42,15 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             // scavenged chunk names
             // TODO MM: avoid this complexity - try scavenging exactly at where its invoked and not wait for readIndex to rebuild
-            chunk0 = GetChunkName(0);
-            chunk1 = GetChunkName(1);
-            chunk2 = GetChunkName(2);
-            chunk3 = GetChunkName(3);
+            _chunk0 = GetChunkName(0);
+            _chunk1 = GetChunkName(1);
+            _chunk2 = GetChunkName(2);
+            _chunk3 = GetChunkName(3);
 
-            Assert.IsTrue(File.Exists(chunk0));
-            Assert.IsTrue(File.Exists(chunk1));
-            Assert.IsTrue(File.Exists(chunk2));
-            Assert.IsTrue(File.Exists(chunk3));
+            Assert.IsTrue(File.Exists(_chunk0));
+            Assert.IsTrue(File.Exists(_chunk1));
+            Assert.IsTrue(File.Exists(_chunk2));
+            Assert.IsTrue(File.Exists(_chunk3));
         }
 
         private string GetChunkName(int chunkNumber)
@@ -70,72 +63,42 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         [Test]
         public void truncated_chunks_should_be_deleted()
         {
-            Assert.IsFalse(File.Exists(chunk2));
-            Assert.IsFalse(File.Exists(chunk3));
+            Assert.IsFalse(File.Exists(_chunk2));
+            Assert.IsFalse(File.Exists(_chunk3));
         }
 
         [Test]
         public void intersecting_chunk_should_be_deleted()
         {
-            Assert.IsFalse(File.Exists(chunk1));
+            Assert.IsFalse(File.Exists(_chunk1));
         }
 
         [Test]
         public void untouched_chunk_should_survive()
         {
-            Assert.AreEqual(chunk0, GetChunkName(0));
+            Assert.AreEqual(_chunk0, GetChunkName(0));
         }
 
         [Test]
         public void checksums_should_be_equal_to_beginning_of_intersected_scavenged_chunk()
         {
-            Assert.AreEqual(chunkEdge.TransactionPosition, WriterCheckpoint.Read());
-            Assert.AreEqual(chunkEdge.TransactionPosition, ChaserCheckpoint.Read());
+            Assert.AreEqual(_chunkEdge.TransactionPosition, WriterCheckpoint.Read());
+            Assert.AreEqual(_chunkEdge.TransactionPosition, ChaserCheckpoint.Read());
         }
 
         [Test]
         public void read_one_by_one_returns_survived_records()
         {
-            var res = ReadIndex.ReadEvent("ES1", 0);
-            Assert.AreEqual(ReadEventResult.Success, res.Result);
-            Assert.AreEqual(_event0, res.Record);
-            res = ReadIndex.ReadEvent("ES2", 0);
-            Assert.AreEqual(ReadEventResult.Success, res.Result);
-            Assert.AreEqual(_event1, res.Record);
-            res = ReadIndex.ReadEvent("ES2", 1);
+            var res = ReadIndex.ReadEvent("ES2", 0);
             Assert.AreEqual(ReadEventResult.Success, res.Result);
             Assert.AreEqual(_event2, res.Record);
         }
 
         [Test]
-        public void read_one_by_one_doesnt_return_truncated_or_scavenged_records_and_doesnt_say_that_they_are_deleted()
+        public void there_is_no_previously_scavenged_stream_which_delete_record_was_truncated()
         {
-            var res = ReadIndex.ReadEvent("ES1", 1);
-            Assert.AreEqual(ReadEventResult.NotFound, res.Result);
-            Assert.IsNull(res.Record);
-            res = ReadIndex.ReadEvent("ES1", 2);
-            Assert.AreEqual(ReadEventResult.NotFound, res.Result);
-            Assert.IsNull(res.Record);
-            res = ReadIndex.ReadEvent("ES1", 3);
-            Assert.AreEqual(ReadEventResult.NotFound, res.Result);
-            Assert.IsNull(res.Record);
-            res = ReadIndex.ReadEvent("ES1", 4);
-            Assert.AreEqual(ReadEventResult.NotFound, res.Result);
-            Assert.IsNull(res.Record);
-            res = ReadIndex.ReadEvent("ES1", 5);
-            Assert.AreEqual(ReadEventResult.NotFound, res.Result);
-            Assert.IsNull(res.Record);
-            res = ReadIndex.ReadEvent("ES1", 6);
-            Assert.AreEqual(ReadEventResult.NotFound, res.Result);
-            Assert.IsNull(res.Record);
-            res = ReadIndex.ReadEvent("ES1", 7);
-            Assert.AreEqual(ReadEventResult.NotFound, res.Result);
-            Assert.IsNull(res.Record);
-            res = ReadIndex.ReadEvent("ES1", 8);
-            Assert.AreEqual(ReadEventResult.NotFound, res.Result);
-            Assert.IsNull(res.Record);
-            res = ReadIndex.ReadEvent("ES1", 9);
-            Assert.AreEqual(ReadEventResult.NotFound, res.Result);
+            var res = ReadIndex.ReadEvent("ES1", 0);
+            Assert.AreEqual(ReadEventResult.NoStream, res.Result);
             Assert.IsNull(res.Record);
         }
 
@@ -144,9 +107,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             var res = ReadIndex.ReadStreamEventsForward("ES2", 0, 100);
             var records = res.Records;
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_event1, records[0]);
-            Assert.AreEqual(_event2, records[1]);
+            Assert.AreEqual(1, records.Length);
+            Assert.AreEqual(_event2, records[0]);
         }
 
         [Test]
@@ -154,8 +116,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             var res = ReadIndex.ReadStreamEventsForward("ES1", 0, 100);
             var records = res.Records;
-            Assert.AreEqual(1, records.Length);
-            Assert.AreEqual(_event0, records[0]);
+            Assert.AreEqual(0, records.Length);
         }
 
         [Test]
@@ -163,8 +124,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             var res = ReadIndex.ReadStreamEventsBackward("ES2", -1, 100);
             var records = res.Records;
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_event1, records[1]);
+            Assert.AreEqual(1, records.Length);
             Assert.AreEqual(_event2, records[0]);
         }
 
@@ -173,8 +133,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             var res = ReadIndex.ReadStreamEventsBackward("ES1", -1, 100);
             var records = res.Records;
-            Assert.AreEqual(1, records.Length);
-            Assert.AreEqual(_event0, records[0]);
+            Assert.AreEqual(0, records.Length);
         }
 
         [Test]
@@ -183,10 +142,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
             var res = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100);
             var records = res.Records.Select(r => r.Event).ToArray();
 
-            Assert.AreEqual(3, records.Length);
-            Assert.AreEqual(_event0, records[0]);
-            Assert.AreEqual(_event1, records[1]);
-            Assert.AreEqual(_event2, records[2]);
+            Assert.AreEqual(1, records.Length);
+            Assert.AreEqual(_event2, records[0]);
         }
 
         [Test]
@@ -195,9 +152,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
             var res = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100);
             var records = res.Records.Select(r => r.Event).ToArray();
 
-            Assert.AreEqual(3, records.Length);
-            Assert.AreEqual(_event0, records[2]);
-            Assert.AreEqual(_event1, records[1]);
+            Assert.AreEqual(1, records.Length);
             Assert.AreEqual(_event2, records[0]);
 
         }

@@ -29,6 +29,7 @@
 using System;
 using System.Linq;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests.Helper;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
@@ -38,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 {
     [TestFixture]
     public class when_the_heading_event_reader_with_a_subscribed_projection_handles_an_event :
-        TestFixtureWithReadWriteDisaptchers
+        TestFixtureWithReadWriteDispatchers
     {
         private HeadingEventReader _point;
         private Exception _exception;

@@ -25,33 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
+
 using System.Diagnostics;
-using System.IO;
-using System.Text;
-using System.Threading;
-using EventStore.Common.Utils;
-using EventStore.Transport.Http;
 
 namespace EventStore.Core.Services.Monitoring.Utils
 {
-    public class ShellExecutor
+    public static class ShellExecutor
     {
-        private Process _process;
-        private readonly MemoryStream _outputStream = new MemoryStream();
-
-        private Action<Exception, string> _callback;
-        public readonly string Command;
-        public readonly string Args;
-
-        public ShellExecutor(string command, string args = null)
-        {
-            Ensure.NotNull(command, "command");
-
-            Command = command;
-            Args = args;
-        }
-
         public static string GetOutput(string command, string args = null)
         {
             var info = new ProcessStartInfo
@@ -68,67 +48,6 @@ namespace EventStore.Core.Services.Monitoring.Utils
                 var res = process.StandardOutput.ReadToEnd();
                 return res;
             }
-        }
-
-        public void GetOutputAsync(Action<Exception, string> callback)
-        {
-            Ensure.NotNull(callback, "callback");
-            _callback = callback;
-
-            var info = new ProcessStartInfo
-            {
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                FileName = Command,
-                Arguments = Args ?? string.Empty
-            };
-
-            // note MM: takes time to start a process. no async API available
-            ThreadPool.QueueUserWorkItem(_ =>
-            {
-                Stream inputStream;
-                try
-                {
-                    _process = Process.Start(info);
-                    inputStream = _process.StandardOutput.BaseStream;
-                }
-                catch (Exception ex)
-                {
-                    OnCompleted(ex, null);
-                    return;
-                }
-
-                var copier = new AsyncStreamCopier<object>(inputStream, _outputStream, null, OnStreamCopied);
-                copier.Start();
-            });
-        }
-
-        private void OnStreamCopied(AsyncStreamCopier<object> copier)
-        {
-            if (copier.Error != null)
-            {
-                OnCompleted(copier.Error, null);
-            }
-            else
-            {
-                var output = Encoding.UTF8.GetString(_outputStream.GetBuffer(), 0, (int)_outputStream.Length);
-                OnCompleted(null, output);
-            }
-        }
-
-        private void OnCompleted(Exception ex, string output)
-        {
-            CleanUp();
-            _callback(ex, output);
-        }
-
-        private void CleanUp()
-        {
-            if (_outputStream != null)
-                _outputStream.Dispose();
-            if (_process != null)
-                _process.Dispose();
         }
     }
 }

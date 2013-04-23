@@ -199,13 +199,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                              .Single()
                              .Projections.Length);
                 Assert.AreEqual(
-                    2,
+                    1,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
                              .Projections.Single()
                              .Epoch);
                 Assert.AreEqual(
-                    2,
+                    1,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
                              .Projections.Single()
@@ -274,13 +274,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                              .Single()
                              .Projections.Length);
                 Assert.AreEqual(
-                    2,
+                    1,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
                              .Projections.Single()
                              .Epoch);
                 Assert.AreEqual(
-                    3,
+                    2,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
                              .Projections.Single()

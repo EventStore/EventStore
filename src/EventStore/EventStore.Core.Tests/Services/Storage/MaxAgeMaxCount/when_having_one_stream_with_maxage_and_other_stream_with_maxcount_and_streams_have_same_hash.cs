@@ -57,23 +57,23 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
             var metadata1 = string.Format(@"{{""$maxAge"":{0}}}", (int)TimeSpan.FromMinutes(25).TotalSeconds);
             const string metadata2 = @"{""$maxCount"":2}";
 
-            _r11 = WriteStreamCreated("ES1", metadata1, now.AddMinutes(-100));
-            _r21 = WriteStreamCreated("ES2", metadata2, now.AddMinutes(-99));
+            _r11 = WriteStreamMetadata("ES1", 0, metadata1);
+            _r21 = WriteStreamMetadata("ES2", 0, metadata2);
 
-            _r12 = WriteSingleEvent("ES1", 1, "bla1", now.AddMinutes(-50));
-            _r13 = WriteSingleEvent("ES1", 2, "bla1", now.AddMinutes(-20));
+            _r12 = WriteSingleEvent("ES1", 0, "bla1", now.AddMinutes(-100));
+            _r13 = WriteSingleEvent("ES1", 1, "bla1", now.AddMinutes(-20));
 
-            _r22 = WriteSingleEvent("ES2", 1, "bla1", now.AddMinutes(-20));
-            _r23 = WriteSingleEvent("ES2", 2, "bla1", now.AddMinutes(-19));
+            _r22 = WriteSingleEvent("ES2", 0, "bla1", now.AddMinutes(-100));
+            _r23 = WriteSingleEvent("ES2", 1, "bla1", now.AddMinutes(-20));
 
-            _r14 = WriteSingleEvent("ES1", 3, "bla1", now.AddMinutes(-11));
-            _r24 = WriteSingleEvent("ES2", 3, "bla1", now.AddMinutes(-10));
+            _r14 = WriteSingleEvent("ES1", 2, "bla1", now.AddMinutes(-11));
+            _r24 = WriteSingleEvent("ES2", 2, "bla1", now.AddMinutes(-10));
 
-            _r15 = WriteSingleEvent("ES1", 4, "bla1", now.AddMinutes(-5));
-            _r16 = WriteSingleEvent("ES1", 5, "bla1", now.AddMinutes(-2));
+            _r15 = WriteSingleEvent("ES1", 3, "bla1", now.AddMinutes(-5));
+            _r16 = WriteSingleEvent("ES1", 4, "bla1", now.AddMinutes(-2));
 
-            _r25 = WriteSingleEvent("ES2", 4, "bla1", now.AddMinutes(-1));
-            _r26 = WriteSingleEvent("ES2", 5, "bla1", now.AddMinutes(-1));
+            _r25 = WriteSingleEvent("ES2", 3, "bla1", now.AddMinutes(-1));
+            _r26 = WriteSingleEvent("ES2", 4, "bla1", now.AddMinutes(-1));
         }
 
         [Test]
@@ -96,22 +96,18 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
             Assert.IsNull(result.Record);
 
             result = ReadIndex.ReadEvent("ES1", 1);
-            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
-            Assert.IsNull(result.Record);
-
-            result = ReadIndex.ReadEvent("ES1", 2);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r13, result.Record);
 
-            result = ReadIndex.ReadEvent("ES1", 3);
+            result = ReadIndex.ReadEvent("ES1", 2);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r14, result.Record);
 
-            result = ReadIndex.ReadEvent("ES1", 4);
+            result = ReadIndex.ReadEvent("ES1", 3);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r15, result.Record);
 
-            result = ReadIndex.ReadEvent("ES1", 5);
+            result = ReadIndex.ReadEvent("ES1", 4);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r16, result.Record);
         }
@@ -132,14 +128,10 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
             Assert.IsNull(result.Record);
 
             result = ReadIndex.ReadEvent("ES2", 3);
-            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
-            Assert.IsNull(result.Record);
-
-            result = ReadIndex.ReadEvent("ES2", 4);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r25, result.Record);
 
-            result = ReadIndex.ReadEvent("ES2", 5);
+            result = ReadIndex.ReadEvent("ES2", 4);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r26, result.Record);
         }

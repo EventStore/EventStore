@@ -28,14 +28,17 @@
 
 using System;
 using System.Collections.Generic;
-using EventStore.Core.Services.Transport.Http.Codecs;
+using System.Text;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public static class HttpHelpers
     {
+        private static readonly Encoding _encoding = new UTF8Encoding(false);
+
         public static void RegisterRedirectAction(IHttpService service, string fromUrl, string toUrl)
         {
             service.RegisterControllerAction(
@@ -51,6 +54,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                 new KeyValuePair<string, string>(
                                     "Location",   new Uri(match.BaseUri, toUrl).AbsoluteUri)
                             }, Console.WriteLine));
-        } 
+        }
+
+        public static void Reply(
+            this HttpEntityManager http, string response, int code, string description, string contentType,
+            IEnumerable<KeyValuePair<string, string>> headers = null)
+        {
+            http.Reply(
+                _encoding.GetBytes(response), code, description, contentType, _encoding, headers, exception => { });
+        }
     }
 }

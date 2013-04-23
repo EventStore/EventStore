@@ -32,9 +32,9 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
+using EventStore.Transport.Http.Codecs;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
 namespace EventStore.TestClient.Commands
@@ -106,7 +106,6 @@ namespace EventStore.TestClient.Commands
                     for (int j = 0; j < count; ++j)
                     {
                         var write = new HttpClientMessageDto.WriteEventsText(
-                            ExpectedVersion.Any,
                             new[] 
                             { 
                                 new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), 

@@ -33,7 +33,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 {
-    [TestFixture]
+    [TestFixture, Ignore("Metadata must be valid.")]
     public class with_invalid_max_count_and_normal_max_age: ReadIndexTestScenario
     {
         private EventRecord _r1;
@@ -49,12 +49,12 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 
             const string metadata = @"{""$maxAge"":21,""$maxCount"":2.1}";
 
-            _r1 = WriteStreamCreated("ES", metadata, now.AddSeconds(-100));
-            _r2 = WriteSingleEvent("ES", 1, "bla1", now.AddSeconds(-50));
-            _r3 = WriteSingleEvent("ES", 2, "bla1", now.AddSeconds(-20));
-            _r4 = WriteSingleEvent("ES", 3, "bla1", now.AddSeconds(-11));
-            _r5 = WriteSingleEvent("ES", 4, "bla1", now.AddSeconds(-5));
-            _r6 = WriteSingleEvent("ES", 5, "bla1", now.AddSeconds(-1));
+            _r1 = WriteStreamMetadata("ES", 0, metadata);
+            _r2 = WriteSingleEvent("ES", 0, "bla1", now.AddSeconds(-50));
+            _r3 = WriteSingleEvent("ES", 1, "bla1", now.AddSeconds(-20));
+            _r4 = WriteSingleEvent("ES", 2, "bla1", now.AddSeconds(-11));
+            _r5 = WriteSingleEvent("ES", 3, "bla1", now.AddSeconds(-5));
+            _r6 = WriteSingleEvent("ES", 4, "bla1", now.AddSeconds(-1));
         }
 
         [Test]
@@ -65,22 +65,18 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
             Assert.IsNull(result.Record);
 
             result = ReadIndex.ReadEvent("ES", 1);
-            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
-            Assert.IsNull(result.Record);
-
-            result = ReadIndex.ReadEvent("ES", 2);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r3, result.Record);
 
-            result = ReadIndex.ReadEvent("ES", 3);
+            result = ReadIndex.ReadEvent("ES", 2);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r4, result.Record);
 
-            result = ReadIndex.ReadEvent("ES", 4);
+            result = ReadIndex.ReadEvent("ES", 3);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r5, result.Record);
 
-            result = ReadIndex.ReadEvent("ES", 5);
+            result = ReadIndex.ReadEvent("ES", 4);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r6, result.Record);
         }

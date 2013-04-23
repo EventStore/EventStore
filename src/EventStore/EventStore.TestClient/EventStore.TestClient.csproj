@@ -80,7 +80,6 @@
     <Compile Include="Commands\RunTestScenarios\TestEvent.cs" />
     <Compile Include="Commands\RunTestScenarios\WriteMode.cs" />
     <Compile Include="Commands\ScavengeProcessor.cs" />
-    <Compile Include="Commands\CreateStreamProcessor.cs" />
     <Compile Include="Commands\DeleteProcessor.cs" />
     <Compile Include="Commands\DvuBasic\BankAccountBasicProducer.cs" />
     <Compile Include="Commands\DvuBasic\BankAccountEventFactory.cs" />

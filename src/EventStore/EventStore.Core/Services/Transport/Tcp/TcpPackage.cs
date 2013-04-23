@@ -26,13 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
     public struct TcpPackage
     {
-        private static readonly byte[] EmptyArray = new byte[0];
-
         public readonly TcpCommand Command;
         public readonly Guid CorrelationId;
         public readonly ArraySegment<byte> Data;
@@ -54,7 +53,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             Command = command;
             CorrelationId = correlationId;
-            Data = new ArraySegment<byte>(data ?? EmptyArray);
+            Data = new ArraySegment<byte>(data ?? Empty.ByteArray);
         }
 
         public TcpPackage(TcpCommand command, Guid correlationId, ArraySegment<byte> data)

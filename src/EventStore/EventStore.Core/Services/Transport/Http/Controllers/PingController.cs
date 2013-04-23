@@ -29,8 +29,8 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
@@ -58,11 +58,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var response = new HttpMessage.TextMessage("Ping request successfully handled");
             entity.ReplyTextContent(Format.TextMessage(entity, response),
-                                 HttpStatusCode.OK,
-                                 "OK",
-                                 entity.ResponseCodec.ContentType,
-                                 null,
-                                 e => Log.ErrorException(e, "Error while writing http response (ping)"));
+                                    HttpStatusCode.OK,
+                                    "OK",
+                                    entity.ResponseCodec.ContentType,
+                                    null,
+                                    e => Log.ErrorException(e, "Error while writing http response (ping)"));
         }
     }
 }

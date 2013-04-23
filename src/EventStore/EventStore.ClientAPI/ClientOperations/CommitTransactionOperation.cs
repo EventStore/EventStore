@@ -36,8 +36,6 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class CommitTransactionOperation : OperationBase<object, ClientMessage.TransactionCommitCompleted>
     {
-        public override bool IsLongRunning { get { return false; } }
-
         private readonly bool _forward;
         private readonly long _transactionId;
 
@@ -74,8 +72,11 @@ namespace EventStore.ClientAPI.ClientOperations
                 case ClientMessage.OperationResult.InvalidTransaction:
                     Fail(new InvalidTransactionException());
                     return new InspectionResult(InspectionDecision.EndOperation);
+                case ClientMessage.OperationResult.AccessDenied:
+                    Fail(new AccessDeniedException("Write access denied."));
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 default:
-                    throw new ArgumentOutOfRangeException(string.Format("Unexpected OperationResult: {0}.", response.Result));
+                    throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }
         }
 

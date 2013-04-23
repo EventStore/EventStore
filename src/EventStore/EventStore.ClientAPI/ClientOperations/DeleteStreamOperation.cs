@@ -36,8 +36,6 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class DeleteStreamOperation : OperationBase<object, ClientMessage.DeleteStreamCompleted>
     {
-        public override bool IsLongRunning { get { return false; } }
-
         private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;
@@ -76,8 +74,11 @@ namespace EventStore.ClientAPI.ClientOperations
                 case ClientMessage.OperationResult.InvalidTransaction:
                     Fail(new InvalidTransactionException());
                     return new InspectionResult(InspectionDecision.EndOperation);
+                case ClientMessage.OperationResult.AccessDenied:
+                    Fail(new AccessDeniedException(string.Format("Write access denied for stream '{0}'.", _stream)));
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 default:
-                    throw new ArgumentOutOfRangeException(string.Format("Unexpected OperationResult: {0}.", response.Result));
+                    throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }
         }
 

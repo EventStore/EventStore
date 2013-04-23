@@ -489,7 +489,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Log.Info("Starting to write {0} events to [{1}]", events, stream);
             var store = GetConnection();
             int eventVersion = 0;
-            var createTask = store.CreateStreamAsync(stream, Guid.NewGuid(), false, Encoding.UTF8.GetBytes("metadata"));
 
             Action<Task> fail = prevTask =>
             {
@@ -498,7 +497,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             };
 
             Action<Task> writeSingleEvent = null;
-            writeSingleEvent = prevTask =>
+            writeSingleEvent = _ =>
             {
                 if (eventVersion == events)
                 {
@@ -509,14 +508,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 eventVersion += 1;
                 var writeTask = store.AppendToStreamAsync(stream,
-                                                            eventVersion - 1,
-                                                            new[] { createEvent(eventVersion) });
+                                                          eventVersion - 1,
+                                                          new[] { createEvent(eventVersion) });
                 writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 writeTask.ContinueWith(writeSingleEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
 
-            createTask.ContinueWith(writeSingleEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
-            createTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
+            writeSingleEvent(null);
 
             return resSource.Task;
         }
@@ -529,7 +527,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var resSource = new TaskCompletionSource<object>();
             var store = GetConnection();
             int writtenCount = 0;
-            var createTask = store.CreateStreamAsync(stream, Guid.NewGuid(), false, Encoding.UTF8.GetBytes("metadata"));
 
             Action<Task> fail = prevTask =>
             {
@@ -538,7 +535,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             };
 
             Action<Task> writeBatch = null;
-            writeBatch = prevTask =>
+            writeBatch = _ =>
             {
                 if (writtenCount == eventCount)
                 {
@@ -558,8 +555,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 writeTask.ContinueWith(writeBatch, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
 
-            createTask.ContinueWith(writeBatch, TaskContinuationOptions.OnlyOnRanToCompletion);
-            createTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
+            writeBatch(null);
 
             return resSource.Task;
         }
@@ -579,8 +575,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             int writtenCount = 0;
             EventStoreTransaction transaction = null;
-            var createTask = store.CreateStreamAsync(stream, Guid.NewGuid(), false, Encoding.UTF8.GetBytes("metadata"));
-            createTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
 
             Action<Task> writeTransactionEvent = null;
             writeTransactionEvent = prevTask =>
@@ -604,18 +598,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 writeTask.ContinueWith(writeTransactionEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
 
-            createTask.ContinueWith(_ =>
+            var startTask = store.StartTransactionAsync(stream, 0);
+            startTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
+            startTask.ContinueWith(t =>
             {
-                var startTask = store.StartTransactionAsync(stream, 0);
-                startTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
-                startTask.ContinueWith(t =>
-                {
-                    transaction = t.Result;
-                    writeTransactionEvent(t);
-                }, TaskContinuationOptions.OnlyOnRanToCompletion);
-
+                transaction = t.Result;
+                writeTransactionEvent(t);
             }, TaskContinuationOptions.OnlyOnRanToCompletion);
-
 
             return resSource.Task;
         }

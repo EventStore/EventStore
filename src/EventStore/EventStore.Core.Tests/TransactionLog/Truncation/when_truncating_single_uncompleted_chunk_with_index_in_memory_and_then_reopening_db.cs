@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation
@@ -8,21 +7,20 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
     [TestFixture]
     public class when_truncating_single_uncompleted_chunk_with_index_in_memory_and_then_reopening_db : TruncateAndReOpenDbScenario
     {
-        private EventRecord _event0;
         private EventRecord _event1;
         private EventRecord _event2;
         private EventRecord _event3;
 
-        public when_truncating_single_uncompleted_chunk_with_index_in_memory_and_then_reopening_db(): base(20000)
+        public when_truncating_single_uncompleted_chunk_with_index_in_memory_and_then_reopening_db()
+            : base(20000)
         {
         }
 
         protected override void WriteTestScenario()
         {
-            _event0 = WriteStreamCreated("ES");
-            _event1 = WriteSingleEvent("ES", 1, new string('.', 500));
-            _event2 = WriteSingleEvent("ES", 2, new string('.', 500));    // truncated
-            _event3 = WriteSingleEvent("ES", 3, new string('.', 500));    // truncated
+            _event1 = WriteSingleEvent("ES", 0, new string('.', 500));
+            _event2 = WriteSingleEvent("ES", 1, new string('.', 500));    // truncated
+            _event3 = WriteSingleEvent("ES", 2, new string('.', 500));    // truncated
 
             TruncateCheckpoint = _event2.LogPosition;
         }
@@ -39,14 +37,16 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             var res = ReadIndex.ReadEvent("ES", 0);
             Assert.AreEqual(ReadEventResult.Success, res.Result);
-            Assert.AreEqual(_event0, res.Record);
-            res = ReadIndex.ReadEvent("ES", 1);
-            Assert.AreEqual(ReadEventResult.Success, res.Result);
             Assert.AreEqual(_event1, res.Record);
+
+            res = ReadIndex.ReadEvent("ES", 1);
+            Assert.AreEqual(ReadEventResult.NotFound, res.Result);
+            Assert.IsNull(res.Record);
 
             res = ReadIndex.ReadEvent("ES", 2);
             Assert.AreEqual(ReadEventResult.NotFound, res.Result);
             Assert.IsNull(res.Record);
+
             res = ReadIndex.ReadEvent("ES", 3);
             Assert.AreEqual(ReadEventResult.NotFound, res.Result);
             Assert.IsNull(res.Record);
@@ -57,9 +57,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             var res = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
             var records = res.Records;
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_event0, records[0]);
-            Assert.AreEqual(_event1, records[1]);
+            Assert.AreEqual(1, records.Length);
+            Assert.AreEqual(_event1, records[0]);
         }
 
         [Test]
@@ -67,8 +66,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             var res = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
             var records = res.Records;
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_event0, records[1]);
+            Assert.AreEqual(1, records.Length);
             Assert.AreEqual(_event1, records[0]);
         }
 
@@ -77,9 +75,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             var res = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100);
             var records = res.Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_event0, records[0]);
-            Assert.AreEqual(_event1, records[1]);
+            Assert.AreEqual(1, records.Length);
+            Assert.AreEqual(_event1, records[0]);
         }
 
         [Test]
@@ -87,8 +84,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             var res = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100);
             var records = res.Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_event0, records[1]);
+            Assert.AreEqual(1, records.Length);
             Assert.AreEqual(_event1, records[0]);
         }
 

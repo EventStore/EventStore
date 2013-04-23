@@ -29,11 +29,13 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -110,7 +112,7 @@ namespace EventStore.Projections.Core.Services.Management
         private Action _onPrepared;
         private Action _onStarted;
         private DateTime _lastAccessed;
-        private int _lastWrittenVersion;
+        private int _lastWrittenVersion = -1;
 
         public ManagedProjection(
             IPublisher coreQueue, Guid id, int projectionId, string name, ILogger logger,
@@ -439,8 +441,8 @@ namespace EventStore.Projections.Core.Services.Management
                         Mode = message.Mode,
                         EmitEnabled = message.EmitEnabled,
                         CheckpointsDisabled = !message.CheckpointsEnabled,
-                        Epoch = 0,
-                        Version = 0,
+                        Epoch = -1,
+                        Version = -1,
                     });
             Action completed1 = () => StartOrLoadStopped(completed);
             UpdateProjectionVersion();
@@ -457,8 +459,9 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), _readDispatcher.Envelope, "$projections-" + name, -1, 1, resolveLinks: false,
-                    validationStreamVersion: null), LoadCompleted);
+                    Guid.NewGuid(), _readDispatcher.Envelope, "$projections-" + name, -1, 1, 
+                    resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
+                LoadCompleted);
         }
 
         private void LoadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed)
@@ -497,7 +500,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (persistedState.Version == null)
             {
                 persistedState.Version = completed.Events[0].Event.EventNumber;
-                persistedState.Epoch = 0;
+                persistedState.Epoch = -1;
             }
             if (_lastWrittenVersion > persistedState.Version)
                 persistedState.Version = _lastWrittenVersion;
@@ -554,7 +557,8 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
-                    new Event(Guid.NewGuid(), "$ProjectionUpdated", true, managedProjectionSerializedState, new byte[0])),
+                    new Event(Guid.NewGuid(), "$ProjectionUpdated", true, managedProjectionSerializedState, Empty.ByteArray),
+                    SystemAccount.Principal),
                 m => WriteCompleted(m, completed, eventStreamId));
         }
 
@@ -563,7 +567,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (message.Result == OperationResult.Success)
             {
                 _logger.Info("'{0}' projection source has been written", _name);
-                var writtenEventNumber = (message.FirstEventNumber == 0 ? 1 : message.FirstEventNumber);
+                var writtenEventNumber = message.FirstEventNumber;
                 if (writtenEventNumber != (_persistedState.Version ?? writtenEventNumber))
                     throw new Exception("Projection version and event number mismatch");
                 _lastWrittenVersion = (_persistedState.Version ?? writtenEventNumber);
@@ -672,7 +676,7 @@ namespace EventStore.Projections.Core.Services.Management
             var createProjectionMessage =
                 new CoreProjectionManagementMessage.CreateAndPrepare(
                     new PublishEnvelope(_inputQueue), _id, _name, 
-                    new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 1, _persistedState.Version ?? 1),
+                    new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
                     config, delegate
                         {
                             // this delegate runs in the context of a projection core thread
@@ -728,7 +732,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             var createProjectionMessage =
                 new CoreProjectionManagementMessage.CreatePrepared(
-                    new PublishEnvelope(_inputQueue), _id, _name, new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 1,
+                    new PublishEnvelope(_inputQueue), _id, _name, new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0,
                     _persistedState.Version ?? 1), config, new SourceDefinition(_persistedState.SourceDefinition));
 
             //note: set running before start as coreProjection.start() can respond with faulted

@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new StorageMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4);
+            yield return new ClientMessage.TransactionCommit(CorrelationId, Envelope, false, 4, null);
         }
 
         protected override Message When()
@@ -57,8 +57,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
         [Test]
         public void successful_request_message_is_publised()
         {
-            Assert.That(produced.ContainsSingle<StorageMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                          x.Success));
+            Assert.That(produced.ContainsSingle<StorageMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId && x.Success));
         }
 
         [Test]

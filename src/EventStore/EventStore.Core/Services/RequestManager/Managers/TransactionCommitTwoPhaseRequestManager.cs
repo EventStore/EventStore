@@ -32,8 +32,11 @@ using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.TransactionCommitRequestCreated>
+    public class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
+                                                           IHandle<ClientMessage.TransactionCommit>
     {
+        private ClientMessage.TransactionCommit _request;
+
         public TransactionCommitTwoPhaseRequestManager(IPublisher publisher, 
                                                        int prepareCount, 
                                                        int commitCount, 
@@ -43,16 +46,21 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
         }
 
-        public void Handle(StorageMessage.TransactionCommitRequestCreated request)
+        public void Handle(ClientMessage.TransactionCommit request)
         {
-            Init(request.Envelope, request.CorrelationId, request.TransactionId);
+            _request = request;
+            Init(request.Envelope, request.CorrelationId, null, request.User, request.TransactionId);
+        }
 
+        protected override void OnSecurityAccessGranted()
+        {
             Publisher.Publish(
                 new StorageMessage.WriteTransactionPrepare(
-                    request.CorrelationId,
+                    _request.CorrelationId,
                     PublishEnvelope,
-                    request.TransactionId,
-                    liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks*9/10)));
+                    _request.TransactionId,
+                    liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
+            _request = null;
         }
 
         protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)

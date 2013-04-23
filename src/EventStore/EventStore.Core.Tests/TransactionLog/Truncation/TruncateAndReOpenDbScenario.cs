@@ -12,7 +12,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
 {
     public abstract class TruncateAndReOpenDbScenario : TruncateScenario
     {
-        protected TruncateAndReOpenDbScenario(int maxEntriesInMemTable = 100) : base(maxEntriesInMemTable)
+        protected TruncateAndReOpenDbScenario(int maxEntriesInMemTable = 100, int metastreamMaxCount = 1)
+            : base(maxEntriesInMemTable, metastreamMaxCount)
         {
         }
 
@@ -33,7 +34,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
                                                    ChaserCheckpoint,
                                                    new InMemoryCheckpoint(-1),
                                                    new InMemoryCheckpoint(-1)));
-            
+
             Db.Open();
 
             TableIndex = new TableIndex(Path.Combine(PathName, "index"),
@@ -45,7 +46,9 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
                                       () => new TFChunkReader(Db, Db.Config.WriterCheckpoint),
                                       TableIndex,
                                       new ByLengthHasher(),
-                                      new NoLRUCache<string, StreamCacheInfo>());
+                                      new NoLRUCache<string, StreamCacheInfo>(),
+                                      additionalCommitChecks: true,
+                                      metastreamMaxCount: MetastreamMaxCount);
             ReadIndex.Init(WriterCheckpoint.Read(), ChaserCheckpoint.Read());
         }
     }

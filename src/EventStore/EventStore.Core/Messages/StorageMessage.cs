@@ -27,9 +27,11 @@
 // 
 using System;
 using System.Net;
+using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages
@@ -42,7 +44,6 @@ namespace EventStore.Core.Messages
             IEnvelope Envelope { get; }
             string EventStreamId { get; }
             int ExpectedVersion { get; }
-            bool AllowImplicitStreamCreation { get; }
         }
 
         public interface IFlushableMessage
@@ -62,16 +63,9 @@ namespace EventStore.Core.Messages
             public int ExpectedVersion { get; private set; }
             public readonly Event[] Events;
 
-            public bool AllowImplicitStreamCreation { get; private set; }
             public readonly DateTime LiveUntil;
 
-            public WritePrepares(Guid correlationId, 
-                                 IEnvelope envelope, 
-                                 string eventStreamId, 
-                                 int expectedVersion, 
-                                 Event[] events, 
-                                 bool allowImplicitStreamCreation,
-                                 DateTime liveUntil)
+            public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, Event[] events, DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -84,7 +78,6 @@ namespace EventStore.Core.Messages
                 ExpectedVersion = expectedVersion;
                 Events = events;
 
-                AllowImplicitStreamCreation = allowImplicitStreamCreation;
                 LiveUntil = liveUntil;
             }
         }
@@ -96,15 +89,9 @@ namespace EventStore.Core.Messages
             public string EventStreamId { get; private set; }
             public int ExpectedVersion { get; private set; }
 
-            public bool AllowImplicitStreamCreation { get; private set; }
             public readonly DateTime LiveUntil;
 
-            public WriteDelete(Guid correlationId, 
-                               IEnvelope envelope, 
-                               string eventStreamId, 
-                               int expectedVersion, 
-                               bool allowImplicitStreamCreation, 
-                               DateTime liveUntil)
+            public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -115,7 +102,6 @@ namespace EventStore.Core.Messages
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
 
-                AllowImplicitStreamCreation = allowImplicitStreamCreation;
                 LiveUntil = liveUntil;
             }
         }
@@ -141,15 +127,9 @@ namespace EventStore.Core.Messages
             public string EventStreamId { get; private set; }
             public int ExpectedVersion { get; private set; }
 
-            public bool AllowImplicitStreamCreation { get; private set; }
             public readonly DateTime LiveUntil;
 
-            public WriteTransactionStart(Guid correlationId, 
-                                         IEnvelope envelope, 
-                                         string eventStreamId, 
-                                         int expectedVersion, 
-                                         bool allowImplicitStreamCreation,
-                                         DateTime liveUntil)
+            public WriteTransactionStart(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -160,7 +140,6 @@ namespace EventStore.Core.Messages
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
 
-                AllowImplicitStreamCreation = allowImplicitStreamCreation;
                 LiveUntil = liveUntil;
             }
         }
@@ -255,151 +234,6 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class CreateStreamRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly string EventStreamId;
-            public readonly Guid CreateStreamId;
-            public readonly bool IsJson;
-            public readonly byte[] Metadata;
-
-            public CreateStreamRequestCreated(Guid correlationId,
-                                              IEnvelope envelope,
-                                              string eventStreamId,
-                                              Guid createStreamId,
-                                              bool isJson,
-                                              byte[] metadata)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-                Ensure.NotEmptyGuid(createStreamId, "createStreamId");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-                EventStreamId = eventStreamId;
-                CreateStreamId = createStreamId;
-                IsJson = isJson;
-                Metadata = metadata ?? Empty.ByteArray;
-            }
-        }
-
-        public class WriteRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-
-            public readonly string EventStreamId;
-            public readonly int ExpectedVersion;
-
-            public readonly Event[] Events;
-
-            public WriteRequestCreated(Guid correlationId, 
-                                       IEnvelope envelope,
-                                       string eventStreamId,
-                                       int expectedVersion,
-                                       Event[] events)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-                Ensure.NotNull(events, "events");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-
-                EventStreamId = eventStreamId;
-                ExpectedVersion = expectedVersion;
-
-                Events = events;
-            }
-        }
-
-        public class TransactionStartRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly string EventStreamId;
-            public readonly int ExpectedVersion;
-
-            public TransactionStartRequestCreated(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-                EventStreamId = eventStreamId;
-                ExpectedVersion = expectedVersion;
-            }
-        }
-
-        public class TransactionWriteRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly long TransactionId;
-            public readonly Event[] Events;
-
-            public TransactionWriteRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId, Event[] events)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.Nonnegative(transactionId, "transactionId");
-                Ensure.NotNull(events, "events");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-                TransactionId = transactionId;
-                Events = events;
-            }
-        }
-
-        public class TransactionCommitRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly long TransactionId;
-
-            public TransactionCommitRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.Nonnegative(transactionId, "transactionId");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-                TransactionId = transactionId;
-            }
-        }
-
-        public class DeleteStreamRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-
-            public readonly string EventStreamId;
-            public readonly int ExpectedVersion;
-
-            public DeleteStreamRequestCreated(Guid correlationId,
-                                              IEnvelope envelope,
-                                              string eventStreamId,
-                                              int expectedVersion)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-
-                EventStreamId = eventStreamId;
-                ExpectedVersion = expectedVersion;
-            }
-        }
-
         public class AlreadyCommitted: Message
         {
             public readonly Guid CorrelationId;
@@ -485,6 +319,40 @@ namespace EventStore.Core.Messages
                 ForwardingId = forwardingId;
                 CorrelationId = correlationId;
                 TimeoutMessage = timeoutMessage;
+            }
+        }
+
+        public class CheckStreamAccess: Message
+        {
+            public readonly IEnvelope Envelope;
+            public readonly Guid CorrelationId;
+            public readonly string EventStreamId;
+            public readonly StreamAccessType AccessType;
+            public readonly IPrincipal User;
+
+            public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, StreamAccessType accessType, IPrincipal user)
+            {
+                Envelope = envelope;
+                CorrelationId = correlationId;
+                EventStreamId = eventStreamId;
+                AccessType = accessType;
+                User = user;
+            }
+        }
+
+        public class CheckStreamAccessCompleted: Message
+        {
+            public readonly Guid CorrelationId;
+            public readonly string EventStreamId;
+            public readonly StreamAccessType AccessType;
+            public readonly StreamAccessResult AccessResult;
+
+            public CheckStreamAccessCompleted(Guid correlationId, string eventStreamId, StreamAccessType accessType, StreamAccessResult accessResult)
+            {
+                CorrelationId = correlationId;
+                EventStreamId = eventStreamId;
+                AccessType = accessType;
+                AccessResult = accessResult;
             }
         }
     }

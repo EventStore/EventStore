@@ -30,16 +30,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using EventStore.ClientAPI;
-using EventStore.Core.Services;
+using EventStore.Common.Log;
 using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
+using ILogger = EventStore.Common.Log.ILogger;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
     public class subscribe_to_stream_catching_up_should : SpecificationWithDirectoryPerTestFixture
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<subscribe_to_stream_catching_up_should>();
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
 
         private MiniNode _node;
@@ -73,10 +74,11 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                null,
                                                                false,
                                                                (_, x) => appeared.Set(),
+                                                               _ => Log.Info("Live processing started."),
                                                                (_, __, ___) => dropped.Signal());
 
                 Thread.Sleep(100); // give time for first pull phase
-                var dummySubscr = store.SubscribeToStream(stream, false, x => { }, () => { }).Result; // wait for dummy subscription to complete
+                var dummySubscr = store.SubscribeToStream(stream, false, (s, x) => { }, (s, r, e) => { }).Result; // wait for dummy subscription to complete
                 Thread.Sleep(100);
                 Assert.IsFalse(appeared.Wait(0), "Some event appeared!");
                 Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
@@ -86,9 +88,9 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning")]
-        public void be_able_to_subscribe_to_non_existing_stream_and_then_catch_created_event()
+        public void be_able_to_subscribe_to_non_existing_stream_and_then_catch_event()
         {
-            const string stream = "be_able_to_subscribe_to_non_existing_stream_and_then_catch_created_event";
+            const string stream = "be_able_to_subscribe_to_non_existing_stream_and_then_catch_event";
             using (var store = TestConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
@@ -99,9 +101,10 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                null,
                                                                false,
                                                                (_, x) => appeared.Signal(),
+                                                               _ => Log.Info("Live processing started."),
                                                                (_, __, ___) => dropped.Signal());
 
-                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
+                store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
 
                 if (!appeared.Wait(Timeout))
                 {
@@ -126,10 +129,20 @@ namespace EventStore.Core.Tests.ClientAPI
                 var dropped1 = new ManualResetEventSlim(false);
                 var dropped2 = new ManualResetEventSlim(false);
 
-                var sub1 = store.SubscribeToStreamFrom(stream, null, false, (_, e) => appeared.Signal(), (x, y, z) => dropped1.Set());
-                var sub2 = store.SubscribeToStreamFrom(stream, null, false, (_, e) => appeared.Signal(), (x, y, z) => dropped2.Set());
+                var sub1 = store.SubscribeToStreamFrom(stream, 
+                                                       null,
+                                                       false,
+                                                       (_, e) => appeared.Signal(),
+                                                        _ => Log.Info("Live processing started."),
+                                                       (x, y, z) => dropped1.Set());
+                var sub2 = store.SubscribeToStreamFrom(stream,
+                                                       null,
+                                                       false,
+                                                       (_, e) => appeared.Signal(),
+                                                        _ => Log.Info("Live processing started."),
+                                                       (x, y, z) => dropped2.Set());
 
-                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
+                store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
 
                 if (!appeared.Wait(Timeout))
                 {
@@ -157,7 +170,12 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
 
                 var dropped = new CountdownEvent(1);
-                var subscription = store.SubscribeToStreamFrom(stream, null, false, (x, y) => { }, (x, y, z) => dropped.Signal());
+                var subscription = store.SubscribeToStreamFrom(stream,
+                                                               null,
+                                                               false,
+                                                               (x, y) => { },
+                                                               _ => Log.Info("Live processing started."),
+                                                               (x, y, z) => dropped.Signal());
                 Assert.IsFalse(dropped.Wait(0));
                 subscription.Stop(Timeout);
                 Assert.IsTrue(dropped.Wait(Timeout));
@@ -173,13 +191,12 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
 
                 var events = new List<ResolvedEvent>();
-                var appeared = new CountdownEvent(21); // events and $stream-created
+                var appeared = new CountdownEvent(20); // events
                 var dropped = new CountdownEvent(1);
 
-                store.CreateStream(stream, Guid.NewGuid(), false, null);
                 for (int i = 0; i < 10; ++i)
                 {
-                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 var subscription = store.SubscribeToStreamFrom(stream,
@@ -190,10 +207,11 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                    events.Add(y);
                                                                    appeared.Signal();
                                                                },
+                                                               _ => Log.Info("Live processing started."),
                                                                (x, y, z) => dropped.Signal());
                 for (int i = 10; i < 20; ++i)
                 {
-                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 if (!appeared.Wait(Timeout))
@@ -202,13 +220,10 @@ namespace EventStore.Core.Tests.ClientAPI
                     Assert.Fail("Couldn't wait for all events.");
                 }
 
-                Assert.AreEqual(21, events.Count);
-                for (int i = 0; i < 21; ++i)
+                Assert.AreEqual(20, events.Count);
+                for (int i = 0; i < 20; ++i)
                 {
-                    if (i == 0)
-                        Assert.AreEqual(SystemEventTypes.StreamCreated, events[i].OriginalEvent.EventType);
-                    else
-                        Assert.AreEqual("et-" + (i-1).ToString(), events[i].OriginalEvent.EventType);
+                    Assert.AreEqual("et-" + i.ToString(), events[i].OriginalEvent.EventType);
                 }
 
                 Assert.IsFalse(dropped.Wait(0));
@@ -226,27 +241,27 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
 
                 var events = new List<ResolvedEvent>();
-                var appeared = new CountdownEvent(20); // skip $stream-created and first 10 events
+                var appeared = new CountdownEvent(20); // skip first 10 events
                 var dropped = new CountdownEvent(1);
 
-                store.CreateStream(stream, Guid.NewGuid(), false, null);
                 for (int i = 0; i < 20; ++i)
                 {
-                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 var subscription = store.SubscribeToStreamFrom(stream,
-                                                               10,
+                                                               9,
                                                                false,
                                                                (x, y) =>
                                                                {
                                                                    events.Add(y);
                                                                    appeared.Signal();
                                                                },
+                                                               _ => Log.Info("Live processing started."),
                                                                (x, y, z) => dropped.Signal());
                 for (int i = 20; i < 30; ++i)
                 {
-                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 if (!appeared.Wait(Timeout))
@@ -281,20 +296,20 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(10);
                 var dropped = new CountdownEvent(1);
 
-                store.CreateStream(stream, Guid.NewGuid(), false, null);
                 for (int i = 0; i < 20; ++i)
                 {
-                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 var subscription = store.SubscribeToStreamFrom(stream,
-                                                               10,
+                                                               9,
                                                                false,
                                                                (x, y) =>
                                                                {
                                                                    events.Add(y);
                                                                    appeared.Signal();
                                                                },
+                                                               _ => Log.Info("Live processing started."),
                                                                (x, y, z) => dropped.Signal());
                 if (!appeared.Wait(Timeout))
                 {

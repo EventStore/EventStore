@@ -27,10 +27,10 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -99,15 +99,23 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.InternalServerError, description ?? "Internal Server Error", null, Encoding.UTF8);
         }
 
-        public static ResponseConfiguration ReadEventCompleted(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration NotImplemented(string description = null)
         {
-            // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
+            return new ResponseConfiguration(HttpStatusCode.NotImplemented, description ?? "Not Implemented", null, Encoding.UTF8);
+        }
 
-            var completed = message as ClientMessage.ReadEventCompleted;
-            if (completed == null)
+        public static ResponseConfiguration Unauthorized(string description = null)
+        {
+            return new ResponseConfiguration(HttpStatusCode.Unauthorized, description ?? "Unauthorized", null, Encoding.UTF8);
+        }
+
+        public static ResponseConfiguration EventEntry(HttpResponseConfiguratorArgs entity, Message message)
+        {
+            var msg = message as ClientMessage.ReadEventCompleted;
+            if (msg == null)
                 return InternalServerError();
 
-            switch (completed.Result)
+            switch (msg.Result)
             {
                 case ReadEventResult.Success:
                     return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
@@ -116,15 +124,22 @@ namespace EventStore.Core.Services.Transport.Http
                     return NotFound();
                 case ReadEventResult.StreamDeleted:
                     return Gone();
+                case ReadEventResult.Error:
+                    return InternalServerError(msg.Error);
+                case ReadEventResult.AccessDenied:
+                    return Unauthorized();
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        public static ResponseConfiguration ReadStreamEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfStream)
+        public static ResponseConfiguration EventMetadata(HttpResponseConfiguratorArgs entity)
         {
-            // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
+            return NotImplemented();
+        }
 
+        public static ResponseConfiguration GetStreamEventsBackward(HttpResponseConfiguratorArgs entity, Message message, bool headOfStream)
+        {
             var msg = message as ClientMessage.ReadStreamEventsBackwardCompleted;
             if (msg == null)
                 return InternalServerError();
@@ -144,7 +159,88 @@ namespace EventStore.Core.Services.Transport.Http
                 case ReadStreamResult.NotModified:
                     return NotModified();
                 case ReadStreamResult.Error:
-                    return InternalServerError(msg.Message);
+                    return InternalServerError(msg.Error);
+                case ReadStreamResult.AccessDenied:
+                    return Unauthorized();
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public static ResponseConfiguration GetStreamEventsForward(HttpResponseConfiguratorArgs entity, Message message)
+        {
+            var msg = message as ClientMessage.ReadStreamEventsForwardCompleted;
+            if (msg == null)
+                return InternalServerError();
+
+            switch (msg.Result)
+            {
+                case ReadStreamResult.Success:
+                {
+                    if (msg.LastEventNumber >= msg.FromEventNumber + msg.MaxCount)
+                        return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
+                    return OkNoCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, msg.LastEventNumber.ToString(CultureInfo.InvariantCulture));
+                }
+                case ReadStreamResult.NoStream:
+                    return NotFound();
+                case ReadStreamResult.StreamDeleted:
+                    return Gone();
+                case ReadStreamResult.NotModified:
+                    return NotModified();
+                case ReadStreamResult.Error:
+                    return InternalServerError(msg.Error);
+                case ReadStreamResult.AccessDenied:
+                    return Unauthorized();
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
+        {
+            var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
+            if (msg == null)
+                return InternalServerError("Failed to read all events backward.");
+
+            switch (msg.Result)
+            {
+                case ReadAllResult.Success:
+                {
+                    if (!headOfTf && msg.CurrentPos.CommitPosition <= msg.TfEofPosition)
+                        return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
+                    return OkNoCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, msg.TfEofPosition.ToString(CultureInfo.InvariantCulture));
+                }
+                case ReadAllResult.NotModified:
+                    return NotModified();
+                case ReadAllResult.Error:
+                    return InternalServerError(msg.Error);
+                case ReadAllResult.AccessDenied:
+                    return Unauthorized();
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
+        {
+            var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
+            if (msg == null)
+                return InternalServerError("Failed to read all events forward.");
+
+            switch (msg.Result)
+            {
+                case ReadAllResult.Success:
+                {
+                    if (!headOfTf && msg.Events.Length == msg.MaxCount)
+                        return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
+                    return OkNoCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, msg.TfEofPosition.ToString(CultureInfo.InvariantCulture));
+                }
+                case ReadAllResult.NotModified:
+                    return NotModified();
+                case ReadAllResult.Error:
+                    return InternalServerError(msg.Error);
+                case ReadAllResult.AccessDenied:
+                    return Unauthorized();
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -152,13 +248,11 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration WriteEventsCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)
         {
-            // Debug.Assert(message.GetType() == typeof(ClientMessage.WriteEventsCompleted));
-
-            var completed = message as ClientMessage.WriteEventsCompleted;
-            if (completed == null)
+            var msg = message as ClientMessage.WriteEventsCompleted;
+            if (msg == null)
                 return InternalServerError();
 
-            switch (completed.Result)
+            switch (msg.Result)
             {
                 case OperationResult.Success:
                 {
@@ -167,11 +261,12 @@ namespace EventStore.Core.Services.Transport.Http
                         "Created",
                         null,
                         Encoding.UTF8,
-                        new KeyValuePair<string, string>("Location",
-                                                         HostName.Combine(entity.UserHostName,
-                                                                          "/streams/{0}/{1}",
-                                                                          Uri.EscapeDataString(eventStreamId),
-                                                                          completed.FirstEventNumber == 0 ? 1 : completed.FirstEventNumber)));
+                        new KeyValuePair<string, string>(
+                            "Location",
+                            HostName.Combine(entity.RequestedUrl, 
+                                             "/streams/{0}/{1}", 
+                                             Uri.EscapeDataString(eventStreamId), 
+                                             msg.FirstEventNumber)));
                 }
                 case OperationResult.PrepareTimeout:
                 case OperationResult.CommitTimeout:
@@ -183,6 +278,8 @@ namespace EventStore.Core.Services.Transport.Http
                     return Gone("Stream deleted");
                 case OperationResult.InvalidTransaction:
                     return InternalServerError("Invalid transaction");
+                case OperationResult.AccessDenied:
+                    return Unauthorized();
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -190,8 +287,6 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration GetFreshStatsCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
-            // Debug.Assert(message.GetType() == typeof(MonitoringMessage.GetFreshStatsCompleted));
-
             var completed = message as MonitoringMessage.GetFreshStatsCompleted;
             if (completed == null)
                 return InternalServerError();
@@ -199,96 +294,31 @@ namespace EventStore.Core.Services.Transport.Http
             return completed.Success ? OkNoCache(entity.ResponseCodec.ContentType, Encoding.UTF8) : NotFound();
         }
 
-        public static ResponseConfiguration CreateStreamCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)
-        {
-            // Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
-
-            var completed = message as ClientMessage.CreateStreamCompleted;
-            if (completed == null)
-                return InternalServerError();
-
-            switch (completed.Result)
-            {
-                case OperationResult.Success:
-                {
-                    return new ResponseConfiguration(
-                        HttpStatusCode.Created,
-                        "Stream created",
-                        null,
-                        Encoding.UTF8,
-                        new KeyValuePair<string, string>("Location",
-                                                         HostName.Combine(entity.UserHostName,
-                                                                          "/streams/{0}",
-                                                                          Uri.EscapeDataString(eventStreamId))));
-                }
-                case OperationResult.PrepareTimeout:
-                case OperationResult.CommitTimeout:
-                case OperationResult.ForwardTimeout:
-                    return InternalServerError("Create timeout");
-
-                case OperationResult.WrongExpectedVersion:
-                case OperationResult.StreamDeleted:
-                case OperationResult.InvalidTransaction:
-                    return BadRequest(string.Format("Error code : {0}. Reason : {1}", completed.Result, completed.Message));
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
         public static ResponseConfiguration DeleteStreamCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
-            // Debug.Assert(message.GetType() == typeof(ClientMessage.DeleteStreamCompleted));
-
-            var completed = message as ClientMessage.DeleteStreamCompleted;
-            if (completed == null)
+            var msg = message as ClientMessage.DeleteStreamCompleted;
+            if (msg == null)
                 return InternalServerError();
 
-            switch (completed.Result)
+            switch (msg.Result)
             {
                 case OperationResult.Success:
                     return new ResponseConfiguration(HttpStatusCode.NoContent, "Stream deleted", null, Encoding.UTF8);
-
                 case OperationResult.PrepareTimeout:
                 case OperationResult.CommitTimeout:
                 case OperationResult.ForwardTimeout:
                     return InternalServerError("Delete timeout");
-
                 case OperationResult.WrongExpectedVersion:
+                    return BadRequest("Wrong expected EventNumber");
                 case OperationResult.StreamDeleted:
+                    return Gone("Stream deleted");
                 case OperationResult.InvalidTransaction:
-                    return BadRequest(string.Format("Error code : {0}. Reason : {1}", completed.Result, completed.Message));
-
+                    return InternalServerError("Invalid transaction");
+                case OperationResult.AccessDenied:
+                    return Unauthorized();
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-        }
-
-        public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
-        {
-            // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
-
-            var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
-            if (msg == null)
-                return InternalServerError("Failed to read all events backward.");
-            if (msg.NotModified)
-                return NotModified();
-            if (!headOfTf && msg.Result.CurrentPos.CommitPosition <= msg.Result.TfEofPosition)
-                return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
-            return OkNoCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, msg.Result.TfEofPosition.ToString(CultureInfo.InvariantCulture));
-        }
-
-        public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
-        {
-            // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
-
-            var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
-            if (msg == null)
-                return InternalServerError("Failed to read all events forward.");
-            if (msg.NotModified)
-                return NotModified();
-            if (!headOfTf && msg.Result.Events.Length == msg.Result.MaxCount)
-                return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
-            return OkNoCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, msg.Result.TfEofPosition.ToString(CultureInfo.InvariantCulture));
         }
     }
 }

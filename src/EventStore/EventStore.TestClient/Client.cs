@@ -81,8 +81,6 @@ namespace EventStore.TestClient
 
             _commands.Register(new PingFloodHttpProcessor());
 
-            _commands.Register(new CreateStreamProcessor());
-
             _commands.Register(new WriteProcessor());
             _commands.Register(new WriteJsonProcessor());
             _commands.Register(new WriteFloodProcessor());

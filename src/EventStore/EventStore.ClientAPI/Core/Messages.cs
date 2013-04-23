@@ -139,7 +139,7 @@ namespace EventStore.ClientAPI.Core
         public readonly string StreamId;
         public readonly bool ResolveLinkTos;
         public readonly Action<EventStoreSubscription, ResolvedEvent> EventAppeared;
-        public readonly Action<EventStoreSubscription, string, Exception> SubscriptionDropped;
+        public readonly Action<EventStoreSubscription, SubscriptionDropReason, Exception> SubscriptionDropped;
            
         public readonly int MaxRetries;
         public readonly TimeSpan Timeout;
@@ -148,7 +148,7 @@ namespace EventStore.ClientAPI.Core
                                         string streamId,
                                         bool resolveLinkTos, 
                                         Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                                        Action<EventStoreSubscription, string, Exception> subscriptionDropped, 
+                                        Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, 
                                         int maxRetries, 
                                         TimeSpan timeout)
         {

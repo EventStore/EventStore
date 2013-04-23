@@ -35,8 +35,9 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public class SingleAckRequestManager : IHandle<StorageMessage.TransactionStartRequestCreated>,
-                                           IHandle<StorageMessage.TransactionWriteRequestCreated>,
+    public class SingleAckRequestManager : IRequestManager,
+                                           IHandle<ClientMessage.TransactionStart>,
+                                           IHandle<ClientMessage.TransactionWrite>,
                                            IHandle<StorageMessage.PrepareAck>,
                                            IHandle<StorageMessage.WrongExpectedVersion>,
                                            IHandle<StorageMessage.InvalidTransaction>,
@@ -67,28 +68,27 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _publishEnvelope = new PublishEnvelope(_bus);
         }
 
-        public void Handle(StorageMessage.TransactionStartRequestCreated message)
+        public void Handle(ClientMessage.TransactionStart request)
         {
             if (_initialized)
                 throw new InvalidOperationException();
 
             _initialized = true;
             _requestType = RequestType.TransactionStart;
-            _responseEnvelope = message.Envelope;
-            _correlationId = message.CorrelationId;
+            _responseEnvelope = request.Envelope;
+            _correlationId = request.CorrelationId;
 
             _transactionId = -1; // not known yet
 
             _bus.Publish(new StorageMessage.WriteTransactionStart(_correlationId,
                                                                   _publishEnvelope,
-                                                                  message.EventStreamId,
-                                                                  message.ExpectedVersion,
-                                                                  allowImplicitStreamCreation: true,
+                                                                  request.EventStreamId,
+                                                                  request.ExpectedVersion,
                                                                   liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks * 9 / 10)));
             _nextTimeoutTime = DateTime.UtcNow + _prepareTimeout;
         }
 
-        public void Handle(StorageMessage.TransactionWriteRequestCreated request)
+        public void Handle(ClientMessage.TransactionWrite request)
         {
             if (_initialized)
                 throw new InvalidOperationException();
@@ -100,10 +100,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _transactionId = request.TransactionId;
 
-            _bus.Publish(new StorageMessage.WriteTransactionData(request.CorrelationId,
-                                                                 _publishEnvelope,
-                                                                 _transactionId,
-                                                                 request.Events));
+            _bus.Publish(new StorageMessage.WriteTransactionData(request.CorrelationId, _publishEnvelope, _transactionId, request.Events));
             CompleteSuccessRequest(request.CorrelationId, request.TransactionId);
         }
 
@@ -122,7 +119,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(StorageMessage.InvalidTransaction message)
         {
-            CompleteFailedRequest(message.CorrelationId, _transactionId, OperationResult.WrongExpectedVersion, "Wrong expected version.");
+            CompleteFailedRequest(message.CorrelationId, _transactionId, OperationResult.InvalidTransaction, "Invalid transaction.");
         }
 
         public void Handle(StorageMessage.StreamDeleted message)

@@ -91,14 +91,27 @@ General UI
     margin-right: 50px;
 }
 
-.error {
-	min-width: 40%;
-	margin: 10px auto;
+.head-error
+{
+    margin: 10px auto;
 	padding: 8px;
 	text-align: center;
 	border: 1px solid #EE5678;
     background-color: transparent;
 	border-radius: 5px;
+}
+
+
+.error {
+	min-width: 40%;
+/*	
+    margin: 10px auto;
+	padding: 8px;
+	text-align: center;
+	border: 1px solid #EE5678;
+    background-color: transparent;
+	border-radius: 5px;
+    */
 	font-size: 13px;
     color: #EE5678;
     white-space: normal;
@@ -127,13 +140,13 @@ Projections common
     margin-left: -25px;
 }
 
-#commands-container li {
+#commands-container li, .commands-container li {
     display: inline;
 }
-#commands-container a {
+#commands-container a, .commands-container a {
     cursor: pointer;
 }
-#commands-container i.icon-remove {
+#commands-container i.icon-remove, .commands-container i.icon-remove {
     margin-top: 2px;
     margin-bottom: 2px;
     margin-left: -3px;

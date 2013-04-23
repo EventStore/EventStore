@@ -201,7 +201,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             try
             {
+#pragma warning disable 420
                 Interlocked.Increment(ref _sentAsyncs);
+#pragma warning restore 420
                 NotifySendStarting(_sendSocketArgs.Count);
 
                 var firedAsync = _sendSocketArgs.AcceptSocket.SendAsync(_sendSocketArgs);
@@ -222,7 +224,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void ProcessSend(SocketAsyncEventArgs socketArgs)
         {
+#pragma warning disable 420
             Interlocked.Increment(ref _sentAsyncCallbacks);
+#pragma warning restore 420
             if (socketArgs.SocketError != SocketError.Success)
             {
                 NotifySendCompleted(0);
@@ -232,7 +236,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
 
             NotifySendCompleted(socketArgs.Count);
+#pragma warning disable 420
             Interlocked.Increment(ref _packagesSent);
+#pragma warning restore 420
 
             lock (_sendingLock)
             {
@@ -268,7 +274,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
             try
             {
+#pragma warning disable 420
                 Interlocked.Increment(ref _recvAsyncs);
+#pragma warning restore 420
                 NotifyReceiveStarting();
                 bool firedAsync;
                 lock (_receiveSocketArgs)
@@ -298,7 +306,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
         {
             if (socketArgs != _receiveSocketArgs)
                 throw new Exception("Invalid socket args received");
+#pragma warning disable 420
             Interlocked.Increment(ref _recvAsyncCallbacks);
+#pragma warning restore 420
 
             // socket closed normally or some error occurred
             if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
@@ -310,7 +320,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
 
             NotifyReceiveCompleted(socketArgs.BytesTransferred);
+#pragma warning disable 420
             Interlocked.Increment(ref _packagesReceived);
+#pragma warning restore 420
             Interlocked.Add(ref _bytesReceived, socketArgs.BytesTransferred);
 
             var receiveBufferSegment = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);

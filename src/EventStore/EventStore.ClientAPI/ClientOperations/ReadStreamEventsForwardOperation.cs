@@ -27,6 +27,7 @@
 //  
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 
@@ -34,8 +35,6 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class ReadStreamEventsForwardOperation : OperationBase<StreamEventsSlice, ClientMessage.ReadStreamEventsCompleted>
     {
-        public override bool IsLongRunning { get { return false; } }
-
         private readonly string _stream;
         private readonly int _fromEventNumber;
         private readonly int _maxCount;
@@ -69,8 +68,14 @@ namespace EventStore.ClientAPI.ClientOperations
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.NoStream:
                     Succeed();
                     return new InspectionResult(InspectionDecision.EndOperation);
+                case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.Error:
+                    Fail(new ServerErrorException(string.IsNullOrEmpty(response.Error) ? "<no message>" : response.Error));
+                    return new InspectionResult(InspectionDecision.EndOperation);
+                case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.AccessDenied:
+                    Fail(new AccessDeniedException(string.Format("Read access denied for stream '{0}'.", _stream)));
+                    return new InspectionResult(InspectionDecision.EndOperation);
                 default:
-                    throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadStreamResult: {0}.", response.Result));
+                    throw new Exception(string.Format("Unexpected ReadStreamResult: {0}.", response.Result));
             }
         }
 

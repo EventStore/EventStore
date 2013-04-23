@@ -107,7 +107,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                                   new[]
                                                   {
                                                       new Event(Guid.NewGuid(), "test-event-type", false, new byte[4000], null)
-                                                  }));
+                                                  },
+                                                  null));
             }
         }
     }

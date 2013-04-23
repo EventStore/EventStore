@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Messages;
@@ -85,8 +86,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe<ProjectionSubscriptionMessage.CheckpointSuggested>(_coreProjection);
             _bus.Subscribe<ProjectionSubscriptionMessage.EofReached>(_coreProjection);
             _bus.Subscribe<ProjectionSubscriptionMessage.ProgressChanged>(_coreProjection);
-            _bus.Subscribe(new StubHandler<ProjectionCoreServiceMessage.CoreTick>(tick => tick.Action()));
-            _bus.Subscribe(new StubHandler<ReaderCoreServiceMessage.ReaderTick>(tick => tick.Action()));
+            _bus.Subscribe(new AdHocHandler<ProjectionCoreServiceMessage.CoreTick>(tick => tick.Action()));
+            _bus.Subscribe(new AdHocHandler<ReaderCoreServiceMessage.ReaderTick>(tick => tick.Action()));
             PreWhen();
             When();
         }

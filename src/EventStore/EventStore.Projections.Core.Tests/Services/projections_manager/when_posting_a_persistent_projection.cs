@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Linq;
 using System.Text;
 using EventStore.Core.Bus;
@@ -51,6 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         protected override void When()
         {
+            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS",

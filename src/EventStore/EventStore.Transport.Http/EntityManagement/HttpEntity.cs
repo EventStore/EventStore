@@ -27,46 +27,74 @@
 // 
 using System;
 using System.Net;
+using System.Security.Principal;
 using EventStore.Common.Utils;
+using EventStore.Transport.Http.Codecs;
 
 namespace EventStore.Transport.Http.EntityManagement
 {
     public class HttpEntity
     {
-        public readonly HttpEntityManager Manager;
+        public readonly Uri RequestedUrl;
 
-        public readonly DateTime TimeStamp;
-        public readonly string UserHostName;
-
-        public readonly ICodec RequestCodec;
-        public readonly ICodec ResponseCodec;
 
         public readonly HttpListenerRequest Request;
         internal readonly HttpListenerResponse Response;
+        public readonly IPrincipal User;
 
-        public HttpEntity(DateTime timeStamp,
-                          ICodec requestCodec,
-                          ICodec responseCodec,
-                          HttpListenerContext context,
-                          string[] allowedMethods,
-                          Action<HttpEntity> onRequestSatisfied)
+        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response, IPrincipal user)
         {
-            Ensure.NotNull(requestCodec, "requestCodec");
-            Ensure.NotNull(responseCodec, "responseCodec");
-            Ensure.NotNull(context, "context");
-            Ensure.NotNull(allowedMethods, "allowedMethods");
-            Ensure.NotNull(onRequestSatisfied, "onRequestSatisfied");
+            Ensure.NotNull(request, "request");
+            Ensure.NotNull(response, "response");
 
-            TimeStamp = timeStamp;
-            UserHostName = context.Request.UserHostName;
+            RequestedUrl = request.Url;
 
-            RequestCodec = requestCodec;
-            ResponseCodec = responseCodec;
 
-            Request = context.Request;
-            Response = context.Response;
+            Request = request;
+            Response = response;
+            User = user;
+        }
 
-            Manager = new HttpEntityManager(this, allowedMethods, onRequestSatisfied);
+        private HttpEntity(IPrincipal user)
+        {
+            RequestedUrl = null;
+
+
+            Request = null;
+            Response = null;
+            User = user;
+        }
+
+        private HttpEntity(HttpEntity httpEntity, IPrincipal user)
+        {
+            RequestedUrl = httpEntity.RequestedUrl;
+
+
+            Request = httpEntity.Request;
+            Response = httpEntity.Response;
+            User = user;
+            
+        }
+
+        public HttpEntityManager CreateManager(
+            ICodec requestCodec, ICodec responseCodec, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
+        {
+            return new HttpEntityManager(this, allowedMethods, onRequestSatisfied, requestCodec, responseCodec);
+        }
+
+        public HttpEntityManager CreateManager()
+        {
+            return new HttpEntityManager(this, Empty.StringArray, entity => { }, Codec.NoCodec, Codec.NoCodec);
+        }
+
+        public HttpEntity SetUser(IPrincipal user)
+        {
+            return new HttpEntity(this, user);
+        }
+
+        public static HttpEntity Test(IPrincipal user)
+        {
+            return new HttpEntity(user);
         }
     }
 }

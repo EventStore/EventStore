@@ -30,7 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
-using EventStore.Core.Services.Transport.Http.Codecs;
+using EventStore.Transport.Http.Codecs;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {
