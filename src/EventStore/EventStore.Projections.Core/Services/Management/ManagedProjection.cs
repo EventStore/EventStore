@@ -311,8 +311,14 @@ namespace EventStore.Projections.Core.Services.Management
             }
             if (!Enabled)
                 Enable();
-            Action completed =
-                () => Start(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
+            Action completed = () =>
+                {
+                    if (_state == ManagedProjectionState.Prepared)
+                        Start(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
+                    else
+                        message.Envelope.ReplyWith(
+                            new ProjectionManagementMessage.Updated(message.Name));
+                };
             UpdateProjectionVersion();
             Prepare(() => BeginWrite(completed));
         }
@@ -444,7 +450,9 @@ namespace EventStore.Projections.Core.Services.Management
                         Epoch = -1,
                         Version = -1,
                     });
-            Action completed1 = () => StartOrLoadStopped(completed);
+            Action completed1 = () => { 
+                StartOrLoadStopped(completed); 
+            };
             UpdateProjectionVersion();
             Prepare(() => BeginWrite(completed1));
         }
@@ -603,11 +611,17 @@ namespace EventStore.Projections.Core.Services.Management
             BeginCreatePrepared(config, onPrepared);
         }
 
-        private void Start(Action onStarted)
+        private void Start(Action completed)
         {
             if (!Enabled)
                 throw new InvalidOperationException("Projection is disabled");
-            _onStarted = onStarted;
+            _onStopped = _onStarted = () =>
+                {
+                    _onStopped = null;
+                    _onStarted = null;
+                    if (completed != null)
+                        completed();
+                };
             _state = ManagedProjectionState.Starting;
             _coreQueue.Publish(new CoreProjectionManagementMessage.Start(_id));
         }
@@ -659,7 +673,13 @@ namespace EventStore.Projections.Core.Services.Management
         private void BeginCreateAndPrepare(
             ProjectionStateHandlerFactory handlerFactory, ProjectionConfig config, Action onPrepared)
         {
-            _onPrepared = onPrepared;
+            _onPrepared = _onStopped = () =>
+                {
+                    _onStopped = null;
+                    _onPrepared = null;
+                    if (onPrepared != null) 
+                        onPrepared();
+                };
             if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
             if (config == null) throw new ArgumentNullException("config");
 
@@ -799,11 +819,17 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void StartOrLoadStopped(Action completed)
         {
-            if (Enabled)
-                Start(completed);
-            else
-                LoadStopped(completed);
+            if (_state == ManagedProjectionState.Prepared)
+            {
+                if (Enabled)
+                    Start(completed);
+                else
+                    LoadStopped(completed);
+            }
+            else if (completed != null)
+                completed();
         }
+
 
         private void DoUpdateQuery(ProjectionManagementMessage.UpdateQuery message)
         {
