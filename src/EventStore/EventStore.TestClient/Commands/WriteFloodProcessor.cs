@@ -167,9 +167,9 @@ namespace EventStore.TestClient.Commands
                             {
                                 new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
                                                                  "TakeSomeSpaceEvent",
-                                                                 false,
-                                                                 Encoding.UTF8.GetBytes("DATA" + new string('*', size)),
-                                                                 Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
+                                                                 true,
+                                                                 Encoding.UTF8.GetBytes("{ \"DATA\" : \"" + new string('*', size) + "\"}"),
+                                                                 Encoding.UTF8.GetBytes("{ \"METADATA\" : \"" + new string('$', 100) + "\"}"))
                             },
                             true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
