@@ -49,6 +49,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public bool IsListening { get { return _server.IsListening; } }
         public IEnumerable<string> ListenPrefixes { get { return _server.ListenPrefixes; } }
+        public ServiceAccessibility Accessibility { get { return _accessibility; } }
 
         private readonly ServiceAccessibility _accessibility;
         private readonly IPublisher _inputBus;

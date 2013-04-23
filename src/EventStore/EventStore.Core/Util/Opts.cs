@@ -150,6 +150,41 @@ namespace EventStore.Core.Util
         /*
          *  CLUSTER OPTIONS
          */
+        public const string InternalIpCmd = "int-ip|internal-ip=";
+        public const string InternalIpEnv = "INT_IP";
+        public const string InternalIpJson = "internalIp";
+        public const string InternalIpDescr = "Internal IP Address.";
+        public static readonly IPAddress InternalIpDefault = IPAddress.Loopback;
+
+        public const string ExternalIpCmd = "ext-ip|external-ip=";
+        public const string ExternalIpEnv = "EXT_IP";
+        public const string ExternalIpJson = "externalIp";
+        public const string ExternalIpDescr = "External IP Address.";
+        public static readonly IPAddress ExternalIpDefault = IPAddress.Loopback;
+
+        public const string InternalHttpPortCmd = "int-http-port|internal-http-port=";
+        public const string InternalHttpPortEnv = "INT_HTTP_PORT";
+        public const string InternalHttpPortJson = "internalHttpPort";
+        public const string InternalHttpPortDescr = "Internal HTTP Port.";
+        public static readonly int InternalHttpPortDefault = 2112;
+
+        public const string ExternalHttpPortCmd = "ext-http-port|external-http-port=";
+        public const string ExternalHttpPortEnv = "EXT_HTTP_PORT";
+        public const string ExternalHttpPortJson = "externalHttpPort";
+        public const string ExternalHttpPortDescr = "External HTTP Port.";
+        public static readonly int ExternalHttpPortDefault = 2113;
+
+        public const string InternalTcpPortCmd = "int-tcp-port|internal-tcp-port=";
+        public const string InternalTcpPortEnv = "INT_TCP_PORT";
+        public const string InternalTcpPortJson = "internalTcpPort";
+        public const string InternalTcpPortDescr = "Internal TCP Port.";
+        public static readonly int InternalTcpPortDefault = 1112;
+
+        public const string ExternalTcpPortCmd = "ext-tcp-port|external-tcp-port=";
+        public const string ExternalTcpPortEnv = "EXT_TCP_PORT";
+        public const string ExternalTcpPortJson = "externalTcpPort";
+        public const string ExternalTcpPortDescr = "External TCP Port.";
+        public static readonly int ExternalTcpPortDefault = 1113;
 
         public const string ClusterDnsCmd = "cluster-dns=";
         public const string ClusterDnsEnv = "CLUSTER_DNS";
@@ -181,17 +216,29 @@ namespace EventStore.Core.Util
         public const string FakeDnsDescr = null;
         public const bool   FakeDnsDefault = true;
 
-        public const string ManagerIpCmd = "manager-ip=";
-        public const string ManagerIpEnv = "MANAGER_IP";
-        public const string ManagerIpJson = "managerIp";
-        public const string ManagerIpDescr = null;
-        public static readonly IPAddress ManagerIpDefault = IPAddress.Loopback;
+        public const string InternalManagerIpCmd = "manager-ip|int-manager-ip|internal-manager-ip=";
+        public const string InternalManagerIpEnv = "INT_MANAGER_IP";
+        public const string InternalManagerIpJson = "internalManagerIp";
+        public const string InternalManagerIpDescr = null;
+        public static readonly IPAddress InternalManagerIpDefault = IPAddress.Loopback;
 
-        public const string ManagerPortCmd = "manager-port=";
-        public const string ManagerPortEnv = "MANAGER_PORT";
-        public const string ManagerPortJson = "managerPort";
-        public const string ManagerPortDescr = null;
-        public const int    ManagerPortDefault = 30777;
+        public const string ExternalManagerIpCmd = "ext-manager-ip|external-manager-ip=";
+        public const string ExternalManagerIpEnv = "EXT_MANAGER_IP";
+        public const string ExternalManagerIpJson = "externalManagerIp";
+        public const string ExternalManagerIpDescr = null;
+        public static readonly IPAddress ExternalManagerIpDefault = IPAddress.Loopback;
+
+        public const string InternalManagerHttpPortCmd = "manager-port|int-manager-http-port|internal-manager-http-port=";
+        public const string InternalManagerHttpPortEnv = "INT_MANAGER_HTTP_PORT";
+        public const string InternalManagerHttpPortJson = "internalManagerHttpPort";
+        public const string InternalManagerHttpPortDescr = null;
+        public const int    InternalManagerHttpPortDefault = 30777;
+
+        public const string ExternalManagerHttpPortCmd = "ext-manager-http-port|external-manager-http-port=";
+        public const string ExternalManagerHttpPortEnv = "EXT_MANAGER_HTTP_PORT";
+        public const string ExternalManagerHttpPortJson = "externalManagerHttpPort";
+        public const string ExternalManagerHttpPortDescr = null;
+        public const int    ExternalManagerHttpPortDefault = 30778;
 
         public const string FakeDnsIpsCmd = "fake-dns-ip=";
         public const string FakeDnsIpsEnv = "FAKE_DNS_IPS";
