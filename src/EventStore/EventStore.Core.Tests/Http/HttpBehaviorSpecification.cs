@@ -53,6 +53,7 @@ namespace EventStore.Core.Tests.Http
         protected string _lastResponseBody;
         protected JsonException _lastJsonException;
         private Func<HttpWebResponse, byte[]> _dumpResponse;
+        private Func<HttpWebResponse, int> _dumpResponse2;
         private Func<HttpWebRequest, byte[]> _dumpRequest;
         private Func<HttpWebRequest, byte[]> _dumpRequest2;
         private string _tag;
@@ -62,6 +63,7 @@ namespace EventStore.Core.Tests.Http
         {
 #if !__MonoCS__
             EventStore.Common.Utils.Helper.EatException(() => _dumpResponse = CreateDumpResponse());
+            EventStore.Common.Utils.Helper.EatException(() => _dumpResponse2 = CreateDumpResponse2());
             EventStore.Common.Utils.Helper.EatException(() => _dumpRequest = CreateDumpRequest());
             EventStore.Common.Utils.Helper.EatException(() => _dumpRequest2 = CreateDumpRequest2());
 #endif
@@ -210,22 +212,29 @@ namespace EventStore.Core.Tests.Http
             {
                 var bytes = _dumpRequest(request);
                 if (bytes != null)
-                    Console.WriteLine(Encoding.ASCII.GetString(bytes).TrimEnd('\0'));
+                    Console.WriteLine(Encoding.ASCII.GetString(bytes, 0, GetBytesLength(bytes)).TrimEnd('\0'));
             }
             if (_dumpRequest2 != null)
             {
                 var bytes = _dumpRequest2(request);
                 if (bytes != null)
-                    Console.WriteLine(Encoding.ASCII.GetString(bytes).TrimEnd('\0'));
+                    Console.WriteLine(Encoding.ASCII.GetString(bytes, 0, GetBytesLength(bytes)).TrimEnd('\0'));
             }
             Console.WriteLine();
             if (_dumpResponse != null)
             {
                 var bytes = _dumpResponse(response);
+                var len = _dumpResponse2(response);
                 if (bytes != null)
-                    Console.WriteLine(Encoding.ASCII.GetString(bytes).TrimEnd('\0'));
+                    Console.WriteLine(Encoding.ASCII.GetString(bytes, 0, len).TrimEnd('\0'));
             }
             return response;
+        }
+
+        private int GetBytesLength(byte[] bytes)
+        {
+            var index = Array.IndexOf(bytes, 0);
+            return index < 0 ? bytes.Length : index;
         }
 
         private HttpWebRequest CreateJsonPostRequest<T>(string path, string method, T body)
@@ -340,6 +349,25 @@ namespace EventStore.Core.Tests.Http
             return debugExpression.Compile();
         }
 
+        private static Func<HttpWebResponse, int> CreateDumpResponse2()
+        {
+            var r = Expression.Parameter(typeof (HttpWebResponse), "r");
+            var piCoreResponseData = typeof (HttpWebResponse).GetProperty(
+                "CoreResponseData",
+                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var fim_ConnectStream = piCoreResponseData.PropertyType.GetField("m_ConnectStream",
+                                                                             BindingFlags.GetField| BindingFlags.Public | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var connectStreamType = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("System.Net.ConnectStream")).Where(t => t != null).FirstOrDefault();
+            var fim_ReadOffset = connectStreamType.GetField("m_ReadOffset",
+                                                            BindingFlags.GetField| BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var fim_ReadBufferSize = connectStreamType.GetField("m_ReadBufferSize",
+                                                            BindingFlags.GetField| BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var stream = Expression.Convert(Expression.Field(Expression.Property(r, piCoreResponseData), fim_ConnectStream), connectStreamType);
+            var body = Expression.Add(Expression.Field(stream, fim_ReadOffset), Expression.Field(stream, fim_ReadBufferSize));
+            var debugExpression = Expression.Lambda<Func<HttpWebResponse, int>>(body, r);
+            return debugExpression.Compile();
+        }
+
         private static Func<HttpWebRequest, byte[]> CreateDumpRequest()
         {
             var r = Expression.Parameter(typeof (HttpWebRequest), "r");
@@ -382,7 +410,7 @@ namespace EventStore.Core.Tests.Http
             var debugExpression = Expression.Lambda<Func<HttpWebRequest, byte[]>>(body, r);
             return debugExpression.Compile();
         }
-    // System.Text.Encoding.UTF8.GetString(((System.Net.ConnectStream)(_response.CoreResponseData.m_ConnectStream)).m_ReadBuffer)
+    // System.Text.Encoding.UTF8.GetString(((System.Net.ConnectStream)(_response.CoreResponseData.m_ConnectStream)).m_ReadBuffer) // m_ReadOffset
     // System.Text.Encoding.UTF8.GetString(((System.Net.HttpWebRequest)(request))._WriteBuffer)
     // ((System.Net.ConnectStream)(request._SubmitWriteStream)).BufferedData.headChunk.Buffer
     }
