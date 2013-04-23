@@ -50,7 +50,8 @@ namespace EventStore.ClientAPI
             var endPointDiscoverer = new ClusterDnsEndPointDiscoverer(connectionSettings.Log,
                                                                       clusterSettings.ClusterDns,
                                                                       clusterSettings.MaxDiscoverAttempts,
-                                                                      clusterSettings.ManagerExternalHttpPort);
+                                                                      clusterSettings.ManagerExternalHttpPort,
+                                                                      clusterSettings.FakeDnsEntries);
             _conn = new EventStoreNodeConnection(connectionSettings, endPointDiscoverer, connectionName);
         }
 

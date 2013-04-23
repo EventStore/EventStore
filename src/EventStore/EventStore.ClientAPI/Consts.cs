@@ -38,11 +38,11 @@ namespace EventStore.ClientAPI
 
         public const bool DefaultAllowForwarding = true;
 
-        public static readonly TimeSpan DefaultReconnectionDelay = TimeSpan.FromSeconds(3);
+        public static readonly TimeSpan DefaultReconnectionDelay = TimeSpan.FromMilliseconds(100);
         public static readonly TimeSpan DefaultOperationTimeout = TimeSpan.FromSeconds(7);
         public static readonly TimeSpan DefaultOperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
-        public static readonly TimeSpan TimerPeriod = TimeSpan.FromMilliseconds(1000);
+        public static readonly TimeSpan TimerPeriod = TimeSpan.FromMilliseconds(200);
 
         public const int DefaultMaxClusterDiscoverAttempts = 10;
         public const int DefaultClusterManagerExternalHttpPort = 30778;

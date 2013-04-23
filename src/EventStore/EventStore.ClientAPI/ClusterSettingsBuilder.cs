@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Net;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
@@ -38,6 +39,8 @@ namespace EventStore.ClientAPI
         private string _clusterDns;
         private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
         private int _managerExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
+
+        private IPAddress[] _fakeDnsEntries;
 
         internal ClusterSettingsBuilder()
         {
@@ -65,11 +68,20 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+        public ClusterSettingsBuilder SetFakeDnsEntries(params IPAddress[] dnsEntries)
+        {
+            if (dnsEntries == null || dnsEntries.Length == 0)
+                throw new ArgumentException("Empty FakeDnsEntries collection.");
+            _fakeDnsEntries = dnsEntries;
+            return this;
+        }
+
         public static implicit operator ClusterSettings(ClusterSettingsBuilder builder)
         {
             return new ClusterSettings(builder._clusterDns,
                                        builder._maxDiscoverAttempts,
-                                       builder._managerExternalHttpPort);
+                                       builder._managerExternalHttpPort,
+                                       builder._fakeDnsEntries);
         }
     }
 }

@@ -47,10 +47,15 @@ namespace EventStore.ClientAPI.Core
         private readonly string _clusterDns;
         private readonly int _maxDiscoverAttempts;
         private readonly int _managerExternalHttpPort;
+        private readonly IPAddress[] _fakeDnsEntries;
 
         private readonly HttpAsyncClient _client;
 
-        public ClusterDnsEndPointDiscoverer(ILogger log, string clusterDns, int maxDiscoverAttempts, int managerExternalHttpPort)
+        public ClusterDnsEndPointDiscoverer(ILogger log, 
+                                            string clusterDns,
+                                            int maxDiscoverAttempts, 
+                                            int managerExternalHttpPort,
+                                            IPAddress[] fakeDnsEntries)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
@@ -59,12 +64,16 @@ namespace EventStore.ClientAPI.Core
             _clusterDns = clusterDns;
             _maxDiscoverAttempts = maxDiscoverAttempts;
             _managerExternalHttpPort = managerExternalHttpPort;
+            _fakeDnsEntries = fakeDnsEntries;
 
             _client = new HttpAsyncClient(log);
         }
 
         public Task<IPEndPoint> DiscoverAsync()
         {
+            if (_fakeDnsEntries != null && _fakeDnsEntries.Length > 0)
+                return Task.Factory.StartNew(() => FindBestClusterNode(_fakeDnsEntries, _maxDiscoverAttempts));
+
             return Task<IPAddress[]>
                 .Factory
                 .FromAsync(Dns.BeginGetHostAddresses, Dns.EndGetHostAddresses, _clusterDns, null)
@@ -79,6 +88,24 @@ namespace EventStore.ClientAPI.Core
         }
 
         private IPEndPoint FindBestClusterNode(IPAddress[] managers, int maxAttempts)
+        {
+            for (int i = 0; i < maxAttempts; ++i)
+            {
+                try
+                {
+                    return TryFindBestClusterNode(managers, maxAttempts);
+                }
+                catch (Exception exc)
+                {
+                    if (i == maxAttempts - 1)
+                        throw;
+                }
+                Thread.Sleep(1000);
+            }
+            throw new ClusterException(string.Format("Couldn't find any candidate node for cluster DNS '{0}'.", _clusterDns));
+        }
+
+        private IPEndPoint TryFindBestClusterNode(IPAddress[] managers, int maxAttempts)
         {
             var info = RetrieveClusterGossip(managers, maxAttempts);
             if (info != null && info.Members != null && info.Members.Any())
@@ -116,7 +143,7 @@ namespace EventStore.ClientAPI.Core
                 _log.Info("Failed to discover cluster. No information available");
 
             throw new ClusterException(
-                string.Format("Failed to discover cluster from DNS entry '{0}'.", _clusterDns));
+                    string.Format("Failed to discover cluster from DNS entry '{0}'.", _clusterDns));
         }
 
         private ClusterMessages.ClusterInfoDto RetrieveClusterGossip(IPAddress[] managers, int maxAttempts)
@@ -137,7 +164,7 @@ namespace EventStore.ClientAPI.Core
                 _log.Info("Failed to get cluster info from [{0}].", managers[i]);
                 attempt++;
 
-                Thread.Sleep(TimeSpan.FromMilliseconds(300));
+                Thread.Sleep(TimeSpan.FromMilliseconds(100));
             }
             return null;
         }

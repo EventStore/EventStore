@@ -27,6 +27,7 @@
 //  
 
 using System;
+using System.Net;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
@@ -46,9 +47,12 @@ namespace EventStore.ClientAPI
         public readonly int MaxDiscoverAttempts;
         public readonly int ManagerExternalHttpPort;
 
+        public readonly IPAddress[] FakeDnsEntries;
+
         internal ClusterSettings(string clusterDns,
                                  int maxDiscoverAttempts,
-                                 int managerExternalHttpPort)
+                                 int managerExternalHttpPort,
+                                 IPAddress[] fakeDnsEntries)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
             if (maxDiscoverAttempts < -1)
@@ -58,6 +62,8 @@ namespace EventStore.ClientAPI
             ClusterDns = clusterDns;
             MaxDiscoverAttempts = maxDiscoverAttempts;
             ManagerExternalHttpPort = managerExternalHttpPort;
+
+            FakeDnsEntries = fakeDnsEntries;
         }
     }
 }
