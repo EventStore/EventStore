@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.ClientAPI
     public class when_committing_empty_transaction : SpecificationWithDirectory
     {
         private MiniNode _node;
-        private EventStoreConnection _connection;
+        private IEventStoreConnection _connection;
         private EventData _firstEvent;
 
         [SetUp]
@@ -50,8 +50,8 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _firstEvent = TestEvent.NewTestEvent();
 
-            _connection = TestConnection.Create();
-            _connection.Connect(_node.TcpEndPoint);
+            _connection = TestConnection.Create(_node.TcpEndPoint);
+            _connection.Connect();
 
             _connection.AppendToStream("test-stream",
                                        ExpectedVersion.NoStream,

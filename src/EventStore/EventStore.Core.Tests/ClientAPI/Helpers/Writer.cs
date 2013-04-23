@@ -31,11 +31,11 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
     internal class StreamWriter
     {
-        private readonly EventStoreConnection _store;
+        private readonly IEventStoreConnection _store;
         private readonly string _stream;
         private readonly int _version;
 
-        public StreamWriter(EventStoreConnection store, string stream, int version)
+        public StreamWriter(IEventStoreConnection store, string stream, int version)
         {
             _store = store;
             _stream = stream;
@@ -54,10 +54,10 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
     internal class TailWriter
     {
-        private readonly EventStoreConnection _store;
+        private readonly IEventStoreConnection _store;
         private readonly string _stream;
 
-        public TailWriter(EventStoreConnection store, string stream)
+        public TailWriter(IEventStoreConnection store, string stream)
         {
             _store = store;
             _stream = stream;
@@ -72,10 +72,10 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
     internal class TransactionalWriter
     {
-        private readonly EventStoreConnection _store;
+        private readonly IEventStoreConnection _store;
         private readonly string _stream;
 
-        public TransactionalWriter(EventStoreConnection store, string stream)
+        public TransactionalWriter(IEventStoreConnection store, string stream)
         {
             _store = store;
             _stream = stream;

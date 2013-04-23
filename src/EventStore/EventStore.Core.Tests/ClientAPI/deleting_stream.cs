@@ -59,9 +59,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_doesnt_exists_should_success_when_passed_empty_stream_expected_version()
         {
             const string stream = "which_already_exists_should_success_when_passed_empty_stream_expected_version";
-            using (var connection = TestConnection.Create())
+            using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect(_node.TcpEndPoint);
+                connection.Connect();
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.DoesNotThrow(delete.Wait);
             }
@@ -72,9 +72,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_doesnt_exists_should_success_when_passed_any_for_expected_version()
         {
             const string stream = "which_already_exists_should_success_when_passed_any_for_expected_version";
-            using (var connection = TestConnection.Create())
+            using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect(_node.TcpEndPoint);
+                connection.Connect();
 
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any);
                 Assert.DoesNotThrow(delete.Wait);
@@ -86,9 +86,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void with_invalid_expected_version_should_fail()
         {
             const string stream = "with_invalid_expected_version_should_fail";
-            using (var connection = TestConnection.Create())
+            using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect(_node.TcpEndPoint);
+                connection.Connect();
 
                 var delete = connection.DeleteStreamAsync(stream, 1);
                 Assert.That(() => delete.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
@@ -100,9 +100,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_was_already_deleted_should_fail()
         {
             const string stream = "which_was_allready_deleted_should_fail";
-            using (var connection = TestConnection.Create())
+            using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect(_node.TcpEndPoint);
+                connection.Connect();
 
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.DoesNotThrow(delete.Wait);

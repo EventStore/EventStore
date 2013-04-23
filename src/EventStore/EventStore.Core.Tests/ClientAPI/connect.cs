@@ -15,18 +15,18 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void should_not_throw_exception_when_server_is_down()
         {
-            using (var connection = TestConnection.Create())
+            var ip = IPAddress.Loopback;
+            int port = TcpPortsHelper.GetAvailablePort(ip);
+            try
             {
-                var ip = IPAddress.Loopback;
-                int port = TcpPortsHelper.GetAvailablePort(ip);
-                try
+                using (var connection = TestConnection.Create(new IPEndPoint(ip, port)))
                 {
-                    Assert.DoesNotThrow(() => connection.Connect(new IPEndPoint(ip, port)));
+                    Assert.DoesNotThrow(() => connection.Connect());
                 }
-                finally
-                {
-                    TcpPortsHelper.ReturnPort(port);
-                }
+            }
+            finally
+            {
+                TcpPortsHelper.ReturnPort(port);
             }
         }
 
@@ -43,25 +43,25 @@ namespace EventStore.Core.Tests.ClientAPI
                                              .OnClosed((x, r) => closed.Set())
                                              .FailOnNoServerResponse();
 
-            using (var connection = EventStoreConnection.Create(settings))
+            var ip = IPAddress.Loopback;
+            int port = TcpPortsHelper.GetAvailablePort(ip);
+            try
             {
-                var ip = IPAddress.Loopback;
-                int port = TcpPortsHelper.GetAvailablePort(ip);
-                try
+                using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
                 {
-                    connection.Connect(new IPEndPoint(ip, port));
+                    connection.Connect();
 
                     if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
                         Assert.Fail("Connection timeout took too long.");
 
-                    Assert.That(() => connection.Connect(new IPEndPoint(ip, port)),
+                    Assert.That(() => connection.Connect(),
                                 Throws.Exception.InstanceOf<AggregateException>()
-                                .With.InnerException.InstanceOf<InvalidOperationException>());
+                                      .With.InnerException.InstanceOf<InvalidOperationException>());
                 }
-                finally
-                {
-                    TcpPortsHelper.ReturnPort(port);
-                }
+            }
+            finally
+            {
+                TcpPortsHelper.ReturnPort(port);
             }
         }
 
@@ -82,13 +82,13 @@ namespace EventStore.Core.Tests.ClientAPI
                                              .OnErrorOccurred((x, exc) => Console.WriteLine("Error: {0}", exc))
                                              .FailOnNoServerResponse();
 
-            using (var connection = EventStoreConnection.Create(settings))
+            var ip = IPAddress.Loopback;
+            int port = TcpPortsHelper.GetAvailablePort(ip);
+            try
             {
-                var ip = IPAddress.Loopback;
-                int port = TcpPortsHelper.GetAvailablePort(ip);
-                try
+                using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
                 {
-                    connection.Connect(new IPEndPoint(ip, port));
+                    connection.Connect();
 
                     if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
                         Assert.Fail("Connection timeout took too long.");
@@ -97,10 +97,10 @@ namespace EventStore.Core.Tests.ClientAPI
                                 Throws.Exception.InstanceOf<AggregateException>()
                                 .With.InnerException.InstanceOf<InvalidOperationException>());
                 }
-                finally
-                {
-                    TcpPortsHelper.ReturnPort(port);
-                }
+            }
+            finally
+            {
+                TcpPortsHelper.ReturnPort(port);
             }
         }
     }

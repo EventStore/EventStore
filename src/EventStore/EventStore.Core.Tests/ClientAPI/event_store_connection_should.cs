@@ -27,6 +27,7 @@
 //  
 
 using System;
+using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -59,7 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void not_throw_on_close_if_connect_was_not_called()
         {
-            var connection = TestConnection.Create();
+            var connection = TestConnection.Create(_node.TcpEndPoint);
             Assert.DoesNotThrow(connection.Close);
         }
 
@@ -67,8 +68,8 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void not_throw_on_close_if_called_multiple_times()
         {
-            var connection = TestConnection.Create();
-            connection.Connect(_node.TcpEndPoint);
+            var connection = TestConnection.Create(_node.TcpEndPoint);
+            connection.Connect();
             connection.Close();
             Assert.DoesNotThrow(connection.Close);
         }
@@ -77,10 +78,10 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void throw_on_connect_called_more_than_once()
         {
-            var connection = TestConnection.Create();
-            Assert.DoesNotThrow(() => connection.Connect(_node.TcpEndPoint));
+            var connection = TestConnection.Create(_node.TcpEndPoint);
+            Assert.DoesNotThrow(() => connection.Connect());
 
-            Assert.That(() => connection.Connect(_node.TcpEndPoint),
+            Assert.That(() => connection.Connect(),
                         Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
         }
 
@@ -88,11 +89,11 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void throw_on_connect_called_after_close()
         {
-            var connection = TestConnection.Create();
-            connection.Connect(_node.TcpEndPoint);
+            var connection = TestConnection.Create(_node.TcpEndPoint);
+            connection.Connect();
             connection.Close();
 
-            Assert.That(() => connection.Connect(_node.TcpEndPoint),
+            Assert.That(() => connection.Connect(),
                         Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
         }
 
@@ -100,7 +101,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void throw_invalid_operation_on_every_api_call_if_connect_was_not_called()
         {
-            var connection = TestConnection.Create();
+            var connection = TestConnection.Create(_node.TcpEndPoint);
 
             const string s = "stream";
             var events = new[] { TestEvent.NewTestEvent() };

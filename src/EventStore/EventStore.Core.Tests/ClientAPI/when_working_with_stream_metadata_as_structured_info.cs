@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.ClientAPI
     public class when_working_with_stream_metadata_as_structured_info : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
-        private EventStoreConnection _connection;
+        private IEventStoreConnection _connection;
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
@@ -49,8 +49,8 @@ namespace EventStore.Core.Tests.ClientAPI
             _node = new MiniNode(PathName);
             _node.Start();
 
-            _connection = TestConnection.Create();
-            _connection.Connect(_node.TcpEndPoint);
+            _connection = TestConnection.Create(_node.TcpEndPoint);
+            _connection.Connect();
         }
 
         [TestFixtureTearDown]

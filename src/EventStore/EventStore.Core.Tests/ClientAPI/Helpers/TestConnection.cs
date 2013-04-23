@@ -27,6 +27,7 @@
 //  
 
 using System;
+using System.Net;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.Helper;
 
@@ -34,9 +35,9 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
     public static class TestConnection
     {
-        public static EventStoreConnection Create()
+        public static IEventStoreConnection Create(IPEndPoint endPoint)
         {
-            return EventStoreConnection.Create(Settings());
+            return EventStoreConnection.Create(Settings(), endPoint);
         }
 
         private static ConnectionSettingsBuilder Settings()

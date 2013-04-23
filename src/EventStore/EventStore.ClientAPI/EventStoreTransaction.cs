@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Core;
 
 namespace EventStore.ClientAPI
 {
@@ -39,7 +40,7 @@ namespace EventStore.ClientAPI
     {
         public readonly long TransactionId;
 
-        private readonly EventStoreConnection _connection;
+        private readonly IEventStoreTransactionConnection _connection;
         private bool _isRolledBack;
         private bool _isCommitted;
 
@@ -48,7 +49,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="transactionId">The transaction id of the transaction</param>
         /// <param name="connection">The connection the transaction is hooked to</param>
-        internal EventStoreTransaction(long transactionId, EventStoreConnection connection)
+        internal EventStoreTransaction(long transactionId, IEventStoreTransactionConnection connection)
         {
             Ensure.Nonnegative(transactionId, "transactionId");
 

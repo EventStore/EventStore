@@ -28,6 +28,7 @@
 
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Core;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
@@ -39,14 +40,14 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;
-        private readonly EventStoreConnection _parentConnection;
+        private readonly IEventStoreTransactionConnection _parentConnection;
 
         public StartTransactionOperation(ILogger log, 
                                          TaskCompletionSource<EventStoreTransaction> source,
                                          bool forward,
                                          string stream,
                                          int expectedVersion,
-                                         EventStoreConnection parentConnection)
+                                         IEventStoreTransactionConnection parentConnection)
             : base(log, source, TcpCommand.TransactionStart, TcpCommand.TransactionStartCompleted)
         {
             _forward = forward;

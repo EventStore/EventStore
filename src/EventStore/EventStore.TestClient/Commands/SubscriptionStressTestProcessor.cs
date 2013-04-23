@@ -55,8 +55,9 @@ namespace EventStore.TestClient.Commands
             var conn = EventStoreConnection.Create(ConnectionSettings.Create()
                                                                      .UseCustomLogger(new ClientApiLoggerBridge(context.Log))
                                                                      .FailOnNoServerResponse()
-                                                                     /*.EnableVerboseLogging()*/);
-            conn.Connect(context.Client.TcpEndpoint);
+                                                                     /*.EnableVerboseLogging()*/, 
+                                                                     context.Client.TcpEndpoint);
+            conn.Connect();
 
             long appearedCnt = 0;
             var sw = Stopwatch.StartNew();

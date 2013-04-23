@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Http
     public abstract class HttpBehaviorSpecification : SpecificationWithDirectoryPerTestFixture
     {
         protected MiniNode _node;
-        protected EventStoreConnection _connection;
+        protected IEventStoreConnection _connection;
         protected HttpWebResponse _lastResponse;
         protected string _lastResponseBody;
         protected JsonException _lastJsonException;
@@ -82,8 +82,8 @@ namespace EventStore.Core.Tests.Http
                 _node = CreateMiniNode();
                 _node.Start();
 
-                _connection = TestConnection.Create();
-                _connection.Connect(_node.TcpEndPoint);
+                _connection = TestConnection.Create(_node.TcpEndPoint);
+                _connection.Connect();
             }
             _lastResponse = null;
             _lastResponseBody = null;

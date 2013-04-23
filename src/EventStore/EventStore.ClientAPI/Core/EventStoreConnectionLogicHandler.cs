@@ -48,7 +48,7 @@ namespace EventStore.ClientAPI.Core
 
         public int TotalOperationCount { get { return _operationCount; } }
 
-        private readonly EventStoreConnection _esConnection;
+        private readonly IEventStoreConnection _esConnection;
         private readonly ConnectionSettings _settings;
         private readonly bool _verbose;
         private readonly ILogger _log;
@@ -81,7 +81,7 @@ namespace EventStore.ClientAPI.Core
         private bool _heartbeatIntervalStage;
         private readonly Stopwatch _heartbeatStopwatch = new Stopwatch();
 
-        public EventStoreConnectionLogicHandler(EventStoreConnection esConnection, ConnectionSettings settings)
+        public EventStoreConnectionLogicHandler(IEventStoreConnection esConnection, ConnectionSettings settings)
         {
             Ensure.NotNull(esConnection, "esConnection");
             Ensure.NotNull(settings, "settings");

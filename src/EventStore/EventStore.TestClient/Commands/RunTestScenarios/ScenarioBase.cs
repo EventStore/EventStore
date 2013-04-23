@@ -65,7 +65,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         private readonly string _dbPath;
 
         private readonly Dictionary<WriteMode, Func<string, int, Func<int, EventData>, Task>> _writeHandlers;
-        private readonly EventStoreConnection[] _connections;
+        private readonly IEventStoreConnection[] _connections;
         private int _nextConnectionNum = -1;
         private readonly ProjectionsManager _projectionsManager;
 
@@ -108,7 +108,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                                          TcpPortsHelper.GetAvailablePort(ipAddress));
             }
 
-            _connections = new EventStoreConnection[connections];
+            _connections = new IEventStoreConnection[connections];
 
             Log.Info("Projection manager points to {0}.", _nodeConnection);
             _projectionsManager = new ProjectionsManager(new ConsoleLogger(), new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.HttpPort));
@@ -137,7 +137,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return dbPath;
         }
 
-        protected EventStoreConnection GetConnection()
+        protected IEventStoreConnection GetConnection()
         {
             var connectionNum = (int)(((uint)Interlocked.Increment(ref _nextConnectionNum)) % Connections);
             return _connections[connectionNum];
@@ -154,18 +154,19 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 _connections[i] = EventStoreConnection.Create(
                       ConnectionSettings.Create()
-                                      .DisableVerboseLogging()
-                                      .UseCustomLogger(ApiLogger)
-                                      .LimitConcurrentOperationsTo(MaxConcurrentRequests)
-                                      .KeepRetrying()
-                                      .FailOnNoServerResponse()
-                                      .OnClosed((c, s) => Log.Debug("[SCENARIO] {0} closed.", c.ConnectionName))
-                                      .OnConnected(c => Log.Debug("[SCENARIO] {0} connected.", c.ConnectionName))
-                                      .OnDisconnected(c => Log.Debug("[SCENARIO] {0} disconnected.", c.ConnectionName))
-                                      .OnErrorOccurred((c, e) => Log.DebugException(e, "[SCENARIO] {0} error occurred.", c.ConnectionName))
-                                      .OnReconnecting(c => Log.Debug("[SCENARIO] {0} reconnecting.", c.ConnectionName)),
+                                        .DisableVerboseLogging()
+                                        .UseCustomLogger(ApiLogger)
+                                        .LimitConcurrentOperationsTo(MaxConcurrentRequests)
+                                        .KeepRetrying()
+                                        .FailOnNoServerResponse()
+                                        .OnClosed((c, s) => Log.Debug("[SCENARIO] {0} closed.", c.ConnectionName))
+                                        .OnConnected(c => Log.Debug("[SCENARIO] {0} connected.", c.ConnectionName))
+                                        .OnDisconnected(c => Log.Debug("[SCENARIO] {0} disconnected.", c.ConnectionName))
+                                        .OnErrorOccurred((c, e) => Log.DebugException(e, "[SCENARIO] {0} error occurred.", c.ConnectionName))
+                                        .OnReconnecting(c => Log.Debug("[SCENARIO] {0} reconnecting.", c.ConnectionName)),
+                    new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.TcpPort),
                     connectionName: string.Format("ESConn-{0}", i));
-                _connections[i].Connect(new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.TcpPort));
+                _connections[i].Connect();
             } 
             RunInternal();   
         }

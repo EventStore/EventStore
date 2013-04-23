@@ -50,11 +50,11 @@ namespace EventStore.ClientAPI
         private TimeSpan _operationTimeout = Consts.DefaultOperationTimeout;
         private TimeSpan _operationTimeoutCheckPeriod = Consts.DefaultOperationTimeoutCheckPeriod;
 
-        private Action<EventStoreConnection, Exception> _errorOccurred;
-        private Action<EventStoreConnection, string> _closed;
-        private Action<EventStoreConnection> _connected;
-        private Action<EventStoreConnection> _disconnected;
-        private Action<EventStoreConnection> _reconnecting;
+        private Action<IEventStoreConnection, Exception> _errorOccurred;
+        private Action<IEventStoreConnection, string> _closed;
+        private Action<IEventStoreConnection> _connected;
+        private Action<IEventStoreConnection> _disconnected;
+        private Action<IEventStoreConnection> _reconnecting;
 
         private bool _failOnNoServerResponse;
         private TimeSpan _heartbeatInterval = TimeSpan.FromMilliseconds(950);
@@ -267,7 +267,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="handler"></param>
         /// <returns></returns>
-        public ConnectionSettingsBuilder OnErrorOccurred(Action<EventStoreConnection, Exception> handler)
+        public ConnectionSettingsBuilder OnErrorOccurred(Action<IEventStoreConnection, Exception> handler)
         {
             _errorOccurred = handler;
             return this;
@@ -278,7 +278,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="handler"></param>
         /// <returns></returns>
-        public ConnectionSettingsBuilder OnClosed(Action<EventStoreConnection, string> handler)
+        public ConnectionSettingsBuilder OnClosed(Action<IEventStoreConnection, string> handler)
         {
             _closed = handler;
             return this;
@@ -289,7 +289,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="handler"></param>
         /// <returns></returns>
-        public ConnectionSettingsBuilder OnConnected(Action<EventStoreConnection> handler)
+        public ConnectionSettingsBuilder OnConnected(Action<IEventStoreConnection> handler)
         {
             _connected = handler;
             return this;
@@ -300,7 +300,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="handler"></param>
         /// <returns></returns>
-        public ConnectionSettingsBuilder OnDisconnected(Action<EventStoreConnection> handler)
+        public ConnectionSettingsBuilder OnDisconnected(Action<IEventStoreConnection> handler)
         {
             _disconnected = handler;
             return this;
@@ -311,7 +311,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="handler"></param>
         /// <returns></returns>
-        public ConnectionSettingsBuilder OnReconnecting(Action<EventStoreConnection> handler)
+        public ConnectionSettingsBuilder OnReconnecting(Action<IEventStoreConnection> handler)
         {
             _reconnecting = handler;
             return this;

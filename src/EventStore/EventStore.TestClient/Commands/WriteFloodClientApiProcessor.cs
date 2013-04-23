@@ -77,7 +77,7 @@ namespace EventStore.TestClient.Commands
             context.IsAsync();
 
             var doneEvent = new ManualResetEventSlim(false);
-            var clients = new List<EventStoreConnection>();
+            var clients = new List<IEventStoreConnection>();
             var threads = new List<Thread>();
 
             long succ = 0;
@@ -103,12 +103,12 @@ namespace EventStore.TestClient.Commands
                     .OnErrorOccurred((conn, exc) => context.Fail(exc, "Error on connection."))
                     .FailOnNoServerResponse();
 
-                var client = EventStoreConnection.Create(settings);
+                var client = EventStoreConnection.Create(settings, context.Client.TcpEndpoint);
                 clients.Add(client);
 
                 threads.Add(new Thread(_ =>
                 {
-                    client.Connect(context.Client.TcpEndpoint);
+                    client.Connect();
 
                     for (int j = 0; j < count; ++j)
                     {

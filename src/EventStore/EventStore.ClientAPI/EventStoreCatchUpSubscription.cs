@@ -45,7 +45,7 @@ namespace EventStore.ClientAPI
 
         protected readonly ILogger Log;
 
-        private readonly EventStoreConnection _connection;
+        private readonly IEventStoreConnection _connection;
         private readonly bool _resolveLinkTos;
         private readonly string _streamId;
         
@@ -67,10 +67,10 @@ namespace EventStore.ClientAPI
         private int _isDropped;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 
-        protected abstract void ReadEventsTill(EventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber);
+        protected abstract void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber);
         protected abstract void TryProcess(ResolvedEvent e);
 
-        protected EventStoreCatchUpSubscription(EventStoreConnection connection, 
+        protected EventStoreCatchUpSubscription(IEventStoreConnection connection, 
                                                 ILogger log,
                                                 string streamId,
                                                 bool resolveLinkTos,
@@ -271,7 +271,7 @@ namespace EventStore.ClientAPI
         private Position _nextReadPosition;
         private Position _lastProcessedPosition;
 
-        internal EventStoreAllCatchUpSubscription(EventStoreConnection connection,
+        internal EventStoreAllCatchUpSubscription(IEventStoreConnection connection,
                                                   ILogger log,
                                                   Position? fromPositionExclusive, /* if null -- from the very beginning */
                                                   bool resolveLinkTos,
@@ -285,7 +285,7 @@ namespace EventStore.ClientAPI
             _nextReadPosition = fromPositionExclusive ?? Position.Start;
         }
 
-        protected override void ReadEventsTill(EventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber)
+        protected override void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber)
         {
             bool done;
             do
@@ -334,7 +334,7 @@ namespace EventStore.ClientAPI
         private int _nextReadEventNumber;
         private int _lastProcessedEventNumber;
 
-        internal EventStoreStreamCatchUpSubscription(EventStoreConnection connection,
+        internal EventStoreStreamCatchUpSubscription(IEventStoreConnection connection,
                                                      ILogger log,
                                                      string streamId,
                                                      int? fromEventNumberExclusive, /* if null -- from the very beginning */
@@ -351,7 +351,7 @@ namespace EventStore.ClientAPI
             _nextReadEventNumber = fromEventNumberExclusive ?? 0;
         }
 
-        protected override void ReadEventsTill(EventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber)
+        protected override void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber)
         {
             bool done;
             do

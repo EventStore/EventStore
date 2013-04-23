@@ -31,7 +31,7 @@ using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
 {
-    public class ConnectionSettings
+    public sealed class ConnectionSettings
     {
         private static readonly Lazy<ConnectionSettings> DefaultSettings = new Lazy<ConnectionSettings>(() => Create(), true);
 
@@ -93,23 +93,23 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Raised whenever the internal error occurs
         /// </summary>
-        public Action<EventStoreConnection, Exception> ErrorOccurred;
+        public Action<IEventStoreConnection, Exception> ErrorOccurred;
         /// <summary>
         /// Raised whenever the connection is closed
         /// </summary>
-        public Action<EventStoreConnection, string> Closed;
+        public Action<IEventStoreConnection, string> Closed;
         /// <summary>
         /// Raised whenever the internal connection is connected to the event store
         /// </summary>
-        public Action<EventStoreConnection> Connected;
+        public Action<IEventStoreConnection> Connected;
         /// <summary>
         /// Raised whenever the internal connection is disconnected from the event store
         /// </summary>
-        public Action<EventStoreConnection> Disconnected;
+        public Action<IEventStoreConnection> Disconnected;
         /// <summary>
         /// Raised whenever the internal connection is reconnecting to the event store
         /// </summary>
-        public Action<EventStoreConnection> Reconnecting;
+        public Action<IEventStoreConnection> Reconnecting;
 
         public readonly bool FailOnNoServerResponse;
         public readonly TimeSpan HeartbeatInterval = TimeSpan.FromMilliseconds(1000);
@@ -125,11 +125,11 @@ namespace EventStore.ClientAPI
                                     TimeSpan reconnectionDelay,
                                     TimeSpan operationTimeout,
                                     TimeSpan operationTimeoutCheckPeriod,
-                                    Action<EventStoreConnection, Exception> errorOccurred,
-                                    Action<EventStoreConnection, string> closed,
-                                    Action<EventStoreConnection> connected,
-                                    Action<EventStoreConnection> disconnected,
-                                    Action<EventStoreConnection> reconnecting,
+                                    Action<IEventStoreConnection, Exception> errorOccurred,
+                                    Action<IEventStoreConnection, string> closed,
+                                    Action<IEventStoreConnection> connected,
+                                    Action<IEventStoreConnection> disconnected,
+                                    Action<IEventStoreConnection> reconnecting,
                                     bool failOnNoServerResponse,
                                     TimeSpan heartbeatInterval,
                                     TimeSpan heartbeatTimeout)

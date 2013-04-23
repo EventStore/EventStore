@@ -25,25 +25,32 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using EventStore.ClientAPI;
 
-namespace EventStore.Core.Tests.ClientAPI.Helpers
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace EventStore.ClientAPI.Core
 {
-    internal class EventsStream
+    internal interface IEventStoreTransactionConnection
     {
-        private const int SliceSize = 10;
+        /// <summary>
+        /// Writes to a transaction in the event store asynchronously
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
+        /// round trips over long periods of time between the caller and the event store. This method
+        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
+        /// </remarks>
+        /// <param name="transaction">The <see cref="EventStoreTransaction"/> to write to.</param>
+        /// <param name="events">The events to write</param>
+        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
+        Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events);
 
-        public static int Count(IEventStoreConnection store, string stream)
-        {
-            var result = 0;
-            while (true)
-            {
-                var slice = store.ReadStreamEventsForward(stream, result, SliceSize, false);
-                result += slice.Events.Length;
-                if (slice.IsEndOfStream)
-                    break;
-            }
-            return result;
-        }
+        /// <summary>
+        /// Commits a multi-write transaction in the Event Store
+        /// </summary>
+        /// <param name="transaction">The <see cref="EventStoreTransaction"></see> to commit</param>
+        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
+        Task CommitTransactionAsync(EventStoreTransaction transaction);
     }
 }

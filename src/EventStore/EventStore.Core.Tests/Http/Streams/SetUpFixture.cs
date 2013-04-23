@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Http.Streams
     class SetUpFixture
     {
         public static MiniNode _node;
-        public static EventStoreConnection _connection;
+        public static IEventStoreConnection _connection;
         public static int _counter;
         private SpecificationWithDirectoryPerTestFixture _directory;
 
@@ -49,8 +49,8 @@ namespace EventStore.Core.Tests.Http.Streams
             _node = new MiniNode(_directory.PathName);
             _node.Start();
 
-            _connection = TestConnection.Create();
-            _connection.Connect(_node.TcpEndPoint);
+            _connection = TestConnection.Create(_node.TcpEndPoint);
+            _connection.Connect();
         }
 
         [TearDown]

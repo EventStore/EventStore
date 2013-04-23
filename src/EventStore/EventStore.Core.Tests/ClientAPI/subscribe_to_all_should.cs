@@ -59,9 +59,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void allow_multiple_subscriptions()
         {
             const string stream = "subscribe_to_all_should_allow_multiple_subscriptions";
-            using (var store = TestConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(_node.TcpEndPoint);
+                store.Connect();
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
@@ -80,9 +80,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void catch_deleted_events_as_well()
         {
             const string stream = "subscribe_to_all_should_catch_created_and_deleted_events_as_well";
-            using (var store = TestConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(_node.TcpEndPoint);
+                store.Connect();
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
