@@ -45,6 +45,6 @@ namespace EventStore.ClientAPI
         public static readonly TimeSpan TimerPeriod = TimeSpan.FromMilliseconds(1000);
 
         public const int DefaultMaxClusterDiscoverAttempts = 10;
-        public const int DefaultClusterManagerPort = 30777;
+        public const int DefaultClusterManagerExternalHttpPort = 30778;
     }
 }

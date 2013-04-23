@@ -58,7 +58,7 @@ namespace EventStore.ClientAPI.Core
         private readonly Timer _timer;
         private readonly Stopwatch _timerStopwatch;
 
-        private Func<Task<IPEndPoint>> _endPointDiscoverer; 
+        private IEndPointDiscoverer _endPointDiscoverer; 
         private TcpPackageConnection _connection;
         private readonly Stopwatch _connectionStopwatch = new Stopwatch();
         private readonly Stopwatch _reconnectionStopwatch = new Stopwatch();
@@ -119,7 +119,7 @@ namespace EventStore.ClientAPI.Core
             _queue.EnqueueMessage(message);
         }
 
-        private void StartConnection(TaskCompletionSource<object> task, Func<Task<IPEndPoint>> endPointDiscoverer)
+        private void StartConnection(TaskCompletionSource<object> task, IEndPointDiscoverer endPointDiscoverer)
         {
             Ensure.NotNull(task, "task");
             Ensure.NotNull(endPointDiscoverer, "endPointDiscoverer");
@@ -147,13 +147,13 @@ namespace EventStore.ClientAPI.Core
             if (_verbose) _log.Debug("EventStoreConnection '{0}': DiscoverEndPoint.", _esConnection.ConnectionName);
             if (_disposed) return;
 
-            _endPointDiscoverer().ContinueWith(t =>
+            _endPointDiscoverer.DiscoverAsync().ContinueWith(t =>
             {
                 if (t.IsFaulted)
                 {
                     EnqueueMessage(new CloseConnectionMessage("Failed to resolve TCP end point to which to connect.", t.Exception));
                     if (completionTask != null)
-                        completionTask.SetException(t.Exception.InnerExceptions);
+                        completionTask.SetException(new CannotEstablishConnectionException("Couldn't resolve target end point.", t.Exception));
                 }
                 else
                 {

@@ -27,76 +27,51 @@
 //  
 
 using System.Net;
-using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Core;
 
 namespace EventStore.ClientAPI
 {
     public static class EventStoreConnection
     {
         /// <summary>
-        /// Creates a new <see cref="EventStoreConnection"/> using default <see cref="ConnectionSettings"/>
+        /// Creates a new <see cref="IEventStoreConnection"/> to single node using default <see cref="ConnectionSettings"/>
         /// </summary>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <param name="tcpEndPoint">The <see cref="IPEndPoint"/> to connect to.</param>
-        /// <returns>a new <see cref="EventStoreConnection"/></returns>
+        /// <returns>a new <see cref="IEventStoreConnection"/></returns>
         public static IEventStoreConnection Create(IPEndPoint tcpEndPoint, string connectionName = null)
         {
             return Create(ConnectionSettings.Default, tcpEndPoint, connectionName);
         }
 
         /// <summary>
-        /// Creates a new <see cref="EventStoreConnection"/> using specific <see cref="ConnectionSettings"/>
+        /// Creates a new <see cref="IEventStoreConnection"/> to single node using specific <see cref="ConnectionSettings"/>
         /// </summary>
         /// <param name="settings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
         /// <param name="tcpEndPoint">The <see cref="IPEndPoint"/> to connect to.</param>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
-        /// <returns>a new <see cref="EventStoreConnection"/></returns>
+        /// <returns>a new <see cref="IEventStoreConnection"/></returns>
         public static IEventStoreConnection Create(ConnectionSettings settings, IPEndPoint tcpEndPoint, string connectionName = null)
         {
             Ensure.NotNull(settings, "settings");
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
-            var tcpEndPointDiscoverer = Task.Factory.StartNew(() => tcpEndPoint);
-            return new EventStoreNodeConnection(settings, () => tcpEndPointDiscoverer, connectionName);
+            return new EventStoreNodeConnection(settings, new StaticEndPointDiscoverer(tcpEndPoint), connectionName);
         }
-        /*
+        
         /// <summary>
-        /// Connects the <see cref="EventStoreConnection"/> synchronously to a clustered EventStore based upon DNS entry
+        /// Creates a new <see cref="IEventStoreConnection"/> to EventStore cluster 
+        /// using specific <see cref="ConnectionSettings"/> and <see cref="ClusterSettings"/>
         /// </summary>
-        /// <param name="clusterDns">The cluster's DNS entry.</param>
-        /// <param name="maxDiscoverAttempts">The maximum number of attempts to try the DNS.</param>
-        /// <param name="port">The port to connect to.</param>
-        public void Connect(string clusterDns, int maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts, int port = Consts.DefaultClusterManagerPort)
+        /// <param name="connectionSettings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
+        /// <param name="clusterSettings">The <see cref="ClusterSettings"/> that determine cluster behavior.</param>
+        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
+        /// <returns>a new <see cref="IEventStoreConnection"/></returns>
+        public static IEventStoreConnection Create(ConnectionSettings connectionSettings, ClusterSettings clusterSettings, string connectionName)
         {
-            ConnectAsync(clusterDns, maxDiscoverAttempts, port).Wait();
+            Ensure.NotNull(connectionSettings, "connectionSettings");
+            Ensure.NotNull(clusterSettings, "clusterSettings");
+            return new EventStoreClusterConnection(connectionSettings, clusterSettings, connectionName);
         }
-
-        /// <summary>
-        /// Connects the <see cref="EventStoreConnection"/> asynchronously to a clustered EventStore based upon DNS entry
-        /// </summary>
-        /// <param name="clusterDns">The cluster's DNS entry</param>
-        /// <param name="maxDiscoverAttempts">The maximum number of attempts to try the DNS</param>
-        /// <param name="port">The port to connect to</param>
-        /// <returns>A <see cref="Task"/> that can be awaited upon</returns>
-        public Task ConnectAsync(string clusterDns,
-                                 int maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts,
-                                 int port = Consts.DefaultClusterManagerPort)
-        {
-            Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
-            Ensure.Positive(maxDiscoverAttempts, "maxDiscoverAttempts");
-            Ensure.Nonnegative(port, "port");
-
-            // TODO AN: rework this mess
-            var explorer = new ClusterExplorer(_settings.Log, _settings.AllowForwarding, maxDiscoverAttempts, port);
-            return explorer.Resolve(clusterDns)
-                           .ContinueWith(resolve =>
-                           {
-                               if (resolve.IsFaulted || resolve.Result == null)
-                                   throw new CannotEstablishConnectionException("Failed to find node to connect", resolve.Exception);
-                               var endPoint = resolve.Result;
-                               return EstablishConnectionAsync(endPoint);
-                           });
-        }
-        */
     }
 }
