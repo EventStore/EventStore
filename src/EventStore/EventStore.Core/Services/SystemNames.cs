@@ -30,7 +30,7 @@ namespace EventStore.Core.Services
 {
     public static class SystemHeader
     {
-        public const string ExpectedVersion = "X-ES-EXPECTEDVERSION";
+        public const string ExpectedVersion = "X-ES-ExpectedVersion";
     }
 
     public static class SystemStreams

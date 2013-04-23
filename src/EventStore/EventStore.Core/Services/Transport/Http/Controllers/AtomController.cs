@@ -67,6 +67,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Codec.Json,
                                                           Codec.EventXml,
                                                           Codec.EventJson,
+                                                          Codec.EventsXml,
+                                                          Codec.EventsJson,
                                                       };
         private static readonly ICodec[] AtomWithHtmlCodecs = new[]
                                                               {
@@ -77,6 +79,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   Codec.Json,
                                                                   Codec.EventXml,
                                                                   Codec.EventJson,
+                                                                  Codec.EventsXml,
+                                                                  Codec.EventsJson,
                                                                   HtmlFeedCodec // initialization order matters
                                                               };
 
@@ -160,7 +164,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.Atom.DeleteStreamCompleted, Configure.DeleteStreamCompleted);
-            // TODO AN: get expected version from X-ES-EXPECTEDVERSION
+            // TODO AN: get expected version from X-ES-ExpectedVersion
             Publish(new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, true, stream, ExpectedVersion.Any, manager.User));
         }
 
