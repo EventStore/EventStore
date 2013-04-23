@@ -51,22 +51,46 @@ namespace EventStore.ClientAPI.Core
         }
     }
 
-    internal class EstablishTcpConnectionMessage: Message
+    internal class StartConnectionMessage : Message
     {
         public readonly TaskCompletionSource<object> Task;
-        public readonly IPEndPoint EndPoint;
+        public readonly Func<Task<IPEndPoint>> EndPointDiscoverer;
 
-        public EstablishTcpConnectionMessage(TaskCompletionSource<object> task, IPEndPoint endPoint)
+        public StartConnectionMessage(TaskCompletionSource<object> task, Func<Task<IPEndPoint>> endPointDiscoverer)
         {
             Ensure.NotNull(task, "task");
-            Ensure.NotNull(endPoint, "endPoint");
+            Ensure.NotNull(endPointDiscoverer, "endendPointDiscoverer");
+            
             Task = task;
-            EndPoint = endPoint;
+            EndPointDiscoverer = endPointDiscoverer;
         }
     }
 
     internal class CloseConnectionMessage: Message
     {
+        public readonly string Reason;
+        public readonly Exception Exception;
+
+        public CloseConnectionMessage(string reason, Exception exception)
+        {
+            Reason = reason;
+            Exception = exception;
+        }
+    }
+
+    internal class DiscoverEndPoint : Message
+    {
+    }
+
+    internal class EstablishTcpConnectionMessage: Message
+    {
+        public readonly IPEndPoint EndPoint;
+
+        public EstablishTcpConnectionMessage(IPEndPoint endPoint)
+        {
+            Ensure.NotNull(endPoint, "endPoint");
+            EndPoint = endPoint;
+        }
     }
 
     internal class TcpConnectionEstablishedMessage : Message

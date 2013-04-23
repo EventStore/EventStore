@@ -53,7 +53,7 @@ namespace EventStore.ClientAPI
     /// time or a single thread can make many asynchronous requests. To get the most performance out of the connection
     /// it is generally recommended to use it in this way.
     /// </remarks>
-    public class EventStoreConnection : IDisposable
+    public sealed class EventStoreConnection : IDisposable
     {
         public readonly string ConnectionName;
 
@@ -133,7 +133,9 @@ namespace EventStore.ClientAPI
         /// <param name="maxDiscoverAttempts">The maximum number of attempts to try the DNS</param>
         /// <param name="port">The port to connect to</param>
         /// <returns>A <see cref="Task"/> that can be awaited upon</returns>
-        public Task ConnectAsync(string clusterDns, int maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts, int port = Consts.DefaultClusterManagerPort)
+        public Task ConnectAsync(string clusterDns, 
+                                 int maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts, 
+                                 int port = Consts.DefaultClusterManagerPort)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
             Ensure.Positive(maxDiscoverAttempts, "maxDiscoverAttempts");
@@ -155,7 +157,8 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
             var source = new TaskCompletionSource<object>();
-            _handler.EnqueueMessage(new EstablishTcpConnectionMessage(source, tcpEndPoint));
+            var tcpEndPointTask = Task.Factory.StartNew(() => tcpEndPoint);
+            _handler.EnqueueMessage(new StartConnectionMessage(source, () => tcpEndPointTask));
             return source.Task;
         }
 
@@ -172,7 +175,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         public void Close()
         {
-            _handler.EnqueueMessage(new CloseConnectionMessage());
+            _handler.EnqueueMessage(new CloseConnectionMessage("Connection close requested by client.", null));
         }
 
 

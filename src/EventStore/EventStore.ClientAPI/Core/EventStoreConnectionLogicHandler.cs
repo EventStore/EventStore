@@ -58,8 +58,8 @@ namespace EventStore.ClientAPI.Core
         private readonly Timer _timer;
         private readonly Stopwatch _timerStopwatch;
 
+        private Func<Task<IPEndPoint>> _endPointDiscoverer; 
         private TcpPackageConnection _connection;
-        private IPEndPoint _tcpEndPoint;
         private readonly Stopwatch _connectionStopwatch = new Stopwatch();
         private readonly Stopwatch _reconnectionStopwatch = new Stopwatch();
         private int _reconnectionCount;
@@ -91,8 +91,10 @@ namespace EventStore.ClientAPI.Core
             _verbose = settings.VerboseLogging;
             _log = settings.Log;
 
-            _queue.RegisterHandler<EstablishTcpConnectionMessage>(msg => EstablishTcpConnection(msg.Task, msg.EndPoint));
-            _queue.RegisterHandler<CloseConnectionMessage>(msg => CloseConnection("Connection close requested by client."));
+            _queue.RegisterHandler<StartConnectionMessage>(msg => StartConnection(msg.Task, msg.EndPointDiscoverer));
+            _queue.RegisterHandler<DiscoverEndPoint>(msg => DiscoverEndPoint(null));
+            _queue.RegisterHandler<EstablishTcpConnectionMessage>(msg => EstablishTcpConnection(msg.EndPoint));
+            _queue.RegisterHandler<CloseConnectionMessage>(msg => CloseConnection(msg.Reason, msg.Exception));
 
             _queue.RegisterHandler<TcpConnectionEstablishedMessage>(msg => TcpConnectionEstablished(msg.Connection));
             _queue.RegisterHandler<HandleTcpPackageMessage>(msg => HandleTcpPackage(msg.Connection, msg.Package));
@@ -117,12 +119,12 @@ namespace EventStore.ClientAPI.Core
             _queue.EnqueueMessage(message);
         }
 
-        private void EstablishTcpConnection(TaskCompletionSource<object> task, IPEndPoint tcpEndPoint)
+        private void StartConnection(TaskCompletionSource<object> task, Func<Task<IPEndPoint>> endPointDiscoverer)
         {
             Ensure.NotNull(task, "task");
-            Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+            Ensure.NotNull(endPointDiscoverer, "endPointDiscoverer");
 
-            if (_verbose) _log.Debug("EventStoreConnection '{0}': EstablishTcpConnection, tcpEndPoint: {1}.", _esConnection.ConnectionName, tcpEndPoint);
+            if (_verbose) _log.Debug("EventStoreConnection '{0}': StartConnection.", _esConnection.ConnectionName);
 
             if (_disposed)
             {
@@ -134,21 +136,51 @@ namespace EventStore.ClientAPI.Core
                 task.SetException(new InvalidOperationException(string.Format("EventStoreConnection '{0}' is already active.", _esConnection.ConnectionName)));
                 return;
             }
-
             _connectionActive = true;
-            _tcpEndPoint = tcpEndPoint;
-            Connect();
-            
-            task.SetResult(null);
+
+            _endPointDiscoverer = endPointDiscoverer;
+            DiscoverEndPoint(task);
         }
 
-        private void Connect()
+        private void DiscoverEndPoint(TaskCompletionSource<object> completionTask)
         {
-            _log.Info("EventStoreConnection '{0}': TCP connecting to [{1}]...", _esConnection.ConnectionName, _tcpEndPoint);
+            if (_verbose) _log.Debug("EventStoreConnection '{0}': DiscoverEndPoint.", _esConnection.ConnectionName);
+            if (_disposed) return;
+
+            _endPointDiscoverer().ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                {
+                    EnqueueMessage(new CloseConnectionMessage("Failed to resolve TCP end point to which to connect.", t.Exception));
+                    if (completionTask != null)
+                        completionTask.SetException(t.Exception.InnerExceptions);
+                }
+                else
+                {
+                    EnqueueMessage(new EstablishTcpConnectionMessage(t.Result));
+                    if (completionTask != null)
+                        completionTask.SetResult(null);
+                }
+            });
+        }
+
+        private void EstablishTcpConnection(IPEndPoint tcpEndPoint)
+        {
+            Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+
+            if (_verbose) _log.Debug("EventStoreConnection '{0}': EstablishTcpConnection to {1}.", _esConnection.ConnectionName, tcpEndPoint);
+            if (_disposed) return; 
+
+            Connect(tcpEndPoint);
+        }
+
+        private void Connect(IPEndPoint tcpEndPoint)
+        {
+            _log.Info("EventStoreConnection '{0}': TCP connecting to [{1}]...", _esConnection.ConnectionName, tcpEndPoint);
             
             _connection = new TcpPackageConnection(
                 _log,
-                _tcpEndPoint,
+                tcpEndPoint,
                 Guid.NewGuid(),
                 (connection, package) => EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
                 (connection, exc) => EnqueueMessage(new TcpConnectionErrorMessage(connection, exc)),
@@ -306,7 +338,7 @@ namespace EventStore.ClientAPI.Core
                 {
                     if (_settings.Reconnecting != null)
                         _settings.Reconnecting(_esConnection);
-                    Connect();
+                    EnqueueMessage(new DiscoverEndPoint());
                 }
                 _reconnectionStopwatch.Stop();
             }
@@ -465,7 +497,7 @@ namespace EventStore.ClientAPI.Core
                     else
                     {
                         _log.Info("EventStoreConnection '{0}': closing TCP connection [{1}, {2:B}] due to HEARTBEAT TIMEOUT at pkgNum {3}.",
-                                  _esConnection.ConnectionName, _tcpEndPoint, _connection.ConnectionId, packageNumber);
+                                  _esConnection.ConnectionName, _connection.EffectiveEndPoint, _connection.ConnectionId, packageNumber);
                         _connection.Close();
                     }
                 }
@@ -646,16 +678,15 @@ namespace EventStore.ClientAPI.Core
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
 
-            if (!_reconnectionStopwatch.IsRunning || !_tcpEndPoint.Equals(tcpEndPoint))
+            if (!_reconnectionStopwatch.IsRunning || _connection == null || !_connection.EffectiveEndPoint.Equals(tcpEndPoint))
             {
-                if (_verbose) 
+                if (_verbose)
                     _log.Info("EventStoreConnection '{0}': going to reconnect to [{1}]. Current state: {2}, Current endpoint: {3}.",
-                              _esConnection.ConnectionName, tcpEndPoint, 
-                              _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected", _tcpEndPoint);
+                              _esConnection.ConnectionName, tcpEndPoint, _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected",
+                              _connection == null ? null : _connection.EffectiveEndPoint);
 
                 CloseTcpConnection();
-                _tcpEndPoint = tcpEndPoint;
-                Connect();
+                Connect(tcpEndPoint);
             }
             RetryOperation(operationItem);
         }
@@ -717,16 +748,15 @@ namespace EventStore.ClientAPI.Core
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
 
-            if (!_reconnectionStopwatch.IsRunning || !_tcpEndPoint.Equals(tcpEndPoint))
+            if (!_reconnectionStopwatch.IsRunning || _connection == null || !_connection.EffectiveEndPoint.Equals(tcpEndPoint))
             {
                 if (_verbose) 
                     _log.Info("EventStoreConnection '{0}': going to reconnect to [{1}]. Current state: {2}, Current endpoint: {3}.",
-                              _esConnection.ConnectionName, tcpEndPoint, 
-                              _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected", _tcpEndPoint);
+                              _esConnection.ConnectionName, tcpEndPoint,  _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected", 
+                              _connection == null ? null : _connection.EffectiveEndPoint);
 
                 CloseTcpConnection();
-                _tcpEndPoint = tcpEndPoint;
-                Connect();
+                Connect(tcpEndPoint);
             }
             RetrySubscription(operationItem);
         }
