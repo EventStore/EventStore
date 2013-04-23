@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;

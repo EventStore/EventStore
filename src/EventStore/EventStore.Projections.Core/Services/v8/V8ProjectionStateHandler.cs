@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.Serialization;
+using EventStore.Common.Utils;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.v8;

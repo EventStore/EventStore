@@ -156,7 +156,7 @@ namespace EventStore.Core.Services.Transport.Http
             return feed;
         }
 
-        public static EntryElement ToEntry(ResolvedEvent eventLinkPair, Uri requestedUrl, EmbedLevel embedContent)
+        public static EntryElement ToEntry(ResolvedEvent eventLinkPair, Uri requestedUrl, EmbedLevel embedContent, bool singleEntry = false)
         {
             if (eventLinkPair.Event == null || requestedUrl == null)
                 return null;
@@ -253,7 +253,8 @@ namespace EventStore.Core.Services.Transport.Http
             entry.SetUpdated(evnt.TimeStamp);
             entry.SetAuthor(AtomSpecs.Author);
             entry.SetSummary(evnt.EventType);
-
+            if (singleEntry && (evnt.Flags & PrepareFlags.IsJson) != 0)
+                entry.SetContent(AutoEventConverter.CreateDataDto(eventLinkPair));
             entry.AddLink("edit", HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, evnt.EventNumber));
             entry.AddLink("alternate", HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, evnt.EventNumber));
 

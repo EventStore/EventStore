@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using EventStore.Common.Utils;
 using EventStore.Core.Util;
 
 namespace EventStore.Projections.Core.v8

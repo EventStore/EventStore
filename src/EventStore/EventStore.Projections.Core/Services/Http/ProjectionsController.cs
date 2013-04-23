@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http;

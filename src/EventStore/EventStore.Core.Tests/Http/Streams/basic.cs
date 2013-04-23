@@ -142,6 +142,13 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
             }
+
+            [Test]
+            public void returns_correct_body()
+            {
+                AssertJson(new { Content = new { Data = new {A = "1"}}}, _json);
+            }
+
         }
 
         [TestFixture, Category("LongRunning")]
@@ -159,6 +166,13 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
             }
+
+            [Test]
+            public void returns_correct_body()
+            {
+                AssertJson(new { Data = new {A = "1"}}, _json);
+            }
+
         }
 
         [TestFixture, Category("LongRunning")]
@@ -175,6 +189,12 @@ namespace EventStore.Core.Tests.Http.Streams
             public void request_succeeds()
             {
                 Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+            [Test]
+            public void returns_correct_body()
+            {
+                AssertJson(new {A = "1"}, _json);
             }
         }
 

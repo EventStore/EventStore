@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Linq;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;

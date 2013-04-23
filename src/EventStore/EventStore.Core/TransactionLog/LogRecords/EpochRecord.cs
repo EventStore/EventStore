@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Util;
 

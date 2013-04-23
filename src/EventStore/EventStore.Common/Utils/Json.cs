@@ -31,7 +31,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 
-namespace EventStore.Core.Util
+namespace EventStore.Common.Utils
 {
     public static class Json
     {

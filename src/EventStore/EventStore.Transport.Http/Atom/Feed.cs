@@ -31,6 +31,7 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 using EventStore.Common.Utils;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Transport.Http.Atom
 {
@@ -143,11 +144,17 @@ namespace EventStore.Transport.Http.Atom
 
     public class EntryElement : IXmlSerializable
     {
+        private object _content;
         public string Title { get; set; }
         public string Id { get; set; }
         public string Updated { get; set; }
         public PersonElement Author { get; set; }
         public string Summary { get; set; }
+
+        public object Content {
+            get { return _content; } 
+            set { throw new NotSupportedException(); } 
+        }
 
         public List<LinkElement> Links { get; set; }
 
@@ -233,6 +240,11 @@ namespace EventStore.Transport.Http.Atom
             Links.ForEach(link => link.WriteXml(writer));
 
             writer.WriteEndElement();
+        }
+
+        public void SetContent(object content)
+        {
+            _content = content;
         }
     }
 

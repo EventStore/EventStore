@@ -53,7 +53,7 @@ namespace EventStore.Core.Services.Transport.Http
                                 case ContentType.Atom:
                                 case ContentType.AtomJson:
                                 case ContentType.Html:
-                                    return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.RequestedUrl, embed));
+                                    return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.RequestedUrl, embed, singleEntry: true));
                                 default:
                                     return AutoEventConverter.SmartFormat(completed.Record, entity.ResponseCodec);
                             }

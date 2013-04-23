@@ -35,6 +35,7 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using EventStore.ClientAPI;
+using EventStore.Common.Utils;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Http.Streams;
 using EventStore.Core.Tests.Http.Users;

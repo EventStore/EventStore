@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
