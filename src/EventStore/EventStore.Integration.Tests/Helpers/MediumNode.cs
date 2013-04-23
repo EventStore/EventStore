@@ -42,25 +42,25 @@ namespace EventStore.Integration.Tests.Helpers
         {
             RegisterWebControllers(new[] {NodeSubsystems.Projections} );
             RegisterUIProjections();
-            _projections = new Projections.Core.Projections(_tfChunkDb,
-                                                            _node.MainQueue,
-                                                            _node.MainBus,
-                                                            _node.TimerService,
-                                                            _node.HttpService,
-                                                            _node.NetworkSendService,
+            _projections = new Projections.Core.Projections(Db, 
+                                                            Node.MainQueue,
+                                                            Node.MainBus,
+                                                            Node.TimerService,
+                                                            Node.HttpService,
+                                                            Node.NetworkSendService,
                                                             projectionWorkerThreadCount: 1);
 }
 
         private void RegisterUIProjections()
         {
             var users = new UserManagementProjectionsRegistration();
-            _node.MainBus.Subscribe(users);
+            Node.MainBus.Subscribe(users);
         }
 
         private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems)
         {
-            _node.HttpService.SetupController(new WebSiteController(_node.MainQueue, enabledNodeSubsystems));
-            _node.HttpService.SetupController(new UsersWebController(_node.MainQueue));
+            Node.HttpService.SetupController(new WebSiteController(Node.MainQueue, enabledNodeSubsystems));
+            Node.HttpService.SetupController(new UsersWebController(Node.MainQueue));
         }
     }
 }
