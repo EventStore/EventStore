@@ -26,10 +26,17 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using System.Xml;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json.Utilities;
+using Formatting = Newtonsoft.Json.Formatting;
 
 namespace EventStore.Common.Utils
 {
@@ -76,5 +83,39 @@ namespace EventStore.Common.Utils
             var result = JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(json), JsonSettings);
             return result;
         }
+
+    public static object DeserializeObject(JObject value, Type type, JsonSerializerSettings settings)
+    {
+      JsonSerializer jsonSerializer = JsonSerializer.Create(settings);
+      return jsonSerializer.Deserialize((JsonReader) new JTokenReader(value), type);
+    }
+
+
+    public static object DeserializeObject(JObject value, Type type, params JsonConverter[] converters)
+    {
+      JsonSerializerSettings serializerSettings;
+      if (converters == null || converters.Length <= 0)
+        serializerSettings = (JsonSerializerSettings) null;
+      else
+        serializerSettings = new JsonSerializerSettings()
+        {
+          Converters = (IList<JsonConverter>) converters
+        };
+      JsonSerializerSettings settings = serializerSettings;
+      return DeserializeObject(value, type, settings);
+    }
+
+    public static XmlDocument ToXmlDocument(this JObject value, string deserializeRootElementName, bool writeArrayAttribute)
+    {
+      return (XmlDocument) DeserializeObject(value, typeof (XmlDocument), new JsonConverter[1]
+      {
+        (JsonConverter) new XmlNodeConverter()
+        {
+          DeserializeRootElementName = deserializeRootElementName,
+          WriteArrayAttribute = writeArrayAttribute
+        }
+      });
+    }
+
     }
 }
