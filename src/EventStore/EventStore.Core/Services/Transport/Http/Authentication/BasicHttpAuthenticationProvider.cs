@@ -28,6 +28,7 @@
 
 using System;
 using System.Net;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Helpers;

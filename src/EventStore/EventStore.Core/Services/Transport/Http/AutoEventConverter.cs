@@ -49,17 +49,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static string SmartFormat(ResolvedEvent evnt, ICodec targetCodec)
         {
-            var dto = new HttpClientMessageDto.ReadEventCompletedText(evnt);
-            if (evnt.Event.Flags.HasFlag(PrepareFlags.IsJson))
-            {
-                var deserializedData = Codec.Json.From<object>((string) dto.data);
-                var deserializedMetadata = Codec.Json.From<object>((string) dto.metadata);
-
-                if (deserializedData != null)
-                    dto.data = deserializedData;
-                if (deserializedMetadata != null)
-                    dto.metadata = deserializedMetadata;
-            }
+            var dto = CreateDataDto(evnt);
 
             switch (targetCodec.ContentType)
             {
@@ -89,6 +79,22 @@ namespace EventStore.Core.Services.Transport.Http
                 default:
                     throw new NotSupportedException();
             }
+        }
+
+        public static HttpClientMessageDto.ReadEventCompletedText CreateDataDto(ResolvedEvent evnt)
+        {
+            var dto = new HttpClientMessageDto.ReadEventCompletedText(evnt);
+            if (evnt.Event.Flags.HasFlag(PrepareFlags.IsJson))
+            {
+                var deserializedData = Codec.Json.From<object>((string) dto.data);
+                var deserializedMetadata = Codec.Json.From<object>((string) dto.metadata);
+
+                if (deserializedData != null)
+                    dto.data = deserializedData;
+                if (deserializedMetadata != null)
+                    dto.metadata = deserializedMetadata;
+            }
+            return dto;
         }
 
         public static Event[] SmartParse(string request, ICodec sourceCodec)

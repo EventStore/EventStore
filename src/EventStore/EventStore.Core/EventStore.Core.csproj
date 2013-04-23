@@ -225,7 +225,6 @@
     <Compile Include="TransactionLog\Chunks\TFChunkManager.cs" />
     <Compile Include="TransactionLog\RecordWriteResult.cs" />
     <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
-    <Compile Include="Util\Json.cs" />
     <Compile Include="Util\MD5Hash.cs" />
     <Compile Include="Messages\TcpClientMessageDto.cs" />
     <Compile Include="Messages\MonitoringMessage.cs" />

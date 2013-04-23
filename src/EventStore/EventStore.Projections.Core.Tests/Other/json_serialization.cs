@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System.Linq;

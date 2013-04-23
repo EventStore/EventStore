@@ -35,6 +35,7 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using EventStore.ClientAPI;
+using EventStore.Common.Utils;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Http.Streams;
 using EventStore.Core.Tests.Http.Users;
@@ -179,13 +180,7 @@ namespace EventStore.Core.Tests.Http
 
         protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null)
         {
-            var request = CreateRequest(path, "GET", null, credentials);
-            request.Accept = accept ?? "application/json";
-            _lastResponse = GetRequestResponse(request);
-            var memoryStream = new MemoryStream();
-            _lastResponse.GetResponseStream().CopyTo(memoryStream);
-            var bytes = memoryStream.ToArray();
-            _lastResponseBody = Encoding.UTF8.GetString(bytes);
+            Get(path, accept, credentials);
             try
             {
                 return _lastResponseBody.ParseJson<T>();
@@ -195,6 +190,17 @@ namespace EventStore.Core.Tests.Http
                 _lastJsonException = ex;
                 return default(T);
             }
+        }
+
+        protected void Get(string path, string accept = null, ICredentials credentials = null)
+        {
+            var request = CreateRequest(path, "GET", null, credentials);
+            request.Accept = accept ?? "application/json";
+            _lastResponse = GetRequestResponse(request);
+            var memoryStream = new MemoryStream();
+            _lastResponse.GetResponseStream().CopyTo(memoryStream);
+            var bytes = memoryStream.ToArray();
+            _lastResponseBody = Encoding.UTF8.GetString(bytes);
         }
 
         private HttpWebResponse GetRequestResponse(HttpWebRequest request)

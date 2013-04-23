@@ -142,6 +142,13 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
             }
+
+            [Test]
+            public void returns_correct_body()
+            {
+                AssertJson(new { Content = new { Data = new {A = "1"}}}, _json);
+            }
+
         }
 
         [TestFixture, Category("LongRunning")]
@@ -159,6 +166,13 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
             }
+
+            [Test]
+            public void returns_correct_body()
+            {
+                AssertJson(new { Data = new {A = "1"}}, _json);
+            }
+
         }
 
         [TestFixture, Category("LongRunning")]
@@ -176,6 +190,67 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
             }
+
+            [Test]
+            public void returns_correct_body()
+            {
+                AssertJson(new {A = "1"}, _json);
+            }
+        }
+
+
+        [TestFixture, Category("LongRunning")]
+        class when_requesting_a_single_event_in_the_stream_as_atom_xml: HttpBehaviorSpecificationWithSingleEvent
+        {
+            private JObject _json;
+
+            protected override void When()
+            {
+                Get(TestStream + "/0", accept: ContentType.Atom);
+            }
+
+            [Test]
+            public void request_succeeds()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+        }
+
+        [TestFixture, Category("LongRunning")]
+        class when_requesting_a_single_event_in_the_stream_as_event_xml: HttpBehaviorSpecificationWithSingleEvent
+        {
+            private JObject _json;
+
+            protected override void When()
+            {
+                Get(TestStream + "/0", accept: ContentType.EventXml);
+            }
+
+            [Test]
+            public void request_succeeds()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+        }
+
+        [TestFixture, Category("LongRunning")]
+        class when_requesting_a_single_event_in_the_stream_as_xml: HttpBehaviorSpecificationWithSingleEvent
+        {
+            private JObject _json;
+
+            protected override void When()
+            {
+                Get(TestStream + "/0", accept: ContentType.Xml);
+            }
+
+            [Test]
+            public void request_succeeds()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
         }
 
     }
