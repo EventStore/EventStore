@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,40 +25,42 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.IO;
+
+using EventStore.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests
+namespace EventStore.Core.Tests.Http.Streams
 {
-    public class SpecificationWithDirectoryPerTestFixture
+    [SetUpFixture]
+    class SetUpFixture
     {
-        protected internal string PathName;
+        public static MiniNode _node;
+        public static EventStoreConnection _connection;
+        public static int _counter;
+        private SpecificationWithDirectoryPerTestFixture _directory;
 
-        protected string GetTempFilePath()
+        [SetUp]
+        public void SetUp()
         {
-            var typeName = GetType().Name.Length > 30 ? GetType().Name.Substring(0, 30) : GetType().Name;
-            return Path.Combine(PathName, string.Format("{0}-{1}", Guid.NewGuid(), typeName));
+            _counter = 0;
+            _directory = new SpecificationWithDirectoryPerTestFixture();
+            _directory.TestFixtureSetUp();
+            _node = new MiniNode(_directory.PathName);
+            _node.Start();
+
+            _connection = TestConnection.Create();
+            _connection.Connect(_node.TcpEndPoint);
         }
 
-        protected string GetFilePathFor(string fileName)
+        [TearDown]
+        public void TearDown()
         {
-            return Path.Combine(PathName, fileName);
-        }
-
-        [TestFixtureSetUp]
-        public virtual void TestFixtureSetUp()
-        {
-            var typeName = GetType().Name.Length > 30 ? GetType().Name.Substring(0, 30) : GetType().Name;
-            PathName = Path.Combine(Path.GetTempPath(), string.Format("{0}-{1}", Guid.NewGuid(), typeName));
-            Directory.CreateDirectory(PathName);
-        }
-
-        [TestFixtureTearDown]
-        public virtual void TestFixtureTearDown()
-        {
-            //kill whole tree
-            Directory.Delete(PathName, true);
+            _connection.Close();
+            _node.Shutdown();
+            _connection = null;
+            _node = null;
+            _directory.TestFixtureTearDown();
         }
     }
 }

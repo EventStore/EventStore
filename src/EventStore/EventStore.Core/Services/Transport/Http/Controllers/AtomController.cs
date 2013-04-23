@@ -64,7 +64,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
                                                           Codec.CreateCustom(Codec.Xml, ContentType.Atom, Encoding.UTF8),
-                                                          Codec.Json
+                                                          Codec.Json,
+                                                          Codec.EventXml,
+                                                          Codec.EventJson,
                                                       };
         private static readonly ICodec[] AtomWithHtmlCodecs = new[]
                                                               {
@@ -73,6 +75,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   Codec.ApplicationXml,
                                                                   Codec.CreateCustom(Codec.Xml, ContentType.Atom, Encoding.UTF8),
                                                                   Codec.Json,
+                                                                  Codec.EventXml,
+                                                                  Codec.EventJson,
                                                                   HtmlFeedCodec // initialization order matters
                                                               };
 

@@ -65,15 +65,29 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 case ContentType.Xml:
                 case ContentType.ApplicationXml:
+                    {
+                        var serializeObject = JsonConvert.SerializeObject(dto.data);
+                        var deserializeXmlNode = JsonConvert.DeserializeXmlNode(serializeObject, "data");
+                        return deserializeXmlNode.InnerXml;
+                    }
+                case ContentType.Json:
+                    return targetCodec.To(dto.data);
+
+
                 case ContentType.Atom:
+                case ContentType.EventXml:
                 {
                     var serializeObject = JsonConvert.SerializeObject(dto);
                     var deserializeXmlNode = JsonConvert.DeserializeXmlNode(serializeObject, "event");
                     return deserializeXmlNode.InnerXml;
                 }
 
-                default:
+                case ContentType.EventJson:
                     return targetCodec.To(dto);
+
+
+                default:
+                    throw new NotSupportedException();
             }
         }
 
@@ -91,10 +105,12 @@ namespace EventStore.Core.Services.Transport.Http
             switch(sourceCodec.ContentType)
             {
                 case ContentType.Json:
+                case ContentType.EventsJson:
                 case ContentType.AtomJson:
                     return LoadFromJson(data);
 
                 case ContentType.Xml:
+                case ContentType.EventsXml:
                 case ContentType.ApplicationXml:
                 case ContentType.Atom:
                     return LoadFromXml(data);

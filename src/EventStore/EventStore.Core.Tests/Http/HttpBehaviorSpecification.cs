@@ -29,10 +29,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.Tests.Http.Streams;
 using EventStore.Core.Tests.Http.Users;
 using NUnit.Framework;
 using EventStore.Core.Util;
@@ -48,17 +52,37 @@ namespace EventStore.Core.Tests.Http
         protected HttpWebResponse _lastResponse;
         protected string _lastResponseBody;
         protected JsonException _lastJsonException;
+        private Func<HttpWebResponse, byte[]> _dumpResponse;
+        private Func<HttpWebRequest, byte[]> _dumpRequest;
+        private Func<HttpWebRequest, byte[]> _dumpRequest2;
+        private string _tag;
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
+#if !__MonoCS__
+            EventStore.Common.Utils.Helper.EatException(() => _dumpResponse = CreateDumpResponse());
+            EventStore.Common.Utils.Helper.EatException(() => _dumpRequest = CreateDumpRequest());
+            EventStore.Common.Utils.Helper.EatException(() => _dumpRequest2 = CreateDumpRequest2());
+#endif
+
             base.TestFixtureSetUp();
-            _node = CreateMiniNode();
-            _node.Start();
 
-            _connection = TestConnection.Create();
-            _connection.Connect(_node.TcpEndPoint);
+            if (SetUpFixture._connection != null && SetUpFixture._node != null)
+            {
+                _tag = "_" + (++SetUpFixture._counter).ToString();
+                _node = SetUpFixture._node;
+                _connection = SetUpFixture._connection;
+            }
+            else
+            {
+                _tag = "_1";
+                _node = CreateMiniNode();
+                _node.Start();
 
+                _connection = TestConnection.Create();
+                _connection.Connect(_node.TcpEndPoint);
+            }
             _lastResponse = null;
             _lastResponseBody = null;
             _lastJsonException = null;
@@ -66,6 +90,15 @@ namespace EventStore.Core.Tests.Http
             Given();
             When();
 
+        }
+
+        public string TestStream {
+            get { return "/streams/test" + Tag; }
+        }
+
+        public string Tag
+        {
+            get { return _tag; }
         }
 
         protected virtual MiniNode CreateMiniNode()
@@ -76,8 +109,11 @@ namespace EventStore.Core.Tests.Http
         [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
-            _connection.Close();
-            _node.Shutdown();
+            if (SetUpFixture._connection == null || SetUpFixture._node == null)
+            {
+                _connection.Close();
+                _node.Shutdown();
+            }
             base.TestFixtureTearDown();
         }
 
@@ -103,6 +139,10 @@ namespace EventStore.Core.Tests.Http
 
         protected Uri MakeUrl(string path)
         {
+            var supplied = new Uri(path, UriKind.RelativeOrAbsolute);
+            if (supplied.IsAbsoluteUri)
+                return supplied;
+
             var httpEndPoint = _node.HttpEndPoint;
             return new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path).Uri;
         }
@@ -135,9 +175,10 @@ namespace EventStore.Core.Tests.Http
             return httpWebResponse;
         }
 
-        protected T GetJson<T>(string path, ICredentials credentials = null)
+        protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null)
         {
             var request = CreateRequest(path, "GET", null, credentials);
+            request.Accept = accept ?? "application/json";
             _lastResponse = GetRequestResponse(request);
             var memoryStream = new MemoryStream();
             _lastResponse.GetResponseStream().CopyTo(memoryStream);
@@ -154,7 +195,7 @@ namespace EventStore.Core.Tests.Http
             }
         }
 
-        private static HttpWebResponse GetRequestResponse(HttpWebRequest request)
+        private HttpWebResponse GetRequestResponse(HttpWebRequest request)
         {
             HttpWebResponse response;
             try
@@ -164,6 +205,25 @@ namespace EventStore.Core.Tests.Http
             catch (WebException ex)
             {
                 response = (HttpWebResponse) ex.Response;
+            }
+            if (_dumpRequest != null)
+            {
+                var bytes = _dumpRequest(request);
+                if (bytes != null)
+                    Console.WriteLine(Encoding.ASCII.GetString(bytes).TrimEnd('\0'));
+            }
+            if (_dumpRequest2 != null)
+            {
+                var bytes = _dumpRequest2(request);
+                if (bytes != null)
+                    Console.WriteLine(Encoding.ASCII.GetString(bytes).TrimEnd('\0'));
+            }
+            Console.WriteLine();
+            if (_dumpResponse != null)
+            {
+                var bytes = _dumpResponse(response);
+                if (bytes != null)
+                    Console.WriteLine(Encoding.ASCII.GetString(bytes).TrimEnd('\0'));
             }
             return response;
         }
@@ -199,7 +259,7 @@ namespace EventStore.Core.Tests.Http
                 }
                 else if (!response.TryGetValue(v.Key, out vv))
                 {
-                    Assert.Fail("{0}/{1} not found", path, v.Key);
+                    Assert.Fail("{0}/{1} not found in '{2}'", path, v.Key, response.ToString());
                 }
                 else
                 {
@@ -214,11 +274,14 @@ namespace EventStore.Core.Tests.Http
                     {
                         AssertJArray(v.Value as JArray, vv as JArray, path + "/" + v.Key);
                     }
-                    else
+                    else if (v.Value is JValue)
                     {
                         Assert.AreEqual(
-                            v.Value, vv, "{0}/{1} value is '{2}' but '{3}' is expected", path, v.Key, vv, v.Value);
+                            ((JValue) (v.Value)).Value, ((JValue) vv).Value,
+                            "{0}/{1} value is '{2}' but '{3}' is expected", path, v.Key, vv, v.Value);
                     }
+                    else
+                        Assert.Fail();
                 }
             }
         }
@@ -240,12 +303,14 @@ namespace EventStore.Core.Tests.Http
                 {
                     AssertJArray(v as JArray, vv as JArray, path + "/" + index);
                 }
-                else
+                else if (v is JValue)
                 {
                     Assert.AreEqual(
-                        v, vv, "{0}/{1} value is '{2}' but '{3}' is expected", path, index,
-                        vv, v);
+                        ((JValue) v).Value, ((JValue) vv).Value, "{0}/{1} value is '{2}' but '{3}' is expected", path,
+                        index, vv, v);
                 }
+                else
+                    Assert.Fail();
             }
         }
 
@@ -258,5 +323,67 @@ namespace EventStore.Core.Tests.Http
 
             AssertJObject(jobject, response, path);
         }
+
+        private static Func<HttpWebResponse, byte[]> CreateDumpResponse()
+        {
+            var r = Expression.Parameter(typeof (HttpWebResponse), "r");
+            var piCoreResponseData = typeof (HttpWebResponse).GetProperty(
+                "CoreResponseData",
+                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var fim_ConnectStream = piCoreResponseData.PropertyType.GetField("m_ConnectStream",
+                                                                             BindingFlags.GetField| BindingFlags.Public | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var connectStreamType = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("System.Net.ConnectStream")).Where(t => t != null).FirstOrDefault();
+            var fim_ReadBuffer = connectStreamType.GetField("m_ReadBuffer",
+                                                            BindingFlags.GetField| BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var body = Expression.Field(Expression.Convert(Expression.Field(Expression.Property(r, piCoreResponseData), fim_ConnectStream), connectStreamType), fim_ReadBuffer);
+            var debugExpression = Expression.Lambda<Func<HttpWebResponse, byte[]>>(body, r);
+            return debugExpression.Compile();
+        }
+
+        private static Func<HttpWebRequest, byte[]> CreateDumpRequest()
+        {
+            var r = Expression.Parameter(typeof (HttpWebRequest), "r");
+            var fi_WriteBuffer = typeof (HttpWebRequest).GetField("_WriteBuffer",
+                                                                  BindingFlags.GetField| BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var body = Expression.Field(r, fi_WriteBuffer);
+            var debugExpression = Expression.Lambda<Func<HttpWebRequest, byte[]>>(body, r);
+            return debugExpression.Compile();
+        }
+
+        private static Func<HttpWebRequest, byte[]> CreateDumpRequest2()
+        {
+            var r = Expression.Parameter(typeof (HttpWebRequest), "r");
+            var fi_SubmitWriteStream = typeof (HttpWebRequest).GetField(
+                "_SubmitWriteStream",
+                BindingFlags.GetField | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy
+                | BindingFlags.Instance);
+            var connectStreamType = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("System.Net.ConnectStream")).Where(t => t != null).FirstOrDefault();
+            var piBufferedData = connectStreamType.GetProperty(
+                "BufferedData",
+                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy
+                | BindingFlags.Instance);
+            var fiheadChunk = piBufferedData.PropertyType.GetField(
+                "headChunk",
+                BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy
+                | BindingFlags.Instance);
+            var piBuffer = fiheadChunk.FieldType.GetField(
+                "Buffer",
+                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy
+                | BindingFlags.Instance);
+            var headChunk =
+                Expression.Field(
+                    Expression.Property(
+                        Expression.Convert(Expression.Field(r, fi_SubmitWriteStream), connectStreamType), piBufferedData),
+                    fiheadChunk);
+            var body =
+                Expression.Condition(
+                    Expression.ReferenceNotEqual(headChunk, Expression.Constant(null, headChunk.Type)),
+                    Expression.Field(headChunk, piBuffer), Expression.Constant(null, piBuffer.FieldType));
+            var debugExpression = Expression.Lambda<Func<HttpWebRequest, byte[]>>(body, r);
+            return debugExpression.Compile();
+        }
+    // System.Text.Encoding.UTF8.GetString(((System.Net.ConnectStream)(_response.CoreResponseData.m_ConnectStream)).m_ReadBuffer)
+    // System.Text.Encoding.UTF8.GetString(((System.Net.HttpWebRequest)(request))._WriteBuffer)
+    // ((System.Net.ConnectStream)(request._SubmitWriteStream)).BufferedData.headChunk.Buffer
     }
 }

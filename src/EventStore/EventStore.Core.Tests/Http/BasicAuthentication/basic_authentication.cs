@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 
             protected override void When()
             {
-                _json = GetJson<JObject>("/test1", new NetworkCredential("test1", "Pa55w0rd!"));
+                _json = GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
             }
 
             [Test]
@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 
             protected override void When()
             {
-                _json = GetJson<JObject>("/test1", new NetworkCredential("test1", "InvalidPassword!"));
+                _json = GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "InvalidPassword!"));
             }
 
             [Test]
@@ -118,7 +118,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 
             protected override void When()
             {
-                _json = GetJson<JObject>("/test1", new NetworkCredential("test1", "Pa55w0rd!"));
+                _json = GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
             }
 
             [Test]
@@ -144,7 +144,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 
             protected override void When()
             {
-                _json = GetJson<JObject>("/test1", new NetworkCredential("test1", "Pa55w0rd!"));
+                _json = GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
             }
 
             [Test]
