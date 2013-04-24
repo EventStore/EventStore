@@ -123,7 +123,9 @@ namespace EventStore.Core.Tests.Http
         protected HttpWebRequest CreateRequest(
             string path, string method, string contentType, ICredentials credentials = null)
         {
-            var httpWebRequest = (HttpWebRequest) WebRequest.Create(MakeUrl(path));
+			var uri = MakeUrl (path);
+			var request = WebRequest.Create (uri);
+            var httpWebRequest = (HttpWebRequest)request;
             httpWebRequest.Method = method;
             httpWebRequest.ContentType = contentType;
             if (credentials != null)
@@ -143,7 +145,7 @@ namespace EventStore.Core.Tests.Http
         protected Uri MakeUrl(string path)
         {
             var supplied = new Uri(path, UriKind.RelativeOrAbsolute);
-            if (supplied.IsAbsoluteUri)
+            if (supplied.IsAbsoluteUri && !supplied.IsFile) // NOTE: is file imporant for mono
                 return supplied;
 
             var httpEndPoint = _node.HttpEndPoint;

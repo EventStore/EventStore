@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.TransactionLog
         private readonly Guid _eventId = Guid.NewGuid();
         private InMemoryCheckpoint _checkpoint;
 
-        [Test, Ignore("On MONO something strange is happening when the record size is > 4096 bytes, the first bytes are not written into file. Will have to debug later.")]
+        [Test]
         public void a_record_can_be_written()
         {
             var filename = GetFilePathFor("chunk-000000.000000");
