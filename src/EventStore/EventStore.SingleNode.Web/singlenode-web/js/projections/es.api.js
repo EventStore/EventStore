@@ -12,12 +12,8 @@ es.postEvent = function (settings) {
     var onError = settings.error || function() {};
     var onSuccess = settings.success || function() {};
 
-
-
     var dataStr = null;
-    if (typeof data === "object") {
-        dataStr = JSON.stringify(data);
-    } else if (typeof data === "string") {
+    if (typeof data === "object" || typeof data === "string") {
         dataStr = data;
     } else {
         throw "couldn't parse data";
