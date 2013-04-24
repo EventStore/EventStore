@@ -78,19 +78,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void PostUser(HttpEntityManager http, string s)
         {
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(
-                http,
-                configurator:
-                    (codec, result) =>
-                        {
-                            var configuration = AutoConfigurator(codec, result);
-                            return configuration.Code == HttpStatusCode.OK
-                                       ? configuration.SetCreated(
-                                           MakeUrl(http, "/users/" + Uri.EscapeDataString(result.LoginName)))
-                                       : configuration;
-                        });
+                http, configurator: (codec, result) =>
+                    {
+                        var configuration = AutoConfigurator(codec, result);
+                        return configuration.Code == HttpStatusCode.OK
+                                   ? configuration.SetCreated(
+                                       MakeUrl(http, "/users/" + Uri.EscapeDataString(result.LoginName)))
+                                   : configuration;
+                    });
             var data = http.RequestCodec.From<PostUserData>(s);
             var message = new UserManagementMessage.Create(
-                envelope, data.LoginName, data.FullName, data.Password);
+                envelope, data.LoginName, data.FullName, data.Groups, data.Password);
             Publish(message);
         }
 
@@ -99,7 +97,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];
             var data = http.RequestCodec.From<PutUserData>(s);
-            var message = new UserManagementMessage.Update(envelope, login, data.FullName);
+            var message = new UserManagementMessage.Update(envelope, login, data.FullName, data.Groups);
             Publish(message);
         }
 
@@ -193,12 +191,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             public string LoginName { get; set; }
             public string FullName { get; set; }
+            public string[] Groups { get; set; }
             public string Password { get; set; }
         }
 
         private class PutUserData
         {
             public string FullName { get; set; }
+            public string[] Groups { get; set; }
         }
 
         private class ResetPasswordData

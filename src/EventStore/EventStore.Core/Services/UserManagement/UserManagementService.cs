@@ -27,14 +27,13 @@
 // 
 
 using System;
+using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Authentication;
-using EventStore.Core.Util;
-using System.Linq;
 
 namespace EventStore.Core.Services.UserManagement
 {
@@ -68,7 +67,7 @@ namespace EventStore.Core.Services.UserManagement
 
         public void Handle(UserManagementMessage.Update message)
         {
-            ReadUpdateWriteReply(message, data => data.SetFullName(message.FullName));
+            ReadUpdateWriteReply(message, data => data.SetFullName(message.FullName).SetGroups(message.Groups));
         }
 
         public void Handle(UserManagementMessage.Enable message)
@@ -124,7 +123,7 @@ namespace EventStore.Core.Services.UserManagement
                             message.Envelope.ReplyWith(
                                 new UserManagementMessage.UserDetailsResult(
                                     new UserManagementMessage.UserData(
-                                        message.LoginName, data.FullName, data.Disabled,
+                                        message.LoginName, data.FullName, data.Groups, data.Disabled,
                                         new DateTimeOffset(completed.Events[0].Event.TimeStamp, TimeSpan.FromHours(0)))));
                         else
                         {
@@ -161,7 +160,7 @@ namespace EventStore.Core.Services.UserManagement
             string hash;
             string salt;
             _passwordHashAlgorithm.Hash(message.Password, out hash, out salt);
-            return new UserData(message.LoginName, message.FullName, hash, salt, disabled: false);
+            return new UserData(message.LoginName, message.FullName, message.Groups, hash, salt, disabled: false);
         }
 
         private void ReadUserDetailsAnd(
@@ -221,7 +220,7 @@ namespace EventStore.Core.Services.UserManagement
         {
             var userCreatedEvent = new Event(Guid.NewGuid(), eventType, true, userData.ToJsonBytes(), null);
             _ioDispatcher.WriteEvents(
-                "$user-" + message.LoginName, expectedVersion, new[] { userCreatedEvent }, SystemAccount.Principal,
+                "$user-" + message.LoginName, expectedVersion, new[] {userCreatedEvent}, SystemAccount.Principal,
                 completed => WriteUserCreatedCompleted(completed, message));
         }
 
