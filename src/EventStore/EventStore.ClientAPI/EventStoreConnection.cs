@@ -67,7 +67,7 @@ namespace EventStore.ClientAPI
         /// <param name="clusterSettings">The <see cref="ClusterSettings"/> that determine cluster behavior.</param>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <returns>a new <see cref="IEventStoreConnection"/></returns>
-        public static IEventStoreConnection Create(ConnectionSettings connectionSettings, ClusterSettings clusterSettings, string connectionName)
+        public static IEventStoreConnection Create(ConnectionSettings connectionSettings, ClusterSettings clusterSettings, string connectionName = null)
         {
             Ensure.NotNull(connectionSettings, "connectionSettings");
             Ensure.NotNull(clusterSettings, "clusterSettings");
