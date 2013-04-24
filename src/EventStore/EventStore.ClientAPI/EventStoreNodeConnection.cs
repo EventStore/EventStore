@@ -60,7 +60,7 @@ namespace EventStore.ClientAPI
 
         private readonly string _connectionName;
         private readonly ConnectionSettings _settings;
-        private readonly Func<Task<IPEndPoint>> _endPointDiscoverer;
+        private readonly IEndPointDiscoverer _endPointDiscoverer;
         private readonly EventStoreConnectionLogicHandler _handler;
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace EventStore.ClientAPI
         /// <param name="settings">The <see cref="ConnectionSettings"/> containing the settings for this connection.</param>
         /// <param name="endPointDiscoverer">Discoverer of destination node end point.</param>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
-        internal EventStoreNodeConnection(ConnectionSettings settings, Func<Task<IPEndPoint>> endPointDiscoverer, string connectionName)
+        internal EventStoreNodeConnection(ConnectionSettings settings, IEndPointDiscoverer endPointDiscoverer, string connectionName)
         {
             Ensure.NotNull(settings, "settings");
             Ensure.NotNull(endPointDiscoverer, "endPointDiscoverer");

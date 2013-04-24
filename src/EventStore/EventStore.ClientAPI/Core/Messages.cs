@@ -54,9 +54,9 @@ namespace EventStore.ClientAPI.Core
     internal class StartConnectionMessage : Message
     {
         public readonly TaskCompletionSource<object> Task;
-        public readonly Func<Task<IPEndPoint>> EndPointDiscoverer;
+        public readonly IEndPointDiscoverer EndPointDiscoverer;
 
-        public StartConnectionMessage(TaskCompletionSource<object> task, Func<Task<IPEndPoint>> endPointDiscoverer)
+        public StartConnectionMessage(TaskCompletionSource<object> task, IEndPointDiscoverer endPointDiscoverer)
         {
             Ensure.NotNull(task, "task");
             Ensure.NotNull(endPointDiscoverer, "endendPointDiscoverer");

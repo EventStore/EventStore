@@ -26,25 +26,29 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Runtime.Serialization;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Exceptions
 {
-    internal static class Consts
+    public class ClusterException : EventStoreConnectionException
     {
-        public const int DefaultMaxQueueSize = 5000;
-        public const int DefaultMaxConcurrentItems = 5000;
-        public const int DefaultMaxOperationRetries = 10;
-        public const int DefaultMaxReconnections = 10;
+        public ClusterException()
+        {
+        }
 
-        public const bool DefaultAllowForwarding = true;
+        public ClusterException(string message)
+                : base(message)
+        {
+        }
 
-        public static readonly TimeSpan DefaultReconnectionDelay = TimeSpan.FromMilliseconds(100);
-        public static readonly TimeSpan DefaultOperationTimeout = TimeSpan.FromSeconds(7);
-        public static readonly TimeSpan DefaultOperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
+        public ClusterException(string message, Exception innerException)
+                : base(message, innerException)
+        {
+        }
 
-        public static readonly TimeSpan TimerPeriod = TimeSpan.FromMilliseconds(200);
-
-        public const int DefaultMaxClusterDiscoverAttempts = 10;
-        public const int DefaultClusterManagerExternalHttpPort = 30778;
+        protected ClusterException(SerializationInfo info, StreamingContext context)
+                : base(info, context)
+        {
+        }
     }
 }

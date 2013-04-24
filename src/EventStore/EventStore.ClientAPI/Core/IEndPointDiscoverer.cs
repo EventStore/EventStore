@@ -25,26 +25,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using System;
 
-namespace EventStore.ClientAPI
+using System.Net;
+using System.Threading.Tasks;
+
+namespace EventStore.ClientAPI.Core
 {
-    internal static class Consts
+    internal interface IEndPointDiscoverer
     {
-        public const int DefaultMaxQueueSize = 5000;
-        public const int DefaultMaxConcurrentItems = 5000;
-        public const int DefaultMaxOperationRetries = 10;
-        public const int DefaultMaxReconnections = 10;
-
-        public const bool DefaultAllowForwarding = true;
-
-        public static readonly TimeSpan DefaultReconnectionDelay = TimeSpan.FromMilliseconds(100);
-        public static readonly TimeSpan DefaultOperationTimeout = TimeSpan.FromSeconds(7);
-        public static readonly TimeSpan DefaultOperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
-
-        public static readonly TimeSpan TimerPeriod = TimeSpan.FromMilliseconds(200);
-
-        public const int DefaultMaxClusterDiscoverAttempts = 10;
-        public const int DefaultClusterManagerExternalHttpPort = 30778;
+        Task<IPEndPoint> DiscoverAsync();
     }
 }

@@ -25,26 +25,45 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
+using System.Net;
+using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
 {
-    internal static class Consts
+    public sealed class ClusterSettings
     {
-        public const int DefaultMaxQueueSize = 5000;
-        public const int DefaultMaxConcurrentItems = 5000;
-        public const int DefaultMaxOperationRetries = 10;
-        public const int DefaultMaxReconnections = 10;
+        /// <summary>
+        /// Creates a new set of <see cref="ClusterSettings"/>
+        /// </summary>
+        /// <returns>A <see cref="ClusterSettingsBuilder"/> that can be used to build up a <see cref="ClusterSettings"/></returns>
+        public static ClusterSettingsBuilder Create()
+        {
+            return new ClusterSettingsBuilder();
+        }
 
-        public const bool DefaultAllowForwarding = true;
+        public readonly string ClusterDns;
+        public readonly int MaxDiscoverAttempts;
+        public readonly int ManagerExternalHttpPort;
 
-        public static readonly TimeSpan DefaultReconnectionDelay = TimeSpan.FromMilliseconds(100);
-        public static readonly TimeSpan DefaultOperationTimeout = TimeSpan.FromSeconds(7);
-        public static readonly TimeSpan DefaultOperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
+        public readonly IPAddress[] FakeDnsEntries;
 
-        public static readonly TimeSpan TimerPeriod = TimeSpan.FromMilliseconds(200);
+        internal ClusterSettings(string clusterDns,
+                                 int maxDiscoverAttempts,
+                                 int managerExternalHttpPort,
+                                 IPAddress[] fakeDnsEntries)
+        {
+            Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
+            if (maxDiscoverAttempts < -1)
+                throw new ArgumentOutOfRangeException("maxDiscoverAttempts", string.Format("maxDiscoverAttempts value is out of range: {0}. Allowed range: [-1, infinity].", maxDiscoverAttempts));
+            Ensure.Positive(managerExternalHttpPort, "managerExternalHttpPort");
 
-        public const int DefaultMaxClusterDiscoverAttempts = 10;
-        public const int DefaultClusterManagerExternalHttpPort = 30778;
+            ClusterDns = clusterDns;
+            MaxDiscoverAttempts = maxDiscoverAttempts;
+            ManagerExternalHttpPort = managerExternalHttpPort;
+
+            FakeDnsEntries = fakeDnsEntries;
+        }
     }
 }
