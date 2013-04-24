@@ -512,11 +512,12 @@ namespace EventStore.Projections.Core.Services.Management
             }
             else
             {
+                completedAction();
                 if (requestedFrom == -1)
                 {
                     _logger.Info(
                         "Projection manager is initializing from the empty {0} stream", completed.EventStreamId);
-                    CreateFakeProjection(() => CreatePredefinedProjections(completedAction));
+                    CreateFakeProjection(CreatePredefinedProjections);
                 }
             }
             RequestSystemProjections();
@@ -556,7 +557,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         }
 
-        private void CreatePredefinedProjections(Action completed)
+        private void CreatePredefinedProjections()
         {
             CreatePredefinedProjection("$streams", typeof (IndexStreams), "");
             CreatePredefinedProjection("$stream_by_category", typeof(CategorizeStreamByPath), "-");
