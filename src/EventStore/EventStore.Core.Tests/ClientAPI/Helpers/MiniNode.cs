@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
         public MiniNode(string pathname, int? tcpPort = null, int? httpPort = null, bool enableProjections = false)
         {
-            var ip = GetLocalIp();
+            IPAddress ip = IPAddress.Loopback; //GetLocalIp();
 
             int extTcpPort = tcpPort ?? TcpPortsHelper.GetAvailablePort(ip);
             int extHttpPort = httpPort ?? TcpPortsHelper.GetAvailablePort(ip);

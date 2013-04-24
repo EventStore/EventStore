@@ -26,12 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helper;
 using EventStore.Core.Tests.Services.Transport.Http.Authentication;
 using NUnit.Framework;
-using System.Linq;
 
 namespace EventStore.Core.Tests.Services.UserManagementService
 {
@@ -51,7 +51,8 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 AllWritesSucceed();
 
                 _replyTo = new PublishEnvelope(_bus);
-                _users = new Core.Services.UserManagement.UserManagementService(_bus, _ioDispatcher, new StubPasswordHashAlgorithm());
+                _users = new Core.Services.UserManagement.UserManagementService(
+                    _bus, _ioDispatcher, new StubPasswordHashAlgorithm());
             }
 
             [SetUp]
@@ -77,7 +78,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void When()
             {
                 base.When();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
             [Test]
@@ -104,6 +107,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(user);
                 Assert.AreEqual("John Doe", user.Data.FullName);
                 Assert.AreEqual("user1", user.Data.LoginName);
+                Assert.NotNull(user.Data.Groups);
+                Assert.That(user.Data.Groups.Any(v => v == "admin"));
+                Assert.That(user.Data.Groups.Any(v => v == "other"));
                 Assert.AreEqual(false, user.Data.Disabled);
             }
 
@@ -116,7 +122,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
-
         }
 
         [TestFixture]
@@ -125,13 +130,16 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "Existing John", "existing!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "Existing John", new[] {"admin", "other"}, "existing!"));
             }
 
             protected override void When()
             {
                 base.When();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(_replyTo, "user1", "John Doe", new[] {"bad"}, "Johny123!"));
             }
 
             [Test]
@@ -151,6 +159,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(user);
                 Assert.AreEqual("Existing John", user.Data.FullName);
                 Assert.AreEqual("user1", user.Data.LoginName);
+                Assert.NotNull(user.Data.Groups);
+                Assert.That(user.Data.Groups.Any(v => v == "admin"));
+                Assert.That(user.Data.Groups.Any(v => v == "other"));
                 Assert.AreEqual(false, user.Data.Disabled);
             }
 
@@ -163,7 +174,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
-
         }
 
         [TestFixture]
@@ -172,13 +182,15 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
             protected override void When()
             {
                 base.When();
-                _users.Handle(new UserManagementMessage.Update(_replyTo, "user1", "Doe John"));
+                _users.Handle(new UserManagementMessage.Update(_replyTo, "user1", "Doe John", new[] {"good"}));
             }
 
             [Test]
@@ -205,6 +217,10 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(user);
                 Assert.AreEqual("Doe John", user.Data.FullName);
                 Assert.AreEqual("user1", user.Data.LoginName);
+                Assert.NotNull(user.Data.Groups);
+                Assert.That(user.Data.Groups.All(v => v != "admin"));
+                Assert.That(user.Data.Groups.All(v => v != "other"));
+                Assert.That(user.Data.Groups.Any(v => v == "good"));
                 Assert.AreEqual(false, user.Data.Disabled);
             }
 
@@ -226,7 +242,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
-
         }
 
         [TestFixture]
@@ -240,7 +255,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void When()
             {
                 base.When();
-                _users.Handle(new UserManagementMessage.Update(_replyTo, "user1", "Doe John"));
+                _users.Handle(new UserManagementMessage.Update(_replyTo, "user1", "Doe John", new[] {"admin", "other"}));
             }
 
             [Test]
@@ -270,7 +285,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.AreEqual(UserManagementMessage.Error.NotFound, user.Error);
                 Assert.Null(user.Data);
             }
-
         }
 
         [TestFixture]
@@ -279,14 +293,16 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
                 _users.Handle(new UserManagementMessage.Disable(_replyTo, "user1"));
             }
 
             protected override void When()
             {
                 base.When();
-                _users.Handle(new UserManagementMessage.Update(_replyTo, "user1", "Doe John"));
+                _users.Handle(new UserManagementMessage.Update(_replyTo, "user1", "Doe John", new[] {"good"}));
             }
 
             [Test]
@@ -305,7 +321,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(user);
                 Assert.AreEqual(true, user.Data.Disabled);
             }
-
         }
 
         [TestFixture]
@@ -314,7 +329,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
             protected override void When()
@@ -340,7 +357,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(user);
                 Assert.AreEqual(true, user.Data.Disabled);
             }
-
         }
 
         [TestFixture]
@@ -349,7 +365,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
                 _users.Handle(new UserManagementMessage.Disable(_replyTo, "user1"));
             }
 
@@ -376,7 +394,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(user);
                 Assert.AreEqual(true, user.Data.Disabled);
             }
-
         }
 
         [TestFixture]
@@ -385,7 +402,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
                 _users.Handle(new UserManagementMessage.Disable(_replyTo, "user1"));
             }
 
@@ -412,7 +431,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(user);
                 Assert.AreEqual(false, user.Data.Disabled);
             }
-
         }
 
         [TestFixture]
@@ -421,7 +439,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
             protected override void When()
@@ -447,7 +467,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(user);
                 Assert.AreEqual(false, user.Data.Disabled);
             }
-
         }
 
         [TestFixture]
@@ -456,7 +475,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
             protected override void When()
@@ -496,12 +517,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             public void changes_password()
             {
                 _consumer.HandledMessages.Clear();
-                _users.Handle(new UserManagementMessage.ChangePassword(_replyTo, "user1", "new-password", "other-password"));
+                _users.Handle(
+                    new UserManagementMessage.ChangePassword(_replyTo, "user1", "new-password", "other-password"));
                 var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
-
         }
 
         [TestFixture]
@@ -510,7 +531,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
             protected override void When()
@@ -550,12 +573,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             public void changes_password()
             {
                 _consumer.HandledMessages.Clear();
-                _users.Handle(new UserManagementMessage.ChangePassword(_replyTo, "user1", "new-password", "other-password"));
+                _users.Handle(
+                    new UserManagementMessage.ChangePassword(_replyTo, "user1", "new-password", "other-password"));
                 var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
-
         }
 
         [TestFixture]
@@ -564,7 +587,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
             protected override void When()
@@ -605,12 +630,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             public void does_not_change_the_password()
             {
                 _consumer.HandledMessages.Clear();
-                _users.Handle(new UserManagementMessage.ChangePassword(_replyTo, "user1", "Johny123!", "other-password"));
+                _users.Handle(
+                    new UserManagementMessage.ChangePassword(_replyTo, "user1", "Johny123!", "other-password"));
                 var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
-
         }
 
         [TestFixture]
@@ -619,7 +644,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
             protected override void When()
@@ -657,7 +684,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         }
 
         [TestFixture]
-        public class when_getting_all_users: TestFixtureWithUserManagementService
+        public class when_getting_all_users : TestFixtureWithUserManagementService
         {
             protected override void Given()
             {
@@ -672,10 +699,18 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user1", "John Doe 1", "Johny123!"));
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user2", "John Doe 2", "Johny123!"));
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "user3", "Another Doe 1", "Johny123!"));
-                _users.Handle(new UserManagementMessage.Create(_replyTo, "another_user", "Another Doe 2", "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user1", "John Doe 1", new[] {"admin1", "other"}, "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user2", "John Doe 2", new[] {"admin2", "other"}, "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "user3", "Another Doe 1", new[] {"admin3", "other"}, "Johny123!"));
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, "another_user", "Another Doe 2", new[] {"admin4", "other"}, "Johny123!"));
             }
 
             protected override void When()
@@ -709,6 +744,5 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.That(users.Any(v => v.LoginName == "user2" && v.FullName == "John Doe 2"));
             }
         }
-
     }
 }

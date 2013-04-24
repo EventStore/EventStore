@@ -46,7 +46,14 @@ namespace EventStore.Core.Tests.Http.Users
             protected override void When()
             {
                 _response = MakeJsonPost(
-                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                    "/users/",
+                    new
+                        {
+                            LoginName = "test1",
+                            FullName = "User Full Name",
+                            Groups = new[] {"admin", "other"},
+                            Password = "Pa55w0rd!"
+                        });
             }
 
             [Test]
@@ -64,7 +71,15 @@ namespace EventStore.Core.Tests.Http.Users
 
             protected override void Given()
             {
-                MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                MakeJsonPost(
+                    "/users/",
+                    new
+                        {
+                            LoginName = "test1",
+                            FullName = "User Full Name",
+                            Groups = new[] {"admin", "other"},
+                            Password = "Pa55w0rd!"
+                        });
             }
 
             protected override void When()
@@ -87,9 +102,15 @@ namespace EventStore.Core.Tests.Http.Users
                             Success = true,
                             Error = "Success",
                             Data =
-                        new {LoginName = "test1", FullName = "User Full Name", Disabled = false, Password___ = false}
-                        },
-                    _response);
+                        new
+                            {
+                                LoginName = "test1",
+                                FullName = "User Full Name",
+                                Groups = new[] {"admin", "other"},
+                                Disabled = false,
+                                Password___ = false
+                            }
+                        }, _response);
             }
         }
 

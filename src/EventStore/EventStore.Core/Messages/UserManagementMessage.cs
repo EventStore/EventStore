@@ -33,7 +33,6 @@ namespace EventStore.Core.Messages
 {
     public static class UserManagementMessage
     {
-
         public class RequestMessage : Message
         {
             public readonly IEnvelope Envelope;
@@ -70,12 +69,14 @@ namespace EventStore.Core.Messages
         public sealed class Create : UserManagementRequestMessage
         {
             public readonly string FullName;
+            public readonly string[] Groups;
             public readonly string Password;
 
-            public Create(IEnvelope envelope, string loginName, string fullName, string password)
+            public Create(IEnvelope envelope, string loginName, string fullName, string[] groups, string password)
                 : base(envelope, loginName)
             {
                 FullName = fullName;
+                Groups = groups;
                 Password = password;
             }
         }
@@ -83,11 +84,13 @@ namespace EventStore.Core.Messages
         public sealed class Update : UserManagementRequestMessage
         {
             public readonly string FullName;
+            public readonly string[] Groups;
 
-            public Update(IEnvelope envelope, string loginName, string fullName)
+            public Update(IEnvelope envelope, string loginName, string fullName, string[] groups)
                 : base(envelope, loginName)
             {
                 FullName = fullName;
+                Groups = groups;
             }
         }
 
@@ -154,10 +157,14 @@ namespace EventStore.Core.Messages
             {
             }
         }
+
         public enum Error
         {
-            Success, NotFound, Conflict,
-            Error, TryAgain,
+            Success,
+            NotFound,
+            Conflict,
+            Error,
+            TryAgain,
             Unauthorized
         }
 
@@ -165,13 +172,16 @@ namespace EventStore.Core.Messages
         {
             public readonly string LoginName;
             public readonly string FullName;
+            public readonly string[] Groups;
             public readonly DateTimeOffset? DateLastUpdated;
             public readonly bool Disabled;
 
-            public UserData(string loginName, string fullName, bool disabled, DateTimeOffset? dateLastUpdated)
+            public UserData(
+                string loginName, string fullName, string[] groups, bool disabled, DateTimeOffset? dateLastUpdated)
             {
                 LoginName = loginName;
                 FullName = fullName;
+                Groups = groups;
                 Disabled = disabled;
                 DateLastUpdated = dateLastUpdated;
             }
@@ -187,13 +197,13 @@ namespace EventStore.Core.Messages
 
 
             public UpdateResult(string loginName)
-                : base (true, Error.Success)
+                : base(true, Error.Success)
             {
                 LoginName = loginName;
             }
 
             public UpdateResult(string loginName, Error error)
-                : base (false, error)
+                : base(false, error)
             {
                 LoginName = loginName;
             }

@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Net;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
@@ -43,6 +44,7 @@ namespace EventStore.Core.Tests.Http.Streams
         [SetUp]
         public void SetUp()
         {
+            WebRequest.DefaultWebProxy = new WebProxy();
             _counter = 0;
             _directory = new SpecificationWithDirectoryPerTestFixture();
             _directory.TestFixtureSetUp();

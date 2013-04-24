@@ -28,13 +28,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using System.Linq;
-using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.UserManagement
 {
@@ -43,7 +42,7 @@ namespace EventStore.Core.Services.UserManagement
         private const string UserEventType = "$User";
         private const string UserStreamPrefix = "$user-";
         private readonly IODispatcher _ioDispatcher;
-        private List<UserManagementMessage.UserData> _results = new List<UserManagementMessage.UserData>();
+        private readonly List<UserManagementMessage.UserData> _results = new List<UserManagementMessage.UserData>();
         private Action<UserManagementMessage.Error, UserManagementMessage.UserData[]> _onCompleted;
         private int _activeRequests;
         private bool _aborted;
@@ -66,12 +65,13 @@ namespace EventStore.Core.Services.UserManagement
         private void BeginReadForward(int fromEventNumber)
         {
             _activeRequests++;
-            _ioDispatcher.ReadForward("$users", fromEventNumber, 1, false, SystemAccount.Principal, ReadUsersForwardCompleted);
+            _ioDispatcher.ReadForward(
+                "$users", fromEventNumber, 1, false, SystemAccount.Principal, ReadUsersForwardCompleted);
         }
 
         private void ReadUsersForwardCompleted(ClientMessage.ReadStreamEventsForwardCompleted result)
         {
-            if (_aborted) 
+            if (_aborted)
                 return;
             switch (result.Result)
             {
@@ -109,20 +109,21 @@ namespace EventStore.Core.Services.UserManagement
         {
             _activeRequests++;
             _ioDispatcher.ReadBackward(
-                UserStreamPrefix + loginName, -1, 1, false, SystemAccount.Principal, 
+                UserStreamPrefix + loginName, -1, 1, false, SystemAccount.Principal,
                 result => ReadUserDetailsBackwardCompleted(loginName, result));
         }
 
-        private void ReadUserDetailsBackwardCompleted(string loginName, ClientMessage.ReadStreamEventsBackwardCompleted result)
+        private void ReadUserDetailsBackwardCompleted(
+            string loginName, ClientMessage.ReadStreamEventsBackwardCompleted result)
         {
-            if (_aborted) 
+            if (_aborted)
                 return;
             switch (result.Result)
             {
                 case ReadStreamResult.Success:
                     if (result.Events.Length != 1)
                     {
-                        AddLoadedUserDetails(loginName, "", true, null);
+                        AddLoadedUserDetails(loginName, "", new string[] {}, true, null);
                     }
                     else
                     {
@@ -131,7 +132,7 @@ namespace EventStore.Core.Services.UserManagement
                             var eventRecord = result.Events[0].Event;
                             var userData = eventRecord.Data.ParseJson<UserData>();
                             AddLoadedUserDetails(
-                                userData.LoginName, userData.FullName, userData.Disabled,
+                                userData.LoginName, userData.FullName, userData.Groups, userData.Disabled,
                                 new DateTimeOffset(eventRecord.TimeStamp, TimeSpan.FromHours(0)));
                         }
                         catch
@@ -141,7 +142,7 @@ namespace EventStore.Core.Services.UserManagement
                     }
                     break;
                 case ReadStreamResult.NoStream:
-                    AddLoadedUserDetails(loginName, "", true, null);
+                    AddLoadedUserDetails(loginName, "", new string[] {}, true, null);
                     break;
                 case ReadStreamResult.StreamDeleted:
                     // ignore - deleted
@@ -160,9 +161,10 @@ namespace EventStore.Core.Services.UserManagement
                 _onCompleted(UserManagementMessage.Error.Success, _results.ToArray());
         }
 
-        private void AddLoadedUserDetails(string loginName, string fullName, bool disabled, DateTimeOffset? dateLastUpdated)
+        private void AddLoadedUserDetails(
+            string loginName, string fullName, string[] groups, bool disabled, DateTimeOffset? dateLastUpdated)
         {
-            _results.Add(new UserManagementMessage.UserData(loginName, fullName, disabled, dateLastUpdated));
+            _results.Add(new UserManagementMessage.UserData(loginName, fullName, groups, disabled, dateLastUpdated));
         }
     }
 }
