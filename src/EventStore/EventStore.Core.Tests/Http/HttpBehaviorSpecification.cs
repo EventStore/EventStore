@@ -128,6 +128,7 @@ namespace EventStore.Core.Tests.Http
             httpWebRequest.ContentType = contentType;
             if (credentials != null)
             {
+                httpWebRequest.PreAuthenticate = true;
                 httpWebRequest.Credentials = credentials;
             }
             return httpWebRequest;
