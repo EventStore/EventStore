@@ -50,6 +50,7 @@ namespace EventStore.Transport.Http.Server
             ListenPrefixes = prefixes;
 
             _listener = new HttpListener();
+            _listener.Realm = "ES";
             _listener.AuthenticationSchemes = AuthenticationSchemes.Basic | AuthenticationSchemes.Anonymous;
             foreach (var prefix in prefixes)
             {
