@@ -26,7 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Linq.Expressions;
 using System.Net;
+using System.Reflection;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
@@ -43,6 +45,10 @@ namespace EventStore.Transport.Http.Server
 
         private readonly HttpListener _listener;
 
+#if __MonoCS__
+        private static readonly Func<HttpListenerRequest, HttpListenerContext> _getContext = CreateGetContext();
+#endif
+
         public HttpAsyncServer(string[] prefixes)
         {
             Ensure.NotNull(prefixes, "prefixes");
@@ -51,7 +57,15 @@ namespace EventStore.Transport.Http.Server
 
             _listener = new HttpListener();
             _listener.Realm = "ES";
-            _listener.AuthenticationSchemes = AuthenticationSchemes.Basic | AuthenticationSchemes.Anonymous;
+#if __MonoCS__
+                _listener.AuthenticationSchemeSelectorDelegate =
+                    request =>
+                    _getContext(request).Response.StatusCode == HttpStatusCode.Unauthorized
+                        ? AuthenticationSchemes.Basic
+                        : AuthenticationSchemes.Anonymous;
+#else
+                _listener.AuthenticationSchemes = AuthenticationSchemes.Basic | AuthenticationSchemes.Anonymous;
+#endif
             foreach (var prefix in prefixes)
             {
                 _listener.Prefixes.Add(prefix);
@@ -140,5 +154,24 @@ namespace EventStore.Transport.Http.Server
             if (handler != null)
                 handler(this, context);
         }
+
+ #if __MonoCS__
+       private static Func<HttpListenerRequest, HttpListenerContext> CreateGetContext()
+        {
+            var r = Expression.Parameter(typeof (HttpListenerRequest), "r");
+            var piHttpListenerContext = typeof (HttpListenerRequest).GetProperty(
+                "HttpListenerContext",
+                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var fiContext = typeof (HttpListenerRequest).GetField(
+                "context",
+                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var body = piHttpListenerContext != null
+                           ? Expression.Property(r, piHttpListenerContext)
+                           : Expression.Field(r, fiContext);
+            var debugExpression = Expression.Lambda<Func<HttpListenerRequest, HttpListenerContext>>(body, r);
+            return debugExpression.Compile();
+        }
+#endif
+
     }
 }
