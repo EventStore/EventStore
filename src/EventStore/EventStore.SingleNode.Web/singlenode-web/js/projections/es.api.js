@@ -29,11 +29,7 @@ es.postEvent = function (settings) {
         "Data": dataStr,
         "Metadata": metadata
     };
-    var body = {
-        "CorrelationId": correlationId,
-        "ExpectedVersion": expectedVersion,
-        "Events": [event]
-    };
+    var body = [event];
     
     var bodyStr = JSON.stringify(body);
     var encodedStream = encodeURIComponent(stream);
@@ -42,9 +38,10 @@ es.postEvent = function (settings) {
         type: "post",
         data: bodyStr,
         headers: {
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "X-ES-ExpectedVersion": expectedVersion
         },
-        contentType: "application/json", 
+        contentType: "application/vnd.eventstore.events+json",
         success: function () {
             onSuccess(eventId, correlationId);
         },

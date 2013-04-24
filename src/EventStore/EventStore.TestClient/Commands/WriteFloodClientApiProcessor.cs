@@ -93,7 +93,7 @@ namespace EventStore.TestClient.Commands
                     .DisableVerboseLogging()
                     .UseConsoleLogger()
                     .EnableOperationsForwarding()
-                    .LimitReconnectionsTo(0)
+                    .LimitReconnectionsTo(10)
                     //.KeepReconnecting()
                     .LimitRetriesForOperationTo(0)
                     //.KeepRetrying()

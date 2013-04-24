@@ -141,6 +141,7 @@
     <Compile Include="Http\BasicAuthentication\basic_authentication.cs" />
     <Compile Include="Http\HttpBehaviorSpecification.cs" />
     <Compile Include="Http\Streams\basic.cs" />
+    <Compile Include="Http\Streams\feed.cs" />
     <Compile Include="Http\Streams\SetUpFixture.cs" />
     <Compile Include="Http\TestController.cs" />
     <Compile Include="Http\Users\StreamHelpers.cs" />

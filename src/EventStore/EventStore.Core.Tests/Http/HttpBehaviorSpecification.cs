@@ -329,6 +329,10 @@ namespace EventStore.Core.Tests.Http
             }
         }
 
+        protected void AssertJson<T>(T expected, JObject response, Func<JObject, JObject> selector)
+        {
+        }
+
         protected void AssertJson<T>(T expected, JObject response)
         {
             var serialized = expected.ToJson();
