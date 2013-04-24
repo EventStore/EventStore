@@ -45,9 +45,6 @@ namespace EventStore.Transport.Http.Server
 
         private readonly HttpListener _listener;
 
-#if __MonoCS__
-        private static readonly Func<HttpListenerRequest, HttpListenerContext> _getContext = CreateGetContext();
-#endif
 
         public HttpAsyncServer(string[] prefixes)
         {
@@ -57,15 +54,7 @@ namespace EventStore.Transport.Http.Server
 
             _listener = new HttpListener();
             _listener.Realm = "ES";
-#if __MonoCS__
-                _listener.AuthenticationSchemeSelectorDelegate =
-                    request =>
-                    _getContext(request).Response.StatusCode == HttpStatusCode.Unauthorized
-                        ? AuthenticationSchemes.Basic
-                        : AuthenticationSchemes.Anonymous;
-#else
-                _listener.AuthenticationSchemes = AuthenticationSchemes.Basic | AuthenticationSchemes.Anonymous;
-#endif
+            _listener.AuthenticationSchemes = AuthenticationSchemes.Basic | AuthenticationSchemes.Anonymous;
             foreach (var prefix in prefixes)
             {
                 _listener.Prefixes.Add(prefix);
