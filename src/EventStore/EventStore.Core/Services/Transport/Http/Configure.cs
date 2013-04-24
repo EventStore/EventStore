@@ -79,6 +79,13 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", null, Encoding.UTF8);
         }
 
+        public static ResponseConfiguration NotFoundNoCache()
+        {
+            var headrs = new List<KeyValuePair<string, string>>();
+            headrs.Add(new KeyValuePair<string, string>("Cache-Control", "max-age=0, no-cache, must-revalidate"));
+            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", null, Encoding.UTF8, headrs);
+        }
+
         public static ResponseConfiguration Gone(string description = null)
         {
             return new ResponseConfiguration(HttpStatusCode.Gone, description ?? "Deleted", null, Encoding.UTF8);
@@ -176,11 +183,16 @@ namespace EventStore.Core.Services.Transport.Http
             switch (msg.Result)
             {
                 case ReadStreamResult.Success:
-                {
-                    if (msg.LastEventNumber >= msg.FromEventNumber + msg.MaxCount)
-                        return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
-                    return OkNoCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, msg.LastEventNumber.ToString(CultureInfo.InvariantCulture));
-                }
+                    {
+                        if (msg.IsEndOfStream && msg.Events.Length == 0)
+                            return NotFoundNoCache();
+                        if (msg.LastEventNumber >= msg.FromEventNumber + msg.MaxCount)
+                            return OkCache(
+                                entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
+                        return OkNoCache(
+                            entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding,
+                            msg.LastEventNumber.ToString(CultureInfo.InvariantCulture));
+                    }
                 case ReadStreamResult.NoStream:
                     return NotFound();
                 case ReadStreamResult.StreamDeleted:

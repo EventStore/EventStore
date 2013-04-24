@@ -128,7 +128,12 @@ namespace EventStore.Transport.Tcp
 
         private void HandleBadAccept(SocketAsyncEventArgs socketArgs)
         {
-            Helper.EatException(() => socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
+            Helper.EatException(
+                () =>
+                    {
+                        if (socketArgs.AcceptSocket != null) // avoid annoying exceptions
+                            socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs);
+                    });
             socketArgs.AcceptSocket = null;
             _acceptSocketArgsPool.Return(socketArgs);
         }
