@@ -182,7 +182,7 @@ namespace EventStore.Transport.Http.EntityManagement
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Origin", "*");
 				if (HttpEntity.Response.StatusCode == HttpStatusCode.Unauthorized) 
 				{
-					HttpEntity.Response.AddHeader("WWW-Authenticate", "Basic realm=\" ES \"");
+					HttpEntity.Response.AddHeader("WWW-Authenticate", "Basic realm=\"ES\"");
 				}
             }
             catch (Exception e)
