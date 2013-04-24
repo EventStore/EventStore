@@ -44,6 +44,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     public enum EmbedLevel
     {
         None,
+        Content,
         Rich,
         Body,
         PrettyBody,
@@ -578,6 +579,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var rawValue = match.BoundVariables["embed"] ?? string.Empty;
             switch (rawValue.ToLowerInvariant())
             {
+                case "content": return EmbedLevel.Content;
                 case "rich": return EmbedLevel.Rich;
                 case "body": return EmbedLevel.Body;
                 case "pretty": return EmbedLevel.PrettyBody;

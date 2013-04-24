@@ -164,7 +164,7 @@ namespace EventStore.Core.Services.Transport.Http
             var evnt = eventLinkPair.Event;
 
             EntryElement entry;
-            if (embedContent > EmbedLevel.None)
+            if (embedContent > EmbedLevel.Content)
             {
                 var richEntry = new RichEntryElement();
                 entry = richEntry;
@@ -253,7 +253,7 @@ namespace EventStore.Core.Services.Transport.Http
             entry.SetUpdated(evnt.TimeStamp);
             entry.SetAuthor(AtomSpecs.Author);
             entry.SetSummary(evnt.EventType);
-            if (singleEntry && (evnt.Flags & PrepareFlags.IsJson) != 0)
+            if ((singleEntry || embedContent == EmbedLevel.Content) && ((evnt.Flags & PrepareFlags.IsJson) != 0))
                 entry.SetContent(AutoEventConverter.CreateDataDto(eventLinkPair));
             entry.AddLink("edit", HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, evnt.EventNumber));
             entry.AddLink("alternate", HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, evnt.EventNumber));
