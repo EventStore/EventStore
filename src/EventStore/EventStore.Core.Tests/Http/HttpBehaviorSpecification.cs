@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.Http
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
-#if !__MonoCS__
+#if !__MonoCS__ && DUMPHTTP
             EventStore.Common.Utils.Helper.EatException(() => _dumpResponse = CreateDumpResponse());
             EventStore.Common.Utils.Helper.EatException(() => _dumpResponse2 = CreateDumpResponse2());
             EventStore.Common.Utils.Helper.EatException(() => _dumpRequest = CreateDumpRequest());
@@ -126,11 +126,10 @@ namespace EventStore.Core.Tests.Http
             var httpWebRequest = (HttpWebRequest) WebRequest.Create(MakeUrl(path));
             httpWebRequest.Method = method;
             httpWebRequest.ContentType = contentType;
+            httpWebRequest.UseDefaultCredentials = false;
             if (credentials != null)
             {
                 httpWebRequest.Credentials = credentials;
-                httpWebRequest.PreAuthenticate = true;
-                httpWebRequest.AllowWriteStreamBuffering = true;
             }
             return httpWebRequest;
         }
