@@ -10,7 +10,7 @@ namespace EventStore.Core.Tests.Helper
     public static class TcpPortsHelper
     {
         private static readonly EventStore.Common.Concurrent.ConcurrentQueue<int> AvailablePorts = 
-            new EventStore.Common.Concurrent.ConcurrentQueue<int>(GetRandomPorts(50000, 100));
+            new EventStore.Common.Concurrent.ConcurrentQueue<int>(GetRandomPorts(50000, 200));
 
         public static int GetAvailablePort(IPAddress ip)
         {
