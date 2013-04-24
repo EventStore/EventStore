@@ -52,7 +52,13 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
             {
                 Assert.AreEqual(HttpStatusCode.Unauthorized, _lastResponse.StatusCode);
             }
-        }
+
+			[Test]
+			public void returns_www_authenticate_header()
+			{
+				Assert.NotNull (_lastResponse.Headers [HttpResponseHeader.WwwAuthenticate]);
+			}
+		}
 
         [TestFixture, Category("LongRunning")]
         class when_requesting_a_protected_resource_with_credentials_provided: HttpBehaviorSpecification
