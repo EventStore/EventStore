@@ -128,8 +128,9 @@ namespace EventStore.Core.Tests.Http
             httpWebRequest.ContentType = contentType;
             if (credentials != null)
             {
-                httpWebRequest.AllowWriteStreamBuffering = true;
                 httpWebRequest.Credentials = credentials;
+                httpWebRequest.PreAuthenticate = true;
+                httpWebRequest.AllowWriteStreamBuffering = true;
             }
             return httpWebRequest;
         }
