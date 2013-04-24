@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.Http
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
-#if !__MonoCS__ && DUMPHTTP
+#if !__MonoCS__
             EventStore.Common.Utils.Helper.EatException(() => _dumpResponse = CreateDumpResponse());
             EventStore.Common.Utils.Helper.EatException(() => _dumpResponse2 = CreateDumpResponse2());
             EventStore.Common.Utils.Helper.EatException(() => _dumpRequest = CreateDumpRequest());
@@ -126,6 +126,7 @@ namespace EventStore.Core.Tests.Http
 			var uri = MakeUrl (path);
 			var request = WebRequest.Create (uri);
             var httpWebRequest = (HttpWebRequest)request;
+            httpWebRequest.ConnectionGroupName = TestStream;
             httpWebRequest.Method = method;
             httpWebRequest.ContentType = contentType;
             httpWebRequest.UseDefaultCredentials = false;

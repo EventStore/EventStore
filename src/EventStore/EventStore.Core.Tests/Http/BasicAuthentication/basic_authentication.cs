@@ -36,6 +36,31 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
     namespace basic_authentication
     {
         [TestFixture, Category("LongRunning")]
+        class when_requesting_an_unprotected_resource : HttpBehaviorSpecification
+        {
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                var json = GetJson<JObject>("/test-anonymous");
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+			[Test]
+			public void does_not_return_www_authenticate_header()
+			{
+				Assert.Null(_lastResponse.Headers [HttpResponseHeader.WwwAuthenticate]);
+			}
+		}
+
+        [TestFixture, Category("LongRunning")]
         class when_requesting_a_protected_resource : HttpBehaviorSpecification
         {
             protected override void Given()

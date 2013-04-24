@@ -21,6 +21,7 @@ namespace EventStore.Core.Tests.Http
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
             Register(service, "/test1", Test1Handler);
+            Register(service, "/test-anonymous", TestAnonymousHandler);
         }
 
         private void Register(
@@ -36,6 +37,14 @@ namespace EventStore.Core.Tests.Http
                 http.Reply("OK", 200, "OK", "text/plain");
             else 
                 http.Reply("Please authenticate yourself", 401, "Unauthorized", "text/plain");
+        }
+
+        private void TestAnonymousHandler(HttpEntityManager http, UriTemplateMatch match)
+        {
+            if (http.User != null)
+                http.Reply("ERROR", 500, "ERROR", "text/plain");
+            else 
+                http.Reply("OK", 200, "OK", "text/plain");
         }
     }
 }
