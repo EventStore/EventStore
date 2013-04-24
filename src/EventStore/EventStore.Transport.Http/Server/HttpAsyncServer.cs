@@ -85,7 +85,15 @@ namespace EventStore.Transport.Http.Server
         {
             try
             {
-                _listener.Close();
+				var counter = 10;
+				while (_listener.IsListening && counter-- > 0)
+				{
+					_listener.Abort();
+					_listener.Stop();
+					_listener.Close();
+					if (_listener.IsListening)
+						System.Threading.Thread.Sleep(50);
+				}
             }
             catch (Exception e)
             {
@@ -109,6 +117,10 @@ namespace EventStore.Transport.Http.Server
             {
                 Logger.ErrorException(e, "EndGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
             }
+			catch (ObjectDisposedException e)
+			{
+				Logger.ErrorException(e, "EndGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
+			}
             catch (InvalidOperationException e)
             {
                 Logger.ErrorException(e, "EndGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
