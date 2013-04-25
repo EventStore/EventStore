@@ -211,7 +211,7 @@ namespace EventStore.Core.Tests.Http
             _lastResponseBody = Encoding.UTF8.GetString(bytes);
         }
 
-        private HttpWebResponse GetRequestResponse(HttpWebRequest request)
+        protected HttpWebResponse GetRequestResponse(HttpWebRequest request)
         {
             HttpWebResponse response;
             try
@@ -251,7 +251,7 @@ namespace EventStore.Core.Tests.Http
             return index < 0 ? bytes.Length : index;
         }
 
-        private HttpWebRequest CreateJsonPostRequest<T>(string path, string method, T body, ICredentials credentials = null)
+        protected HttpWebRequest CreateJsonPostRequest<T>(string path, string method, T body, ICredentials credentials = null)
         {
             var request = CreateRequest(path, method, "application/json", credentials);
             request.GetRequestStream().WriteJson(body);

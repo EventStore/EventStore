@@ -175,6 +175,7 @@
     <Compile Include="Services\Transport\Http\Authentication\PasswordHashAlgorithm.cs" />
     <Compile Include="Services\Transport\Http\Authentication\Rfc2898PasswordHashAlgorithm.cs" />
     <Compile Include="Data\UserData.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\TrustedAuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\UsersController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
