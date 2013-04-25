@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
 {
     namespace stream_access
     {
-        [TestFixture]
+        [TestFixture, Category("LongRunning")]
         class when_creating_a_secured_stream_by_posting_metadata: SpecificationWithUsers
         {
             private HttpWebResponse _response;
@@ -57,10 +57,24 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
                     new[] {new {EventId = Guid.NewGuid(), EventType = SystemEventTypes.StreamMetadata, Data = new JRaw(jsonMetadata)}});
             }
 
-            [Test, Category("LongRunning")]
+            [Test]
             public void returns_ok_status_code()
             {
                 Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
+            }
+
+            [Test]
+            public void refuses_to_post_event_as_anonymous()
+            {
+                var response = PostEvent(new {Some = "Data"});
+                Assert.AreEqual(HttpStatusCode.Unauthorized, response.StatusCode);
+            }
+
+            [Test]
+            public void accepts_post_event_as_authorized_user()
+            {
+                var response = PostEvent(new {Some = "Data"}, GetCorrectCredentialsFor("user1"));
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
         }
     }

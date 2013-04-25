@@ -158,9 +158,9 @@ namespace EventStore.Core.Tests.Http
             return new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path).Uri;
         }
 
-        protected HttpWebResponse MakeJsonPost<T>(string path, T body)
+        protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null)
         {
-            var request = CreateJsonPostRequest(path, "POST", body);
+            var request = CreateJsonPostRequest(path, "POST", body, credentials);
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }
@@ -251,9 +251,9 @@ namespace EventStore.Core.Tests.Http
             return index < 0 ? bytes.Length : index;
         }
 
-        private HttpWebRequest CreateJsonPostRequest<T>(string path, string method, T body)
+        private HttpWebRequest CreateJsonPostRequest<T>(string path, string method, T body, ICredentials credentials = null)
         {
-            var request = CreateRequest(path, method, "application/json");
+            var request = CreateRequest(path, method, "application/json", credentials);
             request.GetRequestStream().WriteJson(body);
             return request;
         }

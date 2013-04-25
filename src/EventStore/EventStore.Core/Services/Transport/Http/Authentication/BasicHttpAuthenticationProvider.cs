@@ -28,6 +28,7 @@
 
 using System;
 using System.Net;
+using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
@@ -35,7 +36,6 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
@@ -43,14 +43,14 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
     {
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
-        private readonly LRUCache<string, string> _userPasswordsCache;
+        private readonly LRUCache<string, Tuple<string, IPrincipal>> _userPasswordsCache;
 
         public BasicHttpAuthenticationProvider(
             IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm, int cacheSize = 1000)
         {
             _ioDispatcher = ioDispatcher;
             _passwordHashAlgorithm = passwordHashAlgorithm;
-            _userPasswordsCache = new LRUCache<string, string>(cacheSize);
+            _userPasswordsCache = new LRUCache<string, Tuple<string, IPrincipal>>(cacheSize);
         }
 
         public override bool Authenticate(IncomingHttpRequestMessage message)
@@ -68,15 +68,16 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
 
         private void HttpBasicAuthenticate(IncomingHttpRequestMessage message, HttpListenerBasicIdentity basicIdentity)
         {
-            string correctPassword;
-            if (_userPasswordsCache.TryGet(basicIdentity.Name, out correctPassword))
+            Tuple<string, IPrincipal> cached;
+            if (_userPasswordsCache.TryGet(basicIdentity.Name, out cached))
             {
-                AuthenticateWithPassword(message, correctPassword, basicIdentity.Password);
+                AuthenticateWithPassword(message, cached.Item1, basicIdentity.Password, cached.Item2);
             }
             else
             {
                 var userStreamId = "$user-" + basicIdentity.Name;
-                _ioDispatcher.ReadBackward(userStreamId, -1, 1, false, SystemAccount.Principal, m => ReadUserDataCompleted(message, m));
+                _ioDispatcher.ReadBackward(
+                    userStreamId, -1, 1, false, SystemAccount.Principal, m => ReadUserDataCompleted(message, m));
             }
         }
 
@@ -93,9 +94,9 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                 }
                 var basicIdentity = (HttpListenerBasicIdentity) entity.User.Identity;
                 var userData = completed.Events[0].Event.Data.ParseJson<UserData>();
-                if (userData.Disabled) 
+                if (userData.Disabled)
                     ReplyUnauthorized(message.Entity);
-                else 
+                else
                     AuthenticateWithPasswordHash(message, userData, basicIdentity);
             }
             catch
@@ -108,23 +109,34 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             IncomingHttpRequestMessage message, UserData userData, HttpListenerBasicIdentity basicHttpIdentity)
         {
             var entity = message.Entity;
-            
+
             if (!_passwordHashAlgorithm.Verify(basicHttpIdentity.Password, userData.Hash, userData.Salt))
             {
                 ReplyUnauthorized(entity);
                 return;
             }
-            CachePassword(basicHttpIdentity.Name, basicHttpIdentity.Password);
-            Authenticated(message, entity.User);
+            var principal = CreatePrincipal(userData);
+            CachePassword(basicHttpIdentity.Name, basicHttpIdentity.Password, principal);
+            Authenticated(message, principal);
         }
 
-        private void CachePassword(string loginName, string password)
+        private static GenericPrincipal CreatePrincipal(UserData userData)
         {
-            _userPasswordsCache.Put(loginName, password);
+            var roles = new string[userData.Groups != null ? userData.Groups.Length + 1 : 1];
+            if (userData.Groups != null)
+                Array.Copy(userData.Groups, roles, userData.Groups.Length);
+            roles[roles.Length - 1] = userData.LoginName;
+            var principal = new GenericPrincipal(new GenericIdentity(userData.LoginName), roles);
+            return principal;
+        }
+
+        private void CachePassword(string loginName, string password, IPrincipal principal)
+        {
+            _userPasswordsCache.Put(loginName, Tuple.Create(password, principal));
         }
 
         private void AuthenticateWithPassword(
-            IncomingHttpRequestMessage message, string correctPassword, string suppliedPassword)
+            IncomingHttpRequestMessage message, string correctPassword, string suppliedPassword, IPrincipal principal)
         {
             var entity = message.Entity;
 
@@ -133,8 +145,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                 ReplyUnauthorized(entity);
             }
 
-            Authenticated(message, entity.User);
+            Authenticated(message, principal);
         }
-
     }
 }

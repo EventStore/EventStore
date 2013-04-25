@@ -39,16 +39,16 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
     {
         protected override void Given()
         {
-            PostUser("admin", "Administrator", "Pa55w0rd!", "admin", "other");
+            PostUser("admin", "Administrator", "admin!", "admin", "other");
             PostUser("user1", "User 1", "user1!", "other");
-            PostUser("user2", "User 2", "user2@", "other");
-            PostUser("guest", "Guest", "guest");
+            PostUser("user2", "User 2", "user2!", "other");
+            PostUser("guest", "Guest", "guest!");
         }
 
         protected void PostUser(string login, string userFullName, string password, params string[] groups)
         {
             var response = MakeJsonPost(
-                "/users/", new {LoginName = login, FullName = userFullName, Groups = groups, Password = password});
+                "/users/", new {LoginName = login + Tag, FullName = userFullName, Groups = groups, Password = password});
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
         }
 
@@ -68,6 +68,12 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
             return response.Headers[HttpResponseHeader.Location];
         }
 
+        protected HttpWebResponse PostEvent<T>(T data, ICredentials credentials = null)
+        {
+            return MakeJsonPost(
+                TestStream, new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = data}}, credentials);
+        }
+
         protected string GetLink(JObject feed, string relation)
         {
             var rel = (from JObject link in feed["links"]
@@ -75,6 +81,11 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
                        where attr.Name == "relation" && (string) attr.Value == relation
                        select link).SingleOrDefault();
             return (rel == null) ? null : (string) rel["uri"];
+        }
+
+        protected NetworkCredential GetCorrectCredentialsFor(string user)
+        {
+            return new NetworkCredential(user+ Tag, user + "!");
         }
     }
 }
