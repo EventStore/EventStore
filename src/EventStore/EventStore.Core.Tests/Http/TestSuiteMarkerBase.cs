@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,12 +26,42 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Net;
+using EventStore.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Http.Streams
+namespace EventStore.Core.Tests.Http
 {
-    [SetUpFixture]
-    class SetUpFixture : TestSuiteMarkerBase
+    class TestSuiteMarkerBase
     {
+        public static MiniNode _node;
+        public static IEventStoreConnection _connection;
+        public static int _counter;
+        private SpecificationWithDirectoryPerTestFixture _directory;
+
+        [SetUp]
+        public void SetUp()
+        {
+            WebRequest.DefaultWebProxy = new WebProxy();
+            _counter = 0;
+            _directory = new SpecificationWithDirectoryPerTestFixture();
+            _directory.TestFixtureSetUp();
+            _node = new MiniNode(_directory.PathName);
+            _node.Start();
+
+            _connection = TestConnection.Create(_node.TcpEndPoint);
+            _connection.Connect();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _connection.Close();
+            _node.Shutdown();
+            _connection = null;
+            _node = null;
+            _directory.TestFixtureTearDown();
+        }
     }
 }

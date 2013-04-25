@@ -170,56 +170,74 @@ namespace EventStore.ClientAPI
             {
                 using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream, UTF8NoBom)))
                 {
-                    jsonWriter.WriteStartObject();
-                    if (MaxCount.HasValue)
-                    {
-                        jsonWriter.WritePropertyName(SystemMetadata.MaxCount);
-                        jsonWriter.WriteValue(MaxCount.Value);
-                    }
-                    if (MaxAge.HasValue)
-                    {
-                        jsonWriter.WritePropertyName(SystemMetadata.MaxAge);
-                        jsonWriter.WriteValue((long)MaxAge.Value.TotalSeconds);
-                    }
-                    if (CacheControl.HasValue)
-                    {
-                        jsonWriter.WritePropertyName(SystemMetadata.CacheControl);
-                        jsonWriter.WriteValue((long)CacheControl.Value.TotalSeconds);
-                    }
-                    if (Acl != null)
-                    {
-                        jsonWriter.WriteStartObject();
-                        if (Acl.ReadRole != null)
-                        {
-                            jsonWriter.WritePropertyName(SystemMetadata.AclRead);
-                            jsonWriter.WriteValue(Acl.ReadRole);
-                        }
-                        if (Acl.WriteRole != null)
-                        {
-                            jsonWriter.WritePropertyName(SystemMetadata.AclWrite);
-                            jsonWriter.WriteValue(Acl.WriteRole);
-                        }
-                        if (Acl.MetaReadRole != null)
-                        {
-                            jsonWriter.WritePropertyName(SystemMetadata.AclMetaRead);
-                            jsonWriter.WriteValue(Acl.MetaReadRole);
-                        }
-                        if (Acl.MetaWriteRole != null)
-                        {
-                            jsonWriter.WritePropertyName(SystemMetadata.AclMetaWrite);
-                            jsonWriter.WriteValue(Acl.MetaWriteRole);
-                        }
-                        jsonWriter.WriteEndObject();
-                    }
-                    foreach (var customMetadata in _customMetadata)
-                    {
-                        jsonWriter.WritePropertyName(customMetadata.Key);
-                        customMetadata.Value.WriteTo(jsonWriter);
-                    }
-                    jsonWriter.WriteEndObject();
+                    WriteAsJson(jsonWriter);
                 }
                 return memoryStream.ToArray();
             }
+        }
+
+        public string AsJsonString()
+        {
+            using (var stringWriter = new StringWriter())
+            {
+                using (var jsonWriter = new JsonTextWriter(stringWriter))
+                {
+                    WriteAsJson(jsonWriter);
+                }
+                return stringWriter.ToString();
+            }
+        }
+
+        private void WriteAsJson(JsonTextWriter jsonWriter)
+        {
+            jsonWriter.WriteStartObject();
+            if (MaxCount.HasValue)
+            {
+                jsonWriter.WritePropertyName(SystemMetadata.MaxCount);
+                jsonWriter.WriteValue(MaxCount.Value);
+            }
+            if (MaxAge.HasValue)
+            {
+                jsonWriter.WritePropertyName(SystemMetadata.MaxAge);
+                jsonWriter.WriteValue((long) MaxAge.Value.TotalSeconds);
+            }
+            if (CacheControl.HasValue)
+            {
+                jsonWriter.WritePropertyName(SystemMetadata.CacheControl);
+                jsonWriter.WriteValue((long) CacheControl.Value.TotalSeconds);
+            }
+            if (Acl != null)
+            {
+                jsonWriter.WritePropertyName(SystemMetadata.Acl);
+                jsonWriter.WriteStartObject();
+                if (Acl.ReadRole != null)
+                {
+                    jsonWriter.WritePropertyName(SystemMetadata.AclRead);
+                    jsonWriter.WriteValue(Acl.ReadRole);
+                }
+                if (Acl.WriteRole != null)
+                {
+                    jsonWriter.WritePropertyName(SystemMetadata.AclWrite);
+                    jsonWriter.WriteValue(Acl.WriteRole);
+                }
+                if (Acl.MetaReadRole != null)
+                {
+                    jsonWriter.WritePropertyName(SystemMetadata.AclMetaRead);
+                    jsonWriter.WriteValue(Acl.MetaReadRole);
+                }
+                if (Acl.MetaWriteRole != null)
+                {
+                    jsonWriter.WritePropertyName(SystemMetadata.AclMetaWrite);
+                    jsonWriter.WriteValue(Acl.MetaWriteRole);
+                }
+                jsonWriter.WriteEndObject();
+            }
+            foreach (var customMetadata in _customMetadata)
+            {
+                jsonWriter.WritePropertyName(customMetadata.Key);
+                customMetadata.Value.WriteTo(jsonWriter);
+            }
+            jsonWriter.WriteEndObject();
         }
 
         public static StreamMetadata FromJsonBytes(byte[] json)

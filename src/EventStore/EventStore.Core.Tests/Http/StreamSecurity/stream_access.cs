@@ -26,12 +26,42 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using System.Net;
+using EventStore.ClientAPI;
+using EventStore.ClientAPI.Common;
 using NUnit.Framework;
+using Newtonsoft.Json.Linq;
 
-namespace EventStore.Core.Tests.Http.Streams
+namespace EventStore.Core.Tests.Http.StreamSecurity
 {
-    [SetUpFixture]
-    class SetUpFixture : TestSuiteMarkerBase
+    namespace stream_access
     {
+        [TestFixture]
+        class when_creating_a_secured_stream_by_posting_metadata: SpecificationWithUsers
+        {
+            private HttpWebResponse _response;
+
+            protected override void When()
+            {
+                var metadata =
+                    (StreamMetadata)
+                    StreamMetadata.Build()
+                                  .SetMetadataReadRole("admin")
+                                  .SetMetadataWriteRole("admin")
+                                  .SetReadRole("")
+                                  .SetWriteRole("other");
+                var jsonMetadata = metadata.AsJsonString();
+                _response = MakeJsonPost(
+                    TestMetadataStream,
+                    new[] {new {EventId = Guid.NewGuid(), EventType = SystemEventTypes.StreamMetadata, Data = new JRaw(jsonMetadata)}});
+            }
+
+            [Test, Category("LongRunning")]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
+            }
+        }
     }
 }

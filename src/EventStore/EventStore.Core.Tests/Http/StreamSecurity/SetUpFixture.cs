@@ -28,7 +28,7 @@
 
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Http.Streams
+namespace EventStore.Core.Tests.Http.StreamSecurity
 {
     [SetUpFixture]
     class SetUpFixture : TestSuiteMarkerBase

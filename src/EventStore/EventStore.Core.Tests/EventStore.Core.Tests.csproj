@@ -140,10 +140,14 @@
     <Compile Include="Helper\TestFixtureWithReadWriteDispatchers.cs" />
     <Compile Include="Http\BasicAuthentication\basic_authentication.cs" />
     <Compile Include="Http\HttpBehaviorSpecification.cs" />
+    <Compile Include="Http\StreamSecurity\SetUpFixture.cs" />
+    <Compile Include="Http\StreamSecurity\SpecificationWithUsers.cs" />
+    <Compile Include="Http\StreamSecurity\stream_access.cs" />
     <Compile Include="Http\Streams\basic.cs" />
     <Compile Include="Http\Streams\feed.cs" />
     <Compile Include="Http\Streams\SetUpFixture.cs" />
     <Compile Include="Http\TestController.cs" />
+    <Compile Include="Http\TestSuiteMarkerBase.cs" />
     <Compile Include="Http\Users\StreamHelpers.cs" />
     <Compile Include="Http\Users\users.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
