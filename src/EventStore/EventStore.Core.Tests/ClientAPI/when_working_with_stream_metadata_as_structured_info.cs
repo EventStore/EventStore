@@ -187,6 +187,20 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(null, meta.StreamMetadata.CacheControl);
         }
 
+        [Test, Ignore("You can't get stream metadata for metastream through ClientAPI")]
+        public void getting_metadata_for_metastream_returns_correct_metadata()
+        {
+            const string stream = "$$getting_metadata_for_metastream_returns_correct_metadata";
+
+            var meta = _connection.GetStreamMetadata(stream);
+            Assert.AreEqual(stream, meta.Stream);
+            Assert.AreEqual(false, meta.IsStreamDeleted);
+            Assert.AreEqual(-1, meta.MetastreamVersion);
+            Assert.AreEqual(1, meta.StreamMetadata.MaxCount);
+            Assert.AreEqual(null, meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(null, meta.StreamMetadata.CacheControl);
+        }
+
         [Test]
         public void getting_metadata_for_deleted_stream_returns_empty_stream_metadata_and_signals_stream_deletion()
         {
@@ -204,6 +218,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(null, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(null, meta.StreamMetadata.MaxAge);
             Assert.AreEqual(null, meta.StreamMetadata.CacheControl);
+            Assert.AreEqual(null, meta.StreamMetadata.Acl);
         }
 
         [Test]
@@ -215,6 +230,12 @@ namespace EventStore.Core.Tests.ClientAPI
                                                         ""$maxCount"": 17,
                                                         ""$maxAge"": 123321,
                                                         ""$cacheControl"": 7654321,
+                                                        ""$acl"": {
+                                                            ""$r"": ""readRole"",
+                                                            ""$w"": ""writeRole"",
+                                                            ""$mr"": ""metaReadRole"",
+                                                            ""$mw"": ""metaWriteRole""
+                                                        },
                                                         ""customString"": ""a string"",
                                                         ""customInt"": -179,
                                                         ""customDouble"": 1.7,
@@ -235,6 +256,13 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(17, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(TimeSpan.FromSeconds(123321), meta.StreamMetadata.MaxAge);
             Assert.AreEqual(TimeSpan.FromSeconds(7654321), meta.StreamMetadata.CacheControl);
+            
+            Assert.NotNull(meta.StreamMetadata.Acl);
+            Assert.AreEqual("readRole", meta.StreamMetadata.Acl.ReadRole);
+            Assert.AreEqual("writeRole", meta.StreamMetadata.Acl.WriteRole);
+            Assert.AreEqual("metaReadRole", meta.StreamMetadata.Acl.MetaReadRole);
+            Assert.AreEqual("metaWriteRole", meta.StreamMetadata.Acl.MetaWriteRole);
+
             Assert.AreEqual("a string", meta.StreamMetadata.GetValue<string>("customString"));
             Assert.AreEqual(-179, meta.StreamMetadata.GetValue<int>("customInt"));
             Assert.AreEqual(1.7, meta.StreamMetadata.GetValue<double>("customDouble"));
@@ -253,6 +281,10 @@ namespace EventStore.Core.Tests.ClientAPI
                                                     .SetMaxCount(17)
                                                     .SetMaxAge(TimeSpan.FromSeconds(123321))
                                                     .SetCacheControl(TimeSpan.FromSeconds(7654321))
+                                                    .SetReadRole("readRole")
+                                                    .SetWriteRole("writeRole")
+                                                    .SetMetadataReadRole("metaReadRole")
+                                                    .SetMetadataWriteRole("metaWriteRole")
                                                     .SetCustomProperty("customString", "a string")
                                                     .SetCustomProperty("customInt", -179)
                                                     .SetCustomProperty("customDouble", 1.7)
@@ -273,6 +305,13 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(17, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(TimeSpan.FromSeconds(123321), meta.StreamMetadata.MaxAge);
             Assert.AreEqual(TimeSpan.FromSeconds(7654321), meta.StreamMetadata.CacheControl);
+
+            Assert.NotNull(meta.StreamMetadata.Acl);
+            Assert.AreEqual("readRole", meta.StreamMetadata.Acl.ReadRole);
+            Assert.AreEqual("writeRole", meta.StreamMetadata.Acl.WriteRole);
+            Assert.AreEqual("metaReadRole", meta.StreamMetadata.Acl.MetaReadRole);
+            Assert.AreEqual("metaWriteRole", meta.StreamMetadata.Acl.MetaWriteRole);
+            
             Assert.AreEqual("a string", meta.StreamMetadata.GetValue<string>("customString"));
             Assert.AreEqual(-179, meta.StreamMetadata.GetValue<int>("customInt"));
             Assert.AreEqual(1.7, meta.StreamMetadata.GetValue<double>("customDouble"));
