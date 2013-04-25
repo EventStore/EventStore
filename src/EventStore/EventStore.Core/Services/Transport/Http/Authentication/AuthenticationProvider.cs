@@ -48,5 +48,11 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             var manager = entity.CreateManager();
             manager.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", exception => { });
         }
+
+        public static void ReplyInternalServerError(HttpEntity entity)
+        {
+            var manager = entity.CreateManager();
+            manager.ReplyStatus(HttpStatusCode.InternalServerError, "Internal Server Error", exception => { });
+        }
     }
 }

@@ -98,7 +98,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             protected override void Given()
             {
                 base.Given();
-                ExistingEvent("$user-user", "$user", null, "{Salt:'drowssap',Hash:'password'}");
+                ExistingEvent("$user-user", "$user", null, "{LoginName:'user', Salt:'drowssap',Hash:'password'}");
             }
 
             [SetUp]
@@ -134,7 +134,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             protected override void Given()
             {
                 base.Given();
-                ExistingEvent("$user-user", "$user", null, "{Salt:'drowssap',Hash:'password'}");
+                ExistingEvent("$user-user", "$user", null, "{LoginName:'user', Salt:'drowssap',Hash:'password'}");
             }
 
             [SetUp]
@@ -183,7 +183,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             protected override void Given()
             {
                 base.Given();
-                ExistingEvent("$user-user", "$user", null, "{Salt:'drowssap',Hash:'password'}");
+                ExistingEvent("$user-user", "$user", null, "{LoginName:'user', Salt:'drowssap',Hash:'password'}");
             }
 
             [SetUp]

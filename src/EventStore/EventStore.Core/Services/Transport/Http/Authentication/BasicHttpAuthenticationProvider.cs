@@ -94,8 +94,13 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                 }
                 var basicIdentity = (HttpListenerBasicIdentity) entity.User.Identity;
                 var userData = completed.Events[0].Event.Data.ParseJson<UserData>();
+                if (userData.LoginName != basicIdentity.Name)
+                {
+                    ReplyInternalServerError(entity);
+                    return;
+                }
                 if (userData.Disabled)
-                    ReplyUnauthorized(message.Entity);
+                    ReplyUnauthorized(entity);
                 else
                     AuthenticateWithPasswordHash(message, userData, basicIdentity);
             }
