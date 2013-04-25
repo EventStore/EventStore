@@ -69,6 +69,26 @@ namespace EventStore.ClientAPI.Messages
             public long EpochPosition { get; set; }
             public int EpochNumber { get; set; }
             public Guid EpochId { get; set; }
+
+            public override string ToString()
+            {
+                if (State == VNodeState.Manager)
+                    return string.Format("MAN <{0}> [{1}:{2}, {3}:{4}] | {5}",
+                                         IsAlive ? "LIVE" : "DEAD",
+                                         InternalHttpIp, InternalHttpPort,
+                                         ExternalHttpIp, ExternalHttpPort,
+                                         TimeStamp);
+                return string.Format("VND <{0}> [{1}, {2}:{3}, {4}:{5}, {6}:{7}, {8}:{9}] {10}/{11}/E{12}@{13}:{14:B} | {15}",
+                                     IsAlive ? "LIVE" : "DEAD",
+                                     State,
+                                     InternalTcpIp, InternalTcpPort,
+                                     ExternalTcpIp, ExternalTcpPort,
+                                     InternalHttpIp, InternalHttpPort,
+                                     ExternalHttpIp, ExternalHttpPort,
+                                     WriterCheckpoint, ChaserCheckpoint,
+                                     EpochNumber, EpochPosition, EpochId,
+                                     TimeStamp);
+            }
         }
 
         public enum VNodeState

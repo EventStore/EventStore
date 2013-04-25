@@ -27,11 +27,10 @@
 //  
 
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
@@ -50,6 +49,7 @@ namespace EventStore.ClientAPI.Core
         private readonly IPAddress[] _fakeDnsEntries;
 
         private readonly HttpAsyncClient _client;
+        private ClusterMessages.MemberInfoDto[] _oldGossip;
 
         public ClusterDnsEndPointDiscoverer(ILogger log, 
                                             string clusterDns,
@@ -69,145 +69,180 @@ namespace EventStore.ClientAPI.Core
             _client = new HttpAsyncClient(log);
         }
 
-        public Task<IPEndPoint> DiscoverAsync()
+        public Task<IPEndPoint> DiscoverAsync(IPEndPoint failedEndPoint)
         {
-            if (_fakeDnsEntries != null && _fakeDnsEntries.Length > 0)
-                return Task.Factory.StartNew(() => FindBestClusterNode(_fakeDnsEntries, _maxDiscoverAttempts));
-
-            return Task<IPAddress[]>
-                .Factory
-                .FromAsync(Dns.BeginGetHostAddresses, Dns.EndGetHostAddresses, _clusterDns, null)
-                .ContinueWith(t =>
+            return Task.Factory.StartNew(() =>
+            {
+                for (int attempt = 1; attempt <= _maxDiscoverAttempts; ++attempt)
                 {
-                    if (t.IsFaulted)
-                        throw new ClusterException(string.Format("Error while resolving DNS entry '{0}'.", _clusterDns), t.Exception);
-                    if (t.Result == null || t.Result.Length == 0)
-                        throw new ClusterException(string.Format("DNS entry '{0} resolved into empty list.", _clusterDns));
-                    return FindBestClusterNode(t.Result, _maxDiscoverAttempts);
-                });
+                    //_log.Info("Discovering cluster. Attempt {0}/{1}...", attempt + 1, _maxDiscoverAttempts);
+                    try
+                    {
+                        var endPoint = DiscoverEndPoint(failedEndPoint);
+                        if (endPoint != null)
+                        {
+                            _log.Info("Discovering attempt {0}/{1} successful: best candidate is [{2}].", attempt, _maxDiscoverAttempts, endPoint);
+                            return endPoint;
+                        }
+
+                        _log.Info("Discovering attempt {0}/{1} failed: no candidate found.", attempt, _maxDiscoverAttempts);
+                    }
+                    catch (Exception exc)
+                    {
+                        _log.Info("Discovering attempt {0}/{1} failed with error: {2}.", attempt, _maxDiscoverAttempts, exc);
+                    }
+
+                    Thread.Sleep(500);
+                }
+                throw new ClusterException(string.Format("Failed to discover candidate in {0} attempts.", _maxDiscoverAttempts));
+            });
         }
 
-        private IPEndPoint FindBestClusterNode(IPAddress[] managers, int maxAttempts)
+        private IPEndPoint DiscoverEndPoint(IPEndPoint failedEndPoint)
         {
-            for (int i = 0; i < maxAttempts; ++i)
+            var oldGossip = Interlocked.Exchange(ref _oldGossip, null);
+            var gossipCandidates = oldGossip != null
+                                           ? GetGossipCandidatesFromOldGossip(oldGossip, failedEndPoint)
+                                           : GetGossipCandidatesFromDns();
+            for (int i=0; i<gossipCandidates.Length; ++i)
             {
-                try
+                var gossip = TryGetGossipFrom(gossipCandidates[i]);
+                if (gossip == null || gossip.Members == null || gossip.Members.Length == 0)
+                    continue;
+
+                var bestNode = TryDetermineBestNode(gossip.Members);
+                if (bestNode != null)
                 {
-                    return TryFindBestClusterNode(managers, maxAttempts);
+                    _oldGossip = gossip.Members;
+                    return bestNode;
                 }
-                catch (Exception exc)
-                {
-                    if (i == maxAttempts - 1)
-                        throw;
-                }
-                Thread.Sleep(1000);
             }
-            throw new ClusterException(string.Format("Couldn't find any candidate node for cluster DNS '{0}'.", _clusterDns));
-        }
 
-        private IPEndPoint TryFindBestClusterNode(IPAddress[] managers, int maxAttempts)
-        {
-            var info = RetrieveClusterGossip(managers, maxAttempts);
-            if (info != null && info.Members != null && info.Members.Any())
-            {
-                var alive = info.Members.Where(m => m.IsAlive).ToArray();
-                /*
-                                if (!_allowForwarding)
-                                {
-                                    _log.Info("Forwarding denied. Looking for master...");
-                                    var master = alive.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Master);
-                                    if (master == null)
-                                    {
-                                        _log.Info("Master not found");
-                                        return null;
-                                    }
-                                    _log.Info("Master found on [{0}:{1}]", master.ExternalTcpIp, master.ExternalTcpPort);
-                                    return new IPEndPoint(IPAddress.Parse(master.ExternalTcpIp), master.ExternalTcpPort);
-                                }
-                */
-
-                var node = alive.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Master) ??
-                           alive.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Slave) ??
-                           alive.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Clone) ??
-                           alive.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.CatchingUp) ??
-                           alive.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.PreReplica);
-                if (node != null)
-                {
-                    _log.Info("Best choice found, it's {0} on [{1}:{2}]", node.State, node.ExternalTcpIp, node.ExternalTcpPort);
-                    return new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalTcpPort);
-                }
-
-                _log.Info("Unable to locate master, slave or clone node");
-            }
-            else
-                _log.Info("Failed to discover cluster. No information available");
-
-            throw new ClusterException(
-                    string.Format("Failed to discover cluster from DNS entry '{0}'.", _clusterDns));
-        }
-
-        private ClusterMessages.ClusterInfoDto RetrieveClusterGossip(IPAddress[] managers, int maxAttempts)
-        {
-            var attempt = 0;
-            var random = new Random();
-            while (attempt < maxAttempts)
-            {
-                _log.Info("Discovering cluster. Attempt {0} of {1}...", attempt + 1, maxAttempts);
-                var i = random.Next(0, managers.Length);
-                _log.Info("Picked [{0}]", managers[i]);
-                var info = DownloadClusterGossip(new IPEndPoint(managers[i], _managerExternalHttpPort));
-                if (info != null)
-                {
-                    _log.Info("Going to select node based on info from [{0}]", managers[i]);
-                    return info;
-                }
-                _log.Info("Failed to get cluster info from [{0}].", managers[i]);
-                attempt++;
-
-                Thread.Sleep(TimeSpan.FromMilliseconds(100));
-            }
             return null;
         }
 
-        private ClusterMessages.ClusterInfoDto DownloadClusterGossip(IPEndPoint manager)
+        private IPEndPoint[] GetGossipCandidatesFromDns()
+        {
+            var ips = (_fakeDnsEntries != null && _fakeDnsEntries.Length > 0) ? _fakeDnsEntries : ResolveDns(_clusterDns);
+            var managers = ips.Select(ip => new IPEndPoint(ip, _managerExternalHttpPort)).ToArray();
+            RandomShuffle(managers, 0, managers.Length-1);
+            return managers;
+        }
+
+        private IPAddress[] ResolveDns(string dns)
+        {
+            IPAddress[] addresses;
+            try
+            {
+                addresses = Dns.GetHostAddresses(dns);
+            }
+            catch (Exception exc)
+            {
+                throw new ClusterException(string.Format("Error while resolving DNS entry '{0}'.", _clusterDns), exc);
+            }
+            if (addresses == null || addresses.Length == 0)
+                throw new ClusterException(string.Format("DNS entry '{0}' resolved into empty list.", _clusterDns));
+            return addresses;
+        }
+
+        private IPEndPoint[] GetGossipCandidatesFromOldGossip(IEnumerable<ClusterMessages.MemberInfoDto> oldGossip, IPEndPoint failedEndPoint)
+        {
+            var gossipCandidates = failedEndPoint == null 
+                    ? oldGossip.ToArray() 
+                    : oldGossip.Where(x => !(x.ExternalHttpPort == failedEndPoint.Port 
+                                             && IPAddress.Parse(x.ExternalHttpIp).Equals(failedEndPoint.Address)))
+                               .ToArray();
+            return ArrangeGossipCandidates(gossipCandidates);
+        }
+
+        private IPEndPoint[] ArrangeGossipCandidates(ClusterMessages.MemberInfoDto[] members)
+        {
+            var result = new IPEndPoint[members.Length];
+            int i = -1;
+            int j = members.Length;
+            for (int k = 0; k < members.Length; ++k)
+            {
+                if (members[k].State == ClusterMessages.VNodeState.Manager)
+                    result[--j] = new IPEndPoint(IPAddress.Parse(members[k].ExternalHttpIp), members[k].ExternalHttpPort);
+                else
+                    result[++i] = new IPEndPoint(IPAddress.Parse(members[k].ExternalHttpIp), members[k].ExternalHttpPort);
+            }
+            RandomShuffle(result, 0, i); // shuffle nodes
+            RandomShuffle(result, j, members.Length - 1); // shuffle managers
+
+            return result;
+        }
+
+        private void RandomShuffle<T>(T[] arr, int i, int j)
+        {
+            if (i >= j)
+                return;
+            var rnd = new Random(Guid.NewGuid().GetHashCode());
+            for (int k = 0; k < arr.Length; ++k)
+            {
+                var index = rnd.Next(k, arr.Length);
+                var tmp = arr[index];
+                arr[index] = arr[k];
+                arr[k] = tmp;
+            }
+        }
+
+        private ClusterMessages.ClusterInfoDto TryGetGossipFrom(IPEndPoint endPoint)
         {
             ClusterMessages.ClusterInfoDto result = null;
             var completed = new ManualResetEventSlim(false);
 
-            var url = manager.ToHttpUrl("/gossip?format=xml");
-            _log.Info("Sending gossip request to {0}...", url);
+            var url = endPoint.ToHttpUrl("/gossip?format=json");
             _client.Get(
                 url,
                 response =>
                 {
-                    _log.Info("Got response from manager on [{0}]", manager);
                     if (response.HttpStatusCode != HttpStatusCode.OK)
                     {
-                        _log.Info("Manager responded with {0} ({1})", response.HttpStatusCode, response.StatusDescription);
+                        _log.Info("[{0}] responded with {1} ({2})", endPoint, response.HttpStatusCode, response.StatusDescription);
                         completed.Set();
                         return;
                     }
                     try
                     {
-                        using (var reader = new StringReader(response.Body))
-                        {
-                            result = (ClusterMessages.ClusterInfoDto)new XmlSerializer(typeof(ClusterMessages.ClusterInfoDto)).Deserialize(reader);
-                        }
+                        result = response.Body.ParseJson<ClusterMessages.ClusterInfoDto>();
                     }
                     catch (Exception e)
                     {
-                        _log.Info(e, "Failed to get cluster info from manager on [{0}]. Deserialization error.", manager);
+                        _log.Info(e, "Failed to get cluster info from [{0}]: deserialization error.", endPoint);
                     }
                     completed.Set();
                 },
                 e =>
                 {
-                    _log.Info(e, "Failed to get cluster info from manager on [{0}]. Request failed", manager);
+                    _log.Info(e, "Failed to get cluster info from [{0}]: request failed.", endPoint);
                     completed.Set();
                 });
 
             completed.Wait();
             return result;
+        }
+
+        private IPEndPoint TryDetermineBestNode(IEnumerable<ClusterMessages.MemberInfoDto> members)
+        {
+            var notAllowedStates = new[]
+            {
+                ClusterMessages.VNodeState.Manager, 
+                ClusterMessages.VNodeState.ShuttingDown,
+                ClusterMessages.VNodeState.Shutdown
+            };
+            var node = members.Where(x => x.IsAlive)
+                              .Where(x => !notAllowedStates.Contains(x.State))
+                              .OrderByDescending(x => x.State)
+                              .FirstOrDefault();
+            if (node == null)
+            {
+                _log.Info("Unable to locate suitable node. Gossip info:\n{0}.", string.Join("\n", members.Select(x => x.ToString())));
+                return null;
+            }
+
+            _log.Info("Best choice found: [{0}:{1}] ({2}).", node.ExternalTcpIp, node.ExternalTcpPort, node.State);
+            return new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalTcpPort);
         }
     }
 }

@@ -147,7 +147,7 @@ namespace EventStore.ClientAPI.Core
             if (_verbose) _log.Debug("EventStoreConnection '{0}': DiscoverEndPoint.", _esConnection.ConnectionName);
             if (_disposed) return;
 
-            _endPointDiscoverer.DiscoverAsync().ContinueWith(t =>
+            _endPointDiscoverer.DiscoverAsync(_connection != null ? _connection.EffectiveEndPoint : null).ContinueWith(t =>
             {
                 if (t.IsFaulted)
                 {

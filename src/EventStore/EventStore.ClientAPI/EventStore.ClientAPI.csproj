@@ -97,6 +97,7 @@
     <Compile Include="Common\Log\DebugLogger.cs" />
     <Compile Include="Common\SystemNames.cs" />
     <Compile Include="Common\Utils\Helper.cs" />
+    <Compile Include="Common\Utils\Json.cs" />
     <Compile Include="ConnectionSettings.cs" />
     <Compile Include="ConnectionSettingsBuilder.cs" />
     <Compile Include="ClusterSettings.cs" />

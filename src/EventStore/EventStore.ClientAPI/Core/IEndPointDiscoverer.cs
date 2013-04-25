@@ -33,6 +33,6 @@ namespace EventStore.ClientAPI.Core
 {
     internal interface IEndPointDiscoverer
     {
-        Task<IPEndPoint> DiscoverAsync();
+        Task<IPEndPoint> DiscoverAsync(IPEndPoint failedEndPoint);
     }
 }
