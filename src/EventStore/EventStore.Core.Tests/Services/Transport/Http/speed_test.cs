@@ -154,7 +154,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
     [TestFixture]
     public class speed_test
     {
-        [Test, Category("LongRunning"), Explicit, MightyMooseIgnore, Ignore]
+        [Test, MightyMooseIgnore, Ignore]
         public void of_http_requests_routing()
         {
             const int iterations = 100000;
@@ -199,7 +199,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Console.WriteLine("{0} request done in {1} ({2:0.00} per sec)", iterations, sw.Elapsed, 1000.0 * iterations / sw.ElapsedMilliseconds);
         }
 
-        [Test, Category("LongRunning"), Explicit, MightyMooseIgnore, Ignore]
+        [Test, MightyMooseIgnore, Ignore]
         public void of_uri_router()
         {
             const int iterations = 100000;
