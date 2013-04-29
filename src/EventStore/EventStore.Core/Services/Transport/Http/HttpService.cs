@@ -90,6 +90,7 @@ namespace EventStore.Core.Services.Transport.Http
             _providers = new AuthenticationProvider[]
                 {
                     new BasicHttpAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm),
+                    new TrustedAuthenticationProvider(),
                     new AnonymousAuthenticationProvider()
                 };
 

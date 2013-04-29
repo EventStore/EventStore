@@ -98,25 +98,6 @@ namespace EventStore.Core.Messages
             }
         }
 
-        [XmlRoot(ElementName = "events")]
-        public class WriteEventsText
-        {
-            [XmlElement("event")]
-            public ClientEventText[] events { get; set; }
-
-            public WriteEventsText()
-            {
-            }
-
-            public WriteEventsText(ClientEventText[] events)
-            {
-                Ensure.NotNull(events, "events");
-                Ensure.Positive(events.Length, "events.Length");
-
-                this.events = events;
-            }
-        }
-
         [XmlRoot(ElementName = "event")]
         public class ReadEventCompletedText
         {

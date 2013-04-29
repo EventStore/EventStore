@@ -29,7 +29,6 @@
 using System.Net;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
-using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace EventStore.Core.Tests.Http.BasicAuthentication
 {
@@ -53,12 +52,12 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
                 Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
             }
 
-			[Test]
-			public void does_not_return_www_authenticate_header()
-			{
-				Assert.Null(_lastResponse.Headers [HttpResponseHeader.WwwAuthenticate]);
-			}
-		}
+            [Test]
+            public void does_not_return_www_authenticate_header()
+            {
+                Assert.Null(_lastResponse.Headers[HttpResponseHeader.WwwAuthenticate]);
+            }
+        }
 
         [TestFixture, Category("LongRunning")]
         class when_requesting_a_protected_resource : HttpBehaviorSpecification
@@ -78,15 +77,15 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
                 Assert.AreEqual(HttpStatusCode.Unauthorized, _lastResponse.StatusCode);
             }
 
-			[Test]
-			public void returns_www_authenticate_header()
-			{
-				Assert.NotNull (_lastResponse.Headers [HttpResponseHeader.WwwAuthenticate]);
-			}
-		}
+            [Test]
+            public void returns_www_authenticate_header()
+            {
+                Assert.NotNull(_lastResponse.Headers[HttpResponseHeader.WwwAuthenticate]);
+            }
+        }
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_protected_resource_with_credentials_provided: HttpBehaviorSpecification
+        class when_requesting_a_protected_resource_with_credentials_provided : HttpBehaviorSpecification
         {
             private JObject _json;
 
@@ -110,7 +109,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_protected_resource_with_invalid_credentials_provided: HttpBehaviorSpecification
+        class when_requesting_a_protected_resource_with_invalid_credentials_provided : HttpBehaviorSpecification
         {
             private JObject _json;
 
@@ -184,6 +183,5 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
                 Assert.AreEqual(HttpStatusCode.Unauthorized, _lastResponse.StatusCode);
             }
         }
-
     }
 }

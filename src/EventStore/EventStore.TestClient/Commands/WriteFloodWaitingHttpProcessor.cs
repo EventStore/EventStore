@@ -30,7 +30,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
@@ -105,14 +104,10 @@ namespace EventStore.TestClient.Commands
 
                     for (int j = 0; j < count; ++j)
                     {
-                        var write = new HttpClientMessageDto.WriteEventsText(
-                            new[] 
-                            { 
-                                new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), 
-                                                               "type",
-                                                               "DATA" + new string('*', 256),
-                                                               "METADATA" + new string('$', 100))
-                            });
+                        var write = new[] { new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), 
+                                                                                     "type",
+                                                                                     "DATA" + new string('*', 256),
+                                                                                     "METADATA" + new string('$', 100))};
                         var request = Codec.Xml.To(write);
                         client.Post(url, 
                                     request, 

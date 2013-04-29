@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using EventStore.ClientAPI.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -130,16 +131,18 @@ namespace EventStore.TestClient.Commands
                     for (int j = 0; j < count; ++j)
                     {
                         var url = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}", esId);
-                        var write = new HttpClientMessageDto.WriteEventsText(
-                            new[] 
-                            { 
-                                new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), 
-                                                                         "type",
-                                                                         "DATA" + new string('*', 256),
-                                                                         "METADATA" + new string('$', 100))
-                            });
+                        var write = new[] { new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), 
+                                                                                     "type",
+                                                                                     "DATA" + new string('*', 256),
+                                                                                     "METADATA" + new string('$', 100)) };
+
                         var requestString = Codec.Json.To(write);
-                        client.Post(url, requestString, Codec.Json.ContentType, onSuccess, onException);
+                        client.Post(
+                            url, 
+                            requestString,
+                            Codec.Json.ContentType,
+                            new Dictionary<string, string> { },
+                            onSuccess, onException);
                         
                         var localSent = Interlocked.Increment(ref sent);
                         while (localSent - Interlocked.Read(ref received) > context.Client.Options.WriteWindow/clientsCnt)

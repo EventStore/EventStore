@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             public void does_not_publish_authenticated_http_request_message()
             {
                 var authenticatedHttpRequestMessages = _consumer.HandledMessages.OfType<AuthenticatedHttpRequestMessage>().ToList();
-                Assert.AreEqual(authenticatedHttpRequestMessages.Count, 0);
+                Assert.AreEqual(0, authenticatedHttpRequestMessages.Count);
             }
         }
 
@@ -98,7 +98,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             protected override void Given()
             {
                 base.Given();
-                ExistingEvent("$user-user", "$user", null, "{Salt:'drowssap',Hash:'password'}");
+                ExistingEvent("$user-user", "$user", null, "{LoginName:'user', Salt:'drowssap',Hash:'password'}");
             }
 
             [SetUp]
@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             public void publishes_authenticated_http_request_message_with_user()
             {
                 var authenticatedHttpRequestMessages = _consumer.HandledMessages.OfType<AuthenticatedHttpRequestMessage>().ToList();
-                Assert.AreEqual(authenticatedHttpRequestMessages.Count, 1);
+                Assert.AreEqual(1, authenticatedHttpRequestMessages.Count);
                 var message = authenticatedHttpRequestMessages[0];
                 Assert.AreEqual("user", message.Entity.User.Identity.Name);
                 Assert.IsTrue(message.Entity.User.Identity.IsAuthenticated);
@@ -134,7 +134,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             protected override void Given()
             {
                 base.Given();
-                ExistingEvent("$user-user", "$user", null, "{Salt:'drowssap',Hash:'password'}");
+                ExistingEvent("$user-user", "$user", null, "{LoginName:'user', Salt:'drowssap',Hash:'password'}");
             }
 
             [SetUp]
@@ -161,7 +161,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             public void publishes_authenticated_http_request_message_with_user()
             {
                 var authenticatedHttpRequestMessages = _consumer.HandledMessages.OfType<AuthenticatedHttpRequestMessage>().ToList();
-                Assert.AreEqual(authenticatedHttpRequestMessages.Count, 1);
+                Assert.AreEqual(1, authenticatedHttpRequestMessages.Count);
                 var message = authenticatedHttpRequestMessages[0];
                 Assert.AreEqual("user", message.Entity.User.Identity.Name);
                 Assert.IsTrue(message.Entity.User.Identity.IsAuthenticated);
@@ -183,7 +183,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             protected override void Given()
             {
                 base.Given();
-                ExistingEvent("$user-user", "$user", null, "{Salt:'drowssap',Hash:'password'}");
+                ExistingEvent("$user-user", "$user", null, "{LoginName:'user', Salt:'drowssap',Hash:'password'}");
             }
 
             [SetUp]
@@ -204,7 +204,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             public void publishes_authenticated_http_request_message_with_user()
             {
                 var authenticatedHttpRequestMessages = _consumer.HandledMessages.OfType<AuthenticatedHttpRequestMessage>().ToList();
-                Assert.AreEqual(authenticatedHttpRequestMessages.Count, 0);
+                Assert.AreEqual(0, authenticatedHttpRequestMessages.Count);
             }
         }
     }
