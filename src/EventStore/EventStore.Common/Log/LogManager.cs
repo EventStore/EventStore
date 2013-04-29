@@ -90,8 +90,15 @@ namespace EventStore.Common.Log
 
         public static void Finish()
         {
-            GlobalLogger.Flush();
-            NLog.LogManager.Configuration = null;
+            try
+            {
+                GlobalLogger.Flush();
+                NLog.LogManager.Configuration = null;
+            }
+            catch (Exception exc)
+            {
+                GlobalLogger.ErrorException(exc, "Exception during flushing logs, ignoring...");
+            }
         }
 
         public static void SetLogFactory(Func<string, ILogger> factory)
