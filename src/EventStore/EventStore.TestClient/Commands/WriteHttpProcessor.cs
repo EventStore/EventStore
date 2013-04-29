@@ -68,8 +68,7 @@ namespace EventStore.TestClient.Commands
             var url = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}", eventStreamId);
             context.Log.Info("Writing to {0}...", url);
 
-            var request = Codec.Xml.To(new HttpClientMessageDto.WriteEventsText(
-                    new[] { new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), "type", data, metadata) }));
+            var request = Codec.Xml.To(new[] { new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), "type", data, metadata) });
 
             var sw = Stopwatch.StartNew();
             client.Post(
