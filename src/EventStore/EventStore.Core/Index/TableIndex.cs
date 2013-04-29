@@ -145,11 +145,10 @@ namespace EventStore.Core.Index
                     }
                 }
 
-                if (_indexMap.IsCorrupt(_directory))
-                    _indexMap.LeaveUnsafeState(_directory);
-
                 if (createEmptyIndexMap)
                     _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
+                if (_indexMap.IsCorrupt(_directory))
+                    _indexMap.LeaveUnsafeState(_directory);
             }
             _prepareCheckpoint = _indexMap.PrepareCheckpoint;
             _commitCheckpoint = _indexMap.CommitCheckpoint;
