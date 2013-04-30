@@ -41,22 +41,23 @@ namespace EventStore.Transport.Tcp
 {
     public class TcpConnection : TcpConnectionBase, ITcpConnection
     {
-        private const int MaxSendPacketSize = 64 * 1024;
+        internal const int MaxSendPacketSize = 64 * 1024;
+        internal static readonly BufferManager BufferManager = new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnection>();
         private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool", 
                                                                                    TcpConfiguration.SendReceivePoolSize, 
                                                                                    () => new SocketAsyncEventArgs());
-        private static readonly BufferManager BufferManager = new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
 
-        internal static TcpConnection CreateConnectingTcpConnection(Guid connectionId, 
-                                                                    IPEndPoint remoteEndPoint, 
-                                                                    TcpClientConnector connector, 
-                                                                    Action<TcpConnection> onConnectionEstablished, 
-                                                                    Action<TcpConnection, SocketError> onConnectionFailed,
-                                                                    bool verbose)
+        public static ITcpConnection CreateConnectingTcpConnection(Guid connectionId, 
+                                                                   IPEndPoint remoteEndPoint, 
+                                                                   TcpClientConnector connector, 
+                                                                   Action<ITcpConnection> onConnectionEstablished, 
+                                                                   Action<ITcpConnection, SocketError> onConnectionFailed,
+                                                                   bool verbose)
         {
             var connection = new TcpConnection(connectionId, remoteEndPoint, verbose);
+// ReSharper disable ImplicitlyCapturedClosure
             connector.InitConnect(remoteEndPoint,
                                   (_, socket) =>
                                   {
@@ -69,10 +70,11 @@ namespace EventStore.Transport.Tcp
                                       if (onConnectionFailed != null)
                                           onConnectionFailed(connection, socketError);
                                   });
+// ReSharper restore ImplicitlyCapturedClosure
             return connection;
         }
 
-        internal static TcpConnection CreateAcceptedTcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, Socket socket, bool verbose)
+        public static ITcpConnection CreateAcceptedTcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, Socket socket, bool verbose)
         {
             var connection = new TcpConnection(connectionId, effectiveEndPoint, verbose);
             connection.InitSocket(socket, verbose);
@@ -80,44 +82,35 @@ namespace EventStore.Transport.Tcp
         }
 
         public event Action<ITcpConnection, SocketError> ConnectionClosed;
-
-        public readonly Guid ConnectionId;
-        public IPEndPoint EffectiveEndPoint { get; private set; }
+        public Guid ConnectionId { get { return _connectionId; } }
+        public IPEndPoint EffectiveEndPoint { get { return _effectiveEndPoint; } }
         public int SendQueueSize { get { return _sendQueue.Count; } }
+
+        private readonly Guid _connectionId;
+        private readonly IPEndPoint _effectiveEndPoint;
+        private readonly bool _verbose;
 
         private Socket _socket;
         private SocketAsyncEventArgs _receiveSocketArgs;
         private SocketAsyncEventArgs _sendSocketArgs;
 
         private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
-        private readonly Queue<Tuple<ArraySegment<byte>, Action>> _receiveQueue = new Queue<Tuple<ArraySegment<byte>, Action>>();
+        private readonly Common.Concurrent.ConcurrentQueue<Tuple<ArraySegment<byte>, int>> _receiveQueue = new Common.Concurrent.ConcurrentQueue<Tuple<ArraySegment<byte>, int>>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
-        private readonly object _receivingLock = new object();
         private readonly SpinLock2 _sendingLock = new SpinLock2();
         private bool _isSending;
         private int _closed;
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
-        private volatile int _packagesSent;
-        private long _bytesSent;
-        private volatile int _packagesReceived;
-        private long _bytesReceived;
-        private volatile int _sentAsyncs;
-        private volatile int _sentAsyncCallbacks;
-        private volatile int _recvAsyncs;
-        private volatile int _recvAsyncCallbacks;
-
-        private readonly bool _verbose;
-
         private TcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, bool verbose)
         {
             Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(effectiveEndPoint, "effectiveEndPoint");
 
-            ConnectionId = connectionId;
-            EffectiveEndPoint = effectiveEndPoint;
+            _connectionId = connectionId;
+            _effectiveEndPoint = effectiveEndPoint;
             _verbose = verbose;
         }
 
@@ -125,21 +118,17 @@ namespace EventStore.Transport.Tcp
         {
             if (verbose)
                 Console.WriteLine("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
-
-            base.InitSocket(socket, EffectiveEndPoint);
+            InitSocket(socket, EffectiveEndPoint);
             using (_sendingLock.Acquire()) 
             {
                 _socket = socket;
                 try
                 {
                     socket.NoDelay = true;
-                    //socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, TcpConfiguration.SocketBufferSize);
-                    //socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer, TcpConfiguration.SocketBufferSize);
                 }
                 catch (ObjectDisposedException)
                 {
-                    CloseInternal(SocketError.Shutdown);
-                    _socket = null;
+                    CloseInternal(SocketError.Shutdown, "Socket disposed.");
                     return;
                 }
 
@@ -192,7 +181,6 @@ namespace EventStore.Transport.Tcp
                     break;
             }
 
-            Interlocked.Add(ref _bytesSent, _memoryStream.Length);
             _sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), 0, (int) _memoryStream.Length);
 
             if (_sendSocketArgs.Count == 0)
@@ -206,9 +194,7 @@ namespace EventStore.Transport.Tcp
             
             try
             {
-                Interlocked.Increment(ref _sentAsyncs);
                 NotifySendStarting(_sendSocketArgs.Count);
-                
                 var firedAsync = _sendSocketArgs.AcceptSocket.SendAsync(_sendSocketArgs);
                 if (!firedAsync)
                     ProcessSend(_sendSocketArgs);
@@ -227,23 +213,21 @@ namespace EventStore.Transport.Tcp
 
         private void ProcessSend(SocketAsyncEventArgs socketArgs)
         {
-            Interlocked.Increment(ref _sentAsyncCallbacks);
             if (socketArgs.SocketError != SocketError.Success)
             {
                 NotifySendCompleted(0);
                 ReturnSendingSocketArgs();
-                CloseInternal(socketArgs.SocketError);
-                return;
+                CloseInternal(socketArgs.SocketError, "Socket send error.");
             }
-            
-            NotifySendCompleted(socketArgs.Count);
-            Interlocked.Increment(ref _packagesSent);
-
-            using (_sendingLock.Acquire())
+            else
             {
-                _isSending = false;
+                NotifySendCompleted(socketArgs.Count);
+                using (_sendingLock.Acquire())
+                {
+                    _isSending = false;
+                }
+                TrySend();
             }
-            TrySend();
         }
 
         public void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback)
@@ -251,12 +235,8 @@ namespace EventStore.Transport.Tcp
             if (callback == null)
                 throw new ArgumentNullException("callback");
 
-            lock (_receivingLock)
-            {
-                if (_receiveCallback != null)
-                    throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
-                _receiveCallback = callback;
-            }
+            if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
+                throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
             TryDequeueReceivedData();
         }
 
@@ -266,29 +246,13 @@ namespace EventStore.Transport.Tcp
             if (buffer.Array == null || buffer.Count == 0 || buffer.Array.Length < buffer.Offset + buffer.Count)
                 throw new Exception("Invalid buffer allocated");
 
-            //TODO AN: do we need to lock on _receiveSocketArgs?..
-            lock (_receiveSocketArgs) 
-            {
-                _receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
-                if (_receiveSocketArgs.Buffer == null)
-                    throw new Exception("Buffer was not set");
-            }
             try
             {
-                Interlocked.Increment(ref _recvAsyncs);
                 NotifyReceiveStarting();
-                bool firedAsync;
-                lock (_receiveSocketArgs)
-                {
-                    if (_receiveSocketArgs.Buffer == null)
-                        throw new Exception("Buffer was lost");
-                    firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(_receiveSocketArgs);
-                }
+                _receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
+                var firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(_receiveSocketArgs);
                 if (!firedAsync)
-                {
-                    Log.Info("SYNC receive");
                     ProcessReceive(_receiveSocketArgs);
-                }
             }
             catch (ObjectDisposedException)
             {
@@ -304,37 +268,24 @@ namespace EventStore.Transport.Tcp
 
         private void ProcessReceive(SocketAsyncEventArgs socketArgs)
         {
-            if (socketArgs != _receiveSocketArgs)
-                throw new Exception("Invalid socket args received");
-            Interlocked.Increment(ref _recvAsyncCallbacks);
+            if (socketArgs != _receiveSocketArgs) throw new Exception("Invalid socket args received");
 
             // socket closed normally or some error occurred
             if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
             {
                 NotifyReceiveCompleted(0);
                 ReturnReceivingSocketArgs();
-                CloseInternal(socketArgs.SocketError);
+                CloseInternal(socketArgs.SocketError, "Socket receive error");
                 return;
             }
             
             NotifyReceiveCompleted(socketArgs.BytesTransferred);
-            Interlocked.Increment(ref _packagesReceived);
-            Interlocked.Add(ref _bytesReceived, socketArgs.BytesTransferred);
             
-            var receiveBufferSegment = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
-            lock (_receivingLock)
-            {
-                var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count);
-                Action disposeBufferAction = () => BufferManager.CheckIn(fullBuffer);
-                _receiveQueue.Enqueue(Tuple.Create(receiveBufferSegment, disposeBufferAction));
-            }
+            var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count);
+            _receiveQueue.Enqueue(Tuple.Create(fullBuffer, socketArgs.BytesTransferred));
 
-            lock (_receiveSocketArgs)
-            {
-                if (socketArgs.Buffer == null)
-                    throw new Exception("Cleaning already null buffer");
-                socketArgs.SetBuffer(null, 0, 0);
-            }
+            if (_receiveSocketArgs.Buffer == null) throw new Exception("Cleaning already null buffer");
+            _receiveSocketArgs.SetBuffer(null, 0, 0);
 
             StartReceive();
             TryDequeueReceivedData();
@@ -342,63 +293,51 @@ namespace EventStore.Transport.Tcp
 
         private void TryDequeueReceivedData()
         {
-            Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback;
-            List<Tuple<ArraySegment<byte>, Action>> res;
+            if (_receiveQueue.Count == 0 || _receiveCallback == null) // no awaiting callback or no data to dequeue
+                return;
 
-            lock (_receivingLock)
+            var callback = Interlocked.Exchange(ref _receiveCallback, null);
+            if (callback == null) throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
+
+            var dequeueResultList = new List<Tuple<ArraySegment<byte>, int>>();
+            Tuple<ArraySegment<byte>, int> piece;
+            while (_receiveQueue.TryDequeue(out piece))
             {
-                // no awaiting callback or no data to dequeue
-                if (_receiveCallback == null || _receiveQueue.Count == 0)
-                    return;
-
-                res = new List<Tuple<ArraySegment<byte>, Action>>(_receiveQueue.Count);
-                while (_receiveQueue.Count > 0)
-                {
-                    var arraySegments = _receiveQueue.Dequeue();
-                    res.Add(arraySegments);
-                }
-
-                callback = _receiveCallback;
-                _receiveCallback = null;
+                dequeueResultList.Add(piece);
             }
-            callback(this, res.Select(v => v.Item1).ToArray());
+
+            callback(this, dequeueResultList.Select(v => new ArraySegment<byte>(v.Item1.Array, v.Item1.Offset, v.Item2)));
             int bytes = 0;
-            foreach (var tuple in res)
+            for (int i = 0, n = dequeueResultList.Count; i < n; ++i)
             {
-                bytes += tuple.Item1.Count;
-                tuple.Item2(); // dispose buffers
+                var tuple = dequeueResultList[i];
+                bytes += tuple.Item2;
+                BufferManager.CheckIn(tuple.Item1); // dispose buffers
             }
             NotifyReceiveDispatched(bytes);
         }
 
-        public void Close()
+        public void Close(string reason)
         {
-            CloseInternal(SocketError.Success); // normal socket closing
+            CloseInternal(SocketError.Success, reason ?? "Normal socket close."); // normal socket closing
         }
 
-        private void CloseInternal(SocketError socketError)
+        private void CloseInternal(SocketError socketError, string reason)
         {
-            var isClosed = Interlocked.CompareExchange(ref _closed, 1, 0) != 0;
-            if (isClosed)
+            if (Interlocked.CompareExchange(ref _closed, 1, 0) != 0)
                 return;
 
             NotifyClosed();
 
             if (_verbose)
             {
-                Log.Info("[{0:HH:mm:ss.fff}: {1}]:\nConnection ID: {2:B}\nReceived packages: {3}, bytes: {4}\nSent packages: {5}, bytes: {6}\n"
-                         + "SendAsync calls: {7}, callbacks: {8}\nReceiveAsync calls: {9}, callbacks: {10}\n",
-                         DateTime.UtcNow,
-                         EffectiveEndPoint,
-                         ConnectionId,
-                         _packagesReceived,
-                         Interlocked.Read(ref _bytesReceived),
-                         _packagesSent,
-                         Interlocked.Read(ref _bytesSent),
-                         _sentAsyncs,
-                         _sentAsyncCallbacks,
-                         _recvAsyncs,
-                         _recvAsyncCallbacks);
+                Log.Info("[{0:HH:mm:ss.fff}: {1}]:\nConnection ID: {2:B}\nReceived bytes: {3}, Sent bytes: {4}\n"
+                         + "Send calls: {5}, callbacks: {6}\nReceive calls: {7}, callbacks: {8}\nClose reason: [{9}] {10}",
+                         DateTime.UtcNow, EffectiveEndPoint, _connectionId,
+                         TotalBytesReceived, TotalBytesSent,
+                         SendCalls, SendCallbacks,
+                         ReceiveCalls, ReceiveCallbacks,
+                         socketError, reason);
             }
 
             if (_socket != null)

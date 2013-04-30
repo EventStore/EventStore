@@ -261,7 +261,7 @@ namespace EventStore.TestClient
                                           "[{0}] ERROR for {1}. Connection will be closed.",
                                           conn.EffectiveEndPoint,
                                           validPackage ? package.Command as object : "<invalid package>");
-                        conn.Close();
+                        conn.Close(ex.Message);
 
                         if (failContextOnError)
                             context.Fail(ex);

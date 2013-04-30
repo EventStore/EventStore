@@ -309,6 +309,7 @@
     <Compile Include="MightyMooseIgnoreAttribute.cs" />
     <Compile Include="Services\Transport\Http\speed_test.cs" />
     <Compile Include="Services\Transport\Http\uri_router_should.cs" />
+    <Compile Include="Services\Transport\Tcp\ssl_connection.cs" />
     <Compile Include="Services\UserManagementService\user_management_service.cs" />
     <Compile Include="Services\VNode\vnode_fsm_should.cs" />
     <Compile Include="SpecificationWithDirectoryPerTestFixture.cs" />
@@ -407,8 +408,14 @@
       <Project>{30AF4820-DC60-4674-9E19-C4518445545A}</Project>
       <Name>EventStore.Transport.Http</Name>
     </ProjectReference>
+    <ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj">
+      <Project>{A3C1CBE0-4728-451F-B709-480134432880}</Project>
+      <Name>EventStore.Transport.Tcp</Name>
+    </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="server.p12" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Net;
+using System.Net.Sockets;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -103,16 +104,17 @@ namespace EventStore.Core.Services.Transport.Tcp
             _serverListener.Stop();
         }
 
-        private void OnConnectionAccepted(TcpConnection connection)
+        private void OnConnectionAccepted(IPEndPoint endPoint, Socket socket)
         {
-            Log.Info("{0} TCP connection accepted: [{1}], connection ID: {2}.", _serviceType, connection.EffectiveEndPoint, connection.ConnectionId);
+            var conn = TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(), endPoint, socket, verbose: true);
+            Log.Info("{0} TCP connection accepted: [{1}], connection ID: {2}.", _serviceType, conn.EffectiveEndPoint, conn.ConnectionId);
 
-            var dispatcher = _dispatcherFactory(connection.ConnectionId, _serverEndPoint);
+            var dispatcher = _dispatcherFactory(conn.ConnectionId, _serverEndPoint);
             var manager = new TcpConnectionManager(
                     _serviceType.ToString().ToLower(),
                     dispatcher,
                     _publisher,
-                    connection,
+                    conn,
                     _networkSendQueue,
                     onConnectionClosed: (m, e) => _publisher.Publish(new TcpMessage.ConnectionClosed(m, e))); // TODO AN: race condition
             _publisher.Publish(new TcpMessage.ConnectionEstablished(manager));

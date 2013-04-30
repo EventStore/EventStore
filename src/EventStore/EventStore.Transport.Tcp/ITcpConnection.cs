@@ -35,10 +35,14 @@ namespace EventStore.Transport.Tcp
     public interface ITcpConnection
     {
         event Action<ITcpConnection, SocketError> ConnectionClosed;
+
+        Guid ConnectionId { get; }
         IPEndPoint EffectiveEndPoint { get; }
         int SendQueueSize { get; }
+        bool IsClosed { get; }
+
         void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback);
         void EnqueueSend(IEnumerable<ArraySegment<byte>> data);
-        void Close();
+        void Close(string reason);
     }
 }

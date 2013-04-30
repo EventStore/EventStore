@@ -51,11 +51,11 @@ namespace EventStore.Transport.Tcp
             return socketArgs;
         }
 
-        public TcpConnection ConnectTo(Guid connectionId, 
-                                       IPEndPoint remoteEndPoint, 
-                                       Action<TcpConnection> onConnectionEstablished = null,
-                                       Action<TcpConnection, SocketError> onConnectionFailed = null,
-                                       bool verbose = true)
+        public ITcpConnection ConnectTo(Guid connectionId, 
+                                        IPEndPoint remoteEndPoint, 
+                                        Action<ITcpConnection> onConnectionEstablished = null,
+                                        Action<ITcpConnection, SocketError> onConnectionFailed = null,
+                                        bool verbose = true)
         {
             Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
             return TcpConnection.CreateConnectingTcpConnection(connectionId, remoteEndPoint, this, onConnectionEstablished, onConnectionFailed, verbose);

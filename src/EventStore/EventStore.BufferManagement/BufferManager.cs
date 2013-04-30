@@ -88,6 +88,11 @@ namespace EventStore.BufferManagement
             _defaultBufferManager = manager;
         }
 
+        public int ChunkSize
+        {
+            get { return _chunkSize; }
+        }
+
         public int SegmentsCount
         {
             get { return _segments.Count; }

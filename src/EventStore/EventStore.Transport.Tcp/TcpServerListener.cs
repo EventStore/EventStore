@@ -40,7 +40,7 @@ namespace EventStore.Transport.Tcp
         private readonly IPEndPoint _serverEndPoint;
         private readonly Socket _listeningSocket;
         private readonly SocketArgsPool _acceptSocketArgsPool;
-        private Action<TcpConnection> _onConnectionAccepted;
+        private Action<IPEndPoint, Socket> _onSocketAccepted;
 
         public TcpServerListener(IPEndPoint serverEndPoint)
         {
@@ -62,11 +62,11 @@ namespace EventStore.Transport.Tcp
             return socketArgs;
         }
 
-        public void StartListening(Action<TcpConnection> callback)
+        public void StartListening(Action<IPEndPoint, Socket> callback)
         {
             Ensure.NotNull(callback, "callback");
 
-            _onConnectionAccepted = callback;
+            _onSocketAccepted = callback;
 
             Log.Info("Starting TCP listening on TCP endpoint: {0}.", _serverEndPoint);
             try
@@ -150,8 +150,7 @@ namespace EventStore.Transport.Tcp
                 return;
             }
 
-            var tcpConnection = TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(), socketEndPoint, socket, verbose: true);
-            _onConnectionAccepted(tcpConnection);
+            _onSocketAccepted(socketEndPoint, socket);
         }
 
         public void Stop()

@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         public bool IsClosed { get { return _isClosed != 0; } }
         public int SendQueueSize { get { return _connection.SendQueueSize; } }
 
-        private readonly TcpConnection _connection;
+        private readonly ITcpConnection _connection;
         private readonly IEnvelope _tcpEnvelope;
         private readonly IPublisher _publisher;
         private readonly ITcpDispatcher _dispatcher;
@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         public TcpConnectionManager(string connectionName, 
                                     ITcpDispatcher dispatcher, 
                                     IPublisher publisher, 
-                                    TcpConnection openedConnection,
+                                    ITcpConnection openedConnection,
                                     IPublisher networkSendQueue,
                                     Action<TcpConnectionManager, SocketError> onConnectionClosed)
         {
@@ -142,7 +142,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                 OnConnectionClosed(_connection, SocketError.Success);
         }
 
-        private void OnConnectionEstablished(TcpConnection connection)
+        private void OnConnectionEstablished(ITcpConnection connection)
         {
             Log.Info("Connection '{0}' ({1:B}) to [{2}] established.", ConnectionName, ConnectionId, connection.EffectiveEndPoint);
 
@@ -153,7 +153,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                 handler(this);
         }
 
-        private void OnConnectionFailed(TcpConnection connection, SocketError socketError)
+        private void OnConnectionFailed(ITcpConnection connection, SocketError socketError)
         {
             if (Interlocked.CompareExchange(ref _isClosed, 1, 0) == 0)
             {
@@ -256,7 +256,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Encoding.UTF8.GetBytes(message)), checkQueueSize: false);
             Log.Error("Closing connection '{0}' [{1}, {2:B}] due to error. Reason: {3}", ConnectionName, EndPoint, ConnectionId, message);
-            _connection.Close();
+            _connection.Close(message);
         }
 
         public void Stop(string reason = null)
@@ -264,7 +264,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             Log.Trace("Closing connection '{0}' [{1}, {2:B}] cleanly.{3}",
                       ConnectionName, EndPoint, ConnectionId,
                       reason.IsEmpty() ? string.Empty : " Reason: " + reason);
-            _connection.Close();
+            _connection.Close(reason);
         }
 
         public void SendMessage(Message message)

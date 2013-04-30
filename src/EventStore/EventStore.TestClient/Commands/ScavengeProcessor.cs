@@ -54,7 +54,7 @@ namespace EventStore.TestClient.Commands
                         context.Fail();
                 });
             connection.EnqueueSend(package.AsByteArray());
-            connection.Close();
+            connection.Close("OK");
             return true;
         }
     }
