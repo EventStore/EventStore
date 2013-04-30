@@ -151,7 +151,7 @@ namespace EventStore.Transport.Tcp
                     return;
                 }
 
-                _sslStream = new SslStream(new NetworkStream(socket, ownsSocket: true), false);
+                _sslStream = new SslStream(new NetworkStream(socket, true), false);
                 try
                 {
                     _sslStream.BeginAuthenticateAsServer(certificate, false, SslProtocols.Default, true, OnEndAuthenticateAsServer, _sslStream);
@@ -224,7 +224,7 @@ namespace EventStore.Transport.Tcp
                     return;
                 }
 
-                _sslStream = new SslStream(new NetworkStream(socket, ownsSocket: true), false, ValidateServerCertificate, null);
+                _sslStream = new SslStream(new NetworkStream(socket, true), false, ValidateServerCertificate, null);
                 try
                 {
                     _sslStream.BeginAuthenticateAsClient(targetHost, OnEndAuthenticateAsClient, _sslStream);
