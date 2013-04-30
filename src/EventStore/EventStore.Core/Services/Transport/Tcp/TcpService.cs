@@ -28,6 +28,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -42,6 +43,12 @@ namespace EventStore.Core.Services.Transport.Tcp
         External
     }
 
+    public enum TcpSecurityType
+    {
+        Normal,
+        Secure
+    }
+
     public class TcpService : IHandle<SystemMessage.SystemInit>,
                               IHandle<SystemMessage.SystemStart>,
                               IHandle<SystemMessage.BecomeShuttingDown>
@@ -53,14 +60,18 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly TcpServerListener _serverListener;
         private readonly IPublisher _networkSendQueue;
         private readonly TcpServiceType _serviceType;
+        private readonly TcpSecurityType _securityType;
         private readonly Func<Guid, IPEndPoint, ITcpDispatcher> _dispatcherFactory;
+        private readonly X509Certificate _certificate;
 
         public TcpService(IPublisher publisher,
                           IPEndPoint serverEndPoint,
                           IPublisher networkSendQueue,
                           TcpServiceType serviceType,
-                          ITcpDispatcher dispatcher)
-            : this(publisher, serverEndPoint, networkSendQueue, serviceType, (_, __) => dispatcher)
+                          TcpSecurityType securityType,
+                          ITcpDispatcher dispatcher,
+                          X509Certificate certificate)
+            : this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher, certificate)
         {
         }
 
@@ -68,19 +79,25 @@ namespace EventStore.Core.Services.Transport.Tcp
                           IPEndPoint serverEndPoint, 
                           IPublisher networkSendQueue, 
                           TcpServiceType serviceType,
-                          Func<Guid, IPEndPoint, ITcpDispatcher> dispatcherFactory)
+                          TcpSecurityType securityType,
+                          Func<Guid, IPEndPoint, ITcpDispatcher> dispatcherFactory,
+                          X509Certificate certificate)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(serverEndPoint, "serverEndPoint");
             Ensure.NotNull(networkSendQueue, "networkSendQueue");
             Ensure.NotNull(dispatcherFactory, "dispatcherFactory");
+            if (securityType == TcpSecurityType.Secure)
+                Ensure.NotNull(certificate, "certificate");
 
             _publisher = publisher;
             _serverEndPoint = serverEndPoint;
             _serverListener = new TcpServerListener(_serverEndPoint);
             _networkSendQueue = networkSendQueue;
             _serviceType = serviceType;
+            _securityType = securityType;
             _dispatcherFactory = dispatcherFactory;
+            _certificate = certificate;
         }
 
         public void Handle(SystemMessage.SystemInit message)
@@ -106,12 +123,15 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnConnectionAccepted(IPEndPoint endPoint, Socket socket)
         {
-            var conn = TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(), endPoint, socket, verbose: true);
-            Log.Info("{0} TCP connection accepted: [{1}], connection ID: {2}.", _serviceType, conn.EffectiveEndPoint, conn.ConnectionId);
+            var conn = _securityType == TcpSecurityType.Secure 
+                ? TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, _certificate, verbose: true)
+                : TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(), endPoint, socket, verbose: true);
+            Log.Info("{0} TCP connection accepted: [{1}, {2}], connection ID: {3}.", 
+                     _serviceType, _securityType, conn.EffectiveEndPoint, conn.ConnectionId);
 
             var dispatcher = _dispatcherFactory(conn.ConnectionId, _serverEndPoint);
             var manager = new TcpConnectionManager(
-                    _serviceType.ToString().ToLower(),
+                    string.Format("{0}-{1}", _serviceType.ToString().ToLower(), _securityType.ToString().ToLower()),
                     dispatcher,
                     _publisher,
                     conn,

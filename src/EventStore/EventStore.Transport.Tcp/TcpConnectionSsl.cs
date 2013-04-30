@@ -136,7 +136,7 @@ namespace EventStore.Transport.Tcp
         {
             Ensure.NotNull(certificate, "certificate");
 
-            if (verbose) Console.WriteLine("TcpConnectionSsl::InitSocket({0})", socket.RemoteEndPoint);
+            if (verbose) Console.WriteLine("TcpConnectionSsl::InitServerSocket({0})", socket.RemoteEndPoint);
             InitSocket(socket, EffectiveEndPoint);
 
             using (_streamLock.Acquire())

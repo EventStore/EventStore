@@ -179,7 +179,8 @@ namespace EventStore.Core
             _networkSendService = new NetworkSendService(tcpQueueCount: vNodeSettings.TcpSendingThreads, httpQueueCount: vNodeSettings.HttpSendingThreads);
 
             // TCP
-            var tcpService = new TcpService(_mainQueue, _tcpEndPoint, _networkSendService, TcpServiceType.External, new ClientTcpDispatcher());
+            var tcpService = new TcpService(_mainQueue, _tcpEndPoint, _networkSendService, 
+                                            TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), null);
             _mainBus.Subscribe<SystemMessage.SystemInit>(tcpService);
             _mainBus.Subscribe<SystemMessage.SystemStart>(tcpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);

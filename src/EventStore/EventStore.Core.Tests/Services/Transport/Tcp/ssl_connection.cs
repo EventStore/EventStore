@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
             var ip = IPAddress.Loopback;
             var port = TcpPortsHelper.GetAvailablePort(ip);
             var serverEndPoint = new IPEndPoint(ip, port);
-            var cert = GetCertificate();
+            X509Certificate cert = GetCertificate();
 
             var sent = new byte[1000];
             new Random().NextBytes(sent);
@@ -63,6 +63,9 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
             listener.StartListening((endPoint, socket) =>
             {
                 var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, cert, verbose: true);
+                ssl.ConnectionClosed += (x, y) => done.Set();
+                if (ssl.IsClosed) done.Set();
+                
                 Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback = null;
                 callback = (x, y) =>
                 {
