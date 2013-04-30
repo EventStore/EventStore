@@ -165,7 +165,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                     message: 'Version in A is incorrect. ',
                                     stream: event.streamId,
                                     seqNumber: event.sequenceNumber,
-                                    streamType: streamType,
+                                    eventType: event.eventType,
                                     eventInternalVer: event.body.version,
                                     detailsAVer: state.aVer,
                                     detailsBVer: state.bVer}});
@@ -179,7 +179,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                     message: 'Version in B is incorrect. ',
                                     stream: event.streamId,
                                     seqNumber: event.sequenceNumber,
-                                    streamType: streamType,
+                                    eventType: event.eventType,
                                     eventInternalVer: event.body.version,
                                     detailsAVer: state.aVer,
                                     detailsBVer: state.bVer }});
@@ -260,7 +260,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private void WaitAndCheckIfIsFaulted(string projectionName)
         {
-            var stopWatch = new Stopwatch();
+            var stopWatch = Stopwatch.StartNew();
             
             var waitDuration = TimeSpan.FromMilliseconds(20 * 1000 + 5 * Streams * EventsPerStream);
             while (stopWatch.Elapsed < waitDuration )
@@ -274,8 +274,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 }
 
                 var position = GetProjectionPosition(projectionName);
-                if (position >= EventsPerStream)
-                {
+                if (position >= (EventsPerStream - 1))
+                { 
                     Log.Debug("Expected position reached, done.");
                     break;
                 }
