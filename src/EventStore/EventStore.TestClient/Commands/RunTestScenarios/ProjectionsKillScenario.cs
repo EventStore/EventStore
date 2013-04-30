@@ -76,7 +76,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var success = false;
             var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
-            var expectedEventsPerStream = EventsPerStream.ToString();
+            var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
 
             var isWatchStarted = false;
             
@@ -95,7 +95,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 }
 
                 success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
-                       && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
+                       && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
 
                 if (success)
                     break;

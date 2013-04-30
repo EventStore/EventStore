@@ -30,7 +30,6 @@ using System.Globalization;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 
 namespace EventStore.TestClient.Commands.DvuBasic

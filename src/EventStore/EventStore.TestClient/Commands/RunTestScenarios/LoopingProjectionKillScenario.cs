@@ -104,7 +104,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var writeTask = WriteData();
 
             var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
-            var expectedEventsPerStream = EventsPerStream.ToString();
+            var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
 
             var successTask = Task.Factory.StartNew(() => 
                 {
@@ -121,7 +121,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         }
 
                         success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
-                               && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
+                               && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
 
                         if (success)
                             break;

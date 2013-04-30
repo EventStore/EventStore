@@ -254,8 +254,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 var s = stream;
                 Log.Info("Deleting stream {0}...", stream);
-                var task = store.DeleteStreamAsync(stream, EventsPerStream)
+                var task = store.DeleteStreamAsync(stream, (EventsPerStream - 1))
                                 .ContinueWith(x => Log.Info("Stream {0} successfully deleted", s));
+
                 tasks.Add(task);
             }
             Task.WaitAll(tasks.ToArray());
@@ -416,7 +417,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 process.Kill();
 
-                var waitCount = 100;
+                var waitCount = 200;
                 while (!process.HasExited && waitCount > 0)
                 {
                     Thread.Sleep(250);
@@ -507,10 +508,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     return;
                 }
 
-                eventVersion += 1;
                 var writeTask = store.AppendToStreamAsync(stream,
                                                           eventVersion - 1,
                                                           new[] { createEvent(eventVersion) });
+
+                eventVersion += 1;
+
                 writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 writeTask.ContinueWith(writeSingleEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
@@ -545,13 +548,15 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     return;
                 }
 
-                var startIndex = writtenCount + 1;
-                var endIndex = Math.Min(eventCount, startIndex + bucketSize - 1);
-                var events = Enumerable.Range(startIndex, endIndex - startIndex + 1).Select(createEvent).ToArray();
+                var startIndex = writtenCount;
+                var endIndex = Math.Min(eventCount, startIndex + bucketSize);
+                var events = Enumerable.Range(startIndex, endIndex - startIndex).Select(createEvent).ToArray();
 
                 writtenCount = endIndex;
 
-                var writeTask = store.AppendToStreamAsync(stream, startIndex - 1, events);
+                var expectedVersion = startIndex - 1;
+                var writeTask = store.AppendToStreamAsync(stream, expectedVersion, events);
+
                 writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 writeTask.ContinueWith(writeBatch, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
@@ -592,14 +597,15 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     return;
                 }
 
+                var writeTask = transaction.WriteAsync(createEvent(writtenCount));
+
                 writtenCount += 1;
 
-                var writeTask = transaction.WriteAsync(createEvent(writtenCount));
                 writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 writeTask.ContinueWith(writeTransactionEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
 
-            var startTask = store.StartTransactionAsync(stream, 0);
+            var startTask = store.StartTransactionAsync(stream, -1);
             startTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
             startTask.ContinueWith(t =>
             {

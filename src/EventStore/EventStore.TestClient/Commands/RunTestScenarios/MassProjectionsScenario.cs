@@ -101,7 +101,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 success = CheckProjectionState(bankProjections[bankProjections.Count - 1], 
                                                "success", 
-                                               x => x == EventsPerStream.ToString());
+                                               x => x == (EventsPerStream - 1).ToString());
                 if (success)
                     break;
 
@@ -122,7 +122,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 success = CheckProjectionState(bankProjections[bankProjections.Count - 1],
                                                "success",
-                                               x => x == EventsPerStream.ToString());
+                                               x => x == (EventsPerStream - 1).ToString());
 
                 if (success)
                     break;
