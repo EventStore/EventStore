@@ -130,9 +130,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var exceptDeleted = streams.Except(deleted).ToArray();
 
             var readCnt = Math.Min(100, EventsPerStream/3);
-            var rd1 = Read(exceptDeleted, @from: 0, count: readCnt + 1);
-            var rd2 = Read(exceptDeleted, @from: EventsPerStream - readCnt, count: readCnt + 1);
-            var rd3 = Read(exceptDeleted, @from: EventsPerStream / 2, count: Math.Min(readCnt, EventsPerStream - EventsPerStream/2) + 1);
+            var rd1 = Read(exceptDeleted, @from: 0, count: readCnt);
+            var rd2 = Read(exceptDeleted, @from: EventsPerStream - readCnt, count: readCnt);
+            var rd3 = Read(exceptDeleted, @from: EventsPerStream / 2, count: Math.Min(readCnt, EventsPerStream - EventsPerStream/2));
 
             Log.Info("== READ from picked ALL ==");
 

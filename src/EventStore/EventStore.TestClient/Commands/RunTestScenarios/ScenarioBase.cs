@@ -254,8 +254,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 var s = stream;
                 Log.Info("Deleting stream {0}...", stream);
-                var task = store.DeleteStreamAsync(stream, EventsPerStream)
+                var task = store.DeleteStreamAsync(stream, (EventsPerStream - 1))
                                 .ContinueWith(x => Log.Info("Stream {0} successfully deleted", s));
+
                 tasks.Add(task);
             }
             Task.WaitAll(tasks.ToArray());
