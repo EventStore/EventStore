@@ -9,6 +9,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
 using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Bus
 {
@@ -130,14 +131,14 @@ namespace EventStore.Core.Tests.Bus
         private void SpeedTest(Func<IHandle<Message>, IPublisher> queueFactory, int producingThreads, int messageCnt)
         {
             var queue = queueFactory(new NoopConsumer());
-            var threads = new Thread[producingThreads];
+
             int msgCnt = messageCnt;
             var startEvent = new ManualResetEventSlim(false);
             var endEvent = new CountdownEvent(producingThreads);
             var msg = new SystemMessage.SystemStart();
             for (int i = 0; i < producingThreads; ++i)
             {
-                threads[i] = new Thread(() =>
+                Task.Factory.StartNew(() =>
                 {
                     startEvent.Wait();
 
@@ -148,8 +149,7 @@ namespace EventStore.Core.Tests.Bus
 
                     endEvent.Signal();
 
-                }) { IsBackground = true, Name = "Producer #" + i};
-                threads[i].Start();
+                }, TaskCreationOptions.LongRunning);
             }
 
             Thread.Sleep(500);

@@ -37,6 +37,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -56,7 +57,7 @@ namespace EventStore.Core.Services.Storage
         private readonly ITransactionFileChaser _chaser;
         private readonly IReadIndex _readIndex;
         private readonly IPEndPoint _vnodeEndPoint;
-        private Thread _thread;
+        private Task _thread;
         private volatile bool _stop;
 
         private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Storage Chaser");
@@ -84,9 +85,7 @@ namespace EventStore.Core.Services.Storage
 
         public void Handle(SystemMessage.SystemInit message)
         {
-            _thread = new Thread(ChaseTransactionLog);
-            _thread.IsBackground = true;
-            _thread.Name = Name;
+            _thread = new Task(ChaseTransactionLog, TaskCreationOptions.LongRunning);
         }
 
         public void Handle(SystemMessage.SystemStart message)

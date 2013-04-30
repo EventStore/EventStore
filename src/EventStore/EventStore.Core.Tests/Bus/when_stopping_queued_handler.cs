@@ -32,6 +32,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
 using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Bus
 {
@@ -58,7 +59,7 @@ namespace EventStore.Core.Tests.Bus
             
             var wait = new ManualResetEventSlim(false);
 
-            ThreadPool.QueueUserWorkItem(_ =>
+            Task.Factory.StartNew(() =>
             {
                 Queue.Stop();
                 wait.Set();
@@ -83,7 +84,7 @@ namespace EventStore.Core.Tests.Bus
 
             var wait = new ManualResetEventSlim(false);
 
-            ThreadPool.QueueUserWorkItem(_ =>
+            Task.Factory.StartNew(() =>
             {
                 Queue.Stop();
                 wait.Set();

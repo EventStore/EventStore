@@ -33,6 +33,7 @@ using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Index
 {
@@ -185,11 +186,11 @@ namespace EventStore.Core.Index
                     {
                         _backgroundRunningEvent.Reset();
                         _backgroundRunning = true;
-                        ThreadPool.QueueUserWorkItem(x => ReadOffQueue());
+                        Task.Factory.StartNew(() => ReadOffQueue());
                     }
 
                     if (_additionalReclaim)
-                        ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
+                        Task.Factory.StartNew(() => ReclaimMemoryIfNeeded(_awaitingMemTables));
                 }
             }
         }

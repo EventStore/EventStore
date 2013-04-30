@@ -113,10 +113,10 @@ namespace EventStore.ClientAPI.Connection
             _executionQueue.Enqueue(callback);
 
             if (Interlocked.CompareExchange(ref _workerRunning, 1, 0) == 0)
-                ThreadPool.QueueUserWorkItem(ExecuteUserCallbacks);
+                Task.Factory.StartNew(ExecuteUserCallbacks);
         }
 
-        private void ExecuteUserCallbacks(object state)
+        private void ExecuteUserCallbacks()
         {
             bool proceed = true;
             while (proceed)

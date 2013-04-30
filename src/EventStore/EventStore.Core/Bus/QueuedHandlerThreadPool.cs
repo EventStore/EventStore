@@ -31,6 +31,7 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Bus
 {
@@ -98,7 +99,7 @@ namespace EventStore.Core.Bus
             _queueMonitor.Unregister(this);
         }
 
-        private void ReadFromQueue(object o)
+        private void ReadFromQueue()
         {
             bool proceed = true;
             while (proceed)
@@ -150,7 +151,7 @@ namespace EventStore.Core.Bus
             Ensure.NotNull(message, "message");
             _queue.Enqueue(message);
             if (Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0)
-                ThreadPool.QueueUserWorkItem(ReadFromQueue);
+                Task.Factory.StartNew(ReadFromQueue);
         }
 
         public void Handle(Message message)

@@ -32,6 +32,7 @@ using System.Text;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.Monitoring.Utils
 {
@@ -85,7 +86,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
             };
 
             // note MM: takes time to start a process. no async API available
-            ThreadPool.QueueUserWorkItem(_ =>
+            Task.Factory.StartNew(() =>
             {
                 Stream inputStream;
                 try
