@@ -103,7 +103,7 @@ namespace EventStore.Web.Playground
 
             // TCP
             var tcpService = new TcpService(
-                MainQueue, _tcpEndPoint, _networkSendService, TcpServiceType.External, new ClientTcpDispatcher());
+                MainQueue, _tcpEndPoint, _networkSendService, TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), null);
             Bus.Subscribe<SystemMessage.SystemInit>(tcpService);
             Bus.Subscribe<SystemMessage.SystemStart>(tcpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
