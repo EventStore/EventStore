@@ -417,7 +417,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 process.Kill();
 
-                var waitCount = 100;
+                var waitCount = 200;
                 while (!process.HasExited && waitCount > 0)
                 {
                     Thread.Sleep(250);
