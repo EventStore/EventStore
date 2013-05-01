@@ -28,10 +28,17 @@ call build-js1_x64.cmd   || goto :Error
 popd || goto :Error
 
 pushd src\EventStore || goto :Error
-msbuild src\EventStore\EventStore.sln || goto :Error
+msbuild EventStore.sln /p:Configuration=Release || goto :Error
+popd || goto :Error
+
+pushd bin\eventstore\release\anycpu || goto :Error
+md c:\EventStore\Data
+start EventStore.SingleNode.exe --db=c:\EventStore\Data\db1
 popd || goto :Error
 
 popd || goto :Error
+
+start http://127.0.0.1:2113/
 
 exit /b 0
 :Error
