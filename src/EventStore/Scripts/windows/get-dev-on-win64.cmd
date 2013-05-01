@@ -3,7 +3,7 @@ mode con: cols=170 lines=3000
 set EventStoreDest=c:\EventStore
 
 @powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))"  || goto :Error
-set path= %systemdrive%\chocolatey\bin;%PATH%; || goto :Error
+set path=%systemdrive%\chocolatey\bin;%PATH%; || goto :Error
 cinst git || goto :Error
 cinst svn || goto :Error
 cinst VisualStudio2012WDX || goto :Error
