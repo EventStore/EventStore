@@ -2,7 +2,7 @@
 
 set EventStoreDest=c:\EventStore
 
-@powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))" && SET PATH=%PATH%;%systemdrive%\chocolatey\bin || goto :Error
+@powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))" && path %PATH%;%systemdrive%\chocolatey\bin || goto :Error
 call cinst git || goto :Error
 call cinst svn || goto :Error
 call cinst VisualStudio2012WDX || goto :Error
