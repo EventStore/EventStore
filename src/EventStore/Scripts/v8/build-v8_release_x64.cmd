@@ -1,6 +1,6 @@
 @echo off
 pushd %~dp0 || goto :error
-cd ..\..\v8 || goto :error
+cd ..\..\v8 || (echo No V8 sources found. Get V8 sources by running get-v8.cmd & goto :error)
 
 call %~dp0configure-cpp.cmd || goto :error
 call :generate-project-files || goto :error
