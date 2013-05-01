@@ -27,8 +27,7 @@ call build-js1_x64.cmd   || goto :Error
 popd || goto :Error
 
 pushd src\EventStore || goto :Error
-msbuild Y:\EventStore\src\EventStore\EventStore.sln 
-
+msbuild src\EventStore\EventStore.sln || goto :Error
 popd || goto :Error
 
 popd || goto :Error
@@ -36,4 +35,5 @@ popd || goto :Error
 exit /b 0
 :Error
 echo Something went wrong. See previous messages.
+pause
 exit /b 1
