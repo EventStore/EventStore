@@ -3,12 +3,12 @@ mode con: cols=170 lines=3000
 set EventStoreDest=c:\EventStore
 
 @powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))"  || goto :Error
-path %systemdrive%\chocolatey\bin;%PATH% || goto :Error
+set path= %systemdrive%\chocolatey\bin;%PATH%; || goto :Error
 cinst git || goto :Error
 cinst svn || goto :Error
 cinst VisualStudio2012WDX || goto :Error
 
-path %SystemRoot%\Microsoft.NET\Framework\v4.0.30319\;%PATH%;%ProgramFiles(x86)%\Git\cmd;%ProgramFiles(x86)%\Subversion\bin; || goto :error
+set path=%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\;%PATH%;%ProgramFiles(x86)%\Git\cmd;%ProgramFiles(x86)%\Subversion\bin; || goto :error
 
 
 git clone git://github.com/EventStore/EventStore.git %EventStoreDest% || goto :Error
