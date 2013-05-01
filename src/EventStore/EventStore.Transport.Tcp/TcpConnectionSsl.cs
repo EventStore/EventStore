@@ -112,6 +112,7 @@ namespace EventStore.Transport.Tcp
 
         private readonly SpinLock2 _streamLock = new SpinLock2();
         private bool _isSending;
+        private int _receiveHandling;
         private int _isClosed;
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
@@ -487,31 +488,42 @@ namespace EventStore.Transport.Tcp
             StartReceive();
             TryDequeueReceivedData();
         }
-        
+
         private void TryDequeueReceivedData()
         {
-            if (_receiveQueue.Count == 0 || _receiveCallback == null) // no data to dequeue or no awaiting callback
+            if (Interlocked.CompareExchange(ref _receiveHandling, 1, 0) != 0)
                 return;
-
-            var callback = Interlocked.Exchange(ref _receiveCallback, null);
-            if (callback == null) throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
-
-            var dequeueResultList = new List<Tuple<ArraySegment<byte>, int>>();
-            Tuple<ArraySegment<byte>, int> piece;
-            while (_receiveQueue.TryDequeue(out piece))
+            do
             {
-                dequeueResultList.Add(piece);
-            }
+                if (_receiveQueue.Count >= 0 && _receiveCallback != null)
+                {
+                    var callback = Interlocked.Exchange(ref _receiveCallback, null);
+                    if (callback == null)
+                        throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
 
-            callback(this, dequeueResultList.Select(v => new ArraySegment<byte>(v.Item1.Array, v.Item1.Offset, v.Item2)));
-            int bytes = 0;
-            for (int i = 0, n = dequeueResultList.Count; i < n; ++i)
-            {
-                var tuple = dequeueResultList[i];
-                bytes += tuple.Item2;
-                TcpConnection.BufferManager.CheckIn(tuple.Item1); // dispose buffers
-            }
-            NotifyReceiveDispatched(bytes);
+                    var dequeueResultList = new List<Tuple<ArraySegment<byte>, int>>(_receiveQueue.Count);
+                    Tuple<ArraySegment<byte>, int> piece;
+                    while (_receiveQueue.TryDequeue(out piece))
+                    {
+                        dequeueResultList.Add(piece);
+                    }
+
+                    callback(this, dequeueResultList.Select(v =>
+                        new ArraySegment<byte>(v.Item1.Array, v.Item1.Offset, v.Item2)));
+
+                    int bytes = 0;
+                    for (int i = 0, n = dequeueResultList.Count; i < n; ++i)
+                    {
+                        var tuple = dequeueResultList[i];
+                        bytes += tuple.Item2;
+                        TcpConnection.BufferManager.CheckIn(tuple.Item1); // dispose buffers
+                    }
+                    NotifyReceiveDispatched(bytes);
+                }
+                Interlocked.Exchange(ref _receiveHandling, 0);
+            } while (_receiveQueue.Count > 0
+                     && _receiveCallback != null
+                     && Interlocked.CompareExchange(ref _receiveHandling, 1, 0) == 0);
         }
 
         public void Close(string reason)
