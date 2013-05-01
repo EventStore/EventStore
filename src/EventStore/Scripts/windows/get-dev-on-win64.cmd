@@ -4,9 +4,9 @@ set EventStoreDest=c:\EventStore
 
 @powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))"  || goto :Error
 path %PATH%;%systemdrive%\chocolatey\bin || goto :Error
-call cinst git || goto :Error
-call cinst svn || goto :Error
-call cinst VisualStudio2012WDX || goto :Error
+call cinst.bat git || goto :Error
+call cinst.bat svn || goto :Error
+call cinst.bat VisualStudio2012WDX || goto :Error
 
 path %SystemRoot%\Microsoft.NET\Framework\v4.0.30319\;%PATH%;%ProgramFiles(x86)%\Git\cmd;%ProgramFiles(x86)%\Subversion\bin; || goto :error
 
