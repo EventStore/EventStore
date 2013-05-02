@@ -119,12 +119,12 @@ namespace EventStore.Projections.Core.Tests.Services
             _service.Handle(new ProjectionCoreServiceMessage.StartCore());
         }
 
-        protected CheckpointStrategy CreateCheckpointStrategy()
+        protected ReaderStrategy CreateReaderStrategy()
         {
             var result = new CheckpointStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(ProjectionConfig.GetTest());
+            return result.Build(ProjectionConfig.GetTest()).ReaderStrategy;
         }
 
         protected static ResolvedEvent CreateEvent()

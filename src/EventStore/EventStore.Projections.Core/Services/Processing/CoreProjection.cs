@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -228,7 +227,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingQueue = projectionQueue;
             _checkpointManager = coreProjectionCheckpointManager;
             _projectionStateHandler = projectionStateHandler;
-            _zeroCheckpointTag = _checkpointStrategy.PositionTagger.MakeZeroCheckpointTag();
+            _zeroCheckpointTag = _checkpointStrategy.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag();
 
             namingBuilder.GetPartitionCatalogStreamName();
             GoToState(State.Initial);
@@ -900,7 +899,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projectionConfig.StopOnEof);
             _subscriptionDispatcher.PublishSubscribe(
                 new ReaderSubscriptionManagement.Subscribe(
-                    _currentSubscriptionId, checkpointTag, _checkpointStrategy, subscriptionOptions), this);
+                    _currentSubscriptionId, checkpointTag, _checkpointStrategy.ReaderStrategy, subscriptionOptions), this);
             _subscribed = true;
             try
             {

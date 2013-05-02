@@ -52,17 +52,17 @@ namespace EventStore.Projections.Core.Messages
         public class Subscribe : ReaderSubscriptionManagementMessage
         {
             private readonly CheckpointTag _fromPosition;
-            private readonly CheckpointStrategy _checkpointStrategy;
+            private readonly ReaderStrategy _readerStrategy;
             private readonly ReaderSubscriptionOptions _options;
 
             public Subscribe(
                 Guid subscriptionId, CheckpointTag from,
-                CheckpointStrategy checkpointStrategy, ReaderSubscriptionOptions readerSubscriptionOptions): base(subscriptionId)
+                ReaderStrategy readerStrategy, ReaderSubscriptionOptions readerSubscriptionOptions): base(subscriptionId)
             {
                 if (@from == null) throw new ArgumentNullException("from");
-                if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
+                if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
                 _fromPosition = @from;
-                _checkpointStrategy = checkpointStrategy;
+                _readerStrategy = readerStrategy;
                 _options = readerSubscriptionOptions;
             }
 
@@ -71,9 +71,9 @@ namespace EventStore.Projections.Core.Messages
                 get { return _fromPosition; }
             }
 
-            public CheckpointStrategy CheckpointStrategy
+            public ReaderStrategy ReaderStrategy
             {
-                get { return _checkpointStrategy; }
+                get { return _readerStrategy; }
             }
 
             public ReaderSubscriptionOptions Options

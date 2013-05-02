@@ -30,9 +30,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
@@ -115,7 +113,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var fromCheckpointTag = message.FromPosition;
             var subscriptionId = message.SubscriptionId;
-            var projectionSubscription = message.CheckpointStrategy.CreateProjectionSubscription(_publisher, fromCheckpointTag, message.SubscriptionId, message.Options);
+            var projectionSubscription = message.ReaderStrategy.CreateReaderSubscription(_publisher, fromCheckpointTag, message.SubscriptionId, message.Options);
             _subscriptions.Add(subscriptionId, projectionSubscription);
 
             var distibutionPointCorrelationId = Guid.NewGuid();

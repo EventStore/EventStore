@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
         protected int _checkpointUnhandledBytesThreshold;
         protected int _checkpointProcessedEventsThreshold;
-        protected CheckpointStrategy _checkpointStrategy;
+        protected ReaderStrategy _readerStrategy;
 
         [SetUp]
         public void setup()
@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             _bus.Subscribe(_checkpointHandler);
             _bus.Subscribe(_progressHandler);
             _bus.Subscribe(_eofHandler);
-            _checkpointStrategy = CreateCheckpointStrategy();
+            _readerStrategy = CreateCheckpointStrategy().ReaderStrategy;
             _subscription = CreateProjectionSubscription();
 
 
@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected virtual IReaderSubscription CreateProjectionSubscription()
         {
             return new ReaderSubscription(_bus, 
-                _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _checkpointStrategy, _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold);
+                _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _readerStrategy, _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold);
         }
 
         protected virtual void Given()

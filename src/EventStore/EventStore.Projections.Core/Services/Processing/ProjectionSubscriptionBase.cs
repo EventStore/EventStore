@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<EventReorderingReaderSubscription>();
         private readonly IPublisher _publisher;
-        private readonly CheckpointStrategy _checkpointStrategy;
+        private readonly ReaderStrategy _readerStrategy;
         private readonly long? _checkpointUnhandledBytesThreshold;
         private readonly int? _checkpointProcessedEventsThreshold;
         private readonly bool _stopOnEof;
@@ -53,22 +53,22 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected ProjectionSubscriptionBase(
             IPublisher publisher, Guid subscriptionId, CheckpointTag from,
-            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold,
+            ReaderStrategy readerStrategy, long? checkpointUnhandledBytesThreshold,
             int? checkpointProcessedEventsThreshold, bool stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
-            if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
+            if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
             _publisher = publisher;
-            _checkpointStrategy = checkpointStrategy;
+            _readerStrategy = readerStrategy;
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
             _stopOnEof = stopOnEof;
             _subscriptionId = subscriptionId;
             _lastPassedOrCheckpointedEventPosition = null;
 
-            _eventFilter = checkpointStrategy.EventFilter;
+            _eventFilter = readerStrategy.EventFilter;
 
-            _positionTagger = checkpointStrategy.PositionTagger;
+            _positionTagger = readerStrategy.PositionTagger;
             _positionTracker = new PositionTracker(_positionTagger);
             _positionTracker.UpdateByCheckpointTagInitial(@from);
         }
@@ -154,7 +154,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_eofReached)
                 throw new InvalidOperationException("Onetime projection has already reached the eof position");
             _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
-            return _checkpointStrategy.CreatePausedEventReader(
+            return _readerStrategy.CreatePausedEventReader(
                 eventReaderId, publisher, _positionTracker.LastTag, _stopOnEof);
         }
 

@@ -36,9 +36,9 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         public ReaderSubscription(
             IPublisher publisher, Guid subscriptionId, CheckpointTag from,
-            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof = false)
+            ReaderStrategy readerStrategy, long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof = false)
             : base(
-                publisher, subscriptionId, from, checkpointStrategy,
+                publisher, subscriptionId, from, readerStrategy,
                 checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold, stopOnEof)
         {
         }

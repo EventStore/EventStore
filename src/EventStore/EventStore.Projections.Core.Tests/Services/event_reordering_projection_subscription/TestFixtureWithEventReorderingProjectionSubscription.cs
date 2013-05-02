@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 _projectionCorrelationId, 
                 CheckpointTag.FromStreamPositions(
                     new Dictionary<string, int> {{"a", ExpectedVersion.NoStream}, {"b", ExpectedVersion.NoStream}}),
-                _checkpointStrategy,
+                _readerStrategy,
                 _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold, _processingLagMs);
         }
     }

@@ -225,6 +225,7 @@
     <Compile Include="Services\Processing\EmittedEvent.cs" />
     <Compile Include="Services\Processing\EmittedStream.cs" />
     <Compile Include="Services\Processing\HeadingEventReader.cs" />
+    <Compile Include="Services\Processing\ReaderStrategy.cs" />
     <Compile Include="Services\Processing\ReaderSubscriptionOptions.cs" />
     <Compile Include="Services\Processing\ResolvedEvent.cs" />
     <Compile Include="Services\Processing\ResultEmitter.cs" />

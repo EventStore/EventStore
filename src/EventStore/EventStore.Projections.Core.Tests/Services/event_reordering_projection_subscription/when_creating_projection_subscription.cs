@@ -27,9 +27,7 @@
 // 
 
 using System;
-using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -44,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         {
             var ps = new EventReorderingReaderSubscription(new FakePublisher(),
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
-                CreateCheckpointStrategy(),
+                CreateReaderStrategy(),
                 1000, 2000, 500);
         }
 
@@ -53,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         {
             var ps = new EventReorderingReaderSubscription(null,
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), 
-                CreateCheckpointStrategy(),
+                CreateReaderStrategy(),
                 1000, 2000, 500);
         }
 
@@ -65,12 +63,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 null, 1000, 2000, 500);
         }
 
-        private CheckpointStrategy CreateCheckpointStrategy()
+        private ReaderStrategy CreateReaderStrategy()
         {
             var result = new CheckpointStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(ProjectionConfig.GetTest());
+            return result.Build(ProjectionConfig.GetTest()).ReaderStrategy;
         }
     }
 }
