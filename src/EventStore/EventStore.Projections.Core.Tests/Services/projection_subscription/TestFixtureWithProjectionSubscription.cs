@@ -45,12 +45,12 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected TestHandler<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
         protected TestHandler<ProjectionSubscriptionMessage.EofReached> _eofHandler;
         protected IReaderSubscription _subscription;
-        protected EventReader ForkedReader;
+        protected IEventReader ForkedReader;
         protected InMemoryBus _bus;
         protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
         protected int _checkpointUnhandledBytesThreshold;
         protected int _checkpointProcessedEventsThreshold;
-        protected ReaderStrategy _readerStrategy;
+        protected IReaderStrategy _readerStrategy;
 
         [SetUp]
         public void setup()
@@ -105,7 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 result.AllEvents();
             }
             var config = ProjectionConfig.GetTest();
-            return result.Build(config, readerBuilder.Build(config));
+            return result.Build(config, readerBuilder.Build());
         }
     }
 }

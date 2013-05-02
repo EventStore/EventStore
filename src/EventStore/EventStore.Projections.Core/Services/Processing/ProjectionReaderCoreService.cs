@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<Guid, IReaderSubscription> _subscriptions =
             new Dictionary<Guid, IReaderSubscription>();
 
-        private readonly Dictionary<Guid, EventReader> _eventReaders = new Dictionary<Guid, EventReader>();
+        private readonly Dictionary<Guid, IEventReader> _eventReaders = new Dictionary<Guid, IEventReader>();
 
         private readonly Dictionary<Guid, Guid> _subscriptionEventReaders = new Dictionary<Guid, Guid>();
         private readonly Dictionary<Guid, Guid> _eventReaderSubscriptions = new Dictionary<Guid, Guid>();
@@ -150,20 +150,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _pausedSubscriptions.Remove(message.SubscriptionId);
             _subscriptionEventReaders.Remove(message.SubscriptionId);
             _subscriptions.Remove(message.SubscriptionId);
-        }
-
-        public void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
-        {
-            EventReader reader;
-            if (_eventReaders.TryGetValue(message.CorrelationId, out reader))
-                reader.Handle(message);
-        }
-
-        public void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
-        {
-            EventReader reader;
-            if (_eventReaders.TryGetValue(message.CorrelationId, out reader))
-                reader.Handle(message);
         }
 
         public void Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)

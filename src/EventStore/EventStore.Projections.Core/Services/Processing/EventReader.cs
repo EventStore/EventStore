@@ -34,9 +34,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class EventReader : IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
-                                                   IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
-                                                   IDisposable
+    public abstract class EventReader : IEventReader
     {
         protected readonly Guid EventReaderCorrelationId;
         protected readonly IPublisher _publisher;
@@ -52,7 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (eventReaderCorrelationId == Guid.Empty)
-                throw new ArgumentException("distibutionPointCorrelationId");
+                throw new ArgumentException("eventReaderCorrelationId");
             _publisher = publisher;
             EventReaderCorrelationId = eventReaderCorrelationId;
             _stopOnEof = stopOnEof;
@@ -85,9 +83,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 _paused = true;
 //            _logger.Trace("Pausing event distribution {0} at '{1}'", EventReaderCorrelationId, FromAsText());
         }
-
-        public abstract void Handle(ClientMessage.ReadStreamEventsForwardCompleted message);
-        public abstract void Handle(ClientMessage.ReadAllEventsForwardCompleted message);
 
         public void Dispose()
         {

@@ -38,7 +38,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class StreamEventReader : EventReader
+    public class StreamEventReader : EventReader, IHandle<ClientMessage.ReadStreamEventsForwardCompleted>
     {
         private readonly string _streamName;
         private int _fromSequenceNumber;
@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return _eventsRequested;
         }
 
-        public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
+        public void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
         {
             if (_disposed)
                 return;
@@ -145,11 +145,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _publisher.Publish(
                 new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
-        }
-
-        public override void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
-        {
-            throw new NotImplementedException();
         }
 
         private void RequestEvents(bool delay)

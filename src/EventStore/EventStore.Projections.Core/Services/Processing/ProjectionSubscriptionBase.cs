@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<EventReorderingReaderSubscription>();
         private readonly IPublisher _publisher;
-        private readonly ReaderStrategy _readerStrategy;
+        private readonly IReaderStrategy _readerStrategy;
         private readonly long? _checkpointUnhandledBytesThreshold;
         private readonly int? _checkpointProcessedEventsThreshold;
         private readonly bool _stopOnEof;
@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected ProjectionSubscriptionBase(
             IPublisher publisher, Guid subscriptionId, CheckpointTag from,
-            ReaderStrategy readerStrategy, long? checkpointUnhandledBytesThreshold,
+            IReaderStrategy readerStrategy, long? checkpointUnhandledBytesThreshold,
             int? checkpointProcessedEventsThreshold, bool stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -149,7 +149,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsSinceLastCheckpointSuggested = 0;
         }
 
-        public EventReader CreatePausedEventReader(IPublisher publisher, Guid eventReaderId)
+        public IEventReader CreatePausedEventReader(IPublisher publisher, Guid eventReaderId)
         {
             if (_eofReached)
                 throw new InvalidOperationException("Onetime projection has already reached the eof position");

@@ -159,7 +159,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return new HashSet<string>(list);
         }
 
-        public void Validate(ProjectionConfig config)
+        protected void Validate()
         {
             if (!_allStreams && _categories == null && _streams == null)
                 throw new InvalidOperationException("None of streams and categories are included");
@@ -192,9 +192,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_options.ProcessingLag < 50)
                     throw new InvalidOperationException("Event reordering requires processing lag at least of 50ms");
             }
-            if (_definesStateTransform && !config.EmitEventEnabled)
-                throw new InvalidOperationException(
-                    "transformBy/filterBy requires EmitEventEnabled mode");
         }
 
     }

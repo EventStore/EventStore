@@ -34,7 +34,7 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ReaderStrategy
+    public class ReaderStrategy : IReaderStrategy
     {
         private readonly bool _allStreams;
         private readonly HashSet<string> _categories;
@@ -53,9 +53,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
-            public ReaderStrategy Build(ProjectionConfig config)
+            public IReaderStrategy Build()
             {
-                base.Validate(config);
+                base.Validate();
                 HashSet<string> categories = ToSet(_categories);
                 HashSet<string> streams = ToSet(_streams);
                 bool includeLinks = _options.IncludeLinks;
@@ -70,8 +70,14 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        public static IReaderStrategy Create(ISourceDefinitionConfigurator sources)
+        {
+            var builder = new Builder();
+            sources.ConfigureSourceProcessingStrategy(builder);
+            return builder.Build();
+        }
 
-        public ReaderStrategy(
+        private ReaderStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, bool includeLinks,
             HashSet<string> events, int processingLag, bool reorderEvents, bool useEventIndexes)
         {
@@ -124,7 +130,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     readerSubscriptionOptions.CheckpointProcessedEventsThreshold, readerSubscriptionOptions.StopOnEof);
         }
 
-        public EventReader CreatePausedEventReader(
+        public IEventReader CreatePausedEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof)
         {
             if (_allStreams && _useEventIndexes && _events != null && _events.Count == 1)
@@ -214,7 +220,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return _events.Select(v => "$et-" + v).ToArray();
         }
 
-        private static EventReader CreatePausedStreamEventReader(
+        private static IEventReader CreatePausedStreamEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, string streamName, bool stopOnEof,
             bool resolveLinkTos)
         {
@@ -226,7 +232,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return eventReader;
         }
 
-        private static EventReader CreatePausedEventIndexEventReader(
+        private static IEventReader CreatePausedEventIndexEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, bool resolveLinkTos,
             IEnumerable<string> streams)
         {
@@ -237,7 +243,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 stopOnEof);
         }
 
-        private static EventReader CreatePausedMultiStreamEventReader(
+        private static IEventReader CreatePausedMultiStreamEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, bool resolveLinkTos,
             IEnumerable<string> streams)
         {

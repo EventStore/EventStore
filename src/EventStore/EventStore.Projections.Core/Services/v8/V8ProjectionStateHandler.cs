@@ -101,7 +101,7 @@ namespace EventStore.Projections.Core.Services.v8
             var sourcesDefinition = _query.GetSourcesDefintion();
             if (sourcesDefinition == null)
                 throw new InvalidOperationException("Invalid query.  No source definition.");
-            sourcesDefinition.BuildProcessingStrategy(builder);
+            sourcesDefinition.ConfigureSourceProcessingStrategy(builder);
         }
 
         public void Load(string state)

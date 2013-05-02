@@ -42,31 +42,40 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _byCustomPartitions;
         private readonly bool _useCheckpoints;
         private readonly bool _definesStateTransform;
-        private readonly ReaderStrategy _readerStrategy;
+        private readonly IReaderStrategy _readerStrategy;
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
-            public CheckpointStrategy Build(ProjectionConfig config, ReaderStrategy readerStrategy)
+            public CheckpointStrategy Build(ProjectionConfig config, IReaderStrategy readerStrategy)
             {
-                base.Validate(config);
+                base.Validate();
                 return new CheckpointStrategy(
                     _byStream, _byCustomPartitions, config.CheckpointsEnabled, _definesStateTransform, readerStrategy);
             }
+
+            public new void Validate(ProjectionConfig config)
+            {
+                base.Validate();
+                if (_definesStateTransform && !config.EmitEventEnabled)
+                    throw new InvalidOperationException("transformBy/filterBy requires EmitEventEnabled mode");
+            }
         }
+
+
 
         public bool UseCheckpoints
         {
             get { return _useCheckpoints; }
         }
 
-        public ReaderStrategy ReaderStrategy
+        public IReaderStrategy ReaderStrategy
         {
             get { return _readerStrategy; }
         }
 
         private CheckpointStrategy(
             bool byStream, bool byCustomPartitions, bool useCheckpoints, bool definesStateTransform,
-            ReaderStrategy readerStrategy)
+            IReaderStrategy readerStrategy)
         {
             _readerStrategy = readerStrategy;
             _byStream = byStream;

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -27,48 +27,21 @@
 // 
 
 using System;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
+using EventStore.Core.Bus;
 
-namespace EventStore.Projections.Core.Tests.Services.projection_subscription
+namespace EventStore.Projections.Core.Services.Processing
 {
-    [TestFixture]
-    public class when_creating_projection_subscription
+    public interface IReaderStrategy
     {
-        [Test]
-        public void it_can_be_created()
-        {
-            var ps = new ReaderSubscription(
-                new FakePublisher(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
-                CreateReaderStrategy(),
-                1000, 2000);
-        }
+        bool IsReadingOrderRepeatable { get; }
+        EventFilter EventFilter { get; }
+        PositionTagger PositionTagger { get; }
 
-        [Test, ExpectedException(typeof(ArgumentNullException))]
-        public void null_publisher_throws_argument_null_exception()
-        {
-            var ps = new ReaderSubscription(null,
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
-                CreateReaderStrategy(), 1000, 2000);
-        }
+        IReaderSubscription CreateReaderSubscription(
+            IPublisher publisher, CheckpointTag fromCheckpointTag, Guid subscriptionId,
+            ReaderSubscriptionOptions readerSubscriptionOptions);
 
-        [Test, ExpectedException(typeof(ArgumentNullException))]
-        public void null_checkpoint_strategy_throws_argument_null_exception()
-        {
-            var ps = new ReaderSubscription(new FakePublisher(),
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), 
-                null, 1000, 2000);
-        }
-
-        private IReaderStrategy CreateReaderStrategy()
-        {
-            var result = new ReaderStrategy.Builder();
-            result.FromAll();
-            result.AllEvents();
-            return result.Build();
-        }
+        IEventReader CreatePausedEventReader(
+            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof);
     }
 }

@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             _receivedEofNotifications.Add(message);
         }
 
-        public EventReader CreatePausedEventReader(IPublisher publisher, Guid forkedEventReaderId)
+        public IEventReader CreatePausedEventReader(IPublisher publisher, Guid forkedEventReaderId)
         {
             throw new NotImplementedException();
         }

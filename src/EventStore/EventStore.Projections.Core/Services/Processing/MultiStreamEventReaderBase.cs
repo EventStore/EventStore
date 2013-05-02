@@ -40,7 +40,8 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class MultiStreamEventReaderBase<TPosition> : EventReader
+    public abstract class MultiStreamEventReaderBase<TPosition> : EventReader, IHandle<ClientMessage.ReadStreamEventsForwardCompleted>
+                                                   
         where TPosition : struct, IComparable<TPosition>
     {
         private readonly HashSet<string> _streams;
@@ -118,7 +119,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected abstract long? PositionToSafeJoinPosition(TPosition? safePositionToJoin);
 
-        public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
+        public void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
         {
             if (_disposed)
                 return;
@@ -240,11 +241,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 var minHead = _buffers[minStreamId].Dequeue();
                 DeliverEvent(minHead.Item1, minHead.Item2, minHead.Item3);
             }
-        }
-
-        public override void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
-        {
-            throw new NotImplementedException();
         }
 
         private void RequestEventsAll()

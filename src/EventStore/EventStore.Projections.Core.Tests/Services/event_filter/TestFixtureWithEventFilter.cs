@@ -27,7 +27,6 @@
 // 
 
 using System;
-using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -56,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_filter
             _ef = null;
             try
             {
-                _ef = _builder.Build(ProjectionConfig.GetTest()).EventFilter;
+                _ef = _builder.Build().EventFilter;
             }
             catch (Exception ex)
             {

@@ -38,7 +38,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class TransactionFileEventReader : EventReader
+    public class TransactionFileEventReader : EventReader, IHandle<ClientMessage.ReadAllEventsForwardCompleted>
     {
         private bool _eventsRequested;
         private int _maxReadCount = 250;
@@ -74,11 +74,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return _eventsRequested;
         }
 
-        public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
-        {
-        }
-
-        public override void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
+        public void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
         {
             if (_disposed)
                 return;

@@ -28,12 +28,13 @@
 
 using System;
 using System.Runtime.Serialization;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
     [DataContract]
-    public class QuerySourcesDefinition
+    public class QuerySourcesDefinition: ISourceDefinitionConfigurator
     {
         [DataMember(Name = "all_streams")]
         public bool AllStreams { get; set; }
@@ -62,7 +63,7 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "options")]
         public QuerySourcesDefinitionOptions Options { get; set; }
 
-        public void BuildProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
         {
             if (AllStreams)
                 builder.FromAll();

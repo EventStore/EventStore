@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class HeadingEventReader
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<HeadingEventReader>();
-        private EventReader _headEventReader;
+        private IEventReader _headEventReader;
         private EventPosition _subscribeFromPosition = new EventPosition(long.MaxValue, long.MaxValue);
 
         private readonly Queue<ReaderSubscriptionMessage.CommittedEventDistributed> _lastMessages =
@@ -101,7 +101,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastEventPosition = message.Data.Position;
         }
 
-        public void Start(Guid eventReaderId, EventReader eventReader)
+        public void Start(Guid eventReaderId, IEventReader eventReader)
         {
             if (_started)
                 throw new InvalidOperationException("Already started");

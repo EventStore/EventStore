@@ -33,7 +33,6 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -119,12 +118,12 @@ namespace EventStore.Projections.Core.Tests.Services
             _service.Handle(new ProjectionCoreServiceMessage.StartCore());
         }
 
-        protected ReaderStrategy CreateReaderStrategy()
+        protected IReaderStrategy CreateReaderStrategy()
         {
             var result = new ReaderStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(ProjectionConfig.GetTest());
+            return result.Build();
         }
 
         protected static ResolvedEvent CreateEvent()

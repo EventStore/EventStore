@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public EventReorderingReaderSubscription(
             IPublisher publisher, Guid subscriptionId, CheckpointTag from,
-            ReaderStrategy readerStrategy, long? checkpointUnhandledBytesThreshold,
+            IReaderStrategy readerStrategy, long? checkpointUnhandledBytesThreshold,
             int? checkpointProcessedEventsThreshold, int processingLagMs, bool stopOnEof = false)
             : base(
                 publisher, subscriptionId, @from, readerStrategy,

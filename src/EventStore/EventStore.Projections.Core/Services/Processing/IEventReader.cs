@@ -27,15 +27,12 @@
 // 
 
 using System;
-using EventStore.Core.Bus;
-using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IReaderSubscription : IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderEof>
+    public interface IEventReader : IDisposable
     {
-        IEventReader CreatePausedEventReader(IPublisher publisher, Guid forkedEventReaderId);
+        void Resume();
+        void Pause();
     }
 }

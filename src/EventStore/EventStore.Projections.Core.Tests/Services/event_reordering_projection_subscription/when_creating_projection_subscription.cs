@@ -28,7 +28,6 @@
 
 using System;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -63,12 +62,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 null, 1000, 2000, 500);
         }
 
-        private ReaderStrategy CreateReaderStrategy()
+        private IReaderStrategy CreateReaderStrategy()
         {
             var result = new ReaderStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(ProjectionConfig.GetTest());
+            return result.Build();
         }
     }
 }
