@@ -29,13 +29,13 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.v8
 {
-    internal class QueryScript : IDisposable
+    public class QueryScript : IDisposable
     {
         private readonly PreludeScript _prelude;
         private readonly CompiledScript _script;
@@ -258,63 +258,6 @@ namespace EventStore.Projections.Core.v8
         public QuerySourcesDefinition GetSourcesDefintion()
         {
             return _sources;
-        }
-
-        [DataContract]
-        internal class QuerySourcesDefinition
-        {
-            [DataMember(Name = "all_streams")]
-            public bool AllStreams { get; set; }
-
-            [DataMember(Name = "categories")]
-            public string[] Categories { get; set; }
-
-            [DataMember(Name = "streams")]
-            public string[] Streams { get; set; }
-
-            [DataMember(Name = "all_events")]
-            public bool AllEvents { get; set; }
-
-            [DataMember(Name = "events")]
-            public string[] Events { get; set; }
-
-            [DataMember(Name = "by_streams")]
-            public bool ByStreams { get; set; }
-
-            [DataMember(Name = "by_custom_partitions")]
-            public bool ByCustomPartitions { get; set; }
-
-            [DataMember(Name = "defines_state_transform")]
-            public bool DefinesStateTransform { get; set; }
-
-            [DataMember(Name = "options")]
-            public QuerySourcesDefinitionOptions Options { get; set;}
-        }
-
-        [DataContract]
-        internal class QuerySourcesDefinitionOptions
-        {
-            [DataMember(Name = "resultStreamName")]
-            public string ResultStreamName { get; set; }
-
-            [DataMember(Name = "partitionResultStreamNamePattern")]
-            public string PartitionResultStreamNamePattern { get; set; }
-
-            [DataMember(Name = "useEventIndexes")]
-            public bool UseEventIndexes { get; set; }
-
-            [DataMember(Name = "$forceProjectionName")]
-            public string ForceProjectionName { get; set; }
-
-            [DataMember(Name = "$includeLinks")]
-            public bool IncludeLinks { get; set; }
-
-            [DataMember(Name = "reorderEvents")]
-            public bool ReorderEvents { get; set; }
-
-            [DataMember(Name = "processingLag")]
-            public int? ProcessingLag { get; set; }
-
         }
     }
 }

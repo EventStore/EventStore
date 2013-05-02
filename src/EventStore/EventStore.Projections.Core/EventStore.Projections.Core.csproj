@@ -161,6 +161,8 @@
     <Compile Include="Messages\ICoreProjection.cs" />
     <Compile Include="Messages\IProjectionCheckpointManager.cs" />
     <Compile Include="Messages\ProjectionCoreServiceMessage.cs" />
+    <Compile Include="Messages\QuerySourcesDefinition.cs" />
+    <Compile Include="Messages\QuerySourcesDefinitionOptions.cs" />
     <Compile Include="Messages\ReaderCoreServiceMessage.cs" />
     <Compile Include="Messages\ReaderSubscriptionManagement.cs" />
     <Compile Include="Messages\ProjectionSubscriptionMessage.cs" />

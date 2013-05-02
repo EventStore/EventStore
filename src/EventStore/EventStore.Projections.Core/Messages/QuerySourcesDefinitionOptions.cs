@@ -26,42 +26,32 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
+using System.Runtime.Serialization;
 
-namespace EventStore.Projections.Core.Tests.Services.event_filter
+namespace EventStore.Projections.Core.Messages
 {
-    public class TestFixtureWithEventFilter
+    [DataContract]
+    public class QuerySourcesDefinitionOptions
     {
-        protected ReaderStrategy.Builder _builder;
-        protected EventFilter _ef;
-        protected Exception _exception;
+        [DataMember(Name = "resultStreamName")]
+        public string ResultStreamName { get; set; }
 
-        [SetUp]
-        public void Setup()
-        {
-            _builder = new ReaderStrategy.Builder();
-            Given();
-            When();
-        }
+        [DataMember(Name = "partitionResultStreamNamePattern")]
+        public string PartitionResultStreamNamePattern { get; set; }
 
-        protected virtual void Given()
-        {
-        }
+        [DataMember(Name = "useEventIndexes")]
+        public bool UseEventIndexes { get; set; }
 
-        protected virtual void When()
-        {
-            _ef = null;
-            try
-            {
-                _ef = _builder.Build(ProjectionConfig.GetTest()).EventFilter;
-            }
-            catch (Exception ex)
-            {
-                _exception = ex;
-            }
-        }
+        [DataMember(Name = "$forceProjectionName")]
+        public string ForceProjectionName { get; set; }
+
+        [DataMember(Name = "$includeLinks")]
+        public bool IncludeLinks { get; set; }
+
+        [DataMember(Name = "reorderEvents")]
+        public bool ReorderEvents { get; set; }
+
+        [DataMember(Name = "processingLag")]
+        public int? ProcessingLag { get; set; }
     }
 }

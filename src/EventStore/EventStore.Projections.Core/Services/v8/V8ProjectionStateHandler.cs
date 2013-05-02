@@ -98,46 +98,10 @@ namespace EventStore.Projections.Core.Services.v8
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
         {
             CheckDisposed();
-            var sourcesDefintion = _query.GetSourcesDefintion();
-            if (sourcesDefintion == null)
+            var sourcesDefinition = _query.GetSourcesDefintion();
+            if (sourcesDefinition == null)
                 throw new InvalidOperationException("Invalid query.  No source definition.");
-            if (sourcesDefintion.AllStreams)
-                builder.FromAll();
-            else
-            {
-                if (sourcesDefintion.Streams != null)
-                    foreach (var stream in sourcesDefintion.Streams)
-                        builder.FromStream(stream);
-                if (sourcesDefintion.Categories != null)
-                    foreach (var category in sourcesDefintion.Categories)
-                        builder.FromCategory(category);
-            }
-            if (sourcesDefintion.AllEvents)
-                builder.AllEvents();
-            else
-                if (sourcesDefintion.Events != null)
-                    foreach (var @event in sourcesDefintion.Events)
-                        builder.IncludeEvent(@event);
-            if (sourcesDefintion.ByStreams)
-                builder.SetByStream();
-            if (sourcesDefintion.ByCustomPartitions)
-                builder.SetByCustomPartitions();
-            if (sourcesDefintion.Options.IncludeLinks)
-                builder.SetIncludeLinks();
-            if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.ResultStreamName))
-                builder.SetResultStreamNameOption(sourcesDefintion.Options.ResultStreamName);
-            if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.PartitionResultStreamNamePattern))
-                builder.SetPartitionResultStreamNamePatternOption(sourcesDefintion.Options.PartitionResultStreamNamePattern);
-            if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.ForceProjectionName))
-                builder.SetForceProjectionName(sourcesDefintion.Options.ForceProjectionName);
-            if (sourcesDefintion.Options.UseEventIndexes)
-                builder.SetUseEventIndexes(true);
-            if (sourcesDefintion.Options.ReorderEvents)
-                builder.SetReorderEvents(true);
-            if (sourcesDefintion.Options.ProcessingLag != null)
-                builder.SetProcessingLag(sourcesDefintion.Options.ProcessingLag.GetValueOrDefault());
-            if (sourcesDefintion.DefinesStateTransform)
-                builder.SetDefinesStateTransform(); 
+            sourcesDefinition.BuildProcessingStrategy(builder);
         }
 
         public void Load(string state)

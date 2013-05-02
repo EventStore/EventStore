@@ -50,6 +50,27 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
 
+
+        public class Builder : QuerySourceProcessingStrategyBuilder
+        {
+            public ReaderStrategy Build(ProjectionConfig config)
+            {
+                base.Validate(config);
+                HashSet<string> categories = ToSet(_categories);
+                HashSet<string> streams = ToSet(_streams);
+                bool includeLinks = _options.IncludeLinks;
+                HashSet<string> events = ToSet(_events);
+                bool useEventIndexes = _options.UseEventIndexes;
+                bool reorderEvents = _options.ReorderEvents;
+                int processingLag = _options.ProcessingLag;
+                var readerStrategy = new ReaderStrategy(
+                    _allStreams, categories, streams, _allEvents, includeLinks, events, processingLag, reorderEvents,
+                    useEventIndexes);
+                return readerStrategy;
+            }
+        }
+
+
         public ReaderStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, bool includeLinks,
             HashSet<string> events, int processingLag, bool reorderEvents, bool useEventIndexes)
@@ -66,6 +87,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _eventFilter = CreateEventFilter();
             _positionTagger = CreatePositionTagger();
+        }
+
+        public bool IsReadingOrderRepeatable {
+            get
+            {
+                return !((_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
+                       || (_streams != null && _streams.Count > 1));
+            }
         }
 
         public EventFilter EventFilter

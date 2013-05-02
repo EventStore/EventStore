@@ -121,10 +121,10 @@ namespace EventStore.Projections.Core.Tests.Services
 
         protected ReaderStrategy CreateReaderStrategy()
         {
-            var result = new CheckpointStrategy.Builder();
+            var result = new ReaderStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(ProjectionConfig.GetTest()).ReaderStrategy;
+            return result.Build(ProjectionConfig.GetTest());
         }
 
         protected static ResolvedEvent CreateEvent()

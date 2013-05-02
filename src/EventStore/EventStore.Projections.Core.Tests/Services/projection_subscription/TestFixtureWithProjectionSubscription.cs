@@ -91,16 +91,21 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected virtual CheckpointStrategy CreateCheckpointStrategy()
         {
             var result = new CheckpointStrategy.Builder();
+            var readerBuilder = new ReaderStrategy.Builder();
             if (_source != null)
             {
+                _source(readerBuilder);
                 _source(result);
             }
             else
             {
+                readerBuilder.FromAll();
+                readerBuilder.AllEvents();
                 result.FromAll();
                 result.AllEvents();
             }
-            return result.Build(ProjectionConfig.GetTest());
+            var config = ProjectionConfig.GetTest();
+            return result.Build(config, readerBuilder.Build(config));
         }
     }
 }

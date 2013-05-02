@@ -126,12 +126,15 @@ namespace EventStore.Projections.Core.Services.Processing
             out ProjectionSourceDefinition preparedSourceDefinition)
         {
             var builder = new CheckpointStrategy.Builder();
+            var readerStrategyBuilder = new ReaderStrategy.Builder();
             var namingBuilderFactory = new ProjectionNamesBuilder.Factory();
+            sourceDefinition.ConfigureSourceProcessingStrategy(readerStrategyBuilder);
             sourceDefinition.ConfigureSourceProcessingStrategy(builder);
             sourceDefinition.ConfigureSourceProcessingStrategy(namingBuilderFactory);
             var namingBuilder = namingBuilderFactory.Create(name);
             var effectiveProjectionName = namingBuilder.EffectiveProjectionName;
-            var checkpointStrategy = builder.Build(projectionConfig);
+            var readerStrategy = readerStrategyBuilder.Build(projectionConfig);
+            var checkpointStrategy = builder.Build(projectionConfig, readerStrategy);
             var sourceDefinitionRecorder = new SourceDefinitionRecorder();
             (projectionStateHandler ?? sourceDefinition).ConfigureSourceProcessingStrategy(sourceDefinitionRecorder);
             preparedSourceDefinition = sourceDefinitionRecorder.Build(namingBuilder);

@@ -11,9 +11,12 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_strategy
         public void it_can_be_created()
         {
             var builder = new CheckpointStrategy.Builder();
+            var readerBuilder = new ReaderStrategy.Builder();
             builder.FromAll();
             builder.AllEvents();
-            var cs = builder.Build(ProjectionConfig.GetTest());
+            readerBuilder.FromAll();
+            readerBuilder.AllEvents();
+            var cs = builder.Build(ProjectionConfig.GetTest(), readerBuilder.Build(ProjectionConfig.GetTest()));
         }
 
     }
