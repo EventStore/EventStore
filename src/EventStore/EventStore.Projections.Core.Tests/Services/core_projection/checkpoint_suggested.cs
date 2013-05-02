@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             {
                 //projection subscribes here
                 _coreProjection.Handle(
-                    new ProjectionSubscriptionMessage.CheckpointSuggested(
+                    new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
             }
 
@@ -98,10 +98,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             {
                 //projection subscribes here
                 _coreProjection.Handle(
-                    new ProjectionSubscriptionMessage.CheckpointSuggested(
+                    new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
                 _coreProjection.Handle(
-                    new ProjectionSubscriptionMessage.CheckpointSuggested(
+                    new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId, CheckpointTag.FromPosition(160, 150), 55.6f, 1));
             }
 
@@ -139,10 +139,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             {
                 //projection subscribes here
                 _coreProjection.Handle(
-                    new ProjectionSubscriptionMessage.CheckpointSuggested(
+                    new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
                 _coreProjection.Handle(
-                    new ProjectionSubscriptionMessage.CheckpointSuggested(
+                    new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId, CheckpointTag.FromPosition(160, 150), 55.6f, 1));
             }
 

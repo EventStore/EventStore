@@ -33,14 +33,14 @@ namespace EventStore.Projections.Core.Services.Processing
     internal class CheckpointSuggestedWorkItem : CheckpointWorkItemBase
     {
         private readonly CoreProjection _projection;
-        private readonly ProjectionSubscriptionMessage.CheckpointSuggested _message;
+        private readonly EventReaderSubscriptionMessage.CheckpointSuggested _message;
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
 
         private bool _completed = false;
         private bool _completeRequested = false;
 
         public CheckpointSuggestedWorkItem(
-            CoreProjection projection, ProjectionSubscriptionMessage.CheckpointSuggested message,
+            CoreProjection projection, EventReaderSubscriptionMessage.CheckpointSuggested message,
             ICoreProjectionCheckpointManager checkpointManager)
             : base(projection) 
         {

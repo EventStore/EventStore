@@ -42,24 +42,24 @@ namespace EventStore.Projections.Core.Tests.Services
     {
         public class TestCoreProjection : ICoreProjection
         {
-            public List<ProjectionSubscriptionMessage.CommittedEventReceived> HandledMessages =
-                new List<ProjectionSubscriptionMessage.CommittedEventReceived>();
+            public List<EventReaderSubscriptionMessage.CommittedEventReceived> HandledMessages =
+                new List<EventReaderSubscriptionMessage.CommittedEventReceived>();
 
-            public List<ProjectionSubscriptionMessage.CheckpointSuggested> HandledCheckpoints =
-                new List<ProjectionSubscriptionMessage.CheckpointSuggested>();
+            public List<EventReaderSubscriptionMessage.CheckpointSuggested> HandledCheckpoints =
+                new List<EventReaderSubscriptionMessage.CheckpointSuggested>();
 
-            public List<ProjectionSubscriptionMessage.ProgressChanged> HandledProgress =
-                new List<ProjectionSubscriptionMessage.ProgressChanged>();
+            public List<EventReaderSubscriptionMessage.ProgressChanged> HandledProgress =
+                new List<EventReaderSubscriptionMessage.ProgressChanged>();
 
-            public List<ProjectionSubscriptionMessage.EofReached> HandledEof =
-                new List<ProjectionSubscriptionMessage.EofReached>();
+            public List<EventReaderSubscriptionMessage.EofReached> HandledEof =
+                new List<EventReaderSubscriptionMessage.EofReached>();
 
-            public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
+            public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
             {
                 HandledMessages.Add(message);
             }
 
-            public void Handle(ProjectionSubscriptionMessage.CheckpointSuggested message)
+            public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
             {
                 HandledCheckpoints.Add(message);
             }
@@ -74,12 +74,12 @@ namespace EventStore.Projections.Core.Tests.Services
                 throw new NotImplementedException();
             }
 
-            public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
+            public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
             {
                 HandledProgress.Add(message);
             }
 
-            public void Handle(ProjectionSubscriptionMessage.EofReached message)
+            public void Handle(EventReaderSubscriptionMessage.EofReached message)
             {
                 HandledEof.Add(message);
             }
@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Tests.Services
         protected TestHandler<Message> _consumer;
         protected InMemoryBus _bus;
         protected ProjectionCoreService _service;
-        protected ProjectionReaderCoreService _readerService;
+        protected EventReaderCoreService _readerService;
 
         [SetUp]
         public void Setup()
@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services
             _bus = new InMemoryBus("temp");
             _bus.Subscribe(_consumer);
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
-            _readerService = new ProjectionReaderCoreService(_bus, 10, writerCheckpoint);
+            _readerService = new EventReaderCoreService(_bus, 10, writerCheckpoint);
             _service = new ProjectionCoreService(_bus, _bus);
             _readerService.Handle(new Messages.ReaderCoreServiceMessage.StartReader());
             _service.Handle(new ProjectionCoreServiceMessage.StartCore());

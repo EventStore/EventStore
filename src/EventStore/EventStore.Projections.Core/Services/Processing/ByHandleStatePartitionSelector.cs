@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _handler = handler;
         }
 
-        public override string GetStatePartition(ProjectionSubscriptionMessage.CommittedEventReceived @event)
+        public override string GetStatePartition(EventReaderSubscriptionMessage.CommittedEventReceived @event)
         {
             return _handler.GetStatePartition(
                 @event.CheckpointTag, @event.Data.EventStreamId, @event.Data.EventType, @event.EventCategory,

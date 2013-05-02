@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (progressChanged)
                     _publisher.Publish(
-                        new ProjectionSubscriptionMessage.ProgressChanged(
+                        new EventReaderSubscriptionMessage.ProgressChanged(
                             _subscriptionId, _positionTracker.LastTag, _progress,
                             _subscriptionMessageSequenceNumber++));
                 return;
@@ -108,7 +108,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
                 var convertedMessage =
-                    ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
+                    EventReaderSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
                         message, eventCheckpointTag, _eventFilter.GetCategory(message.Data.PositionStreamId),
                         _subscriptionId, _subscriptionMessageSequenceNumber++);
                 _publisher.Publish(convertedMessage);
@@ -129,7 +129,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     if (progressChanged)
                         _publisher.Publish(
-                            new ProjectionSubscriptionMessage.ProgressChanged(
+                            new EventReaderSubscriptionMessage.ProgressChanged(
                                 _subscriptionId, _positionTracker.LastTag, _progress,
                                 _subscriptionMessageSequenceNumber++));
                 }
@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
             _publisher.Publish(
-                new ProjectionSubscriptionMessage.CheckpointSuggested(
+                new EventReaderSubscriptionMessage.CheckpointSuggested(
                     _subscriptionId, _positionTracker.LastTag, message.Progress,
                     _subscriptionMessageSequenceNumber++));
             _eventsSinceLastCheckpointSuggested = 0;
@@ -165,7 +165,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _eofReached = true;
                 EofReached();
                 _publisher.Publish(
-                    new ProjectionSubscriptionMessage.EofReached(
+                    new EventReaderSubscriptionMessage.EofReached(
                         _subscriptionId, _positionTracker.LastTag,
                         _subscriptionMessageSequenceNumber++));
             }

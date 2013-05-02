@@ -291,7 +291,7 @@ namespace EventStore.Projections.Core.Messages
 
             public class Event
             {
-                public static Event Create(ProjectionSubscriptionMessage.CommittedEventReceived source, string partition)
+                public static Event Create(EventReaderSubscriptionMessage.CommittedEventReceived source, string partition)
                 {
                     return new Event 
                         {

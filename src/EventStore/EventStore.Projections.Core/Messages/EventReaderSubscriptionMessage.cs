@@ -32,14 +32,14 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
-    public abstract class ProjectionSubscriptionMessage : Message
+    public abstract class EventReaderSubscriptionMessage : Message
     {
         private readonly Guid _subscriptionId;
         private readonly long _subscriptionMessageSequenceNumber;
         private readonly CheckpointTag _checkpointTag;
         private readonly float _progress;
 
-        private ProjectionSubscriptionMessage(
+        private EventReaderSubscriptionMessage(
             Guid subscriptionId, CheckpointTag checkpointTag, float progress,
             long subscriptionMessageSequenceNumber)
         {
@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Messages
         /// restore the projection processing (typically
         /// an event at this position does not satisfy projection filter)
         /// </summary>
-        public class CheckpointSuggested : ProjectionSubscriptionMessage
+        public class CheckpointSuggested : EventReaderSubscriptionMessage
         {
             public CheckpointSuggested(
                 Guid subscriptionId, CheckpointTag checkpointTag, float progress,
@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class ProgressChanged : ProjectionSubscriptionMessage
+        public class ProgressChanged : EventReaderSubscriptionMessage
         {
             public ProgressChanged(
                 Guid subscriptionId, CheckpointTag checkpointTag, float progress,
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class EofReached : ProjectionSubscriptionMessage
+        public class EofReached : EventReaderSubscriptionMessage
         {
             public EofReached(
                 Guid subscriptionId, CheckpointTag checkpointTag,
@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class CommittedEventReceived : ProjectionSubscriptionMessage
+        public class CommittedEventReceived : EventReaderSubscriptionMessage
         {
             public static CommittedEventReceived Sample(
                 ResolvedEvent data, Guid subscriptionId, long subscriptionMessageSequenceNumber)

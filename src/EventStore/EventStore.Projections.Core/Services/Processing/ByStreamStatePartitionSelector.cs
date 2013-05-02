@@ -32,7 +32,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ByStreamStatePartitionSelector : StatePartitionSelector
     {
-        public override string GetStatePartition(ProjectionSubscriptionMessage.CommittedEventReceived @event)
+        public override string GetStatePartition(EventReaderSubscriptionMessage.CommittedEventReceived @event)
         {
 
             if (@event.Data.ResolvedLinkTo && @event.Data.PositionMetadata != null)

@@ -30,14 +30,13 @@ using System;
 using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionReaderCoreService : 
+    public class EventReaderCoreService : 
         IHandle<ReaderCoreServiceMessage.StartReader>, 
         IHandle<ReaderCoreServiceMessage.StopReader>, 
         IHandle<ReaderSubscriptionManagement.Subscribe>, 
@@ -65,7 +64,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ICheckpoint _writerCheckpoint;
 
 
-        public ProjectionReaderCoreService(
+        public EventReaderCoreService(
             IPublisher publisher, int eventCacheSize,
             ICheckpoint writerCheckpoint)
         {

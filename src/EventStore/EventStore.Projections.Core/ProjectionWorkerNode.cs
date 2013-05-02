@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core
         private readonly bool _runProjections;
         private readonly ProjectionCoreService _projectionCoreService;
         private readonly InMemoryBus _coreOutput;
-        private readonly ProjectionReaderCoreService _projectionReaderCoreService;
+        private readonly EventReaderCoreService _eventReaderCoreService;
 
         public ProjectionWorkerNode(TFChunkDb db, QueuedHandler inputQueue, bool runProjections)
         {
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core
             _coreOutput = new InMemoryBus("Core Output");
 
             IPublisher publisher = CoreOutput;
-            _projectionReaderCoreService = new ProjectionReaderCoreService(publisher, 10, db.Config.WriterCheckpoint);
+            _eventReaderCoreService = new EventReaderCoreService(publisher, 10, db.Config.WriterCheckpoint);
             if (runProjections)
                 _projectionCoreService = new ProjectionCoreService(inputQueue, publisher);
 
@@ -71,10 +71,10 @@ namespace EventStore.Projections.Core
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.Dispose>(_projectionCoreService);
-                coreInputBus.Subscribe<ProjectionSubscriptionMessage.CommittedEventReceived>(_projectionCoreService);
-                coreInputBus.Subscribe<ProjectionSubscriptionMessage.CheckpointSuggested>(_projectionCoreService);
-                coreInputBus.Subscribe<ProjectionSubscriptionMessage.EofReached>(_projectionCoreService);
-                coreInputBus.Subscribe<ProjectionSubscriptionMessage.ProgressChanged>(_projectionCoreService);
+                coreInputBus.Subscribe<EventReaderSubscriptionMessage.CommittedEventReceived>(_projectionCoreService);
+                coreInputBus.Subscribe<EventReaderSubscriptionMessage.CheckpointSuggested>(_projectionCoreService);
+                coreInputBus.Subscribe<EventReaderSubscriptionMessage.EofReached>(_projectionCoreService);
+                coreInputBus.Subscribe<EventReaderSubscriptionMessage.ProgressChanged>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.Start>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.Stop>(_projectionCoreService);
@@ -93,16 +93,16 @@ namespace EventStore.Projections.Core
                 //NOTE: message forwarding is set up outside (for Read/Write events)
             }
 
-            coreInputBus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_projectionReaderCoreService);
-            coreInputBus.Subscribe<ReaderCoreServiceMessage.StartReader>(_projectionReaderCoreService);
-            coreInputBus.Subscribe<ReaderCoreServiceMessage.StopReader>(_projectionReaderCoreService);
-            coreInputBus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_projectionReaderCoreService);
-            coreInputBus.Subscribe<ReaderSubscriptionManagement.Unsubscribe>(_projectionReaderCoreService);
-            coreInputBus.Subscribe<ReaderSubscriptionManagement.Pause>(_projectionReaderCoreService);
-            coreInputBus.Subscribe<ReaderSubscriptionManagement.Resume>(_projectionReaderCoreService);
-            coreInputBus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_projectionReaderCoreService);
-            coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_projectionReaderCoreService);
-            coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_projectionReaderCoreService);
+            coreInputBus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_eventReaderCoreService);
+            coreInputBus.Subscribe<ReaderCoreServiceMessage.StartReader>(_eventReaderCoreService);
+            coreInputBus.Subscribe<ReaderCoreServiceMessage.StopReader>(_eventReaderCoreService);
+            coreInputBus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_eventReaderCoreService);
+            coreInputBus.Subscribe<ReaderSubscriptionManagement.Unsubscribe>(_eventReaderCoreService);
+            coreInputBus.Subscribe<ReaderSubscriptionManagement.Pause>(_eventReaderCoreService);
+            coreInputBus.Subscribe<ReaderSubscriptionManagement.Resume>(_eventReaderCoreService);
+            coreInputBus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_eventReaderCoreService);
+            coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_eventReaderCoreService);
+            coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_eventReaderCoreService);
             //NOTE: message forwarding is set up outside (for Read/Write events)
 
         }

@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class NoopStatePartitionSelector : StatePartitionSelector
     {
-        public override string GetStatePartition(ProjectionSubscriptionMessage.CommittedEventReceived @event)
+        public override string GetStatePartition(EventReaderSubscriptionMessage.CommittedEventReceived @event)
         {
             return "";
         }

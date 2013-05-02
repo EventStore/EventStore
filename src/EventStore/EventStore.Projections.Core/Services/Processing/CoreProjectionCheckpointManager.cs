@@ -398,7 +398,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     (pair.Event.Flags & PrepareFlags.IsJson) != 0, pair.Event.Data, pair.Event.Metadata, pair.Link == null ? null : pair.Link.Metadata,
                     pair.Event.TimeStamp), null, -1);
             _publisher.Publish(
-                ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
+                EventReaderSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
                     committedEvent, positionTag, null, _projectionCorrelationId, 
                     prerecordedEventMessageSequenceNumber));
         }

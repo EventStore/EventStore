@@ -33,11 +33,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 {
     public class FakeCoreProjection : ICoreProjection
     {
-        public readonly List<ProjectionSubscriptionMessage.CommittedEventReceived> _committedEventReceivedMessages =
-            new List<ProjectionSubscriptionMessage.CommittedEventReceived>();
+        public readonly List<EventReaderSubscriptionMessage.CommittedEventReceived> _committedEventReceivedMessages =
+            new List<EventReaderSubscriptionMessage.CommittedEventReceived>();
 
-        public readonly List<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointSuggestedMessages =
-            new List<ProjectionSubscriptionMessage.CheckpointSuggested>();
+        public readonly List<EventReaderSubscriptionMessage.CheckpointSuggested> _checkpointSuggestedMessages =
+            new List<EventReaderSubscriptionMessage.CheckpointSuggested>();
 
         public readonly List<CoreProjectionProcessingMessage.CheckpointCompleted> _checkpointCompletedMessages =
             new List<CoreProjectionProcessingMessage.CheckpointCompleted>();
@@ -48,18 +48,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public readonly List<CoreProjectionProcessingMessage.PrerecordedEventsLoaded> _prerecordedEventsLoadedMessages =
             new List<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>();
 
-        public readonly List<ProjectionSubscriptionMessage.ProgressChanged> _progresschangedMessages =
-            new List<ProjectionSubscriptionMessage.ProgressChanged>();
+        public readonly List<EventReaderSubscriptionMessage.ProgressChanged> _progresschangedMessages =
+            new List<EventReaderSubscriptionMessage.ProgressChanged>();
 
-        public readonly List<ProjectionSubscriptionMessage.EofReached> _eofReachedMessages =
-            new List<ProjectionSubscriptionMessage.EofReached>();
+        public readonly List<EventReaderSubscriptionMessage.EofReached> _eofReachedMessages =
+            new List<EventReaderSubscriptionMessage.EofReached>();
 
-        public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
+        public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
             _committedEventReceivedMessages.Add(message);
         }
 
-        public void Handle(ProjectionSubscriptionMessage.CheckpointSuggested message)
+        public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
         {
             _checkpointSuggestedMessages.Add(message);
         }
@@ -74,12 +74,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _checkpointLoadedMessages.Add(message);
         }
 
-        public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
+        public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
         {
             _progresschangedMessages.Add(message);
         }
 
-        public void Handle(ProjectionSubscriptionMessage.EofReached message)
+        public void Handle(EventReaderSubscriptionMessage.EofReached message)
         {
             _eofReachedMessages.Add(message);
         }

@@ -27,12 +27,9 @@
 // 
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -53,7 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _byStream, _byCustomPartitions, config.CheckpointsEnabled, _definesStateTransform, readerStrategy);
             }
 
-            public new void Validate(ProjectionConfig config)
+            public void Validate(ProjectionConfig config)
             {
                 base.Validate();
                 if (_definesStateTransform && !config.EmitEventEnabled)
@@ -61,7 +58,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-
+        public static CheckpointStrategy Create(ISourceDefinitionConfigurator sources, ProjectionConfig config)
+        {
+            var builder = new Builder();
+            sources.ConfigureSourceProcessingStrategy(builder);
+            return builder.Build(config, Processing.ReaderStrategy.Create(sources));
+        }
 
         public bool UseCheckpoints
         {

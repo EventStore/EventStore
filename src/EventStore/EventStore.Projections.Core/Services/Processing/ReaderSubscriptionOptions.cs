@@ -33,13 +33,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly long _checkpointUnhandledBytesThreshold;
         private readonly int? _checkpointProcessedEventsThreshold;
         private readonly bool _stopOnEof;
+        private readonly int? _stopAfterNEvents;
 
         public ReaderSubscriptionOptions(
-            long checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof)
+            long checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof, int? stopAfterNEvents)
         {
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
             _stopOnEof = stopOnEof;
+            _stopAfterNEvents = stopAfterNEvents;
         }
 
         public long CheckpointUnhandledBytesThreshold
@@ -55,6 +57,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public bool StopOnEof
         {
             get { return _stopOnEof; }
+        }
+
+        public int? StopAfterNEvents
+        {
+            get { return _stopAfterNEvents; }
         }
     }
 }

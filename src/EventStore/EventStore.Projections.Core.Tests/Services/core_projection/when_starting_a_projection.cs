@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
         private RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
         private RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
-        private PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage> _subscriptionDispatcher;
+        private PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> _subscriptionDispatcher;
         private ProjectionConfig _projectionConfig;
 
         [SetUp]
@@ -69,14 +69,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _subscriptionDispatcher =
                 new PublishSubscribeDispatcher
                     <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
                     (_bus, v => v.SubscriptionId, v => v.SubscriptionId);
             _bus.Subscribe(
-                _subscriptionDispatcher.CreateSubscriber<ProjectionSubscriptionMessage.CommittedEventReceived>());
+                _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(
-                _subscriptionDispatcher.CreateSubscriber<ProjectionSubscriptionMessage.CheckpointSuggested>());
-            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<ProjectionSubscriptionMessage.EofReached>());
-            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<ProjectionSubscriptionMessage.ProgressChanged>());
+                _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();

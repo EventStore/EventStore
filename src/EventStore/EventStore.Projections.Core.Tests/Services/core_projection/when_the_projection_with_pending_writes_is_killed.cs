@@ -54,19 +54,19 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             //projection subscribes here
             // just_emit - ensures that each handled event emits a single event
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(120, 110),
                         Guid.NewGuid(), "just_emit", false, "data1",
                         "metadata"), _subscriptionId, 0));
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(140, 130),
                         Guid.NewGuid(), "just_emit", false, "data2",
                         "metadata"), _subscriptionId, 1));
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(160, 150),
                         Guid.NewGuid(), "just_emit", false, "data3",

@@ -45,10 +45,10 @@ namespace EventStore.Projections.Core.Services.Processing
                                   IHandle<CoreProjectionManagementMessage.GetResult>,
                                   IHandle<CoreProjectionManagementMessage.GetDebugState>,
                                   IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
-                                  IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>,
-                                  IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>,
-                                  IHandle<ProjectionSubscriptionMessage.ProgressChanged>,
-                                  IHandle<ProjectionSubscriptionMessage.EofReached>
+                                  IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
+                                  IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
+                                  IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
+                                  IHandle<EventReaderSubscriptionMessage.EofReached>
     {
         public static CoreProjection CreateAndPrepare(
             string name, ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage> subscriptionDispatcher,
+            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher,
             ILogger logger)
         {
             if (name == null) throw new ArgumentNullException("name");
@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage> subscriptionDispatcher,
+            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher,
             ILogger logger, out ProjectionSourceDefinition preparedSourceDefinition)
         {
             if (name == null) throw new ArgumentNullException("name");
@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage> subscriptionDispatcher,
+            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher,
             ILogger logger, out ProjectionSourceDefinition preparedSourceDefinition)
         {
             if (name == null) throw new ArgumentNullException("name");
@@ -121,7 +121,7 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             PublishSubscribeDispatcher
                 <ReaderSubscriptionManagement.Subscribe,
-                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
                 subscriptionDispatcher, ILogger logger, ISourceDefinitionConfigurator sourceDefinition,
             out ProjectionSourceDefinition preparedSourceDefinition)
         {
@@ -131,9 +131,8 @@ namespace EventStore.Projections.Core.Services.Processing
             sourceDefinition.ConfigureSourceProcessingStrategy(namingBuilderFactory);
             var namingBuilder = namingBuilderFactory.Create(name);
             var effectiveProjectionName = namingBuilder.EffectiveProjectionName;
-            var readerStrategy = ReaderStrategy.Create(sourceDefinition);
 
-            var checkpointStrategy = builder.Build(projectionConfig, readerStrategy);
+            var checkpointStrategy = CheckpointStrategy.Create(sourceDefinition, projectionConfig);
             var sourceDefinitionRecorder = new SourceDefinitionRecorder();
             (projectionStateHandler ?? sourceDefinition).ConfigureSourceProcessingStrategy(sourceDefinitionRecorder);
             preparedSourceDefinition = sourceDefinitionRecorder.Build(namingBuilder);
@@ -165,7 +164,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly Guid _projectionCorrelationId;
         private readonly ProjectionConfig _projectionConfig;
-        private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage> _subscriptionDispatcher;
+        private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> _subscriptionDispatcher;
         private readonly CheckpointStrategy _checkpointStrategy;
         private readonly bool _definesStateTransform;
         private readonly ILogger _logger;
@@ -199,7 +198,7 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             PublishSubscribeDispatcher
                 <ReaderSubscriptionManagement.Subscribe,
-                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
                 subscriptionDispatcher, ILogger logger, CheckpointStrategy checkpointStrategy,
             ProjectionNamesBuilder namingBuilder, bool definesStateTransform)
         {
@@ -292,7 +291,7 @@ namespace EventStore.Projections.Core.Services.Processing
             info.PartitionsCached = _partitionStateCache.CachedItemCount;
         }
 
-        public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
+        public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
             if (_state != State.StateLoaded)
             {
@@ -319,7 +318,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
+        public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
         {
             if (IsOutOfOrderSubscriptionMessage(message))
                 return;
@@ -338,7 +337,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void Handle(ProjectionSubscriptionMessage.EofReached message)
+        public void Handle(EventReaderSubscriptionMessage.EofReached message)
         {
             if (IsOutOfOrderSubscriptionMessage(message))
                 return;
@@ -377,7 +376,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Stop();
         }
 
-        public void Handle(ProjectionSubscriptionMessage.CheckpointSuggested message)
+        public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
         {
             if (IsOutOfOrderSubscriptionMessage(message))
                 return;
@@ -663,7 +662,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new CoreProjectionManagementMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }
 
-        private bool IsOutOfOrderSubscriptionMessage(ProjectionSubscriptionMessage message)
+        private bool IsOutOfOrderSubscriptionMessage(EventReaderSubscriptionMessage message)
         {
             if (_currentSubscriptionId != message.SubscriptionId)
                 return true;
@@ -672,7 +671,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        private void RegisterSubscriptionMessage(ProjectionSubscriptionMessage message)
+        private void RegisterSubscriptionMessage(EventReaderSubscriptionMessage message)
         {
             _expectedSubscriptionMessageSequenceNumber = message.SubscriptionMessageSequenceNumber + 1;
         }
@@ -705,7 +704,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return _projectionStateHandler.GetType().Namespace + "." + _projectionStateHandler.GetType().Name;
         }
 
-        internal EventProcessedResult ProcessCommittedEvent(ProjectionSubscriptionMessage.CommittedEventReceived message,
+        internal EventProcessedResult ProcessCommittedEvent(EventReaderSubscriptionMessage.CommittedEventReceived message,
             string partition)
         {
             switch (_state)
@@ -731,7 +730,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private CheckpointSuggestedWorkItem _checkpointSuggestedWorkItem;
 
-        private void InternalCollectEventForDebugging(string partition, ProjectionSubscriptionMessage.CommittedEventReceived message)
+        private void InternalCollectEventForDebugging(string partition, EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
             if (_eventsForDebugging.Count >= 10)
                 EnsureUnsubscribed();
@@ -739,7 +738,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private EventProcessedResult InternalProcessCommittedEvent(string partition,
-            ProjectionSubscriptionMessage.CommittedEventReceived message)
+            EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
             string newState;
             string projectionResult;
@@ -753,7 +752,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private bool SafeProcessEventByHandler(
-            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, out string newState,
+            string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, out string newState,
             out string projectionResult, out EmittedEvent[] emittedEvents)
         {
             projectionResult = null;
@@ -780,7 +779,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private EventProcessedResult InternalCommittedEventProcessed(
-            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, EmittedEvent[] emittedEvents,
+            string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, EmittedEvent[] emittedEvents,
             string newState, string projectionResult)
         {
             if (!ValidateEmittedEvents(emittedEvents))
@@ -819,7 +818,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private bool ProcessEventByHandler(
-            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, out string newState, out string projectionResult,
+            string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, out string newState, out string projectionResult,
             out EmittedEvent[] emittedEvents)
         {
             projectionResult = null;
@@ -898,7 +897,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingQueue.Subscribed(_currentSubscriptionId);
             var subscriptionOptions = new ReaderSubscriptionOptions(
                 _projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold,
-                _projectionConfig.StopOnEof);
+                _projectionConfig.StopOnEof, stopAfterNEvents: null);
             _subscriptionDispatcher.PublishSubscribe(
                 new ReaderSubscriptionManagement.Subscribe(
                     _currentSubscriptionId, checkpointTag, _checkpointStrategy.ReaderStrategy, subscriptionOptions), this);

@@ -3,10 +3,10 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Messages
 {
-    public interface ICoreProjection : IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>,
-                                       IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>,
-                                       IHandle<ProjectionSubscriptionMessage.ProgressChanged>,
-                                       IHandle<ProjectionSubscriptionMessage.EofReached>,
+    public interface ICoreProjection : IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
+                                       IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
+                                       IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
+                                       IHandle<EventReaderSubscriptionMessage.EofReached>,
                                        IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>,
                                        IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>,
                                        IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,

@@ -29,7 +29,6 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -40,10 +39,10 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
     public abstract class TestFixtureWithProjectionSubscription
     {
         protected Guid _projectionCorrelationId;
-        protected TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
-        protected TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
-        protected TestHandler<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
-        protected TestHandler<ProjectionSubscriptionMessage.EofReached> _eofHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.CommittedEventReceived> _eventHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.ProgressChanged> _progressHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.EofReached> _eofHandler;
         protected IReaderSubscription _subscription;
         protected IEventReader ForkedReader;
         protected InMemoryBus _bus;
@@ -60,10 +59,10 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             Given();
             _bus = new InMemoryBus("bus");
             _projectionCorrelationId = Guid.NewGuid();
-            _eventHandler = new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>();
-            _checkpointHandler = new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>();
-            _progressHandler = new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>();
-            _eofHandler = new TestHandler<ProjectionSubscriptionMessage.EofReached>();
+            _eventHandler = new TestHandler<EventReaderSubscriptionMessage.CommittedEventReceived>();
+            _checkpointHandler = new TestHandler<EventReaderSubscriptionMessage.CheckpointSuggested>();
+            _progressHandler = new TestHandler<EventReaderSubscriptionMessage.ProgressChanged>();
+            _eofHandler = new TestHandler<EventReaderSubscriptionMessage.EofReached>();
 
             _bus.Subscribe(_eventHandler);
             _bus.Subscribe(_checkpointHandler);

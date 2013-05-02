@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         protected ProjectionManager _manager;
         private ProjectionCoreService _coreService;
-        private ProjectionReaderCoreService _readerService;
+        private EventReaderCoreService _readerService;
 
         protected override void Given1()
         {
@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
             _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, _timeProvider);
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
-            _readerService = new ProjectionReaderCoreService(_bus, 10, writerCheckpoint);
+            _readerService = new EventReaderCoreService(_bus, 10, writerCheckpoint);
             _coreService = new ProjectionCoreService(_bus, _bus);
             _bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(_manager);
@@ -105,10 +105,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_readerService);
-            _bus.Subscribe<ProjectionSubscriptionMessage.CommittedEventReceived>(_coreService);
-            _bus.Subscribe<ProjectionSubscriptionMessage.CheckpointSuggested>(_coreService);
-            _bus.Subscribe<ProjectionSubscriptionMessage.EofReached>(_coreService);
-            _bus.Subscribe<ProjectionSubscriptionMessage.ProgressChanged>(_coreService);
+            _bus.Subscribe<EventReaderSubscriptionMessage.CommittedEventReceived>(_coreService);
+            _bus.Subscribe<EventReaderSubscriptionMessage.CheckpointSuggested>(_coreService);
+            _bus.Subscribe<EventReaderSubscriptionMessage.EofReached>(_coreService);
+            _bus.Subscribe<EventReaderSubscriptionMessage.ProgressChanged>(_coreService);
             _bus.Subscribe<ReaderSubscriptionManagement.Pause>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Resume>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_readerService);

@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private
             PublishSubscribeDispatcher
                 <ReaderSubscriptionManagement.Subscribe,
-                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
             _subscriptionDispatcher;
 
         [SetUp]
@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _subscriptionDispatcher =
                 new PublishSubscribeDispatcher
                     <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
                     (new FakePublisher(), v => v.SubscriptionId, v => v.SubscriptionId);
 
         }

@@ -49,10 +49,10 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<CoreProjectionManagementMessage.GetState>,
                                         IHandle<CoreProjectionManagementMessage.GetResult>,
                                         IHandle<CoreProjectionManagementMessage.GetDebugState>,
-                                        IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>, 
-                                        IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>, 
-                                        IHandle<ProjectionSubscriptionMessage.EofReached>, 
-                                        IHandle<ProjectionSubscriptionMessage.ProgressChanged>, 
+                                        IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>, 
+                                        IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>, 
+                                        IHandle<EventReaderSubscriptionMessage.EofReached>, 
+                                        IHandle<EventReaderSubscriptionMessage.ProgressChanged>, 
                                          IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
                                          IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
                                          IHandle<ClientMessage.WriteEventsCompleted>, 
@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
 
-        private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+        private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
             _subscriptionDispatcher;
 
 
@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptionDispatcher =
                 new PublishSubscribeDispatcher
                     <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, ProjectionSubscriptionMessage>
+                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
                     (_publisher, v => v.SubscriptionId, v => v.SubscriptionId);
         }
 
@@ -278,25 +278,25 @@ namespace EventStore.Projections.Core.Services.Processing
                 projection.Handle(message);
         }
 
-        public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
+        public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
             if (_subscriptionDispatcher.Handle(message))
                 return;
         }
 
-        public void Handle(ProjectionSubscriptionMessage.CheckpointSuggested message)
+        public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
         {
             if (_subscriptionDispatcher.Handle(message))
                 return;
         }
 
-        public void Handle(ProjectionSubscriptionMessage.EofReached message)
+        public void Handle(EventReaderSubscriptionMessage.EofReached message)
         {
             if (_subscriptionDispatcher.Handle(message))
                 return;
         }
 
-        public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
+        public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
         {
             if (_subscriptionDispatcher.Handle(message))
                 return;

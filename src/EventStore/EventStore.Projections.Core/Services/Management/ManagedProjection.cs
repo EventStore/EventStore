@@ -710,9 +710,6 @@ namespace EventStore.Projections.Core.Services.Management
                                         _timeoutScheduler == null
                                             ? (Action<int, Action>) null
                                             : _timeoutScheduler.Schedule);
-                                var checkpointStrategyBuilder = new CheckpointStrategy.Builder();
-                                stateHandler.ConfigureSourceProcessingStrategy(checkpointStrategyBuilder);
-                                checkpointStrategyBuilder.Validate(config); // avoid future exceptions in coreprojection
                                 return stateHandler;
                             }
                             catch (Exception ex)

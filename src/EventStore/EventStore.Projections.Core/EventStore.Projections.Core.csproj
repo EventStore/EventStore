@@ -165,7 +165,7 @@
     <Compile Include="Messages\QuerySourcesDefinitionOptions.cs" />
     <Compile Include="Messages\ReaderCoreServiceMessage.cs" />
     <Compile Include="Messages\ReaderSubscriptionManagement.cs" />
-    <Compile Include="Messages\ProjectionSubscriptionMessage.cs" />
+    <Compile Include="Messages\EventReaderSubscriptionMessage.cs" />
     <Compile Include="Messages\ReaderSubscriptionMessage.cs" />
     <Compile Include="Messaging\PublishToWrapEnvelop.cs" />
     <Compile Include="Messaging\UnwrapEnvelopeHandler.cs" />
@@ -220,7 +220,7 @@
     <Compile Include="Services\Processing\PreparePositionTagger.cs" />
     <Compile Include="Services\Processing\ProgressWorkItem.cs" />
     <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
-    <Compile Include="Services\Processing\ProjectionReaderCoreService.cs" />
+    <Compile Include="Services\Processing\EventReaderCoreService.cs" />
     <Compile Include="Services\Processing\ProjectionSourceDefinition.cs" />
     <Compile Include="Services\Processing\ProjectionSubscriptionBase.cs" />
     <Compile Include="Services\Processing\ProjectionVersion.cs" />
