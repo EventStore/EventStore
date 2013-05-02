@@ -287,30 +287,27 @@ namespace EventStore.Core
             monitoringQueue.Start();
             _mainQueue.Start();
 
-            foreach (var subsystem in subsystems)
-            {
-                subsystem.Register(db, _mainQueue, _mainBus, _timerService, _httpService, _networkSendService);
-            }
+            if (subsystems != null)
+                foreach (var subsystem in subsystems)
+                    subsystem.Register(db, _mainQueue, _mainBus, _timerService, _httpService, _networkSendService);
         }
 
         public void Start()
         {
             _mainQueue.Publish(new SystemMessage.SystemInit());
             //TODO: replace with messages
-            foreach (var subsystem in _subsystems)
-            {
-                subsystem.Start();
-            }
+            if (_subsystems != null)
+                foreach (var subsystem in _subsystems)
+                    subsystem.Start();
         }
 
         public void Stop(bool exitProcess)
         {
             _mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess));
             //TODO: replace with messages
-            foreach (var subsystem in _subsystems)
-            {
-                subsystem.Stop();
-            }
+            if (_subsystems != null)
+                foreach (var subsystem in _subsystems)
+                    subsystem.Stop();
         }
 
         public override string ToString()

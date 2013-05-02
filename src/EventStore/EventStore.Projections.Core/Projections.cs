@@ -44,8 +44,8 @@ namespace EventStore.Projections.Core
     public sealed class ProjectionsSubsystem : ISubsystem
     {
         private Projections _projections;
-        private int _projectionWorkerThreadCount;
-        private bool _runProjections;
+        private readonly int _projectionWorkerThreadCount;
+        private readonly bool _runProjections;
 
         public ProjectionsSubsystem(int projectionWorkerThreadCount, bool runProjections)
         {
@@ -97,9 +97,11 @@ namespace EventStore.Projections.Core
             HttpService httpService, IPublisher networkSendQueue, bool runProjections)
         {
             _coreQueues = new List<QueuedHandler>();
-            _managerInputBus = new InMemoryBus("manager input bus");
-            _managerInputQueue = new QueuedHandler(_managerInputBus, "ProjectionManager");
-
+            if (runProjections)
+            {
+                _managerInputBus = new InMemoryBus("manager input bus");
+                _managerInputQueue = new QueuedHandler(_managerInputBus, "ProjectionManager");
+            }
             while (_coreQueues.Count < _projectionWorkerThreadCount)
             {
                 var coreInputBus = new InMemoryBus("bus");
