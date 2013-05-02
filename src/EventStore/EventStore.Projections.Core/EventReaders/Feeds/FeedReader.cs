@@ -55,6 +55,17 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
         private Guid _subscriptionId;
         private CheckpointTag _lastReaderPosition;
 
+        public static FeedReader Create(
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.Subscribe,
+                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+                publishSubscribeDispatcher, FeedReaderMessage.ReadPage message)
+        {
+            return new FeedReader(
+                publishSubscribeDispatcher, message.QuerySource, message.FromPosition, message.MaxEvents,
+                message.CorrelationId, message.Envelope);
+        }
+
         public FeedReader(
             PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher, QuerySourcesDefinition querySource, CheckpointTag fromPosition, int maxEvents,
             Guid requestCorrelationId, IEnvelope replyEnvelope)
@@ -63,6 +74,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
             if (querySource == null) throw new ArgumentNullException("querySource");
             if (fromPosition == null) throw new ArgumentNullException("fromPosition");
             if (replyEnvelope == null) throw new ArgumentNullException("replyEnvelope");
+            if (maxEvents <= 0) throw new ArgumentException("non-negative expected", "maxEvents");
 
             _subscriptionDispatcher = subscriptionDispatcher;
             _querySource = querySource;
@@ -76,7 +88,8 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
         {
             var readerStrategy = ReaderStrategy.Create(_querySource);
             //TODO: make reader mode explicit
-            var readerOptions = new ReaderSubscriptionOptions(1024*1024, _maxEvents + 1, false, _maxEvents);
+            var readerOptions = new ReaderSubscriptionOptions(
+                1024*1024, _maxEvents + 1, stopOnEof: true, stopAfterNEvents: _maxEvents);
             _subscriptionId =
                 _subscriptionDispatcher.PublishSubscribe(
                     new ReaderSubscriptionManagement.Subscribe(
@@ -113,9 +126,5 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
             _replyEnvelope.ReplyWith(new FeedReaderMessage.FeedPage(_requestCorrelationId, _batch.ToArray(), _lastReaderPosition));
         }
 
-        public static FeedReader Create(PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> publishSubscribeDispatcher, FeedReaderMessage.ReadPage message)
-        {
-            return new FeedReader(publishSubscribeDispatcher, message.QuerySource, message.FromPosition, message.MaxEvents, message.CorrelationId, message.Envelope);
-        }
     }
 }

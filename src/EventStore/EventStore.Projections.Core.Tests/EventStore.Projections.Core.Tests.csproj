@@ -150,6 +150,7 @@
     <Compile Include="Services\event_reader\stream_reader\when_onetime_reader_handles_eof.cs" />
     <Compile Include="Services\event_reader\transaction_file_reader\when_handling_eof_and_idle_eof.cs" />
     <Compile Include="Services\event_reader\transaction_file_reader\when_onetime_reader_handles_eof.cs" />
+    <Compile Include="Services\feeed_reader\feed_reader.cs" />
     <Compile Include="Services\handlers\categorize_events_by_stream_path.cs" />
     <Compile Include="Services\partition_state\partition_state.cs" />
     <Compile Include="Services\partition_state_cache\when_caching_a_parition_state.cs" />
@@ -232,6 +233,7 @@
     <Compile Include="Services\projections_manager\FakeForeachStreamProjection.cs" />
     <Compile Include="Services\projections_manager\FakeProjection.cs" />
     <Compile Include="Services\projections_manager\onetime\a_new_posted_projection.cs" />
+    <Compile Include="Services\feeed_reader\TestFixtureWithFeedReaderService.cs" />
     <Compile Include="Services\projections_manager\TestFixtureWithProjectionCoreAndManagementServices.cs" />
     <Compile Include="Services\projections_manager\v8\v8_internals.cs" />
     <Compile Include="Services\projections_manager\v8\when_compiling_v8_projection.cs" />

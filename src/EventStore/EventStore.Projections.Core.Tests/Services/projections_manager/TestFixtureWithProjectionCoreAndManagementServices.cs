@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void Setup()
         {
             _timeProvider = new FakeTimeProvider();
-            //TODO: this became a n integration test - proper ProjectionCoreService and ProjectionManager testing is required instead
+            //TODO: this became an integration test - proper ProjectionCoreService and ProjectionManager testing is required as well
             _bus.Subscribe(_consumer);
 
             _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, _timeProvider);
