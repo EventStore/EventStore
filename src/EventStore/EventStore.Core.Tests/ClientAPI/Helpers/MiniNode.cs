@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         public readonly TFChunkDb Db;
         private readonly string _dbPath;
 
-        public MiniNode(string pathname, int? tcpPort = null, int? httpPort = null, bool enableProjections = false)
+        public MiniNode(string pathname, int? tcpPort = null, int? httpPort = null, bool enableProjections = false, ISubsystem[] subsystems = null)
         {
             IPAddress ip = IPAddress.Loopback; //GetLocalIp();
 
@@ -97,7 +97,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                      "TCP ENDPOINT:", TcpEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
 
-            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, enabledNodeSubsystems: enableProjections ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0], memTableEntryCount: 1000);
+            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, enabledNodeSubsystems: enableProjections ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0], memTableEntryCount: 1000, subsystems: subsystems);
             Node.HttpService.SetupController(new TestController(Node.MainQueue, Node.NetworkSendService));
         }
 

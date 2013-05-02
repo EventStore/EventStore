@@ -43,7 +43,7 @@ namespace EventStore.SingleNode
     public class Program : ProgramBase<SingleNodeOptions>
     {
         private SingleVNode _node;
-        private Projections.Core.Projections _projections;
+        private Projections.Core.ProjectionsSubsystem _projections;
         private readonly DateTime _startupTimeStamp = DateTime.UtcNow;
         private ExclusiveDbLock _dbLock;
 
@@ -94,19 +94,10 @@ namespace EventStore.SingleNode
                      "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
 
             var enabledNodeSubsystems = runProjections ? new[] {NodeSubsystems.Projections} : new NodeSubsystems[0];
-            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, enabledNodeSubsystems);
+            _projections = new Projections.Core.ProjectionsSubsystem(options.ProjectionThreads, options.RunProjections);
+            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, enabledNodeSubsystems, ESConsts.MemTableEntryCount, _projections);
             RegisterWebControllers(enabledNodeSubsystems);
             RegisterUIProjections();
-            if (options.RunProjections)
-            {
-                _projections = new Projections.Core.Projections(db,
-                                                                _node.MainQueue,
-                                                                _node.MainBus,
-                                                                _node.TimerService,
-                                                                _node.HttpService,
-                                                                _node.NetworkSendService,
-                                                                options.ProjectionThreads);
-            }
         }
 
         private void RegisterUIProjections()
@@ -144,9 +135,6 @@ namespace EventStore.SingleNode
             _node.Start();
             
             _node.HttpService.SetupController(new TestController(_node.MainQueue, _node.NetworkSendService));
-
-            if (_projections != null)
-                _projections.Start();
         }
 
         public override void Stop()

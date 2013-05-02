@@ -26,35 +26,20 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using EventStore.Core;
-using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Web.Users;
+using EventStore.Core.Bus;
+using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.TransactionLog.Chunks;
 
-namespace EventStore.Integration.Tests.Helpers
+namespace EventStore.Core
 {
-    class MediumNode: MiniNode
+    public interface ISubsystem
     {
-        private Projections.Core.ProjectionsSubsystem _projections;
+        void Register(
+            TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService,
+            HttpService httpService, IPublisher networkSendService);
 
-        public MediumNode(string pathname)
-            : base(pathname, enableProjections: false)
-        {
-            RegisterWebControllers(new[] {NodeSubsystems.Projections} );
-            RegisterUIProjections();
-            _projections = new Projections.Core.ProjectionsSubsystem(projectionWorkerThreadCount: 1, runProjections: false);
-}
-
-        private void RegisterUIProjections()
-        {
-            var users = new UserManagementProjectionsRegistration();
-            Node.MainBus.Subscribe(users);
-        }
-
-        private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems)
-        {
-            Node.HttpService.SetupController(new WebSiteController(Node.MainQueue, enabledNodeSubsystems));
-            Node.HttpService.SetupController(new UsersWebController(Node.MainQueue));
-        }
+        void Start();
+        void Stop();
     }
 }
