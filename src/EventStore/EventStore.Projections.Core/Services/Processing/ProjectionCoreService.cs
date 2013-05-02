@@ -49,10 +49,6 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<CoreProjectionManagementMessage.GetState>,
                                         IHandle<CoreProjectionManagementMessage.GetResult>,
                                         IHandle<CoreProjectionManagementMessage.GetDebugState>,
-                                        IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>, 
-                                        IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>, 
-                                        IHandle<EventReaderSubscriptionMessage.EofReached>, 
-                                        IHandle<EventReaderSubscriptionMessage.ProgressChanged>, 
                                          IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
                                          IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
                                          IHandle<ClientMessage.WriteEventsCompleted>, 
@@ -82,22 +78,25 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptionDispatcher;
 
 
-        public ProjectionCoreService(IPublisher inputQueue, IPublisher publisher)
+        public ProjectionCoreService(
+            IPublisher inputQueue, IPublisher publisher,
+            PublishSubscribeDispatcher
+                    <ReaderSubscriptionManagement.Subscribe,
+                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
+                        >
+                subscriptionDispatcher)
         {
             _inputQueue = inputQueue;
             _publisher = publisher;
             _readDispatcher =
                 new RequestResponseDispatcher
                     <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
-                    _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+                    publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(inputQueue));
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
                     _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
-            _subscriptionDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
-                    (_publisher, v => v.SubscriptionId, v => v.SubscriptionId);
+            _subscriptionDispatcher = subscriptionDispatcher;
+                
         }
 
         public void Handle(ProjectionCoreServiceMessage.StartCore message)

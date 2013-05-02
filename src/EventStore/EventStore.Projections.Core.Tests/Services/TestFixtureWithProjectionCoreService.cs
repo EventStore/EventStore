@@ -29,10 +29,12 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -105,6 +107,12 @@ namespace EventStore.Projections.Core.Tests.Services
         protected ProjectionCoreService _service;
         protected EventReaderCoreService _readerService;
 
+        private
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.Subscribe,
+                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+            _subscriptionDispatcher;
+
         [SetUp]
         public void Setup()
         {
@@ -113,7 +121,16 @@ namespace EventStore.Projections.Core.Tests.Services
             _bus.Subscribe(_consumer);
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
             _readerService = new EventReaderCoreService(_bus, 10, writerCheckpoint);
-            _service = new ProjectionCoreService(_bus, _bus);
+            _subscriptionDispatcher =
+                new PublishSubscribeDispatcher
+                    <ReaderSubscriptionManagement.Subscribe,
+                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
+                        >(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
+            _service = new ProjectionCoreService(_bus, _bus, _subscriptionDispatcher);
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
             _readerService.Handle(new Messages.ReaderCoreServiceMessage.StartReader());
             _service.Handle(new ProjectionCoreServiceMessage.StartCore());
         }

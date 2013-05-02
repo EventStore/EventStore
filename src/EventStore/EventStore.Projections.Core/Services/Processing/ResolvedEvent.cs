@@ -28,7 +28,6 @@
 
 using System;
 using System.Text;
-using EventStore.Common.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
 {

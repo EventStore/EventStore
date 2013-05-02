@@ -156,8 +156,11 @@
       <Link>Properties\AssemblyVersion.cs</Link>
     </Compile>
     <Compile Include="EventPosition.cs" />
+    <Compile Include="EventReaders\Feeds\FeedReader.cs" />
+    <Compile Include="EventReaders\Feeds\FeedReaderService.cs" />
     <Compile Include="Messages\CoreProjectionManagementMessage.cs" />
     <Compile Include="Messages\CoreProjectionProcessingMessage.cs" />
+    <Compile Include="Messages\EventReaders\Feeds\FeedReaderMessage.cs" />
     <Compile Include="Messages\ICoreProjection.cs" />
     <Compile Include="Messages\IProjectionCheckpointManager.cs" />
     <Compile Include="Messages\ProjectionCoreServiceMessage.cs" />
@@ -248,6 +251,7 @@
     <Compile Include="Services\Processing\ProjectionCheckpoint.cs" />
     <Compile Include="Services\Processing\ReaderSubscription.cs" />
     <Compile Include="Services\Processing\CheckpointStrategy.cs" />
+    <Compile Include="Services\Processing\TaggedResolvedEvent.cs" />
     <Compile Include="Services\Processing\TransactionFileEventFilter.cs" />
     <Compile Include="Services\Processing\TransactionFilePositionTagger.cs" />
     <Compile Include="Services\Processing\TransactionFileEventReader.cs" />

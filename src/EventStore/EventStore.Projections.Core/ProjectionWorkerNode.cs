@@ -28,8 +28,11 @@
 using EventStore.Core.Bus;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Projections.Core.EventReaders.Feeds;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core
@@ -41,6 +44,13 @@ namespace EventStore.Projections.Core
         private readonly InMemoryBus _coreOutput;
         private readonly EventReaderCoreService _eventReaderCoreService;
 
+        private readonly PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.Subscribe,
+                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+            _subscriptionDispatcher;
+
+        private FeedReaderService _feedReaderService;
+
         public ProjectionWorkerNode(TFChunkDb db, QueuedHandler inputQueue, bool runProjections)
         {
             _runProjections = runProjections;
@@ -49,10 +59,15 @@ namespace EventStore.Projections.Core
             _coreOutput = new InMemoryBus("Core Output");
 
             IPublisher publisher = CoreOutput;
+            _subscriptionDispatcher = new PublishSubscribeDispatcher
+                    <ReaderSubscriptionManagement.Subscribe,
+                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>(publisher, v => v.SubscriptionId, v => v.SubscriptionId);;
             _eventReaderCoreService = new EventReaderCoreService(publisher, 10, db.Config.WriterCheckpoint);
+            _feedReaderService = new FeedReaderService(_subscriptionDispatcher);
             if (runProjections)
-                _projectionCoreService = new ProjectionCoreService(inputQueue, publisher);
-
+            {
+                _projectionCoreService = new ProjectionCoreService(inputQueue, publisher, _subscriptionDispatcher);
+            }
         }
 
         public InMemoryBus CoreOutput
@@ -62,6 +77,13 @@ namespace EventStore.Projections.Core
 
         public void SetupMessaging(IBus coreInputBus)
         {
+            coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
+            coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
+            coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
+            coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+
+            coreInputBus.Subscribe(_feedReaderService);
+
             if (_runProjections)
             {
 
@@ -71,10 +93,6 @@ namespace EventStore.Projections.Core
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.Dispose>(_projectionCoreService);
-                coreInputBus.Subscribe<EventReaderSubscriptionMessage.CommittedEventReceived>(_projectionCoreService);
-                coreInputBus.Subscribe<EventReaderSubscriptionMessage.CheckpointSuggested>(_projectionCoreService);
-                coreInputBus.Subscribe<EventReaderSubscriptionMessage.EofReached>(_projectionCoreService);
-                coreInputBus.Subscribe<EventReaderSubscriptionMessage.ProgressChanged>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.Start>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.Stop>(_projectionCoreService);

@@ -85,20 +85,23 @@ namespace EventStore.Projections.Core.Messages
                 builder.SetByStream();
             if (ByCustomPartitions)
                 builder.SetByCustomPartitions();
-            if (Options.IncludeLinks)
-                builder.SetIncludeLinks();
-            if (!String.IsNullOrWhiteSpace(Options.ResultStreamName))
-                builder.SetResultStreamNameOption(Options.ResultStreamName);
-            if (!String.IsNullOrWhiteSpace(Options.PartitionResultStreamNamePattern))
-                builder.SetPartitionResultStreamNamePatternOption(Options.PartitionResultStreamNamePattern);
-            if (!String.IsNullOrWhiteSpace(Options.ForceProjectionName))
-                builder.SetForceProjectionName(Options.ForceProjectionName);
-            if (Options.UseEventIndexes)
-                builder.SetUseEventIndexes(true);
-            if (Options.ReorderEvents)
-                builder.SetReorderEvents(true);
-            if (Options.ProcessingLag != null)
-                builder.SetProcessingLag(Options.ProcessingLag.GetValueOrDefault());
+            if (Options != null)
+            {
+                if (Options.IncludeLinks)
+                    builder.SetIncludeLinks();
+                if (!String.IsNullOrWhiteSpace(Options.ResultStreamName))
+                    builder.SetResultStreamNameOption(Options.ResultStreamName);
+                if (!String.IsNullOrWhiteSpace(Options.PartitionResultStreamNamePattern))
+                    builder.SetPartitionResultStreamNamePatternOption(Options.PartitionResultStreamNamePattern);
+                if (!String.IsNullOrWhiteSpace(Options.ForceProjectionName))
+                    builder.SetForceProjectionName(Options.ForceProjectionName);
+                if (Options.UseEventIndexes)
+                    builder.SetUseEventIndexes(true);
+                if (Options.ReorderEvents)
+                    builder.SetReorderEvents(true);
+                if (Options.ProcessingLag != null)
+                    builder.SetProcessingLag(Options.ProcessingLag.GetValueOrDefault());
+            }
             if (DefinesStateTransform)
                 builder.SetDefinesStateTransform();
         }
