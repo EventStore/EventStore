@@ -29,20 +29,26 @@
 using EventStore.Core;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Projections.Core;
 using EventStore.Web.Users;
 
 namespace EventStore.Integration.Tests.Helpers
 {
     class MediumNode: MiniNode
     {
+        public static MediumNode Create(string pathname, bool runProjections)
+        {
+            return new MediumNode(pathname, new Projections.Core.ProjectionsSubsystem(projectionWorkerThreadCount: 1, runProjections: runProjections), runProjections);
+        }
+
         private Projections.Core.ProjectionsSubsystem _projections;
 
-        public MediumNode(string pathname)
-            : base(pathname, enableProjections: false)
+        private MediumNode(string pathname, ProjectionsSubsystem projectionsSubsystem, bool runProjections)
+            : base(pathname, enableProjections: runProjections, subsystems: new []{projectionsSubsystem})
         {
+            _projections = projectionsSubsystem;
             RegisterWebControllers(new[] {NodeSubsystems.Projections} );
             RegisterUIProjections();
-            _projections = new Projections.Core.ProjectionsSubsystem(projectionWorkerThreadCount: 1, runProjections: false);
 }
 
         private void RegisterUIProjections()

@@ -71,11 +71,11 @@ namespace EventStore.Projections.Core
 
         public void Stop()
         {
-            throw new System.NotImplementedException();
+            _projections.Stop();
         }
     }
 
-    class Projections
+    sealed class Projections
     {
         private List<QueuedHandler> _coreQueues;
         private readonly int _projectionWorkerThreadCount;
@@ -179,9 +179,18 @@ namespace EventStore.Projections.Core
 
         public void Start()
         {
-            _managerInputQueue.Start();
+            if (_managerInputQueue != null) 
+                _managerInputQueue.Start();
             foreach (var queue in _coreQueues)
                 queue.Start();
+        }
+
+        public void Stop()
+        {
+            if (_managerInputQueue != null) 
+                _managerInputQueue.Stop();
+            foreach (var queue in _coreQueues)
+                queue.Stop();
         }
     }
 }

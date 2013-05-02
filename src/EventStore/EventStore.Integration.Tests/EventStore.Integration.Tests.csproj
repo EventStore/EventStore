@@ -64,6 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers\HttpBehaviorSpecification.cs" />
+    <Compile Include="Helpers\HttpBehaviorSpecificationWithProjections.cs" />
     <Compile Include="Helpers\MediumNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Smoke\MediumNodeTests.cs" />

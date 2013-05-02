@@ -30,12 +30,11 @@ using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Integration.Tests.Helpers
 {
-    abstract class HttpBehaviorSpecification : Core.Tests.Http.HttpBehaviorSpecification
+    abstract class HttpBehaviorSpecificationWithProjections : Core.Tests.Http.HttpBehaviorSpecification
     {
         protected override MiniNode CreateMiniNode()
         {
-            return MediumNode.Create(PathName, runProjections: false);
+            return MediumNode.Create(PathName, runProjections: true);
         }
-
     }
 }
