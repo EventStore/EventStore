@@ -423,7 +423,7 @@ namespace EventStore.Projections.Core.Services.Processing
             jsonWriter.WriteValue(projectionVersion.ProjectionId + ":" + projectionVersion.Epoch + ":" + projectionVersion.Version);
         }
 
-        public static CheckpointTagVersion FromJson(JsonTextReader reader, ProjectionVersion current)
+        public static CheckpointTagVersion FromJson(JsonReader reader, ProjectionVersion current)
         {
             Check(reader.Read(), reader);
             Check(JsonToken.StartObject, reader);
@@ -518,13 +518,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 };
         }
 
-        private static void Check(JsonToken type, JsonTextReader reader)
+        private static void Check(JsonToken type, JsonReader reader)
         {
             if (reader.TokenType != type)
                 throw new Exception("Invalid JSON");
         } 
 
-        private static void Check(bool read, JsonTextReader reader)
+        private static void Check(bool read, JsonReader reader)
         {
             if (!read)
                 throw new Exception("Invalid JSON");

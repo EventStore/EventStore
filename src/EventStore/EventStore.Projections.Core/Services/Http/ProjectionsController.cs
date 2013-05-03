@@ -38,9 +38,12 @@ using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.EventReaders.Feeds;
+using EventStore.Projections.Core.Services.Processing;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Services.Http
 {
@@ -123,6 +126,8 @@ namespace EventStore.Projections.Core.Services.Http
             Register(
                 service, "/projection/{name}/debug", HttpMethod.Get, OnProjectionDebugGet, Codec.NoCodecs,
                 SupportedCodecs);
+            RegisterTextBody(
+                service, "/projections/read-events", HttpMethod.Post, OnProjectionsReadEvents);
             Register(
                 service, "/projection/{name}/state?partition={partition}", HttpMethod.Get, OnProjectionStateGet,
                 Codec.NoCodecs, SupportedCodecs);
@@ -293,6 +298,27 @@ namespace EventStore.Projections.Core.Services.Http
                     envelope, match.BoundVariables["name"]));
         }
 
+
+        public class ReadEventsBody
+        {
+            public QuerySourcesDefinition Query { get; set; }
+            public JObject Position { get; set; }
+            public int? MaxEvents { get; set; }
+        }
+
+        private void OnProjectionsReadEvents(HttpEntityManager http, UriTemplateMatch match, string body)
+        {
+
+            var bodyParsed = body.ParseJson<ReadEventsBody>();
+            var fromPosition = CheckpointTag.FromJson(new JTokenReader(bodyParsed.Position), new ProjectionVersion(0, 0, 0));
+
+            var envelope = new SendToHttpEnvelope<FeedReaderMessage.FeedPage>(
+                _networkSendQueue, http, FeedPageFormatter, FeedPageConfigurator, ErrorsEnvelope(http));
+            Publish(
+                new FeedReaderMessage.ReadPage(Guid.NewGuid(), 
+                    envelope, bodyParsed.Query, fromPosition.Tag, bodyParsed.MaxEvents ?? 10));
+        }
+
         private void ProjectionsGet(HttpEntityManager http, UriTemplateMatch match, ProjectionMode? mode)
         {
             var envelope =
@@ -356,6 +382,11 @@ namespace EventStore.Projections.Core.Services.Http
             return Configure.OkNoCache("application/json", Encoding.UTF8);
         }
 
+        private ResponseConfiguration FeedPageConfigurator(ICodec codec, FeedReaderMessage.FeedPage page)
+        {
+            return Configure.OkNoCache("application/json", Encoding.UTF8);
+        }
+
         private string StateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionState state)
         {
             if (state.Exception != null)
@@ -375,6 +406,11 @@ namespace EventStore.Projections.Core.Services.Http
         private string DebugStateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionDebugState state)
         {
             return state.Events.ToJson();
+        }
+
+        private string FeedPageFormatter(ICodec codec, FeedReaderMessage.FeedPage page)
+        {
+            return page.ToJson();
         }
 
         private ResponseConfiguration QueryConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
