@@ -170,7 +170,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverLastCommitPosition(EventPosition lastPosition)
         {
-            if (_stopOnEof)
+            if (_stopOnEof || _stopAfterNEvents != null)
                 return;
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(

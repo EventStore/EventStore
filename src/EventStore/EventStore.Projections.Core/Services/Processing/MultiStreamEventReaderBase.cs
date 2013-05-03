@@ -292,7 +292,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverSafePositionToJoin()
         {
-            if (_stopOnEof || _safePositionToJoin == null)
+            if (_stopOnEof || _stopAfterNEvents != null || _safePositionToJoin == null)
                 return;
             // deliver if already available
             _publisher.Publish(

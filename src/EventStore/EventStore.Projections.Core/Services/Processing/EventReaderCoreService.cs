@@ -245,15 +245,20 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool TrySubscribeHeadingEventReader(
             ReaderSubscriptionMessage.CommittedEventDistributed message, Guid projectionId)
         {
+            if (message.SafeTransactionFileReaderJoinPosition == null)
+                return false;
+
             if (!_runHeadingReader)
-                throw new InvalidOperationException("Should not attempt subscribing heading event reader when it is not running");
+                throw new InvalidOperationException(
+                    "Should not attempt subscribing heading event reader when it is not running");
+
             if (_pausedSubscriptions.Contains(projectionId))
                 return false;
 
             var projectionSubscription = _subscriptions[projectionId];
 
-            if (message.SafeTransactionFileReaderJoinPosition == null
-                || !_headingEventReader.TrySubscribe(
+            if (
+                !_headingEventReader.TrySubscribe(
                     projectionId, projectionSubscription, message.SafeTransactionFileReaderJoinPosition.Value))
                 return false;
 
