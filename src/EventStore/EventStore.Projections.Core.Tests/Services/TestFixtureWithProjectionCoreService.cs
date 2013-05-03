@@ -120,7 +120,7 @@ namespace EventStore.Projections.Core.Tests.Services
             _bus = new InMemoryBus("temp");
             _bus.Subscribe(_consumer);
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
-            _readerService = new EventReaderCoreService(_bus, 10, writerCheckpoint);
+            _readerService = new EventReaderCoreService(_bus, 10, writerCheckpoint, runHeadingReader: true);
             _subscriptionDispatcher =
                 new PublishSubscribeDispatcher
                     <ReaderSubscriptionManagement.Subscribe,

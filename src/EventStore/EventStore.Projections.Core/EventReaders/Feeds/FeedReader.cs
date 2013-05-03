@@ -67,7 +67,10 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
         }
 
         public FeedReader(
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher, QuerySourcesDefinition querySource, CheckpointTag fromPosition, int maxEvents,
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.Subscribe,
+                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+                subscriptionDispatcher, QuerySourcesDefinition querySource, CheckpointTag fromPosition, int maxEvents,
             Guid requestCorrelationId, IEnvelope replyEnvelope)
         {
             if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");

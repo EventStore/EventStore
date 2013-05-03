@@ -99,6 +99,10 @@ namespace EventStore.Core.Tests.Http
             get { return "/streams/test" + Tag; }
         }
 
+        public string TestStreamName {
+            get { return "test" + Tag; }
+        }
+
         public string TestMetadataStream {
             get { return "/streams/$$test" + Tag; }
         }

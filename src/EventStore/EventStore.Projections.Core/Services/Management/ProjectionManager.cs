@@ -80,6 +80,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher[] _queues;
         private readonly TimeoutScheduler[] _timeoutSchedulers;
         private readonly ITimeProvider _timeProvider;
+        private readonly bool _runProjections;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
         private readonly Dictionary<string, ManagedProjection> _projections;
         private readonly Dictionary<Guid, string> _projectionsMap;
@@ -92,7 +93,9 @@ namespace EventStore.Projections.Core.Services.Management
 
         private int _readEventsBatchSize = 100;
 
-        public ProjectionManager(IPublisher inputQueue, IPublisher publisher, IPublisher[] queues, ITimeProvider timeProvider)
+        public ProjectionManager(
+            IPublisher inputQueue, IPublisher publisher, IPublisher[] queues, ITimeProvider timeProvider,
+            bool runProjections)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -106,6 +109,7 @@ namespace EventStore.Projections.Core.Services.Management
             _timeoutSchedulers = CreateTimeoutSchedulers(queues);
 
             _timeProvider = timeProvider;
+            _runProjections = runProjections;
 
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
@@ -135,15 +139,17 @@ namespace EventStore.Projections.Core.Services.Management
             foreach (var queue in _queues)
             {
                 queue.Publish(new Messages.ReaderCoreServiceMessage.StartReader());
-                queue.Publish(new ProjectionCoreServiceMessage.StartCore());
+                if (_runProjections)
+                    queue.Publish(new ProjectionCoreServiceMessage.StartCore());
             }
-            StartExistingProjections(
-                () =>
-                    {
-                        _started = true;
-                        ScheduleExpire();
-                        ScheduleRegularTimeout();
-                    });
+            if (_runProjections)
+                StartExistingProjections(
+                    () =>
+                        {
+                            _started = true;
+                            ScheduleExpire();
+                            ScheduleRegularTimeout();
+                        });
         }
 
         private void ScheduleExpire()
@@ -170,7 +176,8 @@ namespace EventStore.Projections.Core.Services.Management
             foreach (var queue in _queues)
             {
                 queue.Publish(new ProjectionCoreServiceMessage.StopCore());
-                queue.Publish(new Messages.ReaderCoreServiceMessage.StopReader());
+                if (_runProjections)
+                    queue.Publish(new Messages.ReaderCoreServiceMessage.StopReader());
             }
 
             _writeDispatcher.CancelAll();

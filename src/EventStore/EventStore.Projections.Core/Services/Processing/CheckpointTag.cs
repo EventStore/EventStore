@@ -373,49 +373,79 @@ namespace EventStore.Projections.Core.Services.Processing
                 using (var textWriter = new StreamWriter(memoryStream, _utf8NoBom))
                 using (var jsonWriter = new JsonTextWriter(textWriter))
                 {
-                    jsonWriter.WriteStartObject();
-                    switch (Mode_)
-                    {
-                        case Mode.Position:
-                            jsonWriter.WritePropertyName("$v");
-                            WriteVersion(projectionVersion, jsonWriter);
-                            jsonWriter.WritePropertyName("$c");
-                            jsonWriter.WriteValue(CommitPosition.GetValueOrDefault());
-                            jsonWriter.WritePropertyName("$p");
-                            jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
-                            break;
-                        case Mode.PreparePosition:
-                            jsonWriter.WritePropertyName("$v");
-                            WriteVersion(projectionVersion, jsonWriter);
-                            jsonWriter.WritePropertyName("$p");
-                            jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
-                            break;
-                        case Mode.Stream:
-                        case Mode.MultiStream:
-                            jsonWriter.WritePropertyName("$v");
-                            WriteVersion(projectionVersion, jsonWriter);
-                            jsonWriter.WritePropertyName("$s");
-                            jsonWriter.WriteStartObject();
-                            foreach (var stream in Streams)
-                            {
-                                jsonWriter.WritePropertyName(stream.Key);
-                                jsonWriter.WriteValue(stream.Value);
-                            }
-                            jsonWriter.WriteEndObject();
-                            break;
-                    }
-                    if (extraMetaData != null)
-                    {
-                        foreach (var pair in extraMetaData)
-                        {
-                            jsonWriter.WritePropertyName(pair.Key);
-                            jsonWriter.WriteRawValue(pair.Value);
-                        }
-                    }
-                    jsonWriter.WriteEndObject();
+                    WriteTo(projectionVersion, extraMetaData, jsonWriter);
                 }
                 return memoryStream.ToArray();
             }
+        }
+
+        public string ToJsonString(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
+        {
+            if (projectionVersion.ProjectionId <= 0) throw new ArgumentException("projectionId is required", "projectionVersion");
+
+            using (var textWriter = new StringWriter())
+            {
+                using (var jsonWriter = new JsonTextWriter(textWriter))
+                {
+                    WriteTo(projectionVersion, extraMetaData, jsonWriter);
+                }
+                return textWriter.ToString();
+            }
+        }
+
+        public string ToJsonString(IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
+        {
+            using (var textWriter = new StringWriter())
+            {
+                using (var jsonWriter = new JsonTextWriter(textWriter))
+                {
+                    WriteTo(default(ProjectionVersion), extraMetaData, jsonWriter);
+                }
+                return textWriter.ToString();
+            }
+        }
+
+        private void WriteTo(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, string>> extraMetaData, JsonTextWriter jsonWriter)
+        {
+            jsonWriter.WriteStartObject();
+            if (projectionVersion.ProjectionId > 0)
+            {
+                jsonWriter.WritePropertyName("$v");
+                WriteVersion(projectionVersion, jsonWriter);
+            }
+            switch (Mode_)
+            {
+                case Mode.Position:
+                    jsonWriter.WritePropertyName("$c");
+                    jsonWriter.WriteValue(CommitPosition.GetValueOrDefault());
+                    jsonWriter.WritePropertyName("$p");
+                    jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
+                    break;
+                case Mode.PreparePosition:
+                    jsonWriter.WritePropertyName("$p");
+                    jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
+                    break;
+                case Mode.Stream:
+                case Mode.MultiStream:
+                    jsonWriter.WritePropertyName("$s");
+                    jsonWriter.WriteStartObject();
+                    foreach (var stream in Streams)
+                    {
+                        jsonWriter.WritePropertyName(stream.Key);
+                        jsonWriter.WriteValue(stream.Value);
+                    }
+                    jsonWriter.WriteEndObject();
+                    break;
+            }
+            if (extraMetaData != null)
+            {
+                foreach (var pair in extraMetaData)
+                {
+                    jsonWriter.WritePropertyName(pair.Key);
+                    jsonWriter.WriteRawValue(pair.Value);
+                }
+            }
+            jsonWriter.WriteEndObject();
         }
 
         private static void WriteVersion(ProjectionVersion projectionVersion, JsonTextWriter jsonWriter)

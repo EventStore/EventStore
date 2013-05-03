@@ -150,31 +150,29 @@ namespace EventStore.Projections.Core
             }
 
             _managerInputBus.Subscribe(
-                Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(_coreQueues.Cast<IPublisher>().ToArray()));
+            Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(_coreQueues.Cast<IPublisher>().ToArray()));
 
-            if (runProjections)
+            _projectionManagerNode = ProjectionManagerNode.Create(
+                db, _managerInputQueue, httpService, networkSendQueue, _coreQueues.Cast<IPublisher>().ToArray(),
+                runProjections);
+            _projectionManagerNode.SetupMessaging(_managerInputBus);
             {
-                _projectionManagerNode = ProjectionManagerNode.Create(
-                    db, _managerInputQueue, httpService, networkSendQueue, _coreQueues.Cast<IPublisher>().ToArray());
-                _projectionManagerNode.SetupMessaging(_managerInputBus);
-                {
-                    var forwarder = new RequestResponseQueueForwarder(
-                        inputQueue: _managerInputQueue, externalRequestQueue: mainQueue);
-                    _projectionManagerNode.Output.Subscribe<ClientMessage.ReadEvent>(forwarder);
-                    _projectionManagerNode.Output.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
-                    _projectionManagerNode.Output.Subscribe<ClientMessage.ReadStreamEventsForward>(forwarder);
-                    _projectionManagerNode.Output.Subscribe<ClientMessage.WriteEvents>(forwarder);
-                    _projectionManagerNode.Output.Subscribe(
-                        Forwarder.Create<ProjectionManagementMessage.RequestSystemProjections>(mainQueue));
-                    _projectionManagerNode.Output.Subscribe(Forwarder.Create<Message>(_managerInputQueue));
+                var forwarder = new RequestResponseQueueForwarder(
+                    inputQueue: _managerInputQueue, externalRequestQueue: mainQueue);
+                _projectionManagerNode.Output.Subscribe<ClientMessage.ReadEvent>(forwarder);
+                _projectionManagerNode.Output.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
+                _projectionManagerNode.Output.Subscribe<ClientMessage.ReadStreamEventsForward>(forwarder);
+                _projectionManagerNode.Output.Subscribe<ClientMessage.WriteEvents>(forwarder);
+                _projectionManagerNode.Output.Subscribe(
+                    Forwarder.Create<ProjectionManagementMessage.RequestSystemProjections>(mainQueue));
+                _projectionManagerNode.Output.Subscribe(Forwarder.Create<Message>(_managerInputQueue));
 
-                    _projectionManagerNode.Output.Subscribe(timerService);
+                _projectionManagerNode.Output.Subscribe(timerService);
 
-                    // self forward all
+                // self forward all
 
-                    mainBus.Subscribe(Forwarder.Create<SystemMessage.StateChangeMessage>(_managerInputQueue));
-                    _managerInputBus.Subscribe(new UnwrapEnvelopeHandler());
-                }
+                mainBus.Subscribe(Forwarder.Create<SystemMessage.StateChangeMessage>(_managerInputQueue));
+                _managerInputBus.Subscribe(new UnwrapEnvelopeHandler());
             }
         }
 

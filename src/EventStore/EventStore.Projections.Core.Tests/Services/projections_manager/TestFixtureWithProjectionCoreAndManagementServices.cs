@@ -61,9 +61,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             //TODO: this became an integration test - proper ProjectionCoreService and ProjectionManager testing is required as well
             _bus.Subscribe(_consumer);
 
-            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, _timeProvider);
+            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, _timeProvider, true);
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
-            _readerService = new EventReaderCoreService(_bus, 10, writerCheckpoint);
+            _readerService = new EventReaderCoreService(_bus, 10, writerCheckpoint, runHeadingReader: true);
             _subscriptionDispatcher =
                 new PublishSubscribeDispatcher
                     <ReaderSubscriptionManagement.Subscribe,

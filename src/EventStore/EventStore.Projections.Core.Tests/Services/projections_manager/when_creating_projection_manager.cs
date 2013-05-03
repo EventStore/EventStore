@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             using (
                 var m = new ProjectionManager(
-                    new FakePublisher(), new FakePublisher(), new IPublisher[] {new FakePublisher()}, _timeProvider))
+                    new FakePublisher(), new FakePublisher(), new IPublisher[] {new FakePublisher()}, _timeProvider, true))
             {
             }
         }
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             using (
                 var m = new ProjectionManager(
-                    null, new FakePublisher(), new IPublisher[] {new FakePublisher()}, _timeProvider))
+                    null, new FakePublisher(), new IPublisher[] {new FakePublisher()}, _timeProvider, true))
             {
             }
         }
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             using (
                 var m = new ProjectionManager(
-                    new FakePublisher(), null, new IPublisher[] {new FakePublisher()}, _timeProvider))
+                    new FakePublisher(), null, new IPublisher[] {new FakePublisher()}, _timeProvider, true))
             {
             }
         }
@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_queues_throws_argument_null_exception()
         {
-            using (var m = new ProjectionManager(new FakePublisher(), new FakePublisher(), null, _timeProvider))
+            using (var m = new ProjectionManager(new FakePublisher(), new FakePublisher(), null, _timeProvider, true))
             {
             }
         }
@@ -90,7 +90,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             using (
                 var m = new ProjectionManager(
-                    new FakePublisher(), new FakePublisher(), new IPublisher[0], _timeProvider))
+                    new FakePublisher(), new FakePublisher(), new IPublisher[0], _timeProvider, true))
             {
             }
         }

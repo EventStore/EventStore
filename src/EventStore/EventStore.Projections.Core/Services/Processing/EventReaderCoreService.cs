@@ -62,15 +62,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly HashSet<Guid> _pausedSubscriptions = new HashSet<Guid>();
         private readonly HeadingEventReader _headingEventReader;
         private readonly ICheckpoint _writerCheckpoint;
+        private readonly bool _runHeadingReader;
 
 
         public EventReaderCoreService(
             IPublisher publisher, int eventCacheSize,
-            ICheckpoint writerCheckpoint)
+            ICheckpoint writerCheckpoint, bool runHeadingReader)
         {
             _publisher = publisher;
-            _headingEventReader = new HeadingEventReader(eventCacheSize);
+            if (runHeadingReader)
+                _headingEventReader = new HeadingEventReader(eventCacheSize);
             _writerCheckpoint = writerCheckpoint;
+            _runHeadingReader = runHeadingReader;
         }
 
         public void Handle(ReaderSubscriptionManagement.Pause message)
@@ -157,7 +160,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Guid projectionId;
             if (_stopped)
                 return;
-            if (_headingEventReader.Handle(message))
+            if (_runHeadingReader && _headingEventReader.Handle(message))
                 return;
             if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed
@@ -172,7 +175,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Guid projectionId;
             if (_stopped)
                 return;
-            if (_headingEventReader.Handle(message))
+            if (_runHeadingReader && _headingEventReader.Handle(message))
                 return;
             if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed
@@ -203,7 +206,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 new EventPosition(_writerCheckpoint.Read(), -1), new RealTimeProvider(),
                 deliverEndOfTFPosition: false);
             _eventReaders.Add(distributionPointCorrelationId, transactionFileReader);
-            _headingEventReader.Start(distributionPointCorrelationId, transactionFileReader);
+            if (_runHeadingReader)
+                _headingEventReader.Start(distributionPointCorrelationId, transactionFileReader);
         }
 
         public void StopReaders()
@@ -233,13 +237,16 @@ namespace EventStore.Projections.Core.Services.Processing
                 _eventReaderSubscriptions.Clear();
             }
 
-            _headingEventReader.Stop();
+            if (_runHeadingReader)
+                _headingEventReader.Stop();
             _stopped = true;
         }
 
         private bool TrySubscribeHeadingEventReader(
             ReaderSubscriptionMessage.CommittedEventDistributed message, Guid projectionId)
         {
+            if (!_runHeadingReader)
+                throw new InvalidOperationException("Should not attempt subscribing heading event reader when it is not running");
             if (_pausedSubscriptions.Contains(projectionId))
                 return false;
 

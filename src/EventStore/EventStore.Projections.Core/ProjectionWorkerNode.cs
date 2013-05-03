@@ -59,10 +59,14 @@ namespace EventStore.Projections.Core
             _coreOutput = new InMemoryBus("Core Output");
 
             IPublisher publisher = CoreOutput;
-            _subscriptionDispatcher = new PublishSubscribeDispatcher
+            _subscriptionDispatcher =
+                new PublishSubscribeDispatcher
                     <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>(publisher, v => v.SubscriptionId, v => v.SubscriptionId);;
-            _eventReaderCoreService = new EventReaderCoreService(publisher, 10, db.Config.WriterCheckpoint);
+                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
+                        >(publisher, v => v.SubscriptionId, v => v.SubscriptionId);
+            ;
+            _eventReaderCoreService = new EventReaderCoreService(
+                publisher, 10, db.Config.WriterCheckpoint, runHeadingReader: runProjections);
             _feedReaderService = new FeedReaderService(_subscriptionDispatcher);
             if (runProjections)
             {

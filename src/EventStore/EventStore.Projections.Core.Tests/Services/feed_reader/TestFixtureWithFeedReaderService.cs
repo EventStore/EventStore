@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             _bus.Subscribe(_consumer);
 
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
-            _readerService = new EventReaderCoreService(GetInputQueue(), 10, writerCheckpoint);
+            _readerService = new EventReaderCoreService(GetInputQueue(), 10, writerCheckpoint, runHeadingReader: false);
             _subscriptionDispatcher =
                 new PublishSubscribeDispatcher
                     <ReaderSubscriptionManagement.Subscribe,
