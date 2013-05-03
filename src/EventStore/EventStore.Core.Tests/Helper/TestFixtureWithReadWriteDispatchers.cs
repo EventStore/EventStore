@@ -85,14 +85,14 @@ namespace EventStore.Core.Tests.Helper
         protected void WhenLoop()
         {
             _queue.Process();
-            foreach (var action in When())
+            foreach (var message in When())
             {
-                action();
+                _queue.Publish(message);
                 _queue.Process();
             }
         }
 
-        protected virtual IEnumerable<Action> When()
+        protected virtual IEnumerable<Message> When()
         {
             yield break;
         }

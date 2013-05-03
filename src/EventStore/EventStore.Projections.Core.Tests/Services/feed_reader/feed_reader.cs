@@ -331,14 +331,12 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                 _maxEvents = 2;
             }
 
-            protected override IEnumerable<Action> When()
+            protected override IEnumerable<Message> When()
             {
                 yield return
-                    () =>
-                    _bus.Publish(
-                        new FeedReaderMessage.ReadPage(
-                            Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), _querySourcesDefinition, _fromPosition,
-                            _maxEvents));
+                    new FeedReaderMessage.ReadPage(
+                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), _querySourcesDefinition, _fromPosition,
+                        _maxEvents);
             }
 
             [Test]
