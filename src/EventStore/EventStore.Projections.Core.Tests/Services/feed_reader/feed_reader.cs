@@ -354,5 +354,52 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             }
         }
 
+        [TestFixture]
+        class when_reading_existing_events_by_parts : TestFixtureWithFeedReaderService
+        {
+            private QuerySourcesDefinition _querySourcesDefinition;
+            private CheckpointTag _fromPosition;
+            private int _maxEvents;
+
+            protected override void Given()
+            {
+                base.Given();
+                ExistingEvent("test-stream", "type1", "{}", "{Data: 1}");
+                ExistingEvent("test-stream", "type1", "{}", "{Data: 2}");
+                ExistingEvent("test-stream", "type2", "{}", "{Data: 3}");
+
+                _querySourcesDefinition = new QuerySourcesDefinition {Streams = new[] {"test-stream"}, AllEvents = true};
+                _fromPosition = CheckpointTag.FromStreamPosition("test-stream", -1);
+                _maxEvents = 2;
+            }
+
+            protected override IEnumerable<Message> When()
+            {
+                yield return
+                    new FeedReaderMessage.ReadPage(
+                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), _querySourcesDefinition, _fromPosition,
+                        _maxEvents);
+                var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Single();
+                yield return
+                    new FeedReaderMessage.ReadPage(
+                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), _querySourcesDefinition, feedPage.LastReaderPosition,
+                        _maxEvents);
+            }
+
+            [Test]
+            public void publishes_feed_page_message()
+            {
+                var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().ToArray();
+                Assert.AreEqual(2, feedPage.Length);
+            }
+
+            [Test]
+            public void returns_correct_last_reader_position()
+            {
+                var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Last();
+                Assert.AreEqual(CheckpointTag.FromStreamPosition("test-stream", 2), feedPage.LastReaderPosition);
+            }
+        }
+
     }
 }

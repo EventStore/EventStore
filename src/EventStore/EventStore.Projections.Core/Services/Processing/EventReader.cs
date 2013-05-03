@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected void SendEof()
         {
-            if (_stopOnEof)
+            if (_stopOnEof || _stopAfterNEvents != null)
             {
                 _publisher.Publish(new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId));
                 Dispose();
