@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -127,7 +128,8 @@ namespace EventStore.Projections.Core.Services.Http
                 service, "/projection/{name}/debug", HttpMethod.Get, OnProjectionDebugGet, Codec.NoCodecs,
                 SupportedCodecs);
             RegisterTextBody(
-                service, "/projections/read-events", HttpMethod.Post, OnProjectionsReadEvents);
+                service, "/projections/read-events", HttpMethod.Post, OnProjectionsReadEvents,
+                requestCodecs: SupportedCodecs, responseCodecs: SupportedCodecs);
             Register(
                 service, "/projection/{name}/state?partition={partition}", HttpMethod.Get, OnProjectionStateGet,
                 Codec.NoCodecs, SupportedCodecs);
@@ -410,7 +412,25 @@ namespace EventStore.Projections.Core.Services.Http
 
         private string FeedPageFormatter(ICodec codec, FeedReaderMessage.FeedPage page)
         {
-            return page.ToJson();
+            return
+                new
+                    {
+                        CorrelationId = page.CorrelationId,
+                        ReaderPosition = page.LastReaderPosition.ToJsonRaw(),
+                        Events = (from e in page.Events
+                                  let resolvedEvent = e.ResolvedEvent
+                                  select
+                                      new
+                                          {
+                                              EventStreamId = resolvedEvent.EventStreamId,
+                                              EventNumber = resolvedEvent.EventSequenceNumber,
+                                              EventType = resolvedEvent.EventType,
+                                              Data = resolvedEvent.Data,
+                                              Metadata = resolvedEvent.Metadata,
+                                              IsJson = resolvedEvent.IsJson,
+                                              ReaderPosition = e.ReaderPosition.ToJsonRaw(),
+                                          }).ToArray()
+                    }.ToJson();
         }
 
         private ResponseConfiguration QueryConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)

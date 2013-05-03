@@ -169,6 +169,25 @@ namespace EventStore.Core.Tests.Http
             return httpWebResponse;
         }
 
+        protected JObject MakeJsonPostWithJsonResponse<T>(string path, T body, ICredentials credentials = null)
+        {
+            var request = CreateJsonPostRequest(path, "POST", body, credentials);
+            _lastResponse = GetRequestResponse(request);
+            var memoryStream = new MemoryStream();
+            _lastResponse.GetResponseStream().CopyTo(memoryStream);
+            var bytes = memoryStream.ToArray();
+            _lastResponseBody = Encoding.UTF8.GetString(bytes);
+            try
+            {
+                return _lastResponseBody.ParseJson<JObject>();
+            }
+            catch (JsonException ex)
+            {
+                _lastJsonException = ex;
+                return default(JObject);
+            }
+        }
+
         protected HttpWebResponse MakeJsonPut<T>(string path, T body)
         {
             var request = CreateJsonPostRequest(path, "PUT", body);

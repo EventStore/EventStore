@@ -405,6 +405,18 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        public JRaw ToJsonRaw(IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
+        {
+            using (var textWriter = new StringWriter())
+            {
+                using (var jsonWriter = new JsonTextWriter(textWriter))
+                {
+                    WriteTo(default(ProjectionVersion), extraMetaData, jsonWriter);
+                }
+                return new JRaw(textWriter.ToString());
+            }
+        }
+
         private void WriteTo(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, string>> extraMetaData, JsonTextWriter jsonWriter)
         {
             jsonWriter.WriteStartObject();

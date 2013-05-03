@@ -28,14 +28,15 @@
 
 using System;
 using System.Net;
+using EventStore.Common.Utils;
+using EventStore.Integration.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
-using HttpBehaviorSpecification = EventStore.Integration.Tests.Helpers.HttpBehaviorSpecification;
 
-namespace EventStore.Integration.Tests.EventReader
+namespace EventStore.Integration.Tests.FeedReader
 {
-    namespace event_reader
+    namespace feed_reader
     {
         abstract class FeedReaderSpecification : HttpBehaviorSpecification
         {
@@ -59,23 +60,52 @@ namespace EventStore.Integration.Tests.EventReader
         [TestFixture, Category("LongRunning")]
         class when_reading_a_single_event : FeedReaderSpecification
         {
-            private HttpWebResponse _response;
+            private JObject _response;
 
             protected override void When()
             {
-                _response = MakeJsonPost(
+                _response = MakeJsonPostWithJsonResponse(
                     "/projections/read-events",
                     new
                         {
                             Query = new {Streams = new[] {TestStreamName}, All_Events = true},
-                            Position = new JRaw(CheckpointTag.FromStreamPosition(TestStreamName, -1).ToJsonString())
+                            Position = new JRaw(CheckpointTag.FromStreamPosition(TestStreamName, -1).ToJsonString()),
+                            MaxEvents = 1
                         });
             }
 
             [Test]
             public void returns_ok_status_code()
             {
-                Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+            [Test]
+            public void returns_correct_reader_position()
+            {
+                AssertJson(
+                    new {ReaderPosition = CheckpointTag.FromStreamPosition(TestStreamName, 1).ToJsonRaw()}, _response);
+            }
+
+            [Test]
+            public void returns_correct_event()
+            {
+                AssertJson(
+                    new
+                        {
+                            Events =
+                        new[]
+                            {
+                                new
+                                    {
+                                        EventStreamId = TestStreamName,
+                                        EventNumber = 0,
+                                        EventType = "event-type",
+                                        Data = new {SampleData = 1}.ToJson(),
+                                        Metadata = "",
+                                    }
+                            }
+                        }, _response);
             }
         }
     }

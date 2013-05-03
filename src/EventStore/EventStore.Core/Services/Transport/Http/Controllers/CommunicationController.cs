@@ -105,12 +105,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected void RegisterTextBody(
             IHttpService service, string uriTemplate, string httpMethod,
-            Action<HttpEntityManager, UriTemplateMatch, string> action)
+            Action<HttpEntityManager, UriTemplateMatch, string> action, ICodec[] requestCodecs = null,
+            ICodec[] responseCodecs = null)
         {
             Register(
                 service, uriTemplate, httpMethod,
                 (http, match) => http.ReadTextRequestAsync((manager, s) => action(manager, match, s), LogError),
-                DefaultCodecs, DefaultCodecs);
+                requestCodecs ?? DefaultCodecs, responseCodecs ?? DefaultCodecs);
         }
 
         protected void RegisterUrlBased(
