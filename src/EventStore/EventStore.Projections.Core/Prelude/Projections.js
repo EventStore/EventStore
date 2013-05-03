@@ -13,14 +13,14 @@ var $projections = {
 
         var sources = {
             /* TODO: comment out default falses to reduce message size */
-            all_streams: false, 
-            all_events: false,
-            by_streams: false,
-            by_custom_partitions: false,
+            allStreams: false, 
+            allEvents: false,
+            byStreams: false,
+            byCustomPartitions: false,
             categories: [], 
             streams: [], 
             events: [],
-            defines_state_transform: false,
+            definesStateTransform: false,
             options: { 
                 resultStreamName: null, 
                 partitionResultStreamNamePattern: null, 
@@ -96,12 +96,12 @@ var $projections = {
         }
 
         function on_any(eventHandler) {
-            sources.all_events = true;
+            sources.allEvents = true;
             anyEventHandlers.push(eventHandler);
         }
 
         function on_raw(eventHandler) {
-            sources.all_events = true;
+            sources.allEvents = true;
             rawEventHandlers.push(eventHandler);
         }
 
@@ -211,25 +211,25 @@ var $projections = {
         }
 
         function byStream() {
-            sources.by_streams = true;
+            sources.byStreams = true;
         }
 
         function partitionBy(eventHandler) {
             getStatePartitionHandler = eventHandler;
-            sources.by_custom_partitions = true;
+            sources.byCustomPartitions = true;
         }
 
         function $defines_state_transform() {
-            sources.defines_state_transform = true;
+            sources.definesStateTransform = true;
         }
 
         function chainTransformBy(by) {
             transformers.push(by);
-            sources.defines_state_transform = true;
+            sources.definesStateTransform = true;
         }
 
         function fromAll() {
-            sources.all_streams = true;
+            sources.allStreams = true;
         }
 
         function emit(ev) {

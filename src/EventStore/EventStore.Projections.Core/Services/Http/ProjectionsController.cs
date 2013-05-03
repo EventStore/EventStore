@@ -368,7 +368,11 @@ namespace EventStore.Projections.Core.Services.Http
             if (state.Exception != null)
                 return Configure.InternalServerError();
             else
-                return Configure.OkNoCache("application/json", Encoding.UTF8);
+                return state.Position != null
+                           ? Configure.OkNoCache(
+                               "application/json", Encoding.UTF8,
+                               new KeyValuePair<string, string>("X-ES-Position", state.Position.ToJsonString()))
+                           : Configure.OkNoCache("application/json", Encoding.UTF8);
         }
 
         private ResponseConfiguration ResultConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionResult state)
@@ -376,7 +380,11 @@ namespace EventStore.Projections.Core.Services.Http
             if (state.Exception != null)
                 return Configure.InternalServerError();
             else
-                return Configure.OkNoCache("application/json", Encoding.UTF8);
+                return state.Position != null
+                           ? Configure.OkNoCache(
+                               "application/json", Encoding.UTF8,
+                               new KeyValuePair<string, string>("X-ES-Position", state.Position.ToJsonString()))
+                           : Configure.OkNoCache("application/json", Encoding.UTF8);
         }
 
         private ResponseConfiguration DebugStateConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionDebugState state)
@@ -419,15 +427,22 @@ namespace EventStore.Projections.Core.Services.Http
                         ReaderPosition = page.LastReaderPosition.ToJsonRaw(),
                         Events = (from e in page.Events
                                   let resolvedEvent = e.ResolvedEvent
+                                  let isJson = resolvedEvent.IsJson
+                                  let data =
+                                      isJson ? (object) (resolvedEvent.Data.ParseJson<JObject>()) : resolvedEvent.Data
+                                  let metadata =
+                                      isJson
+                                          ? (object) (resolvedEvent.Metadata.ParseJson<JObject>())
+                                          : resolvedEvent.Metadata
                                   select
                                       new
                                           {
                                               EventStreamId = resolvedEvent.EventStreamId,
                                               EventNumber = resolvedEvent.EventSequenceNumber,
                                               EventType = resolvedEvent.EventType,
-                                              Data = resolvedEvent.Data,
-                                              Metadata = resolvedEvent.Metadata,
-                                              IsJson = resolvedEvent.IsJson,
+                                              Data = data,
+                                              Metadata = metadata,
+                                              IsJson = isJson,
                                               ReaderPosition = e.ReaderPosition.ToJsonRaw(),
                                           }).ToArray()
                     }.ToJson();

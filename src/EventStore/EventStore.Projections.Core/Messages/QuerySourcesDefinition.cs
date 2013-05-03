@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Messages
     [DataContract]
     public class QuerySourcesDefinition: ISourceDefinitionConfigurator
     {
-        [DataMember(Name = "all_streams")]
+        [DataMember(Name = "allStreams")]
         public bool AllStreams { get; set; }
 
         [DataMember(Name = "categories")]
@@ -45,19 +45,19 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "streams")]
         public string[] Streams { get; set; }
 
-        [DataMember(Name = "all_events")]
+        [DataMember(Name = "allEvents")]
         public bool AllEvents { get; set; }
 
         [DataMember(Name = "events")]
         public string[] Events { get; set; }
 
-        [DataMember(Name = "by_streams")]
+        [DataMember(Name = "byStreams")]
         public bool ByStreams { get; set; }
 
-        [DataMember(Name = "by_custom_partitions")]
+        [DataMember(Name = "byCustomPartitions")]
         public bool ByCustomPartitions { get; set; }
 
-        [DataMember(Name = "defines_state_transform")]
+        [DataMember(Name = "definesStateTransform")]
         public bool DefinesStateTransform { get; set; }
 
         [DataMember(Name = "options")]

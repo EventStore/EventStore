@@ -61,15 +61,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void Load(CheckpointTag checkpointTag)
         {
-            Projection.BeginGetPartitionStateAt(_partition, checkpointTag, LoadCompleted, lockLoaded: false);
+            Projection.BeginGetPartitionStateAt(_partition, checkpointTag, state => LoadCompleted(state, checkpointTag), lockLoaded: false);
         }
 
-        private void LoadCompleted(PartitionState state)
+        private void LoadCompleted(PartitionState state, CheckpointTag checkpointTag)
         {
-            Reply(state);
+            Reply(state, checkpointTag);
             NextStage();
         }
 
-        protected abstract void Reply(PartitionState state);
+        protected abstract void Reply(PartitionState state, CheckpointTag checkpointTag);
     }
 }

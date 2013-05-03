@@ -216,13 +216,17 @@ namespace EventStore.Projections.Core.Messages
             private readonly Guid _correlationId;
             private readonly Exception _exception;
             private readonly string _partition;
+            private readonly CheckpointTag _position;
 
-            protected DataReportBase(Guid correlationId, Guid projectionId, string partition, Exception exception = null)
+            protected DataReportBase(
+                Guid correlationId, Guid projectionId, string partition, CheckpointTag position,
+                Exception exception = null)
                 : base(projectionId)
             {
                 _correlationId = correlationId;
                 _exception = exception;
                 _partition = partition;
+                _position = position;
             }
 
             public string Partition
@@ -239,14 +243,21 @@ namespace EventStore.Projections.Core.Messages
             {
                 get { return _correlationId; }
             }
+
+            public CheckpointTag Position
+            {
+                get { return _position; }
+            }
         }
 
         public class StateReport : DataReportBase
         {
             private readonly string _state;
 
-            public StateReport(Guid correlationId, Guid projectionId, string partition, string state, Exception exception = null)
-                : base(correlationId, projectionId, partition, exception)
+            public StateReport(
+                Guid correlationId, Guid projectionId, string partition, string state, CheckpointTag position,
+                Exception exception = null)
+                : base(correlationId, projectionId, partition, position, exception)
             {
                 _state = state;
             }
@@ -262,8 +273,10 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly string _result;
 
-            public ResultReport(Guid correlationId, Guid projectionId, string partition, string result, Exception exception = null)
-                : base(correlationId, projectionId, partition, exception)
+            public ResultReport(
+                Guid correlationId, Guid projectionId, string partition, string result, CheckpointTag position,
+                Exception exception = null)
+                : base(correlationId, projectionId, partition, position, exception)
             {
                 _result = result;
             }

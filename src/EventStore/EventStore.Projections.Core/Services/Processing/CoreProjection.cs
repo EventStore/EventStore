@@ -405,7 +405,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.StateReport(
-                        message.CorrelationId, _projectionCorrelationId, message.Partition, null, new Exception("Not yet available")));
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, state: null, position: null,
+                        exception: new Exception("Not yet available")));
                 return;
             }
             EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
@@ -418,7 +419,10 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             catch (Exception ex)
             {
-                message.Envelope.ReplyWith(new CoreProjectionManagementMessage.StateReport(message.CorrelationId, _projectionCorrelationId, message.Partition, null, ex));
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.StateReport(
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, state: null, position: null,
+                        exception: ex));
                 SetFaulted(ex);
             }
         }
@@ -429,7 +433,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.ResultReport(
-                        message.CorrelationId, _projectionCorrelationId, message.Partition, null, new Exception("Not yet available")));
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, result: null, position: null,
+                        exception: new Exception("Not yet available")));
                 return;
             }
             EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
@@ -442,7 +447,10 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             catch (Exception ex)
             {
-                message.Envelope.ReplyWith(new CoreProjectionManagementMessage.ResultReport(message.CorrelationId, _projectionCorrelationId, message.Partition, null, ex));
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.ResultReport(
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, result: null, position: null,
+                        exception: ex));
                 SetFaulted(ex);
             }
         }

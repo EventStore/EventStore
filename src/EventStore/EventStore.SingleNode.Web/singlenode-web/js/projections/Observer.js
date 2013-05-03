@@ -3,7 +3,8 @@
 define(["projections/ResourceMonitor"], function (resourceMonitor) {
     //TODO: handle errors
     return {
-        create: function (baseUrl) {
+        create: function (baseUrl, options) {
+            var autoRefresh = !options || options.autoRefresh;
             var stateMonitor = null;
             var resultMonitor = null;
             var statusMonitor = null;
@@ -27,17 +28,17 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                 return status;
             }
 
-            function dispatch(handlers, arg) {
+            function dispatch(handlers, arg1, arg2) {
                 for (var i = 0; i < handlers.length; i++) 
-                    handlers[i](arg);
+                    handlers[i](arg1, arg2);
             }
 
             function internalSubscribe(handlers) {
 
-                stateMonitor = resourceMonitor.create(baseUrl + "/state", "application/json", "text");
-                resultMonitor = resourceMonitor.create(baseUrl + "/result", "application/json", "text");
-                statusMonitor = resourceMonitor.create(baseUrl + "/statistics", "application/json");
-                sourceMonitor = resourceMonitor.create(baseUrl + "/query?config=yes", "application/json");
+                stateMonitor = resourceMonitor.create(baseUrl + "/state", { accept: "application/json", type: "text", autoRefresh: autoRefresh });
+                resultMonitor = resourceMonitor.create(baseUrl + "/result", { accept: "application/json", type: "text", autoRefresh: autoRefresh });
+                statusMonitor = resourceMonitor.create(baseUrl + "/statistics", { accept: "application/json", autoRefresh: autoRefresh });
+                sourceMonitor = resourceMonitor.create(baseUrl + "/query?config=yes", { accept: "application/json", autoRefresh: autoRefresh });
 
                 if (handlers.statusChanged) {
                     if (subscribed.statusChanged.length == 0) 
@@ -51,13 +52,13 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
 
                 if (handlers.stateChanged) {
                     if (subscribed.stateChanged.length == 0)
-                        stateMonitor.start(function (v) { dispatch(subscribed.stateChanged, v); });
+                        stateMonitor.start(function (v, xhr) { dispatch(subscribed.stateChanged, v, xhr); });
                     subscribed.stateChanged.push(handlers.stateChanged);
                 }
 
                 if (handlers.resultChanged) {
                     if (subscribed.resultChanged.length == 0)
-                        resultMonitor.start(function (v) { dispatch(subscribed.resultChanged, v); });
+                        resultMonitor.start(function (v, xhr) { dispatch(subscribed.resultChanged, v, xhr); });
                     subscribed.resultChanged.push(handlers.resultChanged);
                 }
 

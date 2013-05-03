@@ -2,7 +2,7 @@
 // url monitor
 define([], function () {
     return { 
-        create: function createResourceMonitor(baseUrl, accept, type) {
+        create: function createResourceMonitor(baseUrl, options) {
 
             var _lastDataJson = null;
             var _handler = null;
@@ -18,9 +18,10 @@ define([], function () {
                 var dataJson = JSON.stringify(data);
                 if (dataJson !== _lastDataJson) {
                     _lastDataJson = dataJson;
-                    _handler(data);
+                    _handler(data, xhr);
                 }
-                schedule();
+                if (options.autoRefresh)
+                    schedule();
             }
 
             function error(xhr, status) {
@@ -32,9 +33,9 @@ define([], function () {
                 if (_handler !== null) {
                     _current = $.ajax(baseUrl, {
                         headers: {
-                            Accept: accept,
+                            Accept: options.accept,
                         },
-                        dataType: type,
+                        dataType: options.type,
                         success: success,
                         error: error,
                     });

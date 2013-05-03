@@ -244,12 +244,13 @@ namespace EventStore.Projections.Core.Services.Management
                         new PublishEnvelope(_inputQueue), Guid.NewGuid(), _id, message.Partition),
                     m =>
                     message.Envelope.ReplyWith(
-                        new ProjectionManagementMessage.ProjectionState(_name, m.Partition, m.State)));
+                        new ProjectionManagementMessage.ProjectionState(_name, m.Partition, m.State, m.Position)));
             }
             else
             {
                 message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.ProjectionState(message.Name, message.Partition, "*** UNKNOWN ***"));
+                    new ProjectionManagementMessage.ProjectionState(
+                        message.Name, message.Partition, "*** UNKNOWN ***", position: null));
             }
         }
 
@@ -263,12 +264,13 @@ namespace EventStore.Projections.Core.Services.Management
                         new PublishEnvelope(_inputQueue), Guid.NewGuid(), _id, message.Partition),
                     m =>
                     message.Envelope.ReplyWith(
-                        new ProjectionManagementMessage.ProjectionResult(_name, m.Partition, m.Result)));
+                        new ProjectionManagementMessage.ProjectionResult(_name, m.Partition, m.Result, m.Position)));
             }
             else
             {
                 message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.ProjectionResult(message.Name, message.Partition, "*** UNKNOWN ***"));
+                    new ProjectionManagementMessage.ProjectionResult(
+                        message.Name, message.Partition, "*** UNKNOWN ***", position: null));
             }
         }
         public void Handle(ProjectionManagementMessage.GetDebugState message)

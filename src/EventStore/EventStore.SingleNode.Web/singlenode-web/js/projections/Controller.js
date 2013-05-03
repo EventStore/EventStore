@@ -54,7 +54,8 @@ define(function () {
                 success: function (data, textStatus, jqXHR) {
                     created = true;
                     baseUrl = jqXHR.getResponseHeader('Location');
-                    observer.configureUrl(baseUrl);
+                    if (observer) 
+                        observer.configureUrl(baseUrl);
                     successPostCommand(success)(data, textStatus, jqXHR);
                 },
                 error: errorPostCommand,

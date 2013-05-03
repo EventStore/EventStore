@@ -398,12 +398,15 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly string _name;
             private readonly string _partition;
+            private readonly CheckpointTag _position;
             private readonly Exception _exception;
 
-            protected ProjectionDataBase(string name, string partition, Exception exception = null)
+            protected ProjectionDataBase(
+                string name, string partition, CheckpointTag position, Exception exception = null)
             {
                 _name = name;
                 _partition = partition;
+                _position = position;
                 _exception = exception;
             }
 
@@ -421,14 +424,20 @@ namespace EventStore.Projections.Core.Messages
             {
                 get { return _partition; }
             }
+
+            public CheckpointTag Position
+            {
+                get { return _position; }
+            }
         }
 
         public class ProjectionState : ProjectionDataBase
         {
             private readonly string _state;
 
-            public ProjectionState(string name, string partition, string state, Exception exception = null)
-                : base(name, partition, exception)
+            public ProjectionState(
+                string name, string partition, string state, CheckpointTag position, Exception exception = null)
+                : base(name, partition, position, exception)
             {
                 _state = state;
             }
@@ -443,8 +452,9 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly string _result;
 
-            public ProjectionResult(string name, string partition, string result, Exception exception = null)
-                : base(name, partition, exception)
+            public ProjectionResult(
+                string name, string partition, string result, CheckpointTag position, Exception exception = null)
+                : base(name, partition, position, exception)
             {
                 _result = result;
             }
