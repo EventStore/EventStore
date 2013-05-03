@@ -36,6 +36,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -97,11 +98,8 @@ namespace EventStore.Projections.Core
             HttpService httpService, IPublisher networkSendQueue, bool runProjections)
         {
             _coreQueues = new List<QueuedHandler>();
-            if (runProjections)
-            {
-                _managerInputBus = new InMemoryBus("manager input bus");
-                _managerInputQueue = new QueuedHandler(_managerInputBus, "ProjectionManager");
-            }
+            _managerInputBus = new InMemoryBus("manager input bus");
+            _managerInputQueue = new QueuedHandler(_managerInputBus, "Projections Master");
             while (_coreQueues.Count < _projectionWorkerThreadCount)
             {
                 var coreInputBus = new InMemoryBus("bus");
@@ -150,6 +148,9 @@ namespace EventStore.Projections.Core
 
                 _coreQueues.Add(coreQueue);
             }
+
+            _managerInputBus.Subscribe(
+                Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(_coreQueues.Cast<IPublisher>().ToArray()));
 
             if (runProjections)
             {
