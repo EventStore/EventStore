@@ -124,9 +124,6 @@ namespace EventStore.Projections.Core.Services.Http
             Register(
                 service, "/projection/{name}/statistics", HttpMethod.Get, OnProjectionStatisticsGet, Codec.NoCodecs,
                 SupportedCodecs);
-            Register(
-                service, "/projection/{name}/debug", HttpMethod.Get, OnProjectionDebugGet, Codec.NoCodecs,
-                SupportedCodecs);
             RegisterTextBody(
                 service, "/projections/read-events", HttpMethod.Post, OnProjectionsReadEvents,
                 requestCodecs: SupportedCodecs, responseCodecs: SupportedCodecs);
@@ -291,16 +288,6 @@ namespace EventStore.Projections.Core.Services.Http
                     envelope, match.BoundVariables["name"], match.BoundVariables["partition"] ?? ""));
         }
 
-        private void OnProjectionDebugGet(HttpEntityManager http, UriTemplateMatch match)
-        {
-            var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionDebugState>(
-                _networkSendQueue, http, DebugStateFormatter, DebugStateConfigurator, ErrorsEnvelope(http));
-            Publish(
-                new ProjectionManagementMessage.GetDebugState(
-                    envelope, match.BoundVariables["name"]));
-        }
-
-
         public class ReadEventsBody
         {
             public QuerySourcesDefinition Query { get; set; }
@@ -387,11 +374,6 @@ namespace EventStore.Projections.Core.Services.Http
                            : Configure.OkNoCache("application/json", Encoding.UTF8);
         }
 
-        private ResponseConfiguration DebugStateConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionDebugState state)
-        {
-            return Configure.OkNoCache("application/json", Encoding.UTF8);
-        }
-
         private ResponseConfiguration FeedPageConfigurator(ICodec codec, FeedReaderMessage.FeedPage page)
         {
             return Configure.OkNoCache("application/json", Encoding.UTF8);
@@ -411,11 +393,6 @@ namespace EventStore.Projections.Core.Services.Http
                 return state.Exception.ToString();
             else
                 return state.Result;
-        }
-
-        private string DebugStateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionDebugState state)
-        {
-            return state.Events.ToJson();
         }
 
         private string FeedPageFormatter(ICodec codec, FeedReaderMessage.FeedPage page)

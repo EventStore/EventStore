@@ -99,7 +99,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<CoreProjectionManagementMessage.Kill>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.GetState>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.GetResult>(_coreService);
-            _bus.Subscribe<CoreProjectionManagementMessage.GetDebugState>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.UpdateStatistics>(_coreService);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_coreService);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_coreService);

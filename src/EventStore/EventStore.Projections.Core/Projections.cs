@@ -126,8 +126,6 @@ namespace EventStore.Projections.Core
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<CoreProjectionManagementMessage.ResultReport>(_managerInputQueue));
                     projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<CoreProjectionManagementMessage.DebugState>(_managerInputQueue));
-                    projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<CoreProjectionManagementMessage.StatisticsReport>(_managerInputQueue));
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<CoreProjectionManagementMessage.Started>(_managerInputQueue));

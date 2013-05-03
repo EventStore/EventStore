@@ -43,7 +43,7 @@ namespace EventStore.Integration.Tests.FeedReader
             protected void PostEvent<T>(T data, ICredentials credentials = null)
             {
                 var response = MakeJsonPost(
-                    TestStream, new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = data}},
+                    TestStream, new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = data, Metadata = new {M = false}}},
                     credentials);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
@@ -68,7 +68,7 @@ namespace EventStore.Integration.Tests.FeedReader
                     "/projections/read-events",
                     new
                         {
-                            Query = new {Streams = new[] {TestStreamName}, All_Events = true},
+                            Query = new {Streams = new[] {TestStreamName}, AllEvents = true},
                             Position = new JRaw(CheckpointTag.FromStreamPosition(TestStreamName, -1).ToJsonString()),
                             MaxEvents = 1
                         });
@@ -84,7 +84,7 @@ namespace EventStore.Integration.Tests.FeedReader
             public void returns_correct_reader_position()
             {
                 AssertJson(
-                    new {ReaderPosition = CheckpointTag.FromStreamPosition(TestStreamName, 1).ToJsonRaw()}, _response);
+                    new {ReaderPosition = CheckpointTag.FromStreamPosition(TestStreamName, 0).ToJsonRaw()}, _response);
             }
 
             [Test]
@@ -101,8 +101,8 @@ namespace EventStore.Integration.Tests.FeedReader
                                         EventStreamId = TestStreamName,
                                         EventNumber = 0,
                                         EventType = "event-type",
-                                        Data = new {SampleData = 1}.ToJson(),
-                                        Metadata = "",
+                                        Data = new {SampleData = 1},
+                                        Metadata = new {M = false},
                                     }
                             }
                         }, _response);

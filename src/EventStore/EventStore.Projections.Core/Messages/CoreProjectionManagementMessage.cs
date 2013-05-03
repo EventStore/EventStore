@@ -185,24 +185,6 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class GetDebugState : CoreProjectionManagementMessage
-        {
-            private readonly IEnvelope _envelope;
-
-            public GetDebugState(IEnvelope envelope, Guid correlationId)
-                : base(correlationId)
-            {
-                if (envelope == null) throw new ArgumentNullException("envelope");
-                _envelope = envelope;
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
-            }
-
-        }
-
         public class UpdateStatistics : CoreProjectionManagementMessage
         {
             public UpdateStatistics(Guid projectionId)
@@ -286,55 +268,6 @@ namespace EventStore.Projections.Core.Messages
                 get { return _result; }
             }
 
-        }
-        public class DebugState : CoreProjectionManagementMessage
-        {
-            private readonly Event[] _events;
-
-            public DebugState(Guid projectionId, Event[] events)
-                : base(projectionId)
-            {
-                _events = events;
-            }
-
-            public Event[] Events
-            {
-                get { return _events; }
-            }
-
-            public class Event
-            {
-                public static Event Create(EventReaderSubscriptionMessage.CommittedEventReceived source, string partition)
-                {
-                    return new Event 
-                        {
-                            Partition = partition,
-                            BodyRaw = source.Data.Data,
-                            MetadataRaw = source.Data.Metadata,
-                            EventType = source.Data.EventType,
-                            StreamId = source.Data.EventStreamId,
-                            SequenceNumber = source.Data.EventSequenceNumber,
-                            Category = source.EventCategory,
-                            LogPosition = source.Data.Position.PreparePosition,
-                        };
-                }
-
-                public string Category { get; set; }
-
-                public string Partition { get; set; }
-
-                public long LogPosition { get; set; }
-
-                public int SequenceNumber { get; set; }
-
-                public string StreamId { get; set; }
-
-                public string EventType { get; set; }
-
-                public string MetadataRaw { get; set; }
-
-                public string BodyRaw { get; set; }
-            }
         }
 
         public class StatisticsReport : CoreProjectionManagementMessage

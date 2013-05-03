@@ -56,7 +56,6 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<ProjectionManagementMessage.GetStatistics>,
                                      IHandle<ProjectionManagementMessage.GetState>,
                                      IHandle<ProjectionManagementMessage.GetResult>,
-                                     IHandle<ProjectionManagementMessage.GetDebugState>,
                                      IHandle<ProjectionManagementMessage.Disable>,
                                      IHandle<ProjectionManagementMessage.Enable>,
                                      IHandle<ProjectionManagementMessage.Reset>,
@@ -69,7 +68,6 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<CoreProjectionManagementMessage.Prepared>,
                                      IHandle<CoreProjectionManagementMessage.StateReport>,
                                      IHandle<CoreProjectionManagementMessage.ResultReport>,
-                                     IHandle<CoreProjectionManagementMessage.DebugState>,
                                      IHandle<CoreProjectionManagementMessage.StatisticsReport>, 
                                      IHandle<ProjectionManagementMessage.RegisterSystemProjection>
     {
@@ -347,17 +345,6 @@ namespace EventStore.Projections.Core.Services.Management
                 projection.Handle(message);
         }
 
-        public void Handle(ProjectionManagementMessage.GetDebugState message)
-        {
-            if (!_started)
-                return;
-            var projection = GetProjection(message.Name);
-            if (projection == null)
-                message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
-            else
-                projection.Handle(message);
-        }
-
         public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
         {
             ScheduleExpire();
@@ -430,16 +417,6 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
         public void Handle(CoreProjectionManagementMessage.ResultReport message)
-        {
-            string name;
-            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
-            {
-                var projection = _projections[name];
-                projection.Handle(message);
-            }
-        }
-
-        public void Handle(CoreProjectionManagementMessage.DebugState message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.ProjectionId, out name))

@@ -48,7 +48,6 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<CoreProjectionManagementMessage.Kill>,
                                          IHandle<CoreProjectionManagementMessage.GetState>,
                                         IHandle<CoreProjectionManagementMessage.GetResult>,
-                                        IHandle<CoreProjectionManagementMessage.GetDebugState>,
                                          IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
                                          IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
                                          IHandle<ClientMessage.WriteEventsCompleted>, 
@@ -212,13 +211,6 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void Handle(CoreProjectionManagementMessage.GetResult message)
-        {
-            CoreProjection projection;
-            if (_projections.TryGetValue(message.ProjectionId, out projection))
-                projection.Handle(message);
-        }
-
-        public void Handle(CoreProjectionManagementMessage.GetDebugState message)
         {
             CoreProjection projection;
             if (_projections.TryGetValue(message.ProjectionId, out projection))

@@ -273,28 +273,6 @@ namespace EventStore.Projections.Core.Services.Management
                         message.Name, message.Partition, "*** UNKNOWN ***", position: null));
             }
         }
-        public void Handle(ProjectionManagementMessage.GetDebugState message)
-        {
-            _lastAccessed = _timeProvider.Now;
-            if (_state >= ManagedProjectionState.Stopped)
-            {
-                var needRequest = false;
-                if (_debugStateRequests == null)
-                {
-                    _debugStateRequests = new List<IEnvelope>();
-                    needRequest = true;
-                }
-                _debugStateRequests.Add(message.Envelope);
-                if (needRequest)
-                    _coreQueue.Publish(
-                        new CoreProjectionManagementMessage.GetDebugState(new PublishEnvelope(_inputQueue), _id));
-            }
-            else
-            {
-                //TODO: report right state here
-                message.Envelope.ReplyWith(new ProjectionManagementMessage.ProjectionDebugState(message.Name, null));
-            }
-        }
 
         public void Handle(ProjectionManagementMessage.Disable message)
         {
@@ -405,14 +383,6 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.StatisticsReport message)
         {
             _lastReceivedStatistics = message.Statistics;
-        }
-
-        public void Handle(CoreProjectionManagementMessage.DebugState message)
-        {
-            var debugStateRequests = _debugStateRequests;
-            _debugStateRequests = null;
-            foreach (var request in debugStateRequests)
-                request.ReplyWith(new ProjectionManagementMessage.ProjectionDebugState(_name, message.Events));
         }
 
         public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
