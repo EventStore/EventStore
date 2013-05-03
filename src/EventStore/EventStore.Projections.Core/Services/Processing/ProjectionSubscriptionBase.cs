@@ -41,6 +41,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly long? _checkpointUnhandledBytesThreshold;
         private readonly int? _checkpointProcessedEventsThreshold;
         private readonly bool _stopOnEof;
+        private readonly int? _stopAfterNEvents;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
         private readonly PositionTracker _positionTracker;
@@ -52,9 +53,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _eofReached;
 
         protected ProjectionSubscriptionBase(
-            IPublisher publisher, Guid subscriptionId, CheckpointTag from,
-            IReaderStrategy readerStrategy, long? checkpointUnhandledBytesThreshold,
-            int? checkpointProcessedEventsThreshold, bool stopOnEof)
+            IPublisher publisher, Guid subscriptionId, CheckpointTag @from, IReaderStrategy readerStrategy,
+            long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof,
+            int? stopAfterNEvents)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
@@ -63,6 +64,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
             _stopOnEof = stopOnEof;
+            _stopAfterNEvents = stopAfterNEvents;
             _subscriptionId = subscriptionId;
             _lastPassedOrCheckpointedEventPosition = null;
 
@@ -155,7 +157,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Onetime projection has already reached the eof position");
             _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
             return _readerStrategy.CreatePausedEventReader(
-                eventReaderId, publisher, _positionTracker.LastTag, _stopOnEof);
+                eventReaderId, publisher, _positionTracker.LastTag, _stopOnEof, _stopAfterNEvents);
         }
 
         public void Handle(ReaderSubscriptionMessage.EventReaderEof message)

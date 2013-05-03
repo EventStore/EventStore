@@ -77,8 +77,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
 
         protected virtual IReaderSubscription CreateProjectionSubscription()
         {
-            return new ReaderSubscription(_bus, 
-                _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _readerStrategy, _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold);
+            return new ReaderSubscription(
+                _bus, _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _readerStrategy,
+                _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold);
         }
 
         protected virtual void Given()

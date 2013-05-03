@@ -112,7 +112,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var fromCheckpointTag = message.FromPosition;
             var subscriptionId = message.SubscriptionId;
-            var projectionSubscription = message.ReaderStrategy.CreateReaderSubscription(_publisher, fromCheckpointTag, message.SubscriptionId, message.Options);
+            var projectionSubscription = message.ReaderStrategy.CreateReaderSubscription(
+                _publisher, fromCheckpointTag, message.SubscriptionId, message.Options);
             _subscriptions.Add(subscriptionId, projectionSubscription);
 
             var distibutionPointCorrelationId = Guid.NewGuid();

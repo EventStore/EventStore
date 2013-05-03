@@ -29,46 +29,36 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
+using EventStore.Core.Messaging;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Core.Tests.Helper
 {
-    public class MultiStreamEventReader : MultiStreamEventReaderBase<long>
+    public class ManualQueue : IPublisher
     {
-        public MultiStreamEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, string[] streams, Dictionary<string, int> fromPositions,
-            bool resolveLinkTos, ITimeProvider timeProvider, bool stopOnEof = false, int? stopAfterNEvents = null)
-            : base(
-                publisher, eventReaderCorrelationId, streams, fromPositions, resolveLinkTos, timeProvider, stopOnEof,
-                stopAfterNEvents)
+        private readonly Queue<Message> _queue = new Queue<Message>();
+        private readonly IBus _bus;
+
+        public ManualQueue(IBus bus)
         {
+            _bus = bus;
         }
 
-        protected override long? EventPairToPosition(EventStore.Core.Data.ResolvedEvent resolvedEvent)
+        public void Publish(Message message)
         {
-            return resolvedEvent.OriginalEvent.LogPosition;
+            _queue.Enqueue(message);
         }
 
-        protected override long? MessageToLastCommitPosition(ClientMessage.ReadStreamEventsForwardCompleted message)
+        public void Process()
         {
-            return GetLastCommitPositionFrom(message);
-        }
-
-        protected override long GetItemPosition(Tuple<EventRecord, EventRecord, float> head)
-        {
-            return head.Item2.LogPosition;
-        }
-
-        protected override long GetMaxPosition()
-        {
-            return long.MaxValue;
-        }
-
-        protected override long? PositionToSafeJoinPosition(long? safePositionToJoin)
-        {
-            return safePositionToJoin;
+            var count = 0;
+            while (_queue.Count > 0)
+            {
+                var message = _queue.Dequeue();
+                _bus.Publish(message);
+                count++;
+                if (count > 1000)
+                    throw new Exception("Possible infinite message loop");
+            }
         }
     }
 }

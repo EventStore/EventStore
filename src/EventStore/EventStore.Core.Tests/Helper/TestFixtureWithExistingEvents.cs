@@ -122,13 +122,6 @@ namespace EventStore.Core.Tests.Helper
         {
             _writesQueue = new Queue<ClientMessage.WriteEvents>();
             _listEventsHandler = new TestHandler<ClientMessage.ReadStreamEventsBackward>();
-            _readDispatcher =
-                new RequestResponseDispatcher
-                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
-                    _bus, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_bus));
-            _writeDispatcher =
-                new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
-                    _bus, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_bus));
             _bus.Subscribe(_listEventsHandler);
             _bus.Subscribe<ClientMessage.WriteEvents>(this);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);

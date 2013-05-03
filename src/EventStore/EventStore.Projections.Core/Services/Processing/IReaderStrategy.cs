@@ -41,7 +41,6 @@ namespace EventStore.Projections.Core.Services.Processing
             IPublisher publisher, CheckpointTag fromCheckpointTag, Guid subscriptionId,
             ReaderSubscriptionOptions readerSubscriptionOptions);
 
-        IEventReader CreatePausedEventReader(
-            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof);
+        IEventReader CreatePausedEventReader(Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents);
     }
 }

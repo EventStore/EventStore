@@ -59,11 +59,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private const int _maxReadCount = 111;
         private TPosition? _safePositionToJoin;
         private readonly Dictionary<string, bool> _eofs;
+        private int _deliveredEvents;
 
         protected MultiStreamEventReaderBase(
-            IPublisher publisher, Guid eventReaderCorrelationId, string[] streams,
-            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider, bool stopOnEof = false)
-            : base(publisher, eventReaderCorrelationId, stopOnEof)
+            IPublisher publisher, Guid eventReaderCorrelationId, string[] streams, Dictionary<string, int> fromPositions,
+            bool resolveLinkTos, ITimeProvider timeProvider, bool stopOnEof = false, int? stopAfterNEvents = null)
+            : base(publisher, eventReaderCorrelationId, stopOnEof, stopAfterNEvents)
         {
             if (streams == null) throw new ArgumentNullException("streams");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
@@ -240,7 +241,20 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
                 var minHead = _buffers[minStreamId].Dequeue();
                 DeliverEvent(minHead.Item1, minHead.Item2, minHead.Item3);
+                if (CheckEnough())
+                    return;
             }
+        }
+
+        private bool CheckEnough()
+        {
+            if (_stopAfterNEvents != null && _deliveredEvents >= _stopAfterNEvents)
+            {
+                _publisher.Publish(new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId));
+                Dispose();
+                return true;
+            }
+            return false;
         }
 
         private void RequestEventsAll()
@@ -295,6 +309,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverEvent(EventRecord @event, EventRecord positionEvent, float progress)
         {
+            _deliveredEvents ++;
             string streamId = positionEvent.EventStreamId;
             int fromPosition = _fromPositions.Streams[streamId];
             if (positionEvent.EventNumber != fromPosition)

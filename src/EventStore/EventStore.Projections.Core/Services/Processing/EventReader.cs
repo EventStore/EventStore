@@ -41,12 +41,13 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly ILogger _logger = LogManager.GetLoggerFor<EventReader>();
 
         protected readonly bool _stopOnEof;
+        protected readonly int? _stopAfterNEvents;
         protected bool _paused = true;
         protected bool _pauseRequested = true;
         protected bool _disposed;
 
         protected EventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, bool stopOnEof)
+            IPublisher publisher, Guid eventReaderCorrelationId, bool stopOnEof, int? stopAfterNEvents)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (eventReaderCorrelationId == Guid.Empty)
@@ -54,6 +55,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher = publisher;
             EventReaderCorrelationId = eventReaderCorrelationId;
             _stopOnEof = stopOnEof;
+            _stopAfterNEvents = stopAfterNEvents;
         }
 
         public void Resume()

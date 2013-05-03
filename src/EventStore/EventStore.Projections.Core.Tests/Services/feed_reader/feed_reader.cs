@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
@@ -60,10 +61,10 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 _bus = new InMemoryBus("test");
                 _subscriptionDispatcher =
-                            new PublishSubscribeDispatcher
-                                <ReaderSubscriptionManagement.Subscribe,
-                                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage,
-                                    EventReaderSubscriptionMessage>(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
+                    new PublishSubscribeDispatcher
+                        <ReaderSubscriptionManagement.Subscribe,
+                            ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage,
+                            EventReaderSubscriptionMessage>(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
                 _testQueryDefinition = new QuerySourcesDefinition {AllStreams = true, AllEvents = true};
             }
 
@@ -75,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     new NoopEnvelope());
             }
 
-            [Test, ExpectedException(typeof(ArgumentNullException))]
+            [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_subscription_dispatcher_throws_argument_null_exception()
             {
                 var feedReader = new FeedReader(
@@ -83,7 +84,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     new NoopEnvelope());
             }
 
-            [Test, ExpectedException(typeof(ArgumentNullException))]
+            [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_query_definition_throws_argument_null_exception()
             {
                 var feedReader = new FeedReader(
@@ -91,15 +92,14 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     new NoopEnvelope());
             }
 
-            [Test, ExpectedException(typeof(ArgumentNullException))]
+            [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_from_position_throws_argument_null_exception()
             {
                 var feedReader = new FeedReader(
-                    _subscriptionDispatcher, _testQueryDefinition, null, 10, Guid.NewGuid(),
-                    new NoopEnvelope());
+                    _subscriptionDispatcher, _testQueryDefinition, null, 10, Guid.NewGuid(), new NoopEnvelope());
             }
 
-            [Test, ExpectedException(typeof(ArgumentNullException))]
+            [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_envelope_throws_argument_null_exception()
             {
                 var feedReader = new FeedReader(
@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     null);
             }
 
-            [Test, ExpectedException(typeof(ArgumentException))]
+            [Test, ExpectedException(typeof (ArgumentException))]
             public void zero_max_events_throws_argument_exception()
             {
                 var feedReader = new FeedReader(
@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     new NoopEnvelope());
             }
 
-            [Test, ExpectedException(typeof(ArgumentException))]
+            [Test, ExpectedException(typeof (ArgumentException))]
             public void negative_max_events_throws_argument_exception()
             {
                 var feedReader = new FeedReader(
@@ -129,7 +129,8 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
         {
             protected InMemoryBus _bus;
 
-            protected PublishSubscribeDispatcher
+            protected
+                PublishSubscribeDispatcher
                     <ReaderSubscriptionManagement.Subscribe,
                         ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
                         > _subscriptionDispatcher;
@@ -311,6 +312,49 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
 
         }
 
+        [TestFixture]
+        class when_reading_existing_events : TestFixtureWithFeedReaderService
+        {
+            private QuerySourcesDefinition _querySourcesDefinition;
+            private CheckpointTag _fromPosition;
+            private int _maxEvents;
+
+            protected override void Given()
+            {
+                base.Given();
+                ExistingEvent("test-stream", "type1", "{}", "{Data: 1}");
+                ExistingEvent("test-stream", "type1", "{}", "{Data: 2}");
+                ExistingEvent("test-stream", "type2", "{}", "{Data: 3}");
+
+                _querySourcesDefinition = new QuerySourcesDefinition {Streams = new[] {"test-stream"}, AllEvents = true};
+                _fromPosition = CheckpointTag.FromStreamPosition("test-stream", -1);
+                _maxEvents = 2;
+            }
+
+            protected override IEnumerable<Action> When()
+            {
+                yield return
+                    () =>
+                    _bus.Publish(
+                        new FeedReaderMessage.ReadPage(
+                            Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), _querySourcesDefinition, _fromPosition,
+                            _maxEvents));
+            }
+
+            [Test]
+            public void publishes_feed_page_message()
+            {
+                var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().ToArray();
+                Assert.AreEqual(1, feedPage.Length);
+            }
+
+            [Test]
+            public void returns_correct_last_reader_position()
+            {
+                var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Single();
+                Assert.AreEqual(CheckpointTag.FromStreamPosition("test-stream", 1), feedPage.LastReaderPosition);
+            }
+        }
 
     }
 }

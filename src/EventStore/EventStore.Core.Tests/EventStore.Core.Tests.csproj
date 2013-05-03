@@ -134,6 +134,7 @@
     <Compile Include="Hashes\SMHasher.cs" />
     <Compile Include="Hashes\xxhash_hash_should.cs" />
     <Compile Include="Helper\ClientApiLoggerBridge.cs" />
+    <Compile Include="Helper\ManualQueue.cs" />
     <Compile Include="Helper\ReflectionDynamic.cs" />
     <Compile Include="Helper\TcpPortsHelper.cs" />
     <Compile Include="Helper\TestFixtureWithExistingEvents.cs" />

@@ -46,11 +46,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _deliverEndOfTfPosition;
         private readonly bool _resolveLinkTos;
         private readonly ITimeProvider _timeProvider;
+        private int _deliveredEvents;
 
         public TransactionFileEventReader(
             IPublisher publisher, Guid eventReaderCorrelationId, EventPosition @from, ITimeProvider timeProvider,
-            bool stopOnEof = false, bool deliverEndOfTFPosition = true, bool resolveLinkTos = true)
-            : base(publisher, eventReaderCorrelationId, stopOnEof)
+            bool stopOnEof = false, bool deliverEndOfTFPosition = true, bool resolveLinkTos = true,
+            int? stopAfterNEvents = null)
+            : base(publisher, eventReaderCorrelationId, stopOnEof, stopAfterNEvents)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             _from = @from;
@@ -115,8 +117,21 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     var @event = message.Events[index];
                     DeliverEvent(@event, message.TfEofPosition, oldFrom);
+                    if (CheckEnough())
+                        return;
                 }
             }
+        }
+
+        private bool CheckEnough()
+        {
+            if (_stopAfterNEvents != null && _deliveredEvents >= _stopAfterNEvents)
+            {
+                _publisher.Publish(new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId));
+                Dispose();
+                return true;
+            }
+            return false;
         }
 
         private void SendIdle()
@@ -166,6 +181,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void DeliverEvent(
             EventStore.Core.Data.ResolvedEvent @event, long lastCommitPosition, EventPosition currentFrom)
         {
+            _deliveredEvents++;
             EventRecord positionEvent = (@event.Link ?? @event.Event);
             EventPosition receivedPosition = @event.OriginalPosition.Value;
             if (currentFrom > receivedPosition)

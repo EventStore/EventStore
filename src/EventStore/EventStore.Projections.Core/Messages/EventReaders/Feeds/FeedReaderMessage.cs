@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Messages.EventReaders.Feeds
         {
             public readonly Guid CorrelationId;
             public readonly TaggedResolvedEvent[] Events;
-            private readonly CheckpointTag LastReaderPosition;
+            public readonly CheckpointTag LastReaderPosition;
 
             public FeedPage(Guid correlationId, TaggedResolvedEvent[] events, CheckpointTag lastReaderPosition)
             {

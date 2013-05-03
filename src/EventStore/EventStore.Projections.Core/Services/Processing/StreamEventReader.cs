@@ -47,11 +47,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool _eventsRequested;
         private int _maxReadCount = 111;
+        private int _deliveredEvents;
 
         public StreamEventReader(
             IPublisher publisher, Guid eventReaderCorrelationId, string streamName, int fromSequenceNumber,
-            ITimeProvider timeProvider, bool resolveLinkTos, bool stopOnEof = false)
-            : base(publisher, eventReaderCorrelationId, stopOnEof)
+            ITimeProvider timeProvider, bool resolveLinkTos, bool stopOnEof = false, int? stopAfterNEvents = null)
+            : base(publisher, eventReaderCorrelationId, stopOnEof, stopAfterNEvents)
         {
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
             if (streamName == null) throw new ArgumentNullException("streamName");
@@ -131,6 +132,8 @@ namespace EventStore.Projections.Core.Services.Processing
                             DeliverEvent(
                                 @event, @link, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber,
                                 ref oldFromSequenceNumber);
+                            if (CheckEnough())
+                                return;
                         }
                     }
 
@@ -139,6 +142,17 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
+        }
+
+        private bool CheckEnough()
+        {
+            if (_stopAfterNEvents != null && _deliveredEvents >= _stopAfterNEvents)
+            {
+                _publisher.Publish(new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId));
+                Dispose();
+                return true;
+            }
+            return false;
         }
 
         private void SendIdle()
@@ -185,6 +199,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverEvent(EventRecord @event, EventRecord link, float progress, ref int sequenceNumber)
         {
+            _deliveredEvents++;
+
             EventRecord positionEvent = (link ?? @event);
             if (positionEvent.EventNumber != sequenceNumber)
                 throw new InvalidOperationException(

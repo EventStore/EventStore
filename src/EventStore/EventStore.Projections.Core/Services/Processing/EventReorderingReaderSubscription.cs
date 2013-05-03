@@ -42,12 +42,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly int _processingLagMs;
 
         public EventReorderingReaderSubscription(
-            IPublisher publisher, Guid subscriptionId, CheckpointTag from,
-            IReaderStrategy readerStrategy, long? checkpointUnhandledBytesThreshold,
-            int? checkpointProcessedEventsThreshold, int processingLagMs, bool stopOnEof = false)
+            IPublisher publisher, Guid subscriptionId, CheckpointTag @from, IReaderStrategy readerStrategy,
+            long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, int processingLagMs,
+            bool stopOnEof = false, int? stopAfterNEvents = null)
             : base(
-                publisher, subscriptionId, @from, readerStrategy,
-                checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold, stopOnEof)
+                publisher, subscriptionId, @from, readerStrategy, checkpointUnhandledBytesThreshold,
+                checkpointProcessedEventsThreshold, stopOnEof, stopAfterNEvents)
         {
             _processingLagMs = processingLagMs;
         }

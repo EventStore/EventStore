@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using System.Collections.Generic;
 using System.IO;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
@@ -36,7 +38,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Helper
 {
-    public class TestFixtureWithReadWriteDispatchers
+    public abstract class TestFixtureWithReadWriteDispatchers
     {
         protected InMemoryBus _bus;
 
@@ -50,12 +52,13 @@ namespace EventStore.Core.Tests.Helper
 
         protected TestHandler<Message> _consumer;
         protected IODispatcher _ioDispatcher;
+        protected ManualQueue _queue;
 
         [SetUp]
         public void setup0()
         {
             _bus = new InMemoryBus("bus");
-            _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+            _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(GetInputQueue()));
             _readDispatcher = _ioDispatcher.BackwardReader;
             _writeDispatcher = _ioDispatcher.Writer;
 
@@ -67,6 +70,31 @@ namespace EventStore.Core.Tests.Helper
 
             _consumer = new TestHandler<Message>();
             _bus.Subscribe(_consumer);
+        }
+
+        protected virtual IPublisher GetInputQueue()
+        {
+            return _bus;
+        }
+
+        protected void SetUpManualQueue()
+        {
+            _queue = new ManualQueue(_bus);
+        }
+
+        protected void WhenLoop()
+        {
+            _queue.Process();
+            foreach (var action in When())
+            {
+                action();
+                _queue.Process();
+            }
+        }
+
+        protected virtual IEnumerable<Action> When()
+        {
+            yield break;
         }
     }
 }

@@ -35,11 +35,12 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ReaderSubscription : ProjectionSubscriptionBase, IReaderSubscription
     {
         public ReaderSubscription(
-            IPublisher publisher, Guid subscriptionId, CheckpointTag from,
-            IReaderStrategy readerStrategy, long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof = false)
+            IPublisher publisher, Guid subscriptionId, CheckpointTag @from, IReaderStrategy readerStrategy,
+            long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof = false,
+            int? stopAfterNEvents = null)
             : base(
-                publisher, subscriptionId, from, readerStrategy,
-                checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold, stopOnEof)
+                publisher, subscriptionId, @from, readerStrategy, checkpointUnhandledBytesThreshold,
+                checkpointProcessedEventsThreshold, stopOnEof, stopAfterNEvents)
         {
         }
 
