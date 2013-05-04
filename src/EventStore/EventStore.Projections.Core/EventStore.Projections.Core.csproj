@@ -205,14 +205,14 @@
     <Compile Include="Services\Processing\IndexedEventTypesEventFilter.cs" />
     <Compile Include="Services\Processing\IReaderStrategy.cs" />
     <Compile Include="Services\Processing\IResultEmitter.cs" />
-    <Compile Include="Services\Processing\MultiStreamEventReaderBase.cs" />
+    <Compile Include="Services\Processing\MultiStreamEventReader.cs" />
+    <Compile Include="Services\Processing\MultiStreamEventReaderBase2.cs" />
     <Compile Include="Services\Processing\MultiStreamMultiOutputCheckpointManager.cs" />
     <Compile Include="Services\Processing\CoreProjectionQueue.cs" />
     <Compile Include="Services\Processing\EventReader.cs" />
     <Compile Include="Services\Processing\IReaderSubscription.cs" />
     <Compile Include="Services\Processing\MultiStreamEventFilter.cs" />
     <Compile Include="Services\Processing\MultiStreamPositionTagger.cs" />
-    <Compile Include="Services\Processing\MultiStreamEventReader.cs" />
     <Compile Include="Services\Processing\NoopResultEmitter.cs" />
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\PartitionState.cs" />

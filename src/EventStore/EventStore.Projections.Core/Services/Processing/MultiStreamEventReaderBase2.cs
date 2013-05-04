@@ -40,8 +40,9 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class MultiStreamEventReaderBase<TPosition> : EventReader, IHandle<ClientMessage.ReadStreamEventsForwardCompleted>
-                                                   
+    public abstract class MultiStreamEventReaderBase2<TPosition> : EventReader,
+                                                                   IHandle
+                                                                       <ClientMessage.ReadStreamEventsForwardCompleted>
         where TPosition : struct, IComparable<TPosition>
     {
         private readonly HashSet<string> _streams;
@@ -61,7 +62,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, bool> _eofs;
         private int _deliveredEvents;
 
-        protected MultiStreamEventReaderBase(
+        protected MultiStreamEventReaderBase2(
             IPublisher publisher, Guid eventReaderCorrelationId, string[] streams, Dictionary<string, int> fromPositions,
             bool resolveLinkTos, ITimeProvider timeProvider, bool stopOnEof = false, int? stopAfterNEvents = null)
             : base(publisher, eventReaderCorrelationId, stopOnEof, stopAfterNEvents)
@@ -112,7 +113,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected abstract TPosition? EventPairToPosition(EventStore.Core.Data.ResolvedEvent resolvedEvent);
 
-        protected abstract TPosition? MessageToLastCommitPosition(ClientMessage.ReadStreamEventsForwardCompleted message);
+        protected abstract TPosition? MessageToLastCommitPosition(
+            ClientMessage.ReadStreamEventsForwardCompleted message);
 
         protected abstract TPosition GetItemPosition(Tuple<EventRecord, EventRecord, float> head);
 
@@ -162,7 +164,8 @@ namespace EventStore.Projections.Core.Services.Processing
                             var @event = message.Events[index].Event;
                             var @link = message.Events[index].Link;
                             EventRecord positionEvent = (link ?? @event);
-                            UpdateSafePositionToJoin(positionEvent.EventStreamId, EventPairToPosition(message.Events[index]));
+                            UpdateSafePositionToJoin(
+                                positionEvent.EventStreamId, EventPairToPosition(message.Events[index]));
                             Queue<Tuple<EventRecord, EventRecord, float>> queue;
                             if (!_buffers.TryGetValue(positionEvent.EventStreamId, out queue))
                             {
@@ -327,8 +330,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     EventReaderCorrelationId,
                     new ResolvedEvent(
                         streamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
-                        default(TFPos), @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata,
-                        @event == positionEvent ? null : positionEvent.Metadata,
+                        default(TFPos), @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0,
+                        @event.Data, @event.Metadata, @event == positionEvent ? null : positionEvent.Metadata,
                         positionEvent.TimeStamp), _stopOnEof ? (long?) null : positionEvent.LogPosition, progress));
         }
     }

@@ -35,7 +35,7 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EventIndexEventReader : MultiStreamEventReaderBase<TFPos>
+    public class EventIndexEventReader : MultiStreamEventReaderBase2<TFPos>
     {
         public EventIndexEventReader(
             IPublisher publisher, Guid eventReaderCorrelationId, string[] streams, Dictionary<string, int> fromPositions,
