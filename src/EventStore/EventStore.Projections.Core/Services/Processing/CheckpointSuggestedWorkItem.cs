@@ -57,6 +57,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projection.SetCurrentCheckpointSuggestedWorkItem(null);
                 _completed = true;
             }
+            _projection.NewCheckpointStarted(_message.CheckpointTag);
             NextStage();
         }
 

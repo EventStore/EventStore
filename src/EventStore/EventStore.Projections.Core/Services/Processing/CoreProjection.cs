@@ -877,6 +877,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(state, checkpointTag), null);
             _checkpointManager.Start(checkpointTag);
             _processingQueue.InitializeQueue(checkpointTag);
+            NewCheckpointStarted(checkpointTag);
             GoToState(State.StateLoaded);
         }
 
@@ -1039,6 +1040,38 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_checkpointSuggestedWorkItem == null && checkpointSuggestedWorkItem == null)
                 throw new InvalidOperationException("No checkpoint in progress");
             _checkpointSuggestedWorkItem = checkpointSuggestedWorkItem;
+        }
+
+        public void NewCheckpointStarted(CheckpointTag at)
+        {
+            var checkpointHandler = _projectionStateHandler as IProjectionCheckpointHandler;
+            if (checkpointHandler != null)
+            {
+                EmittedEvent[] emittedEvents;
+                try
+                {
+                    checkpointHandler.ProcessNewCheckpoint(at, out emittedEvents);
+                }
+                catch (Exception ex)
+                {
+                    _faultedReason =
+                        string.Format(
+                            "The {0} projection failed to process a checkpoint start.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
+                            _name, GetHandlerTypeName(), at, ex.Message);
+                    if (_logger != null)
+                        _logger.ErrorException(ex, _faultedReason);
+                    GoToState(State.FaultedStopping);
+                    emittedEvents = null;
+                }
+                if (emittedEvents != null && emittedEvents.Length > 0)
+                {
+                    if (!ValidateEmittedEvents(emittedEvents))
+                        return;
+
+                    if (_state == State.Running)
+                        _checkpointManager.EventsEmitted(emittedEvents);
+                }
+            }
         }
     }
 }

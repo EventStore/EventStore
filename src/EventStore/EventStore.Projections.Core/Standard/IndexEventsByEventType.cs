@@ -32,9 +32,10 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Standard
 {
-    public class IndexEventsByEventType : IProjectionStateHandler
+    public class IndexEventsByEventType : IProjectionStateHandler, IProjectionCheckpointHandler
     {
         private readonly string _indexStreamPrefix;
+        private readonly string _indexCheckpointStream;
 
         public IndexEventsByEventType(string source, Action<string> logger)
         {
@@ -46,6 +47,7 @@ namespace EventStore.Projections.Core.Standard
             }
             // we will need to declare event types we are interested in
             _indexStreamPrefix = "$et-";
+            _indexCheckpointStream = "$et";
         }
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
@@ -97,6 +99,16 @@ namespace EventStore.Projections.Core.Standard
 
         public void Dispose()
         {
+        }
+
+        public void ProcessNewCheckpoint(CheckpointTag checkpointPosition, out EmittedEvent[] emittedEvents)
+        {
+            emittedEvents = new[]
+                {
+                    new EmittedDataEvent(
+                        _indexCheckpointStream, Guid.NewGuid(), "$Checkpoint", checkpointPosition.ToJsonString(),
+                        checkpointPosition, expectedTag: null)
+                };
         }
     }
 }

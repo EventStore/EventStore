@@ -66,6 +66,11 @@ namespace EventStore.Projections.Core.Services
         string TransformStateToResult();
     }
 
+    public interface IProjectionCheckpointHandler
+    {
+        void ProcessNewCheckpoint(CheckpointTag checkpointPosition, out EmittedEvent[] emittedEvents);
+    }
+
     public static class ProjectionStateHandlerTestExtensions
     {
         public static bool ProcessEvent(
