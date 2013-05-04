@@ -144,6 +144,8 @@ namespace EventStore.Core.Tests.Helper
             _lastMessageReplies.Clear();
             _deletedStreams.Clear();
             _all.Clear();
+            _readAllEnabled = false;
+            _fakePosition = 100;
             Given1();
             Given();
         }

@@ -27,27 +27,50 @@
 // 
 
 using System.Collections.Generic;
+using EventStore.Core.Data;
+using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_type_index_position_tagger
 {
-    public class TransactionFileEventFilter : EventFilter
+    [TestFixture]
+    public class when_updating_event_by_type_index_position_tracker_from_a_tag
     {
-        private readonly bool _includeLinks;
+        private EventByTypeIndexPositionTagger _tagger;
+        private CheckpointTag _tag;
+        private PositionTracker _positionTracker;
 
-        public TransactionFileEventFilter(bool allEvents, HashSet<string> events, bool includeLinks = false)
-            : base(allEvents, events)
+        [SetUp]
+        public void When()
         {
-            _includeLinks = includeLinks;
+            // given
+            var tagger = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var tracker = new PositionTracker(tagger);
+
+            var newTag = CheckpointTag.FromEventTypeIndexPositions(
+                new TFPos(10, 5), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
+
+            tracker.UpdateByCheckpointTagInitial(newTag);
+            _tag = tracker.LastTag;
+            _tagger = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            _positionTracker = new PositionTracker(_tagger);
+            // when 
+
+            _positionTracker.UpdateByCheckpointTagInitial(_tag);
         }
 
-        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
+        [Test]
+        public void stream_position_is_updated()
         {
-            return _includeLinks || !resolvedFromLinkTo;
+            Assert.AreEqual(1, _positionTracker.LastTag.Streams["type1"]);
+            Assert.AreEqual(2, _positionTracker.LastTag.Streams["type2"]);
         }
 
-        public override string GetCategory(string positionStreamId)
+        [Test]
+        public void tf_stream_position_is_updated()
         {
-            return null;
+            Assert.AreEqual(new TFPos(10, 5), _positionTracker.LastTag.Position);
         }
+
     }
 }

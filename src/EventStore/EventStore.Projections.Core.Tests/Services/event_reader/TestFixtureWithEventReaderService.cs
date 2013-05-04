@@ -43,6 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
         protected override void Given1()
         {
             base.Given1();
+            EnableReadAll();
         }
 
         [SetUp]

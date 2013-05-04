@@ -148,7 +148,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_stopAfterNEvents != null && _deliveredEvents >= _stopAfterNEvents)
             {
-                _publisher.Publish(new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId));
+                _publisher.Publish(new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId, maxEventsReached: true));
                 Dispose();
                 return true;
             }

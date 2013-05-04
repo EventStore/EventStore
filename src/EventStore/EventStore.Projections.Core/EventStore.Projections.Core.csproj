@@ -192,7 +192,9 @@
     <Compile Include="Services\Processing\DefaultCheckpointManager.cs" />
     <Compile Include="Services\Processing\EmittedDataEvent.cs" />
     <Compile Include="Services\Processing\EmittedLinkTo.cs" />
-    <Compile Include="Services\Processing\EventIndexEventReader.cs" />
+    <Compile Include="Services\Processing\EventByTypeIndexEventFilter.cs" />
+    <Compile Include="Services\Processing\EventByTypeIndexEventReader.cs" />
+    <Compile Include="Services\Processing\EventByTypeIndexPositionTagger.cs" />
     <Compile Include="Services\Processing\EventProcessedResult.cs" />
     <Compile Include="Services\Processing\EventReorderingReaderSubscription.cs" />
     <Compile Include="Services\Processing\GetDataWorkItemBase.cs" />
@@ -206,7 +208,6 @@
     <Compile Include="Services\Processing\IReaderStrategy.cs" />
     <Compile Include="Services\Processing\IResultEmitter.cs" />
     <Compile Include="Services\Processing\MultiStreamEventReader.cs" />
-    <Compile Include="Services\Processing\MultiStreamEventReaderBase2.cs" />
     <Compile Include="Services\Processing\MultiStreamMultiOutputCheckpointManager.cs" />
     <Compile Include="Services\Processing\CoreProjectionQueue.cs" />
     <Compile Include="Services\Processing\EventReader.cs" />

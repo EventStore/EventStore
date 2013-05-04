@@ -40,6 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class CheckpointTag : IComparable<CheckpointTag>
     {
         public readonly TFPos Position;
+        //TODO: rename to StreamsOrEventTypes or just Positions
         public readonly Dictionary<string, int> Streams;
 
         internal enum Mode
@@ -82,15 +83,15 @@ namespace EventStore.Projections.Core.Services.Processing
             Mode_ = CalculateMode();
         }
 
-        private CheckpointTag(IDictionary<string, int> streams, TFPos position)
+        private CheckpointTag(IDictionary<string, int> eventTypes, TFPos position)
         {
             Position = position;
-            foreach (var stream in streams)
+            foreach (var stream in eventTypes)
             {
-                if (stream.Key == "") throw new ArgumentException("Empty stream name", "streams");
-                if (stream.Value < 0 && stream.Value != ExpectedVersion.NoStream) throw new ArgumentException("Invalid sequence number", "streams");
+                if (stream.Key == "") throw new ArgumentException("Empty stream name", "eventTypes");
+                if (stream.Value < 0 && stream.Value != ExpectedVersion.NoStream) throw new ArgumentException("Invalid sequence number", "eventTypes");
             }
-            Streams = new Dictionary<string, int>(streams); // clone
+            Streams = new Dictionary<string, int>(eventTypes); // clone
             Mode_ = CalculateMode();
         }
 
@@ -400,11 +401,11 @@ namespace EventStore.Projections.Core.Services.Processing
             return FromStreamPositions(resultDictionary);
         }
 
-        public CheckpointTag UpdateEventTypeIndexPosition(TFPos position, string streamId, int eventSequenceNumber)
+        public CheckpointTag UpdateEventTypeIndexPosition(TFPos position, string eventType, int eventSequenceNumber)
         {
             if (Mode_ != Mode.EventTypeIndex)
                 throw new ArgumentException("Invalid tag mode", "tag");
-            var resultDictionary = PatchStreamsDictionary(streamId, eventSequenceNumber);
+            var resultDictionary = PatchStreamsDictionary(eventType, eventSequenceNumber);
             return FromEventTypeIndexPositions(position, resultDictionary);
         }
 
@@ -418,10 +419,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private Dictionary<string, int> PatchStreamsDictionary(string streamId, int eventSequenceNumber)
         {
             var resultDictionary = new Dictionary<string, int>();
+            var was = false;
             foreach (var stream in Streams)
             {
                 if (stream.Key == streamId)
                 {
+                    was = true;
                     if (eventSequenceNumber < stream.Value)
                         throw new InvalidOperationException(
                             string.Format(
@@ -434,6 +437,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     resultDictionary.Add(stream.Key, stream.Value);
                 }
             }
+            if (!was)
+                throw new ArgumentException("Key not found: " + streamId, "streamId");
             if (resultDictionary.Count < Streams.Count)
                 resultDictionary.Add(streamId, eventSequenceNumber);
             return resultDictionary;

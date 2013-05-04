@@ -67,11 +67,18 @@ namespace EventStore.Projections.Core.Messages
 
         public class EventReaderEof : SubscriptionMessage
         {
-            public EventReaderEof(Guid correlationId)
+            private readonly bool _maxEventsReached;
+
+            public EventReaderEof(Guid correlationId, bool maxEventsReached = false)
                 : base(correlationId)
             {
+                _maxEventsReached = maxEventsReached;
             }
 
+            public bool MaxEventsReached
+            {
+                get { return _maxEventsReached; }
+            }
         }
 
         public class CommittedEventDistributed : SubscriptionMessage

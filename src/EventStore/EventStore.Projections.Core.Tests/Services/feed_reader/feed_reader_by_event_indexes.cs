@@ -19,16 +19,20 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             private QuerySourcesDefinition _querySourcesDefinition;
             private CheckpointTag _fromPosition;
             private int _maxEvents;
+            private TFPos _tfPos1;
+            private TFPos _tfPos2;
+            private TFPos _tfPos3;
 
             protected override void Given()
             {
                 base.Given();
-                var pos1 = ExistingEvent("test-stream", "type1", "{}", "{Data: 1}");
-                var pos2 = ExistingEvent("test-stream", "type1", "{}", "{Data: 2}");
-                var pos3 = ExistingEvent("test-stream", "type2", "{}", "{Data: 3}");
+                _tfPos1 = ExistingEvent("test-stream", "type1", "{}", "{Data: 1}");
+                _tfPos2 = ExistingEvent("test-stream", "type1", "{}", "{Data: 2}");
+                _tfPos3 = ExistingEvent("test-stream", "type2", "{}", "{Data: 3}");
 
-                ExistingEvent("$et-type1", "$>", TFPosToMetadata(pos1), "0@test-stream");
+                ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos1), "0@test-stream");
                 NoStream("$et-type2");
+                NoStream("$et");
                 //NOTE: the following events should be late written
                 //ExistingEvent("$et-type2", "$>", "", "2@test-stream");
                 //ExistingEvent("$et-type1", "$>", "", "1@test-stream");
@@ -39,8 +43,8 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                         Events = new[] {"type1", "type2"},
                         Options = new QuerySourcesDefinitionOptions {UseEventIndexes = true}
                     };
-                _fromPosition = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"$et-type1", -1}, {"$et-type2", -1}});
-                _maxEvents = 2;
+                _fromPosition = CheckpointTag.FromEventTypeIndexPositions(new TFPos(0, -1), new Dictionary<string, int>{{"type1", -1}, {"type2", -1}});
+                _maxEvents = 1; // reading the first event
             }
 
             private string TFPosToMetadata(TFPos tfPos)
@@ -68,8 +72,8 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Single();
                 Assert.AreEqual(
-                    CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"$et-type1", 0}, {"$et-type2", -1}}),
-                    feedPage.LastReaderPosition);
+                    CheckpointTag.FromEventTypeIndexPositions(
+                        _tfPos1, new Dictionary<string, int> {{"type1", 0}, {"type2", -1}}), feedPage.LastReaderPosition);
             }
         }
 
@@ -79,18 +83,21 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             private QuerySourcesDefinition _querySourcesDefinition;
             private CheckpointTag _fromPosition;
             private int _maxEvents;
+            private TFPos _tfPos1;
+            private TFPos _tfPos2;
+            private TFPos _tfPos3;
 
             protected override void Given()
             {
                 base.Given();
-                var pos1 = ExistingEvent("test-stream", "type1", "{}", "{Data: 1}");
-                var pos2 = ExistingEvent("test-stream", "type1", "{}", "{Data: 2}");
-                var pos3 = ExistingEvent("test-stream", "type2", "{}", "{Data: 3}");
+                _tfPos1 = ExistingEvent("test-stream", "type1", "{}", "{Data: 1}");
+                _tfPos2 = ExistingEvent("test-stream", "type1", "{}", "{Data: 2}");
+                _tfPos3 = ExistingEvent("test-stream", "type2", "{}", "{Data: 3}");
 
                 // writes reordered due to batching or timeouts in system projection
-                ExistingEvent("$et-type1", "$>", TFPosToMetadata(pos1), "0@test-stream");
-                ExistingEvent("$et-type2", "$>", TFPosToMetadata(pos3), "2@test-stream");
-                ExistingEvent("$et-type1", "$>", TFPosToMetadata(pos2), "1@test-stream");
+                ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos1), "0@test-stream");
+                ExistingEvent("$et-type2", "$>", TFPosToMetadata(_tfPos3), "2@test-stream");
+                ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos2), "1@test-stream");
 
                 _querySourcesDefinition = new QuerySourcesDefinition
                     {
@@ -98,9 +105,8 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                         Events = new[] {"type1", "type2"},
                         Options = new QuerySourcesDefinitionOptions {UseEventIndexes = true}
                     };
-                _fromPosition =
-                    CheckpointTag.FromStreamPositions(
-                        new Dictionary<string, int> {{"$et-type1", -1}, {"$et-type2", -1}});
+                _fromPosition = CheckpointTag.FromEventTypeIndexPositions(
+                    new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});
                 _maxEvents = 3;
             }
 
@@ -129,8 +135,8 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Single();
                 Assert.AreEqual(
-                    CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"$et-type1", 1}, {"$et-type2", 0}}),
-                    feedPage.LastReaderPosition);
+                    CheckpointTag.FromEventTypeIndexPositions(
+                        _tfPos3, new Dictionary<string, int> {{"type1", 1}, {"type2", 0}}), feedPage.LastReaderPosition);
             }
 
             [Test]

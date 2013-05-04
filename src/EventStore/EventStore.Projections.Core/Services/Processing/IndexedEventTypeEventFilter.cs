@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _stream = "$et-" + eventType;
         }
 
-        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId)
+        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
         {
             return resolvedFromLinkTo && _stream == positionStreamId;
         }

@@ -82,21 +82,28 @@ namespace EventStore.Projections.Core.Services.Processing
             var roundedProgress = (float) Math.Round(message.Progress, 2);
             bool progressChanged = _progress != roundedProgress;
             _progress = roundedProgress;
-            if (!_eventFilter.PassesSource(message.Data.ResolvedLinkTo, message.Data.PositionStreamId))
+            if (
+                !_eventFilter.PassesSource(
+                    message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType))
             {
                 if (progressChanged)
                     _publisher.Publish(
                         new EventReaderSubscriptionMessage.ProgressChanged(
-                            _subscriptionId, _positionTracker.LastTag, _progress,
-                            _subscriptionMessageSequenceNumber++));
+                            _subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
                 return;
             }
+
             // NOTE: after joining heading distribution point it delivers all cached events to the subscription
             // some of this events we may have already received. The delivered events may have different order 
             // (in case of partially ordered cases multi-stream reader etc). We discard all the messages that are not 
             // after the last available checkpoint tag
+
+            //NOTE: older events can appear here when replaying events from the heading event reader
+            //      or when event-by-type-index reader reads TF and both event and resolved-event appear as output
+
             if (!_positionTagger.IsMessageAfterCheckpointTag(_positionTracker.LastTag, message))
             {
+
 /*
                 _logger.Trace(
                     "Skipping replayed event {0}@{1} at position {2}. the last processed event checkpoint tag is: {3}",

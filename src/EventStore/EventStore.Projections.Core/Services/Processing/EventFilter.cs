@@ -42,11 +42,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public bool Passes(bool resolvedFromLinkTo, string eventStreamId, string eventName)
         {
-            return (PassesSource(resolvedFromLinkTo, eventStreamId))
+            return (PassesSource(resolvedFromLinkTo, eventStreamId, eventName))
                    && (_allEvents || _events != null && _events.Contains(eventName));
         }
 
-        public abstract bool PassesSource(bool resolvedFromLinkTo, string positionStreamId);
+        public abstract bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType);
         public abstract string GetCategory(string positionStreamId);
     }
 }

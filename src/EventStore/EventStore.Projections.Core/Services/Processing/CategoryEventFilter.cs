@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _categoryStream = "$ce-" + category;
         }
 
-        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId)
+        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
         {
             return resolvedFromLinkTo && _categoryStream == positionStreamId;
         }

@@ -145,7 +145,7 @@
     <Compile Include="Services\core_projection\TestFixtureWithReadWriteDispatchers.cs" />
     <Compile Include="Services\core_projection\when_receiving_committed_event_the_projection_with_existing_partitioned_state_should.cs" />
     <Compile Include="Services\core_projection\when_the_projection_with_pending_checkpoint_is_stopped.cs" />
-    <Compile Include="Services\event_reader\multi_stream_reader\catching_up\when_reordering_happens_in_event_by_type_index.cs" />
+    <Compile Include="Services\event_reader\event_by_type_index_reader\catching_up\when_reordering_happens_in_event_by_type_index.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_eof_for_all_streams_and_idle_eof.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_read_completed_for_all_streams_after_pause_requested.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_onetime_reader_handles_eof.cs" />
@@ -165,6 +165,11 @@
     <Compile Include="Services\partition_state_update_manager\when_state_updated.cs" />
     <Compile Include="Services\partition_state_update_manager\when_state_updated_twice.cs" />
     <Compile Include="Services\partition_state_update_manager\when_two_states_were_updated.cs" />
+    <Compile Include="Services\position_tagging\event_by_type_index_position_tagger\event_by_type_index_position_tagger.cs" />
+    <Compile Include="Services\position_tagging\event_by_type_index_position_tagger\when_creating_event_by_type_index_position_tracker.cs" />
+    <Compile Include="Services\position_tagging\event_by_type_index_position_tagger\when_updating_event_by_type_index_position_tracker_from_a_tag.cs" />
+    <Compile Include="Services\position_tagging\event_by_type_index_position_tagger\when_updating_event_by_type_index_position_tracker_to_zero.cs" />
+    <Compile Include="Services\position_tagging\event_by_type_index_position_tagger\when_updating_postion_event_by_type_index_position_tracker.cs" />
     <Compile Include="Services\position_tagging\prepare_position_tagger\prepare_position_tagger.cs" />
     <Compile Include="Services\position_tagging\prepare_position_tagger\when_creating_prepare_postion_tracker.cs" />
     <Compile Include="Services\position_tagging\prepare_position_tagger\when_reinitializing_prepapre_postion_tracker.cs" />

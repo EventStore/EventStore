@@ -27,50 +27,68 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class StreamPositionTagger : PositionTagger
+    public class EventByTypeIndexPositionTagger : PositionTagger
     {
-        private readonly string _stream;
+        private readonly HashSet<string> _streams;
+        private readonly HashSet<string> _eventTypes;
+        private readonly Dictionary<string, string> _streamToEventType;
 
-        public StreamPositionTagger(string stream)
+        public EventByTypeIndexPositionTagger(string[] eventTypes)
         {
-            if (stream == null) throw new ArgumentNullException("stream");
-            if (string.IsNullOrEmpty(stream)) throw new ArgumentException("stream");
-            _stream = stream;
+            if (eventTypes == null) throw new ArgumentNullException("eventTypes");
+            if (eventTypes.Length == 0) throw new ArgumentException("eventTypes");
+            _eventTypes = new HashSet<string>(eventTypes);
+            _streams = new HashSet<string>(from eventType in eventTypes select "$et-" + eventType);
+            _streamToEventType = eventTypes.ToDictionary(v => "$et-" + v, v => v);
         }
 
         public override bool IsMessageAfterCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent)
         {
-            if (previous.Mode_ != CheckpointTag.Mode.Stream)
-                throw new ArgumentException("Mode.Stream expected", "previous");
-            return committedEvent.Data.PositionStreamId == _stream
-                   && committedEvent.Data.PositionSequenceNumber > previous.Streams[_stream];
+            if (previous.Mode_ != CheckpointTag.Mode.EventTypeIndex)
+                throw new ArgumentException("Mode.EventTypeIndex expected", "previous");
+            if (committedEvent.Data.Position.CommitPosition <= 0)
+                throw new ArgumentException("complete TF position required", "committedEvent");
+
+            return committedEvent.Data.Position > previous.Position;
         }
 
         public override CheckpointTag MakeCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent)
         {
-            if (committedEvent.Data.PositionStreamId != _stream)
+            var byIndex = _streams.Contains(committedEvent.Data.PositionStreamId);
+            var byEvent = _eventTypes.Contains(committedEvent.Data.EventType);
+            if (!byEvent && !byIndex)
                 throw new InvalidOperationException(
                     string.Format(
-                        "Invalid stream '{0}'.  Expected stream is '{1}'", committedEvent.Data.EventStreamId, _stream));
-            return CheckpointTag.FromStreamPosition(
-                committedEvent.Data.PositionStreamId, committedEvent.Data.PositionSequenceNumber);
+                        "Invalid stream and/or event type'{0}'/'{1}'", committedEvent.Data.PositionStreamId,
+                        committedEvent.Data.EventType));
+
+            return byIndex
+                       ? previous.UpdateEventTypeIndexPosition(
+                           committedEvent.Data.Position, _streamToEventType[committedEvent.Data.PositionStreamId],
+                           committedEvent.Data.PositionSequenceNumber)
+                       : previous.UpdateEventTypeIndexPosition(committedEvent.Data.Position);
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()
         {
-            return CheckpointTag.FromStreamPosition(_stream, -1);
+            return CheckpointTag.FromEventTypeIndexPositions(
+                new TFPos(0, -1), _eventTypes.ToDictionary(v => v, v => ExpectedVersion.NoStream));
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
         {
-            return checkpointTag.Mode_ == CheckpointTag.Mode.Stream && checkpointTag.Streams.Keys.First() == _stream;
+            //TODO: should Stream be supported here as well if in the set?
+            return checkpointTag.Mode_ == CheckpointTag.Mode.EventTypeIndex
+                   && checkpointTag.Streams.All(v => _eventTypes.Contains(v.Key));
         }
     }
 }

@@ -146,7 +146,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 IEnumerable<string> streams = GetEventIndexStreams();
                 return CreatePausedEventIndexEventReader(
-                    eventReaderId, publisher, checkpointTag, stopOnEof, stopAfterNEvents, true, streams);
+                    eventReaderId, publisher, checkpointTag, stopOnEof, stopAfterNEvents, true, _events);
             }
             if (_allStreams)
             {
@@ -185,7 +185,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_allStreams && _useEventIndexes && _events != null && _events.Count == 1)
                 return new IndexedEventTypeEventFilter(_events.First());
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
-                return new IndexedEventTypesEventFilter(_events.ToArray());
+                return new EventByTypeIndexEventFilter(_events);
             if (_allStreams)
                 return new TransactionFileEventFilter(_allEvents, _events, includeLinks: _includeLinks);
             if (_categories != null && _categories.Count == 1)
@@ -204,7 +204,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_allStreams && _useEventIndexes && _events != null && _events.Count == 1)
                 return new StreamPositionTagger("$et-" + _events.First());
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
-                return new MultiStreamPositionTagger(GetEventIndexStreams());
+                return new EventByTypeIndexPositionTagger(_events.ToArray());
             if (_allStreams && _reorderEvents)
                 return new PreparePositionTagger();
             if (_allStreams)
@@ -240,13 +240,16 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private static IEventReader CreatePausedEventIndexEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents,
-            bool resolveLinkTos, IEnumerable<string> streams)
+            bool resolveLinkTos, IEnumerable<string> eventTypes)
         {
-            var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
+            //NOTE: just optimization - anyway if reading from TF events may reappear
+            int p;
+            var nextPositions = eventTypes.ToDictionary(
+                v => "$et-" + v, v => checkpointTag.Streams.TryGetValue(v, out p) ? p + 1 : 0);
 
-            return new EventIndexEventReader(
-                publisher, eventReaderId, streams.ToArray(), nextPositions, resolveLinkTos, new RealTimeProvider(),
-                stopOnEof, stopAfterNEvents);
+            return new EventByTypeIndexEventReader(
+                publisher, eventReaderId, eventTypes.ToArray(), checkpointTag.Position, nextPositions, resolveLinkTos,
+                new RealTimeProvider(), stopOnEof, stopAfterNEvents);
         }
 
         private static IEventReader CreatePausedMultiStreamEventReader(

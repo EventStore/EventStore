@@ -26,19 +26,34 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using EventStore.Projections.Core.Messages;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class PositionTagger
+    public class EventByTypeIndexEventFilter : EventFilter
     {
-        public abstract bool IsMessageAfterCheckpointTag(
-            CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent);
+        //NOTE: this filter will pass both events and links to these events from index streams resulting
+        //      in resolved events re-appearing in the event stream.  This must be filtered out by a 
+        //      reader subscription
+        private readonly HashSet<string> _events;
+        private readonly HashSet<string> _streams;
 
-        public abstract CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent);
+        public EventByTypeIndexEventFilter(HashSet<string> events)
+            : base(false, events)
+        {
+            _events = events;
+            _streams = new HashSet<string>(from eventType in events select "$et-" + eventType);
+        }
 
-        public abstract CheckpointTag MakeZeroCheckpointTag();
+        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
+        {
+            return _events.Contains(eventType) || _streams.Contains(positionStreamId);
+        }
 
-        public abstract bool IsCompatible(CheckpointTag checkpointTag);
+        public override string GetCategory(string positionStreamId)
+        {
+            return null;
+        }
     }
 }
