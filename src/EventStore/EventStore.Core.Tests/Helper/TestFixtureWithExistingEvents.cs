@@ -139,9 +139,6 @@ namespace EventStore.Core.Tests.Helper
             _all.Clear();
             Given1();
             Given();
-            _lastPosition =
-                _lastMessageReplies.Values.Max(v => v == null ? (long?) 0 : v.Max(u => (long?) u.LogPosition))
-                ?? 0 + 100;
         }
 
         protected virtual void Given1()
@@ -240,6 +237,16 @@ namespace EventStore.Core.Tests.Helper
                 }
                 else
                 {
+                    if (list == null)
+                    {
+                        message.Envelope.ReplyWith(
+                            new ClientMessage.ReadStreamEventsForwardCompleted(
+                                message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
+                                ReadStreamResult.NoStream, new ResolvedEvent[0], "", nextEventNumber: -1, lastEventNumber: -1,
+                                isEndOfStream: true, // NOTE AN: don't know how to correctly determine this here
+                                lastCommitPosition: _fakePosition + 50));
+                        return;
+                    }
                     throw new NotImplementedException();
 /*
                     message.Envelope.ReplyWith(

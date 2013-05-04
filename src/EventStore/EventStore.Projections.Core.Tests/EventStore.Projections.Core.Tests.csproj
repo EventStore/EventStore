@@ -151,6 +151,7 @@
     <Compile Include="Services\event_reader\transaction_file_reader\when_handling_eof_and_idle_eof.cs" />
     <Compile Include="Services\event_reader\transaction_file_reader\when_onetime_reader_handles_eof.cs" />
     <Compile Include="Services\feed_reader\feed_reader.cs" />
+    <Compile Include="Services\feed_reader\feed_reader_by_event_indexes.cs" />
     <Compile Include="Services\handlers\categorize_events_by_stream_path.cs" />
     <Compile Include="Services\partition_state\partition_state.cs" />
     <Compile Include="Services\partition_state_cache\when_caching_a_parition_state.cs" />
