@@ -30,6 +30,7 @@ using System;
 using System.Diagnostics.Contracts;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 

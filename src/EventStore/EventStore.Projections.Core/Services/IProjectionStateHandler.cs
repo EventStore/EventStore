@@ -27,7 +27,9 @@
 // 
 
 using System;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Services
 {

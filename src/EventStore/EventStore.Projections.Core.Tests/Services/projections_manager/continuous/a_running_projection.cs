@@ -28,6 +28,7 @@
 
 using System;
 using System.Linq;
+using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;

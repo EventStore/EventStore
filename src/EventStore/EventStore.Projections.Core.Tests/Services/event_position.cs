@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using EventStore.Core.Data;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services

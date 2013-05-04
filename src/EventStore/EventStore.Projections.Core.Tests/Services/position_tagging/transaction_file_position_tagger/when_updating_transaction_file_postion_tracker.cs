@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 

@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;

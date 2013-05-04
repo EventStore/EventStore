@@ -28,6 +28,7 @@
 
 using System;
 using System.Linq;
+using EventStore.Core.Data;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Helper;
 using EventStore.Projections.Core.Messages;
