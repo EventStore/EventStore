@@ -47,16 +47,16 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.multistrea
         public void setup()
         {
             _zeroEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                Guid.NewGuid(), new EventPosition(10, 0), "stream1", 0, false, Guid.NewGuid(), "StreamCreated", false,
+                Guid.NewGuid(), new TFPos(10, 0), "stream1", 0, false, Guid.NewGuid(), "StreamCreated", false,
                 new byte[0], new byte[0]);
             _firstEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                Guid.NewGuid(), new EventPosition(30, 20), "stream1", 1, false, Guid.NewGuid(), "Data", true,
+                Guid.NewGuid(), new TFPos(30, 20), "stream1", 1, false, Guid.NewGuid(), "Data", true,
                 Encoding.UTF8.GetBytes("{}"), new byte[0]);
             _secondEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                Guid.NewGuid(), new EventPosition(50, 40), "stream2", 0, false, Guid.NewGuid(), "StreamCreated", false,
+                Guid.NewGuid(), new TFPos(50, 40), "stream2", 0, false, Guid.NewGuid(), "StreamCreated", false,
                 new byte[0], new byte[0]);
             _thirdEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                Guid.NewGuid(), new EventPosition(70, 60), "stream2", 1, false, Guid.NewGuid(), "Data", true,
+                Guid.NewGuid(), new TFPos(70, 60), "stream2", 1, false, Guid.NewGuid(), "Data", true,
                 Encoding.UTF8.GetBytes("{}"), new byte[0]);
         }
 

@@ -60,10 +60,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             _point.Start(
                 _distibutionPointCorrelationId,
                 new TransactionFileEventReader(
-                    _bus, _distibutionPointCorrelationId, new EventPosition(0, -1), new RealTimeProvider()));
+                    _bus, _distibutionPointCorrelationId, new TFPos(0, -1), new RealTimeProvider()));
             _point.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    _distibutionPointCorrelationId, new EventPosition(20, 10), "stream", 10, false, Guid.NewGuid(),
+                    _distibutionPointCorrelationId, new TFPos(20, 10), "stream", 10, false, Guid.NewGuid(),
                     "type", false, new byte[0], new byte[0]));
         }
 
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         {
             _point.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    _distibutionPointCorrelationId, new EventPosition(40, 30), "stream", 12, false, Guid.NewGuid(),
+                    _distibutionPointCorrelationId, new TFPos(40, 30), "stream", 12, false, Guid.NewGuid(),
                     "type", false, new byte[0], new byte[0]));
         }
 
@@ -92,7 +92,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         {
             _point.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    _distibutionPointCorrelationId, new EventPosition(5, 0), "stream", 8, false, Guid.NewGuid(), "type",
+                    _distibutionPointCorrelationId, new TFPos(5, 0), "stream", 8, false, Guid.NewGuid(), "type",
                     false, new byte[0], new byte[0]));
         }
 

@@ -216,7 +216,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     EventReaderCorrelationId,
                     new ResolvedEvent(
                         positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
-                        resolvedLinkTo, default(EventPosition), @event.EventId, @event.EventType,
+                        resolvedLinkTo, default(TFPos), @event.EventId, @event.EventType,
                         (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata,
                         link == null ? null : link.Metadata, positionEvent.TimeStamp),
                     _stopOnEof ? (long?) null : positionEvent.LogPosition, progress));

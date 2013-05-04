@@ -49,11 +49,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
 
             _subscription.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    Guid.NewGuid(), new EventPosition(200, 150), "a", 1, false, _firstEventId, "bad-event-type", false,
+                    Guid.NewGuid(), new TFPos(200, 150), "a", 1, false, _firstEventId, "bad-event-type", false,
                     new byte[0], new byte[0], _firstEventTimestamp));
             _subscription.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    Guid.NewGuid(), new EventPosition(300, 250), "a", 2, false, Guid.NewGuid(), "bad-event-type", false,
+                    Guid.NewGuid(), new TFPos(300, 250), "a", 2, false, Guid.NewGuid(), "bad-event-type", false,
                     new byte[0], new byte[0], _firstEventTimestamp.AddMilliseconds(_timeBetweenEvents)));
         }
 

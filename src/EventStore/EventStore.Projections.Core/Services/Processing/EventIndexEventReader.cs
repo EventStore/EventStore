@@ -35,7 +35,7 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EventIndexEventReader : MultiStreamEventReaderBase<EventPosition>
+    public class EventIndexEventReader : MultiStreamEventReaderBase<TFPos>
     {
         public EventIndexEventReader(
             IPublisher publisher, Guid eventReaderCorrelationId, string[] streams, Dictionary<string, int> fromPositions,
@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
         }
 
-        protected override EventPosition? EventPairToPosition(EventStore.Core.Data.ResolvedEvent resolvedEvent)
+        protected override TFPos? EventPairToPosition(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
             var @link = resolvedEvent.Link;
             // we assume that event index was written by a standard projection with fromAll() source 
@@ -54,24 +54,24 @@ namespace EventStore.Projections.Core.Services.Processing
             return @link.Metadata.ParseCheckpointTagJson(default(ProjectionVersion)).Tag.Position;
         }
 
-        protected override EventPosition? MessageToLastCommitPosition(
+        protected override TFPos? MessageToLastCommitPosition(
             ClientMessage.ReadStreamEventsForwardCompleted message)
         {
             var lastCommitPosition = GetLastCommitPositionFrom(message);
-            return lastCommitPosition.HasValue ? new EventPosition(message.LastCommitPosition, 0) : (EventPosition?)null;
+            return lastCommitPosition.HasValue ? new TFPos(message.LastCommitPosition, 0) : (TFPos?)null;
         }
 
-        protected override EventPosition GetItemPosition(Tuple<EventRecord, EventRecord, float> head)
+        protected override TFPos GetItemPosition(Tuple<EventRecord, EventRecord, float> head)
         {
             return head.Item2.Metadata.ParseCheckpointTagJson(default(ProjectionVersion)).Tag.Position;
         }
 
-        protected override EventPosition GetMaxPosition()
+        protected override TFPos GetMaxPosition()
         {
-            return new EventPosition(long.MaxValue, long.MaxValue);
+            return new TFPos(long.MaxValue, long.MaxValue);
         }
 
-        protected override long? PositionToSafeJoinPosition(EventPosition? safePositionToJoin)
+        protected override long? PositionToSafeJoinPosition(TFPos? safePositionToJoin)
         {
             return safePositionToJoin != null ? safePositionToJoin.GetValueOrDefault().CommitPosition : (long?) null;
         }

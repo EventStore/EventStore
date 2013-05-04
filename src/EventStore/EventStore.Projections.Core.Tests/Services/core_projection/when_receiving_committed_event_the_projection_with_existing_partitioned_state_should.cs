@@ -74,12 +74,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _coreProjection.Handle(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
-                        "account-01", 2, "account-01", 2, false, new EventPosition(120, 110), _eventId,
+                        "account-01", 2, "account-01", 2, false, new TFPos(120, 110), _eventId,
                         "handle_this_type", false, "data1", "metadata"), _subscriptionId, 0));
             _coreProjection.Handle(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
-                        "account-01", 3, "account-01", 3, false, new EventPosition(160, 150), _eventId, "append", false,
+                        "account-01", 3, "account-01", 3, false, new TFPos(160, 150), _eventId, "append", false,
                         "$", "metadata"), 
                     _subscriptionId, 1));
         }

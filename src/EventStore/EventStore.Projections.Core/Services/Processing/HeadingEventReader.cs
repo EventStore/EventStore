@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<HeadingEventReader>();
         private IEventReader _headEventReader;
-        private EventPosition _subscribeFromPosition = new EventPosition(long.MaxValue, long.MaxValue);
+        private TFPos _subscribeFromPosition = new TFPos(long.MaxValue, long.MaxValue);
 
         private readonly Queue<ReaderSubscriptionMessage.CommittedEventDistributed> _lastMessages =
             new Queue<ReaderSubscriptionMessage.CommittedEventDistributed>();
@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _headEventReaderPaused;
         private Guid _eventReaderId;
         private bool _started;
-        private EventPosition _lastEventPosition = new EventPosition(0, -1);
+        private TFPos _lastEventPosition = new TFPos(0, -1);
 
         public HeadingEventReader(int eventCacheSize)
         {

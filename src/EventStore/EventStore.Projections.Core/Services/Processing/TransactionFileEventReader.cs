@@ -42,14 +42,14 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private bool _eventsRequested;
         private int _maxReadCount = 250;
-        private EventPosition _from;
+        private TFPos _from;
         private readonly bool _deliverEndOfTfPosition;
         private readonly bool _resolveLinkTos;
         private readonly ITimeProvider _timeProvider;
         private int _deliveredEvents;
 
         public TransactionFileEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, EventPosition @from, ITimeProvider timeProvider,
+            IPublisher publisher, Guid eventReaderCorrelationId, TFPos @from, ITimeProvider timeProvider,
             bool stopOnEof = false, bool deliverEndOfTFPosition = true, bool resolveLinkTos = true,
             int? stopAfterNEvents = null)
             : base(publisher, eventReaderCorrelationId, stopOnEof, stopAfterNEvents)
@@ -168,7 +168,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _resolveLinkTos, null, SystemAccount.Principal);
         }
 
-        private void DeliverLastCommitPosition(EventPosition lastPosition)
+        private void DeliverLastCommitPosition(TFPos lastPosition)
         {
             if (_stopOnEof || _stopAfterNEvents != null)
                 return;
@@ -179,11 +179,11 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private void DeliverEvent(
-            EventStore.Core.Data.ResolvedEvent @event, long lastCommitPosition, EventPosition currentFrom)
+            EventStore.Core.Data.ResolvedEvent @event, long lastCommitPosition, TFPos currentFrom)
         {
             _deliveredEvents++;
             EventRecord positionEvent = (@event.Link ?? @event.Event);
-            EventPosition receivedPosition = @event.OriginalPosition.Value;
+            TFPos receivedPosition = @event.OriginalPosition.Value;
             if (currentFrom > receivedPosition)
                 throw new Exception(
                     string.Format(

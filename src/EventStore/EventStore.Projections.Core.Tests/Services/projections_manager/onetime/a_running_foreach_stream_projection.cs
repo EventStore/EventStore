@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 
                 _bus.Publish(
                     ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                        _reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
+                        _reader, new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
                         false, Encoding.UTF8.GetBytes("1"), new byte[0], 100, 33.3f));
             }
         }

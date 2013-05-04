@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _coreProjection.Handle(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
-                        "account-01", -1, "account-01", -1, false, new EventPosition(120, 110), _eventId,
+                        "account-01", -1, "account-01", -1, false, new TFPos(120, 110), _eventId,
                         "handle_this_type", false, "data", "metadata"), _subscriptionId, 0));
         }
 

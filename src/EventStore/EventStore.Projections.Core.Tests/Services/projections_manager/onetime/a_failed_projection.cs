@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 var reader = readerAssignedMessage.ReaderId;
                 _bus.Publish(
                     ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                        reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "event",
+                        reader, new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "event",
                         false, new byte[0], new byte[0], 100, 33.3f));
             }
         }

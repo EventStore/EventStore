@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         [Test]
         public void checkpoint_tag_is_for_correct_position()
         {
-            Assert.AreEqual(new EventPosition(100, 50), _positionTracker.LastTag.Position);
+            Assert.AreEqual(new TFPos(100, 50), _positionTracker.LastTag.Position);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]

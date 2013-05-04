@@ -230,7 +230,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     _feedReader.Handle(
                         EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                             new ResolvedEvent(
-                                "stream", i, "stream", i, false, new EventPosition(i*100, i*100 - 50), Guid.NewGuid(),
+                                "stream", i, "stream", i, false, new TFPos(i*100, i*100 - 50), Guid.NewGuid(),
                                 "type", false, new byte[0], new byte[0], new byte[0], DateTime.UtcNow), _subscriptionId,
                             _number++));
                 }
@@ -269,7 +269,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     _feedReader.Handle(
                         EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                             new ResolvedEvent(
-                                "stream", i, "stream", i, false, new EventPosition(i*100, i*100 - 50), Guid.NewGuid(),
+                                "stream", i, "stream", i, false, new TFPos(i*100, i*100 - 50), Guid.NewGuid(),
                                 "type", false, new byte[0], new byte[0], new byte[0], DateTime.UtcNow), _subscriptionId,
                             _number++));
                 }

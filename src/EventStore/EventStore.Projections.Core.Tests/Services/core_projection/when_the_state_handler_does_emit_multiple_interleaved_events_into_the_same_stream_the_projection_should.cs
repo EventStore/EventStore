@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _coreProjection.Handle(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
-                        "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(120, 110),
+                        "/event_category/1", -1, "/event_category/1", -1, false, new TFPos(120, 110),
                         Guid.NewGuid(), "emit212_type", false, "data",
                         "metadata"), _subscriptionId, 0));
         }

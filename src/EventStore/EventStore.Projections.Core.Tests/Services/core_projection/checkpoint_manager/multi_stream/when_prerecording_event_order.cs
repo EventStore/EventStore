@@ -52,8 +52,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             ExistingEvent("pa", "$>", "1@a", "{$o:\"oa\"}");
             ExistingEvent("pb", "$>", "1@b", "{$o:\"ob\"}");
 
-            _event1 = new ResolvedEvent("pa", 1, "a", 1, true, new EventPosition(200, 150), Guid.NewGuid(), "test1", true, "{}", "{}", "{$o:\"oa\"");
-            _event2 = new ResolvedEvent("pb", 1, "b", 1, true, new EventPosition(300, 250), Guid.NewGuid(), "test1", true, "{}", "{}", "{$o:\"ob\"");
+            _event1 = new ResolvedEvent("pa", 1, "a", 1, true, new TFPos(200, 150), Guid.NewGuid(), "test1", true, "{}", "{}", "{$o:\"oa\"");
+            _event2 = new ResolvedEvent("pb", 1, "b", 1, true, new TFPos(300, 250), Guid.NewGuid(), "test1", true, "{}", "{}", "{$o:\"ob\"");
 
             NoStream("$projections-projection-order");
 

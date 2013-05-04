@@ -146,7 +146,7 @@ namespace EventStore.Projections.Core.Tests.Services
         protected static ResolvedEvent CreateEvent()
         {
             return new ResolvedEvent(
-                "test", -1, "test", -1, false, new EventPosition(10, 5), Guid.NewGuid(), "t", false, new byte[0],
+                "test", -1, "test", -1, false, new TFPos(10, 5), Guid.NewGuid(), "t", false, new byte[0],
                 new byte[0], null, default(DateTime));
         }
     }

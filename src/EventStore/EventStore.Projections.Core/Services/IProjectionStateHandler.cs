@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Services
             return self.ProcessEvent(
                 partition, eventPosition, category,
                 new ResolvedEvent(
-                    streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new EventPosition(0, -1),
+                    streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new TFPos(0, -1),
                     eventId, eventType, isJson, data, metadata), out state, out emittedEvents);
         }
     }

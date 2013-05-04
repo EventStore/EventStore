@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         {
             _point.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    Guid.NewGuid(), new EventPosition(20, 10), "stream", 10, false, Guid.NewGuid(), "type", false,
+                    Guid.NewGuid(), new TFPos(20, 10), "stream", 10, false, Guid.NewGuid(), "type", false,
                     new byte[0], new byte[0]));
         }
 
@@ -95,7 +95,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             var eventReaderId = Guid.NewGuid();
             _point.Start(
                 eventReaderId,
-                new TransactionFileEventReader(_bus, eventReaderId, new EventPosition(0, -1), new RealTimeProvider()));
+                new TransactionFileEventReader(_bus, eventReaderId, new TFPos(0, -1), new RealTimeProvider()));
         }
     }
 }

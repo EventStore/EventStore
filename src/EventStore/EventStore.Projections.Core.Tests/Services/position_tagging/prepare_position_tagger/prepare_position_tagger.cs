@@ -45,13 +45,13 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_po
         public void setup()
         {
             _zeroEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                Guid.NewGuid(), new EventPosition(10, 0), "stream", 0, false, Guid.NewGuid(), "StreamCreated", false,
+                Guid.NewGuid(), new TFPos(10, 0), "stream", 0, false, Guid.NewGuid(), "StreamCreated", false,
                 new byte[0], new byte[0]);
             _firstEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                Guid.NewGuid(), new EventPosition(0, 20), "stream", 1, false, Guid.NewGuid(), "Data", true,
+                Guid.NewGuid(), new TFPos(0, 20), "stream", 1, false, Guid.NewGuid(), "Data", true,
                 Encoding.UTF8.GetBytes("{}"), new byte[0]);
             _secondEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                Guid.NewGuid(), new EventPosition(50, 40), "stream", 2, false, Guid.NewGuid(), "Data", true,
+                Guid.NewGuid(), new TFPos(50, 40), "stream", 2, false, Guid.NewGuid(), "Data", true,
                 Encoding.UTF8.GetBytes("{}"), new byte[0]);
         }
 

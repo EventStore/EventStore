@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 
                 _bus.Publish(
                     ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                        _reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
+                        _reader, new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
                         false, new byte[0], new byte[0], 100, 33.3f));
             }
         }
@@ -119,7 +119,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 base.When();
                 _bus.Publish(
                     ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                        _reader, new EventPosition(200, 150), "stream", 2, "stream", 1, false, Guid.NewGuid(), "type",
+                        _reader, new TFPos(200, 150), "stream", 2, "stream", 1, false, Guid.NewGuid(), "type",
                         false, new byte[0], new byte[0], 100, 33.3f));
             }
 

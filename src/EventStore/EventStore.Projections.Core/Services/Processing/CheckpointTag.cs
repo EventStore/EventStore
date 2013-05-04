@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class CheckpointTag : IComparable<CheckpointTag>
     {
-        public readonly EventPosition Position;
+        public readonly TFPos Position;
         public readonly Dictionary<string, int> Streams;
 
         internal enum Mode
@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
             PreparePosition
         }
 
-        private CheckpointTag(EventPosition position, Dictionary<string, int> streams)
+        private CheckpointTag(TFPos position, Dictionary<string, int> streams)
         {
             Position = position;
             Streams = streams;
@@ -59,11 +59,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private CheckpointTag(long preparePosition)
         {
-            Position = new EventPosition(long.MinValue, preparePosition);
+            Position = new TFPos(long.MinValue, preparePosition);
             Mode_ = CalculateMode();
         }
 
-        private CheckpointTag(EventPosition position)
+        private CheckpointTag(TFPos position)
         {
             Position = position;
             Mode_ = CalculateMode();
@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (stream.Value < 0 && stream.Value != ExpectedVersion.NoStream) throw new ArgumentException("Invalid sequence number", "streams");
             }
             Streams = new Dictionary<string, int>(streams); // clone
-            Position = new EventPosition(Int64.MinValue, Int64.MinValue);
+            Position = new TFPos(Int64.MinValue, Int64.MinValue);
             Mode_ = CalculateMode();
         }
 
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (stream == null) throw new ArgumentNullException("stream");
             if (stream == "") throw new ArgumentException("stream");
             if (sequenceNumber < 0 && sequenceNumber != ExpectedVersion.NoStream) throw new ArgumentException("sequenceNumber");
-            Position = new EventPosition(Int64.MinValue, Int64.MinValue);
+            Position = new TFPos(Int64.MinValue, Int64.MinValue);
             Streams = new Dictionary<string, int> {{stream, sequenceNumber}};
             Mode_ = CalculateMode();
         }
@@ -273,10 +273,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public static CheckpointTag FromPosition(long commitPosition, long preparePosition)
         {
-            return new CheckpointTag(new EventPosition(commitPosition, preparePosition));
+            return new CheckpointTag(new TFPos(commitPosition, preparePosition));
         }
 
-        public static CheckpointTag FromPosition(EventPosition position)
+        public static CheckpointTag FromPosition(TFPos position)
         {
             return new CheckpointTag(position);
         }
@@ -554,7 +554,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     Tag =
                         new CheckpointTag(
-                            new EventPosition(commitPosition ?? Int64.MinValue, preparePosition ?? Int64.MinValue), streams),
+                            new TFPos(commitPosition ?? Int64.MinValue, preparePosition ?? Int64.MinValue), streams),
                     Version = new ProjectionVersion(projectionId, projectionEpoch, projectionVersion),
                     ExtraMetadata = extra,
                 };

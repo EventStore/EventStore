@@ -48,15 +48,15 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
 
             _subscription.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    Guid.NewGuid(), new EventPosition(200, 150), "a", 1, false, _secondEventId, "bad-event-type", false,
+                    Guid.NewGuid(), new TFPos(200, 150), "a", 1, false, _secondEventId, "bad-event-type", false,
                     new byte[0], new byte[0], _firstEventTimestamp));
             _subscription.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    Guid.NewGuid(), new EventPosition(300, 100), "b", 1, false, _firstEventId, "bad-event-type", false,
+                    Guid.NewGuid(), new TFPos(300, 100), "b", 1, false, _firstEventId, "bad-event-type", false,
                     new byte[0], new byte[0], _firstEventTimestamp.AddMilliseconds(1)));
             _subscription.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    Guid.NewGuid(), new EventPosition(310, 305), "a", 2, false, Guid.NewGuid(), "bad-event-type", false,
+                    Guid.NewGuid(), new TFPos(310, 305), "a", 2, false, Guid.NewGuid(), "bad-event-type", false,
                     new byte[0], new byte[0], _firstEventTimestamp.AddMilliseconds(_timeBetweenEvents)));
         }
 

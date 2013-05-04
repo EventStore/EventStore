@@ -46,11 +46,11 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         {
             _subscription.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false, Guid.NewGuid(),
+                    Guid.NewGuid(), new TFPos(200, 150), "test-stream", 1, false, Guid.NewGuid(),
                     "bad-event-type", false, new byte[0], new byte[0]));
             _subscription.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    Guid.NewGuid(), new EventPosition(300, 250), "test-stream", 2, false, Guid.NewGuid(),
+                    Guid.NewGuid(), new TFPos(300, 250), "test-stream", 2, false, Guid.NewGuid(),
                     "bad-event-type", false, new byte[0], new byte[0]));
         }
 

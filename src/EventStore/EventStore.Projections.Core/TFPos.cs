@@ -30,12 +30,12 @@ using EventStore.Core.Data;
 
 namespace EventStore.Projections.Core
 {
-    public struct EventPosition : IComparable<EventPosition>, IEquatable<EventPosition>
+    public struct TFPos : IComparable<TFPos>, IEquatable<TFPos>
     {
         private readonly long _commitPosition;
         private readonly long _preparePosition;
 
-        public EventPosition(long commitPosition, long preparePosition)
+        public TFPos(long commitPosition, long preparePosition)
             : this()
         {
             // do not compare - required to deserialize in any order
@@ -43,9 +43,9 @@ namespace EventStore.Projections.Core
             _preparePosition = preparePosition;
         }
 
-        public static implicit operator EventPosition(TFPos pos)
+        public static implicit operator TFPos(EventStore.Core.Data.TFPos pos)
         {
-            return new EventPosition(pos.CommitPosition, pos.PreparePosition);
+            return new TFPos(pos.CommitPosition, pos.PreparePosition);
         }
 
         public long CommitPosition
@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core
             get { return _preparePosition; }
         }
 
-        public int CompareTo(EventPosition other)
+        public int CompareTo(TFPos other)
         {
             if (_commitPosition < other._commitPosition)
                 return -1;
@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core
             return _preparePosition.CompareTo(other._preparePosition);
         }
 
-        public bool Equals(EventPosition other)
+        public bool Equals(TFPos other)
         {
             return _commitPosition == other._commitPosition && _preparePosition == other._preparePosition;
         }
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is EventPosition && Equals((EventPosition) obj);
+            return obj is TFPos && Equals((TFPos) obj);
         }
 
         public override int GetHashCode()
@@ -86,32 +86,32 @@ namespace EventStore.Projections.Core
             }
         }
 
-        public static bool operator ==(EventPosition d1, EventPosition d2)
+        public static bool operator ==(TFPos d1, TFPos d2)
         {
             return d1.Equals(d2);
         }
 
-        public static bool operator !=(EventPosition d1, EventPosition d2)
+        public static bool operator !=(TFPos d1, TFPos d2)
         {
             return !d1.Equals(d2);
         }
 
-        public static bool operator <(EventPosition t1, EventPosition t2)
+        public static bool operator <(TFPos t1, TFPos t2)
         {
             return t1.CompareTo(t2) < 0;
         }
 
-        public static bool operator <=(EventPosition t1, EventPosition t2)
+        public static bool operator <=(TFPos t1, TFPos t2)
         {
             return t1.CompareTo(t2) <= 0;
         }
 
-        public static bool operator >(EventPosition t1, EventPosition t2)
+        public static bool operator >(TFPos t1, TFPos t2)
         {
             return t1.CompareTo(t2) > 0;
         }
 
-        public static bool operator >=(EventPosition t1, EventPosition t2)
+        public static bool operator >=(TFPos t1, TFPos t2)
         {
             return t1.CompareTo(t2) >= 0;
         }
