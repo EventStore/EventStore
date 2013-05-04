@@ -60,7 +60,6 @@ namespace EventStore.Core.Tests.Helper
         private readonly HashSet<string> _writesToSucceed = new HashSet<string>();
         private bool _allWritesQueueUp;
         private Queue<ClientMessage.WriteEvents> _writesQueue;
-        private long _lastPosition;
 
         protected TFPos ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData)
         {
@@ -157,7 +156,7 @@ namespace EventStore.Core.Tests.Helper
                 message.Envelope.ReplyWith(
                     new ClientMessage.ReadStreamEventsBackwardCompleted(
                         message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
-                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], string.Empty, -1, -1, true, _lastPosition));
+                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], string.Empty, -1, -1, true, _fakePosition + 50));
                             
             }
             else if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list))
@@ -182,7 +181,7 @@ namespace EventStore.Core.Tests.Helper
                             nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber - 1 : -1,
                             lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
                             isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == 0,
-                            lastCommitPosition: _lastPosition));
+                            lastCommitPosition: _fakePosition + 50));
                 }
                 else
                 {
@@ -212,7 +211,7 @@ namespace EventStore.Core.Tests.Helper
                 message.Envelope.ReplyWith(
                     new ClientMessage.ReadStreamEventsBackwardCompleted(
                         message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
-                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], string.Empty, -1, -1, true, _lastPosition));
+                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], string.Empty, -1, -1, true, _fakePosition + 50));
                             
             }
             else if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list))
@@ -233,7 +232,7 @@ namespace EventStore.Core.Tests.Helper
                             nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber + 1 : -1,
                             lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
                             isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == list.Last().EventNumber,
-                            lastCommitPosition: _lastPosition));
+                            lastCommitPosition: _fakePosition + 50));
                 }
                 else
                 {

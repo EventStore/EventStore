@@ -179,6 +179,8 @@ namespace EventStore.Projections.Core.Services.Processing
                         return;
 
                     ProcessBuffers();
+                    if (_disposed) // max N reached
+                        return;
                     if (_pauseRequested)
                         _paused = !AreEventsRequested();
                     else if (message.Events.Length == 0)

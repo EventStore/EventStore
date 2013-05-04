@@ -90,6 +90,8 @@ namespace EventStore.Core.Tests.Helper
                 _queue.Publish(message);
                 _queue.Process();
             }
+            // process final timer messages
+            _queue.Process();
         }
 
         protected virtual IEnumerable<Message> When()

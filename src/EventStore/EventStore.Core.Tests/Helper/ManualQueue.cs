@@ -30,6 +30,8 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
+using System.Linq;
 
 namespace EventStore.Core.Tests.Helper
 {
@@ -37,6 +39,7 @@ namespace EventStore.Core.Tests.Helper
     {
         private readonly Queue<Message> _queue = new Queue<Message>();
         private readonly IBus _bus;
+        private readonly List<TimerMessage.Schedule> _timerQueue = new List<TimerMessage.Schedule>();
 
         public ManualQueue(IBus bus)
         {
@@ -50,10 +53,18 @@ namespace EventStore.Core.Tests.Helper
 
         public void Process()
         {
+            var orderedTimerMessages = _timerQueue.OrderBy(v => v.TriggerAfter);
+            _timerQueue.Clear();
+            foreach (var timerMessage in orderedTimerMessages)
+                timerMessage.Reply();
+
             var count = 0;
             while (_queue.Count > 0)
             {
                 var message = _queue.Dequeue();
+                var schedule = message as TimerMessage.Schedule;
+                if (schedule != null)
+                    _timerQueue.Add(schedule);
                 _bus.Publish(message);
                 count++;
                 if (count > 1000)

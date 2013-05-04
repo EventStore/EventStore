@@ -82,7 +82,6 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             _bus.Subscribe<ReaderCoreServiceMessage.StartReader>(_readerService);
             _bus.Subscribe<ReaderCoreServiceMessage.StopReader>(_readerService);
             _bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_readerService);
-            _bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_readerService);
