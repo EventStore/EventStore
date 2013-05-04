@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
@@ -46,14 +47,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 _projectionSource = "fail";
             }
 
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
+                foreach (var m in base.When()) yield return m;
                 var readerAssignedMessage =
                     _consumer.HandledMessages.OfType<ReaderSubscriptionManagement.ReaderAssignedReader>().LastOrDefault();
                 Assert.IsNotNull(readerAssignedMessage);
                 var reader = readerAssignedMessage.ReaderId;
-                _bus.Publish(
+                yield return(
                     ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                         reader, new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "event",
                         false, new byte[0], new byte[0], 100, 33.3f));
@@ -63,10 +64,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         [TestFixture]
         public class when_updating_query : Base
         {
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
-                _manager.Handle(
+                foreach (var m in base.When()) yield return m;
+                 yield return (
                     new ProjectionManagementMessage.UpdateQuery(
                         new PublishEnvelope(_bus), _projectionName,
                         "native:" + typeof (FakeProjection).AssemblyQualifiedName, @"", null));
@@ -103,10 +104,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         [TestFixture]
         public class when_stopping : Base
         {
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
-                _manager.Handle(new ProjectionManagementMessage.Disable(new PublishEnvelope(_bus), _projectionName));
+                foreach (var m in base.When()) yield return m;
+                yield return (new ProjectionManagementMessage.Disable(new PublishEnvelope(_bus), _projectionName));
             }
 
             [Test]
@@ -146,10 +147,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         [TestFixture]
         public class when_starting : Base
         {
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
-                _manager.Handle(new ProjectionManagementMessage.Enable(new PublishEnvelope(_bus), _projectionName));
+                foreach (var m in base.When()) yield return m;
+                yield return(new ProjectionManagementMessage.Enable(new PublishEnvelope(_bus), _projectionName));
             }
 
             [Test]

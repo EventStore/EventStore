@@ -58,6 +58,7 @@ namespace EventStore.Core.Tests.Helper
         public void setup0()
         {
             _bus = new InMemoryBus("bus");
+            _queue = null;
             _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(GetInputQueue()));
             _readDispatcher = _ioDispatcher.BackwardReader;
             _writeDispatcher = _ioDispatcher.Writer;
@@ -74,7 +75,7 @@ namespace EventStore.Core.Tests.Helper
 
         protected virtual IPublisher GetInputQueue()
         {
-            return _bus;
+            return (IPublisher) _queue ?? _bus;
         }
 
         protected void SetUpManualQueue()
@@ -87,7 +88,8 @@ namespace EventStore.Core.Tests.Helper
             _queue.Process();
             foreach (var message in When())
             {
-                _queue.Publish(message);
+                if (message != null) 
+                    _queue.Publish(message);
                 _queue.Process();
             }
             // process final timer messages

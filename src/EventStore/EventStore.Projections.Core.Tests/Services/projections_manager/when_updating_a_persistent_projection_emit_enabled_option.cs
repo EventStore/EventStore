@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -54,17 +55,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         private string _projectionName;
         private string _source;
 
-        protected override void When()
+        protected override IEnumerable<Message> When()
         {
             _projectionName = "test-projection";
             _source = @"fromAll(); on_any(function(){});log(1);";
-            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            _manager.Handle(
+            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
+            yield return (
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS", _source, enabled: true,
                     checkpointsEnabled: true, emitEnabled: true));
             // when
-            _manager.Handle(
+            yield return (
                 new ProjectionManagementMessage.UpdateQuery(
                     new PublishEnvelope(_bus), _projectionName, "JS", _source, emitEnabled: false));
         }

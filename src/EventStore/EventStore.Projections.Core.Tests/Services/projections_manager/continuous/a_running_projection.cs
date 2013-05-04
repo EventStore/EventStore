@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
@@ -47,15 +48,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 base.Given();
             }
 
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
+                foreach (var m in base.When()) yield return m;
                 var readerAssignedMessage =
                     _consumer.HandledMessages.OfType<ReaderSubscriptionManagement.ReaderAssignedReader>().LastOrDefault();
                 Assert.IsNotNull(readerAssignedMessage);
                 _reader = readerAssignedMessage.ReaderId;
 
-                _bus.Publish(
+                yield return (
                     ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                         _reader, new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
                         false, new byte[0], new byte[0], 100, 33.3f));
@@ -65,13 +66,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
         [TestFixture]
         public class when_stopping : Base
         {
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
-                _manager.Handle(new ProjectionManagementMessage.Disable(new PublishEnvelope(_bus), _projectionName));
+                foreach (var m in base.When()) yield return m;
+
+                 yield return (new ProjectionManagementMessage.Disable(new PublishEnvelope(_bus), _projectionName));
                 for (var i = 0; i < 50; i++)
                 {
-                    _bus.Publish(
+                     yield return (
                         ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                             _reader, new TFPos(100*i + 200, 150), "stream", 1, "stream", 1 + i + 1, false,
                             Guid.NewGuid(), "type", false, new byte[0], new byte[0], 100*i + 200, 33.3f));
@@ -128,10 +130,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
         [TestFixture]
         public class when_handling_event : Base
         {
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
-                _bus.Publish(
+                foreach (var m in base.When()) yield return m;
+                yield return (
                     ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                         _reader, new TFPos(200, 150), "stream", 2, "stream", 1, false, Guid.NewGuid(), "type",
                         false, new byte[0], new byte[0], 100, 33.3f));
@@ -180,10 +182,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 _projectionEnabled = false;
             }
 
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
-                _manager.Handle(new ProjectionManagementMessage.Reset(new PublishEnvelope(_bus), _projectionName));
+                foreach (var m in base.When()) yield return m;
+
+                yield return(new ProjectionManagementMessage.Reset(new PublishEnvelope(_bus), _projectionName));
             }
 
             [Test]
@@ -250,12 +253,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 _projectionEnabled = false;
             }
 
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
-                _manager.Handle(new ProjectionManagementMessage.Reset(new PublishEnvelope(_bus), _projectionName));
-                _manager.Handle(new ProjectionManagementMessage.Enable(new PublishEnvelope(_bus), _projectionName));
-                _bus.Publish(
+                foreach (var m in base.When()) yield return m;
+                yield return(new ProjectionManagementMessage.Reset(new PublishEnvelope(_bus), _projectionName));
+                yield return(new ProjectionManagementMessage.Enable(new PublishEnvelope(_bus), _projectionName));
+                yield return(
                     ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                         _reader, new TFPos(100, 150), "stream", 1, "stream", 1 + 1, false,
                         Guid.NewGuid(), "type", false, new byte[0], new byte[0], 200, 33.3f));

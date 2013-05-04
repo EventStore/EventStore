@@ -109,8 +109,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventReaderId = eventReaderId;
             _headEventReader = eventReader;
             //Guid.Empty means head distribution point
+            _started = true; // started before resume due to old style test with immediate callback
             _headEventReader.Resume();
-            _started = true;
         }
 
         public void Stop()

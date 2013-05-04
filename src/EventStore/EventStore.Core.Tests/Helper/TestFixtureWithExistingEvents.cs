@@ -43,6 +43,7 @@ namespace EventStore.Core.Tests.Helper
     public abstract class TestFixtureWithExistingEvents : TestFixtureWithReadWriteDispatchers,
                                                            IHandle<ClientMessage.ReadStreamEventsBackward>,
                                                            IHandle<ClientMessage.ReadStreamEventsForward>,
+                                                           IHandle<ClientMessage.ReadAllEventsForward>,
                                                            IHandle<ClientMessage.WriteEvents>,
                                                            IHandle<ClientMessage.DeleteStream>
     {
@@ -60,6 +61,7 @@ namespace EventStore.Core.Tests.Helper
         private readonly HashSet<string> _writesToSucceed = new HashSet<string>();
         private bool _allWritesQueueUp;
         private Queue<ClientMessage.WriteEvents> _writesQueue;
+        private bool _readAllEnabled;
 
         protected TFPos ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData)
         {
@@ -81,6 +83,11 @@ namespace EventStore.Core.Tests.Helper
             _all.Add(eventPosition, eventRecord);
             _fakePosition += 100;
             return eventPosition;
+        }
+
+        protected void EnableReadAll()
+        {
+            _readAllEnabled = true;
         }
 
         protected void NoStream(string streamId)
@@ -129,6 +136,7 @@ namespace EventStore.Core.Tests.Helper
             _bus.Subscribe<ClientMessage.WriteEvents>(this);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
             _bus.Subscribe<ClientMessage.ReadStreamEventsForward>(this);
+            _bus.Subscribe<ClientMessage.ReadAllEventsForward>(this);
             _bus.Subscribe<ClientMessage.DeleteStream>(this);
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
@@ -278,6 +286,21 @@ namespace EventStore.Core.Tests.Helper
                 return new ResolvedEvent(x, null);
         }
 
+        private ResolvedEvent BuildEvent(EventRecord x, bool resolveLinks, long commitPosition)
+        {
+            if (x.EventType == "$>" && resolveLinks)
+            {
+                var parts = Encoding.UTF8.GetString(x.Data).Split('@');
+                var list = _lastMessageReplies[parts[1]];
+                var eventNumber = int.Parse(parts[0]);
+                var target = list[eventNumber];
+
+                return new ResolvedEvent(target, x, commitPosition);
+            }
+            else
+                return new ResolvedEvent(x, commitPosition);
+        }
+
         public void Handle(ClientMessage.WriteEvents message)
         {
             if (_allWritesSucceed || _writesToSucceed.Contains(message.EventStreamId))
@@ -338,5 +361,28 @@ namespace EventStore.Core.Tests.Helper
                 message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.Success, string.Empty));
         }
 
+        public void Handle(ClientMessage.ReadAllEventsForward message)
+        {
+            if (!_readAllEnabled)
+                return;
+            var from = new TFPos(message.CommitPosition, message.PreparePosition);
+            var records = _all.SkipWhile(v => v.Key < from).Take(message.MaxCount).ToArray();
+            var list = new List<ResolvedEvent>();
+            var pos = from;
+            var next = pos;
+            var prev = new TFPos(pos.CommitPosition, Int64.MaxValue);
+            foreach (KeyValuePair<TFPos, EventRecord> record in records)
+            {
+                pos = record.Key;
+                next = new TFPos(pos.CommitPosition, pos.PreparePosition + 1);
+                list.Add(BuildEvent(record.Value, message.ResolveLinks, record.Key.CommitPosition));
+            }
+            var events = list.ToArray();
+            message.Envelope.ReplyWith(
+                new ClientMessage.ReadAllEventsForwardCompleted(
+                    message.CorrelationId, ReadAllResult.Success, "", events, message.MaxCount, pos, next, prev,
+                    _fakePosition));
+        }
     }
 }
+

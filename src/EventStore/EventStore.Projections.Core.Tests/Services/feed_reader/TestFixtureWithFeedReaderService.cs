@@ -35,6 +35,12 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
     {
         protected FeedReaderService _feedReaderService;
 
+        protected override void Given1()
+        {
+            base.Given1();
+            EnableReadAll();
+        }
+
         protected override void GivenAdditionalServices()
         {
             _feedReaderService = new FeedReaderService(_subscriptionDispatcher);

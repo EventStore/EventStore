@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using EventStore.Core.Bus;
@@ -50,14 +51,16 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             AllWritesQueueUp();
         }
 
-        protected override void When()
+        protected override IEnumerable<Message> When()
         {
-            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            _manager.Handle(
+            yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            yield return
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS",
-                    @"fromAll().whenAny(function(s,e){return s;});", enabled: true, checkpointsEnabled: true, emitEnabled: true));
+                    @"fromAll().whenAny(function(s,e){return s;});", enabled: true, checkpointsEnabled: true,
+                    emitEnabled: true);
             OneWriteCompletes();
+            yield return null;
         }
 
         [Test, Category("v8")]

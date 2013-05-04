@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -38,10 +39,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     [TestFixture]
     public class when_posting_an_onetime_projection: TestFixtureWithProjectionCoreAndManagementServices
     {
-        protected override void When()
+        protected override IEnumerable<Message> When()
         {
-            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            _manager.Handle(
+            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
+            yield return (
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
         }

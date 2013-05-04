@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
@@ -47,15 +48,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 base.Given();
             }
 
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
+                foreach (var m in base.When()) yield return m;
                 var readerAssignedMessage =
                     _consumer.HandledMessages.OfType<ReaderSubscriptionManagement.ReaderAssignedReader>().LastOrDefault();
                 Assert.IsNotNull(readerAssignedMessage);
                 _reader = readerAssignedMessage.ReaderId;
 
-                _bus.Publish(
+                yield return(
                     ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                         _reader, new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
                         false, new byte[0], new byte[0], 100, 33.3f));
@@ -65,10 +66,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         [TestFixture]
         public class when_handling_eof : Base
         {
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
-                _bus.Publish(new ReaderSubscriptionMessage.EventReaderEof(_reader));
+                foreach (var m in base.When()) yield return m;
+
+                yield return(new ReaderSubscriptionMessage.EventReaderEof(_reader));
             }
 
             [Test]
@@ -115,10 +117,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         [TestFixture]
         public class when_handling_event : Base
         {
-            protected override void When()
+            protected override IEnumerable<Message> When()
             {
-                base.When();
-                _bus.Publish(
+                foreach (var m in base.When()) yield return m;
+                yield return (
                     ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                         _reader, new TFPos(200, 150), "stream", 2, "stream", 1, false, Guid.NewGuid(), "type",
                         false, new byte[0], new byte[0], 100, 33.3f));

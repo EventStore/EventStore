@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -41,11 +42,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         private string _projectionName;
         private string _projectionQuery;
 
-        protected override void When()
+        protected override IEnumerable<Message> When()
         {
             _projectionQuery = @"fromAll(); on_any(function(){});log(1);";
-            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            _manager.Handle(new ProjectionManagementMessage.Post(new PublishEnvelope(_bus), _projectionQuery, enabled: true));
+            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
+            yield return (new ProjectionManagementMessage.Post(new PublishEnvelope(_bus), _projectionQuery, enabled: true));
             _projectionName = _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Single().Name;
         }
 
@@ -86,6 +87,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void the_projection_state_can_be_retrieved()
         {
             _manager.Handle(new ProjectionManagementMessage.GetState(new PublishEnvelope(_bus), _projectionName, ""));
+            _queue.Process();
 
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Count());
             Assert.AreEqual(
