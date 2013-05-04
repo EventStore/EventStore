@@ -132,6 +132,15 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"$et-type1", 1}, {"$et-type2", 0}}),
                     feedPage.LastReaderPosition);
             }
+
+            [Test]
+            public void returns_correct_event_sequence()
+            {
+                var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Single();
+                Assert.That(
+                    new[] {0, 1, 2}.SequenceEqual(
+                        feedPage.Events.Select(e => e.ResolvedEvent.EventSequenceNumber).OrderBy(v => v)));
+            }
         }
 
     }
