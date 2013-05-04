@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System.Linq;
@@ -121,6 +122,19 @@ namespace EventStore.Projections.Core.Tests.Other
             CheckpointTag back = instring.ParseCheckpointTagJson();
             Assert.AreEqual(tag, back);
             Assert.IsNull(back.CommitPosition);
+        }
+
+        [Test]
+        public void event_by_type_index_based_checkpoint_tag()
+        {
+            CheckpointTag tag = CheckpointTag.FromEventTypeIndexPositions(
+                new TFPos(100, 50), new Dictionary<string, int> {{"a", 1}, {"b", 2}});
+            byte[] bytes = tag.ToJsonBytes(_version);
+            string instring = Encoding.UTF8.GetString(bytes);
+            Console.WriteLine(instring);
+
+            CheckpointTag back = instring.ParseCheckpointTagJson();
+            Assert.AreEqual(tag, back);
         }
 
         [Test]

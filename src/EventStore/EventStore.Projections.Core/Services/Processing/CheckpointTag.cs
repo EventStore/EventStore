@@ -47,6 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Position,
             Stream,
             MultiStream,
+            EventTypeIndex,
             PreparePosition
         }
 
@@ -69,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Mode_ = CalculateMode();
         }
 
-        private CheckpointTag(Dictionary<string, int> streams)
+        private CheckpointTag(IDictionary<string, int> streams)
         {
             foreach (var stream in streams)
             {
@@ -78,6 +79,18 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             Streams = new Dictionary<string, int>(streams); // clone
             Position = new TFPos(Int64.MinValue, Int64.MinValue);
+            Mode_ = CalculateMode();
+        }
+
+        private CheckpointTag(IDictionary<string, int> streams, TFPos position)
+        {
+            Position = position;
+            foreach (var stream in streams)
+            {
+                if (stream.Key == "") throw new ArgumentException("Empty stream name", "streams");
+                if (stream.Value < 0 && stream.Value != ExpectedVersion.NoStream) throw new ArgumentException("Invalid sequence number", "streams");
+            }
+            Streams = new Dictionary<string, int>(streams); // clone
             Mode_ = CalculateMode();
         }
 
@@ -94,10 +107,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private Mode CalculateMode()
         {
             if (Streams == null || Streams.Count == 0)
-                if (CommitPosition == null && PreparePosition != null)
+                if (Position.CommitPosition == Int64.MinValue && Position.PreparePosition != Int64.MinValue)
                     return Mode.PreparePosition;
-                else 
+                else
                     return Mode.Position;
+            if (Position != new TFPos(Int64.MinValue, Int64.MinValue))
+                return Mode.EventTypeIndex;
             if (Streams.Count == 1)
                 return Mode.Stream;
             return Mode.MultiStream;
@@ -119,6 +134,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (leftMode)
             {
                 case Mode.Position:
+                case Mode.EventTypeIndex:
                     return left.Position > right.Position;
                 case Mode.PreparePosition:
                     return left.PreparePosition > right.PreparePosition;
@@ -164,6 +180,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (leftMode)
             {
                 case Mode.Position:
+                case Mode.EventTypeIndex:
                     return left.Position >= right.Position;
                 case Mode.PreparePosition:
                     return left.PreparePosition >= right.PreparePosition;
@@ -216,6 +233,10 @@ namespace EventStore.Projections.Core.Services.Processing
             UpgradeModes(ref leftMode, ref rightMode);
             switch (leftMode)
             {
+                case Mode.EventTypeIndex: 
+                    // NOTE: we ignore stream positions as they are only suggestion on 
+                    //       where to start to gain better performance
+                    goto case Mode.Position;
                 case Mode.Position:
                     return Position == other.Position;
                 case Mode.PreparePosition:
@@ -252,9 +273,14 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             get
             {
-                return Streams != null
-                           ? null
-                           : (Position.CommitPosition != Int64.MinValue ? Position.CommitPosition : (long?) null);
+                switch (Mode_)
+                {
+                    case Mode.Position:
+                    case Mode.EventTypeIndex:
+                        return Position.CommitPosition;
+                    default:
+                        return null;
+                }
             }
         }
 
@@ -262,9 +288,15 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             get
             {
-                return Streams != null
-                         ? null
-                         : (Position.PreparePosition != Int64.MinValue ? Position.PreparePosition : (long?)null);
+                switch (Mode_)
+                {
+                    case Mode.Position:
+                    case Mode.PreparePosition:
+                    case Mode.EventTypeIndex:
+                        return Position.PreparePosition;
+                    default:
+                        return null;
+                }
             }
         }
 
@@ -293,8 +325,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public static CheckpointTag FromStreamPositions(IDictionary<string, int> streams)
         {
-            // clone to avoid changes to the dictionary passed as argument
-            return new CheckpointTag(streams.ToDictionary(v => v.Key, v => v.Value));
+            // streams cloned inside
+            return new CheckpointTag(streams);
+        }
+
+        public static CheckpointTag FromEventTypeIndexPositions(TFPos position, IDictionary<string, int> streams)
+        {
+            // streams cloned inside
+            return new CheckpointTag(streams, position);
         }
 
         public int CompareTo(CheckpointTag other)
@@ -313,7 +351,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 case Mode.Stream:
                     return Streams.Keys.First() + ": " + Streams.Values.First();
                 case Mode.MultiStream:
+                case Mode.EventTypeIndex:
                     var sb = new StringBuilder();
+                    if (Mode_ == Mode.EventTypeIndex)
+                    {
+                        sb.Append(Position.ToString());
+                        sb.Append("; ");
+                    }
                     foreach (var stream in Streams)
                     {
                         sb.AppendFormat("{0}: {1}; ", stream.Key, stream.Value);
@@ -336,12 +380,43 @@ namespace EventStore.Projections.Core.Services.Processing
                 rightMode = Mode.MultiStream;
                 return;
             }
+            if (leftMode == Mode.Position && rightMode == Mode.EventTypeIndex)
+            {
+                leftMode = Mode.EventTypeIndex;
+                return;
+            }
+            if (leftMode == Mode.EventTypeIndex && rightMode == Mode.Position)
+            {
+                rightMode = Mode.EventTypeIndex;
+                return;
+            }
         }
 
         public CheckpointTag UpdateStreamPosition(string streamId, int eventSequenceNumber)
         {
             if (Mode_ != Mode.MultiStream)
                 throw new ArgumentException("Invalid tag mode", "tag");
+            var resultDictionary = PatchStreamsDictionary(streamId, eventSequenceNumber);
+            return FromStreamPositions(resultDictionary);
+        }
+
+        public CheckpointTag UpdateEventTypeIndexPosition(TFPos position, string streamId, int eventSequenceNumber)
+        {
+            if (Mode_ != Mode.EventTypeIndex)
+                throw new ArgumentException("Invalid tag mode", "tag");
+            var resultDictionary = PatchStreamsDictionary(streamId, eventSequenceNumber);
+            return FromEventTypeIndexPositions(position, resultDictionary);
+        }
+
+        public CheckpointTag UpdateEventTypeIndexPosition(TFPos position)
+        {
+            if (Mode_ != Mode.EventTypeIndex)
+                throw new ArgumentException("Invalid tag mode", "tag");
+            return FromEventTypeIndexPositions(position, Streams);
+        }
+
+        private Dictionary<string, int> PatchStreamsDictionary(string streamId, int eventSequenceNumber)
+        {
             var resultDictionary = new Dictionary<string, int>();
             foreach (var stream in Streams)
             {
@@ -361,7 +436,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             if (resultDictionary.Count < Streams.Count)
                 resultDictionary.Add(streamId, eventSequenceNumber);
-            return FromStreamPositions(resultDictionary);
+            return resultDictionary;
         }
 
         public byte[] ToJsonBytes(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
@@ -428,10 +503,13 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (Mode_)
             {
                 case Mode.Position:
+                case Mode.EventTypeIndex:
                     jsonWriter.WritePropertyName("$c");
                     jsonWriter.WriteValue(CommitPosition.GetValueOrDefault());
                     jsonWriter.WritePropertyName("$p");
                     jsonWriter.WriteValue(PreparePosition.GetValueOrDefault());
+                    if (Mode_ == Mode.EventTypeIndex)
+                        goto case Mode.MultiStream;
                     break;
                 case Mode.PreparePosition:
                     jsonWriter.WritePropertyName("$p");
