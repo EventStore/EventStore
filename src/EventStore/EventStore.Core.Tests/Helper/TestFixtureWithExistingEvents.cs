@@ -34,7 +34,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -52,6 +51,8 @@ namespace EventStore.Core.Tests.Helper
         protected readonly Dictionary<string, List<EventRecord>> _lastMessageReplies =
             new Dictionary<string, List<EventRecord>>();
 
+        protected readonly SortedList<TFPos, EventRecord> _all = new SortedList<TFPos, EventRecord>();
+
         protected readonly HashSet<string> _deletedStreams = new HashSet<string>();
 
         private int _fakePosition = 100;
@@ -61,7 +62,7 @@ namespace EventStore.Core.Tests.Helper
         private Queue<ClientMessage.WriteEvents> _writesQueue;
         private long _lastPosition;
 
-        protected void ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData)
+        protected TFPos ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData)
         {
             List<EventRecord> list;
             if (!_lastMessageReplies.TryGetValue(streamId, out list) || list == null)
@@ -69,15 +70,18 @@ namespace EventStore.Core.Tests.Helper
                 list = new List<EventRecord>();
                 _lastMessageReplies[streamId] = list;
             }
-            list.Add(
-                new EventRecord(
-                    list.Count,
-                    new PrepareLogRecord(
-                        _fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
-                        DateTime.UtcNow, PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, eventType,
-                        Encoding.UTF8.GetBytes(eventData),
-                        eventMetadata == null ? new byte[0] : Encoding.UTF8.GetBytes(eventMetadata))));
+            var eventRecord = new EventRecord(
+                list.Count,
+                new PrepareLogRecord(
+                    _fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
+                    DateTime.UtcNow, PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, eventType,
+                    Encoding.UTF8.GetBytes(eventData),
+                    eventMetadata == null ? new byte[0] : Encoding.UTF8.GetBytes(eventMetadata)));
+            list.Add(eventRecord);
+            var eventPosition = new TFPos(_fakePosition + 50, _fakePosition);
+            _all.Add(eventPosition, eventRecord);
             _fakePosition += 100;
+            return eventPosition;
         }
 
         protected void NoStream(string streamId)
@@ -132,6 +136,7 @@ namespace EventStore.Core.Tests.Helper
             _bus.Subscribe(_ioDispatcher.StreamDeleter);
             _lastMessageReplies.Clear();
             _deletedStreams.Clear();
+            _all.Clear();
             Given1();
             Given();
             _lastPosition =
@@ -293,15 +298,18 @@ namespace EventStore.Core.Tests.Helper
                     return;
                 }
             }
-            foreach (var eventRecord in from e in message.Events
-                                        let eventNumber = list.Count
-                                        select
-                                            new EventRecord(
-                                            eventNumber, eventNumber*1000, message.CorrelationId, e.EventId,
-                                            eventNumber*1000, 0, message.EventStreamId, ExpectedVersion.Any,
-                                            DateTime.UtcNow, PrepareFlags.SingleWrite, e.EventType, e.Data, e.Metadata))
+            var eventRecords = (from e in message.Events
+                                let eventNumber = list.Count
+                                let tfPosition = (_fakePosition += 100)
+                                select
+                                    new EventRecord(
+                                    eventNumber, tfPosition, message.CorrelationId, e.EventId, tfPosition, 0,
+                                    message.EventStreamId, ExpectedVersion.Any, DateTime.UtcNow,
+                                    PrepareFlags.SingleWrite, e.EventType, e.Data, e.Metadata)).ToArray();
+            foreach (var eventRecord in eventRecords)
             {
                 list.Add(eventRecord);
+                _all.Add(new TFPos(_fakePosition + 50, eventRecord.LogPosition), eventRecord);
             }
 
             message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length));
