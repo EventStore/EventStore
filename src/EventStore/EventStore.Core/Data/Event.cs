@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Text;
 
 namespace EventStore.Core.Data
 {
@@ -37,6 +38,11 @@ namespace EventStore.Core.Data
 
         public readonly byte[] Data;
         public readonly byte[] Metadata;
+
+        public Event(Guid eventId, string eventType, bool isJson, string data, string metadata)
+            : this(eventId, eventType, isJson, Encoding.UTF8.GetBytes(data), Encoding.UTF8.GetBytes(metadata))
+        {
+        }
 
         public Event(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata)
         {

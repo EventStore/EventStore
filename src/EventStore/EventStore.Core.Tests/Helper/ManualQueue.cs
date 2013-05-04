@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Helper
 
         public void Process()
         {
-            var orderedTimerMessages = _timerQueue.OrderBy(v => v.TriggerAfter);
+            var orderedTimerMessages = _timerQueue.OrderBy(v => v.TriggerAfter).ToArray();
             _timerQueue.Clear();
             foreach (var timerMessage in orderedTimerMessages)
                 timerMessage.Reply();

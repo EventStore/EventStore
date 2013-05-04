@@ -26,78 +26,19 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
-using EventStore.Core.Bus;
-using EventStore.Core.Tests.Helper;
-using EventStore.Core.Tests.Services.TimeService;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.EventReaders.Feeds;
-using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
-using TestFixtureWithExistingEvents = EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
+using EventStore.Projections.Core.Tests.Services.event_reader;
 
 namespace EventStore.Projections.Core.Tests.Services.feed_reader
 {
-    public abstract class TestFixtureWithFeedReaderService : TestFixtureWithExistingEvents
+    public abstract class TestFixtureWithFeedReaderService : TestFixtureWithEventReaderService
     {
-        protected FakeTimeProvider _timeProvider;
-
-        protected EventReaderCoreService _readerService;
         protected FeedReaderService _feedReaderService;
 
-        protected override void Given1()
+        protected override void GivenAdditionalServices()
         {
-            base.Given1();
-        }
-
-        [SetUp]
-        public void Setup()
-        {
-            SetUpManualQueue();
-            _timeProvider = new FakeTimeProvider();
-            _bus.Subscribe(_consumer);
-
-            ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
-            _readerService = new EventReaderCoreService(GetInputQueue(), 10, writerCheckpoint, runHeadingReader: false);
-            _subscriptionDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
-                        >(GetInputQueue(), v => v.SubscriptionId, v => v.SubscriptionId);
-
             _feedReaderService = new FeedReaderService(_subscriptionDispatcher);
-
-            _bus.Subscribe(
-                _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
-            _bus.Subscribe(
-                _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
-            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
-            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
-
             _bus.Subscribe(_feedReaderService);
-
-            _bus.Subscribe<ReaderCoreServiceMessage.StartReader>(_readerService);
-            _bus.Subscribe<ReaderCoreServiceMessage.StopReader>(_readerService);
-            _bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_readerService);
-            _bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_readerService);
-            _bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_readerService);
-            _bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_readerService);
-            _bus.Subscribe<ReaderSubscriptionManagement.Pause>(_readerService);
-            _bus.Subscribe<ReaderSubscriptionManagement.Resume>(_readerService);
-            _bus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_readerService);
-            _bus.Subscribe<ReaderSubscriptionManagement.Unsubscribe>(_readerService);
-
-            _bus.Publish(new ReaderCoreServiceMessage.StartReader());
-
-            WhenLoop();
-        }
-
-        protected override IPublisher GetInputQueue()
-        {
-            return (IPublisher) _queue ?? _bus;
         }
     }
 }
