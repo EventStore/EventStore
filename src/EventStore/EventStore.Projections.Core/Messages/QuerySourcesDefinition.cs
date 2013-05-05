@@ -95,8 +95,6 @@ namespace EventStore.Projections.Core.Messages
                     builder.SetPartitionResultStreamNamePatternOption(Options.PartitionResultStreamNamePattern);
                 if (!String.IsNullOrWhiteSpace(Options.ForceProjectionName))
                     builder.SetForceProjectionName(Options.ForceProjectionName);
-                if (Options.UseEventIndexes)
-                    builder.SetUseEventIndexes(true);
                 if (Options.ReorderEvents)
                     builder.SetReorderEvents(true);
                 if (Options.ProcessingLag != null)

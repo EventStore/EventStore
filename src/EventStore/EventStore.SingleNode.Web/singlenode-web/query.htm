@@ -41,8 +41,6 @@
     // NOTE: this sample query immediately stops unless you have 
     // either event_type1 or event_type1 events in the store
     options({
-                useEventIndexes: true,            // makes a fromAll() projection to use event indexes 
-                                                  // NOTE: $by_event_type standard projection should be enabled
                 // reorderEvents: false,          // enables event reordering in a multi-stream projection
                                                   // event reordering atempts to feed the projection with events in a 
                                                   // their natural order

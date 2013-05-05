@@ -46,9 +46,6 @@ namespace EventStore.Projections.Core.Services.Processing
             public string ForceProjectionName { get; set; }
 
             [DataMember]
-            public bool UseEventIndexes { get; set; }
-
-            [DataMember]
             public bool ReorderEvents { get; set; }
 
             [DataMember]
@@ -137,11 +134,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.ForceProjectionName = string.IsNullOrWhiteSpace(forceProjectionName) ? null : forceProjectionName;
         }
 
-        public void SetUseEventIndexes(bool useEventIndexes)
-        {
-            _options.UseEventIndexes = useEventIndexes;
-        }
-
         public void SetReorderEvents(bool reorderEvents)
         {
             _options.ReorderEvents = reorderEvents;
@@ -175,19 +167,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (_byStream && _streams != null)
                 throw new InvalidOperationException("foreachStream projections are not supported on stream based sources");
-            if (_options.UseEventIndexes && !_allStreams)
-                throw new InvalidOperationException("useEventIndexes option is only available in fromAll() projections");
-            if (_options.UseEventIndexes && _allEvents)
-                throw new InvalidOperationException("useEventIndexes option cannot be used in whenAny() projections");
-
             if (_options.ReorderEvents)
             {
-                if (_options.UseEventIndexes)
-                    throw new InvalidOperationException("Event reordering cannot be used with use event indexes option");
-                if (!(_allStreams || _streams != null && _streams.Count > 1))
+                if (_allStreams)
+                    throw new InvalidOperationException("Event reordering cannot be used with fromAll()");
+                if (!(_streams != null && _streams.Count > 1))
                 {
                     throw new InvalidOperationException(
-                        "Event reordering is only available in fromAll() and fromStreams([]) projections");
+                        "Event reordering is only available in fromStreams([]) projections");
                 }
                 if (_options.ProcessingLag < 50)
                     throw new InvalidOperationException("Event reordering requires processing lag at least of 50ms");

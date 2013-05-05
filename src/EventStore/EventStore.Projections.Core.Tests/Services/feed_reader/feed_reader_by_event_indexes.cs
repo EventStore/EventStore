@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     {
                         AllStreams = true,
                         Events = new[] {"type1", "type2"},
-                        Options = new QuerySourcesDefinitionOptions {UseEventIndexes = true}
+                        Options = new QuerySourcesDefinitionOptions {}
                     };
                 _fromPosition = CheckpointTag.FromEventTypeIndexPositions(new TFPos(0, -1), new Dictionary<string, int>{{"type1", -1}, {"type2", -1}});
                 _maxEvents = 1; // reading the first event
@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     {
                         AllStreams = true,
                         Events = new[] {"type1", "type2"},
-                        Options = new QuerySourcesDefinitionOptions {UseEventIndexes = true}
+                        Options = new QuerySourcesDefinitionOptions {}
                     };
                 _fromPosition = CheckpointTag.FromEventTypeIndexPositions(
                     new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});

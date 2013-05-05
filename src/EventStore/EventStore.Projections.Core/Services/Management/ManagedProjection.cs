@@ -900,9 +900,6 @@ namespace EventStore.Projections.Core.Services.Management
                 builder.SetForceProjectionName(_sourceDefinition.Options.ForceProjectionName);
 
             if (_sourceDefinition.Options != null)
-                builder.SetUseEventIndexes(_sourceDefinition.Options.UseEventIndexes);
-
-            if (_sourceDefinition.Options != null)
                 builder.SetReorderEvents(_sourceDefinition.Options.ReorderEvents);
 
             if (_sourceDefinition.Options != null)

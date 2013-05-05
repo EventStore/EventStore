@@ -43,7 +43,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _allEvents;
         private readonly bool _includeLinks;
         private readonly HashSet<string> _events;
-        private readonly bool _useEventIndexes;
         private readonly bool _reorderEvents;
         private readonly int _processingLag;
 
@@ -61,12 +60,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 HashSet<string> streams = ToSet(_streams);
                 bool includeLinks = _options.IncludeLinks;
                 HashSet<string> events = ToSet(_events);
-                bool useEventIndexes = _options.UseEventIndexes;
                 bool reorderEvents = _options.ReorderEvents;
                 int processingLag = _options.ProcessingLag;
                 var readerStrategy = new ReaderStrategy(
-                    _allStreams, categories, streams, _allEvents, includeLinks, events, processingLag, reorderEvents,
-                    useEventIndexes);
+                    _allStreams, categories, streams, _allEvents, includeLinks, events, processingLag, reorderEvents);
                 return readerStrategy;
             }
         }
@@ -80,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private ReaderStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, bool includeLinks,
-            HashSet<string> events, int processingLag, bool reorderEvents, bool useEventIndexes)
+            HashSet<string> events, int processingLag, bool reorderEvents)
         {
             _allStreams = allStreams;
             _categories = categories;
@@ -90,7 +87,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _events = events;
             _processingLag = processingLag;
             _reorderEvents = reorderEvents;
-            _useEventIndexes = useEventIndexes;
 
             _eventFilter = CreateEventFilter();
             _positionTagger = CreatePositionTagger();
@@ -99,8 +95,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public bool IsReadingOrderRepeatable {
             get
             {
-                return !((_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
-                       || (_streams != null && _streams.Count > 1));
+                return !(_streams != null && _streams.Count > 1);
             }
         }
 
@@ -135,14 +130,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public IEventReader CreatePausedEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents)
         {
-            if (_allStreams && _useEventIndexes && _events != null && _events.Count == 1)
-            {
-                var streamName = checkpointTag.Streams.Keys.First();
-                return CreatePausedStreamEventReader(
-                    eventReaderId, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true,
-                    stopAfterNEvents: stopAfterNEvents);
-            }
-            if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
+            if (_allStreams && _events != null && _events.Count >= 1)
             {
                 IEnumerable<string> streams = GetEventIndexStreams();
                 return CreatePausedEventIndexEventReader(
@@ -182,9 +170,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private EventFilter CreateEventFilter()
         {
-            if (_allStreams && _useEventIndexes && _events != null && _events.Count == 1)
-                return new IndexedEventTypeEventFilter(_events.First());
-            if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
+            if (_allStreams && _events != null && _events.Count >= 1)
                 return new EventByTypeIndexEventFilter(_events);
             if (_allStreams)
                 return new TransactionFileEventFilter(_allEvents, _events, includeLinks: _includeLinks);
@@ -201,9 +187,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private PositionTagger CreatePositionTagger()
         {
-            if (_allStreams && _useEventIndexes && _events != null && _events.Count == 1)
-                return new StreamPositionTagger("$et-" + _events.First());
-            if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
+            if (_allStreams && _events != null && _events.Count >= 1)
                 return new EventByTypeIndexPositionTagger(_events.ToArray());
             if (_allStreams && _reorderEvents)
                 return new PreparePositionTagger();

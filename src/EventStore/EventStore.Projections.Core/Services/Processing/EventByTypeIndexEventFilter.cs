@@ -48,7 +48,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
         {
-            return _events.Contains(eventType) || _streams.Contains(positionStreamId);
+            //TODO: add tests to assure that resolved by link events are not passed twice into the subscription?!!
+            return !resolvedFromLinkTo || _streams.Contains(positionStreamId);
         }
 
         public override string GetCategory(string positionStreamId)

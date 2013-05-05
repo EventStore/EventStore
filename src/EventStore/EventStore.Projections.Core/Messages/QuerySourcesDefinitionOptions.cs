@@ -39,9 +39,6 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "partitionResultStreamNamePattern")]
         public string PartitionResultStreamNamePattern { get; set; }
 
-        [DataMember(Name = "useEventIndexes")]
-        public bool UseEventIndexes { get; set; }
-
         [DataMember(Name = "$forceProjectionName")]
         public string ForceProjectionName { get; set; }
 

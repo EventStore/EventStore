@@ -27,7 +27,9 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -61,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 //projection subscribes here
                 _coreProjection.Handle(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
-                        _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
+                        _subscriptionId, CheckpointTag.FromEventTypeIndexPositions(new TFPos(140, 130), new Dictionary<string, int>{{"non-existing", -1}}), 55.5f, 0));
             }
 
             [Test]
@@ -99,10 +101,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 //projection subscribes here
                 _coreProjection.Handle(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
-                        _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
+                        _subscriptionId,
+                        CheckpointTag.FromEventTypeIndexPositions(
+                            new TFPos(140, 130), new Dictionary<string, int> {{"non-existing", -1}}), 55.5f, 0));
                 _coreProjection.Handle(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
-                        _subscriptionId, CheckpointTag.FromPosition(160, 150), 55.6f, 1));
+                        _subscriptionId,
+                        CheckpointTag.FromEventTypeIndexPositions(
+                            new TFPos(160, 150), new Dictionary<string, int> {{"non-existing", -1}}), 55.6f, 1));
             }
 
             [Test]
@@ -140,10 +146,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 //projection subscribes here
                 _coreProjection.Handle(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
-                        _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
+                        _subscriptionId,
+                        CheckpointTag.FromEventTypeIndexPositions(
+                            new TFPos(140, 130), new Dictionary<string, int> {{"non-existing", -1}}), 55.5f, 0));
                 _coreProjection.Handle(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
-                        _subscriptionId, CheckpointTag.FromPosition(160, 150), 55.6f, 1));
+                        _subscriptionId,
+                        CheckpointTag.FromEventTypeIndexPositions(
+                            new TFPos(160, 150), new Dictionary<string, int> {{"non-existing", -1}}), 55.6f, 1));
             }
 
             [Test]

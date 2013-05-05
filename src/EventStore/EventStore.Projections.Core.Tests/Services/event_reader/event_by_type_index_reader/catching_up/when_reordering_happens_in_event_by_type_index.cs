@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                     {
                         AllStreams = true,
                         Events = new[] {"type1", "type2"},
-                        Options = new QuerySourcesDefinitionOptions {UseEventIndexes = true}
+                        Options = new QuerySourcesDefinitionOptions {}
                     };
                 _readerStrategy = ReaderStrategy.Create(_sourceDefinition);
                 _readerSubscriptionOptions = new ReaderSubscriptionOptions(

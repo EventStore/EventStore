@@ -306,30 +306,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
-        public class with_use_event_index_option : TestFixtureWithJsProjection
-        {
-            protected override void Given()
-            {
-                _projection = @"
-                    options({
-                        useEventIndexes: true,
-                    });
-                    fromAll().whenAny(
-                        function(state, event) {
-                            return state;
-                        });
-                ";
-                _state = @"{""count"": 0}";
-            }
-
-            [Test, Category("v8")]
-            public void source_definition_is_correct()
-            {
-                Assert.AreEqual(true, _source.Options.UseEventIndexes);
-            }
-        }
-
-        [TestFixture]
         public class with_include_links_option : TestFixtureWithJsProjection
         {
             protected override void Given()
