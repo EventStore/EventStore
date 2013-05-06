@@ -180,12 +180,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 case ReadStreamResult.NoStream:
                     _eofs[message.EventStreamId] = true;
                     ProcessBuffers();
-                    PauseOrContinueReadingStream(message.EventStreamId);
+                    PauseOrContinueReadingStream(message.EventStreamId, delay: true);
                     CheckSwitch();
                     break;
                 case ReadStreamResult.Success:
                     UpdateNextStreamPosition(message.EventStreamId, message.NextEventNumber);
-                    if (message.Events.Length == 0)
+                    var isEof = message.Events.Length == 0;
+                    if (isEof)
                     {
                         // the end
                         _eofs[message.EventStreamId] = true;
@@ -196,8 +197,8 @@ namespace EventStore.Projections.Core.Services.Processing
                         EnqueueEvents(message);
                     }
                     ProcessBuffers();
-                    //TODO: IT MUST REQUEST EVENTS FROM NEW POSTION (CURRENTLY OLD)
-                    PauseOrContinueReadingStream(message.EventStreamId);
+                    //TODO: IT MUST REQUEST EVENTS FROM NEW POSITION (CURRENTLY OLD)
+                    PauseOrContinueReadingStream(message.EventStreamId, delay: isEof);
                     CheckSwitch();
                     break;
                 default:
@@ -255,14 +256,14 @@ namespace EventStore.Projections.Core.Services.Processing
             return tfPosition < _lastKnownIndexCheckpointPosition;
         }
 
-        private void PauseOrContinueReadingStream(string eventStreamId)
+        private void PauseOrContinueReadingStream(string eventStreamId, bool delay)
         {
             if (_disposed) // max N reached
                 return;
             if (_pauseRequested)
                 _paused = !AreEventsRequested();
             else
-                RequestEvents(eventStreamId, delay: true);
+                RequestEvents(eventStreamId, delay);
             _publisher.Publish(CreateTickMessage());
         }
 
