@@ -54,15 +54,30 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _lastKnownIndexCheckpointEventNumber = -1;
         private TFPos _lastKnownIndexCheckpointPosition = default(TFPos);
 
-        private readonly Dictionary<string, Queue<Tuple<EventRecord, EventRecord, float>>> _buffers =
-            new Dictionary<string, Queue<Tuple<EventRecord, EventRecord, float>>>();
+        protected class PendingEvent
+        {
+            public readonly EventRecord Event;
+            public readonly EventRecord PositionEvent;
+            public readonly float Progress;
+            public readonly TFPos TfPosition;
 
-        private TFPos? _safePositionToJoin;
+            public PendingEvent(EventRecord @event, EventRecord positionEvent, TFPos tfPosition, float progress)
+            {
+                Event = @event;
+                PositionEvent = positionEvent;
+                Progress = progress;
+                TfPosition = tfPosition;
+            }
+        }
+
+        private readonly Dictionary<string, Queue<PendingEvent>> _buffers =
+            new Dictionary<string, Queue<PendingEvent>>();
+
         private readonly Dictionary<string, bool> _eofs;
         private int _deliveredEvents;
         private bool _readAllMode = false;
         private bool _tfEventsRequested;
-        private Dictionary<string, int> _fromPositions;
+        private readonly Dictionary<string, int> _fromPositions;
         private TFPos _fromTfPosition;
         private TFPos _lastEventPosition;
 
@@ -106,9 +121,9 @@ namespace EventStore.Projections.Core.Services.Processing
             return lastCommitPosition.HasValue ? new TFPos(message.LastCommitPosition, 0) : (TFPos?)null;
         }
 
-        protected TFPos GetTargetEventPosition(Tuple<EventRecord, EventRecord, float> head)
+        protected TFPos GetTargetEventPosition(PendingEvent head)
         {
-            return head.Item2.Metadata.ParseCheckpointTagJson(default(ProjectionVersion)).Tag.Position;
+            return head.TfPosition;
         }
 
         protected long? PositionToSafeJoinPosition(TFPos? safePositionToJoin)
@@ -200,16 +215,19 @@ namespace EventStore.Projections.Core.Services.Processing
                 EventRecord positionEvent = (link ?? @event);
                 var queue = GetStreamQueue(positionEvent);
                 //TODO: progress calculation below is incorrect.  sum(current)/sum(last_event) where sum by all streams
-                    queue.Enqueue(Tuple.Create(@event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber));
+                var tfPosition = positionEvent.Metadata.ParseCheckpointTagJson(default(ProjectionVersion)).Tag.Position;
+                var progress = 100.0f*(link ?? @event).EventNumber/message.LastEventNumber;
+                var pendingEvent = new PendingEvent(@event, positionEvent, tfPosition, progress);
+                queue.Enqueue(pendingEvent);
             }
         }
 
-        private Queue<Tuple<EventRecord, EventRecord, float>> GetStreamQueue(EventRecord positionEvent)
+        private Queue<PendingEvent> GetStreamQueue(EventRecord positionEvent)
         {
-            Queue<Tuple<EventRecord, EventRecord, float>> queue;
+            Queue<PendingEvent> queue;
             if (!_buffers.TryGetValue(positionEvent.EventStreamId, out queue))
             {
-                queue = new Queue<Tuple<EventRecord, EventRecord, float>>();
+                queue = new Queue<PendingEvent>();
                 _buffers.Add(positionEvent.EventStreamId, queue);
             }
             return queue;
@@ -219,11 +237,22 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_disposed) // max N reached
                 return;
-            if (_eofs.All(v => v.Value))
+            Queue<PendingEvent> q;
+            if (
+                _streamToEventType.Keys.All(
+                    v =>
+                    _eofs[v]
+                    || _buffers.TryGetValue(v, out q) && q.Count > 0 && !IsIndexedTfPosition(q.Peek().TfPosition)))
             {
                 _readAllMode = true;
                 RequestEventsAll();
             }
+        }
+
+        private bool IsIndexedTfPosition(TFPos tfPosition)
+        {
+            //TODO: ensure <= is acceptable and replace
+            return tfPosition < _lastKnownIndexCheckpointPosition;
         }
 
         private void PauseOrContinueReadingStream(string eventStreamId)
@@ -312,7 +341,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var anyEof = false;
                 foreach (var streamId in _streamToEventType.Keys)
                 {
-                    Queue<Tuple<EventRecord, EventRecord, float>> buffer;
+                    Queue<PendingEvent> buffer;
                     _buffers.TryGetValue(streamId, out buffer);
 
                     if ((buffer == null || buffer.Count == 0))
@@ -338,11 +367,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (!any)
                     break;
 
-                //TODO: ensure <= is acceptable and replace
-                if (!anyEof || minPosition < _lastKnownIndexCheckpointPosition)
+                if (!anyEof || IsIndexedTfPosition(minPosition))
                 {
                     var minHead = _buffers[minStreamId].Dequeue();
-                    DeliverEventRetrievedByIndex(minHead.Item1, minHead.Item2, minHead.Item3, minPosition);
+                    DeliverEventRetrievedByIndex(minHead.Event, minHead.PositionEvent, minHead.Progress, minPosition);
                 }
                 else
                     return; // no safe events to deliver
@@ -429,7 +457,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (_eventsRequested.Contains(stream))
                 return;
-            Queue<Tuple<EventRecord, EventRecord, float>> queue;
+            Queue<PendingEvent> queue;
             if (_buffers.TryGetValue(stream, out queue) && queue.Count > 0)
                 return;
             _eventsRequested.Add(stream);
