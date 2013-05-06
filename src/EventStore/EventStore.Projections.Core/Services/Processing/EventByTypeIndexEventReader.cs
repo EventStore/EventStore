@@ -200,7 +200,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 EventRecord positionEvent = (link ?? @event);
                 var queue = GetStreamQueue(positionEvent);
                 //TODO: progress calculation below is incorrect.  sum(current)/sum(last_event) where sum by all streams
-                queue.Enqueue(Tuple.Create(@event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber));
+                    queue.Enqueue(Tuple.Create(@event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber));
             }
         }
 
@@ -338,11 +338,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (!any)
                     break;
 
-                var minHead = _buffers[minStreamId].Dequeue();
-
                 //TODO: ensure <= is acceptable and replace
                 if (!anyEof || minPosition < _lastKnownIndexCheckpointPosition)
+                {
+                    var minHead = _buffers[minStreamId].Dequeue();
                     DeliverEventRetrievedByIndex(minHead.Item1, minHead.Item2, minHead.Item3, minPosition);
+                }
                 else
                     return; // no safe events to deliver
 
@@ -390,7 +391,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //TODO: we do not need resolve links, but lets check first with
             var readRequest = new ClientMessage.ReadAllEventsForward(
                 EventReaderCorrelationId, new SendToThisEnvelope(this), _fromTfPosition.CommitPosition,
-                _fromTfPosition.PreparePosition, 111, true, null, SystemAccount.Principal);
+                _fromTfPosition.PreparePosition == -1 ? 0 : _fromTfPosition.PreparePosition, 111, true, null, SystemAccount.Principal);
             PublishIORequest(delay, readRequest);
         }
 
@@ -414,7 +415,7 @@ namespace EventStore.Projections.Core.Services.Processing
             else
             {
                 readRequest = new ClientMessage.ReadStreamEventsForward(
-                    EventReaderCorrelationId, new SendToThisEnvelope(this), "$et", _lastKnownIndexCheckpointEventNumber,
+                    EventReaderCorrelationId, new SendToThisEnvelope(this), "$et", _lastKnownIndexCheckpointEventNumber + 1,
                     100, false, null, SystemAccount.Principal);
             }
             PublishIORequest(delay, readRequest);
