@@ -132,11 +132,13 @@ namespace EventStore.Core
             string logsDirectory = Path.GetFullPath(options.LogsDir.IsNotEmptyString() ? options.LogsDir : GetLogsDirectory(options));
             LogManager.Init(componentName, logsDirectory);
 
-            Log.Info("\n{0,-25} {1} ({2})\n"
-                     + "{3,-25} {4} ({5}-bit)\n"
-                     + "{6,-25} {7}\n"
-                     + "{8,-25} {9}\n\n"
-                     + "{10}",
+            Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
+                     + "{5,-25} {6} ({7})\n"
+                     + "{8,-25} {9} ({10}-bit)\n"
+                     + "{11,-25} {12}\n"
+                     + "{13,-25} {14}\n\n"
+                     + "{15}",
+                     "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
                      "OS:", OS.IsLinux ? "Linux" : "Windows", Environment.OSVersion,
                      "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
                      "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),

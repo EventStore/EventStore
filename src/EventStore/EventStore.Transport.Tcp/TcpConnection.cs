@@ -184,15 +184,6 @@ namespace EventStore.Transport.Tcp
 
             _sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), 0, (int) _memoryStream.Length);
 
-            if (_sendSocketArgs.Count == 0)
-            {
-                using (_sendingLock.Acquire())
-                {
-                    _isSending = false;
-                    return;
-                }
-            }
-            
             try
             {
                 NotifySendStarting(_sendSocketArgs.Count);
