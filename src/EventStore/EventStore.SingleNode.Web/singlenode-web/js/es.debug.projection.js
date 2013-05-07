@@ -42,11 +42,25 @@ require(['projections/Observer', 'projections/Controller'],
                     partLoaded();
                 }
             });
+            updateStatus("Loading definition...");
             observer.poll();
+            updateStatus("");
 
             function partLoaded() {
                 if (projectionStatusOk && projectionPosition && projectionDefintion && projectionSource) {
                     loadEvents();
+                }
+            }
+
+            function onLoadEventsSuccess(data) {
+                $("#projection-debug-events").text(data);
+                eventsRaw = JSON.parse(data).events;
+                if (eventsRaw && eventsRaw.length > 0) {
+                    eventsLoaded = true;
+                    checkLoaded();
+                } else {
+                    updateStatus("No further events are available.  Waiting...");
+                    setTimeout(loadEvents, 1000);
                 }
             }
 
@@ -63,12 +77,7 @@ require(['projections/Observer', 'projections/Controller'],
                         position: projectionPosition,
                         maxEvents: 10,
                     }),
-                    success: function (data) {
-                        $("#projection-debug-events").text(data);
-                        eventsRaw = JSON.parse(data).events;
-                        eventsLoaded = true;
-                        checkLoaded();
-                    },
+                    success: onLoadEventsSuccess,
                     error: function (xhr) {
                         setTimeout(loadEvents, 1000);
                     }
@@ -91,6 +100,7 @@ require(['projections/Observer', 'projections/Controller'],
                 });
             });
 
+
         });
 
 
@@ -106,6 +116,7 @@ require(['projections/Observer', 'projections/Controller'],
 
         function readyForDebugging() {
             var first = eventsRaw[0];
+            updateStatus("Running the definition...");
 
             document.getElementById('script-placeholder').contentDocument.write(
                 '<div id="text"></div>' +
@@ -127,6 +138,7 @@ require(['projections/Observer', 'projections/Controller'],
                     setTimeout(loadState, 100);
                     return;
                 }
+                updateStatus("");
 
                 var partition = null;
                 if (projectionDefintion.byCustomPartitions)
@@ -142,6 +154,8 @@ require(['projections/Observer', 'projections/Controller'],
                 else
                     partition = "";
 
+                updateStatus("Loading the projection state...");
+
                 $.ajax(projectionStatusUrl + "/state?partition=" + partition, {
                     headers: {
                         Accept: "application/json",
@@ -152,6 +166,7 @@ require(['projections/Observer', 'projections/Controller'],
                 });
 
                 function successPartitionState(data, status, xhr) {
+                    updateStatus("Ready for debugging!");
                     $('#run-button').removeAttr("disabled");
                     if (data == "")
                         processor.initialize();
@@ -161,7 +176,7 @@ require(['projections/Observer', 'projections/Controller'],
                 }
 
                 function errorPartitionState(xhr, status) {
-                    alert("Failed to get state for partition: " + first.partition);
+                    updateStatus("Error loading the projection state");
                 }
 
                 $('#run-button').click(function() {
@@ -180,6 +195,13 @@ require(['projections/Observer', 'projections/Controller'],
 
             }
 
+        }
+
+        function updateStatus(status) {
+            if (status !== "")
+                $("#status").text(" - " + status);
+            else 
+                $("#status").text("");
         }
     }
 
