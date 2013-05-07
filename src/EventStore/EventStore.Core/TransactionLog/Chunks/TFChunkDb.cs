@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
@@ -72,7 +73,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     // but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
                     var footer = ReadChunkFooter(versions[0]);
                     if (footer.IsCompleted)
-                        chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash);
+                        chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false);
                     else
                     {
                         chunk = TFChunk.TFChunk.FromOngoingFile(versions[0], Config.ChunkSize, checkSize: false);
@@ -83,7 +84,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 else
                 {
-                    chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash);
+                    chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false);
                 }
                 Manager.AddChunk(chunk);
                 chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
@@ -105,7 +106,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var chunkFooter = ReadChunkFooter(chunkFileName);
                 if (chunkHeader.IsScavenged)
                 {
-                    var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash);
+                    var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false);
                     if (lastChunk.ChunkFooter.LogicalDataSize != chunkLocalPos)
                     {
                         lastChunk.Dispose();
@@ -146,6 +147,32 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 RemoveOldChunksVersions(lastChunkNum);
                 CleanUpTempFiles();
+            }
+
+            if (verifyHash && lastChunkNum > 0)
+            {
+                var preLastChunk = Manager.GetChunk(lastChunkNum - 1);
+                var lastBgChunkNum = preLastChunk.ChunkHeader.ChunkStartNumber - 1;
+                ThreadPool.QueueUserWorkItem(_ =>
+                {
+                    for (int chunkNum = lastBgChunkNum; chunkNum >= 0;)
+                    {
+                        var chunk = Manager.GetChunk(chunkNum);
+                        try
+                        {
+                            chunk.VerifyFileHash();
+                        }
+                        catch (Exception exc)
+                        {
+                            var msg = string.Format("Verification of chunk #{0}-{1} ({2}) failed, terminating server...",
+                                                    chunk.ChunkHeader.ChunkStartNumber, chunk.ChunkHeader.ChunkEndNumber, chunk.FileName);
+                            Log.FatalException(exc, msg);
+                            Application.Exit(ExitCode.Error, msg);
+                            return;
+                        }
+                        chunkNum = chunk.ChunkHeader.ChunkStartNumber - 1;
+                    }
+                });
             }
 
             Manager.EnableCaching();
