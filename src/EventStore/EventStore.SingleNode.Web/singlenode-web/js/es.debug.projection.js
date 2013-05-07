@@ -146,6 +146,7 @@ require(['projections/Observer', 'projections/Controller'],
                     updateStatus("");
 
                     partition = null;
+                    console.log(projectionDefintion);
                     if (projectionDefintion.byCustomPartitions)
                         partition = processor.get_state_partition(
                             currentEvent.isJson ? JSON.stringify(currentEvent.data) : currentEvent.data,
@@ -154,10 +155,12 @@ require(['projections/Observer', 'projections/Controller'],
                             currentEvent.category,
                             currentEvent.eventNumber,
                             currentEvent.isJson ? JSON.stringify(currentEvent.metadata) : currentEvent.metadata);
-                    else if (projectionDefintion.byStreams)
+                    else if (projectionDefintion.byStream)
                         partition = currentEvent.eventStreamId;
                     else
                         partition = "";
+
+                    $("#partition").text(partition);
 
                     if (cachedStates[partition]) {
                         partitionStateLoaded(cachedStates[partition]);
