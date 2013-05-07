@@ -134,6 +134,7 @@ namespace EventStore.Projections.Core.v8
                     _getSources = () => ExecuteHandler(handlerHandle, "");
                     break;
                 case "set_debugging":
+                case "debugging_get_state":
                     // ignore - browser based debugging only
                     break;
                 default:

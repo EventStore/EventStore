@@ -12,6 +12,11 @@ require(['projections/Observer', 'projections/Controller'],
         var projectionDefintion = null;
         var projectionSource = null;
         var projectionStatusOk = null;
+        var cachedStates = {};
+        var projectionInitialized = false;
+        var processor = null;
+        var currentEvent = null;
+        var partition = null;
 
         $(function () {
 
@@ -84,6 +89,130 @@ require(['projections/Observer', 'projections/Controller'],
                 });
             }
 
+            function successUpdateSource(data, status, xhr) {
+                window.location = "view-projection.htm#" + projectionStatusUrl;
+            }
+
+            function checkLoaded() {
+                if (eventsLoaded) {
+                    readyForDebugging();
+                }
+            }
+
+            function partitionStateLoaded(data) {
+                updateStatus("Ready for debugging!");
+                $('.run-button').removeAttr("disabled");
+                if (data == "") {
+                    processor.initialize();
+                    cachedStates[partition] = processor.debugging_get_state();
+                } else
+                    processor.set_state(data);
+                $("#projection-debug-result").text(cachedStates[partition]);
+            }
+
+            function readyForDebugging() {
+                currentEvent = eventsRaw[0];
+
+                if (!projectionInitialized) {
+
+                    updateStatus("Running the definition...");
+
+                    document.getElementById('script-placeholder').contentDocument.write(
+                        '<div id="text"></div>' +
+                            '<script src="/web/es/js/projections/v8/Prelude/Modules.js"><' + '/script>' +
+                            '<script src="/web/es/js/projections/v8/Prelude/Projections.js"><' + '/script>' +
+                            '<script src="/web/es/js/projections/es.projections.environment.js"><' + '/script>' +
+                            '<script src="/web/es/js/projections/v8/Prelude/1Prelude.js"><' + '/script>' +
+                            '<script src="/web/es/js/projections/es.projection.js"><' + '/script>' +
+                            '<script src="/web/es/js/projections/es.api.js"><' + '/script>' +
+                            '<script>window.processor = $initialize_hosted_projections(); processor.set_debugging();<' + '/script>' +
+                            '<script src="' + projectionStatusUrl + '/query"><' + '/' + 'script>');
+
+                    setTimeout(loadState, 100);
+                } else {
+                    loadState();
+                }
+
+                function loadState() {
+
+                    processor = document.getElementById('script-placeholder').contentWindow.processor;
+                    if (!processor) {
+                        setTimeout(loadState, 100);
+                        return;
+                    }
+
+                    projectionInitialized = true;
+
+                    updateStatus("");
+
+                    partition = null;
+                    if (projectionDefintion.byCustomPartitions)
+                        partition = processor.get_state_partition(
+                            currentEvent.isJson ? JSON.stringify(currentEvent.data) : currentEvent.data,
+                            currentEvent.eventStreamId,
+                            currentEvent.eventType,
+                            currentEvent.category,
+                            currentEvent.eventNumber,
+                            currentEvent.isJson ? JSON.stringify(currentEvent.metadata) : currentEvent.metadata);
+                    else if (projectionDefintion.byStreams)
+                        partition = currentEvent.eventStreamId;
+                    else
+                        partition = "";
+
+                    if (cachedStates[partition]) {
+                        partitionStateLoaded(cachedStates[partition]);
+                    } else {
+
+                        updateStatus("Loading the projection state...");
+
+                        $.ajax(projectionStatusUrl + "/state?partition=" + partition, {
+                            headers: {
+                                Accept: "application/json",
+                            },
+                            dataType: "text",
+                            success: successPartitionState,
+                            error: errorPartitionState
+                        });
+
+                        function successPartitionState(data, status, xhr) {
+                            partitionStateLoaded(data);
+                        }
+
+                        function errorPartitionState(xhr, status) {
+                            updateStatus("Error loading the projection state");
+                        }
+
+                    }
+                }
+
+            }
+
+            function updateStatus(status) {
+                if (status !== "")
+                    $("#status").text(" - " + status);
+                else
+                    $("#status").text("");
+            }
+
+            function runProjectionStep() {
+                var state = processor.process_event(
+                    currentEvent.isJson ? JSON.stringify(currentEvent.data) : currentEvent.data,
+                    currentEvent.isJson,
+                    currentEvent.eventStreamId,
+                    currentEvent.eventType,
+                    currentEvent.category,
+                    currentEvent.eventNumber,
+                    currentEvent.isJson ? JSON.stringify(currentEvent.metadata) : currentEvent.metadata,
+                    partition);
+
+
+                cachedStates[partition] = state;
+                console.log(currentEvent.readerPosition);
+                projectionPosition = currentEvent.readerPosition;
+                eventsLoaded = false;
+                loadEvents();
+            }
+
             $('#update-button').click(function (ev) {
                 $.ajax(projectionStatusUrl + "/query", {
                     headers: {
@@ -99,110 +228,15 @@ require(['projections/Observer', 'projections/Controller'],
                     }
                 });
             });
+            $('.run-button').click(function () {
+                $('.run-button').attr("disabled", "disabled");
+                runProjectionStep();
+            });
 
 
         });
 
 
-        function successUpdateSource(data, status, xhr) {
-            window.location = "view-projection.htm#" + projectionStatusUrl;
-        }
-
-        function checkLoaded() {
-            if (eventsLoaded) {
-                readyForDebugging();
-            }
-        }
-
-        function readyForDebugging() {
-            var first = eventsRaw[0];
-            updateStatus("Running the definition...");
-
-            document.getElementById('script-placeholder').contentDocument.write(
-                '<div id="text"></div>' +
-                    '<script src="/web/es/js/projections/v8/Prelude/Modules.js"><' + '/script>' +
-                    '<script src="/web/es/js/projections/v8/Prelude/Projections.js"><' + '/script>' +
-                    '<script src="/web/es/js/projections/es.projections.environment.js"><' + '/script>' +
-                    '<script src="/web/es/js/projections/v8/Prelude/1Prelude.js"><' + '/script>' +
-                    '<script src="/web/es/js/projections/es.projection.js"><' + '/script>' +
-                    '<script src="/web/es/js/projections/es.api.js"><' + '/script>' +
-                    '<script>window.processor = $initialize_hosted_projections(); processor.set_debugging();<' + '/script>' +
-                    '<script src="' + projectionStatusUrl + '/query"><' + '/' + 'script>');
-
-            setTimeout(loadState, 100);
-
-            function loadState() {
-
-                var processor = document.getElementById('script-placeholder').contentWindow.processor;
-                if (!processor) {
-                    setTimeout(loadState, 100);
-                    return;
-                }
-                updateStatus("");
-
-                var partition = null;
-                if (projectionDefintion.byCustomPartitions)
-                    partition = processor.get_state_partition(
-                        first.isJson ? JSON.stringify(first.data) : first.data,
-                        first.eventStreamId,
-                        first.eventType,
-                        first.category,
-                        first.eventNumber,
-                        first.isJson ? JSON.stringify(first.metadata) : first.metadata);
-                else if (projectionDefintion.byStreams)
-                    partition = first.eventStreamId;
-                else
-                    partition = "";
-
-                updateStatus("Loading the projection state...");
-
-                $.ajax(projectionStatusUrl + "/state?partition=" + partition, {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    dataType: "text",
-                    success: successPartitionState,
-                    error: errorPartitionState
-                });
-
-                function successPartitionState(data, status, xhr) {
-                    updateStatus("Ready for debugging!");
-                    $('#run-button').removeAttr("disabled");
-                    if (data == "")
-                        processor.initialize();
-                    else
-                        processor.set_state(data);
-                    $("#projection-debug-result").text(data);
-                }
-
-                function errorPartitionState(xhr, status) {
-                    updateStatus("Error loading the projection state");
-                }
-
-                $('#run-button').click(function() {
-                    $('#run-button').attr("disabled", "disabled");
-                    processor.process_event(
-                        first.isJson ? JSON.stringify(first.data) : first.data,
-                        first.isJson,
-                        first.eventStreamId,
-                        first.eventType,
-                        first.category,
-                        first.eventNumber,
-                        first.isJson ? JSON.stringify(first.metadata) : first.metadata,
-                        partition);
-
-                });
-
-            }
-
-        }
-
-        function updateStatus(status) {
-            if (status !== "")
-                $("#status").text(" - " + status);
-            else 
-                $("#status").text("");
-        }
     }
 
 );

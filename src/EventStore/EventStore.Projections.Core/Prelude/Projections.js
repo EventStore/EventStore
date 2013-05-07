@@ -72,6 +72,10 @@ var $projections = {
                 return "OK";
             },
 
+            debugging_get_state: function() {
+                return JSON.stringify(projectionState);
+            },
+
             get_sources: function() {
                 return JSON.stringify(sources);
             }

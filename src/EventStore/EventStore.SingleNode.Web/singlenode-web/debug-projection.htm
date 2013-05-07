@@ -12,18 +12,20 @@
     <script id="r-head">
         es.tmpl.renderHead();
     </script>
-    
+
     <style type="text/css">
         #status
         {
             font-weight: normal;
         }
-
     </style>
 </head>
 <body>
     <div id="content">
-        <h1>Debug Projection<span id="status"></span></h1>
+        <h1>Debug Projection<span id="status"></span>
+            <button id="run-butto2" class="btn run-button" disabled="disabled">
+                Run</button>
+        </h1>
         <div>
             <div style="display: table; width: 100%;">
                 <div style="display: table-row">
@@ -52,7 +54,7 @@
                 </div>
                 <button id="update-button" class="btn">
                     Update</button>
-                <button id="run-button" class="btn" disabled="disabled">
+                <button id="run-button" class="btn run-button" disabled="disabled">
                     Run</button>
             </div>
             <div>
@@ -60,9 +62,10 @@
                 <ol>
                     <li>Make sure you use the Google Chrome browser</li>
                     <li>Open a debugger (Ctrl+Shift+J)</li>
-                    <li>Check the debugger console for errors (occured while running the projection defintion)</li>
+                    <li>Check the debugger console for errors (occured while running the projection defintion or while loading state and events)</li>
                     <li>Click the 'Run' button above</li>
                     <li>Watch for errors in the debugger console</li>
+                    <li>Check the debugging status on ot top</li>
                     <li>Execution will stop on 'debugger' statement immeditaly before invoking your event handler</li>
                 </ol>
                 <p>Any log output and emitted events will appear in the log window below</p>
