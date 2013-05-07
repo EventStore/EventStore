@@ -14,7 +14,7 @@ namespace EventStore.ClientAPI.Core
             _task = Task.Factory.StartNew(() => endPoint);
         }
 
-        public Task<IPEndPoint> DiscoverAsync(IPEndPoint failedEndPoint)
+        public Task<IPEndPoint> DiscoverAsync(IPEndPoint failedTcpEndPoint)
         {
             return _task;
         }

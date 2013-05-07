@@ -69,16 +69,16 @@ namespace EventStore.ClientAPI.Core
             _client = new HttpAsyncClient(log);
         }
 
-        public Task<IPEndPoint> DiscoverAsync(IPEndPoint failedEndPoint)
+        public Task<IPEndPoint> DiscoverAsync(IPEndPoint failedTcpEndPoint)
         {
             return Task.Factory.StartNew(() =>
             {
                 for (int attempt = 1; attempt <= _maxDiscoverAttempts; ++attempt)
                 {
-                    //_log.Info("Discovering cluster. Attempt {0}/{1}...", attempt + 1, _maxDiscoverAttempts);
+                    _log.Info("Discovering cluster. Attempt {0}/{1}...", attempt, _maxDiscoverAttempts);
                     try
                     {
-                        var endPoint = DiscoverEndPoint(failedEndPoint);
+                        var endPoint = DiscoverEndPoint(failedTcpEndPoint);
                         if (endPoint != null)
                         {
                             _log.Info("Discovering attempt {0}/{1} successful: best candidate is [{2}].", attempt, _maxDiscoverAttempts, endPoint);
@@ -123,6 +123,8 @@ namespace EventStore.ClientAPI.Core
 
         private IPEndPoint[] GetGossipCandidatesFromDns()
         {
+            _log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
+
             var ips = (_fakeDnsEntries != null && _fakeDnsEntries.Length > 0) ? _fakeDnsEntries : ResolveDns(_clusterDns);
             var managers = ips.Select(ip => new IPEndPoint(ip, _managerExternalHttpPort)).ToArray();
             RandomShuffle(managers, 0, managers.Length-1);
@@ -145,12 +147,13 @@ namespace EventStore.ClientAPI.Core
             return addresses;
         }
 
-        private IPEndPoint[] GetGossipCandidatesFromOldGossip(IEnumerable<ClusterMessages.MemberInfoDto> oldGossip, IPEndPoint failedEndPoint)
+        private IPEndPoint[] GetGossipCandidatesFromOldGossip(IEnumerable<ClusterMessages.MemberInfoDto> oldGossip, IPEndPoint failedTcpEndPoint)
         {
-            var gossipCandidates = failedEndPoint == null 
+            _log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromOldGossip, failedTcpEndPoint: {0}.", failedTcpEndPoint);
+            var gossipCandidates = failedTcpEndPoint == null 
                     ? oldGossip.ToArray() 
-                    : oldGossip.Where(x => !(x.ExternalHttpPort == failedEndPoint.Port 
-                                             && IPAddress.Parse(x.ExternalHttpIp).Equals(failedEndPoint.Address)))
+                    : oldGossip.Where(x => !(x.ExternalTcpPort == failedTcpEndPoint.Port 
+                                             && IPAddress.Parse(x.ExternalTcpIp).Equals(failedTcpEndPoint.Address)))
                                .ToArray();
             return ArrangeGossipCandidates(gossipCandidates);
         }
@@ -178,9 +181,9 @@ namespace EventStore.ClientAPI.Core
             if (i >= j)
                 return;
             var rnd = new Random(Guid.NewGuid().GetHashCode());
-            for (int k = 0; k < arr.Length; ++k)
+            for (int k = i; k <= j; ++k)
             {
-                var index = rnd.Next(k, arr.Length);
+                var index = rnd.Next(k, j + 1);
                 var tmp = arr[index];
                 arr[index] = arr[k];
                 arr[k] = tmp;
@@ -189,6 +192,8 @@ namespace EventStore.ClientAPI.Core
 
         private ClusterMessages.ClusterInfoDto TryGetGossipFrom(IPEndPoint endPoint)
         {
+            _log.Debug("ClusterDnsEndPointDiscoverer: Trying to get gossip from [{0}].", endPoint);
+
             ClusterMessages.ClusterInfoDto result = null;
             var completed = new ManualResetEventSlim(false);
 
@@ -206,6 +211,7 @@ namespace EventStore.ClientAPI.Core
                     try
                     {
                         result = response.Body.ParseJson<ClusterMessages.ClusterInfoDto>();
+                        _log.Debug("ClusterDnsEndPointDiscoverer: Got gossip from [{0}]:\n{1}.", endPoint, string.Join("\n", result.Members.Select(x => x.ToString())));
                     }
                     catch (Exception e)
                     {

@@ -219,12 +219,14 @@ namespace EventStore.Core
 
             new SubscriptionsService(_mainBus, readIndex); // subscribes internally
 
+            // USER MANAGEMENT
             var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
-            var userManagement = new UserManagementService(_mainQueue, ioDispatcher, passwordHashAlgorithm);
             _mainBus.Subscribe(ioDispatcher.BackwardReader);
             _mainBus.Subscribe(ioDispatcher.ForwardReader);
             _mainBus.Subscribe(ioDispatcher.Writer);
             _mainBus.Subscribe(ioDispatcher.StreamDeleter);
+
+            var userManagement = new UserManagementService(_mainQueue, ioDispatcher, passwordHashAlgorithm);
             _mainBus.Subscribe<UserManagementMessage.Create>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.Update>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
