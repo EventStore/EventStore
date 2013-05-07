@@ -36,6 +36,7 @@ namespace EventStore.Core.TransactionLog.Chunks
     public class TFChunkBulkReader : IDisposable
     {
         public TFChunk.TFChunk Chunk { get { return _chunk; } }
+        internal Stream Stream { get { return _stream; } }
 
         private readonly TFChunk.TFChunk _chunk;
         private readonly Stream _stream;

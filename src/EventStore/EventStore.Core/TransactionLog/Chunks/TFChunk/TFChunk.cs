@@ -348,20 +348,19 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             Log.Trace("Verifying hash for TFChunk '{0}'...", _filename);
 
-            var workItem = GetReaderWorkItem();
-            try
+            using (var reader = AcquireReader())
             {
                 var footer = _chunkFooter;
 
                 byte[] hash;
                 using (var md5 = MD5.Create())
                 {
-                    workItem.Stream.Seek(0, SeekOrigin.Begin);
+                    reader.Stream.Seek(0, SeekOrigin.Begin);
                     // hash header and data
-                    MD5Hash.ContinuousHashFor(md5, workItem.Stream, 0, ChunkHeader.Size + footer.PhysicalDataSize);
+                    MD5Hash.ContinuousHashFor(md5, reader.Stream, 0, ChunkHeader.Size + footer.PhysicalDataSize);
                     // hash mapping and footer except MD5 hash sum which should always be last
                     MD5Hash.ContinuousHashFor(md5, 
-                                              workItem.Stream,
+                                              reader.Stream,
                                               ChunkHeader.Size + footer.PhysicalDataSize,
                                               footer.MapSize + ChunkFooter.Size - ChunkFooter.ChecksumSize);
                     md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
@@ -376,10 +375,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     if (footer.MD5Hash[i] != hash[i])
                         throw new HashValidationException();
                 }
-            }
-            finally
-            {
-                ReturnReaderWorkItem(workItem);
             }
         }
 
