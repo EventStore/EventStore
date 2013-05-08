@@ -335,7 +335,7 @@ namespace EventStore.Transport.Tcp
             if (_verbose)
             {
                 Log.Info("[{0:HH:mm:ss.fff}: {1}]:\nConnection ID: {2:B}\nReceived bytes: {3}, Sent bytes: {4}\n"
-                         + "Send calls: {5}, callbacks: {6}\nReceive calls: {7}, callbacks: {8}\nClose reason: [{9}] {10}",
+                         + "Send calls: {5}, callbacks: {6}\nReceive calls: {7}, callbacks: {8}\nClose reason: [{9}] {10}\n",
                          DateTime.UtcNow, EffectiveEndPoint, _connectionId,
                          TotalBytesReceived, TotalBytesSent,
                          SendCalls, SendCallbacks,
