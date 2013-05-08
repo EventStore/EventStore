@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Standard
         {
             emittedEvents = null;
             newState = null;
-            if (data.EventStreamId.StartsWith("$"))
+            if (data.EventStreamId != data.PositionStreamId)
                 return false;
             if (data.EventType == "$>")
                 return false;
