@@ -38,7 +38,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         int SendQueueSize { get; }
         void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback);
         void EnqueueSend(IEnumerable<ArraySegment<byte>> data);
-        void Close();
+        void Close(string reason);
     }
 }
         

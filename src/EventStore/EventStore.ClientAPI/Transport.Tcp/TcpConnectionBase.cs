@@ -44,8 +44,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
         public int PendingSendBytes { get { return _pendingSendBytes; } }
         public int InSendBytes { get { return _inSendBytes; } }
         public int PendingReceivedBytes { get { return _pendingReceivedBytes; } }
-        public long TotalBytesSent { get { return Interlocked.Read(ref _totaBytesReceived); } }
-        public long TotalBytesReceived { get { return Interlocked.Read(ref _totaBytesReceived); } }
+        public long TotalBytesSent { get { return Interlocked.Read(ref _totalBytesReceived); } }
+        public long TotalBytesReceived { get { return Interlocked.Read(ref _totalBytesReceived); } }
+        public int SendCalls { get { return _sentAsyncs; } }
+        public int SendCallbacks { get { return _sentAsyncCallbacks; } }
+        public int ReceiveCalls { get { return _recvAsyncs; } }
+        public int ReceiveCallbacks { get { return _recvAsyncCallbacks; } }
 
         public bool IsReadyForSend
         {
@@ -123,8 +127,13 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private int _pendingSendBytes;
         private int _inSendBytes;
         private int _pendingReceivedBytes;
-        private long _totaBytesSent;
-        private long _totaBytesReceived;
+        private long _totalBytesSent;
+        private long _totalBytesReceived;
+
+        private int _sentAsyncs;
+        private int _sentAsyncCallbacks;
+        private int _recvAsyncs;
+        private int _recvAsyncCallbacks;
 
         public TcpConnectionBase()
         {
@@ -151,26 +160,30 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 throw new Exception("Concurrent send detected.");
             Interlocked.Add(ref _pendingSendBytes, -bytes);
             Interlocked.Add(ref _inSendBytes, bytes);
+            Interlocked.Increment(ref _sentAsyncs);
         }
 
         protected void NotifySendCompleted(int bytes)
         {
             Interlocked.Exchange(ref _lastSendStarted, -1);
             Interlocked.Add(ref _inSendBytes, -bytes);
-            Interlocked.Add(ref _totaBytesSent, bytes);
+            Interlocked.Add(ref _totalBytesSent, bytes);
+            Interlocked.Increment(ref _sentAsyncCallbacks);
         }
 
         protected void NotifyReceiveStarting()
         {
             if (Interlocked.CompareExchange(ref _lastReceiveStarted, DateTime.UtcNow.Ticks, -1) != -1)
                 throw new Exception("Concurrent receive detected.");
+            Interlocked.Increment(ref _recvAsyncs);
         }
 
         protected void NotifyReceiveCompleted(int bytes)
         {
             Interlocked.Exchange(ref _lastReceiveStarted, -1);
             Interlocked.Add(ref _pendingReceivedBytes, bytes);
-            Interlocked.Add(ref _totaBytesReceived, bytes);
+            Interlocked.Add(ref _totalBytesReceived, bytes);
+            Interlocked.Increment(ref _recvAsyncCallbacks);
         }
 
         protected void NotifyReceiveDispatched(int bytes)

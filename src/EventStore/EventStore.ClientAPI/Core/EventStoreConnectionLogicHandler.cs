@@ -205,7 +205,7 @@ namespace EventStore.ClientAPI.Core
             _connectionActive = false;
             _disposed = true;
 
-            CloseTcpConnection();
+            CloseTcpConnection(reason);
             _timer.Dispose();
 
             foreach (var operation in _operations.Values.Concat(_waitingOperations).Concat(_retryPendingOperations))
@@ -233,7 +233,7 @@ namespace EventStore.ClientAPI.Core
             _log.Info("EventStoreConnection '{0}': closed. Reason: {1}.", _esConnection.ConnectionName, reason);
         }
 
-        private void CloseTcpConnection()
+        private void CloseTcpConnection(string reason)
         {
             if (_connection == null)
             {
@@ -243,7 +243,7 @@ namespace EventStore.ClientAPI.Core
 
             if (_verbose) _log.Debug("EventStoreConnection '{0}': CloseTcpConnection.", _esConnection.ConnectionName);
 
-            _connection.Close();
+            _connection.Close(reason);
             TcpConnectionClosed(_connection);
             _connection = null;
         }
@@ -498,9 +498,10 @@ namespace EventStore.ClientAPI.Core
                         ScheduleHeartbeat(packageNumber);
                     else
                     {
-                        _log.Info("EventStoreConnection '{0}': closing TCP connection [{1}, {2:B}] due to HEARTBEAT TIMEOUT at pkgNum {3}.",
-                                  _esConnection.ConnectionName, _connection.EffectiveEndPoint, _connection.ConnectionId, packageNumber);
-                        _connection.Close();
+                        var msg = string.Format("EventStoreConnection '{0}': closing TCP connection [{1}, {2:B}] due to HEARTBEAT TIMEOUT at pkgNum {3}.",
+                                                _esConnection.ConnectionName, _connection.EffectiveEndPoint, _connection.ConnectionId, packageNumber);
+                        _log.Info(msg);
+                        _connection.Close(msg);
                     }
                 }
             }
@@ -683,12 +684,11 @@ namespace EventStore.ClientAPI.Core
 
             if (!_reconnectionStopwatch.IsRunning || _connection == null || !_connection.EffectiveEndPoint.Equals(tcpEndPoint))
             {
-                if (_verbose)
-                    _log.Info("EventStoreConnection '{0}': going to reconnect to [{1}]. Current state: {2}, Current endpoint: {3}.",
-                              _esConnection.ConnectionName, tcpEndPoint, _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected",
-                              _connection == null ? null : _connection.EffectiveEndPoint);
-
-                CloseTcpConnection();
+                var msg = string.Format("EventStoreConnection '{0}': going to reconnect to [{1}]. Current state: {2}, Current endpoint: {3}.",
+                                        _esConnection.ConnectionName, tcpEndPoint, _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected",
+                                        _connection == null ? null : _connection.EffectiveEndPoint);
+                if (_verbose) _log.Info(msg);
+                CloseTcpConnection(msg);
                 Connect(tcpEndPoint);
             }
             RetryOperation(operationItem);
@@ -755,12 +755,11 @@ namespace EventStore.ClientAPI.Core
 
             if (!_reconnectionStopwatch.IsRunning || _connection == null || !_connection.EffectiveEndPoint.Equals(tcpEndPoint))
             {
-                if (_verbose) 
-                    _log.Info("EventStoreConnection '{0}': going to reconnect to [{1}]. Current state: {2}, Current endpoint: {3}.",
-                              _esConnection.ConnectionName, tcpEndPoint,  _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected", 
-                              _connection == null ? null : _connection.EffectiveEndPoint);
-
-                CloseTcpConnection();
+                var msg = string.Format("EventStoreConnection '{0}': going to reconnect to [{1}]. Current state: {2}, Current endpoint: {3}.",
+                                        _esConnection.ConnectionName, tcpEndPoint, _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected",
+                                        _connection == null ? null : _connection.EffectiveEndPoint);
+                if (_verbose) _log.Info(msg);
+                CloseTcpConnection(msg);
                 Connect(tcpEndPoint);
             }
             RetrySubscription(operationItem);

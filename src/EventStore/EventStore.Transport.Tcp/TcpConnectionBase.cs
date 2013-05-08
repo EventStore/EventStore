@@ -159,7 +159,6 @@ namespace EventStore.Transport.Tcp
                 throw new Exception("Concurrent send detected.");
             Interlocked.Add(ref _pendingSendBytes, -bytes);
             Interlocked.Add(ref _inSendBytes, bytes);
-
             Interlocked.Increment(ref _sentAsyncs);
         }
 
@@ -167,7 +166,6 @@ namespace EventStore.Transport.Tcp
         {
             Interlocked.Exchange(ref _lastSendStarted, -1);
             Interlocked.Add(ref _inSendBytes, -bytes);
-
             Interlocked.Add(ref _totalBytesSent, bytes);
             Interlocked.Increment(ref _sentAsyncCallbacks);
         }

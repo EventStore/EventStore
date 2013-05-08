@@ -120,7 +120,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             catch (PackageFramingException exc)
             {
                 _log.Error(exc, "Invalid TCP frame received.");
-                Close();
+                Close("Invalid TCP frame received.");
                 return;
             }
 
@@ -140,7 +140,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
             catch (Exception e)
             {
-                _connection.Close();
+                _connection.Close(string.Format("Error when processing TcpPackage {0}: {1}", 
+                                                valid ? package.Command.ToString() : "<invalid package>", e.Message));
 
                 var message = string.Format("[{0}] ERROR for {1}. Connection will be closed.",
                                             EffectiveEndPoint, valid ? package.Command.ToString() : "<invalid package>");
@@ -164,11 +165,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
             _connection.EnqueueSend(_framer.FrameData(package.AsArraySegment()));
         }
 
-        public void Close()
+        public void Close(string reason)
         {
             if (_connection == null)
                 throw new InvalidOperationException("Failed connection.");
-            _connection.Close();
+            _connection.Close(reason);
         }
     }
 }

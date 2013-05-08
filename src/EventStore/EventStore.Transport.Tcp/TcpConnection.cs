@@ -117,9 +117,9 @@ namespace EventStore.Transport.Tcp
 
         private void InitSocket(Socket socket, bool verbose)
         {
-            if (verbose)
-                Console.WriteLine("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
-            InitSocket(socket, EffectiveEndPoint);
+            if (verbose) Log.Info("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
+
+            InitSocket(socket, _effectiveEndPoint);
             using (_sendingLock.Acquire()) 
             {
                 _socket = socket;
@@ -260,8 +260,6 @@ namespace EventStore.Transport.Tcp
 
         private void ProcessReceive(SocketAsyncEventArgs socketArgs)
         {
-            if (socketArgs != _receiveSocketArgs) throw new Exception("Invalid socket args received");
-
             // socket closed normally or some error occurred
             if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
             {
@@ -276,7 +274,6 @@ namespace EventStore.Transport.Tcp
             var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count);
             _receiveQueue.Enqueue(Tuple.Create(fullBuffer, socketArgs.BytesTransferred));
 
-            if (_receiveSocketArgs.Buffer == null) throw new Exception("Cleaning already null buffer");
             _receiveSocketArgs.SetBuffer(null, 0, 0);
 
             StartReceive();
@@ -347,8 +344,8 @@ namespace EventStore.Transport.Tcp
             {
                 Helper.EatException(() => _socket.Shutdown(SocketShutdown.Both));
                 Helper.EatException(() => _socket.Close(TcpConfiguration.SocketCloseTimeoutMs));
+                _socket = null;
             }
-            _socket = null;
 
             using (_sendingLock.Acquire())
             {
