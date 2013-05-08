@@ -40,6 +40,11 @@ namespace EventStore.Core.Bus
     /// </summary>
     public class InMemoryBus : IBus, ISubscriber, IPublisher, IHandle<Message>
     {
+        public static InMemoryBus CreateTest()
+        {
+            return new InMemoryBus();
+        }
+
         public static readonly TimeSpan DefaultSlowMessageThreshold = TimeSpan.FromMilliseconds(48);
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<InMemoryBus>();
@@ -50,6 +55,11 @@ namespace EventStore.Core.Bus
 
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
+
+        private InMemoryBus()
+            :this("Test")
+        {
+        }
 
         public InMemoryBus(string name, bool watchSlowMsg = true, TimeSpan? slowMsgThreshold = null)
         {

@@ -172,6 +172,7 @@
     <Compile Include="Services\Transport\Http\Authentication\AuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Authentication\BasicHttpAuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Authentication\AnonymousAuthenticationProvider.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\InternalAuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Authentication\PasswordHashAlgorithm.cs" />
     <Compile Include="Services\Transport\Http\Authentication\Rfc2898PasswordHashAlgorithm.cs" />
     <Compile Include="Data\UserData.cs" />

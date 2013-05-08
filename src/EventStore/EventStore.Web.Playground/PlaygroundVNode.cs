@@ -30,6 +30,7 @@ using System;
 using System.Net;
 using EventStore.Core;
 using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
@@ -37,6 +38,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
+using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.Web.Playground
@@ -109,18 +111,58 @@ namespace EventStore.Web.Playground
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             // HTTP
-            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads,
-                                           new TrieUriRouter(), new Rfc2898PasswordHashAlgorithm(), vNodeSettings.HttpPrefixes);
-            Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
-            Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
-            Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
-            Bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(HttpService);
-            HttpService.SetupController(new AdminController(MainQueue));
-            HttpService.SetupController(new PingController());
-            HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));
-            HttpService.SetupController(new AtomController(MainQueue, _networkSendService));
-            HttpService.SetupController(new WebSiteController(MainQueue, _enabledNodeSubsystems));
-            HttpService.SetupController(new TestController(MainQueue, _networkSendService));
+            {
+
+                var queues = new IQueuedHandler[vNodeSettings.HttpReceivingThreads];
+                var buses = new InMemoryBus[vNodeSettings.HttpReceivingThreads];
+                var multiQueuedHandler = new MultiQueuedHandler(queues, null);
+                for (var i = 0; i < vNodeSettings.HttpReceivingThreads; i++)
+                {
+                    buses[i] = new InMemoryBus(string.Format("Incoming HTTP #{0} Bus", i + 1), watchSlowMsg: false);
+                    queues[i] = new QueuedHandlerThreadPool(
+                        buses[i], name: "Incoming HTTP #" + (i + 1), groupName: "Incoming HTTP", watchSlowMsg: true,
+                        slowMsgThreshold: TimeSpan.FromMilliseconds(50));
+                }
+
+                var dispatcher = new IODispatcher(
+                    _mainQueue, new PublishEnvelope(multiQueuedHandler, crossThread: true));
+
+                var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
+                var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, 1000);
+                var authenticationProviders = new AuthenticationProvider[]
+                    {
+                        new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
+                        new TrustedAuthenticationProvider(), new AnonymousAuthenticationProvider()
+                    };
+
+
+                _httpService = new HttpService(
+                    ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(), multiQueuedHandler,
+                    authenticationProviders, vNodeSettings.HttpPrefixes);
+
+
+                for (var i = 0; i < vNodeSettings.HttpReceivingThreads; i++)
+                {
+                    var bus = buses[i];
+
+                    bus.Subscribe(dispatcher.ForwardReader);
+                    bus.Subscribe(dispatcher.BackwardReader);
+                    bus.Subscribe(dispatcher.Writer);
+                    bus.Subscribe(dispatcher.StreamDeleter);
+
+                    _httpService.CreateAndSubscribePipeline(bus);
+                }
+
+                _mainBus.Subscribe<SystemMessage.SystemInit>(HttpService);
+                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
+                _mainBus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
+                _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(HttpService);
+                HttpService.SetupController(new AdminController(_mainQueue));
+                HttpService.SetupController(new PingController());
+                HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));
+                HttpService.SetupController(new AtomController(_mainQueue, _networkSendService));
+                HttpService.SetupController(new UsersController(_mainQueue, _networkSendService));
+            }
 
 
             // TIMER
