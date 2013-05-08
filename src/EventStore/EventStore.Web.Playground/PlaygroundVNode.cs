@@ -128,9 +128,10 @@ namespace EventStore.Web.Playground
                     _mainQueue, new PublishEnvelope(multiQueuedHandler, crossThread: true));
 
                 var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
+                var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, 1000);
                 var authenticationProviders = new AuthenticationProvider[]
                     {
-                        new BasicHttpAuthenticationProvider(dispatcher, passwordHashAlgorithm),
+                        new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
                         new TrustedAuthenticationProvider(), new AnonymousAuthenticationProvider()
                     };
 
@@ -149,7 +150,7 @@ namespace EventStore.Web.Playground
                     bus.Subscribe(dispatcher.Writer);
                     bus.Subscribe(dispatcher.StreamDeleter);
 
-                    _httpService.SubscribePipeline(bus);
+                    _httpService.CreateAndSubscribePipeline(bus);
                 }
 
                 _mainBus.Subscribe<SystemMessage.SystemInit>(HttpService);

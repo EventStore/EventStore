@@ -171,7 +171,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var providers = new AuthenticationProvider[] {new AnonymousAuthenticationProvider()};
             var httpService = new HttpService(ServiceAccessibility.Public, inputBus, 
                                               new TrieUriRouter(), multiQueuedHandler, providers, "http://localhost:12345/");
-            httpService.SubscribePipeline(bus);
+            httpService.CreateAndSubscribePipeline(bus);
 
             var fakeController = new FakeController(iterations, null);
             httpService.SetupController(fakeController);

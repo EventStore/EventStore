@@ -59,7 +59,9 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
                 _bus.Subscribe(_ioDispatcher.Writer);
                 _bus.Subscribe(_ioDispatcher.StreamDeleter);
 
-                _provider = new BasicHttpAuthenticationProvider(_ioDispatcher, new StubPasswordHashAlgorithm());
+                PasswordHashAlgorithm passwordHashAlgorithm = new StubPasswordHashAlgorithm();
+                var internalAuthenticationProvider = new InternalAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm, 1000);
+                _provider = new BasicHttpAuthenticationProvider(internalAuthenticationProvider);
             }
         }
 

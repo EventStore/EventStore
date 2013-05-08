@@ -26,31 +26,19 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using System.Net;
 using System.Security.Principal;
-using EventStore.Common.Utils;
-using EventStore.Core.Data;
-using EventStore.Core.DataStructures;
-using EventStore.Core.Helpers;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Messages;
-using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
     public class BasicHttpAuthenticationProvider : AuthenticationProvider
     {
-        private readonly IODispatcher _ioDispatcher;
-        private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
-        private readonly LRUCache<string, Tuple<string, IPrincipal>> _userPasswordsCache;
+        private readonly InternalAuthenticationProvider _internalAuthenticationProvider;
 
-        public BasicHttpAuthenticationProvider(
-            IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm, int cacheSize = 1000)
+        public BasicHttpAuthenticationProvider(InternalAuthenticationProvider internalAuthenticationProvider)
         {
-            _ioDispatcher = ioDispatcher;
-            _passwordHashAlgorithm = passwordHashAlgorithm;
-            _userPasswordsCache = new LRUCache<string, Tuple<string, IPrincipal>>(cacheSize);
+            _internalAuthenticationProvider = internalAuthenticationProvider;
         }
 
         public override bool Authenticate(IncomingHttpRequestMessage message)
@@ -60,97 +48,44 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             var basicIdentity = entity.User != null ? entity.User.Identity as HttpListenerBasicIdentity : null;
             if (basicIdentity != null)
             {
-                HttpBasicAuthenticate(message, basicIdentity);
+                string name = basicIdentity.Name;
+                string suppliedPassword = basicIdentity.Password;
+
+                var authenticationRequest = new HttpBasicAuthenticationRequest(this, message, name, suppliedPassword);
+                _internalAuthenticationProvider.HttpBasicAuthenticate(authenticationRequest);
                 return true;
             }
             return false;
         }
 
-        private void HttpBasicAuthenticate(IncomingHttpRequestMessage message, HttpListenerBasicIdentity basicIdentity)
+        private class HttpBasicAuthenticationRequest : InternalAuthenticationProvider.AuthenticationRequest
         {
-            Tuple<string, IPrincipal> cached;
-            if (_userPasswordsCache.TryGet(basicIdentity.Name, out cached))
+            private readonly BasicHttpAuthenticationProvider _basicHttpAuthenticationProvider;
+            private readonly IncomingHttpRequestMessage _message;
+
+            public HttpBasicAuthenticationRequest(
+                BasicHttpAuthenticationProvider basicHttpAuthenticationProvider, IncomingHttpRequestMessage message,
+                string name, string suppliedPassword)
+                : base(name, suppliedPassword)
             {
-                AuthenticateWithPassword(message, cached.Item1, basicIdentity.Password, cached.Item2);
-            }
-            else
-            {
-                var userStreamId = "$user-" + basicIdentity.Name;
-                _ioDispatcher.ReadBackward(
-                    userStreamId, -1, 1, false, SystemAccount.Principal, m => ReadUserDataCompleted(message, m));
-            }
-        }
-
-        private void ReadUserDataCompleted(
-            IncomingHttpRequestMessage message, ClientMessage.ReadStreamEventsBackwardCompleted completed)
-        {
-            try
-            {
-                var entity = message.Entity;
-                if (completed.Result != ReadStreamResult.Success)
-                {
-                    ReplyUnauthorized(entity);
-                    return;
-                }
-                var basicIdentity = (HttpListenerBasicIdentity) entity.User.Identity;
-                var userData = completed.Events[0].Event.Data.ParseJson<UserData>();
-                if (userData.LoginName != basicIdentity.Name)
-                {
-                    ReplyInternalServerError(entity);
-                    return;
-                }
-                if (userData.Disabled)
-                    ReplyUnauthorized(entity);
-                else
-                    AuthenticateWithPasswordHash(message, userData, basicIdentity);
-            }
-            catch
-            {
-                ReplyUnauthorized(message.Entity);
-            }
-        }
-
-        private void AuthenticateWithPasswordHash(
-            IncomingHttpRequestMessage message, UserData userData, HttpListenerBasicIdentity basicHttpIdentity)
-        {
-            var entity = message.Entity;
-
-            if (!_passwordHashAlgorithm.Verify(basicHttpIdentity.Password, userData.Hash, userData.Salt))
-            {
-                ReplyUnauthorized(entity);
-                return;
-            }
-            var principal = CreatePrincipal(userData);
-            CachePassword(basicHttpIdentity.Name, basicHttpIdentity.Password, principal);
-            Authenticated(message, principal);
-        }
-
-        private static GenericPrincipal CreatePrincipal(UserData userData)
-        {
-            var roles = new string[userData.Groups != null ? userData.Groups.Length + 1 : 1];
-            if (userData.Groups != null)
-                Array.Copy(userData.Groups, roles, userData.Groups.Length);
-            roles[roles.Length - 1] = userData.LoginName;
-            var principal = new GenericPrincipal(new GenericIdentity(userData.LoginName), roles);
-            return principal;
-        }
-
-        private void CachePassword(string loginName, string password, IPrincipal principal)
-        {
-            _userPasswordsCache.Put(loginName, Tuple.Create(password, principal));
-        }
-
-        private void AuthenticateWithPassword(
-            IncomingHttpRequestMessage message, string correctPassword, string suppliedPassword, IPrincipal principal)
-        {
-            var entity = message.Entity;
-
-            if (suppliedPassword != correctPassword)
-            {
-                ReplyUnauthorized(entity);
+                _basicHttpAuthenticationProvider = basicHttpAuthenticationProvider;
+                _message = message;
             }
 
-            Authenticated(message, principal);
+            public override void Unauthorized()
+            {
+                ReplyUnauthorized(_message.Entity);
+            }
+
+            public override void Authenticated(IPrincipal principal)
+            {
+                _basicHttpAuthenticationProvider.Authenticated(_message, principal);
+            }
+
+            public override void Error()
+            {
+                ReplyInternalServerError(_message.Entity);
+            }
         }
     }
 }

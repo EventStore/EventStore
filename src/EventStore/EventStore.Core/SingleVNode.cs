@@ -205,9 +205,10 @@ namespace EventStore.Core
                 var dispatcher = new IODispatcher(
                     _mainQueue, new PublishEnvelope(multiQueuedHandler, crossThread: true));
 
+                var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, _passwordHashAlgorithm, 1000);
                 var authenticationProviders = new AuthenticationProvider[]
                     {
-                        new BasicHttpAuthenticationProvider(dispatcher, _passwordHashAlgorithm),
+                        new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
                         new TrustedAuthenticationProvider(), new AnonymousAuthenticationProvider()
                     };
 
@@ -226,7 +227,7 @@ namespace EventStore.Core
                     bus.Subscribe(dispatcher.Writer);
                     bus.Subscribe(dispatcher.StreamDeleter);
 
-                    _httpService.SubscribePipeline(bus);
+                    _httpService.CreateAndSubscribePipeline(bus);
                 }
 
                 _mainBus.Subscribe<SystemMessage.SystemInit>(HttpService);

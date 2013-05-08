@@ -84,7 +84,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                 _service = new HttpService(
                     ServiceAccessibility.Private, _bus, new NaiveUriRouter(), multiQueuedHandler,
                     authenticationProviders, _serverEndPoint.ToHttpUrl());
-                _service.SubscribePipeline(pipelineBus);
+                _service.CreateAndSubscribePipeline(pipelineBus);
                 _client = new HttpAsyncClient();
             }
 
