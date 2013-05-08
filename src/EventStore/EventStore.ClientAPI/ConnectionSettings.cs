@@ -112,8 +112,8 @@ namespace EventStore.ClientAPI
         public Action<IEventStoreConnection> Reconnecting;
 
         public readonly bool FailOnNoServerResponse;
-        public readonly TimeSpan HeartbeatInterval = TimeSpan.FromMilliseconds(1000);
-        public readonly TimeSpan HeartbeatTimeout = TimeSpan.FromMilliseconds(4000);
+        public readonly TimeSpan HeartbeatInterval = TimeSpan.FromMilliseconds(500);
+        public readonly TimeSpan HeartbeatTimeout = TimeSpan.FromMilliseconds(2000);
 
         internal ConnectionSettings(ILogger log,
                                     bool verboseLogging,

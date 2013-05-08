@@ -312,8 +312,6 @@ namespace EventStore.ClientAPI.Core
         {
             if (_disposed || !_connectionActive) return;
 
-            if (_verbose) _log.Debug("EventStoreConnection '{0}': TimerTick.", _esConnection.ConnectionName);
-
             // operations timeouts are checked only if connection is established and check period time passed
             if (_connectionStopwatch.IsRunning && _connectionStopwatch.Elapsed >= _settings.OperationTimeoutCheckPeriod)
             {

@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+
 namespace EventStore.Core.Settings
 {
     public static class ESConsts
@@ -54,5 +56,10 @@ namespace EventStore.Core.Settings
         public const int CachedEpochCount = 1000;
 
         public const int CachedPrincipalCount = 1000;
+
+        public static readonly TimeSpan InternalHeartbeatInterval = TimeSpan.FromMilliseconds(200);
+        public static readonly TimeSpan InternalHeartbeatTimeout = TimeSpan.FromMilliseconds(300);
+        public static readonly TimeSpan ExternalHeartbeatInterval = TimeSpan.FromMilliseconds(500);
+        public static readonly TimeSpan ExternalHeartbeatTimeout = TimeSpan.FromMilliseconds(2000);
     }
 }

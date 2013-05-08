@@ -50,9 +50,6 @@ namespace EventStore.Core.Services.Transport.Tcp
     {
         public const int ConnectionQueueSizeThreshold = 50000;
 
-        private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromMilliseconds(2000);
-        private static readonly TimeSpan HeartbeatTimeout = TimeSpan.FromMilliseconds(4000);
-
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionManager>();
 
         public readonly Guid ConnectionId;
@@ -72,11 +69,16 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly Action<TcpConnectionManager, SocketError> _connectionClosed;
         private readonly Action<TcpConnectionManager> _connectionEstablished;
 
+        private readonly TimeSpan _heartbeatInterval;
+        private readonly TimeSpan _heartbeatTimeout;
+
         public TcpConnectionManager(string connectionName, 
                                     ITcpDispatcher dispatcher, 
                                     IPublisher publisher, 
                                     ITcpConnection openedConnection,
                                     IPublisher networkSendQueue,
+                                    TimeSpan heartbeatInterval,
+                                    TimeSpan heartbeatTimeout,
                                     Action<TcpConnectionManager, SocketError> onConnectionClosed)
         {
             Ensure.NotNull(dispatcher, "dispatcher");
@@ -95,12 +97,18 @@ namespace EventStore.Core.Services.Transport.Tcp
             _framer = new LengthPrefixMessageFramer();
             _framer.RegisterMessageArrivedCallback(OnMessageArrived);
 
+            _heartbeatInterval = heartbeatInterval;
+            _heartbeatTimeout = heartbeatTimeout;
+
             _connectionClosed = onConnectionClosed;
 
             _connection = openedConnection;
             _connection.ConnectionClosed += OnConnectionClosed;
             if (_connection.IsClosed)
+            {
                 OnConnectionClosed(_connection, SocketError.Success);
+                return;
+            }
 
             ScheduleHeartbeat(0);
         }
@@ -112,6 +120,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                     IPEndPoint remoteEndPoint, 
                                     TcpClientConnector connector,
                                     IPublisher networkSendQueue,
+                                    TimeSpan heartbeatInterval,
+                                    TimeSpan heartbeatTimeout,
                                     Action<TcpConnectionManager> onConnectionEstablished,
                                     Action<TcpConnectionManager, SocketError> onConnectionClosed)
         {
@@ -132,6 +142,9 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             _framer = new LengthPrefixMessageFramer();
             _framer.RegisterMessageArrivedCallback(OnMessageArrived);
+
+            _heartbeatInterval = heartbeatInterval;
+            _heartbeatTimeout = heartbeatTimeout;
 
             _connectionEstablished = onConnectionEstablished;
             _connectionClosed = onConnectionClosed;
@@ -297,7 +310,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                 SendPackage(new TcpPackage(TcpCommand.HeartbeatRequestCommand, Guid.NewGuid(), null));
 
                 _publisher.Publish(TimerMessage.Schedule.Create(
-                    HeartbeatTimeout,
+                    _heartbeatTimeout,
                     new SendToWeakThisEnvelope(this), 
                     new TcpMessage.HeartbeatTimeout(EndPoint, msgNum)));
             }
@@ -316,7 +329,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void ScheduleHeartbeat(int msgNum)
         {
-            _publisher.Publish(TimerMessage.Schedule.Create(HeartbeatInterval,
+            _publisher.Publish(TimerMessage.Schedule.Create(_heartbeatInterval,
                                                             new SendToWeakThisEnvelope(this),
                                                             new TcpMessage.Heartbeat(EndPoint, msgNum)));
         }

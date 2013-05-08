@@ -183,7 +183,9 @@ namespace EventStore.Core
 
             // TCP
             var tcpService = new TcpService(_mainQueue, _tcpEndPoint, _networkSendService, 
-                                            TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), null);
+                                            TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), 
+                                            ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout,
+                                            null);
             _mainBus.Subscribe<SystemMessage.SystemInit>(tcpService);
             _mainBus.Subscribe<SystemMessage.SystemStart>(tcpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);

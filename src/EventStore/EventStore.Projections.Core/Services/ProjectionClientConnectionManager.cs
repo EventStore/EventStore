@@ -34,6 +34,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.Settings;
 using EventStore.Projections.Core.Messages;
 using EventStore.Transport.Tcp;
 
@@ -77,6 +78,8 @@ namespace EventStore.Projections.Core.Services
                 endPoint,
                 clientConnector,
                 _networkSendQueue,
+                ESConsts.ExternalHeartbeatInterval, 
+                ESConsts.ExternalHeartbeatTimeout,
                 onConnectionEstablished: manager =>
                 {
                     Console.WriteLine("Connection established: " + manager.EndPoint);

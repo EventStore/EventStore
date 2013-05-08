@@ -62,6 +62,8 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly TcpServiceType _serviceType;
         private readonly TcpSecurityType _securityType;
         private readonly Func<Guid, IPEndPoint, ITcpDispatcher> _dispatcherFactory;
+        private readonly TimeSpan _heartbeatInterval;
+        private readonly TimeSpan _heartbeatTimeout;
         private readonly X509Certificate _certificate;
 
         public TcpService(IPublisher publisher,
@@ -70,8 +72,11 @@ namespace EventStore.Core.Services.Transport.Tcp
                           TcpServiceType serviceType,
                           TcpSecurityType securityType,
                           ITcpDispatcher dispatcher,
+                          TimeSpan heartbeatInterval,
+                          TimeSpan heartbeatTimeout,
                           X509Certificate certificate)
-            : this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher, certificate)
+            : this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher, 
+                   heartbeatInterval, heartbeatTimeout, certificate)
         {
         }
 
@@ -81,6 +86,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                           TcpServiceType serviceType,
                           TcpSecurityType securityType,
                           Func<Guid, IPEndPoint, ITcpDispatcher> dispatcherFactory,
+                          TimeSpan heartbeatInterval,
+                          TimeSpan heartbeatTimeout,
                           X509Certificate certificate)
         {
             Ensure.NotNull(publisher, "publisher");
@@ -97,6 +104,8 @@ namespace EventStore.Core.Services.Transport.Tcp
             _serviceType = serviceType;
             _securityType = securityType;
             _dispatcherFactory = dispatcherFactory;
+            _heartbeatInterval = heartbeatInterval;
+            _heartbeatTimeout = heartbeatTimeout;
             _certificate = certificate;
         }
 
@@ -136,6 +145,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                     _publisher,
                     conn,
                     _networkSendQueue,
+                    _heartbeatInterval,
+                    _heartbeatTimeout,
                     onConnectionClosed: (m, e) => _publisher.Publish(new TcpMessage.ConnectionClosed(m, e))); // TODO AN: race condition
             _publisher.Publish(new TcpMessage.ConnectionEstablished(manager));
             manager.StartReceiving();
