@@ -31,9 +31,6 @@ namespace EventStore.Common.Utils
 {
     public static class Runtime
     {
-        public static bool IsMono
-        {
-            get { return Type.GetType("Mono.Runtime") != null; }
-        }
+        public static readonly bool IsMono = Type.GetType("Mono.Runtime") != null;
     }
 }

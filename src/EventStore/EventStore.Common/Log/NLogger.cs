@@ -28,10 +28,27 @@
 using System;
 using System.Linq;
 using System.Threading;
+using EventStore.Common.Utils;
 using NLog;
+using NLog.Conditions;
 
 namespace EventStore.Common.Log
 {
+    public static class NLoggerHelperMethods
+    {
+        [ConditionMethod("is-dot-net")]
+        public static bool IsDotNet()
+        {
+            return !Runtime.IsMono;
+        }
+
+        [ConditionMethod("is-mono")]
+        public static bool IsMono()
+        {
+            return Runtime.IsMono;
+        }
+    }
+
     public class NLogger : ILogger
     {
         private readonly Logger _logger;

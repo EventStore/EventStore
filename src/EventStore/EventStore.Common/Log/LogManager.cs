@@ -49,7 +49,10 @@ namespace EventStore.Common.Log
 
         static LogManager()
         {
-            NLog.Config.ConfigurationItemFactory.Default.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
+            var conf = NLog.Config.ConfigurationItemFactory.Default;
+            conf.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
+            conf.ConditionMethods.RegisterDefinition("is-dot-net", typeof(NLoggerHelperMethods).GetMethod("IsMono"));
+            conf.ConditionMethods.RegisterDefinition("is-mono", typeof(NLoggerHelperMethods).GetMethod("IsDotNet"));
         }
 
         public static ILogger GetLoggerFor(Type type)
