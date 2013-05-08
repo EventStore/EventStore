@@ -47,7 +47,6 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Services.VNode;
@@ -79,11 +78,11 @@ namespace EventStore.Core
         private readonly NetworkSendService _networkSendService;
 
         private readonly NodeSubsystems[] _enabledNodeSubsystems;
-        private readonly Rfc2898PasswordHashAlgorithm _passwordHashAlgorithm;
 
         public SingleVNode(TFChunkDb db, 
                            SingleVNodeSettings vNodeSettings, 
-                           bool dbVerifyHashes, NodeSubsystems[] enabledNodeSubsystems,
+                           bool dbVerifyHashes, 
+                           NodeSubsystems[] enabledNodeSubsystems,
                            int memTableEntryCount = ESConsts.MemTableEntryCount)
         {
             Ensure.NotNull(db, "db");
@@ -156,7 +155,9 @@ namespace EventStore.Core
                                                 maxReaderCount: 5,
                                                 readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint));
             epochManager.Init();
+
             new StorageWriterService(_mainQueue, _mainBus, db, writer, readIndex, epochManager); // subscribes internally
+            
             var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderThreadCount, db.Config.WriterCheckpoint);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
@@ -188,7 +189,7 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             // HTTP
-            _passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
+            var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
             {
                 var queues = new IQueuedHandler[vNodeSettings.HttpReceivingThreads];
                 var buses = new InMemoryBus[vNodeSettings.HttpReceivingThreads];
@@ -202,7 +203,7 @@ namespace EventStore.Core
                 }
 
                 var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(multiQueuedHandler, crossThread: true));
-                var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, _passwordHashAlgorithm, 1000);
+                var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
 
                 var authenticationProviders = new AuthenticationProvider[]
                 {
@@ -213,6 +214,16 @@ namespace EventStore.Core
 
                 _httpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(), 
                                                multiQueuedHandler, authenticationProviders, vNodeSettings.HttpPrefixes);
+                _httpService.SetupController(new AdminController(_mainQueue));
+                _httpService.SetupController(new PingController());
+                _httpService.SetupController(new StatController(monitoringQueue, _networkSendService));
+                _httpService.SetupController(new AtomController(_mainQueue, _networkSendService));
+                _httpService.SetupController(new UsersController(_mainQueue, _networkSendService));
+
+                _mainBus.Subscribe<SystemMessage.SystemInit>(_httpService);
+                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_httpService);
+                _mainBus.Subscribe<HttpMessage.SendOverHttp>(_httpService);
+                _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_httpService);
 
                 for (var i = 0; i < vNodeSettings.HttpReceivingThreads; i++)
                 {
@@ -225,16 +236,6 @@ namespace EventStore.Core
 
                     _httpService.CreateAndSubscribePipeline(bus);
                 }
-
-                _mainBus.Subscribe<SystemMessage.SystemInit>(HttpService);
-                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
-                _mainBus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
-                _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(HttpService);
-                HttpService.SetupController(new AdminController(_mainQueue));
-                HttpService.SetupController(new PingController());
-                HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));
-                HttpService.SetupController(new AtomController(_mainQueue, _networkSendService));
-                HttpService.SetupController(new UsersController(_mainQueue, _networkSendService));
             }
 
             // REQUEST MANAGEMENT
@@ -264,7 +265,7 @@ namespace EventStore.Core
             _mainBus.Subscribe(ioDispatcher.Writer);
             _mainBus.Subscribe(ioDispatcher.StreamDeleter);
 
-            var userManagement = new UserManagementService(_mainQueue, ioDispatcher, _passwordHashAlgorithm);
+            var userManagement = new UserManagementService(_mainQueue, ioDispatcher, passwordHashAlgorithm);
             _mainBus.Subscribe<UserManagementMessage.Create>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.Update>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
@@ -277,7 +278,7 @@ namespace EventStore.Core
 
             // TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
-            _mainBus.Subscribe<TimerMessage.Schedule>(TimerService);
+            _mainBus.Subscribe<TimerMessage.Schedule>(_timerService);
 
             monitoringQueue.Start();
             _mainQueue.Start();

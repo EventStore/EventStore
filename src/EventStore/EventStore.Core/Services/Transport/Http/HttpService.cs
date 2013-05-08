@@ -93,7 +93,6 @@ namespace EventStore.Core.Services.Transport.Http
             _requestsMultiHandler = multiQueuedHandler;
             _authenticationProviders = authenticationProviders;
 
-
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
         }
