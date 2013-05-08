@@ -48,20 +48,20 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         public void setup()
         {
             _zeroEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                Guid.NewGuid(), new TFPos(20, 10), "$et-type1", 0, "stream1", 0, true, Guid.NewGuid(), "type1", true,
-                Encoding.UTF8.GetBytes("{}"), new byte[0], null, 10f);
+                Guid.NewGuid(), new TFPos(-1, 120), new TFPos(20, 10), "$et-type1", 0, "stream1", 0, true,
+                Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), new byte[0], null, 10f);
 
             _firstEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                Guid.NewGuid(), new TFPos(30, 20), "$et-type2", 0, "stream1", 1, true, Guid.NewGuid(), "type2", true,
-                Encoding.UTF8.GetBytes("{}"), new byte[0], null, 20f);
+                Guid.NewGuid(), new TFPos(-1, 130), new TFPos(30, 20), "$et-type2", 0, "stream1", 1, true,
+                Guid.NewGuid(), "type2", true, Encoding.UTF8.GetBytes("{}"), new byte[0], null, 20f);
 
             _secondEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                Guid.NewGuid(), new TFPos(50, 40), "$et-type1", 1, "stream2", 0, false, Guid.NewGuid(), "type1", true,
-                Encoding.UTF8.GetBytes("{}"), new byte[0], null, 30f);
+                Guid.NewGuid(), new TFPos(-1, 140), new TFPos(50, 40), "$et-type1", 1, "stream2", 0, false,
+                Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), new byte[0], null, 30f);
 
             _thirdEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                Guid.NewGuid(), new TFPos(70, 60), "$et-type2", 1, "stream2", 1, false, Guid.NewGuid(), "type2", true,
-                Encoding.UTF8.GetBytes("{}"), new byte[0], null, 40f);
+                Guid.NewGuid(), new TFPos(-1, 150), new TFPos(70, 60), "$et-type2", 1, "stream2", 1, false,
+                Guid.NewGuid(), "type2", true, Encoding.UTF8.GetBytes("{}"), new byte[0], null, 40f);
         }
 
         [Test]

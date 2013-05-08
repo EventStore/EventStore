@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 
                 yield return (
                     ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                        _reader, new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
+                        _reader, new TFPos(100, 50), new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
                         false, new byte[0], new byte[0], 100, 33.3f));
                 yield return (new ReaderSubscriptionMessage.EventReaderEof(_reader));
             }

@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Messages
         public class CommittedEventDistributed : SubscriptionMessage
         {
             public static CommittedEventDistributed Sample(
-                Guid correlationId, TFPos position, string positionStreamId, int positionSequenceNumber,
+                Guid correlationId, TFPos position, TFPos originalPosition, string positionStreamId, int positionSequenceNumber,
                 string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Guid eventId, string eventType,
                 bool isJson, byte[] data, byte[] metadata, long? safeTransactionFileReaderJoinPosition, float progress)
             {
@@ -92,7 +92,7 @@ namespace EventStore.Projections.Core.Messages
                     correlationId,
                     new ResolvedEvent(
                         positionStreamId, positionSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo,
-                        position, eventId, eventType, isJson, data, metadata, null, default(DateTime)),
+                        position, originalPosition, eventId, eventType, isJson, data, metadata, null, default(DateTime)),
                     safeTransactionFileReaderJoinPosition, progress);
             }
 
@@ -105,7 +105,7 @@ namespace EventStore.Projections.Core.Messages
                     correlationId,
                     new ResolvedEvent(
                         eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo, position,
-                        eventId, eventType, isJson, data, metadata, null, timestamp.GetValueOrDefault()),
+                        position, eventId, eventType, isJson, data, metadata, null, timestamp.GetValueOrDefault()),
                     position.PreparePosition, 11.1f);
             }
 

@@ -453,9 +453,10 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 //TODO: add event sequence validation for inside the index stream
                 var resolvedEvent = new ResolvedEvent(
-                    positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, true, position,
-                    @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
-                    @event.Metadata, positionEvent.Metadata, positionEvent.TimeStamp);
+                    positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
+                    true, new TFPos(-1, positionEvent.LogPosition), position, @event.EventId, @event.EventType,
+                    (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata, positionEvent.Metadata,
+                    positionEvent.TimeStamp);
                 DeliverEvent(progress, resolvedEvent, position);
             }
 
@@ -608,7 +609,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var resolvedEvent = new ResolvedEvent(
                     @event.EventStreamId, @event.EventNumber, @event.EventStreamId, @event.EventNumber, false, position,
-                    @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
+                    position, @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
                     @event.Metadata, null, @event.TimeStamp);
 
                 DeliverEvent(progress, resolvedEvent, position);

@@ -174,15 +174,34 @@ namespace EventStore.Projections.Core.Services.Processing
                     string.Format(
                         "ReadFromTF returned events in incorrect order.  Last known position is: {0}.  Received position is: {1}",
                         currentFrom, receivedPosition));
+            TFPos originalPosition;
+            if (@event.IsResolved)
+            {
+                if (positionEvent.Metadata != null && positionEvent.Metadata.Length > 0)
+                {
+                    var parsedPosition =
+                        positionEvent.Metadata.ParseCheckpointTagJson(default(ProjectionVersion)).Tag.Position;
+                    originalPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
+                                           ? parsedPosition
+                                           : new TFPos(-1, @event.OriginalEvent.LogPosition);
+                }
+                else
+                    originalPosition = new TFPos(-1, @event.OriginalEvent.LogPosition);
+            }
+            else
+            {
+                originalPosition = receivedPosition;
+            }
 
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
                     EventReaderCorrelationId,
                     new ResolvedEvent(
                         positionEvent.EventStreamId, positionEvent.EventNumber, @event.Event.EventStreamId,
-                        @event.Event.EventNumber, @event.Link != null, receivedPosition, @event.Event.EventId,
-                        @event.Event.EventType, (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data,
-                        @event.Event.Metadata, @event.Link == null ? null : @event.Link.Metadata, positionEvent.TimeStamp),
+                        @event.Event.EventNumber, @event.Link != null, receivedPosition,
+                        originalPosition, @event.Event.EventId, @event.Event.EventType,
+                        (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata,
+                        @event.Link == null ? null : @event.Link.Metadata, positionEvent.TimeStamp),
                     _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
                     100.0f*positionEvent.LogPosition/lastCommitPosition));
         }

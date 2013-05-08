@@ -56,10 +56,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 Assert.IsNotNull(readerAssignedMessage);
                 _reader = readerAssignedMessage.ReaderId;
 
-                yield return(
-                    ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                        _reader, new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
-                        false, new byte[0], new byte[0], 100, 33.3f));
+                yield return
+                    (ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                        _reader, new TFPos(100, 50), new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(),
+                        "type", false, new byte[0], new byte[0], 100, 33.3f));
             }
         }
 
@@ -120,10 +120,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             protected override IEnumerable<Message> When()
             {
                 foreach (var m in base.When()) yield return m;
-                yield return (
-                    ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                        _reader, new TFPos(200, 150), "stream", 2, "stream", 1, false, Guid.NewGuid(), "type",
-                        false, new byte[0], new byte[0], 100, 33.3f));
+                yield return
+                    (ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                        _reader, new TFPos(200, 150), new TFPos(200, 150), "stream", 2, "stream", 1, false,
+                        Guid.NewGuid(), "type", false, new byte[0], new byte[0], 100, 33.3f));
             }
 
             [Test]

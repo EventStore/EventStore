@@ -41,6 +41,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _positionStreamId;
         private readonly int _positionSequenceNumber;
         private readonly TFPos _position;
+        private readonly TFPos _originalPosition;
 
 
         public readonly Guid EventId;
@@ -54,7 +55,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ResolvedEvent(
             string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
-            bool resolvedLinkTo, TFPos position, Guid eventId, string eventType, bool isJson, byte[] data,
+            bool resolvedLinkTo, TFPos position, TFPos originalPosition, Guid eventId, string eventType, bool isJson, byte[] data,
             byte[] metadata, byte[] positionMetadata, DateTime timestamp)
         {
             if (Guid.Empty == eventId)
@@ -68,6 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventSequenceNumber = eventSequenceNumber;
             _resolvedLinkTo = resolvedLinkTo;
             _position = position;
+            _originalPosition = originalPosition;
             EventId = eventId;
             EventType = eventType;
             IsJson = isJson;
@@ -135,6 +137,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public TFPos Position
         {
             get { return _position; }
+        }
+
+        public TFPos OriginalPosition
+        {
+            get { return _originalPosition; }
         }
     }
 }

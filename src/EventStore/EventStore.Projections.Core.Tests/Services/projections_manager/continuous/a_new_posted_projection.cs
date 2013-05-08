@@ -134,10 +134,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 Assert.IsNotNull(readerAssignedMessage);
                 var reader = readerAssignedMessage.ReaderId;
 
-                yield return (
-                    ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                        reader, new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "fail",
-                        false, new byte[0], new byte[0], 100, 33.3f));
+                yield return
+                    (ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                        reader, new TFPos(100, 50), new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(),
+                        "fail", false, new byte[0], new byte[0], 100, 33.3f));
             }
 
             [Test]

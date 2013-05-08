@@ -54,28 +54,22 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (previous.Mode_ != CheckpointTag.Mode.EventTypeIndex)
                 throw new ArgumentException("Mode.EventTypeIndex expected", "previous");
-            if (committedEvent.Data.Position.CommitPosition <= 0)
+            if (committedEvent.Data.OriginalPosition.CommitPosition <= 0)
                 throw new ArgumentException("complete TF position required", "committedEvent");
 
-            return committedEvent.Data.Position > previous.Position;
+            return committedEvent.Data.OriginalPosition > previous.Position;
         }
 
         public override CheckpointTag MakeCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent)
         {
             var byIndex = _streams.Contains(committedEvent.Data.PositionStreamId);
-            //var byEvent = _eventTypes.Contains(committedEvent.Data.EventType);
-            //if (!byEvent && !byIndex)
-            //    throw new InvalidOperationException(
-            //        string.Format(
-            //            "Invalid stream and/or event type'{0}'/'{1}'", committedEvent.Data.PositionStreamId,
-            //            committedEvent.Data.EventType));
-
             return byIndex
                        ? previous.UpdateEventTypeIndexPosition(
-                           committedEvent.Data.Position, _streamToEventType[committedEvent.Data.PositionStreamId],
+                           committedEvent.Data.OriginalPosition,
+                           _streamToEventType[committedEvent.Data.PositionStreamId],
                            committedEvent.Data.PositionSequenceNumber)
-                       : previous.UpdateEventTypeIndexPosition(committedEvent.Data.Position);
+                       : previous.UpdateEventTypeIndexPosition(committedEvent.Data.OriginalPosition);
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()

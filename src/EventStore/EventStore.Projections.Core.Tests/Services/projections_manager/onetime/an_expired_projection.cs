@@ -56,10 +56,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 Assert.IsNotNull(readerAssignedMessage);
                 _reader = readerAssignedMessage.ReaderId;
 
-                yield return(
-                    ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                        _reader, new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
-                        false, new byte[0], new byte[0], 100, 33.3f));
+                yield return
+                    (ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                        _reader, new TFPos(100, 50), new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(),
+                        "type", false, new byte[0], new byte[0], 100, 33.3f));
                 _timeProvider.AddTime(TimeSpan.FromMinutes(6));
                 yield return null;
                 foreach (var m in _consumer.HandledMessages.OfType<TimerMessage.Schedule>().ToArray())
