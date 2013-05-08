@@ -42,12 +42,12 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class EventByTypeIndexEventReader : EventReader
     {
-        internal const int _maxReadCount = 111;
+        private const int _maxReadCount = 111;
         private readonly HashSet<string> _eventTypes;
-        public readonly bool _resolveLinkTos;
+        private readonly bool _resolveLinkTos;
         private readonly ITimeProvider _timeProvider;
 
-        public class PendingEvent
+        private class PendingEvent
         {
             public readonly EventRecord Event;
             public readonly EventRecord PositionEvent;
@@ -63,12 +63,11 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public int _deliveredEvents;
-        public bool _readAllMode = false;
-        public TFPos _fromTfPosition;
-        public TFPos _lastEventPosition;
-        private readonly IndexBased _indexBased;
-        private readonly TfBased _tfBased;
+        private int _deliveredEvents;
+        private State _state;
+        private TFPos _lastEventPosition;
+        private readonly Dictionary<string, int> _fromPositions;
+        private readonly Dictionary<string, string> _streamToEventType;
 
         public EventByTypeIndexEventReader(
             IPublisher publisher, Guid eventReaderCorrelationId, string[] eventTypes, TFPos fromTfPosition,
@@ -82,49 +81,48 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _timeProvider = timeProvider;
             _eventTypes = new HashSet<string>(eventTypes);
-            _fromTfPosition = fromTfPosition;
-            _lastEventPosition = new TFPos(0, -10);
+            _streamToEventType = eventTypes.ToDictionary(v => "$et-" + v, v => v);
+            _lastEventPosition = fromTfPosition;
             _resolveLinkTos = resolveLinkTos;
 
-            _indexBased = new IndexBased(_eventTypes, this, fromPositions);
-            _tfBased = new TfBased(timeProvider, this);
+            ValidateTag(fromPositions);
+
+            _fromPositions = fromPositions;
+            _state = new IndexBased(_eventTypes, this);
         }
+
+        private void ValidateTag(Dictionary<string, int> fromPositions)
+        {
+            if (_eventTypes.Count != fromPositions.Count)
+                throw new ArgumentException("Number of streams does not match", "fromPositions");
+
+            foreach (var stream in _streamToEventType.Keys.Where(stream => !fromPositions.ContainsKey(stream)))
+            {
+                throw new ArgumentException(
+                    String.Format("The '{0}' stream position has not been set", stream), "fromPositions");
+            }
+        }
+
 
         public override void Dispose()
         {
-            _indexBased.Dispose();
-            _tfBased.Dispose();
+            _state.Dispose();
             base.Dispose();
         }
 
-        protected override string FromAsText()
+        protected override void RequestEvents(bool delay)
         {
-            return _indexBased.FromAsText();
-        }
-
-        protected override void RequestEvents()
-        {
-            RequestEventsAll();
+            if (_disposed || PauseRequested || Paused)
+                return;
+            _state.RequestEvents(delay);
         }
 
         protected override bool AreEventsRequested()
         {
-            return _indexBased.AreEventsRequested() || _tfBased._tfEventsRequested;
+            return _state.AreEventsRequested();
         }
 
-        public void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
-        {
-            _indexBased.Handle(message);
-        }
-
-        private void CheckIdle()
-        {
-            if (_indexBased._eofs.All(v => v.Value))
-                _publisher.Publish(
-                    new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
-        }
-
-        public bool CheckEnough()
+        private bool CheckEnough()
         {
             if (_stopAfterNEvents != null && _deliveredEvents >= _stopAfterNEvents)
             {
@@ -136,23 +134,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        public void RequestEventsAll()
-        {
-            if (_pauseRequested || _paused)
-                return;
-            if (_readAllMode)
-            {
-                _tfBased.RequestTfEvents(delay: false);
-            }
-            else
-            {
-                foreach (var stream in _indexBased._streamToEventType.Keys)
-                    _indexBased.RequestEvents(stream, delay: false);
-                _indexBased.RequestCheckpointStream(delay: false);
-            }
-        }
-
-        public void PublishIORequest(bool delay, Message readEventsForward)
+        private void PublishIORequest(bool delay, Message readEventsForward)
         {
             if (delay)
                 _publisher.Publish(
@@ -163,85 +145,79 @@ namespace EventStore.Projections.Core.Services.Processing
                 _publisher.Publish(readEventsForward);
         }
 
-        public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
-        {
-            _indexBased.Handle(message);
-        }
-
-        public void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
-        {
-            _tfBased.Handle(message);
-        }
-
-        public void UpdateNextStreamPosition(string eventStreamId, int nextPosition)
+        private void UpdateNextStreamPosition(string eventStreamId, int nextPosition)
         {
             int streamPosition;
-            if (!_indexBased._fromPositions.TryGetValue(eventStreamId, out streamPosition))
+            if (!_fromPositions.TryGetValue(eventStreamId, out streamPosition))
                 streamPosition = -1;
             if (nextPosition > streamPosition)
-                _indexBased._fromPositions[eventStreamId] = nextPosition;
+                _fromPositions[eventStreamId] = nextPosition;
         }
 
-        public class IndexBased : IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
-                                  IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>
+        private abstract class State : IDisposable
+        {
+            public abstract void RequestEvents(bool delay);
+            public abstract bool AreEventsRequested();
+            public abstract void Dispose();
+
+            protected readonly EventByTypeIndexEventReader _reader;
+
+            protected State(EventByTypeIndexEventReader reader)
+            {
+                _reader = reader;
+            }
+
+            protected void DeliverEvent(float progress, ResolvedEvent resolvedEvent, TFPos position)
+            {
+                if (resolvedEvent.Position <= _reader._lastEventPosition)
+                    return;
+                _reader._lastEventPosition = resolvedEvent.Position;
+                _reader._deliveredEvents ++;
+                _reader._publisher.Publish(
+                    //TODO: publish both link and event data
+                    new ReaderSubscriptionMessage.CommittedEventDistributed(
+                        _reader.EventReaderCorrelationId, resolvedEvent,
+                        _reader._stopOnEof ? (long?) null : position.PreparePosition, progress));
+            }
+        }
+
+        private class IndexBased : State,
+                                   IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
+                                   IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>
 
         {
-            private const int _maxReadCount = 111;
-            private readonly EventByTypeIndexEventReader _eventByTypeIndexEventReader;
-            private readonly HashSet<string> _eventTypes;
-            public readonly Dictionary<string, string> _streamToEventType;
-            public readonly HashSet<string> _eventsRequested = new HashSet<string>();
-            public bool _indexCheckpointStreamRequested = false;
+            private readonly Dictionary<string, string> _streamToEventType;
+            private readonly HashSet<string> _eventsRequested = new HashSet<string>();
+            private bool _indexCheckpointStreamRequested;
             private int _lastKnownIndexCheckpointEventNumber = -1;
             private TFPos _lastKnownIndexCheckpointPosition = default(TFPos);
 
             private readonly Dictionary<string, Queue<PendingEvent>> _buffers =
                 new Dictionary<string, Queue<PendingEvent>>();
 
-            public readonly Dictionary<string, bool> _eofs;
-            public readonly Dictionary<string, int> _fromPositions;
+            private readonly Dictionary<string, bool> _eofs;
             private bool _disposed;
+            private readonly IPublisher _publisher;
 
-            public IndexBased(
-                HashSet<string> eventTypes, EventByTypeIndexEventReader eventByTypeIndexEventReader,
-                Dictionary<string, int> fromPositions)
+            public IndexBased(HashSet<string> eventTypes, EventByTypeIndexEventReader reader)
+                : base(reader)
             {
-                _eventTypes = eventTypes;
                 _streamToEventType = eventTypes.ToDictionary(v => "$et-" + v, v => v);
                 _eofs = _streamToEventType.Keys.ToDictionary(v => v, v => false);
-                _eventByTypeIndexEventReader = eventByTypeIndexEventReader;
                 // whatever the first event returned is (even if we start from the same position as the last processed event
                 // let subscription handle this 
-                ValidateTag(fromPositions);
-                _fromPositions = fromPositions;
-            }
-
-            private void ValidateTag(Dictionary<string, int> fromPositions)
-            {
-                if (_eventTypes.Count != fromPositions.Count)
-                    throw new ArgumentException("Number of streams does not match", "fromPositions");
-
-                foreach (var stream in _streamToEventType.Keys.Where(stream => !fromPositions.ContainsKey(stream)))
-                {
-                    throw new ArgumentException(
-                        string.Format("The '{0}' stream position has not been set", stream), "fromPositions");
-                }
+                _publisher = _reader._publisher;
             }
 
 
-            public TFPos GetTargetEventPosition(PendingEvent head)
+            private TFPos GetTargetEventPosition(PendingEvent head)
             {
                 return head.TfPosition;
             }
 
-            public string FromAsText()
-            {
-                return _fromPositions.ToString();
-            }
-
             public void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
             {
-                if (_eventByTypeIndexEventReader._disposed || _eventByTypeIndexEventReader._readAllMode)
+                if (_disposed)
                     return;
                 if (message.EventStreamId == "$et")
                 {
@@ -251,48 +227,50 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 if (!_streamToEventType.ContainsKey(message.EventStreamId))
                     throw new InvalidOperationException(
-                        string.Format("Invalid stream name: {0}", message.EventStreamId));
+                        String.Format("Invalid stream name: {0}", message.EventStreamId));
                 if (!_eventsRequested.Contains(message.EventStreamId))
                     throw new InvalidOperationException("Read events has not been requested");
-                if (_eventByTypeIndexEventReader._paused)
+                if (_reader.Paused)
                     throw new InvalidOperationException("Paused");
-                _eventsRequested.Remove(message.EventStreamId);
                 switch (message.Result)
                 {
                     case ReadStreamResult.NoStream:
                         _eofs[message.EventStreamId] = true;
-                        ProcessBuffers();
-                        PauseOrContinueReadingStream(message.EventStreamId, delay: true);
-                        CheckSwitch();
+                        ProcessBuffersAndContinue(message, eof: true);
                         break;
                     case ReadStreamResult.Success:
-                        _eventByTypeIndexEventReader.UpdateNextStreamPosition(
-                            message.EventStreamId, message.NextEventNumber);
+                        _reader.UpdateNextStreamPosition(message.EventStreamId, message.NextEventNumber);
                         var isEof = message.Events.Length == 0;
-                        if (isEof)
-                        {
-                            // the end
-                            _eofs[message.EventStreamId] = true;
-                        }
-                        else
-                        {
-                            _eofs[message.EventStreamId] = false;
-                            EnqueueEvents(message);
-                        }
-                        ProcessBuffers();
-                        //TODO: IT MUST REQUEST EVENTS FROM NEW POSITION (CURRENTLY OLD)
-                        PauseOrContinueReadingStream(message.EventStreamId, delay: isEof);
-                        CheckSwitch();
+                        _eofs[message.EventStreamId] = isEof;
+                        EnqueueEvents(message);
+                        ProcessBuffersAndContinue(message, eof: isEof);
                         break;
                     default:
                         throw new NotSupportedException(
-                            string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
+                            String.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
+                }
+            }
+
+            private void ProcessBuffersAndContinue(ClientMessage.ReadStreamEventsForwardCompleted message, bool eof)
+            {
+                ProcessBuffers();
+                _eventsRequested.Remove(message.EventStreamId);
+                _reader.PauseOrContinueProcessing(delay: eof);
+                CheckSwitch();
+            }
+
+            private void CheckSwitch()
+            {
+                if (ShouldSwitch())
+                {
+                    Dispose();
+                    _reader.DoSwitch(_lastKnownIndexCheckpointPosition);
                 }
             }
 
             public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
             {
-                if (_eventByTypeIndexEventReader._disposed || _eventByTypeIndexEventReader._readAllMode)
+                if (_disposed)
                     return;
                 ReadIndexCheckpointStreamCompleted(message.Result, message.Events);
             }
@@ -325,61 +303,27 @@ namespace EventStore.Projections.Core.Services.Processing
                 return queue;
             }
 
-            private void CheckSwitch()
-            {
-                if (_eventByTypeIndexEventReader._disposed) // max N reached
-                    return;
-                Queue<PendingEvent> q;
-                if (
-                    _streamToEventType.Keys.All(
-                        v =>
-                        _eofs[v]
-                        || _buffers.TryGetValue(v, out q) && q.Count > 0 && !IsIndexedTfPosition(q.Peek().TfPosition)))
-                {
-                    _eventByTypeIndexEventReader._readAllMode = true;
-                    _eventByTypeIndexEventReader.RequestEventsAll();
-                }
-            }
-
             private bool IsIndexedTfPosition(TFPos tfPosition)
             {
                 //TODO: ensure <= is acceptable and replace
                 return tfPosition < _lastKnownIndexCheckpointPosition;
             }
 
-            private void PauseOrContinueReadingStream(string eventStreamId, bool delay)
-            {
-                if (_eventByTypeIndexEventReader._disposed) // max N reached
-                    return;
-                if (_eventByTypeIndexEventReader._pauseRequested)
-                    _eventByTypeIndexEventReader._paused = !_eventByTypeIndexEventReader.AreEventsRequested();
-                else
-                    RequestEvents(eventStreamId, delay);
-                _eventByTypeIndexEventReader._publisher.Publish(_eventByTypeIndexEventReader.CreateTickMessage());
-            }
-
             private void ReadIndexCheckpointStreamCompleted(
                 ReadStreamResult result, EventStore.Core.Data.ResolvedEvent[] events)
             {
-                if (_eventByTypeIndexEventReader._disposed)
+                if (_disposed)
                     return;
-                if (_eventByTypeIndexEventReader._readAllMode)
-                    throw new InvalidOperationException();
 
                 if (!_indexCheckpointStreamRequested)
                     throw new InvalidOperationException("Read index checkpoint has not been requested");
-                if (_eventByTypeIndexEventReader._paused)
+                if (_reader.Paused)
                     throw new InvalidOperationException("Paused");
                 _indexCheckpointStreamRequested = false;
                 switch (result)
                 {
                     case ReadStreamResult.NoStream:
-                        if (_eventByTypeIndexEventReader._pauseRequested)
-                            _eventByTypeIndexEventReader._paused = !AreEventsRequested();
-                        else
-                            RequestCheckpointStream(delay: true);
-                        _eventByTypeIndexEventReader._publisher.Publish(
-                            _eventByTypeIndexEventReader.CreateTickMessage());
+                        _reader.PauseOrContinueProcessing(delay: true);
                         break;
                     case ReadStreamResult.Success:
                         if (events.Length != 0)
@@ -392,38 +336,23 @@ namespace EventStore.Projections.Core.Services.Processing
                                 _lastKnownIndexCheckpointEventNumber = @event.Event.EventNumber;
                             }
                         }
-                        if (_eventByTypeIndexEventReader._disposed)
-                            return;
 
-                        if (_eventByTypeIndexEventReader._pauseRequested)
-                            _eventByTypeIndexEventReader._paused = !AreEventsRequested();
-                        else if (events.Length == 0)
-                            RequestCheckpointStream(delay: true);
-                        _eventByTypeIndexEventReader._publisher.Publish(
-                            _eventByTypeIndexEventReader.CreateTickMessage());
+                        _reader.PauseOrContinueProcessing(delay: events.Length == 0);
                         break;
                     default:
                         throw new NotSupportedException(
-                            string.Format("ReadEvents result code was not recognized. Code: {0}", result));
+                            String.Format("ReadEvents result code was not recognized. Code: {0}", result));
                 }
-            }
-
-            private void CheckEof()
-            {
-                if (_eofs.All(v => v.Value))
-                    _eventByTypeIndexEventReader.SendEof();
             }
 
             private void ProcessBuffers()
             {
-                if (_eventByTypeIndexEventReader._disposed) // max N reached
+                if (_disposed) // max N reached
                     return;
-                if (_eventByTypeIndexEventReader._readAllMode)
-                    throw new InvalidOperationException();
                 while (true)
                 {
                     var minStreamId = "";
-                    var minPosition = new TFPos(long.MaxValue, long.MaxValue);
+                    var minPosition = new TFPos(Int64.MaxValue, Int64.MaxValue);
                     var any = false;
                     var anyEof = false;
                     foreach (var streamId in _streamToEventType.Keys)
@@ -463,16 +392,19 @@ namespace EventStore.Projections.Core.Services.Processing
                     else
                         return; // no safe events to deliver
 
-                    if (_eventByTypeIndexEventReader.CheckEnough())
+                    if (_reader.CheckEnough())
                         return;
+
+                    if (_buffers[minStreamId].Count == 0)
+                        _reader.PauseOrContinueProcessing(delay: false);
                 }
             }
 
-            public void RequestCheckpointStream(bool delay)
+            private void RequestCheckpointStream(bool delay)
             {
-                if (_eventByTypeIndexEventReader._disposed || _eventByTypeIndexEventReader._readAllMode)
-                    throw new InvalidOperationException("Disposed or invalid mode");
-                if (_eventByTypeIndexEventReader._pauseRequested || _eventByTypeIndexEventReader._paused)
+                if (_disposed)
+                    throw new InvalidOperationException("Disposed");
+                if (_reader.PauseRequested || _reader.Paused)
                     throw new InvalidOperationException("Paused or pause requested");
                 if (_indexCheckpointStreamRequested)
                     return;
@@ -482,26 +414,24 @@ namespace EventStore.Projections.Core.Services.Processing
                 Message readRequest;
                 if (_lastKnownIndexCheckpointEventNumber == -1)
                 {
-                    readRequest =
-                        new ClientMessage.ReadStreamEventsBackward(
-                            _eventByTypeIndexEventReader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et",
-                            -1, 1, false, null, SystemAccount.Principal);
+                    readRequest = new ClientMessage.ReadStreamEventsBackward(
+                        _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et", -1, 1, false, null,
+                        SystemAccount.Principal);
                 }
                 else
                 {
-                    readRequest =
-                        new ClientMessage.ReadStreamEventsForward(
-                            _eventByTypeIndexEventReader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et",
-                            _lastKnownIndexCheckpointEventNumber + 1, 100, false, null, SystemAccount.Principal);
+                    readRequest = new ClientMessage.ReadStreamEventsForward(
+                        _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et",
+                        _lastKnownIndexCheckpointEventNumber + 1, 100, false, null, SystemAccount.Principal);
                 }
-                _eventByTypeIndexEventReader.PublishIORequest(delay, readRequest);
+                _reader.PublishIORequest(delay, readRequest);
             }
 
-            public void RequestEvents(string stream, bool delay)
+            private void RequestEvents(string stream, bool delay)
             {
-                if (_eventByTypeIndexEventReader._disposed || _eventByTypeIndexEventReader._readAllMode)
-                    throw new InvalidOperationException("Disposed or invalid mode");
-                if (_eventByTypeIndexEventReader._pauseRequested || _eventByTypeIndexEventReader._paused)
+                if (_disposed)
+                    throw new InvalidOperationException("Disposed");
+                if (_reader.PauseRequested || _reader.Paused)
                     throw new InvalidOperationException("Paused or pause requested");
 
                 if (_eventsRequested.Contains(stream))
@@ -511,89 +441,99 @@ namespace EventStore.Projections.Core.Services.Processing
                     return;
                 _eventsRequested.Add(stream);
 
-                var readEventsForward =
-                    new ClientMessage.ReadStreamEventsForward(
-                        _eventByTypeIndexEventReader.EventReaderCorrelationId, new SendToThisEnvelope(this), stream,
-                        _fromPositions[stream], EventByTypeIndexEventReader._maxReadCount,
-                        _eventByTypeIndexEventReader._resolveLinkTos, null, SystemAccount.Principal);
-                _eventByTypeIndexEventReader.PublishIORequest(delay, readEventsForward);
+                var readEventsForward = new ClientMessage.ReadStreamEventsForward(
+                    _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), stream,
+                    _reader._fromPositions[stream], _maxReadCount, _reader._resolveLinkTos, null,
+                    SystemAccount.Principal);
+                _reader.PublishIORequest(delay, readEventsForward);
             }
 
             private void DeliverEventRetrievedByIndex(
                 EventRecord @event, EventRecord positionEvent, float progress, TFPos position)
             {
-                if (position <= _eventByTypeIndexEventReader._lastEventPosition)
-                    return;
-                _eventByTypeIndexEventReader._fromTfPosition = position;
-                _eventByTypeIndexEventReader._lastEventPosition = position;
-                _eventByTypeIndexEventReader._deliveredEvents ++;
-                string streamId = positionEvent.EventStreamId;
                 //TODO: add event sequence validation for inside the index stream
-                _eventByTypeIndexEventReader._publisher.Publish(
-                    //TODO: publish both link and event data
-                    new ReaderSubscriptionMessage.CommittedEventDistributed(
-                        _eventByTypeIndexEventReader.EventReaderCorrelationId,
-                        new ResolvedEvent(
-                            streamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, true,
-                            position, @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0,
-                            @event.Data, @event.Metadata, positionEvent.Metadata, positionEvent.TimeStamp),
-                        _eventByTypeIndexEventReader._stopOnEof ? (long?) null : positionEvent.LogPosition, progress));
+                var resolvedEvent = new ResolvedEvent(
+                    positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, true, position,
+                    @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
+                    @event.Metadata, positionEvent.Metadata, positionEvent.TimeStamp);
+                DeliverEvent(progress, resolvedEvent, position);
             }
 
-            internal bool AreEventsRequested()
+            public override bool AreEventsRequested()
             {
                 return _eventsRequested.Count != 0 || _indexCheckpointStreamRequested;
             }
 
-            public void Dispose()
+            public override void Dispose()
             {
                 _disposed = true;
             }
+
+            public override void RequestEvents(bool delay)
+            {
+                foreach (var stream in _streamToEventType.Keys)
+                    RequestEvents(stream, delay: delay);
+                RequestCheckpointStream(delay: delay);
+            }
+
+            private bool ShouldSwitch()
+            {
+                if (_disposed)
+                    return false;
+                if (_reader.Paused || _reader.PauseRequested)
+                    return false;
+                Queue<PendingEvent> q;
+                var shouldSwitch =
+                    _streamToEventType.Keys.All(
+                        v =>
+                        _eofs[v]
+                        || _buffers.TryGetValue(v, out q) && q.Count > 0 && !IsIndexedTfPosition(q.Peek().TfPosition));
+                return shouldSwitch;
+            }
         }
 
-        public class TfBased : IHandle<ClientMessage.ReadAllEventsForwardCompleted>
+        private class TfBased : State, IHandle<ClientMessage.ReadAllEventsForwardCompleted>
         {
-            private readonly EventByTypeIndexEventReader _eventByTypeIndexEventReader;
             private readonly HashSet<string> _eventTypes;
             private readonly ITimeProvider _timeProvider;
-            public bool _tfEventsRequested;
+            private bool _tfEventsRequested;
             private bool _disposed;
+            private readonly Dictionary<string, string> _streamToEventType;
+            private readonly IPublisher _publisher;
+            private TFPos _fromTfPosition;
 
-            public TfBased(ITimeProvider timeProvider, EventByTypeIndexEventReader eventByTypeIndexEventReader)
+            public TfBased(
+                ITimeProvider timeProvider, EventByTypeIndexEventReader reader, TFPos fromTfPosition,
+                IPublisher publisher)
+                : base(reader)
             {
                 _timeProvider = timeProvider;
-                _eventTypes = eventByTypeIndexEventReader._eventTypes;
-                _eventByTypeIndexEventReader = eventByTypeIndexEventReader;
+                _eventTypes = reader._eventTypes;
+                _streamToEventType = _eventTypes.ToDictionary(v => "$et-" + v, v => v);
+                _publisher = publisher;
+                _fromTfPosition = fromTfPosition;
             }
 
             public void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
             {
-                if (_eventByTypeIndexEventReader._disposed)
+                if (_disposed)
                     return;
-                if (!_eventByTypeIndexEventReader._readAllMode)
-                    throw new InvalidOperationException();
 
                 if (!_tfEventsRequested)
                     throw new InvalidOperationException("TF events has not been requested");
-                if (_eventByTypeIndexEventReader._paused)
+                if (_reader.Paused)
                     throw new InvalidOperationException("Paused");
                 _tfEventsRequested = false;
                 switch (message.Result)
                 {
                     case ReadAllResult.Success:
                         var eof = message.Events.Length == 0;
-                        var willDispose = _eventByTypeIndexEventReader._stopOnEof && eof;
-                        _eventByTypeIndexEventReader._fromTfPosition = message.NextPos;
+                        var willDispose = _reader._stopOnEof && eof;
+                        _fromTfPosition = message.NextPos;
 
                         if (!willDispose)
                         {
-                            if (_eventByTypeIndexEventReader._pauseRequested)
-                                _eventByTypeIndexEventReader._paused = true;
-                                // !AreEventsRequested(); -- we are the only reader
-                            else if (eof)
-                                RequestTfEvents(delay: true);
-                            else
-                                _eventByTypeIndexEventReader.RequestEvents();
+                            _reader.PauseOrContinueProcessing(delay: eof);
                         }
 
                         if (eof)
@@ -603,18 +543,17 @@ namespace EventStore.Projections.Core.Services.Processing
                             DeliverLastCommitPosition(message.NextPos);
                             // allow joining heading distribution
                             SendIdle();
-                            _eventByTypeIndexEventReader.SendEof();
+                            _reader.SendEof();
                         }
                         else
                         {
                             foreach (var @event in message.Events)
                             {
                                 var byStream = @event.Link != null
-                                               && _eventByTypeIndexEventReader._indexBased._streamToEventType
-                                                                              .ContainsKey(@event.Link.EventStreamId);
+                                               && _streamToEventType.ContainsKey(@event.Link.EventStreamId);
                                 var byEvent = @event.Link == null && _eventTypes.Contains(@event.Event.EventType);
                                 if (byStream) // ignore data just update positions
-                                    _eventByTypeIndexEventReader.UpdateNextStreamPosition(
+                                    _reader.UpdateNextStreamPosition(
                                         @event.Link.EventStreamId, @event.Link.EventNumber + 1);
                                 else if (byEvent)
                                 {
@@ -622,83 +561,93 @@ namespace EventStore.Projections.Core.Services.Processing
                                         @event.Event, 100.0f*@event.Event.LogPosition/message.TfEofPosition,
                                         @event.OriginalPosition.Value);
                                 }
-                                if (_eventByTypeIndexEventReader.CheckEnough())
+                                if (_reader.CheckEnough())
                                     return;
                             }
                         }
-                        if (_eventByTypeIndexEventReader._disposed)
+                        if (_disposed)
                             return;
 
-                        _eventByTypeIndexEventReader._publisher.Publish(
-                            _eventByTypeIndexEventReader.CreateTickMessage());
                         break;
                     default:
                         throw new NotSupportedException(
-                            string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
+                            String.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
                 }
             }
 
-            public void RequestTfEvents(bool delay)
+            private void RequestTfEvents(bool delay)
             {
-                if (_eventByTypeIndexEventReader._disposed || !_eventByTypeIndexEventReader._readAllMode)
-                    throw new InvalidOperationException("Disposed or invalid mode");
-                if (_eventByTypeIndexEventReader._pauseRequested || _eventByTypeIndexEventReader._paused)
+                if (_disposed)
+                    throw new InvalidOperationException("Disposed");
+                if (_reader.PauseRequested || _reader.Paused)
                     throw new InvalidOperationException("Paused or pause requested");
                 if (_tfEventsRequested)
                     return;
 
                 _tfEventsRequested = true;
                 //TODO: we do not need resolve links, but lets check first with
-                var readRequest =
-                    new ClientMessage.ReadAllEventsForward(
-                        _eventByTypeIndexEventReader.EventReaderCorrelationId, new SendToThisEnvelope(this),
-                        _eventByTypeIndexEventReader._fromTfPosition.CommitPosition,
-                        _eventByTypeIndexEventReader._fromTfPosition.PreparePosition == -1
-                            ? 0
-                            : _eventByTypeIndexEventReader._fromTfPosition.PreparePosition, 111, true, null,
-                        SystemAccount.Principal);
-                _eventByTypeIndexEventReader.PublishIORequest(delay, readRequest);
+                var readRequest = new ClientMessage.ReadAllEventsForward(
+                    _reader.EventReaderCorrelationId, new SendToThisEnvelope(this),
+                    _fromTfPosition.CommitPosition,
+                    _fromTfPosition.PreparePosition == -1 ? 0 : _fromTfPosition.PreparePosition, 111,
+                    true, null, SystemAccount.Principal);
+                _reader.PublishIORequest(delay, readRequest);
             }
 
             private void DeliverLastCommitPosition(TFPos lastPosition)
             {
-                if (_eventByTypeIndexEventReader._stopOnEof || _eventByTypeIndexEventReader._stopAfterNEvents != null)
+                if (_reader._stopOnEof || _reader._stopAfterNEvents != null)
                     return;
-                _eventByTypeIndexEventReader._publisher.Publish(
+                _publisher.Publish(
                     new ReaderSubscriptionMessage.CommittedEventDistributed(
-                        _eventByTypeIndexEventReader.EventReaderCorrelationId, null, lastPosition.PreparePosition,
-                        100.0f));
+                        _reader.EventReaderCorrelationId, null, lastPosition.PreparePosition, 100.0f));
                 //TODO: check was is passed here
             }
 
             private void DeliverEventRetrievedFromTf(EventRecord @event, float progress, TFPos position)
             {
-                if (position <= _eventByTypeIndexEventReader._lastEventPosition)
-                    return;
-                _eventByTypeIndexEventReader._lastEventPosition = position;
-                _eventByTypeIndexEventReader._deliveredEvents ++;
-                _eventByTypeIndexEventReader._publisher.Publish(
-                    //TODO: publish both link and event data
-                    new ReaderSubscriptionMessage.CommittedEventDistributed(
-                        _eventByTypeIndexEventReader.EventReaderCorrelationId,
-                        new ResolvedEvent(
-                            @event.EventStreamId, @event.EventNumber, @event.EventStreamId, @event.EventNumber, false,
-                            position, @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0,
-                            @event.Data, @event.Metadata, null, @event.TimeStamp),
-                        _eventByTypeIndexEventReader._stopOnEof ? (long?) null : position.PreparePosition, progress));
+                var resolvedEvent = new ResolvedEvent(
+                    @event.EventStreamId, @event.EventNumber, @event.EventStreamId, @event.EventNumber, false, position,
+                    @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
+                    @event.Metadata, null, @event.TimeStamp);
+
+                DeliverEvent(progress, resolvedEvent, position);
             }
 
             private void SendIdle()
             {
-                _eventByTypeIndexEventReader._publisher.Publish(
-                    new ReaderSubscriptionMessage.EventReaderIdle(
-                        _eventByTypeIndexEventReader.EventReaderCorrelationId, _timeProvider.Now));
+                _publisher.Publish(
+                    new ReaderSubscriptionMessage.EventReaderIdle(_reader.EventReaderCorrelationId, _timeProvider.Now));
             }
 
-            public void Dispose()
+            public override void Dispose()
             {
                 _disposed = true;
             }
+
+            public override void RequestEvents(bool delay)
+            {
+                RequestTfEvents(delay: delay);
+            }
+
+            public override bool AreEventsRequested()
+            {
+                return _tfEventsRequested;
+            }
+        }
+
+        private void DoSwitch(TFPos lastKnownIndexCheckpointPosition)
+        {
+            if (Paused || PauseRequested || _disposed)
+                throw new InvalidOperationException("_paused || _pauseRequested || _disposed");
+
+            // skip reading TF up to last know index checkpoint position 
+            // as we could only gethere if there is no more indexed events before this point
+            if (lastKnownIndexCheckpointPosition > _lastEventPosition)
+                _lastEventPosition = lastKnownIndexCheckpointPosition;
+
+            _state = new TfBased(_timeProvider, this, _lastEventPosition, this._publisher);
+            _state.RequestEvents(delay: false);
         }
     }
 }

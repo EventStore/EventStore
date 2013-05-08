@@ -61,16 +61,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _timeProvider = timeProvider;
         }
 
-        protected override void RequestEvents()
-        {
-            RequestEvents(delay: false);
-        }
-
-        protected override string FromAsText()
-        {
-            return _from.ToString();
-        }
-
         protected override bool AreEventsRequested()
         {
             return _eventsRequested;
@@ -82,7 +72,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             if (!_eventsRequested)
                 throw new InvalidOperationException("Read events has not been requested");
-            if (_paused)
+            if (Paused)
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
 
@@ -94,12 +84,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (!willDispose)
             {
-                if (_pauseRequested)
-                    _paused = true;
-                else if (eof)
-                    RequestEvents(delay: true);
-                else
-                    RequestEvents();
+                PauseOrContinueProcessing(delay: eof);
             }
 
             if (eof)
@@ -140,12 +125,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
         }
 
-        private void RequestEvents(bool delay)
+        protected override void RequestEvents(bool delay)
         {
             if (_disposed) throw new InvalidOperationException("Disposed");
             if (_eventsRequested)
                 throw new InvalidOperationException("Read operation is already in progress");
-            if (_pauseRequested || _paused)
+            if (PauseRequested || Paused)
                 throw new InvalidOperationException("Paused or pause requested");
             _eventsRequested = true;
 

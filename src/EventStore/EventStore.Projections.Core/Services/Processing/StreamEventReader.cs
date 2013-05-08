@@ -63,16 +63,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _resolveLinkTos = resolveLinkTos;
         }
 
-        protected override void RequestEvents()
-        {
-            RequestEvents(delay: false);
-        }
-
-        protected override string FromAsText()
-        {
-            return _fromSequenceNumber + "@" + _streamName;
-        }
-
         protected override bool AreEventsRequested()
         {
             return _eventsRequested;
@@ -87,17 +77,14 @@ namespace EventStore.Projections.Core.Services.Processing
             if (message.EventStreamId != _streamName)
                 throw new InvalidOperationException(
                     string.Format("Invalid stream name: {0}.  Expected: {1}", message.EventStreamId, _streamName));
-            if (_paused)
+            if (Paused)
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
             switch (message.Result)
             {
                 case ReadStreamResult.NoStream:
                     DeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
-                    if (_pauseRequested)
-                        _paused = true;
-                    else
-                        RequestEvents(delay: true);
+                    PauseOrContinueProcessing(delay: true);
                     SendIdle();
                     SendEof();
                     break;
@@ -109,12 +96,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                     if (!willDispose)
                     {
-                        if (_pauseRequested)
-                            _paused = true;
-                        else if (eof)
-                            RequestEvents(delay: true);
-                        else
-                            RequestEvents();
+                        PauseOrContinueProcessing(delay: eof);
                     }
                     if (eof)
                     {
@@ -161,12 +143,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
         }
 
-        private void RequestEvents(bool delay)
+        protected override void RequestEvents(bool delay)
         {
             if (_disposed) throw new InvalidOperationException("Disposed");
             if (_eventsRequested)
                 throw new InvalidOperationException("Read operation is already in progress");
-            if (_pauseRequested || _paused)
+            if (PauseRequested || Paused)
                 throw new InvalidOperationException("Paused or pause requested");
             _eventsRequested = true;
 

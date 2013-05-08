@@ -93,14 +93,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        protected override string FromAsText()
+        protected override void RequestEvents(bool delay)
         {
-            return _fromPositions.ToString();
-        }
-
-        protected override void RequestEvents()
-        {
-            RequestEventsAll();
+            if (PauseRequested || Paused)
+                return;
+            foreach (var stream in _streams)
+                RequestEvents(stream, delay: delay);
         }
 
         protected override bool AreEventsRequested()
@@ -116,20 +114,16 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException(string.Format("Invalid stream name: {0}", message.EventStreamId));
             if (!_eventsRequested.Contains(message.EventStreamId))
                 throw new InvalidOperationException("Read events has not been requested");
-            if (_paused)
+            if (Paused)
                 throw new InvalidOperationException("Paused");
-            _eventsRequested.Remove(message.EventStreamId);
             switch (message.Result)
             {
                 case ReadStreamResult.NoStream:
                     _eofs[message.EventStreamId] = true;
                     UpdateSafePositionToJoin(message.EventStreamId, MessageToLastCommitPosition(message));
                     ProcessBuffers();
-                    if (_pauseRequested)
-                        _paused = !AreEventsRequested();
-                    else
-                        RequestEvents(message.EventStreamId, delay: true);
-                    _publisher.Publish(CreateTickMessage());
+                    _eventsRequested.Remove(message.EventStreamId);
+                    PauseOrContinueProcessing(delay: true);
                     CheckIdle();
                     CheckEof();
                     break;
@@ -163,17 +157,10 @@ namespace EventStore.Projections.Core.Services.Processing
                                     @event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber));
                         }
                     }
-                    if (_disposed)
-                        return;
 
                     ProcessBuffers();
-                    if (_disposed) // max N reached
-                        return;
-                    if (_pauseRequested)
-                        _paused = !AreEventsRequested();
-                    else if (message.Events.Length == 0)
-                        RequestEvents(message.EventStreamId, delay: true);
-                    _publisher.Publish(CreateTickMessage());
+                    _eventsRequested.Remove(message.EventStreamId);
+                    PauseOrContinueProcessing(delay: message.Events.Length == 0);
                     break;
                 default:
                     throw new NotSupportedException(
@@ -233,6 +220,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 DeliverEvent(minHead.Item1, minHead.Item2, minHead.Item3);
                 if (CheckEnough())
                     return;
+                if (_buffers[minStreamId].Count == 0)
+                    PauseOrContinueProcessing(delay: false);
             }
         }
 
@@ -247,18 +236,10 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        private void RequestEventsAll()
-        {
-            if (_pauseRequested || _paused)
-                return;
-            foreach (var stream in _streams)
-                RequestEvents(stream, delay: false);
-        }
-
         private void RequestEvents(string stream, bool delay)
         {
             if (_disposed) throw new InvalidOperationException("Disposed");
-            if (_pauseRequested || _paused)
+            if (PauseRequested || Paused)
                 throw new InvalidOperationException("Paused or pause requested");
 
             if (_eventsRequested.Contains(stream))

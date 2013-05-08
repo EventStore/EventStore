@@ -42,8 +42,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected readonly bool _stopOnEof;
         protected readonly int? _stopAfterNEvents;
-        protected bool _paused = true;
-        protected bool _pauseRequested = true;
+        private bool _paused = true;
+        private bool _pauseRequested = true;
         protected bool _disposed;
 
         protected EventReader(
@@ -56,6 +56,16 @@ namespace EventStore.Projections.Core.Services.Processing
             EventReaderCorrelationId = eventReaderCorrelationId;
             _stopOnEof = stopOnEof;
             _stopAfterNEvents = stopAfterNEvents;
+        }
+
+        protected bool PauseRequested
+        {
+            get { return _pauseRequested; }
+        }
+
+        protected bool Paused
+        {
+            get { return _paused; }
         }
 
         public void Resume()
@@ -72,7 +82,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _paused = false;
             _pauseRequested = false;
 //            _logger.Trace("Resuming event distribution {0} at '{1}'", EventReaderCorrelationId, FromAsText());
-            RequestEvents();
+            RequestEvents(delay: false);
         }
 
         public void Pause()
@@ -92,15 +102,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected abstract bool AreEventsRequested();
-        protected abstract string FromAsText();
-        protected abstract void RequestEvents();
-
-        protected ReaderCoreServiceMessage.ReaderTick CreateTickMessage()
-        {
-            return
-                new ReaderCoreServiceMessage.ReaderTick(
-                    () => { if (!_paused && !_disposed) RequestEvents(); });
-        }
+        protected abstract void RequestEvents(bool delay);
 
         protected void SendEof()
         {
@@ -118,6 +120,16 @@ namespace EventStore.Projections.Core.Services.Processing
                    || msg.Result == ReadStreamResult.StreamDeleted)
                    ? (msg.LastCommitPosition == -1 ? (long?) null : msg.LastCommitPosition)
                         : (long?) null;
+        }
+
+        protected void PauseOrContinueProcessing(bool delay)
+        {
+            if (_disposed)
+                return;
+            if (_pauseRequested)
+                _paused = !AreEventsRequested();
+            else
+                RequestEvents(delay);
         }
     }
 }
