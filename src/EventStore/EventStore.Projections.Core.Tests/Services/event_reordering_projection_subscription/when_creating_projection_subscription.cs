@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -67,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
             var result = new ReaderStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build();
+            return result.Build(new RealTimeProvider());
         }
     }
 }

@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.EventReaders.Feeds;
 using EventStore.Projections.Core.Messages;
@@ -75,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 var feedReader = new FeedReader(
                     _subscriptionDispatcher, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(),
-                    new NoopEnvelope());
+                    new NoopEnvelope(), new RealTimeProvider());
             }
 
             [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -83,7 +84,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 var feedReader = new FeedReader(
                     null, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(),
-                    new NoopEnvelope());
+                    new NoopEnvelope(), new RealTimeProvider());
             }
 
             [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -91,14 +92,15 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 var feedReader = new FeedReader(
                     _subscriptionDispatcher, null, CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(),
-                    new NoopEnvelope());
+                    new NoopEnvelope(), new RealTimeProvider());
             }
 
             [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_from_position_throws_argument_null_exception()
             {
                 var feedReader = new FeedReader(
-                    _subscriptionDispatcher, _testQueryDefinition, null, 10, Guid.NewGuid(), new NoopEnvelope());
+                    _subscriptionDispatcher, _testQueryDefinition, null, 10, Guid.NewGuid(), new NoopEnvelope(),
+                    new RealTimeProvider());
             }
 
             [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -106,7 +108,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 var feedReader = new FeedReader(
                     _subscriptionDispatcher, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(),
-                    null);
+                    null, new RealTimeProvider());
             }
 
             [Test, ExpectedException(typeof (ArgumentException))]
@@ -114,7 +116,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 var feedReader = new FeedReader(
                     _subscriptionDispatcher, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 0, Guid.NewGuid(),
-                    new NoopEnvelope());
+                    new NoopEnvelope(), new RealTimeProvider());
             }
 
             [Test, ExpectedException(typeof (ArgumentException))]
@@ -122,7 +124,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 var feedReader = new FeedReader(
                     _subscriptionDispatcher, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), -1, Guid.NewGuid(),
-                    new NoopEnvelope());
+                    new NoopEnvelope(), new RealTimeProvider());
             }
 
         }
@@ -155,7 +157,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                 _testQueryDefinition = GivenQuerySource();
                 _feedReader = new FeedReader(
                     _subscriptionDispatcher, _testQueryDefinition, GivenFromPosition(), 10, Guid.NewGuid(),
-                    new PublishEnvelope(_bus));
+                    new PublishEnvelope(_bus), new RealTimeProvider());
                 Given();
                 When();
             }

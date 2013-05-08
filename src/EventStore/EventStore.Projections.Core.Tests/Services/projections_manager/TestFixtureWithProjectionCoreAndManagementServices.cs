@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
 
-            _coreService = new ProjectionCoreService(GetInputQueue(), GetInputQueue(), _subscriptionDispatcher);
+            _coreService = new ProjectionCoreService(GetInputQueue(), GetInputQueue(), _subscriptionDispatcher, _timeProvider);
             _bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.Started>(_manager);

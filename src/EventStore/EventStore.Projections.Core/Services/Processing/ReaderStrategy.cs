@@ -49,11 +49,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
+        private readonly ITimeProvider _timeProvider;
 
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
-            public IReaderStrategy Build()
+            public IReaderStrategy Build(ITimeProvider timeProvider)
             {
                 base.Validate();
                 HashSet<string> categories = ToSet(_categories);
@@ -63,21 +64,21 @@ namespace EventStore.Projections.Core.Services.Processing
                 bool reorderEvents = _options.ReorderEvents;
                 int processingLag = _options.ProcessingLag;
                 var readerStrategy = new ReaderStrategy(
-                    _allStreams, categories, streams, _allEvents, includeLinks, events, processingLag, reorderEvents);
+                    _allStreams, categories, streams, _allEvents, includeLinks, events, processingLag, reorderEvents, timeProvider);
                 return readerStrategy;
             }
         }
 
-        public static IReaderStrategy Create(ISourceDefinitionConfigurator sources)
+        public static IReaderStrategy Create(ISourceDefinitionConfigurator sources, ITimeProvider timeProvider)
         {
             var builder = new Builder();
             sources.ConfigureSourceProcessingStrategy(builder);
-            return builder.Build();
+            return builder.Build(timeProvider);
         }
 
         private ReaderStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, bool includeLinks,
-            HashSet<string> events, int processingLag, bool reorderEvents)
+            HashSet<string> events, int processingLag, bool reorderEvents, ITimeProvider timeProvider)
         {
             _allStreams = allStreams;
             _categories = categories;
@@ -90,6 +91,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _eventFilter = CreateEventFilter();
             _positionTagger = CreatePositionTagger();
+            _timeProvider = timeProvider;
         }
 
         public bool IsReadingOrderRepeatable {
@@ -141,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var eventReader = new TransactionFileEventReader(
                     publisher, eventReaderId,
                     new TFPos(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value),
-                    new RealTimeProvider(), deliverEndOfTFPosition: true, stopOnEof: stopOnEof, resolveLinkTos: false,
+                    _timeProvider, deliverEndOfTFPosition: true, stopOnEof: stopOnEof, resolveLinkTos: false,
                     stopAfterNEvents: stopAfterNEvents);
                 return eventReader;
             }
@@ -210,19 +212,19 @@ namespace EventStore.Projections.Core.Services.Processing
             return _events.Select(v => "$et-" + v).ToArray();
         }
 
-        private static IEventReader CreatePausedStreamEventReader(
+        private IEventReader CreatePausedStreamEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, string streamName, bool stopOnEof,
             int? stopAfterNEvents, bool resolveLinkTos)
         {
             var lastProcessedSequenceNumber = checkpointTag.Streams.Values.First();
             var fromSequenceNumber = lastProcessedSequenceNumber + 1;
             var eventReader = new StreamEventReader(
-                publisher, eventReaderId, streamName, fromSequenceNumber, new RealTimeProvider(), resolveLinkTos,
+                publisher, eventReaderId, streamName, fromSequenceNumber, _timeProvider, resolveLinkTos,
                 stopOnEof, stopAfterNEvents);
             return eventReader;
         }
 
-        private static IEventReader CreatePausedEventIndexEventReader(
+        private IEventReader CreatePausedEventIndexEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents,
             bool resolveLinkTos, IEnumerable<string> eventTypes)
         {
@@ -233,17 +235,17 @@ namespace EventStore.Projections.Core.Services.Processing
 
             return new EventByTypeIndexEventReader(
                 publisher, eventReaderId, eventTypes.ToArray(), checkpointTag.Position, nextPositions, resolveLinkTos,
-                new RealTimeProvider(), stopOnEof, stopAfterNEvents);
+                _timeProvider, stopOnEof, stopAfterNEvents);
         }
 
-        private static IEventReader CreatePausedMultiStreamEventReader(
+        private IEventReader CreatePausedMultiStreamEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents,
             bool resolveLinkTos, IEnumerable<string> streams)
         {
             var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
 
             return new MultiStreamEventReader(
-                publisher, eventReaderId, streams.ToArray(), nextPositions, resolveLinkTos, new RealTimeProvider(),
+                publisher, eventReaderId, streams.ToArray(), nextPositions, resolveLinkTos, _timeProvider,
                 stopOnEof, stopAfterNEvents);
         }
     }

@@ -30,6 +30,7 @@ using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -58,11 +59,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public static CheckpointStrategy Create(ISourceDefinitionConfigurator sources, ProjectionConfig config)
+        public static CheckpointStrategy Create(
+            ISourceDefinitionConfigurator sources, ProjectionConfig config, ITimeProvider timeProvider)
         {
             var builder = new Builder();
             sources.ConfigureSourceProcessingStrategy(builder);
-            return builder.Build(config, Processing.ReaderStrategy.Create(sources));
+            return builder.Build(config, Processing.ReaderStrategy.Create(sources, timeProvider));
         }
 
         public bool UseCheckpoints

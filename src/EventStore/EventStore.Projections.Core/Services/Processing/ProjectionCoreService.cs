@@ -32,6 +32,7 @@ using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -76,6 +77,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
             _subscriptionDispatcher;
 
+        private readonly ITimeProvider _timeProvider;
+
 
         public ProjectionCoreService(
             IPublisher inputQueue, IPublisher publisher,
@@ -83,7 +86,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     <ReaderSubscriptionManagement.Subscribe,
                         ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
                         >
-                subscriptionDispatcher)
+                subscriptionDispatcher, ITimeProvider timeProvider)
         {
             _inputQueue = inputQueue;
             _publisher = publisher;
@@ -95,7 +98,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
                     _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
             _subscriptionDispatcher = subscriptionDispatcher;
-                
+            _timeProvider = timeProvider;
         }
 
         public void Handle(ProjectionCoreServiceMessage.StartCore message)
@@ -135,8 +138,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 IProjectionStateHandler stateHandler = message.HandlerFactory();
                 // constructor can fail if wrong source defintion
                 ProjectionSourceDefinition sourceDefinition;
-                var projection = CoreProjection.CreateAndPrepare(message.Name, message.Version, message.ProjectionId, _publisher, stateHandler, message.Config, _readDispatcher,
-                                                      _writeDispatcher, _subscriptionDispatcher, _logger, out sourceDefinition);
+                var projection = CoreProjection.CreateAndPrepare(
+                    message.Name, message.Version, message.ProjectionId, _publisher, stateHandler, message.Config,
+                    _readDispatcher, _writeDispatcher, _subscriptionDispatcher, _logger, _timeProvider,
+                    out sourceDefinition);
                 _projections.Add(message.ProjectionId, projection);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
@@ -157,7 +162,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 ProjectionSourceDefinition sourceDefinition;
                 var projection = CoreProjection.CreatePrepared(
                     message.Name, message.Version, message.ProjectionId, _publisher, message.SourceDefinition, message.Config,
-                    _readDispatcher, _writeDispatcher, _subscriptionDispatcher, _logger, out sourceDefinition);
+                    _readDispatcher, _writeDispatcher, _subscriptionDispatcher, _logger, _timeProvider, out sourceDefinition);
                 _projections.Add(message.ProjectionId, projection);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));

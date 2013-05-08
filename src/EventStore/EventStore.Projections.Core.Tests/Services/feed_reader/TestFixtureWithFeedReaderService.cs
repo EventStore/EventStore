@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
 
         protected override void GivenAdditionalServices()
         {
-            _feedReaderService = new FeedReaderService(_subscriptionDispatcher);
+            _feedReaderService = new FeedReaderService(_subscriptionDispatcher, _timeProvider);
             _bus.Subscribe(_feedReaderService);
         }
     }

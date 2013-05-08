@@ -34,6 +34,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
+using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Helper
@@ -53,10 +54,12 @@ namespace EventStore.Core.Tests.Helper
         protected TestHandler<Message> _consumer;
         protected IODispatcher _ioDispatcher;
         protected ManualQueue _queue;
+        protected FakeTimeProvider _timeProvider;
 
         [SetUp]
         public void setup0()
         {
+            _timeProvider = new FakeTimeProvider();
             _bus = new InMemoryBus("bus");
             _queue = null;
             _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(GetInputQueue()));

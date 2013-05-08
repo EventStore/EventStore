@@ -54,15 +54,13 @@ namespace EventStore.Projections.Core
             _runProjections = runProjections;
         }
 
-        public void Register(TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService, HttpService httpService, IPublisher networkSendService)
+        public void Register(
+            TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService,
+            ITimeProvider timeProvider, HttpService httpService, IPublisher networkSendService)
         {
-            _projections = new EventStore.Projections.Core.Projections(db, 
-                                                            mainQueue,
-                                                            mainBus,
-                                                            timerService,
-                                                            httpService,
-                                                            networkSendService,
-                                                            projectionWorkerThreadCount: _projectionWorkerThreadCount, runProjections: _runProjections);
+            _projections = new EventStore.Projections.Core.Projections(
+                db, mainQueue, mainBus, timerService, timeProvider, httpService, networkSendService,
+                projectionWorkerThreadCount: _projectionWorkerThreadCount, runProjections: _runProjections);
         }
 
         public void Start()
@@ -85,16 +83,16 @@ namespace EventStore.Projections.Core
         private ProjectionManagerNode _projectionManagerNode;
 
         public Projections(
-            TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService,
+            TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService, ITimeProvider timeProvider,
             HttpService httpService, IPublisher networkSendQueue, int projectionWorkerThreadCount, bool runProjections)
         {
             _projectionWorkerThreadCount = projectionWorkerThreadCount;
-            SetupMessaging(db, mainQueue, mainBus, timerService, httpService, networkSendQueue, runProjections);
+            SetupMessaging(db, mainQueue, mainBus, timerService, timeProvider, httpService, networkSendQueue, runProjections);
 
         }
 
         private void SetupMessaging(
-            TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService,
+            TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService, ITimeProvider timeProvider,
             HttpService httpService, IPublisher networkSendQueue, bool runProjections)
         {
             _coreQueues = new List<QueuedHandler>();
@@ -105,7 +103,7 @@ namespace EventStore.Projections.Core
                 var coreInputBus = new InMemoryBus("bus");
                 var coreQueue = new QueuedHandler(
                     coreInputBus, "Projection Core #" + _coreQueues.Count, groupName: "Projection Core");
-                var projectionNode = new ProjectionWorkerNode(db, coreQueue, runProjections);
+                var projectionNode = new ProjectionWorkerNode(db, coreQueue, timeProvider, runProjections);
                 projectionNode.SetupMessaging(coreInputBus);
 
 

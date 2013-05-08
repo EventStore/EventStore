@@ -32,6 +32,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
@@ -128,7 +129,7 @@ namespace EventStore.Projections.Core.Tests.Services
                     <ReaderSubscriptionManagement.Subscribe,
                         ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
                         >(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
-            _service = new ProjectionCoreService(_bus, _bus, _subscriptionDispatcher);
+            _service = new ProjectionCoreService(_bus, _bus, _subscriptionDispatcher, new RealTimeProvider());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
@@ -142,7 +143,7 @@ namespace EventStore.Projections.Core.Tests.Services
             var result = new ReaderStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build();
+            return result.Build(new RealTimeProvider());
         }
 
         protected static ResolvedEvent CreateEvent()

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -55,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_filter
             _ef = null;
             try
             {
-                _ef = _builder.Build().EventFilter;
+                _ef = _builder.Build(new RealTimeProvider()).EventFilter;
             }
             catch (Exception ex)
             {

@@ -68,9 +68,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ProcessAllFor(DateTime maxTimestamp)
         {
-            if (_buffer.Count == 0)
-                throw new InvalidOperationException();
-
+            
             //NOTE: this is the most straightforward implementation 
             //TODO: build proper data structure when the approach is finalized
             bool processed;

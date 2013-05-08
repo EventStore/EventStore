@@ -34,6 +34,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -45,8 +46,50 @@ namespace EventStore.Core.Tests.Helper
                                                            IHandle<ClientMessage.ReadStreamEventsForward>,
                                                            IHandle<ClientMessage.ReadAllEventsForward>,
                                                            IHandle<ClientMessage.WriteEvents>,
+                                                           IHandle<ClientMessage.TransactionStart>,
+                                                           IHandle<ClientMessage.TransactionWrite>,
+                                                           IHandle<ClientMessage.TransactionCommit>,
                                                            IHandle<ClientMessage.DeleteStream>
     {
+        public class Transaction
+        {
+            private long _position;
+            private ClientMessage.TransactionStart _startMessage;
+
+            private List<Tuple<int, Event >> _events =
+                new List<Tuple<int, Event >>();
+
+            public Transaction(long position, ClientMessage.TransactionStart startMessage)
+            {
+                _position = position;
+                _startMessage = startMessage;
+            }
+
+            public void Write(ClientMessage.TransactionWrite message, ref int fakePosition)
+            {
+                foreach (var @event in message.Events)
+                {
+                    _events.Add(Tuple.Create(fakePosition, @event));
+                    fakePosition += 50;
+                }
+            }
+
+            public void Commit(ClientMessage.TransactionCommit message, TestFixtureWithExistingEvents fixture)
+            {
+                var commitPosition = fixture._fakePosition;
+                fixture._fakePosition += 50;
+                fixture.ProcessWrite(
+                    message.Envelope, message.CorrelationId, _startMessage.EventStreamId, _startMessage.ExpectedVersion,
+                    _events.Select(v => v.Item2).ToArray(),
+                    f =>
+                    new ClientMessage.TransactionCommitCompleted(
+                        message.CorrelationId, message.TransactionId, OperationResult.Success, ""),
+                    new ClientMessage.TransactionCommitCompleted(
+                        message.CorrelationId, message.TransactionId, OperationResult.WrongExpectedVersion,
+                        "Wrong expected version"), _events.Select(v => (long)v.Item1).ToArray(), commitPosition);
+            }
+        }
+
         protected TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 
         protected readonly Dictionary<string, List<EventRecord>> _lastMessageReplies =
@@ -55,6 +98,8 @@ namespace EventStore.Core.Tests.Helper
         protected readonly SortedList<TFPos, EventRecord> _all = new SortedList<TFPos, EventRecord>();
 
         protected readonly HashSet<string> _deletedStreams = new HashSet<string>();
+
+        protected readonly Dictionary<long, Transaction> _activeTransactions = new Dictionary<long, Transaction>();
 
         private int _fakePosition = 100;
         private bool _allWritesSucceed;
@@ -75,7 +120,7 @@ namespace EventStore.Core.Tests.Helper
                 list.Count,
                 new PrepareLogRecord(
                     _fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
-                    DateTime.UtcNow, PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, eventType,
+                    _timeProvider.Now, PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, eventType,
                     Encoding.UTF8.GetBytes(eventData),
                     eventMetadata == null ? new byte[0] : Encoding.UTF8.GetBytes(eventMetadata)));
             list.Add(eventRecord);
@@ -118,7 +163,11 @@ namespace EventStore.Core.Tests.Helper
         protected void OneWriteCompletes()
         {
             var message = _writesQueue.Dequeue();
-            ProcessWrite(message);
+            ProcessWrite(
+                message.Envelope, message.CorrelationId, message.EventStreamId, message.ExpectedVersion, message.Events,
+                firstEventNumber => new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber),
+                new ClientMessage.WriteEventsCompleted(
+                    message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
         }
 
         protected void AllWriteComplete()
@@ -138,6 +187,9 @@ namespace EventStore.Core.Tests.Helper
             _bus.Subscribe<ClientMessage.ReadStreamEventsForward>(this);
             _bus.Subscribe<ClientMessage.ReadAllEventsForward>(this);
             _bus.Subscribe<ClientMessage.DeleteStream>(this);
+            _bus.Subscribe<ClientMessage.TransactionStart>(this);
+            _bus.Subscribe<ClientMessage.TransactionWrite>(this);
+            _bus.Subscribe<ClientMessage.TransactionCommit>(this);
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             _bus.Subscribe(_ioDispatcher.StreamDeleter);
@@ -146,6 +198,7 @@ namespace EventStore.Core.Tests.Helper
             _all.Clear();
             _readAllEnabled = false;
             _fakePosition = 100;
+            _activeTransactions.Clear();
             Given1();
             Given();
         }
@@ -166,7 +219,7 @@ namespace EventStore.Core.Tests.Helper
                 message.Envelope.ReplyWith(
                     new ClientMessage.ReadStreamEventsBackwardCompleted(
                         message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
-                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], string.Empty, -1, -1, true, _fakePosition + 50));
+                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], string.Empty, -1, -1, true, _fakePosition));
                             
             }
             else if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list))
@@ -191,7 +244,7 @@ namespace EventStore.Core.Tests.Helper
                             nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber - 1 : -1,
                             lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
                             isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == 0,
-                            lastCommitPosition: _fakePosition + 50));
+                            lastCommitPosition: _fakePosition));
                 }
                 else
                 {
@@ -221,7 +274,7 @@ namespace EventStore.Core.Tests.Helper
                 message.Envelope.ReplyWith(
                     new ClientMessage.ReadStreamEventsBackwardCompleted(
                         message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
-                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], string.Empty, -1, -1, true, _fakePosition + 50));
+                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], string.Empty, -1, -1, true, _fakePosition));
                             
             }
             else if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list))
@@ -242,7 +295,7 @@ namespace EventStore.Core.Tests.Helper
                             nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber + 1 : -1,
                             lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
                             isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == list.Last().EventNumber,
-                            lastCommitPosition: _fakePosition + 50));
+                            lastCommitPosition: _fakePosition));
                 }
                 else
                 {
@@ -253,7 +306,7 @@ namespace EventStore.Core.Tests.Helper
                                 message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
                                 ReadStreamResult.NoStream, new ResolvedEvent[0], "", nextEventNumber: -1, lastEventNumber: -1,
                                 isEndOfStream: true, // NOTE AN: don't know how to correctly determine this here
-                                lastCommitPosition: _fakePosition + 50));
+                                lastCommitPosition: _fakePosition));
                         return;
                     }
                     throw new NotImplementedException();
@@ -307,43 +360,64 @@ namespace EventStore.Core.Tests.Helper
         {
             if (_allWritesSucceed || _writesToSucceed.Contains(message.EventStreamId))
             {
-                ProcessWrite(message);
+                ProcessWrite(
+                    message.Envelope, message.CorrelationId, message.EventStreamId, message.ExpectedVersion,
+                    message.Events,
+                    firstEventNumber => new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber),
+                    new ClientMessage.WriteEventsCompleted(
+                        message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
             }
             else if (_allWritesQueueUp)
                 _writesQueue.Enqueue(message);
         }
 
-        private void ProcessWrite(ClientMessage.WriteEvents message)
+        private void ProcessWrite<T>(IEnvelope envelope, Guid correlationId, string streamId, int expectedVersion, Event[] events, Func<int, T> writeEventsCompleted, T wrongExpectedVersionResponse, long[] positions = null, int? commitPosition = null) where T : Message
         {
+            if (positions == null)
+            {
+                positions = new long[events.Length];
+                for (int i = 0; i < positions.Length; i++)
+                {
+                    positions[i] = _fakePosition;
+                    _fakePosition += 100;
+                }
+            }
             List<EventRecord> list;
-            if (!_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || list == null)
+            if (!_lastMessageReplies.TryGetValue(streamId, out list) || list == null)
             {
                 list = new List<EventRecord>();
-                _lastMessageReplies[message.EventStreamId] = list;
+                _lastMessageReplies[streamId] = list;
             }
-            if (message.ExpectedVersion != EventStore.ClientAPI.ExpectedVersion.Any)
+            if (expectedVersion != EventStore.ClientAPI.ExpectedVersion.Any)
             {
-                if (message.ExpectedVersion != list.Count - 1)
+                if (expectedVersion != list.Count - 1)
                 {
-                    message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
+                    envelope.ReplyWith(wrongExpectedVersionResponse);
                     return;
                 }
             }
-            var eventRecords = (from e in message.Events
-                                let eventNumber = list.Count
-                                let tfPosition = (_fakePosition += 100)
+            var eventRecords = (from ep in events.Zip(positions, (@event, position) => new {@event, position})
+                                let e = ep.@event
+                                let eventNumber = list.Count //NOTE: ASSUMES STAYS ENUMERABLE
+                                let tfPosition = ep.position
                                 select
+                                    new
+                                        {
+                                            position = tfPosition,
+                                            record =
                                     new EventRecord(
-                                    eventNumber, tfPosition, message.CorrelationId, e.EventId, tfPosition, 0,
-                                    message.EventStreamId, ExpectedVersion.Any, DateTime.UtcNow,
-                                    PrepareFlags.SingleWrite, e.EventType, e.Data, e.Metadata)).ToArray();
+                                    eventNumber, tfPosition, correlationId, e.EventId, tfPosition, 0, streamId,
+                                    ExpectedVersion.Any, _timeProvider.Now, PrepareFlags.SingleWrite, e.EventType, e.Data,
+                                    e.Metadata)
+                                        }); //NOTE: DO NOT MAKE ARRAY 
             foreach (var eventRecord in eventRecords)
             {
-                list.Add(eventRecord);
-                _all.Add(new TFPos(_fakePosition + 50, eventRecord.LogPosition), eventRecord);
+                list.Add(eventRecord.record);
+                _all.Add(new TFPos(commitPosition ?? eventRecord.position + 50, eventRecord.position), eventRecord.record);
             }
 
-            message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length));
+            var firstEventNumber = list.Count - events.Length;
+            envelope.ReplyWith(writeEventsCompleted(firstEventNumber));
         }
 
         public void Handle(ClientMessage.DeleteStream message)
@@ -384,6 +458,48 @@ namespace EventStore.Core.Tests.Helper
                 new ClientMessage.ReadAllEventsForwardCompleted(
                     message.CorrelationId, ReadAllResult.Success, "", events, message.MaxCount, pos, next, prev,
                     _fakePosition));
+        }
+
+        public void Handle(ClientMessage.TransactionStart message)
+        {
+            var transactionId = _fakePosition;
+            _activeTransactions.Add(transactionId, new Transaction(transactionId, message));
+            _fakePosition += 50;
+            message.Envelope.ReplyWith(
+                new ClientMessage.TransactionStartCompleted(
+                    message.CorrelationId, transactionId, OperationResult.Success, ""));
+        }
+
+        public void Handle(ClientMessage.TransactionWrite message)
+        {
+            Transaction transaction;
+            if (!_activeTransactions.TryGetValue(message.TransactionId, out transaction))
+            {
+                message.Envelope.ReplyWith(
+                    new ClientMessage.TransactionWriteCompleted(
+                        message.CorrelationId, message.TransactionId, OperationResult.InvalidTransaction,
+                        "Transaction not found"));
+            }
+            else
+            {
+                transaction.Write(message, ref _fakePosition);
+            }
+        }
+
+        public void Handle(ClientMessage.TransactionCommit message)
+        {
+            Transaction transaction;
+            if (!_activeTransactions.TryGetValue(message.TransactionId, out transaction))
+            {
+                message.Envelope.ReplyWith(
+                    new ClientMessage.TransactionWriteCompleted(
+                        message.CorrelationId, message.TransactionId, OperationResult.InvalidTransaction,
+                        "Transaction not found"));
+            }
+            else
+            {
+                transaction.Commit(message, this);
+            }
         }
     }
 }

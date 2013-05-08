@@ -148,10 +148,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             Assert.AreEqual(4, second.Data.Metadata[0]);
             Assert.AreEqual("a", first.Data.EventStreamId);
             Assert.AreEqual("a", second.Data.EventStreamId);
-            Assert.AreEqual(0, first.Data.Position.PreparePosition);
-            Assert.AreEqual(0, second.Data.Position.PreparePosition);
-            Assert.AreEqual(0, first.Data.Position.CommitPosition);
-            Assert.AreEqual(0, second.Data.Position.CommitPosition);
+            Assert.AreEqual(50, first.Data.Position.PreparePosition);
+            Assert.AreEqual(100, second.Data.Position.PreparePosition);
+            Assert.AreEqual(-1, first.Data.Position.CommitPosition);
+            Assert.AreEqual(-1, second.Data.Position.CommitPosition);
             Assert.AreEqual(50, first.SafeTransactionFileReaderJoinPosition);
             Assert.AreEqual(100, second.SafeTransactionFileReaderJoinPosition);
         }

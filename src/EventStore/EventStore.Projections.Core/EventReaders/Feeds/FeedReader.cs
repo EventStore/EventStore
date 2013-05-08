@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Services;
@@ -51,6 +52,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 
         private readonly List<TaggedResolvedEvent> _batch = new List<TaggedResolvedEvent>();
         private readonly IEnvelope _replyEnvelope;
+        private readonly ITimeProvider _timeProvider;
 
         private Guid _subscriptionId;
         private CheckpointTag _lastReaderPosition;
@@ -59,11 +61,11 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
             PublishSubscribeDispatcher
                 <ReaderSubscriptionManagement.Subscribe,
                 ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
-                publishSubscribeDispatcher, FeedReaderMessage.ReadPage message)
+                publishSubscribeDispatcher, FeedReaderMessage.ReadPage message, ITimeProvider timeProvider)
         {
             return new FeedReader(
                 publishSubscribeDispatcher, message.QuerySource, message.FromPosition, message.MaxEvents,
-                message.CorrelationId, message.Envelope);
+                message.CorrelationId, message.Envelope, timeProvider);
         }
 
         public FeedReader(
@@ -71,7 +73,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
                 <ReaderSubscriptionManagement.Subscribe,
                 ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
                 subscriptionDispatcher, QuerySourcesDefinition querySource, CheckpointTag fromPosition, int maxEvents,
-            Guid requestCorrelationId, IEnvelope replyEnvelope)
+            Guid requestCorrelationId, IEnvelope replyEnvelope, ITimeProvider timeProvider)
         {
             if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
             if (querySource == null) throw new ArgumentNullException("querySource");
@@ -85,11 +87,12 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
             _maxEvents = maxEvents;
             _requestCorrelationId = requestCorrelationId;
             _replyEnvelope = replyEnvelope;
+            _timeProvider = timeProvider;
         }
 
         public void Start()
         {
-            var readerStrategy = ReaderStrategy.Create(_querySource);
+            var readerStrategy = ReaderStrategy.Create(_querySource, _timeProvider);
             //TODO: make reader mode explicit
             var readerOptions = new ReaderSubscriptionOptions(
                 1024*1024, _maxEvents + 1, stopOnEof: true, stopAfterNEvents: _maxEvents);

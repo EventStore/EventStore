@@ -76,6 +76,7 @@ namespace EventStore.Core
         private readonly HttpService _httpService;
         private readonly TimerService _timerService;
         private readonly NetworkSendService _networkSendService;
+        private readonly ITimeProvider _timeProvider;
 
         private readonly NodeSubsystems[] _enabledNodeSubsystems;
         private readonly ISubsystem[] _subsystems;
@@ -282,6 +283,7 @@ namespace EventStore.Core
 
             // TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
+            _timeProvider = new RealTimeProvider();
             _mainBus.Subscribe<TimerMessage.Schedule>(_timerService);
 
             monitoringQueue.Start();
@@ -289,7 +291,7 @@ namespace EventStore.Core
 
             if (subsystems != null)
                 foreach (var subsystem in subsystems)
-                    subsystem.Register(db, _mainQueue, _mainBus, _timerService, _httpService, _networkSendService);
+                    subsystem.Register(db, _mainQueue, _mainBus, _timerService, _timeProvider, _httpService, _networkSendService);
         }
 
         public void Start()

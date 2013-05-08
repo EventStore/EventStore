@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
@@ -68,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var result = new ReaderStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build();
+            return result.Build(new RealTimeProvider());
         }
     }
 }

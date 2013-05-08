@@ -29,6 +29,7 @@ using EventStore.Core.Bus;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Projections.Core.EventReaders.Feeds;
 using EventStore.Projections.Core.Messages;
@@ -51,7 +52,7 @@ namespace EventStore.Projections.Core
 
         private FeedReaderService _feedReaderService;
 
-        public ProjectionWorkerNode(TFChunkDb db, QueuedHandler inputQueue, bool runProjections)
+        public ProjectionWorkerNode(TFChunkDb db, QueuedHandler inputQueue, ITimeProvider timeProvider, bool runProjections)
         {
             _runProjections = runProjections;
             Ensure.NotNull(db, "db");
@@ -67,10 +68,10 @@ namespace EventStore.Projections.Core
             ;
             _eventReaderCoreService = new EventReaderCoreService(
                 publisher, 10, db.Config.WriterCheckpoint, runHeadingReader: runProjections);
-            _feedReaderService = new FeedReaderService(_subscriptionDispatcher);
+            _feedReaderService = new FeedReaderService(_subscriptionDispatcher, timeProvider);
             if (runProjections)
             {
-                _projectionCoreService = new ProjectionCoreService(inputQueue, publisher, _subscriptionDispatcher);
+                _projectionCoreService = new ProjectionCoreService(inputQueue, publisher, _subscriptionDispatcher, timeProvider);
             }
         }
 

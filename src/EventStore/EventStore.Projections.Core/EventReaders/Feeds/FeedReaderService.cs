@@ -27,6 +27,7 @@
 // 
 
 using EventStore.Core.Bus;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Services;
@@ -41,14 +42,21 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
                     ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
             _subscriptionDispatcher;
 
-        public FeedReaderService(PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher)
+        private readonly ITimeProvider _timeProvider;
+
+        public FeedReaderService(
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.Subscribe,
+                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+                subscriptionDispatcher, ITimeProvider timeProvider)
         {
             _subscriptionDispatcher = subscriptionDispatcher;
+            _timeProvider = timeProvider;
         }
 
         public void Handle(FeedReaderMessage.ReadPage message)
         {
-            var reader = FeedReader.Create(_subscriptionDispatcher, message);
+            var reader = FeedReader.Create(_subscriptionDispatcher, message, _timeProvider);
             reader.Start();
         }
     }

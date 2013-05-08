@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 _createTempStreams, _stopOnEof);
             _coreProjection = CoreProjection.CreateAndPrepare(
                 "projection", _version, _projectionCorrelationId, _bus, _stateHandler, _projectionConfig, _readDispatcher,
-                _writeDispatcher, _subscriptionDispatcher, null);
+                _writeDispatcher, _subscriptionDispatcher, null, _timeProvider);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_coreProjection);

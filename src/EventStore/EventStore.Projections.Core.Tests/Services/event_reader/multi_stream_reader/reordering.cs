@@ -36,21 +36,18 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System.Linq;
 
-namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_reader.catching_up
+namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader
 {
-    namespace when_one_event_type_has_been_never_emitted
+    namespace reordering
     {
-        abstract class with_one_event_type_has_been_never_emitted : TestFixtureWithEventReaderService
+        abstract class with_multi_stream_reader : TestFixtureWithEventReaderService
         {
-            protected const int TailLength = 10;
             protected Guid _subscriptionId;
             private QuerySourcesDefinition _sourceDefinition;
             protected IReaderStrategy _readerStrategy;
             protected ReaderSubscriptionOptions _readerSubscriptionOptions;
             protected TFPos _tfPos1;
             protected TFPos _tfPos2;
-            protected TFPos _tfPos3;
-            protected TFPos[] _tfPos;
 
             protected override bool GivenHeadingReaderRunning()
             {
@@ -61,24 +58,17 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
             {
                 base.Given();
                 AllWritesSucceed();
-                _tfPos = new TFPos[TailLength];
-                _tfPos1 = ExistingEvent("test-stream", "type1", "{}", "{Data: 1}");
-                _tfPos2 = ExistingEvent("test-stream", "type1", "{}", "{Data: 2}");
-                _tfPos3 = ExistingEvent("test-stream", "type1", "{}", "{Data: 3}");
+                _tfPos1 = ExistingEvent("stream-a", "type1", "{}", "{Data: 1}");
+                _tfPos2 = ExistingEvent("stream-b", "type1", "{}", "{Data: 2}");
 
-                for (var i = 0; i < TailLength; i++)
-                {
-                    _tfPos[i] = ExistingEvent("test-stream", "type1", "{}", "{Data: " + i + "}");
-                }
-
-                GivenInitialIndexState();
+                GivenOtherEvents();
 
                 _subscriptionId = Guid.NewGuid();
                 _sourceDefinition = new QuerySourcesDefinition
                     {
-                        AllStreams = true,
-                        Events = new[] {"type1", "type2"},
-                        Options = new QuerySourcesDefinitionOptions {}
+                        Streams =  new []{"stream-a", "stream-b"},
+                        AllEvents = true,
+                        Options = new QuerySourcesDefinitionOptions {ReorderEvents = true, ProcessingLag = 100}
                     };
                 _readerStrategy = ReaderStrategy.Create(_sourceDefinition, _timeProvider);
                 _readerSubscriptionOptions = new ReaderSubscriptionOptions(
@@ -86,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                     stopAfterNEvents: null);
             }
 
-            protected abstract void GivenInitialIndexState();
+            protected abstract void GivenOtherEvents();
 
             protected string TFPosToMetadata(TFPos tfPos)
             {
@@ -99,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                 var receivedEvents =
                     _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
 
-                Assert.AreEqual(TailLength + 3, receivedEvents.Length);
+                Assert.AreEqual(5, receivedEvents.Length);
             }
 
             [Test]
@@ -110,36 +100,67 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 
                 Assert.That(
                     (from e in receivedEvents
-                     orderby e.Data.EventSequenceNumber
-                     select e.Data.EventSequenceNumber).SequenceEqual(
+                     orderby e.Data.Position.PreparePosition
+                     select e.Data.Position.PreparePosition).SequenceEqual(
                          from e in receivedEvents
-                         select e.Data.EventSequenceNumber), "Incorrect event order received");
+                         select e.Data.Position.PreparePosition), "Incorrect event order received");
             }
         }
 
         [TestFixture]
-        class when_index_checkpoint_multiple_events_behind : with_one_event_type_has_been_never_emitted
+        class when_event_commit_is_delayed : with_multi_stream_reader
         {
-            protected override void GivenInitialIndexState()
+            protected override void GivenOtherEvents()
             {
-                ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos1), "0@test-stream");
-                ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos2), "1@test-stream");
-                ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos3), "2@test-stream");
-
-                for (var i = 0; i < TailLength; i++)
-                    ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos[i]), (i + 3)+ "@test-stream");
-
-                NoStream("$et-type2");
-                ExistingEvent("$et", "$Checkpoint", TFPosToMetadata(_tfPos3), TFPosToMetadata(_tfPos3));
             }
 
             protected override IEnumerable<Message> When()
             {
-                var fromZeroPosition = CheckpointTag.FromEventTypeIndexPositions(
-                    new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});
+                var fromZeroPosition =
+                    CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"stream-a", -1}, {"stream-b", -1}});
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
+
+
+                var correlationId = Guid.NewGuid();
+                yield return
+                    new ClientMessage.TransactionStart(
+                        correlationId, new PublishEnvelope(GetInputQueue()), false, "stream-a", 0, null);
+
+                var transactionId =
+                    _consumer.HandledMessages.OfType<ClientMessage.TransactionStartCompleted>()
+                             .Single(m => m.CorrelationId == correlationId)
+                             .TransactionId;
+
+                correlationId = Guid.NewGuid();
+                yield return
+                    new ClientMessage.TransactionWrite(
+                        correlationId, new PublishEnvelope(GetInputQueue()), false, transactionId,
+                        new[] {new Event(Guid.NewGuid(), "type1", true, "{Data: 3, Transacted=true}", "{}")}, null);
+
+                correlationId = Guid.NewGuid();
+                yield return
+                    new ClientMessage.WriteEvents(
+                        correlationId, new PublishEnvelope(GetInputQueue()), false, "stream-b", 0,
+                        new[] {new Event(Guid.NewGuid(), "type1", true, "{Data: 4}", "{}")}, null);
+
+                correlationId = Guid.NewGuid();
+                yield return
+                    new ClientMessage.TransactionWrite(
+                        correlationId, new PublishEnvelope(GetInputQueue()), false, transactionId,
+                        new[] {new Event(Guid.NewGuid(), "type1", true, "{Data: 5, Transacted=true}", "{}")}, null);
+
+                correlationId = Guid.NewGuid();
+                yield return
+                    new ClientMessage.TransactionCommit(
+                        correlationId, new PublishEnvelope(GetInputQueue()), false, transactionId, null);
+
+                yield return null;
+
+                _timeProvider.AddTime(TimeSpan.FromMilliseconds(300));
+
+                yield return null;
 
             }
         }
