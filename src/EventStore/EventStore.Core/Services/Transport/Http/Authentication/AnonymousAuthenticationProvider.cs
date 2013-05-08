@@ -30,7 +30,7 @@ using EventStore.Core.Services.Transport.Http.Messages;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    class AnonymousAuthenticationProvider : AuthenticationProvider
+    public class AnonymousAuthenticationProvider : AuthenticationProvider
     {
         public override bool Authenticate(IncomingHttpRequestMessage message)
         {

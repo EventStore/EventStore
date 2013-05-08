@@ -25,13 +25,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -50,9 +49,20 @@ namespace EventStore.Core.Services.Transport.Http
     {
         private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
 
-        public bool IsListening { get { return _server.IsListening; } }
-        public IEnumerable<string> ListenPrefixes { get { return _server.ListenPrefixes; } }
-        public ServiceAccessibility Accessibility { get { return _accessibility; } }
+        public bool IsListening
+        {
+            get { return _server.IsListening; }
+        }
+
+        public IEnumerable<string> ListenPrefixes
+        {
+            get { return _server.ListenPrefixes; }
+        }
+
+        public ServiceAccessibility Accessibility
+        {
+            get { return _accessibility; }
+        }
 
         private readonly ServiceAccessibility _accessibility;
         private readonly IPublisher _inputBus;
@@ -62,17 +72,16 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly HttpMessagePipe _httpPipe;
         private readonly HttpAsyncServer _server;
         private readonly MultiQueuedHandler _requestsMultiHandler;
-        private readonly IODispatcher _ioDispatcher;
-        private readonly AuthenticationProvider[] _providers;
+        private readonly AuthenticatedHttpRequestProcessor _requestProcessor;
+        private readonly IncomingHttpRequestAuthenticationManager _requestAuthenticationManager;
 
         public HttpService(
-            ServiceAccessibility accessibility, IPublisher inputBus, int receiveHandlerCount,
-            IUriRouter uriRouter, PasswordHashAlgorithm passwordHashAlgorithm, params string[] prefixes)
+            ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
+            MultiQueuedHandler multiQueuedHandler, AuthenticationProvider[] authenticationProviders,
+            params string[] prefixes)
         {
             Ensure.NotNull(inputBus, "inputBus");
-            Ensure.Positive(receiveHandlerCount, "receiveHandlerCount");
             Ensure.NotNull(uriRouter, "uriRouter");
-            Ensure.NotNull(passwordHashAlgorithm, "passwordHashAlgorithm");
             Ensure.NotNull(prefixes, "prefixes");
 
             _accessibility = accessibility;
@@ -81,45 +90,22 @@ namespace EventStore.Core.Services.Transport.Http
             _publishEnvelope = new PublishEnvelope(inputBus);
 
             _httpPipe = new HttpMessagePipe();
-            var queues = new IQueuedHandler[receiveHandlerCount];
 
-            // we need to create multi-handler before queues to resolve dependency for ioDispatcher
-            _requestsMultiHandler = new MultiQueuedHandler(queues, null);
+            _requestsMultiHandler = multiQueuedHandler;
 
-            _ioDispatcher = new IODispatcher(inputBus, new PublishEnvelope(_requestsMultiHandler, crossThread: true));
-            _providers = new AuthenticationProvider[]
-                {
-                    new BasicHttpAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm),
-                    new TrustedAuthenticationProvider(),
-                    new AnonymousAuthenticationProvider()
-                };
+            _requestProcessor = new AuthenticatedHttpRequestProcessor(this);
+            _requestAuthenticationManager = new IncomingHttpRequestAuthenticationManager(authenticationProviders);
 
-            for (var i = 0; i < receiveHandlerCount; i++)
-            {
-                queues[i] = CreateQueuedHandler(i);
-            }
 
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
         }
 
-        private IQueuedHandler CreateQueuedHandler(int queueNum)
+        public void SubscribePipeline(IBus bus)
         {
-            var bus = new InMemoryBus(string.Format("Incoming HTTP #{0} Bus", queueNum + 1), watchSlowMsg: false);
-            var requestProcessor = new AuthenticatedHttpRequestProcessor(this);
-            var requestAuthenticationManager = new IncomingHttpRequestAuthenticationManager(_providers);
-            bus.Subscribe<IncomingHttpRequestMessage>(requestAuthenticationManager);
-            bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
-            bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
-
-            bus.Subscribe(_ioDispatcher.ForwardReader);
-            bus.Subscribe(_ioDispatcher.BackwardReader);
-            bus.Subscribe(_ioDispatcher.Writer);
-            bus.Subscribe(_ioDispatcher.StreamDeleter);
-
-            return new QueuedHandlerThreadPool(
-                bus, name: "Incoming HTTP #" + (queueNum + 1), groupName: "Incoming HTTP", watchSlowMsg: true,
-                slowMsgThreshold: TimeSpan.FromMilliseconds(50));
+            bus.Subscribe(_requestAuthenticationManager);
+            bus.Subscribe<AuthenticatedHttpRequestMessage>(_requestProcessor);
+            bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_requestProcessor);
         }
 
         public void Handle(SystemMessage.SystemInit message)
@@ -127,15 +113,17 @@ namespace EventStore.Core.Services.Transport.Http
             if (_server.TryStart())
             {
                 _requestsMultiHandler.Start();
-                _inputBus.Publish(TimerMessage.Schedule.Create(UpdateInterval,
-                                                               _publishEnvelope,
-                                                               new HttpMessage.PurgeTimedOutRequests(_accessibility)));
+                _inputBus.Publish(
+                    TimerMessage.Schedule.Create(
+                        UpdateInterval, _publishEnvelope, new HttpMessage.PurgeTimedOutRequests(_accessibility)));
             }
             else
             {
-                Application.Exit(ExitCode.Error,
-                                 string.Format("Http async server failed to start listening at [{0}].",
-                                               string.Join(", ", _server.ListenPrefixes)));
+                Application.Exit(
+                    ExitCode.Error,
+                    string.Format(
+                        "Http async server failed to start listening at [{0}].",
+                        string.Join(", ", _server.ListenPrefixes)));
             }
         }
 
@@ -143,7 +131,9 @@ namespace EventStore.Core.Services.Transport.Http
         {
             if (message.ExitProcess)
                 Shutdown();
-            _inputBus.Publish(new SystemMessage.ServiceShutdown(string.Format("HttpServer [{0}]", string.Join(", ", _server.ListenPrefixes))));
+            _inputBus.Publish(
+                new SystemMessage.ServiceShutdown(
+                    string.Format("HttpServer [{0}]", string.Join(", ", _server.ListenPrefixes))));
         }
 
         public void Handle(HttpMessage.SendOverHttp message)
@@ -164,9 +154,9 @@ namespace EventStore.Core.Services.Transport.Http
 
             _requestsMultiHandler.PublishToAll(message);
 
-            _inputBus.Publish(TimerMessage.Schedule.Create(UpdateInterval,
-                                                           _publishEnvelope,
-                                                           new HttpMessage.PurgeTimedOutRequests(_accessibility)));
+            _inputBus.Publish(
+                TimerMessage.Schedule.Create(
+                    UpdateInterval, _publishEnvelope, new HttpMessage.PurgeTimedOutRequests(_accessibility)));
         }
 
         public void Shutdown()
@@ -181,7 +171,8 @@ namespace EventStore.Core.Services.Transport.Http
             controller.Subscribe(this, _httpPipe);
         }
 
-        public void RegisterControllerAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
+        public void RegisterControllerAction(
+            ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
         {
             Ensure.NotNull(action, "action");
             Ensure.NotNull(handler, "handler");

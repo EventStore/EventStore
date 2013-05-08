@@ -74,9 +74,19 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             _bus = new InMemoryBus(string.Format("bus_{0}", _serverEndPoint.Port));
 
-            _service = new HttpService(ServiceAccessibility.Private, _bus, 1, new NaiveUriRouter(), 
-                                       new Rfc2898PasswordHashAlgorithm(), _serverEndPoint.ToHttpUrl());
-            _client = new HttpAsyncClient();
+            {
+
+                var pipelineBus = InMemoryBus.CreateTest();
+                var queue = QueuedHandlerThreadPool.CreateTest(pipelineBus);
+                var multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[]{queue}, null);
+                var authenticationProviders = new AuthenticationProvider[] {new AnonymousAuthenticationProvider()};
+
+                _service = new HttpService(
+                    ServiceAccessibility.Private, _bus, new NaiveUriRouter(), multiQueuedHandler,
+                    authenticationProviders, _serverEndPoint.ToHttpUrl());
+                _service.SubscribePipeline(pipelineBus);
+                _client = new HttpAsyncClient();
+            }
 
             HttpBootstrap.Subscribe(_bus, _service);
         }

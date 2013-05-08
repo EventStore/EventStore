@@ -41,6 +41,11 @@ namespace EventStore.Core.Bus
     /// </summary>
     public class QueuedHandlerThreadPool : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue, IThreadSafePublisher
     {
+        public static QueuedHandlerThreadPool CreateTest(IHandle<Message> consumer)
+        {
+            return new QueuedHandlerThreadPool(consumer);
+        }
+
         private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandlerThreadPool>();
 
         public int MessageCount { get { return _queue.Count; } }
@@ -62,6 +67,12 @@ namespace EventStore.Core.Bus
         private readonly QueueStatsCollector _queueStats;
 
         private int _isRunning;
+
+        private QueuedHandlerThreadPool(
+            IHandle<Message> consumer)
+            : this(consumer, "Test", true, TimeSpan.FromMilliseconds(50))
+        {
+        }
 
         public QueuedHandlerThreadPool(IHandle<Message> consumer,
                                        string name,

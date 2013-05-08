@@ -32,8 +32,13 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Services.Transport.Http.Authentication;
+using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Transport.Http.Authentication;
 using EventStore.Transport.Http;
@@ -159,8 +164,15 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             const int iterations = 100000;
 
-            var httpService = new HttpService(ServiceAccessibility.Public, new NoopPublisher(), 1, 
-                                              new TrieUriRouter(), new StubPasswordHashAlgorithm(), "http://localhost:12345/");
+            IPublisher inputBus = new NoopPublisher();
+            var bus = InMemoryBus.CreateTest();
+            var queue = QueuedHandlerThreadPool.CreateTest(bus);
+            var multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[]{queue}, null);
+            var providers = new AuthenticationProvider[] {new AnonymousAuthenticationProvider()};
+            var httpService = new HttpService(ServiceAccessibility.Public, inputBus, 
+                                              new TrieUriRouter(), multiQueuedHandler, providers, "http://localhost:12345/");
+            httpService.SubscribePipeline(bus);
+
             var fakeController = new FakeController(iterations, null);
             httpService.SetupController(fakeController);
 
