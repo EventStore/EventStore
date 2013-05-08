@@ -40,6 +40,7 @@ using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.Settings;
 
 namespace EventStore.Web.Playground
 {
@@ -105,7 +106,8 @@ namespace EventStore.Web.Playground
 
             // TCP
             var tcpService = new TcpService(
-                MainQueue, _tcpEndPoint, _networkSendService, TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), null);
+                MainQueue, _tcpEndPoint, _networkSendService, TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), 
+                ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout, null);
             Bus.Subscribe<SystemMessage.SystemInit>(tcpService);
             Bus.Subscribe<SystemMessage.SystemStart>(tcpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
