@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Services.Processing
 //            _logger.Trace("Pausing event distribution {0} at '{1}'", EventReaderCorrelationId, FromAsText());
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             _disposed = true;
         }
