@@ -72,8 +72,7 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly HttpMessagePipe _httpPipe;
         private readonly HttpAsyncServer _server;
         private readonly MultiQueuedHandler _requestsMultiHandler;
-        private readonly AuthenticatedHttpRequestProcessor _requestProcessor;
-        private readonly IncomingHttpRequestAuthenticationManager _requestAuthenticationManager;
+        private readonly AuthenticationProvider[] _authenticationProviders;
 
         public HttpService(
             ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
@@ -92,20 +91,21 @@ namespace EventStore.Core.Services.Transport.Http
             _httpPipe = new HttpMessagePipe();
 
             _requestsMultiHandler = multiQueuedHandler;
-
-            _requestProcessor = new AuthenticatedHttpRequestProcessor(this);
-            _requestAuthenticationManager = new IncomingHttpRequestAuthenticationManager(authenticationProviders);
+            _authenticationProviders = authenticationProviders;
 
 
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
         }
 
-        public void SubscribePipeline(IBus bus)
+        public void CreateAndSubscribePipeline(IBus bus)
         {
-            bus.Subscribe(_requestAuthenticationManager);
-            bus.Subscribe<AuthenticatedHttpRequestMessage>(_requestProcessor);
-            bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_requestProcessor);
+            var requestProcessor = new AuthenticatedHttpRequestProcessor(this);
+            var requestAuthenticationManager = new IncomingHttpRequestAuthenticationManager(_authenticationProviders);
+
+            bus.Subscribe(requestAuthenticationManager);
+            bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
+            bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
         }
 
         public void Handle(SystemMessage.SystemInit message)
