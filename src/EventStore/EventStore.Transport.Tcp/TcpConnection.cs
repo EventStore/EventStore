@@ -61,7 +61,7 @@ namespace EventStore.Transport.Tcp
             connector.InitConnect(remoteEndPoint,
                                   (_, socket) =>
                                   {
-                                      connection.InitSocket(socket, verbose);
+                                      connection.InitSocket(socket);
                                       if (onConnectionEstablished != null)
                                           onConnectionEstablished(connection);
                                   },
@@ -77,7 +77,7 @@ namespace EventStore.Transport.Tcp
         public static ITcpConnection CreateAcceptedTcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, Socket socket, bool verbose)
         {
             var connection = new TcpConnection(connectionId, effectiveEndPoint, verbose);
-            connection.InitSocket(socket, verbose);
+            connection.InitSocket(socket);
             return connection;
         }
 
@@ -115,10 +115,8 @@ namespace EventStore.Transport.Tcp
             _verbose = verbose;
         }
 
-        private void InitSocket(Socket socket, bool verbose)
+        private void InitSocket(Socket socket)
         {
-            if (verbose) Log.Info("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
-
             InitSocket(socket, _effectiveEndPoint);
             using (_sendingLock.Acquire()) 
             {
