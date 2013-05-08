@@ -25,7 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog
 {
@@ -35,9 +34,6 @@ namespace EventStore.Core.TransactionLog
 
         SeqReadResult TryReadNext();
         SeqReadResult TryReadPrev();
-
-        bool TryReadNext(out LogRecord record);
-        bool TryReadPrev(out LogRecord record);
 
         RecordReadResult TryReadAt(long position);
     }

@@ -64,6 +64,8 @@ namespace EventStore.Core.TransactionLog.Chunks
             var res = _reader.TryReadNext();
             if (res.Success)
                 _chaserCheckpoint.Write(res.RecordPostPosition);
+            else
+                _chaserCheckpoint.Write(_reader.CurrentPosition);
             return res;
         }
 

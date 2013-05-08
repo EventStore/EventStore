@@ -79,7 +79,7 @@ namespace EventStore.Core
         private readonly NetworkSendService _networkSendService;
 
         private readonly NodeSubsystems[] _enabledNodeSubsystems;
-        private Rfc2898PasswordHashAlgorithm _passwordHashAlgorithm;
+        private readonly Rfc2898PasswordHashAlgorithm _passwordHashAlgorithm;
 
         public SingleVNode(TFChunkDb db, 
                            SingleVNodeSettings vNodeSettings, 
@@ -190,7 +190,6 @@ namespace EventStore.Core
             // HTTP
             _passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
             {
-
                 var queues = new IQueuedHandler[vNodeSettings.HttpReceivingThreads];
                 var buses = new InMemoryBus[vNodeSettings.HttpReceivingThreads];
                 var multiQueuedHandler = new MultiQueuedHandler(queues, null);
@@ -198,25 +197,22 @@ namespace EventStore.Core
                 {
                     buses[i] = new InMemoryBus(string.Format("Incoming HTTP #{0} Bus", i + 1), watchSlowMsg: false);
                     queues[i] = new QueuedHandlerThreadPool(
-                        buses[i], name: "Incoming HTTP #" + (i + 1), groupName: "Incoming HTTP", watchSlowMsg: true,
-                        slowMsgThreshold: TimeSpan.FromMilliseconds(50));
+                        buses[i], name: "Incoming HTTP #" + (i + 1), groupName: "Incoming HTTP", 
+                        watchSlowMsg: true, slowMsgThreshold: TimeSpan.FromMilliseconds(50));
                 }
 
-                var dispatcher = new IODispatcher(
-                    _mainQueue, new PublishEnvelope(multiQueuedHandler, crossThread: true));
-
+                var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(multiQueuedHandler, crossThread: true));
                 var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, _passwordHashAlgorithm, 1000);
+
                 var authenticationProviders = new AuthenticationProvider[]
-                    {
-                        new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
-                        new TrustedAuthenticationProvider(), new AnonymousAuthenticationProvider()
-                    };
+                {
+                    new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
+                    new TrustedAuthenticationProvider(), 
+                    new AnonymousAuthenticationProvider()
+                };
 
-
-                _httpService = new HttpService(
-                    ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(), multiQueuedHandler,
-                    authenticationProviders, vNodeSettings.HttpPrefixes);
-
+                _httpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(), 
+                                               multiQueuedHandler, authenticationProviders, vNodeSettings.HttpPrefixes);
 
                 for (var i = 0; i < vNodeSettings.HttpReceivingThreads; i++)
                 {
@@ -240,6 +236,7 @@ namespace EventStore.Core
                 HttpService.SetupController(new AtomController(_mainQueue, _networkSendService));
                 HttpService.SetupController(new UsersController(_mainQueue, _networkSendService));
             }
+
             // REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(_mainQueue, 1, 1, vNodeSettings.PrepareTimeout, vNodeSettings.CommitTimeout);
             _mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);

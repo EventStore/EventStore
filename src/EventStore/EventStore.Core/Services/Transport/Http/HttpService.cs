@@ -103,7 +103,7 @@ namespace EventStore.Core.Services.Transport.Http
             var requestProcessor = new AuthenticatedHttpRequestProcessor(this);
             var requestAuthenticationManager = new IncomingHttpRequestAuthenticationManager(_authenticationProviders);
 
-            bus.Subscribe(requestAuthenticationManager);
+            bus.Subscribe<IncomingHttpRequestMessage>(requestAuthenticationManager);
             bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
             bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
         }

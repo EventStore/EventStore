@@ -29,13 +29,14 @@ using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
     public class TFChunkReader : ITransactionFileReader
     {
         public const int MaxRetries = 20;
+
+        public long CurrentPosition { get { return _curPos; } }
 
         private readonly TFChunkDb _db;
         private readonly ICheckpoint _writerCheckpoint;
@@ -52,14 +53,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             _curPos = initialPosition;
         }
 
-
-        public bool TryReadNext(out LogRecord record)
-        {
-            var res = TryReadNext();
-            record = res.LogRecord;
-            return res.Success;
-        }
-
         public void Reposition(long position)
         {
             _curPos = position;
@@ -67,14 +60,14 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public SeqReadResult TryReadNext()
         {
-            return TryReadNextInternal(_curPos, 0);
+            return TryReadNextInternal(0);
         }
 
-        private SeqReadResult TryReadNextInternal(long position, int retries)
+        private SeqReadResult TryReadNextInternal(int retries)
         {
-            var pos = position;
             while (true)
             {
+                var pos = _curPos;
                 var writerChk = _writerCheckpoint.Read();
                 if (pos >= writerChk)
                     return SeqReadResult.Failure;
@@ -89,7 +82,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {
                     if (retries > MaxRetries)
                         throw new Exception(string.Format("Got a file that was being deleted {0} times from TFChunkDb, likely a bug there.", MaxRetries));
-                    return TryReadNextInternal(pos, retries + 1);
+                    return TryReadNextInternal(retries + 1);
                 }
 
                 if (result.Success)
@@ -100,27 +93,20 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
 
                 // we are the end of chunk
-                pos = chunk.ChunkHeader.ChunkEndPosition; // the start of next physical chunk
+                _curPos = chunk.ChunkHeader.ChunkEndPosition; // the start of next physical chunk
             }
-        }
-
-        public bool TryReadPrev(out LogRecord record)
-        {
-            var res = TryReadPrev();
-            record = res.LogRecord;
-            return res.Success;
         }
 
         public SeqReadResult TryReadPrev()
         {
-            return TryReadPrevInternal(_curPos, 0);
+            return TryReadPrevInternal(0);
         }
 
-        private SeqReadResult TryReadPrevInternal(long position, int retries)
+        private SeqReadResult TryReadPrevInternal(int retries)
         {
-            var pos = position;
             while (true)
             {
+                var pos = _curPos;
                 var writerChk = _writerCheckpoint.Read();
                 // we allow == writerChk, that means read the very last record
                 if (pos > writerChk)
@@ -147,7 +133,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {
                     if (retries > MaxRetries)
                         throw new Exception(string.Format("Got a file that was being deleted {0} times from TFChunkDb, likely a bug there.", MaxRetries));
-                    return TryReadPrevInternal(position, retries + 1);
+                    return TryReadPrevInternal(retries + 1);
                 }
 
                 if (result.Success)
@@ -160,7 +146,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 // we are the beginning of chunk, so need to switch to previous one
                 // to do that we set cur position to the exact boundary position between current and previous chunk, 
                 // this will be handled correctly on next iteration
-                pos = chunk.ChunkHeader.ChunkStartPosition;
+                _curPos = chunk.ChunkHeader.ChunkStartPosition;
             }
         }
 
