@@ -40,6 +40,7 @@ namespace EventStore.Core.Tests.Helper
         private readonly Queue<Message> _queue = new Queue<Message>();
         private readonly IBus _bus;
         private readonly List<TimerMessage.Schedule> _timerQueue = new List<TimerMessage.Schedule>();
+        private bool _timerDisabled;
 
         public ManualQueue(IBus bus)
         {
@@ -53,11 +54,13 @@ namespace EventStore.Core.Tests.Helper
 
         public void Process()
         {
-            var orderedTimerMessages = _timerQueue.OrderBy(v => v.TriggerAfter).ToArray();
-            _timerQueue.Clear();
-            foreach (var timerMessage in orderedTimerMessages)
-                timerMessage.Reply();
-
+            if (!_timerDisabled)
+            {
+                var orderedTimerMessages = _timerQueue.OrderBy(v => v.TriggerAfter).ToArray();
+                _timerQueue.Clear();
+                foreach (var timerMessage in orderedTimerMessages)
+                    timerMessage.Reply();
+            }
             var count = 0;
             while (_queue.Count > 0)
             {
@@ -70,6 +73,18 @@ namespace EventStore.Core.Tests.Helper
                 if (count > 1000)
                     throw new Exception("Possible infinite message loop");
             }
+        }
+
+        public void DisableTimer()
+        {
+            _timerDisabled = true;
+        }
+
+        public void EnableTimer(bool process = true)
+        {
+            _timerDisabled = false;
+            if (process)
+                Process();
         }
     }
 }

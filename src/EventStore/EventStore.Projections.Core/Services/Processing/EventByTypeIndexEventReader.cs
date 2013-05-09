@@ -169,15 +169,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
             protected void DeliverEvent(float progress, ResolvedEvent resolvedEvent, TFPos position)
             {
-                if (resolvedEvent.Position <= _reader._lastEventPosition)
+                if (resolvedEvent.OriginalPosition <= _reader._lastEventPosition)
                     return;
-                _reader._lastEventPosition = resolvedEvent.Position;
+                _reader._lastEventPosition = resolvedEvent.OriginalPosition;
                 _reader._deliveredEvents ++;
                 _reader._publisher.Publish(
                     //TODO: publish both link and event data
                     new ReaderSubscriptionMessage.CommittedEventDistributed(
                         _reader.EventReaderCorrelationId, resolvedEvent,
-                        _reader._stopOnEof ? (long?) null : position.PreparePosition, progress));
+                        _reader._stopOnEof ? (long?) null : position.PreparePosition, progress, source: this.GetType()));
             }
         }
 
@@ -190,7 +190,7 @@ namespace EventStore.Projections.Core.Services.Processing
             private readonly HashSet<string> _eventsRequested = new HashSet<string>();
             private bool _indexCheckpointStreamRequested;
             private int _lastKnownIndexCheckpointEventNumber = -1;
-            private TFPos _lastKnownIndexCheckpointPosition = default(TFPos);
+            private TFPos? _lastKnownIndexCheckpointPosition = null;
 
             private readonly Dictionary<string, Queue<PendingEvent>> _buffers =
                 new Dictionary<string, Queue<PendingEvent>>();
@@ -264,7 +264,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (ShouldSwitch())
                 {
                     Dispose();
-                    _reader.DoSwitch(_lastKnownIndexCheckpointPosition);
+                    _reader.DoSwitch(_lastKnownIndexCheckpointPosition.Value);
                 }
             }
 
@@ -303,10 +303,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 return queue;
             }
 
-            private bool IsIndexedTfPosition(TFPos tfPosition)
+            private bool BeforeTheLastKnownIndexCheckpoint(TFPos tfPosition)
             {
-                //TODO: ensure <= is acceptable and replace
-                return tfPosition < _lastKnownIndexCheckpointPosition;
+                return _lastKnownIndexCheckpointPosition != null && tfPosition <= _lastKnownIndexCheckpointPosition;
             }
 
             private void ReadIndexCheckpointStreamCompleted(
@@ -324,19 +323,29 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     case ReadStreamResult.NoStream:
                         _reader.PauseOrContinueProcessing(delay: true);
+                        _lastKnownIndexCheckpointPosition = default(TFPos);
                         break;
                     case ReadStreamResult.Success:
-                        if (events.Length != 0)
+                        if (events.Length == 0)
+                        {
+                            if (_lastKnownIndexCheckpointPosition == null)
+                                _lastKnownIndexCheckpointPosition = default(TFPos);
+                        }
+                        else
                         {
                             //NOTE: only one event if backward order was requested
                             foreach (var @event in events)
                             {
                                 var data = @event.Event.Data.ParseCheckpointTagJson(default(ProjectionVersion)).Tag;
-                                _lastKnownIndexCheckpointPosition = data.Position;
                                 _lastKnownIndexCheckpointEventNumber = @event.Event.EventNumber;
+                                _lastKnownIndexCheckpointPosition = data.Position;
+                                // reset eofs before this point - probably some where updated so we cannot go 
+                                // forward with this position without making sure nothing appeared
+                                // NOTE: performance is not very good, but we should switch to TF mode shortly
+                                foreach (var key in _eofs.Keys.ToArray())
+                                    _eofs[key] = false;
                             }
                         }
-
                         _reader.PauseOrContinueProcessing(delay: events.Length == 0);
                         break;
                     default:
@@ -383,7 +392,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (!any)
                         break;
 
-                    if (!anyEof || IsIndexedTfPosition(minPosition))
+                    if (!anyEof || BeforeTheLastKnownIndexCheckpoint(minPosition))
                     {
                         var minHead = _buffers[minStreamId].Dequeue();
                         DeliverEventRetrievedByIndex(
@@ -484,11 +493,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_reader.Paused || _reader.PauseRequested)
                     return false;
                 Queue<PendingEvent> q;
-                var shouldSwitch =
-                    _streamToEventType.Keys.All(
-                        v =>
-                        _eofs[v]
-                        || _buffers.TryGetValue(v, out q) && q.Count > 0 && !IsIndexedTfPosition(q.Peek().TfPosition));
+                var shouldSwitch = _lastKnownIndexCheckpointPosition != null
+                                   && _streamToEventType.Keys.All(
+                                       v =>
+                                       _eofs[v]
+                                       || _buffers.TryGetValue(v, out q) && q.Count > 0
+                                       && !BeforeTheLastKnownIndexCheckpoint(q.Peek().TfPosition));
                 return shouldSwitch;
             }
         }
@@ -601,7 +611,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     return;
                 _publisher.Publish(
                     new ReaderSubscriptionMessage.CommittedEventDistributed(
-                        _reader.EventReaderCorrelationId, null, lastPosition.PreparePosition, 100.0f));
+                        _reader.EventReaderCorrelationId, null, lastPosition.PreparePosition, 100.0f, source: this.GetType()));
                 //TODO: check was is passed here
             }
 

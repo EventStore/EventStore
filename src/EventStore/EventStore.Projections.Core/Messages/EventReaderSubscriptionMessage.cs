@@ -36,17 +36,17 @@ namespace EventStore.Projections.Core.Messages
     {
         private readonly Guid _subscriptionId;
         private readonly long _subscriptionMessageSequenceNumber;
+        private readonly object _source;
         private readonly CheckpointTag _checkpointTag;
         private readonly float _progress;
 
-        private EventReaderSubscriptionMessage(
-            Guid subscriptionId, CheckpointTag checkpointTag, float progress,
-            long subscriptionMessageSequenceNumber)
+        private EventReaderSubscriptionMessage(Guid subscriptionId, CheckpointTag checkpointTag, float progress, long subscriptionMessageSequenceNumber, object source)
         {
             _subscriptionId = subscriptionId;
             _checkpointTag = checkpointTag;
             _progress = progress;
             _subscriptionMessageSequenceNumber = subscriptionMessageSequenceNumber;
+            _source = source;
         }
 
         /// <summary>
@@ -59,8 +59,8 @@ namespace EventStore.Projections.Core.Messages
         {
             public CheckpointSuggested(
                 Guid subscriptionId, CheckpointTag checkpointTag, float progress,
-                long subscriptionMessageSequenceNumber)
-                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                long subscriptionMessageSequenceNumber, object source = null)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber, source)
             {
             }
         }
@@ -69,8 +69,8 @@ namespace EventStore.Projections.Core.Messages
         {
             public ProgressChanged(
                 Guid subscriptionId, CheckpointTag checkpointTag, float progress,
-                long subscriptionMessageSequenceNumber)
-                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                long subscriptionMessageSequenceNumber, object source = null)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber, source)
             {
             }
         }
@@ -79,8 +79,8 @@ namespace EventStore.Projections.Core.Messages
         {
             public EofReached(
                 Guid subscriptionId, CheckpointTag checkpointTag,
-                long subscriptionMessageSequenceNumber)
-                : base(subscriptionId, checkpointTag, 100.0f, subscriptionMessageSequenceNumber)
+                long subscriptionMessageSequenceNumber, object source = null)
+                : base(subscriptionId, checkpointTag, 100.0f, subscriptionMessageSequenceNumber, source)
             {
             }
         }
@@ -98,10 +98,8 @@ namespace EventStore.Projections.Core.Messages
 
             private readonly string _eventCategory;
 
-            private CommittedEventReceived(
-                Guid subscriptionId, CheckpointTag checkpointTag, string eventCategory,
-                ResolvedEvent data, float progress, long subscriptionMessageSequenceNumber)
-                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+            private CommittedEventReceived(Guid subscriptionId, CheckpointTag checkpointTag, string eventCategory, ResolvedEvent data, float progress, long subscriptionMessageSequenceNumber, object source)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber, source)
             {
                 if (data == null) throw new ArgumentNullException("data");
                 _data = data;
@@ -114,7 +112,7 @@ namespace EventStore.Projections.Core.Messages
                 : this(
                     subscriptionId,
                     CheckpointTag.FromPosition(data.Position.CommitPosition, data.Position.PreparePosition),
-                    eventCategory, data, progress, subscriptionMessageSequenceNumber)
+                    eventCategory, data, progress, subscriptionMessageSequenceNumber, null)
             {
             }
 
@@ -134,7 +132,7 @@ namespace EventStore.Projections.Core.Messages
             {
                 return new CommittedEventReceived(
                     subscriptionId, checkpointTag, eventCategory, message.Data, message.Progress,
-                    subscriptionMessageSequenceNumber);
+                    subscriptionMessageSequenceNumber, message.Source);
             }
         }
 
@@ -158,5 +156,9 @@ namespace EventStore.Projections.Core.Messages
             get { return _subscriptionId; }
         }
 
+        public object Source
+        {
+            get { return _source; }
+        }
     }
 }

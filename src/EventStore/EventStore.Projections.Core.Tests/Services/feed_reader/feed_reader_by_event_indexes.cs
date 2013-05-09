@@ -98,7 +98,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                 ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos1), "0@test-stream");
                 ExistingEvent("$et-type2", "$>", TFPosToMetadata(_tfPos3), "2@test-stream");
                 ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos2), "1@test-stream");
-
+                NoStream("$et");
                 _querySourcesDefinition = new QuerySourcesDefinition
                     {
                         AllStreams = true,

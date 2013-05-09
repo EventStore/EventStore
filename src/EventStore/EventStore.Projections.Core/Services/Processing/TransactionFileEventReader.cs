@@ -159,7 +159,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId, null, lastPosition.PreparePosition, 100.0f));
+                    EventReaderCorrelationId, null, lastPosition.PreparePosition, 100.0f, source: this.GetType()));
                 //TODO: check was is passed here
         }
 
@@ -203,7 +203,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata,
                         @event.Link == null ? null : @event.Link.Metadata, positionEvent.TimeStamp),
                     _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
-                    100.0f*positionEvent.LogPosition/lastCommitPosition));
+                    100.0f*positionEvent.LogPosition/lastCommitPosition, source: this.GetType()));
         }
     }
 }

@@ -145,6 +145,7 @@
     <Compile Include="Services\core_projection\TestFixtureWithReadWriteDispatchers.cs" />
     <Compile Include="Services\core_projection\when_receiving_committed_event_the_projection_with_existing_partitioned_state_should.cs" />
     <Compile Include="Services\core_projection\when_the_projection_with_pending_checkpoint_is_stopped.cs" />
+    <Compile Include="Services\event_reader\event_by_type_index_reader\catching_up\index_checkpoint.cs" />
     <Compile Include="Services\event_reader\event_by_type_index_reader\catching_up\when_reordering_happens_in_event_by_type_index.cs" />
     <Compile Include="Services\event_reader\event_by_type_index_reader\catching_up\when_one_event_type_has_been_never_emitted.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\reordering.cs" />

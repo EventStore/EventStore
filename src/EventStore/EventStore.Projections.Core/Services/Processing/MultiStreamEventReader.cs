@@ -268,7 +268,7 @@ namespace EventStore.Projections.Core.Services.Processing
             // deliver if already available
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId, null, PositionToSafeJoinPosition(_safePositionToJoin), 100.0f));
+                    EventReaderCorrelationId, null, PositionToSafeJoinPosition(_safePositionToJoin), 100.0f, source: this.GetType()));
         }
 
         private void UpdateSafePositionToJoin(string streamId, long? preparePosition)
@@ -299,7 +299,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         new TFPos(-1, positionEvent.LogPosition), new TFPos(-1, @event.LogPosition), @event.EventId,
                         @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata,
                         @event == positionEvent ? null : positionEvent.Metadata, positionEvent.TimeStamp),
-                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress));
+                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: this.GetType()));
         }
 
         protected virtual long? EventPairToPosition(EventStore.Core.Data.ResolvedEvent resolvedEvent)

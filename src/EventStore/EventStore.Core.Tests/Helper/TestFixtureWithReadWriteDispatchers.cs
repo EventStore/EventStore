@@ -86,6 +86,16 @@ namespace EventStore.Core.Tests.Helper
             _queue = new ManualQueue(_bus);
         }
 
+        protected void DisableTimer()
+        {
+            _queue.DisableTimer();
+        }
+
+        protected void EnableTimer()
+        {
+            _queue.EnableTimer();
+        }
+
         protected void WhenLoop()
         {
             _queue.Process();

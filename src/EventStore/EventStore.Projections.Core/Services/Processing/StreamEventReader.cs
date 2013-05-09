@@ -176,7 +176,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return; //TODO: this should not happen, but StorageReader does not return it now
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId, null, safeJoinPosition, 100.0f));
+                    EventReaderCorrelationId, null, safeJoinPosition, 100.0f, source: this.GetType()));
         }
 
         private void DeliverEvent(EventRecord @event, EventRecord link, float progress, ref int sequenceNumber)
@@ -201,7 +201,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         resolvedLinkTo, new TFPos(-1, positionEvent.LogPosition), new TFPos(-1, @event.LogPosition),
                         @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
                         @event.Metadata, link == null ? null : link.Metadata, positionEvent.TimeStamp),
-                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress));
+                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: this.GetType()));
         }
     }
 }

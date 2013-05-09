@@ -26,7 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
+using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -90,5 +94,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _ticksAreHandledImmediately = true;
         }
 
+        protected ClientMessage.WriteEvents CreateWriteEvent(
+            string streamId, string eventType, string data, string metadata, bool isJson = true,
+            Guid? correlationId = null)
+        {
+            return new ClientMessage.WriteEvents(
+                correlationId ?? Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), false, streamId,
+                ExpectedVersion.Any, new Event(Guid.NewGuid(), eventType, isJson, data, metadata), null);
+        }
     }
 }

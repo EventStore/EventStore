@@ -38,15 +38,22 @@ namespace EventStore.Projections.Core.Messages
         public class SubscriptionMessage : Message
         {
             private readonly Guid _correlationId;
+            private readonly object _source;
 
-            public SubscriptionMessage(Guid correlationId)
+            public SubscriptionMessage(Guid correlationId, object source)
             {
                 _correlationId = correlationId;
+                _source = source;
             }
 
             public Guid CorrelationId
             {
                 get { return _correlationId; }
+            }
+
+            public object Source
+            {
+                get { return _source; }
             }
         }
 
@@ -54,7 +61,7 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly DateTime _idleTimestampUtc;
 
-            public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc): base(correlationId)
+            public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc, object source = null): base(correlationId, source)
             {
                 _idleTimestampUtc = idleTimestampUtc;
             }
@@ -69,8 +76,8 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly bool _maxEventsReached;
 
-            public EventReaderEof(Guid correlationId, bool maxEventsReached = false)
-                : base(correlationId)
+            public EventReaderEof(Guid correlationId, bool maxEventsReached = false, object source = null)
+                : base(correlationId, source)
             {
                 _maxEventsReached = maxEventsReached;
             }
@@ -119,7 +126,9 @@ namespace EventStore.Projections.Core.Messages
             // TODO: separate message?
 
             public CommittedEventDistributed(
-                Guid correlationId, ResolvedEvent data, long? safeTransactionFileReaderJoinPosition, float progress): base(correlationId)
+                Guid correlationId, ResolvedEvent data, long? safeTransactionFileReaderJoinPosition, float progress,
+                object source = null)
+                : base(correlationId, source)
             {
                 _data = data;
                 _safeTransactionFileReaderJoinPosition = safeTransactionFileReaderJoinPosition;

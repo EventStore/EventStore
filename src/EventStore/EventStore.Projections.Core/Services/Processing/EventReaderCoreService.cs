@@ -250,8 +250,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return false;
 
             if (!_runHeadingReader)
-                throw new InvalidOperationException(
-                    "Should not attempt subscribing heading event reader when it is not running");
+                return false;
 
             if (_pausedSubscriptions.Contains(projectionId))
                 return false;
