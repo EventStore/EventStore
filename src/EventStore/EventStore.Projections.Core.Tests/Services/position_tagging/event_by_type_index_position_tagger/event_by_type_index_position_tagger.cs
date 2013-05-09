@@ -231,6 +231,18 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             Assert.AreEqual(2, updated.Streams["type2"]);
         }
 
+        [Test, ExpectedException(typeof(InvalidOperationException))]
+        public void cannot_update_by_prior_tf_position()
+        {
+            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var linkEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                Guid.NewGuid(), new TFPos(180, 170), "$et-type2", 1, false, Guid.NewGuid(), "$>", false,
+                Encoding.UTF8.GetBytes("0@stream2"), new byte[0]);
+            var tag = CheckpointTag.FromEventTypeIndexPositions(
+                new TFPos(270, 260), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
+            var updated = t.MakeCheckpointTag(tag, linkEvent);
+        }
+
         [Test]
         public void produced_checkpoint_tags_are_correctly_ordered()
         {

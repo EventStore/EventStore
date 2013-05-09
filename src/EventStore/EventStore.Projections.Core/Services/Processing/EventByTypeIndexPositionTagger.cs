@@ -63,6 +63,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public override CheckpointTag MakeCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent)
         {
+            if (committedEvent.Data.OriginalPosition < previous.Position)
+                throw new InvalidOperationException(
+                    string.Format(
+                        "Cannot make a checkpoint tag at earlier position. '{0}' < '{1}'",
+                        committedEvent.Data.OriginalPosition, previous.Position));
             var byIndex = _streams.Contains(committedEvent.Data.PositionStreamId);
             return byIndex
                        ? previous.UpdateEventTypeIndexPosition(
