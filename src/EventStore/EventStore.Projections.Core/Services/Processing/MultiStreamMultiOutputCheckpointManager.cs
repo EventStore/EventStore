@@ -148,7 +148,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                             epochEnded = true;
                                             break;
                                         }
-                                        var tag = _positionTagger.AdjustTag(parsed.Tag);
+                                        var tag = parsed.AdjustBy(_positionTagger, _projectionVersion);
                                         //NOTE: even if this tag <= checkpointTag we set last tag
                                         // this is to know the exact last tag to request when writing
                                         if (_lastOrderCheckpointTag == null)

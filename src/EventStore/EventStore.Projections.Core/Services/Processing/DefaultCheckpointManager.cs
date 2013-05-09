@@ -221,7 +221,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         //TODO: check epoch and correctly set _lastWrittenCheckpointEventNumber
                         var checkpointData = Encoding.UTF8.GetString(checkpoint.Data);
                         _lastWrittenCheckpointEventNumber = checkpoint.EventNumber;
-                        var adjustedTag = _positionTagger.AdjustTag(parsed.Tag);
+                        var adjustedTag = parsed.AdjustBy(_positionTagger, _projectionVersion);
                         CheckpointLoaded(adjustedTag, checkpointData);
                     }
                     return;
@@ -285,7 +285,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     }
                     else
                     {
-                        var loadedStateCheckpointTag = _positionTagger.AdjustTag(parsed.Tag);
+                        var loadedStateCheckpointTag = parsed.AdjustBy(_positionTagger, _projectionVersion);
                         // always recovery mode? skip until state before current event
                         //TODO: skip event processing in case we know i has been already processed
                         if (loadedStateCheckpointTag < requestedStateCheckpointTag)

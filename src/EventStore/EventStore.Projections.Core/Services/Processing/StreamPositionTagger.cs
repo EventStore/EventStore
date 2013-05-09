@@ -77,8 +77,10 @@ namespace EventStore.Projections.Core.Services.Processing
         public override CheckpointTag AdjustTag(CheckpointTag tag)
         {
             if (tag.Mode_ == CheckpointTag.Mode.Stream)
-                return tag; // incompatible streams can be safely ignored
-
+            {
+                int p;
+                return CheckpointTag.FromStreamPosition(_stream, tag.Streams.TryGetValue(_stream, out p) ? p : -1);
+            }
             switch (tag.Mode_)
             {
                 case CheckpointTag.Mode.EventTypeIndex:

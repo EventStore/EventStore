@@ -211,7 +211,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
             var tag = CheckpointTag.FromEventTypeIndexPositions(
                 new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
-            Assert.AreSame(tag, t.AdjustTag(tag));
+            Assert.AreEqual(tag, t.AdjustTag(tag));
         }
 
         [Test]

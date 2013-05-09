@@ -39,6 +39,14 @@ namespace EventStore.Projections.Core.Services.Processing
         public ProjectionVersion Version;
         public CheckpointTag Tag;
         public Dictionary<string, JToken> ExtraMetadata;
+
+        public CheckpointTag AdjustBy(PositionTagger tagger, ProjectionVersion version)
+        {
+            if (Version.Version == version.Version && Version.ProjectionId == version.ProjectionId)
+                return Tag;
+
+            return tagger.AdjustTag(Tag);
+        }
     }
 
     public static class CheckpointTagExtensions

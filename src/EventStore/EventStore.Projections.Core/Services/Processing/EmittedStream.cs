@@ -252,7 +252,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 else
                 {
                     //TODO: verify order - as we are reading backward
-                    _lastSubmittedOrCommittedMetadata = _positionTagger.AdjustTag(parsed.Tag);
+                    _lastSubmittedOrCommittedMetadata = parsed.AdjustBy(_positionTagger, _projectionVersion);
                 }
             }
 
@@ -281,7 +281,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 }
                 var eventType = e.Event.EventType;
-                var adjustedTag = _positionTagger.AdjustTag(checkpointTagVersion.Tag);
+                var adjustedTag = checkpointTagVersion.AdjustBy(_positionTagger, _projectionVersion);
                 _alreadyCommittedEvents.Push(Tuple.Create(adjustedTag, eventType, e.Event.EventNumber));
             }
             return stop || message.IsEndOfStream;

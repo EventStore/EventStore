@@ -136,7 +136,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_pos
         {
             var t = new StreamPositionTagger("stream1");
             var tag = CheckpointTag.FromStreamPosition("stream1", 1);
-            Assert.AreSame(tag, t.AdjustTag(tag));
+            Assert.AreEqual(tag, t.AdjustTag(tag));
         }
 
         [Test]

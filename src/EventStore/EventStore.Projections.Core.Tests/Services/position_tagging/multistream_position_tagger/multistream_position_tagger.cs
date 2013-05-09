@@ -156,7 +156,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.multistrea
             var t = new MultiStreamPositionTagger(new[] {"stream1", "stream2"});
             var tag = CheckpointTag.FromStreamPositions(
                 new Dictionary<string, int> {{"stream1", 1}, {"stream2", 2}});
-            Assert.AreSame(tag, t.AdjustTag(tag));
+            Assert.AreEqual(tag, t.AdjustTag(tag));
         }
 
         [Test]
