@@ -51,7 +51,15 @@ namespace EventStore.Projections.Core.Services.Processing
             return CheckpointTag.FromJson(reader, default(ProjectionVersion)).Tag;
         }
 
-        public static CheckpointTagVersion ParseCheckpointTagJson(this byte[] source, ProjectionVersion current)
+        public static CheckpointTag ParseCheckpointTagJson(this byte[] source)
+        {
+            if (source == null || source.Length == 0)
+                return null;
+            var reader = new JsonTextReader(new StreamReader(new MemoryStream(source)));
+            return CheckpointTag.FromJson(reader, default(ProjectionVersion)).Tag;
+        }
+
+        public static CheckpointTagVersion ParseCheckpointTagVersionExtraJson(this byte[] source, ProjectionVersion current)
         {
             if (source == null || source.Length == 0)
                 return new CheckpointTagVersion { Version = new ProjectionVersion(current.ProjectionId, 0, 0), Tag = null };
@@ -59,7 +67,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return CheckpointTag.FromJson(reader, current);
         }
 
-        public static CheckpointTagVersion ParseCheckpointTagJson(this string source, ProjectionVersion current)
+        public static CheckpointTagVersion ParseCheckpointTagVersionExtraJson(this string source, ProjectionVersion current)
         {
             if (string.IsNullOrEmpty(source))
                 return new CheckpointTagVersion { Version = new ProjectionVersion(current.ProjectionId, 0, 0), Tag = null };

@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "Result")).ToList();
             Assert.AreEqual(1, writeEvents.Count);
 
-            var metedata = writeEvents[0].Events[0].Metadata.ParseCheckpointTagJson(default(ProjectionVersion));
+            var metedata = writeEvents[0].Events[0].Metadata.ParseCheckpointTagVersionExtraJson(default(ProjectionVersion));
 
             Assert.AreEqual(120, metedata.Tag.CommitPosition);
             Assert.AreEqual(110, metedata.Tag.PreparePosition);

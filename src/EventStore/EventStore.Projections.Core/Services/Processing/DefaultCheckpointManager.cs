@@ -207,7 +207,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 EventRecord checkpoint = message.Events.FirstOrDefault(v => v.Event.EventType == "$ProjectionCheckpoint").Event;
                 if (checkpoint != null)
                 {
-                    var parsed = checkpoint.Metadata.ParseCheckpointTagJson(_projectionVersion);
+                    var parsed = checkpoint.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                     if (parsed.Version.ProjectionId != _projectionVersion.ProjectionId
                         || _projectionVersion.Epoch > parsed.Version.Version)
                     {
@@ -272,7 +272,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 EventRecord @event = message.Events[0].Event;
                 if (@event.EventType == stateEventType)
                 {
-                    var parsed = @event.Metadata.ParseCheckpointTagJson(_projectionVersion);
+                    var parsed = @event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                     if (parsed.Version.ProjectionId != _projectionVersion.ProjectionId
                         || _projectionVersion.Epoch > parsed.Version.Version)
                     {

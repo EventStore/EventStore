@@ -285,7 +285,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     var queue = GetStreamQueue(positionEvent);
                     //TODO: progress calculation below is incorrect.  sum(current)/sum(last_event) where sum by all streams
                     var tfPosition =
-                        positionEvent.Metadata.ParseCheckpointTagJson(default(ProjectionVersion)).Tag.Position;
+                        positionEvent.Metadata.ParseCheckpointTagJson().Position;
                     var progress = 100.0f*(link ?? @event).EventNumber/message.LastEventNumber;
                     var pendingEvent = new PendingEvent(@event, positionEvent, tfPosition, progress);
                     queue.Enqueue(pendingEvent);
@@ -336,7 +336,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             //NOTE: only one event if backward order was requested
                             foreach (var @event in events)
                             {
-                                var data = @event.Event.Data.ParseCheckpointTagJson(default(ProjectionVersion)).Tag;
+                                var data = @event.Event.Data.ParseCheckpointTagJson();
                                 _lastKnownIndexCheckpointEventNumber = @event.Event.EventNumber;
                                 _lastKnownIndexCheckpointPosition = data.Position;
                                 // reset eofs before this point - probably some where updated so we cannot go 

@@ -74,6 +74,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _disposed;
         private CheckpointTag _last;
         private bool _recoveryCompleted;
+        private string _debugStreamStartedAs;
 
 
         public EmittedStream(
@@ -225,7 +226,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 var parsed = default(CheckpointTagVersion);
                 if (!newPhysicalStream)
                 {
-                    parsed = message.Events[0].Event.Metadata.ParseCheckpointTagJson(_projectionVersion);
+                    _debugStreamStartedAs = Encoding.UTF8.GetString(message.Events[0].Event.Metadata);
+                    parsed = message.Events[0].Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                     if (_projectionVersion.ProjectionId != parsed.Version.ProjectionId)
                     {
                         Failed(
@@ -265,7 +267,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var stop = false;
             foreach (var e in message.Events)
             {
-                var checkpointTagVersion = e.Event.Metadata.ParseCheckpointTagJson(_projectionVersion);
+                var checkpointTagVersion = e.Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                 var ourEpoch = checkpointTagVersion.Version.ProjectionId == _projectionVersion.ProjectionId
                                && checkpointTagVersion.Version.Version >= _projectionVersion.Epoch;
                 if (!ourEpoch || // ignore any events from previous projection epoch

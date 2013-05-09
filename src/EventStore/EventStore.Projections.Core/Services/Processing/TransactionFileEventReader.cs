@@ -180,7 +180,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (positionEvent.Metadata != null && positionEvent.Metadata.Length > 0)
                 {
                     var parsedPosition =
-                        positionEvent.Metadata.ParseCheckpointTagJson(default(ProjectionVersion)).Tag.Position;
+                        positionEvent.Metadata.ParseCheckpointTagJson().Position;
                     originalPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
                                            ? parsedPosition
                                            : new TFPos(-1, @event.OriginalEvent.LogPosition);

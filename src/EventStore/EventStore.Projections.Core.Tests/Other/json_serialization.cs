@@ -146,7 +146,7 @@ namespace EventStore.Projections.Core.Tests.Other
             string instring = Encoding.UTF8.GetString(bytes);
             Console.WriteLine(instring);
 
-            CheckpointTagVersion back = instring.ParseCheckpointTagJson(_version);
+            CheckpointTagVersion back = instring.ParseCheckpointTagVersionExtraJson(_version);
             Assert.IsNotNull(back.ExtraMetadata);
             JToken v;
             Assert.IsTrue(back.ExtraMetadata.TryGetValue("$$a", out v));
