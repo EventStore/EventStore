@@ -406,10 +406,15 @@ namespace EventStore.Projections.Core.Services.Http
                                   let resolvedEvent = e.ResolvedEvent
                                   let isJson = resolvedEvent.IsJson
                                   let data =
-                                      isJson ? (object) (resolvedEvent.Data.ParseJson<JObject>()) : resolvedEvent.Data
+                                      isJson
+                                          ? EatException(
+                                              () => (object) (resolvedEvent.Data.ParseJson<JObject>()), resolvedEvent.Data)
+                                          : resolvedEvent.Data
                                   let metadata =
                                       isJson
-                                          ? (object) (resolvedEvent.Metadata.ParseJson<JObject>())
+                                          ? EatException(
+                                              () => (object) (resolvedEvent.Metadata.ParseJson<JObject>()),
+                                              resolvedEvent.Metadata)
                                           : resolvedEvent.Metadata
                                   select
                                       new
@@ -517,6 +522,18 @@ namespace EventStore.Projections.Core.Services.Http
             return "yes" == value || "true" == value || "1" == value;
         }
 
+        public static T EatException<T>(Func<T> func, T defaultValue = default(T))
+        {
+            Ensure.NotNull(func, "func");
+            try
+            {
+                return func();
+            }
+            catch (Exception)
+            {
+                return defaultValue;
+            }
+        }
 
 /*
         private void OnPostShutdown(HttpEntity entity, UriTemplateMatch match)
