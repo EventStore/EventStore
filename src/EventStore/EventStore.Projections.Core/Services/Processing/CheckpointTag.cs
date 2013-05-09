@@ -426,11 +426,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     was = true;
                     if (eventSequenceNumber < stream.Value)
-                        throw new InvalidOperationException(
-                            string.Format(
-                                "Cannot make a checkpoint tag before the current position. Stream: '{0}'  Current: {1} Message Position Event SequenceNo: {2}",
-                                stream.Key, stream.Value, eventSequenceNumber));
-                    resultDictionary.Add(stream.Key, eventSequenceNumber);
+                        resultDictionary.Add(stream.Key, stream.Value);
+                    else 
+                        resultDictionary.Add(stream.Key, eventSequenceNumber);
                 }
                 else
                 {

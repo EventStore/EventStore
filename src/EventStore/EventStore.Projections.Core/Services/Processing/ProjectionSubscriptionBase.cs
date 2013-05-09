@@ -87,9 +87,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType))
             {
                 if (progressChanged)
-                    _publisher.Publish(
-                        new EventReaderSubscriptionMessage.ProgressChanged(
-                            _subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
+                    PublishProgress();
                 return;
             }
 
@@ -137,15 +135,19 @@ namespace EventStore.Projections.Core.Services.Processing
                 else
                 {
                     if (progressChanged)
-                        _publisher.Publish(
-                            new EventReaderSubscriptionMessage.ProgressChanged(
-                                _subscriptionId, _positionTracker.LastTag, _progress,
-                                _subscriptionMessageSequenceNumber++));
+                        PublishProgress();
                 }
             }
             // initialize checkpointing based on first message 
             if (_lastPassedOrCheckpointedEventPosition == null)
                 _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
+        }
+
+        private void PublishProgress()
+        {
+            _publisher.Publish(
+                new EventReaderSubscriptionMessage.ProgressChanged(
+                    _subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
         }
 
         private void SuggestCheckpoint(ReaderSubscriptionMessage.CommittedEventDistributed message)

@@ -563,9 +563,14 @@ namespace EventStore.Projections.Core.Services.Processing
                                 var byStream = @event.Link != null
                                                && _streamToEventType.ContainsKey(@event.Link.EventStreamId);
                                 var byEvent = @event.Link == null && _eventTypes.Contains(@event.Event.EventType);
-                                if (byStream) // ignore data just update positions
+                                if (byStream)
+                                { // ignore data just update positions
                                     _reader.UpdateNextStreamPosition(
                                         @event.Link.EventStreamId, @event.Link.EventNumber + 1);
+                                    DeliverEventRetrievedFromTf(
+                                        @event.Link, 100.0f*@event.Link.LogPosition/message.TfEofPosition,
+                                        @event.OriginalPosition.Value);
+                                }
                                 else if (byEvent)
                                 {
                                     DeliverEventRetrievedFromTf(

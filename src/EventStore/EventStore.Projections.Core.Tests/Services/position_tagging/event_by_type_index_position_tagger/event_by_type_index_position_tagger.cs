@@ -62,6 +62,8 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             _thirdEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(-1, 150), new TFPos(70, 60), "$et-type2", 1, "stream2", 1, false,
                 Guid.NewGuid(), "type2", true, Encoding.UTF8.GetBytes("{}"), new byte[0], null, 40f);
+
+
         }
 
         [Test]
@@ -212,6 +214,21 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var zeroFromEvent = t.MakeCheckpointTag(zero, _zeroEvent);
 
             Assert.IsTrue(zeroFromEvent > zero);
+        }
+
+        [Test]
+        public void can_update_by_tf_event_if_with_prior_index_position()
+        {
+            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var linkEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                Guid.NewGuid(), new TFPos(180, 170), "$et-type2", 1, false, Guid.NewGuid(), "$>", false,
+                Encoding.UTF8.GetBytes("0@stream2"), new byte[0]);
+            var tag = CheckpointTag.FromEventTypeIndexPositions(
+                new TFPos(70, 60), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
+            var updated = t.MakeCheckpointTag(tag, linkEvent);
+            Assert.AreEqual(new TFPos(180, 170), updated.Position);
+            Assert.AreEqual(2, updated.Streams["type1"]);
+            Assert.AreEqual(2, updated.Streams["type2"]);
         }
 
         [Test]
