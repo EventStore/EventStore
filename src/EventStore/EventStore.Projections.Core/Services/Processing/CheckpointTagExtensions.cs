@@ -37,12 +37,14 @@ namespace EventStore.Projections.Core.Services.Processing
     public struct CheckpointTagVersion
     {
         public ProjectionVersion Version;
+        public int SystemVersion;
         public CheckpointTag Tag;
         public Dictionary<string, JToken> ExtraMetadata;
 
         public CheckpointTag AdjustBy(PositionTagger tagger, ProjectionVersion version)
         {
-            if (Version.Version == version.Version && Version.ProjectionId == version.ProjectionId)
+            if (SystemVersion == Projections.VERSION && Version.Version == version.Version
+                && Version.ProjectionId == version.ProjectionId)
                 return Tag;
 
             return tagger.AdjustTag(Tag);

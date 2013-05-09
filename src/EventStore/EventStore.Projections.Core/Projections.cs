@@ -76,6 +76,8 @@ namespace EventStore.Projections.Core
 
     sealed class Projections
     {
+        public const int VERSION = 2;
+
         private List<QueuedHandler> _coreQueues;
         private readonly int _projectionWorkerThreadCount;
         private QueuedHandler _managerInputQueue;

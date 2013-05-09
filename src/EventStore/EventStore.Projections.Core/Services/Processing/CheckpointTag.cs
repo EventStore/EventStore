@@ -543,7 +543,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private static void WriteVersion(ProjectionVersion projectionVersion, JsonTextWriter jsonWriter)
         {
-            jsonWriter.WriteValue(projectionVersion.ProjectionId + ":" + projectionVersion.Epoch + ":" + projectionVersion.Version);
+            jsonWriter.WriteValue(
+                projectionVersion.ProjectionId + ":" + projectionVersion.Epoch + ":" + projectionVersion.Version + ":"
+                + Projections.VERSION);
         }
 
         public static CheckpointTagVersion FromJson(JsonReader reader, ProjectionVersion current)
@@ -557,6 +559,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var projectionId = current.ProjectionId;
             var projectionEpoch = 0;
             var projectionVersion = 0;
+            var projectionSystemVersion = 0;
             while (true)
             {
                 Check(reader.Read(), reader);
@@ -589,6 +592,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                 projectionId = Int32.Parse(parts[0]);
                                 projectionEpoch = Int32.Parse(parts[1]);
                                 projectionVersion = Int32.Parse(parts[2]);
+                                if (parts.Length >= 4) 
+                                    projectionSystemVersion = Int32.Parse(parts[3]);
                             }
                         }
                         break;
@@ -637,6 +642,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         new CheckpointTag(
                             new TFPos(commitPosition ?? Int64.MinValue, preparePosition ?? Int64.MinValue), streams),
                     Version = new ProjectionVersion(projectionId, projectionEpoch, projectionVersion),
+                    SystemVersion =  projectionSystemVersion,
                     ExtraMetadata = extra,
                 };
         }
