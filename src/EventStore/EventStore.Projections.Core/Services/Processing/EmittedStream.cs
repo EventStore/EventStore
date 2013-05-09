@@ -52,6 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ILogger _logger;
         private readonly string _streamId;
         private readonly ProjectionVersion _projectionVersion;
+        private readonly PositionTagger _positionTagger;
         private readonly CheckpointTag _zeroPosition;
         private readonly CheckpointTag _from;
         private readonly IEmittedStreamContainer _readyHandler;
@@ -78,7 +79,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public EmittedStream(
-            string streamId, ProjectionVersion projectionVersion, CheckpointTag zeroPosition, CheckpointTag from,
+            string streamId, ProjectionVersion projectionVersion, PositionTagger positionTagger, CheckpointTag zeroPosition, CheckpointTag from,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
@@ -86,6 +87,7 @@ namespace EventStore.Projections.Core.Services.Processing
             bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
+            if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (zeroPosition == null) throw new ArgumentNullException("zeroPosition");
             if (@from == null) throw new ArgumentNullException("from");
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
@@ -94,6 +96,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
             _projectionVersion = projectionVersion;
+            _positionTagger = positionTagger;
             _zeroPosition = zeroPosition;
             _from = @from;
             _last = null;
@@ -249,7 +252,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 else
                 {
                     //TODO: verify order - as we are reading backward
-                    _lastSubmittedOrCommittedMetadata = parsed.Tag;
+                    _lastSubmittedOrCommittedMetadata = _positionTagger.AdjustTag(parsed.Tag);
                 }
             }
 
@@ -278,7 +281,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 }
                 var eventType = e.Event.EventType;
-                _alreadyCommittedEvents.Push(Tuple.Create(checkpointTagVersion.Tag, eventType, e.Event.EventNumber));
+                var adjustedTag = _positionTagger.AdjustTag(checkpointTagVersion.Tag);
+                _alreadyCommittedEvents.Push(Tuple.Create(adjustedTag, eventType, e.Event.EventNumber));
             }
             return stop || message.IsEndOfStream;
         }

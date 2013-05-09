@@ -28,6 +28,7 @@
 
 using System;
 using System.Linq;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -71,6 +72,27 @@ namespace EventStore.Projections.Core.Services.Processing
         public override bool IsCompatible(CheckpointTag checkpointTag)
         {
             return checkpointTag.Mode_ == CheckpointTag.Mode.Stream && checkpointTag.Streams.Keys.First() == _stream;
+        }
+
+        public override CheckpointTag AdjustTag(CheckpointTag tag)
+        {
+            if (tag.Mode_ == CheckpointTag.Mode.Stream)
+                return tag; // incompatible streams can be safely ignored
+
+            switch (tag.Mode_)
+            {
+                case CheckpointTag.Mode.EventTypeIndex:
+                    throw new NotSupportedException("Conversion from EventTypeIndex to Stream position tag is not supported");
+                case CheckpointTag.Mode.PreparePosition:
+                    throw new NotSupportedException("Conversion from PreparePosition to Stream position tag is not supported");
+                case CheckpointTag.Mode.MultiStream:
+                    int p;
+                    return CheckpointTag.FromStreamPosition(_stream, tag.Streams.TryGetValue(_stream, out p) ? p : -1);
+                case CheckpointTag.Mode.Position:
+                    throw new NotSupportedException("Conversion from Position to Stream position tag is not supported");
+                default:
+                    throw new Exception();
+            }
         }
     }
 }

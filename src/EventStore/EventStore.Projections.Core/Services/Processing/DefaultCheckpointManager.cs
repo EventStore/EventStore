@@ -55,6 +55,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly ProjectionVersion _projectionVersion;
         protected readonly RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
         protected readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
+        private readonly PositionTagger _positionTagger;
 
         public DefaultCheckpointManager(IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion,  
             RequestResponseDispatcher
@@ -72,6 +73,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionVersion = projectionVersion;
             _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
+            _positionTagger = positionTagger;
             _projectionCheckpointStreamId = namingBuilder.MakeCheckpointStreamName();
             _zeroTag = positionTagger.MakeZeroCheckpointTag();
         }
@@ -219,7 +221,8 @@ namespace EventStore.Projections.Core.Services.Processing
                         //TODO: check epoch and correctly set _lastWrittenCheckpointEventNumber
                         var checkpointData = Encoding.UTF8.GetString(checkpoint.Data);
                         _lastWrittenCheckpointEventNumber = checkpoint.EventNumber;
-                        CheckpointLoaded(parsed.Tag, checkpointData);
+                        var adjustedTag = _positionTagger.AdjustTag(parsed.Tag);
+                        CheckpointLoaded(adjustedTag, checkpointData);
                     }
                     return;
                 }
@@ -282,7 +285,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     }
                     else
                     {
-                        var loadedStateCheckpointTag = parsed.Tag;
+                        var loadedStateCheckpointTag = _positionTagger.AdjustTag(parsed.Tag);
                         // always recovery mode? skip until state before current event
                         //TODO: skip event processing in case we know i has been already processed
                         if (loadedStateCheckpointTag < requestedStateCheckpointTag)
@@ -317,7 +320,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new ProjectionCheckpoint(
                 _readDispatcher, _writeDispatcher, _projectionVersion, this, checkpointPosition,
-                _zeroTag, _projectionConfig.MaxWriteBatchLength, _logger);
+                _positionTagger, _zeroTag, _projectionConfig.MaxWriteBatchLength, _logger);
         }
     }
 }

@@ -74,5 +74,13 @@ namespace EventStore.Projections.Core.Services.Processing
             var reader = new JsonTextReader(new StringReader(source));
             return CheckpointTag.FromJson(reader, current);
         }
+
+        public static Dictionary<string, JToken> ParseCheckpointExtraJson(this string source)
+        {
+            if (string.IsNullOrEmpty(source))
+                return null;
+            var reader = new JsonTextReader(new StringReader(source));
+            return CheckpointTag.FromJson(reader, default(ProjectionVersion)).ExtraMetadata;
+        }
     }
 }

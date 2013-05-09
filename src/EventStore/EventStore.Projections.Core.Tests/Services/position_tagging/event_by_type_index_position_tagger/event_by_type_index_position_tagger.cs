@@ -206,6 +206,25 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         }
 
         [Test]
+        public void adjust_compatible_tag_returns_the_same_tag()
+        {
+            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var tag = CheckpointTag.FromEventTypeIndexPositions(
+                new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
+            Assert.AreSame(tag, t.AdjustTag(tag));
+        }
+
+        [Test]
+        public void can_adjust_tf_position_tag()
+        {
+            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var tag = CheckpointTag.FromEventTypeIndexPositions(
+                new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
+            var original = CheckpointTag.FromPosition(100, 50);
+            Assert.AreEqual(tag, t.AdjustTag(original));
+        }
+
+        [Test]
         public void zero_position_tag_is_before_first_event_possible()
         {
             var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});

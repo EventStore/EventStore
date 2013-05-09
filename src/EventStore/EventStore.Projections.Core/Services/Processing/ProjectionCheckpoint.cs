@@ -45,6 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CheckpointTag _from;
         private CheckpointTag _last;
         private readonly IProjectionCheckpointManager _readyHandler;
+        private readonly PositionTagger _positionTagger;
 
         private bool _checkpointRequested = false;
         private int _requestedCheckpoints;
@@ -67,11 +68,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionVersion projectionVersion, IProjectionCheckpointManager readyHandler, CheckpointTag from,
-            CheckpointTag zero, int maxWriteBatchLength, ILogger logger = null)
+            PositionTagger positionTagger, CheckpointTag zero, int maxWriteBatchLength, ILogger logger = null)
         {
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
             if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
+            if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (zero == null) throw new ArgumentNullException("zero");
             if (from.CommitPosition <= from.PreparePosition) throw new ArgumentException("from");
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
@@ -79,6 +81,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _writeDispatcher = writeDispatcher;
             _projectionVersion = projectionVersion;
             _readyHandler = readyHandler;
+            _positionTagger = positionTagger;
             _zero = zero;
             _from = _last = from;
             _maxWriteBatchLength = maxWriteBatchLength;
@@ -160,7 +163,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_emittedStreams.TryGetValue(streamId, out stream))
             {
                 stream = new EmittedStream(
-                    streamId, _projectionVersion, _zero, _from, _readDispatcher, _writeDispatcher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength,
+                    streamId, _projectionVersion, _positionTagger, _zero, _from, _readDispatcher, _writeDispatcher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength,
                     logger: _logger);
                 if (_started)
                     stream.Start();

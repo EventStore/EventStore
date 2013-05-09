@@ -89,5 +89,26 @@ namespace EventStore.Projections.Core.Services.Processing
             return checkpointTag.Mode_ == CheckpointTag.Mode.EventTypeIndex
                    && checkpointTag.Streams.All(v => _eventTypes.Contains(v.Key));
         }
+
+        public override CheckpointTag AdjustTag(CheckpointTag tag)
+        {
+            if (tag.Mode_ == CheckpointTag.Mode.EventTypeIndex)
+                return tag; // incompatible streams can be safely ignored
+
+            switch (tag.Mode_)
+            {
+                case CheckpointTag.Mode.MultiStream:
+                    throw new NotSupportedException("Conversion from MultiStream to EventTypeIndex position tag is not supported");
+                case CheckpointTag.Mode.Stream:
+                    throw new NotSupportedException("Conversion from Stream to EventTypeIndex position tag is not supported");
+                case CheckpointTag.Mode.PreparePosition:
+                    throw new NotSupportedException("Conversion from PreparePosition to EventTypeIndex position tag is not supported");
+                case CheckpointTag.Mode.Position:
+                    return CheckpointTag.FromEventTypeIndexPositions(
+                        tag.Position, _eventTypes.ToDictionary(v => v, v => -1));
+                default:
+                    throw new Exception();
+            }
+        }
     }
 }

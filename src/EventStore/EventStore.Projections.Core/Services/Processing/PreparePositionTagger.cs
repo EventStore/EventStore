@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -52,6 +53,26 @@ namespace EventStore.Projections.Core.Services.Processing
         public override bool IsCompatible(CheckpointTag checkpointTag)
         {
             return checkpointTag.Mode_ == CheckpointTag.Mode.PreparePosition;
+        }
+
+        public override CheckpointTag AdjustTag(CheckpointTag tag)
+        {
+            if (tag.Mode_ == CheckpointTag.Mode.PreparePosition)
+                return tag; // incompatible streams can be safely ignored
+
+            switch (tag.Mode_)
+            {
+                case CheckpointTag.Mode.EventTypeIndex:
+                    throw new NotSupportedException("Conversion from EventTypeIndex to PreparePosition position tag is not supported");
+                case CheckpointTag.Mode.Stream:
+                    throw new NotSupportedException("Conversion from Stream to PreparePosition position tag is not supported");
+                case CheckpointTag.Mode.MultiStream:
+                    throw new NotSupportedException("Conversion from MultiStream to PreparePosition position tag is not supported");
+                case CheckpointTag.Mode.Position:
+                    throw new NotSupportedException("Conversion from Position to PreparePosition position tag is not supported");
+                default:
+                    throw new Exception();
+            }
         }
     }
 }

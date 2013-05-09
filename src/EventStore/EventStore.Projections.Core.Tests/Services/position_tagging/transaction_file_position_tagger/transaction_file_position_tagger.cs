@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
@@ -94,12 +95,29 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         }
 
         [Test]
-        public void tream_checkpoint_tag_is_incompatible()
+        public void stream_checkpoint_tag_is_incompatible()
         {
             var t = new TransactionFilePositionTagger();
             Assert.IsFalse(t.IsCompatible(CheckpointTag.FromStreamPosition("stream2", 100)));
         }
 
+        [Test]
+        public void adjust_compatible_tag_returns_the_same_tag()
+        {
+            var t = new TransactionFilePositionTagger();
+            var tag = CheckpointTag.FromPosition(100, 50);
+            Assert.AreSame(tag, t.AdjustTag(tag));
+        }
+
+        [Test]
+        public void can_adjust_tf_position_tag()
+        {
+            var t = new TransactionFilePositionTagger();
+            var tag = CheckpointTag.FromPosition(100, 50);
+            var original = CheckpointTag.FromEventTypeIndexPositions(
+                new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
+            Assert.AreEqual(tag, t.AdjustTag(original));
+        }
         [Test]
         public void zero_position_tag_is_before_first_event_possible()
         {

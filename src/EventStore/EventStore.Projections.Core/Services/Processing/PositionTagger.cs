@@ -40,5 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public abstract CheckpointTag MakeZeroCheckpointTag();
 
         public abstract bool IsCompatible(CheckpointTag checkpointTag);
+
+        public abstract CheckpointTag AdjustTag(CheckpointTag tag);
     }
 }

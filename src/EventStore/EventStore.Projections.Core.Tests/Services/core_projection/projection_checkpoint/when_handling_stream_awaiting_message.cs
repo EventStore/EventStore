@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _checkpoint = new ProjectionCheckpoint(
                 _readDispatcher, _writeDispatcher, new ProjectionVersion(1, 0, 0), _readyHandler, CheckpointTag.FromPosition(100, 50),
-                CheckpointTag.FromPosition(0, -1), 250);
+                new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), 250);
 
             _fakeEnvelope = new FakeEnvelope();
             _checkpoint.Handle(new CoreProjectionProcessingMessage.EmittedStreamAwaiting("awaiting_stream", _fakeEnvelope));

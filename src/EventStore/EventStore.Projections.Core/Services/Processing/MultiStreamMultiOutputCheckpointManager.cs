@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private EmittedStream CreateOrderStream(CheckpointTag from)
         {
             return new EmittedStream(
-                _namingBuilder.GetOrderStreamName(), _projectionVersion, _positionTagger.MakeZeroCheckpointTag(), from,
+                _namingBuilder.GetOrderStreamName(), _projectionVersion, _positionTagger, _positionTagger.MakeZeroCheckpointTag(), from,
                 _readDispatcher, _writeDispatcher, /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger,
                 noCheckpoints: true);
         }
@@ -148,7 +148,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                             epochEnded = true;
                                             break;
                                         }
-                                        var tag = parsed.Tag;
+                                        var tag = _positionTagger.AdjustTag(parsed.Tag);
                                         //NOTE: even if this tag <= checkpointTag we set last tag
                                         // this is to know the exact last tag to request when writing
                                         if (_lastOrderCheckpointTag == null)

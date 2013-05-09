@@ -38,6 +38,26 @@ namespace EventStore.Projections.Core.Services.Processing
             return checkpointTag.Mode_ == CheckpointTag.Mode.Position;
         }
 
+        public override CheckpointTag AdjustTag(CheckpointTag tag)
+        {
+            if (tag.Mode_ == CheckpointTag.Mode.Position)
+                return tag; // incompatible streams can be safely ignored
+
+            switch (tag.Mode_)
+            {
+                case CheckpointTag.Mode.EventTypeIndex:
+                    return CheckpointTag.FromPosition(tag.Position.CommitPosition, tag.Position.PreparePosition);
+                case CheckpointTag.Mode.Stream:
+                    throw new NotSupportedException("Conversion from Stream to Position position tag is not supported");
+                case CheckpointTag.Mode.MultiStream:
+                    throw new NotSupportedException("Conversion from MultiStream to Position position tag is not supported");
+                case CheckpointTag.Mode.PreparePosition:
+                    throw new NotSupportedException("Conversion from PreparePosition to Position position tag is not supported");
+                default:
+                    throw new Exception();
+            }
+        }
+
         public override bool IsMessageAfterCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent)
         {

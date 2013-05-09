@@ -151,6 +151,25 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.multistrea
         }
 
         [Test]
+        public void adjust_compatible_tag_returns_the_same_tag()
+        {
+            var t = new MultiStreamPositionTagger(new[] {"stream1", "stream2"});
+            var tag = CheckpointTag.FromStreamPositions(
+                new Dictionary<string, int> {{"stream1", 1}, {"stream2", 2}});
+            Assert.AreSame(tag, t.AdjustTag(tag));
+        }
+
+        [Test]
+        public void can_adjust_stream_position_tag()
+        {
+            var t = new MultiStreamPositionTagger(new[] {"stream1", "stream2"});
+            var tag = CheckpointTag.FromStreamPositions(
+                new Dictionary<string, int> {{"stream1", 1}, {"stream2", -1}});
+            var original = CheckpointTag.FromStreamPosition("stream1", 1);
+            Assert.AreEqual(tag, t.AdjustTag(original));
+        }
+
+        [Test]
         public void zero_position_tag_is_before_first_event_possible()
         {
             var t = new MultiStreamPositionTagger(new[] {"stream1", "stream2"});
