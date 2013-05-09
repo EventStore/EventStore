@@ -504,13 +504,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
-            EnsureState(State.Running | State.Stopping | State.FaultedStopping);
             _logger.Info(
                 "Projection '{0}'({1}) restart has been requested due to: '{2}'", _name, _projectionCorrelationId,
                 message.Reason);
             if (_state != State.Running)
             {
-                SetFaulted("A concurrency violation detected while stopping");
+                SetFaulted(
+                    string.Format(
+                        "A concurrency violation detected, but the projection is not running. Current state is: {0}.  The reason for the restart is: '{1}' ",
+                        _state, message.Reason));
                 return;
             }
 
@@ -695,17 +697,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projectionStateHandler.Load(newState.State);
             else
                 _projectionStateHandler.Initialize();
-        }
-
-        private void LoadProjectionStateFaulted(Exception ex)
-        {
-            _faultedReason =
-                string.Format(
-                    "Cannot load the {0} projection state.\r\nHandler: {1}\r\n\r\nMessage:\r\n\r\n{2}",
-                    _name, GetHandlerTypeName(), ex.Message);
-            if (_logger != null)
-                _logger.ErrorException(ex, _faultedReason);
-            GoToState(State.Faulted);
         }
 
         private string GetHandlerTypeName()
@@ -908,7 +899,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             catch (Exception ex)
             {
-                LoadProjectionStateFaulted(ex);
+                SetFaulted(ex);
                 return;
             }
         }
@@ -970,8 +961,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void SetFaulted(string reason)
         {
-            _faultedReason = reason;
-            GoToState(State.Faulted);
+            if (_state != State.FaultedStopping && _state != State.Faulted)
+                _faultedReason = reason;
+            if (_state != State.Faulted)
+                GoToState(State.Faulted);
         }
 
         private void CheckpointCompleted(CheckpointTag lastCompletedCheckpointPosition)

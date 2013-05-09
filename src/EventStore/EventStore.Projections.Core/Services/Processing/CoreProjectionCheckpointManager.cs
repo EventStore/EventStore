@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _stateLoaded;
         private bool _started;
         protected bool _stopping;
-        private bool _stopped;
+        protected bool _stopped;
         private bool _stateRequested;
 
         private PartitionState _currentProjectionState;
@@ -450,11 +450,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
+            if (_stopped)
+                return;
             RequestRestart(message.Reason);
         }
 
         public void Handle(CoreProjectionProcessingMessage.Failed message)
         {
+            if (_stopped)
+                return;
             Failed(message.Reason);
         }
 

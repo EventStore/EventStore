@@ -72,6 +72,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastEnqueuedEventTag = default(CheckpointTag);
             _subscriptionPaused = false;
             _unsubscribed = false;
+            _lastReportedStatisticsTimeStamp = default(DateTime);
+            _unsubscribed = false;
+            _subscriptionId = Guid.Empty;
+
             _queuePendingEvents.Initialize();
         }
 
@@ -95,6 +99,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void EnqueueOutOfOrderTask(WorkItem workItem)
         {
+            if (_lastEnqueuedEventTag == null)
+                throw new InvalidOperationException(
+                    "Cannot enqueue an out-of-order task.  The projection position is currently unknown.");
             workItem.SetCheckpointTag(_lastEnqueuedEventTag);
             _queuePendingEvents.Enqueue(workItem);
         }
