@@ -28,8 +28,6 @@
 
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -42,27 +40,28 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     public abstract class TestFixtureWithProjectionCoreAndManagementServices : TestFixtureWithExistingEvents
     {
-        protected FakeTimeProvider _timeProvider;
-
         protected ProjectionManager _manager;
         private ProjectionCoreService _coreService;
         private EventReaderCoreService _readerService;
+        protected bool _initializeSystemProjections;
 
         protected override void Given1()
         {
             base.Given1();
             ExistingEvent("$projections-$all", "$ProjectionsInitialized", "", "");
+            _initializeSystemProjections = false;
         }
 
         [SetUp]
         public void Setup()
         {
             SetUpManualQueue();
-            _timeProvider = new FakeTimeProvider();
             //TODO: this became an integration test - proper ProjectionCoreService and ProjectionManager testing is required as well
             _bus.Subscribe(_consumer);
 
-            _manager = new ProjectionManager(GetInputQueue(), GetInputQueue(), new IPublisher[] {GetInputQueue()}, _timeProvider, true);
+            _manager = new ProjectionManager(
+                GetInputQueue(), GetInputQueue(), new[] {GetInputQueue()}, _timeProvider, true,
+                _initializeSystemProjections);
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
             _readerService = new EventReaderCoreService(GetInputQueue(), 10, writerCheckpoint, runHeadingReader: true);
             _subscriptionDispatcher =

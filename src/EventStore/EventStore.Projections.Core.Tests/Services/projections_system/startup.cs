@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,26 +26,42 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using System.Collections.Generic;
-using EventStore.Core.Messages;
-using EventStore.Projections.Core.Tests.Services.projections_manager;
+using System.Linq;
+using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_system
 {
-    public abstract class with_projections_subsystem : TestFixtureWithProjectionCoreAndManagementServices
+    namespace startup
     {
-        protected override void Given1()
+        [TestFixture]
+        public class when_starting_with_empty_db : with_projections_subsystem
         {
-            base.Given1();
-            _initializeSystemProjections = true;
-            AllWritesSucceed();
-            NoOtherStreams();
-        }
+            protected override IEnumerable<WhenStep> When()
+            {
+                yield return
+                    new ProjectionManagementMessage.GetStatistics(Envelope, ProjectionMode.AllNonTransient, null, false)
+                    ;
+            }
 
-        protected override IEnumerable<WhenStep> PreWhen()
-        {
-            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
+            [Test]
+            public void system_projections_are_registered()
+            {
+                var statistics = HandledMessages.OfType<ProjectionManagementMessage.Statistics>().LastOrDefault();
+                Assert.NotNull(statistics);
+                Assert.AreEqual(4, statistics.Projections.Length);
+            }
+
+            [Test]
+            public void system_projections_are_running()
+            {
+                var statistics = HandledMessages.OfType<ProjectionManagementMessage.Statistics>().LastOrDefault();
+                Assert.NotNull(statistics);
+                Assert.That(statistics.Projections.All(s => s.Status == "Stopped"));
+            }
+
         }
     }
 }

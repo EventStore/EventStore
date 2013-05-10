@@ -79,6 +79,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly TimeoutScheduler[] _timeoutSchedulers;
         private readonly ITimeProvider _timeProvider;
         private readonly bool _runProjections;
+        private readonly bool _initializeSystemProjections;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
         private readonly Dictionary<string, ManagedProjection> _projections;
         private readonly Dictionary<Guid, string> _projectionsMap;
@@ -93,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public ProjectionManager(
             IPublisher inputQueue, IPublisher publisher, IPublisher[] queues, ITimeProvider timeProvider,
-            bool runProjections)
+            bool runProjections, bool initializeSystemProjections = true)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -108,6 +109,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             _timeProvider = timeProvider;
             _runProjections = runProjections;
+            _initializeSystemProjections = initializeSystemProjections;
 
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
@@ -476,34 +478,46 @@ namespace EventStore.Projections.Core.Services.Management
         private void LoadProjectionListCompleted(
             ClientMessage.ReadStreamEventsBackwardCompleted completed, int requestedFrom, Action completedAction)
         {
-            if (completed.Result == ReadStreamResult.Success && completed.Events.Length > 0)
+            var anyFound = false;
+            if (completed.Result == ReadStreamResult.Success)
             {
-                if (completed.NextEventNumber != -1)
-                    BeginLoadProjectionList(completedAction, @from: completed.NextEventNumber);
-                foreach (var @event in completed.Events.Where(v => v.Event.EventType == "$ProjectionCreated"))
-                {
-                    var projectionName = Encoding.UTF8.GetString(@event.Event.Data);
-                    if (string.IsNullOrEmpty(projectionName) // NOTE: workaround for a bug allowing to create such projections
-                        || _projections.ContainsKey(projectionName))
+                var projectionRegistrations = completed.Events.Where(e => e.Event.EventType == "$ProjectionCreated").ToArray();
+                if (projectionRegistrations.IsNotEmpty())
+                    foreach (var @event in projectionRegistrations)
                     {
-                        //TODO: log this event as it should not happen
-                        continue; // ignore older attempts to create a projection
+                        anyFound = true;
+                        var projectionName = Encoding.UTF8.GetString(@event.Event.Data);
+                        if (string.IsNullOrEmpty(projectionName)
+                            // NOTE: workaround for a bug allowing to create such projections
+                            || _projections.ContainsKey(projectionName))
+                        {
+                            //TODO: log this event as it should not happen
+                            continue; // ignore older attempts to create a projection
+                        }
+                        var managedProjection = CreateManagedProjectionInstance(
+                            projectionName, @event.Event.EventNumber);
+                        managedProjection.InitializeExisting(projectionName);
                     }
-                    var managedProjection = CreateManagedProjectionInstance(projectionName, @event.Event.EventNumber);
-                    managedProjection.InitializeExisting(projectionName);
-                }
-                completedAction();
             }
-            else
+            if (requestedFrom == -1) // first chunk
             {
-                completedAction();
-                if (requestedFrom == -1)
+                if (!anyFound)
                 {
                     _logger.Info(
                         "Projection manager is initializing from the empty {0} stream", completed.EventStreamId);
-                    CreateFakeProjection(CreatePredefinedProjections);
+                    if (completed.Result == ReadStreamResult.Success && completed.Events.Length == 0)
+                        CreateFakeProjection(CreateSystemProjections);
+                    else
+                        CreateSystemProjections();
                 }
             }
+
+            if (completed.Result == ReadStreamResult.Success && !completed.IsEndOfStream)
+            {
+                BeginLoadProjectionList(completedAction, @from: completed.NextEventNumber);
+                return;
+            }
+            completedAction();
             RequestSystemProjections();
         }
 
@@ -541,15 +555,18 @@ namespace EventStore.Projections.Core.Services.Management
 
         }
 
-        private void CreatePredefinedProjections()
+        private void CreateSystemProjections()
         {
-            CreatePredefinedProjection("$streams", typeof (IndexStreams), "");
-            CreatePredefinedProjection("$stream_by_category", typeof(CategorizeStreamByPath), "-");
-            CreatePredefinedProjection("$by_category", typeof(CategorizeEventsByStreamPath), "-");
-            CreatePredefinedProjection("$by_event_type", typeof(IndexEventsByEventType), "");
+            if (_initializeSystemProjections)
+            {
+                CreateSystemProjection("$streams", typeof (IndexStreams), "");
+                CreateSystemProjection("$stream_by_category", typeof (CategorizeStreamByPath), "-");
+                CreateSystemProjection("$by_category", typeof (CategorizeEventsByStreamPath), "-");
+                CreateSystemProjection("$by_event_type", typeof (IndexEventsByEventType), "");
+            }
         }
 
-        private void CreatePredefinedProjection(string name, Type handlerType, string config)
+        private void CreateSystemProjection(string name, Type handlerType, string config)
         {
             IEnvelope envelope = new NoopEnvelope();
 

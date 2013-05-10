@@ -57,10 +57,26 @@ namespace EventStore.Core.Tests.Helper
         protected IODispatcher _ioDispatcher;
         protected ManualQueue _queue;
         protected FakeTimeProvider _timeProvider;
+        private PublishEnvelope _envelope;
+
+        protected IEnvelope Envelope
+        {
+            get
+            {
+                if (_envelope == null)
+                    _envelope = new PublishEnvelope(GetInputQueue());
+                return _envelope;
+            }
+        }
+
+        protected List<Message> HandledMessages {
+            get { return _consumer.HandledMessages; }
+        }
 
         [SetUp]
         public void setup0()
         {
+            _envelope = null;
             _timeProvider = new FakeTimeProvider();
             _bus = new InMemoryBus("bus");
             _queue = null;
@@ -101,7 +117,7 @@ namespace EventStore.Core.Tests.Helper
         protected void WhenLoop()
         {
             _queue.Process();
-            foreach (var message in (from steps in When()
+            foreach (var message in (from steps in PreWhen().Concat(When())
                                     from m in steps
                                     select m))
             {
@@ -159,13 +175,17 @@ namespace EventStore.Core.Tests.Helper
             }
         }
 
+        protected virtual IEnumerable<WhenStep> PreWhen()
+        {
+            yield break;
+        }
+
         protected virtual IEnumerable<WhenStep> When()
         {
             yield break;
         }
 
         public readonly WhenStep Yield = new WhenStep();
-
     }
 
     public static class TestUtils
