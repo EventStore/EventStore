@@ -363,13 +363,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var nodeProcess = Process.Start(startInfo);
             if (nodeProcess == null || nodeProcess.HasExited)
-                throw new ApplicationException("Process was not started.");
+                throw new ApplicationException(string.Format("Process was not started [{0} {1}].", fileName, arguments));
 
             Thread.Sleep(3000);
             Process tmp;
             var running = TryGetProcessById(nodeProcess.Id, out tmp);
             if (!running || tmp.HasExited)
-                throw new ApplicationException("Process was not started.");
+                throw new ApplicationException(string.Format("Process was not started [{0} {1}].", fileName, arguments));
 
             _startedNodesProcIds.Add(nodeProcess.Id);
 
@@ -431,7 +431,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     TcpPortsHelper.ReturnPort(_nodeConnection.TcpPort);
                     TcpPortsHelper.ReturnPort(_nodeConnection.HttpPort);
 
-                    Log.Info("Killed process {0}", processId);
+                    Log.Info("Killed process {0}, wait a bit.", processId);
+                    Thread.Sleep(1000); // wait for system to release port used by HttpListener.
                 }
                 else
                 {
