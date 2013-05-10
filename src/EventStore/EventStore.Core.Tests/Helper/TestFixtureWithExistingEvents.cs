@@ -519,6 +519,11 @@ namespace EventStore.Core.Tests.Helper
                 transaction.Commit(message, this);
             }
         }
+
+        protected TFPos GetTfPos(string streamId, int eventNumber)
+        {
+            return _all.Last(v => v.Value.EventStreamId == streamId && v.Value.EventNumber == eventNumber).Key;
+        }
     }
 }
 

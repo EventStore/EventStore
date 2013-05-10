@@ -28,10 +28,13 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using EventStore.Core.Tests.Helper;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using System.Linq;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using EventStore.Common.Utils;
 using Newtonsoft.Json.Linq;
@@ -43,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
         public abstract class with_updated_projection : with_projection_config
         {
             private ProjectionManagementMessage.Statistics _allStatistics;
-            private ProjectionManagementMessage.ProjectionState _state;
+            protected ProjectionManagementMessage.ProjectionState _state;
             private ProjectionManagementMessage.ProjectionQuery _query;
             private ProjectionStatistics _statistics;
             protected JObject _stateData;
@@ -76,6 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
                 yield return new ProjectionManagementMessage.Enable(Envelope, _projectionName);
                 yield return CreateWriteEvent("stream3", "type4", "{\"Data\": 8}");
                 yield return CreateWriteEvent("stream4", "type5", "{\"Data\": 9}");
+                yield return CreateWriteEvent("stream5", "type1", "{\"Data\": 10}");
                 yield return
                     new ProjectionManagementMessage.GetStatistics(
                         Envelope, ProjectionMode.AllNonTransient, _projectionName, false);
@@ -115,7 +119,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
         }
 
         [TestFixture]
-        public class when_adding_a_message_type : with_updated_projection
+        public class when_adding_an_event_type : with_updated_projection
         {
             protected override string GivenOriginalSource()
             {
@@ -141,10 +145,64 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             }
 
             [Test]
-            public void correct_event_sequence_processed()
+            public void correct_event_sequence_has_been_processed()
             {
                 HelperExtensions.AssertJson(new {d = new[] {1, 5, 6}}, _stateData);
             }
+
+            [Test]
+            public void projection_position_is_correct()
+            {
+                var pos = GetTfPos("stream5", 0);
+                Assert.AreEqual(
+                    CheckpointTag.FromEventTypeIndexPositions(
+                        pos, new Dictionary<string, int> {{"type1", 1}, {"type3", 1}}), _state.Position);
+            }
+
         }
+
+        [TestFixture]
+        public class when_replacing_an_event_type : with_updated_projection
+        {
+            protected override string GivenOriginalSource()
+            {
+                return @"
+                    function handle(s, e) { s.d.push(e.data.Data); return s; }
+                    fromAll().when({
+                        $init: function(){return {d:[]};},
+                        type1: handle,
+                        type2: handle,
+                    });
+                ";
+            }
+
+            protected override string GivenUpdatedSource()
+            {
+                return @"
+                    function handle(s, e) { s.d.push(e.data.Data); return s; }
+                    fromAll().when({
+                        $init: function(){return {d:[]};},
+                        type1: handle,
+                        type3: handle,
+                    });
+                ";
+            }
+
+            [Test]
+            public void correct_event_sequence_has_been_processed()
+            {
+                HelperExtensions.AssertJson(new {d = new[] {1, 2, 3, 5, 6, 10}}, _stateData);
+            }
+
+            [Test]
+            public void projection_position_is_correct()
+            {
+                var pos = GetTfPos("stream5", 0);
+                Assert.AreEqual(
+                    CheckpointTag.FromEventTypeIndexPositions(
+                        pos, new Dictionary<string, int> {{"type1", 1}, {"type3", 1}}), _state.Position);
+            }
+        }
+
     }
 }
