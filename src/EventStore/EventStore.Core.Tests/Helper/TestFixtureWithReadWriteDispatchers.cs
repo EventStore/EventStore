@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using EventStore.Core.Bus;
@@ -36,6 +37,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
+using System.Linq;
 
 namespace EventStore.Core.Tests.Helper
 {
@@ -99,9 +101,11 @@ namespace EventStore.Core.Tests.Helper
         protected void WhenLoop()
         {
             _queue.Process();
-            foreach (var message in When())
+            foreach (var message in (from steps in When()
+                                    from m in steps
+                                    select m))
             {
-                if (message != null) 
+                if (message != null)
                     _queue.Publish(message);
                 _queue.Process();
             }
@@ -109,9 +113,67 @@ namespace EventStore.Core.Tests.Helper
             _queue.Process();
         }
 
-        protected virtual IEnumerable<Message> When()
+
+        public sealed class WhenStep: IEnumerable<Message>
+        {
+            public readonly Message Message;
+            public readonly IEnumerable<Message> Messages;
+
+            private WhenStep(Message message)
+            {
+                Message = message;
+            }
+
+            internal WhenStep(IEnumerable<Message> messages)
+            {
+                Messages = messages;
+            }
+
+            internal WhenStep()
+            {
+            }
+
+            public static implicit operator WhenStep(Message message)
+            {
+                return new WhenStep(message);
+            }
+
+            public IEnumerator<Message> GetEnumerator()
+            {
+                return GetMessages().GetEnumerator();
+            }
+
+            private IEnumerable<Message> GetMessages()
+            {
+                if (Message != null)
+                    yield return Message;
+                else if (Messages != null)
+                    foreach (var message in Messages)
+                        yield return message;
+                else yield return null;
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }
+
+        protected virtual IEnumerable<WhenStep> When()
         {
             yield break;
+        }
+
+        public readonly WhenStep Yield = new WhenStep();
+
+    }
+
+    public static class TestUtils
+    {
+        public static TestFixtureWithReadWriteDispatchers.WhenStep ToSteps(
+            this IEnumerable<TestFixtureWithReadWriteDispatchers.WhenStep> steps)
+        {
+            return new TestFixtureWithReadWriteDispatchers.WhenStep(steps.SelectMany(v => v));
         }
     }
 }

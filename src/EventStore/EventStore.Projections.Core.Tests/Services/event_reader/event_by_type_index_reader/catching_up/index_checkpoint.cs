@@ -114,7 +114,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                 // NoStream("$et");
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 var fromZeroPosition = CheckpointTag.FromEventTypeIndexPositions(
                     new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});
@@ -171,7 +171,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                 // NoStream("$et");
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 var fromZeroPosition = CheckpointTag.FromEventTypeIndexPositions(
                     new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});

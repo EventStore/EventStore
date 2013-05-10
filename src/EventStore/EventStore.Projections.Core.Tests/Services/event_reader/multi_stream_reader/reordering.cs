@@ -114,7 +114,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             {
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 var fromZeroPosition =
                     CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"stream-a", -1}, {"stream-b", -1}});
@@ -156,11 +156,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     new ClientMessage.TransactionCommit(
                         correlationId, new PublishEnvelope(GetInputQueue()), false, transactionId, null);
 
-                yield return null;
+                yield return Yield;
 
                 _timeProvider.AddTime(TimeSpan.FromMilliseconds(300));
 
-                yield return null;
+                yield return Yield;
 
             }
         }

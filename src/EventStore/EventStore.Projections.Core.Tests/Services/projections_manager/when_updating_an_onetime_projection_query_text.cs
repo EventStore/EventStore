@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 "", _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().State);
         }
 
-        protected override IEnumerable<Message> When()
+        protected override IEnumerable<WhenStep> When()
         {
             _projectionName = "test-projection";
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));

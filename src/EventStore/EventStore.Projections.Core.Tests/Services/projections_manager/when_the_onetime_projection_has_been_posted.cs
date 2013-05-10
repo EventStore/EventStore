@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         private string _projectionName;
         private string _projectionQuery;
 
-        protected override IEnumerable<Message> When()
+        protected override IEnumerable<WhenStep> When()
         {
             _projectionQuery = @"fromAll(); on_any(function(){});log(1);";
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));

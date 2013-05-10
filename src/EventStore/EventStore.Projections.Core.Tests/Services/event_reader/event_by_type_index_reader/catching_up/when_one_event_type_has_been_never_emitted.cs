@@ -133,7 +133,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                 ExistingEvent("$et", "$Checkpoint", TFPosToMetadata(_tfPos3), TFPosToMetadata(_tfPos3));
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 var fromZeroPosition = CheckpointTag.FromEventTypeIndexPositions(
                     new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});

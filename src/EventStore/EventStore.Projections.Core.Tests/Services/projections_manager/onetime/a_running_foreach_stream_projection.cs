@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 //NoStream("$projections-test-projection-stream-checkpoint");
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
                 var readerAssignedMessage =
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         [TestFixture]
         public class when_receiving_eof : Base
         {
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
 

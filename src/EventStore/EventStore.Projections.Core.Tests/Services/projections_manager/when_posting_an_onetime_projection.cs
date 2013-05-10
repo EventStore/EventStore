@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     [TestFixture]
     public class when_posting_an_onetime_projection: TestFixtureWithProjectionCoreAndManagementServices
     {
-        protected override IEnumerable<Message> When()
+        protected override IEnumerable<WhenStep> When()
         {
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
             yield return (

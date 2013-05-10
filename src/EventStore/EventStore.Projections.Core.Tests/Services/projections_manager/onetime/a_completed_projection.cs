@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 base.Given();
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
 
@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         [TestFixture]
         public class when_stopping : Base
         {
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
 
@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         [TestFixture]
         public class when_starting : Base
         {
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
                 yield return (new ProjectionManagementMessage.Enable(new PublishEnvelope(_bus), _projectionName));

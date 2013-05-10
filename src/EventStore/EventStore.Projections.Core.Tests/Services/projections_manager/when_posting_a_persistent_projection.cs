@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             AllWritesQueueUp();
         }
 
-        protected override IEnumerable<Message> When()
+        protected override IEnumerable<WhenStep> When()
         {
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
             yield return
@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     @"fromAll().whenAny(function(s,e){return s;});", enabled: true, checkpointsEnabled: true,
                     emitEnabled: true);
             OneWriteCompletes();
-            yield return null;
+            yield return Yield;
         }
 
         [Test, Category("v8")]

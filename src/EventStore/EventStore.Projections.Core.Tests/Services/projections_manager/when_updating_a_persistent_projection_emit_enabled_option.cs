@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         private string _projectionName;
         private string _source;
 
-        protected override IEnumerable<Message> When()
+        protected override IEnumerable<WhenStep> When()
         {
             _projectionName = "test-projection";
             _source = @"fromAll(); on_any(function(){});log(1);";

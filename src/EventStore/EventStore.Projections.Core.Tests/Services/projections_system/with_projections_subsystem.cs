@@ -28,64 +28,53 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Management;
-using NUnit.Framework;
+using EventStore.Projections.Core.Tests.Services.projections_manager;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager
+namespace EventStore.Projections.Core.Tests.Services.projections_system
 {
-    [TestFixture]
-    public class when_posting_a_persistent_projection_and_writes_succeed : TestFixtureWithProjectionCoreAndManagementServices
+    public abstract class with_projections_subsystem : TestFixtureWithProjectionCoreAndManagementServices
     {
+        protected string _projectionName;
+        protected string _projectionSource;
+        protected Type _fakeProjectionType;
+        protected ProjectionMode _projectionMode;
+        protected bool _checkpointsEnabled;
+        protected bool _emitEnabled;
+        protected bool _projectionEnabled;
+
         protected override void Given()
         {
-            NoStream("$projections-test-projection-order");
-            AllWritesToSucceed("$projections-test-projection-order");
+            base.Given();
+
+            _projectionName = "test-projection";
+            _projectionSource = @"";
+            _fakeProjectionType = typeof (FakeProjection);
+            _projectionMode = ProjectionMode.Continuous;
+            _checkpointsEnabled = true;
+            _emitEnabled = true;
+            _projectionEnabled = true;
+
             NoStream("$projections-test-projection-checkpoint");
+            NoStream("$projections-test-projection-order");
             AllWritesSucceed();
         }
 
-        private string _projectionName;
-
         protected override IEnumerable<WhenStep> When()
         {
-            _projectionName = "test-projection";
-            yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
             yield return
-                new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS",
-                    @"fromAll().whenAny(function(s,e){return s;});", enabled: true, checkpointsEnabled: true,
-                    emitEnabled: true);
+                (new ProjectionManagementMessage.Post(
+                    new PublishEnvelope(_bus), _projectionMode, _projectionName,
+                    "native:" + _fakeProjectionType.AssemblyQualifiedName, _projectionSource,
+                    enabled: _projectionEnabled, checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
         }
+    }
 
-        [Test, Category("v8")]
-        public void projection_status_is_running()
-        {
-            _manager.Handle(
-                new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, true));
-            Assert.AreEqual(
-                ManagedProjectionState.Running,
-                _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections[0].
-                    MasterStatus);
-        }
-
-        [Test, Category("v8")]
-        public void a_projection_updated_event_is_written()
-        {
-            Assert.IsTrue(
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(
-                    v => v.Events[0].EventType == "$ProjectionUpdated"));
-        }
-
-        [Test, Category("v8")]
-        public void a_projection_updated_message_is_published()
-        {
-            // not published until writes complete
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Count());
-        }
+    class with_projection : with_projections_subsystem
+    {
     }
 }

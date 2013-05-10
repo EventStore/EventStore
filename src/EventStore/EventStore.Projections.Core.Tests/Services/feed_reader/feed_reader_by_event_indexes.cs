@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                 return string.Format(@"{{""$c"":{0},""$p"":{1}}}", tfPos.CommitPosition, tfPos.PreparePosition);
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 yield return
                     new FeedReaderMessage.ReadPage(
@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                 return string.Format(@"{{""$c"":{0},""$p"":{1}}}", tfPos.CommitPosition, tfPos.PreparePosition);
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 yield return
                     new FeedReaderMessage.ReadPage(

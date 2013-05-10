@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 AllWritesSucceed();
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
                 yield return (
@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
         [TestFixture]
         public class when_get_query : Base
         {
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When())
                     yield return m;
@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
         [TestFixture]
         public class when_get_state : Base
         {
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
                 yield return (new ProjectionManagementMessage.GetState(new PublishEnvelope(_bus), _projectionName, ""));
@@ -126,7 +126,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
         [TestFixture]
         public class when_failing : Base
         {
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
                 var readerAssignedMessage =

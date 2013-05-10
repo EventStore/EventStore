@@ -335,7 +335,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                 _maxEvents = 2;
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 yield return
                     new FeedReaderMessage.ReadPage(
@@ -377,7 +377,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                 _maxEvents = 2;
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 yield return
                     new FeedReaderMessage.ReadPage(

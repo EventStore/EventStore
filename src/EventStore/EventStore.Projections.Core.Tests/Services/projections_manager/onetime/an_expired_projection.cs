@@ -34,6 +34,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
+using EventStore.Core.Tests.Helper;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 {
@@ -48,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 base.Given();
             }
 
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
                 var readerAssignedMessage =
@@ -61,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                         _reader, new TFPos(100, 50), new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(),
                         "type", false, new byte[0], new byte[0], 100, 33.3f));
                 _timeProvider.AddTime(TimeSpan.FromMinutes(6));
-                yield return null;
+                yield return Yield;
                 foreach (var m in _consumer.HandledMessages.OfType<TimerMessage.Schedule>().ToArray())
                     m.Envelope.ReplyWith(m.ReplyMessage);
             }
@@ -70,9 +71,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         [TestFixture]
         public class when_retrieving_statistics : Base
         {
-            protected override IEnumerable<Message> When()
+            protected override IEnumerable<WhenStep> When()
             {
-                foreach (var m in base.When()) yield return m;
+                yield return base.When().ToSteps();
                 yield return (
                     new ProjectionManagementMessage.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));

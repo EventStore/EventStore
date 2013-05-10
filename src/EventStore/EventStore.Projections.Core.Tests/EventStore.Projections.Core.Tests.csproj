@@ -263,6 +263,7 @@
     <Compile Include="Services\projections_manager\when_updating_a_disabled_projection_query_text.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_faulted_projection_query_text_invalid_defintion.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_persistent_projection_emit_enabled_option.cs" />
+    <Compile Include="Services\projections_system\with_projections_subsystem.cs" />
     <Compile Include="Services\projection_subscription\when_handling_multiple_committed_event_passing_the_filter.cs" />
     <Compile Include="Services\projection_version\when_comparing.cs" />
     <Compile Include="Services\result_emitter\result_emitter.cs" />
