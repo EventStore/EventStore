@@ -304,10 +304,10 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 {
                     head = _heads[streamIdx];
                 }
-                var evnt = CreateEvent(_streams[streamIdx], head + 2);
+                var evnt = CreateEvent(_streams[streamIdx], head + 1);
                 var write = new TcpClientMessageDto.WriteEvents(
                     _streams[streamIdx],
-                    head == -1 ? head : head + 1,
+                    head,
                     new[] 
                     { 
                         new TcpClientMessageDto.NewEvent(evnt.EventId.ToByteArray(), evnt.EventType, evnt.IsJson, evnt.Data, evnt.Metadata) 
