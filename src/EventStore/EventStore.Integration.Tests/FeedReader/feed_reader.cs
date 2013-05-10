@@ -29,6 +29,7 @@
 using System;
 using System.Net;
 using EventStore.Common.Utils;
+using EventStore.Core.Tests.Helper;
 using EventStore.Integration.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -83,14 +84,14 @@ namespace EventStore.Integration.Tests.FeedReader
             [Test]
             public void returns_correct_reader_position()
             {
-                AssertJson(
+                HelperExtensions.AssertJson(
                     new {ReaderPosition = CheckpointTag.FromStreamPosition(TestStreamName, 0).ToJsonRaw()}, _response);
             }
 
             [Test]
             public void returns_correct_event()
             {
-                AssertJson(
+                HelperExtensions.AssertJson(
                     new
                         {
                             Events =

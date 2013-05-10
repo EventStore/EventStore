@@ -129,6 +129,17 @@ namespace EventStore.Core.Tests.Helper
             _queue.Process();
         }
 
+        public static T EatException<T>(Func<T> func, T defaultValue = default(T))
+        {
+            try
+            {
+                return func();
+            }
+            catch (Exception)
+            {
+                return defaultValue;
+            }
+        }
 
         public sealed class WhenStep: IEnumerable<Message>
         {

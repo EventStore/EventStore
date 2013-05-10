@@ -414,7 +414,8 @@ namespace EventStore.Core.Tests.Helper
             }
             var eventRecords = (from ep in events.Zip(positions, (@event, position) => new {@event, position})
                                 let e = ep.@event
-                                let eventNumber = list.Count //NOTE: ASSUMES STAYS ENUMERABLE
+                                let eventNumber = list.Count
+                                //NOTE: ASSUMES STAYS ENUMERABLE
                                 let tfPosition = ep.position
                                 select
                                     new
@@ -423,8 +424,9 @@ namespace EventStore.Core.Tests.Helper
                                             record =
                                     new EventRecord(
                                     eventNumber, tfPosition, correlationId, e.EventId, tfPosition, 0, streamId,
-                                    ExpectedVersion.Any, _timeProvider.Now, PrepareFlags.SingleWrite, e.EventType, e.Data,
-                                    e.Metadata)
+                                    ExpectedVersion.Any, _timeProvider.Now,
+                                    PrepareFlags.SingleWrite | (e.IsJson ? PrepareFlags.IsJson : PrepareFlags.None),
+                                    e.EventType, e.Data, e.Metadata)
                                         }); //NOTE: DO NOT MAKE ARRAY 
             foreach (var eventRecord in eventRecords)
             {

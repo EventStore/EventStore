@@ -28,6 +28,7 @@
 
 using System;
 using System.Net;
+using EventStore.Core.Tests.Helper;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
@@ -69,7 +70,7 @@ namespace EventStore.Core.Tests.Http.Streams
             public void returns_a_location_header_that_can_be_read_as_json()
             {
                 var json = GetJson<JObject>(_response.Headers[HttpResponseHeader.Location]);
-                AssertJson(new {A = "1"}, json);
+                HelperExtensions.AssertJson(new {A = "1"}, json);
             }
         }
 
@@ -109,7 +110,7 @@ namespace EventStore.Core.Tests.Http.Streams
             public void returns_a_location_header_for_the_first_posted_event()
             {
                 var json = GetJson<JObject>(_response.Headers[HttpResponseHeader.Location]);
-                AssertJson(new {A = "1"}, json);
+                HelperExtensions.AssertJson(new {A = "1"}, json);
             }
         }
 
@@ -146,7 +147,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_correct_body()
             {
-                AssertJson(new { Content = new { Data = new {A = "1"}}}, _json);
+                HelperExtensions.AssertJson(new { Content = new { Data = new {A = "1"}}}, _json);
             }
 
         }
@@ -170,7 +171,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_correct_body()
             {
-                AssertJson(new { Data = new {A = "1"}}, _json);
+                HelperExtensions.AssertJson(new { Data = new {A = "1"}}, _json);
             }
 
         }
@@ -194,7 +195,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_correct_body()
             {
-                AssertJson(new {A = "1"}, _json);
+                HelperExtensions.AssertJson(new {A = "1"}, _json);
             }
         }
 

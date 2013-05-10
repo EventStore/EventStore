@@ -40,7 +40,9 @@ namespace EventStore.Core.Data
         public readonly byte[] Metadata;
 
         public Event(Guid eventId, string eventType, bool isJson, string data, string metadata)
-            : this(eventId, eventType, isJson, Encoding.UTF8.GetBytes(data), Encoding.UTF8.GetBytes(metadata))
+            : this(
+                eventId, eventType, isJson, Encoding.UTF8.GetBytes(data),
+                metadata != null ? Encoding.UTF8.GetBytes(metadata) : null)
         {
         }
 

@@ -28,6 +28,7 @@
 
 using System;
 using System.Net;
+using EventStore.Core.Tests.Helper;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
@@ -195,7 +196,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_feed_with_a_single_entry_referring_to_the_last_event()
             {
-                AssertJson(new {entries = new[] {new {Id = _lastEventLocation}}}, _feed);
+                HelperExtensions.AssertJson(new {entries = new[] {new {Id = _lastEventLocation}}}, _feed);
             }
         }
 

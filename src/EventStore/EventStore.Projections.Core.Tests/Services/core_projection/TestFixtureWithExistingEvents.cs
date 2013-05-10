@@ -95,7 +95,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         protected ClientMessage.WriteEvents CreateWriteEvent(
-            string streamId, string eventType, string data, string metadata, bool isJson = true,
+            string streamId, string eventType, string data, string metadata = null, bool isJson = true,
             Guid? correlationId = null)
         {
             return new ClientMessage.WriteEvents(

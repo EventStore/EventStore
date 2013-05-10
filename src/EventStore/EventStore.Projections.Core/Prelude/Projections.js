@@ -118,7 +118,7 @@ var $projections = {
          };
 
          function tryDeserializeBody(eventEnvelope) {
-             var eventRaw = eventEnvelope.bodyRaw;
+            var eventRaw = eventEnvelope.bodyRaw;
             try {
                 if (eventRaw == '')
                     eventEnvelope.body = {};
@@ -126,13 +126,16 @@ var $projections = {
                     eventEnvelope.body = eventRaw;
                 else
                     eventEnvelope.body = JSON.parse(eventRaw);
+                eventEnvelope.data = eventEnvelope.body;
             } catch (ex) {
                 eventEnvelope.jsonError = ex;
                 eventEnvelope.body = undefined;
+                eventEnvelope.data = undefined;
             }
-         }
+        }
 
-        function envelope(body, bodyRaw, eventType, streamId, sequenceNumber, metadataRaw, partition) {
+         function envelope(body, bodyRaw, eventType, streamId, sequenceNumber, metadataRaw, partition) {
+            this.data = body;
             this.body = body;
             this.bodyRaw = bodyRaw;;
             this.eventType = eventType;

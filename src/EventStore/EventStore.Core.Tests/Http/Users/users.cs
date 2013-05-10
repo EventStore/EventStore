@@ -27,6 +27,7 @@
 // 
 
 using System.Net;
+using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 
@@ -96,7 +97,7 @@ namespace EventStore.Core.Tests.Http.Users
             [Test]
             public void returns_valid_json_data()
             {
-                AssertJson(
+                HelperExtensions.AssertJson(
                     new
                         {
                             Success = true,
@@ -164,7 +165,7 @@ namespace EventStore.Core.Tests.Http.Users
             public void enables_it()
             {
                 var jsonResponse = GetJson<JObject>("/users/test1");
-                AssertJson(
+                HelperExtensions.AssertJson(
                     new {Success = true, Error = "Success", Data = new {LoginName = "test1", Disabled = true}},
                     jsonResponse);
             }
@@ -196,7 +197,7 @@ namespace EventStore.Core.Tests.Http.Users
             public void disables_it()
             {
                 var jsonResponse = GetJson<JObject>("/users/test1");
-                AssertJson(
+                HelperExtensions.AssertJson(
                     new {Success = true, Error = "Success", Data = new {LoginName = "test1", Disabled = false}},
                     jsonResponse);
             }
@@ -227,7 +228,7 @@ namespace EventStore.Core.Tests.Http.Users
             public void updates_full_name()
             {
                 var jsonResponse = GetJson<JObject>("/users/test1");
-                AssertJson(
+                HelperExtensions.AssertJson(
                     new { Success = true, Error = "Success", Data = new { FullName = "Updated Full Name" } }, jsonResponse);
             }
         }

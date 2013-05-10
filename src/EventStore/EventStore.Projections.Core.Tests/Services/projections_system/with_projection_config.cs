@@ -28,48 +28,42 @@
 
 using System;
 using System.Collections.Generic;
-using EventStore.Core.Messages;
-using EventStore.Projections.Core.Messages;
+using EventStore.Core.Tests.Helper;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
-using System.Linq;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_system
 {
-    public abstract class with_projections_subsystem : TestFixtureWithProjectionCoreAndManagementServices
+    public abstract class with_projection_config : with_projections_subsystem
     {
-        protected bool _startSystemProjections;
+        protected string _projectionName;
+        protected string _projectionSource;
+        protected Type _fakeProjectionType;
+        protected ProjectionMode _projectionMode;
+        protected bool _checkpointsEnabled;
+        protected bool _emitEnabled;
+        protected bool _projectionEnabled;
 
-        protected override void Given1()
+        protected override void Given()
         {
-            base.Given1();
-            _initializeSystemProjections = true;
-            _startSystemProjections = GivenStartSystemProjections();
+            base.Given();
+
+            _projectionName = "test-projection";
+            _projectionSource = @"";
+            _fakeProjectionType = typeof (FakeProjection);
+            _projectionMode = ProjectionMode.Continuous;
+            _checkpointsEnabled = true;
+            _emitEnabled = true;
+            _projectionEnabled = true;
+
+            NoStream("$projections-" + _projectionName + "-checkpoint");
+            NoStream("$projections-" + _projectionName + "-order");
             AllWritesSucceed();
-            NoOtherStreams();
-            EnableReadAll();
-        }
-
-        protected virtual bool GivenStartSystemProjections()
-        {
-            return false;
         }
 
         protected override IEnumerable<WhenStep> PreWhen()
         {
-            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            if (_startSystemProjections)
-            {
-                yield return
-                    new ProjectionManagementMessage.GetStatistics(Envelope, ProjectionMode.AllNonTransient, null, false)
-                    ;
-                var statistics = HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Last();
-                foreach (var projection in statistics.Projections)
-                {
-                    if (projection.Status != "Running")
-                        yield return new ProjectionManagementMessage.Enable(Envelope, projection.Name);
-                }
-            }
+            yield return base.PreWhen().ToSteps();
         }
     }
 }
