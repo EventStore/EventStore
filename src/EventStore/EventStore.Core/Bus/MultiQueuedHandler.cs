@@ -29,6 +29,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Bus
@@ -52,6 +53,7 @@ namespace EventStore.Core.Bus
             {
                 Queues[i] = queueFactory(i);
             }
+            //TODO AN remove _queueHash function
             _queueHash = queueHash ?? NextQueueHash;
         }
 
@@ -100,7 +102,8 @@ namespace EventStore.Core.Bus
 
         public void Publish(Message message)
         {
-            var queueHash = _queueHash(message);
+            var affineMsg = message as IQueueAffineMessage;
+            int queueHash = affineMsg != null ? affineMsg.QueueId : _queueHash(message);
             var queueNum = (int) ((uint)queueHash % Queues.Length);
             Queues[queueNum].Publish(message);
         }

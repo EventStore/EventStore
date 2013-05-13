@@ -135,6 +135,7 @@
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="ISubsystem.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />
+    <Compile Include="Messages\IQueueAffineMessage.cs" />
     <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
     <Compile Include="Messaging\CallbackEnvelope.cs" />
     <Compile Include="Helpers\IODispatcher.cs" />
@@ -147,7 +148,7 @@
     <Compile Include="Services\Storage\ReaderIndex\StreamAccessResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\TransactionInfo.cs" />
     <Compile Include="Services\SubscriptionsService.cs" />
-    <Compile Include="Services\NetworkSendService.cs" />
+    <Compile Include="Services\HttpSendService.cs" />
     <Compile Include="Services\RequestManager\Managers\DeleteStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\Monitoring\StatsCollectorEnvelope.cs" />
     <Compile Include="Services\Monitoring\Stats\StatsContainer.cs" />
@@ -170,6 +171,7 @@
     <Compile Include="Services\Storage\StorageScavenger.cs" />
     <Compile Include="Services\SystemNames.cs" />
     <Compile Include="Services\RequestManager\Managers\TransactionCommitTwoPhaseRequestManager.cs" />
+    <Compile Include="Services\TcpSendService.cs" />
     <Compile Include="Services\Transport\Http\Authentication\AuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Authentication\BasicHttpAuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Authentication\AnonymousAuthenticationProvider.cs" />

@@ -25,24 +25,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-
 using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
-using EventStore.Transport.Http.EntityManagement;
+using EventStore.Core.Messages;
 
-namespace EventStore.Core.Services.Transport.Http.Messages
+namespace EventStore.Core.Services
 {
-    public class IncomingHttpRequestMessage : Message
+    public class TcpSendService : IHandle<TcpMessage.TcpSend>
     {
-        public readonly IPublisher NextStagePublisher;
-        public readonly HttpService HttpService;
-        public readonly HttpEntity Entity;
-
-        public IncomingHttpRequestMessage(HttpService httpService, HttpEntity entity, IPublisher nextStagePublisher)
+        public void Handle(TcpMessage.TcpSend message)
         {
-            HttpService = httpService;
-            Entity = entity;
-            NextStagePublisher = nextStagePublisher;
+            message.ConnectionManager.SendMessage(message.Message);
         }
     }
 }

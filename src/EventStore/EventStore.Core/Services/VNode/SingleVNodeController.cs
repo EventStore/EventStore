@@ -52,6 +52,7 @@ namespace EventStore.Core.Services.VNode
         private readonly IPublisher _outputBus;
         private readonly IPEndPoint _httpEndPoint;
         private readonly TFChunkDb _db;
+        private readonly SingleVNode _node;
 
         private VNodeState _state = VNodeState.Initializing;
         private QueuedHandler _mainQueue;
@@ -65,15 +66,17 @@ namespace EventStore.Core.Services.VNode
                                               + 1 /* HttpService*/;
         private bool _exitProcessOnShutdown;
 
-        public SingleVNodeController(IPublisher outputBus, IPEndPoint httpEndPoint, TFChunkDb db)
+        public SingleVNodeController(IPublisher outputBus, IPEndPoint httpEndPoint, TFChunkDb db, SingleVNode node)
         {
             Ensure.NotNull(outputBus, "outputBus");
             Ensure.NotNull(httpEndPoint, "httpEndPoint");
             Ensure.NotNull(db, "db");
+            Ensure.NotNull(node, "node");
 
             _outputBus = outputBus;
             _httpEndPoint = httpEndPoint;
             _db = db;
+            _node = node;
 
             _fsm = CreateFSM();
         }
@@ -205,7 +208,10 @@ namespace EventStore.Core.Services.VNode
             _state = VNodeState.Shutdown;
             _outputBus.Publish(message);
             if (_exitProcessOnShutdown)
+            {
+                _node.WorkersHandler.Stop();
                 Application.Exit(ExitCode.Success, "Shutdown with exiting from process was requested.");
+            }
         }
 
         private void Handle(SystemMessage.StorageReaderInitializationDone message)

@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Net;
 using EventStore.Core.Messaging;
 using EventStore.Transport.Http.EntityManagement;
 
@@ -34,10 +33,12 @@ namespace EventStore.Core.Services.Transport.Http.Messages
 {
     class AuthenticatedHttpRequestMessage : Message
     {
+        public readonly HttpService HttpService;
         public readonly HttpEntity Entity;
 
-        public AuthenticatedHttpRequestMessage(HttpEntity entity)
+        public AuthenticatedHttpRequestMessage(HttpService httpService, HttpEntity entity)
         {
+            HttpService = httpService;
             Entity = entity;
         }
     }
