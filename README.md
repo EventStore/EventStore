@@ -20,11 +20,11 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 
 	src\EventStore\Scripts\v8\get-v8.cmd 
 
-	src\EventStore\Scripts\v8\build-v8_x64.cmd 
+	src\EventStore\Scripts\v8\build-v8_x64_release.cmd 
 
 ####Build the v8 integration code
 
-	src\EventStore\Scripts\v8\build-js1_x64.cmd 
+	src\EventStore\Scripts\v8\build-js1_x64_release.cmd 
 
 This step produces a file named js1.dll, which contains the projections framework. If you already have access to a suitable version of this file (e.g. from the binary distribution) you can proceed to step 4, having made it available in src\EventStore\libs\x64.
 
@@ -43,28 +43,28 @@ This step produces a file named js1.dll, which contains the projections framewor
 
 You can get and build the patched version of Mono necessary for Event Store by running
 
-	.\src\EventStore\Scripts\get-mono-303p.sh
+	.\src\EventStore\Scripts\get-mono-307p.sh
 
 This script will install mono to `/opt/mono`, and must be run with root priviledges (since it installs packages via apt-get). However, the script will not add it to the `PATH` which must be done separately, such that `mono --version` outputs:
 
 <pre>
-Mono JIT compiler version (EventStore patched build: ThreadPool.c) 3.0.3 ((no/39c48d5 Thu Feb 14 15:56:56 GMT 2013) (EventStore build)
-Copyright (coffee) 2002-2012 Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com
-	TLS:           __thread
-	SIGSEGV:       altstack
-	Notifications: epoll
-	Architecture:  amd64
-	Disabled:      none
-	Misc:          softdebug
-	LLVM:          supported, not enabled.
-	GC:            Included Boehm (with typed GC and Parallel Mark)
+Mono JIT compiler version (EventStore patched build: ThreadPool.c) 3.0.7 ((no/514fcd7 Fri Mar 15 14:49:41 GMT 2013) (EventStore build)
+Copyright (C) 2002-2012 Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com
+        TLS:           __thread
+        SIGSEGV:       altstack
+        Notifications: epoll
+        Architecture:  amd64
+        Disabled:      none
+        Misc:          softdebug
+        LLVM:          supported, not enabled.
+        GC:            Included Boehm (with typed GC and Parallel Mark)
 </pre>
 
 ####Download and build v8 
 
 	./src/EventStore/Scripts/v8/get-v8.sh 
 	
-	./src/EventStore/Scripts/v8/build-v8.sh 
+	./src/EventStore/Scripts/v8/build-v8_x64_release.sh 
 
 ####Build the v8 integration code (libjs1.so)
 
