@@ -31,7 +31,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
@@ -44,7 +43,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             AddUnwrapper(TcpCommand.WriteEvents, UnwrapWriteEvents);
             AddWrapper<ClientMessage.WriteEvents>(WrapWriteEvents);
-            AddUnwrapper(TcpCommand.WriteEventsCompleted, UnwrapWriteEventCompleted);
+            AddUnwrapper(TcpCommand.WriteEventsCompleted, UnwrapWriteEventsCompleted);
             AddWrapper<ClientMessage.WriteEventsCompleted>(WrapWriteEventsCompleted);
 
             AddUnwrapper(TcpCommand.TransactionStart, UnwrapTransactionStart);
@@ -123,7 +122,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             return new TcpPackage(TcpCommand.WriteEvents, msg.CorrelationId, dto.Serialize());
         }
 
-        private static ClientMessage.WriteEventsCompleted UnwrapWriteEventCompleted(TcpPackage package, IEnvelope envelope)
+        private static ClientMessage.WriteEventsCompleted UnwrapWriteEventsCompleted(TcpPackage package, IEnvelope envelope)
         {
             var dto = package.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
             if (dto == null) return null;

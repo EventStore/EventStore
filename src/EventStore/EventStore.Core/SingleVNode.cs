@@ -77,15 +77,13 @@ namespace EventStore.Core
         private readonly TimerService _timerService;
         private readonly NetworkSendService _networkSendService;
         private readonly ITimeProvider _timeProvider;
-
-        private readonly NodeSubsystems[] _enabledNodeSubsystems;
         private readonly ISubsystem[] _subsystems;
 
         public SingleVNode(TFChunkDb db, 
                            SingleVNodeSettings vNodeSettings, 
                            bool dbVerifyHashes, 
-                           NodeSubsystems[] enabledNodeSubsystems,
-                           int memTableEntryCount, params  ISubsystem[] subsystems)
+                           int memTableEntryCount, 
+                           params ISubsystem[] subsystems)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(vNodeSettings, "vNodeSettings");
@@ -98,7 +96,6 @@ namespace EventStore.Core
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             _controller.SetMainQueue(_mainQueue);
 
-            _enabledNodeSubsystems = enabledNodeSubsystems;
             _subsystems = subsystems;
 
             // MONITORING
@@ -282,9 +279,11 @@ namespace EventStore.Core
             _mainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
 
             // TIMER
-            _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
             _timeProvider = new RealTimeProvider();
+            _timerService = new TimerService(new ThreadBasedScheduler(_timeProvider));
+// ReSharper disable RedundantTypeArgumentsOfMethod
             _mainBus.Subscribe<TimerMessage.Schedule>(_timerService);
+// ReSharper restore RedundantTypeArgumentsOfMethod
 
             monitoringQueue.Start();
             _mainQueue.Start();

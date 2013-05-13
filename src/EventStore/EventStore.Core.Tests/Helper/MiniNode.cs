@@ -40,13 +40,12 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
-using EventStore.Core.Tests.Helper;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
-namespace EventStore.Core.Tests.ClientAPI.Helpers
+namespace EventStore.Core.Tests.Helper
 {
     public class MiniNode
     {
@@ -97,7 +96,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                      "TCP ENDPOINT:", TcpEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
 
-            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, enabledNodeSubsystems: enableProjections ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0], memTableEntryCount: 1000, subsystems: subsystems);
+            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: 1000, subsystems: subsystems);
             Node.HttpService.SetupController(new TestController(Node.MainQueue, Node.NetworkSendService));
         }
 

@@ -27,8 +27,6 @@
 //  
 
 using System;
-using System.Net;
-using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helper;
