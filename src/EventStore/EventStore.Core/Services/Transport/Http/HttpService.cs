@@ -170,8 +170,7 @@ namespace EventStore.Core.Services.Transport.Http
             controller.Subscribe(this, _httpPipe);
         }
 
-        public void RegisterControllerAction(
-            ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
+        public void RegisterControllerAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
         {
             Ensure.NotNull(action, "action");
             Ensure.NotNull(handler, "handler");

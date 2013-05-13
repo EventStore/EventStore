@@ -95,7 +95,7 @@ namespace EventStore.SingleNode
 
             var enabledNodeSubsystems = runProjections ? new[] {NodeSubsystems.Projections} : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(options.ProjectionThreads, options.RunProjections);
-            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, enabledNodeSubsystems, ESConsts.MemTableEntryCount, _projections);
+            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, ESConsts.MemTableEntryCount, _projections);
             RegisterWebControllers(enabledNodeSubsystems);
             RegisterUIProjections();
         }

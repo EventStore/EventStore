@@ -25,14 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
+
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]

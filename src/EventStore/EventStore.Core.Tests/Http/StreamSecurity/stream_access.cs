@@ -29,7 +29,7 @@
 using System;
 using System.Net;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Http.Users;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
