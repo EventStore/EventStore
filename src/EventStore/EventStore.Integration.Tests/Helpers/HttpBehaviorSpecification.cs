@@ -27,6 +27,7 @@
 // 
 
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.Tests.Helper;
 
 namespace EventStore.Integration.Tests.Helpers
 {

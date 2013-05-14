@@ -28,8 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Tests.Helper;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -242,6 +240,46 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
                 Assert.AreEqual(
                     CheckpointTag.FromEventTypeIndexPositions(
                         pos, new Dictionary<string, int> {{"type3", 1}}), _state.Position);
+            }
+        }
+
+        [TestFixture]
+        public class when_replacing_specific_event_types_with_any : with_updated_projection
+        {
+            protected override string GivenOriginalSource()
+            {
+                return @"
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
+                    fromAll().when({
+                        $init: function(){return {d:[]};},
+                        type1: handle,
+                        type2: handle,
+                    });
+                ";
+            }
+
+            protected override string GivenUpdatedSource()
+            {
+                return @"
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
+                    fromAll().when({
+                        $init: function(){return {d:[]};},
+                        $any: handle,
+                    });
+                ";
+            }
+
+            [Test]
+            public void correct_event_sequence_has_been_processed()
+            {
+                HelperExtensions.AssertJson(new {d = new[] {1, 2, 3, 5, 6, 7, 8, 9, 10}}, _stateData);
+            }
+
+            [Test]
+            public void projection_position_is_correct()
+            {
+                var pos = GetTfPos("stream5", 0);
+                Assert.AreEqual(CheckpointTag.FromPosition(pos.CommitPosition, pos.PreparePosition), _state.Position);
             }
         }
 
