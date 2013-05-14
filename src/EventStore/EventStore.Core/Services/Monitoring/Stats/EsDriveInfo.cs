@@ -99,7 +99,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
 
             try
             {
-                var driveInfo = ShellExecutor.GetOutput("df", directory);
+                var driveInfo = ShellExecutor.GetOutput("df", string.Format("-P {0}", directory));
                 var driveInfoLines = driveInfo.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
                 var ourline = driveInfoLines[1];
                 var spaces = new Regex(@"[\s\t]+", RegexOptions.Compiled);
