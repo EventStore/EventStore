@@ -31,6 +31,7 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Bus
 {
@@ -53,7 +54,7 @@ namespace EventStore.Core.Bus
 
         private readonly Common.Concurrent.ConcurrentQueue<Message> _queue = new Common.Concurrent.ConcurrentQueue<Message>();
 
-        private Thread _thread;
+        private Task _thread;
         private volatile bool _stop;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
         private readonly TimeSpan _threadStopWaitTimeout;
@@ -91,7 +92,7 @@ namespace EventStore.Core.Bus
 
             _stopped.Reset();
 
-            _thread = new Thread(ReadFromQueue) {IsBackground = true, Name = Name};
+            _thread = new Task(ReadFromQueue, TaskCreationOptions.LongRunning);
             _thread.Start();
         }
 

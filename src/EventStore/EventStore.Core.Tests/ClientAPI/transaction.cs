@@ -174,7 +174,7 @@ namespace EventStore.Core.Tests.ClientAPI
             }
 
             //500 events during transaction
-            ThreadPool.QueueUserWorkItem(_ =>
+           Task.Factory.StartNew(() =>
             {
                 using (var store = EventStoreConnection.Create())
                 {
@@ -200,7 +200,7 @@ namespace EventStore.Core.Tests.ClientAPI
             });
 
             //500 events to same stream in parallel
-            ThreadPool.QueueUserWorkItem(_ =>
+            Task.Factory.StartNew(() =>
             {
                 using (var store = EventStoreConnection.Create())
                 {

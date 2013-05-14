@@ -31,6 +31,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
+using System.Threading.Tasks;
 
 namespace EventStore.TestClient
 {
@@ -82,7 +83,7 @@ namespace EventStore.TestClient
             int exitC = 0;
             var executedEvent = new AutoResetEvent(false);
 
-            ThreadPool.QueueUserWorkItem(_ =>
+            Task.Factory.StartNew(() =>
             {
                 try
                 {

@@ -31,6 +31,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Services.Monitoring.Stats;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.TimerService
 {
@@ -43,7 +44,7 @@ namespace EventStore.Core.Services.TimerService
 
         private readonly ITimeProvider _timeProvider;
 
-        private readonly Thread _timerThread;
+        private readonly Task _timerThread;
         private volatile bool _stop;
 
         private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Timer");
@@ -53,9 +54,8 @@ namespace EventStore.Core.Services.TimerService
             Ensure.NotNull(timeProvider, "timeProvider");
             _timeProvider = timeProvider;
 
-            _timerThread = new Thread(DoTiming);
-            _timerThread.IsBackground = true;
-            _timerThread.Name = Name;
+            _timerThread = new Task(DoTiming,TaskCreationOptions.LongRunning);
+
             _timerThread.Start();
         }
 

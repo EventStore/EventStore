@@ -32,6 +32,7 @@ using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
@@ -88,7 +89,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 if (_backgroundRunning)
                     return;
-                ThreadPool.QueueUserWorkItem(_ => BackgroundProcessing());
+                Task.Factory.StartNew(() => BackgroundProcessing());
             }
         }
 

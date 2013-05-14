@@ -34,6 +34,7 @@ using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using System.Threading.Tasks;
 
 namespace EventStore.Projections.Core.Tests.Playground
 {
@@ -70,8 +71,8 @@ namespace EventStore.Projections.Core.Tests.Playground
                 {ApplicationBase = AppDomain.CurrentDomain.BaseDirectory, ConfigurationFile = executable + ".config",};
             var appDomain = AppDomain.CreateDomain(
                 Path.GetFileNameWithoutExtension(executable), AppDomain.CurrentDomain.Evidence, setup);
-            ThreadPool.QueueUserWorkItem(
-                state =>
+            Task.Factory.StartNew(
+                () =>
                     {
                         try
                         {

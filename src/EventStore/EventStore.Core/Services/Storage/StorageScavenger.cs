@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -62,7 +63,7 @@ namespace EventStore.Core.Services.Storage
                     return;
                 _isScavengingRunning = true;
             }
-            ThreadPool.QueueUserWorkItem(_ => Scavenge());
+            Task.Factory.StartNew(() => Scavenge());
         }
 
         private void Scavenge()

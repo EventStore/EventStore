@@ -94,7 +94,7 @@ namespace EventStore.ClientAPI
         private readonly Stopwatch _timeoutCheckStopwatch = new Stopwatch();
         private int _reconnectionsCount;
 
-        private Thread _worker;
+        private Task _worker;
         private volatile bool _stopping;
 
         private readonly ConnectionSettings _settings;
@@ -205,7 +205,7 @@ namespace EventStore.ClientAPI
                 _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
                 _timeoutCheckStopwatch.Start();
 
-                _worker = new Thread(MainLoop) {IsBackground = true, Name = "Worker thread"};
+                _worker = new Task(MainLoop, TaskCreationOptions.LongRunning); 
                 _worker.Start();
 
                 return Tasks.CreateCompleted();

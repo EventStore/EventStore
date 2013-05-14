@@ -40,6 +40,7 @@ using EventStore.Transport.Tcp;
 using EventStore.Transport.Tcp.Formatting;
 using EventStore.Transport.Tcp.Framing;
 using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
+using System.Threading.Tasks;
 
 namespace EventStore.TestClient
 {
@@ -125,7 +126,7 @@ namespace EventStore.TestClient
             if (!InteractiveMode)
                 return Execute(Options.Command.ToArray());
 
-            new Thread(() =>
+            Task.Factory.StartNew(() =>
             {
                 Thread.Sleep(100);
                 Console.Write(">>> ");
@@ -154,7 +155,7 @@ namespace EventStore.TestClient
                         Console.Write(">>> ");
                     }
                 }
-            }) { IsBackground = true, Name = "Client Main Loop Thread" }.Start();
+            },TaskCreationOptions.LongRunning);
             return 0;
         }
 
