@@ -303,13 +303,14 @@ namespace EventStore.Core.Tests.Helper
                             .Take(message.MaxCount)
                             .Select(v => BuildEvent(v, message.ResolveLinks))
                             .ToArray();
+                    var lastEventNumber = list.Safe().Any() ? list.Safe().Last().EventNumber : -1;
                     message.Envelope.ReplyWith(
                         new ClientMessage.ReadStreamEventsForwardCompleted(
                             message.CorrelationId, message.EventStreamId,
                             message.FromEventNumber, message.MaxCount, ReadStreamResult.Success, records,
                             string.Empty,
-                            nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber + 1 : -1,
-                            lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
+                            nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber + 1 : lastEventNumber + 1,
+                            lastEventNumber: lastEventNumber,
                             isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == list.Last().EventNumber,
                             lastCommitPosition: _fakePosition));
                 }

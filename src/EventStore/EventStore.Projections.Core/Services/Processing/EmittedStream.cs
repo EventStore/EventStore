@@ -273,16 +273,22 @@ namespace EventStore.Projections.Core.Services.Processing
                 var checkpointTagVersion = e.Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                 var ourEpoch = checkpointTagVersion.Version.ProjectionId == _projectionVersion.ProjectionId
                                && checkpointTagVersion.Version.Version >= _projectionVersion.Epoch;
-                if (!ourEpoch || // ignore any events from previous projection epoch
-                    checkpointTagVersion.Tag < upTo)
+                var doStop = !ourEpoch;
+                if (!doStop)
+                {
+                    //NOTE: may need to compare with last pre-recorded event
+                    //      but should not push to alreadyCommitted if sourece changed (must be at checkpoint)
+                    var adjustedTag = checkpointTagVersion.AdjustBy(_positionTagger, _projectionVersion);
+                    doStop = adjustedTag < upTo;
+                }
+                if (doStop)
                     // ignore any events prior to the requested upTo (== first emitted event position)
                 {
                     stop = true;
                     break;
                 }
                 var eventType = e.Event.EventType;
-                var adjustedTag = checkpointTagVersion.AdjustBy(_positionTagger, _projectionVersion);
-                _alreadyCommittedEvents.Push(Tuple.Create(adjustedTag, eventType, e.Event.EventNumber));
+                _alreadyCommittedEvents.Push(Tuple.Create(checkpointTagVersion.Tag, eventType, e.Event.EventNumber));
             }
             return stop || message.IsEndOfStream;
         }

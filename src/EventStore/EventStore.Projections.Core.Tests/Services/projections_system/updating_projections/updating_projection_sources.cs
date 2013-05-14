@@ -283,6 +283,124 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             }
         }
 
+        [TestFixture]
+        public class when_replacing_stream_with_multiple_streams : with_updated_projection
+        {
+            protected override string GivenOriginalSource()
+            {
+                return @"
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
+                    fromStream('stream1').when({
+                        $init: function(){return {d:[]};},
+                        $any: handle,
+                    });
+                ";
+            }
+
+            protected override string GivenUpdatedSource()
+            {
+                return @"
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
+                    fromStreams('stream1', 'stream2').when({
+                        $init: function(){return {d:[]};},
+                        $any: handle,
+                    });
+                ";
+            }
+
+            [Test, Ignore("No position with stream tag yet")]
+            public void correct_event_sequence_has_been_processed()
+            {
+                HelperExtensions.AssertJson(new {d = new[] {1, 2, 6}}, _stateData);
+            }
+
+            [Test]
+            public void projection_position_is_correct()
+            {
+                Assert.AreEqual(
+                    CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"stream1", 1}, {"stream2", 1}}),
+                    _state.Position);
+            }
+        }
+
+        [TestFixture]
+        public class when_replacing_multiple_streams_with_one_of_them : with_updated_projection
+        {
+            protected override string GivenOriginalSource()
+            {
+                return @"
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
+                    fromStreams('stream1', 'stream2').when({
+                        $init: function(){return {d:[]};},
+                        $any: handle,
+                    });
+                ";
+            }
+
+            protected override string GivenUpdatedSource()
+            {
+                return @"
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
+                    fromStream('stream2').when({
+                        $init: function(){return {d:[]};},
+                        $any: handle,
+                    });
+                ";
+            }
+
+            [Test]
+            public void correct_event_sequence_has_been_processed()
+            {
+                HelperExtensions.AssertJson(new {d = new[] {1, 2, 3, 6}}, _stateData);
+            }
+
+            [Test]
+            public void projection_position_is_correct()
+            {
+                Assert.AreEqual(CheckpointTag.FromStreamPosition("stream2", 1), _state.Position);
+            }
+        }
+
+        [TestFixture]
+        public class when_replacing_a_stream_in_multiple_streams : with_updated_projection
+        {
+            protected override string GivenOriginalSource()
+            {
+                return @"
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
+                    fromStreams('stream1', 'stream2').when({
+                        $init: function(){return {d:[]};},
+                        $any: handle,
+                    });
+                ";
+            }
+
+            protected override string GivenUpdatedSource()
+            {
+                return @"
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
+                    fromStreams('stream2', 'stream3').when({
+                        $init: function(){return {d:[]};},
+                        $any: handle,
+                    });
+                ";
+            }
+
+            [Test, Ignore("No position in multi-stream tag")]
+            public void correct_event_sequence_has_been_processed()
+            {
+                HelperExtensions.AssertJson(new {d = new[] {1, 2, 3, 6, 7, 8}}, _stateData);
+            }
+
+            [Test]
+            public void projection_position_is_correct()
+            {
+                Assert.AreEqual(
+                    CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"stream2", 1}, {"stream3", 3}}),
+                    _state.Position);
+            }
+        }
+
     }
 }
     

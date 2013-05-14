@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helper;
 
 namespace EventStore.Integration.Tests.Helpers
