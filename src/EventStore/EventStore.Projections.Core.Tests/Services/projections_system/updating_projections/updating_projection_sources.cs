@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             protected override string GivenOriginalSource()
             {
                 return @"
-                    function handle(s, e) { s.d.push(e.data.Data); return s; }
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
                     fromAll().when({
                         $init: function(){return {d:[]};},
                         type1: handle,
@@ -135,7 +135,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             protected override string GivenUpdatedSource()
             {
                 return @"
-                    function handle(s, e) { s.d.push(e.data.Data); return s; }
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
                     fromAll().when({
                         $init: function(){return {d:[]};},
                         type1: handle,
@@ -167,7 +167,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             protected override string GivenOriginalSource()
             {
                 return @"
-                    function handle(s, e) { s.d.push(e.data.Data); return s; }
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
                     fromAll().when({
                         $init: function(){return {d:[]};},
                         type1: handle,
@@ -179,7 +179,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             protected override string GivenUpdatedSource()
             {
                 return @"
-                    function handle(s, e) { s.d.push(e.data.Data); return s; }
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
                     fromAll().when({
                         $init: function(){return {d:[]};},
                         type1: handle,
@@ -204,5 +204,47 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             }
         }
 
+        [TestFixture]
+        public class when_replacing_any_with_an_event_type : with_updated_projection
+        {
+            protected override string GivenOriginalSource()
+            {
+                return @"
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
+                    fromAll().when({
+                        $init: function(){return {d:[]};},
+                        $any: handle,
+                    });
+                ";
+            }
+
+            protected override string GivenUpdatedSource()
+            {
+                return @"
+                    function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
+                    fromAll().when({
+                        $init: function(){return {d:[]};},
+                        type3: handle,
+                    });
+                ";
+            }
+
+            [Test]
+            public void correct_event_sequence_has_been_processed()
+            {
+                HelperExtensions.AssertJson(new {d = new[] {1, 2, 3, 4, 5, 6}}, _stateData);
+            }
+
+            [Test]
+            public void projection_position_is_correct()
+            {
+                var pos = GetTfPos("stream5", 0);
+                Assert.AreEqual(
+                    CheckpointTag.FromEventTypeIndexPositions(
+                        pos, new Dictionary<string, int> {{"type3", 1}}), _state.Position);
+            }
+        }
+
     }
 }
+    
