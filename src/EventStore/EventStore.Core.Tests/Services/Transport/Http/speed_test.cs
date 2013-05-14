@@ -33,14 +33,10 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using EventStore.Core.Bus;
-using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
-using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Services.Transport.Http.Authentication;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
 using EventStore.Transport.Http.Codecs;
@@ -166,12 +162,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
             IPublisher inputBus = new NoopPublisher();
             var bus = InMemoryBus.CreateTest();
-            var queue = QueuedHandlerThreadPool.CreateTest(bus);
+            var queue = new QueuedHandlerThreadPool(bus, "Test", true, TimeSpan.FromMilliseconds(50));
             var multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[]{queue}, null);
             var providers = new AuthenticationProvider[] {new AnonymousAuthenticationProvider()};
             var httpService = new HttpService(ServiceAccessibility.Public, inputBus, 
-                                              new TrieUriRouter(), multiQueuedHandler, providers, "http://localhost:12345/");
-            httpService.CreateAndSubscribePipeline(bus);
+                                              new TrieUriRouter(), multiQueuedHandler, "http://localhost:12345/");
+            HttpService.CreateAndSubscribePipeline(bus, providers);
 
             var fakeController = new FakeController(iterations, null);
             httpService.SetupController(fakeController);
@@ -209,6 +205,9 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             sw.Stop();
 
             Console.WriteLine("{0} request done in {1} ({2:0.00} per sec)", iterations, sw.Elapsed, 1000.0 * iterations / sw.ElapsedMilliseconds);
+
+            httpService.Shutdown();
+            multiQueuedHandler.Stop();
         }
 
         [Test, MightyMooseIgnore, Ignore]

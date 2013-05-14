@@ -72,12 +72,10 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly HttpMessagePipe _httpPipe;
         private readonly HttpAsyncServer _server;
         private readonly MultiQueuedHandler _requestsMultiHandler;
-        private readonly AuthenticationProvider[] _authenticationProviders;
 
         public HttpService(
             ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
-            MultiQueuedHandler multiQueuedHandler, AuthenticationProvider[] authenticationProviders,
-            params string[] prefixes)
+            MultiQueuedHandler multiQueuedHandler, params string[] prefixes)
         {
             Ensure.NotNull(inputBus, "inputBus");
             Ensure.NotNull(uriRouter, "uriRouter");
@@ -91,18 +89,21 @@ namespace EventStore.Core.Services.Transport.Http
             _httpPipe = new HttpMessagePipe();
 
             _requestsMultiHandler = multiQueuedHandler;
-            _authenticationProviders = authenticationProviders;
 
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
         }
 
-        public void CreateAndSubscribePipeline(IBus bus)
+        public static void CreateAndSubscribePipeline(IBus bus, AuthenticationProvider[] authenticationProviders)
         {
-            var requestProcessor = new AuthenticatedHttpRequestProcessor(this);
-            var requestAuthenticationManager = new IncomingHttpRequestAuthenticationManager(_authenticationProviders);
+            Ensure.NotNull(authenticationProviders, "authenticationProviders");
 
+            var requestProcessor = new AuthenticatedHttpRequestProcessor();
+            var requestAuthenticationManager = new IncomingHttpRequestAuthenticationManager(authenticationProviders);
+
+// ReSharper disable RedundantTypeArgumentsOfMethod
             bus.Subscribe<IncomingHttpRequestMessage>(requestAuthenticationManager);
+// ReSharper restore RedundantTypeArgumentsOfMethod
             bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
             bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
         }
@@ -111,18 +112,15 @@ namespace EventStore.Core.Services.Transport.Http
         {
             if (_server.TryStart())
             {
-                _requestsMultiHandler.Start();
                 _inputBus.Publish(
                     TimerMessage.Schedule.Create(
                         UpdateInterval, _publishEnvelope, new HttpMessage.PurgeTimedOutRequests(_accessibility)));
             }
             else
             {
-                Application.Exit(
-                    ExitCode.Error,
-                    string.Format(
-                        "Http async server failed to start listening at [{0}].",
-                        string.Join(", ", _server.ListenPrefixes)));
+                Application.Exit(ExitCode.Error,
+                                 string.Format("Http async server failed to start listening at [{0}].", 
+                                               string.Join(", ", _server.ListenPrefixes)));
             }
         }
 
@@ -143,7 +141,7 @@ namespace EventStore.Core.Services.Transport.Http
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
         {
             var entity = new HttpEntity(context.Request, context.Response, context.User);
-            _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(entity, _requestsMultiHandler));
+            _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(this, entity, _requestsMultiHandler));
         }
 
         public void Handle(HttpMessage.PurgeTimedOutRequests message)
@@ -161,7 +159,6 @@ namespace EventStore.Core.Services.Transport.Http
         public void Shutdown()
         {
             _server.Shutdown();
-            _requestsMultiHandler.Stop();
         }
 
         public void SetupController(IController controller)
@@ -170,8 +167,7 @@ namespace EventStore.Core.Services.Transport.Http
             controller.Subscribe(this, _httpPipe);
         }
 
-        public void RegisterControllerAction(
-            ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
+        public void RegisterControllerAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
         {
             Ensure.NotNull(action, "action");
             Ensure.NotNull(handler, "handler");

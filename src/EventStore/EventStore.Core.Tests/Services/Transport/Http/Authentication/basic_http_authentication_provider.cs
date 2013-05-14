@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Tests.Bus.Helpers;
@@ -75,7 +76,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             {
                 SetUpProvider();
                 _entity = HttpEntity.Test(null);
-                _authenticateResult = _provider.Authenticate(new IncomingHttpRequestMessage(_entity, _bus));
+                _authenticateResult = _provider.Authenticate(new IncomingHttpRequestMessage(null, _entity, _bus));
             }
 
             [Test]
@@ -108,7 +109,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             {
                 SetUpProvider();
                 _entity = HttpEntity.Test(new GenericPrincipal(new HttpListenerBasicIdentity("user", "password"), new string[0]));
-                _authenticateResult = _provider.Authenticate(new IncomingHttpRequestMessage(_entity, _bus));
+                _authenticateResult = _provider.Authenticate(new IncomingHttpRequestMessage(null, _entity, _bus));
             }
 
             [Test]
@@ -145,12 +146,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
                 SetUpProvider();
 
                 var entity = HttpEntity.Test(new GenericPrincipal(new HttpListenerBasicIdentity("user", "password"), new string[0]));
-                _provider.Authenticate(new IncomingHttpRequestMessage(entity, _bus));
+                _provider.Authenticate(new IncomingHttpRequestMessage(null, entity, _bus));
 
                 _consumer.HandledMessages.Clear();
 
                 _entity = HttpEntity.Test(new GenericPrincipal(new HttpListenerBasicIdentity("user", "password"), new string[0]));
-                _authenticateResult = _provider.Authenticate(new IncomingHttpRequestMessage(_entity, _bus));
+                _authenticateResult = _provider.Authenticate(new IncomingHttpRequestMessage(null, _entity, _bus));
             }
 
             [Test]
@@ -193,7 +194,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
             {
                 SetUpProvider();
                 _entity = HttpEntity.Test(new GenericPrincipal(new HttpListenerBasicIdentity("user", "password1"), new string[0]));
-                _authenticateResult = _provider.Authenticate(new IncomingHttpRequestMessage(_entity, _bus));
+                _authenticateResult = _provider.Authenticate(new IncomingHttpRequestMessage(null, _entity, _bus));
             }
 
             [Test]

@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Net;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Transport.Http.EntityManagement;
@@ -36,10 +35,12 @@ namespace EventStore.Core.Services.Transport.Http.Messages
     public class IncomingHttpRequestMessage : Message
     {
         public readonly IPublisher NextStagePublisher;
+        public readonly HttpService HttpService;
         public readonly HttpEntity Entity;
 
-        public IncomingHttpRequestMessage(HttpEntity entity, IPublisher nextStagePublisher)
+        public IncomingHttpRequestMessage(HttpService httpService, HttpEntity entity, IPublisher nextStagePublisher)
         {
+            HttpService = httpService;
             Entity = entity;
             NextStagePublisher = nextStagePublisher;
         }

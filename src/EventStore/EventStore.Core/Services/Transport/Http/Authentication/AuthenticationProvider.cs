@@ -27,6 +27,7 @@
 // 
 
 using System.Security.Principal;
+using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
@@ -35,12 +36,14 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
 {
     public abstract class AuthenticationProvider
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<AuthenticationProvider>();
+        
         public abstract bool Authenticate(IncomingHttpRequestMessage message);
 
         protected void Authenticated(IncomingHttpRequestMessage message, IPrincipal user)
         {
-            var entity = message.Entity;
-            message.NextStagePublisher.Publish(new AuthenticatedHttpRequestMessage(entity.SetUser(user)));
+            var authenticatedEntity = message.Entity.SetUser(user);
+            message.NextStagePublisher.Publish(new AuthenticatedHttpRequestMessage(message.HttpService, authenticatedEntity));
         }
 
         public static void ReplyUnauthorized(HttpEntity entity)

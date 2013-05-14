@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Linq;
 using System.Net;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -75,9 +76,9 @@ namespace EventStore.Web.Playground
         private readonly PlaygroundVNodeController _controller;
         private readonly HttpService _httpService;
         private readonly TimerService _timerService;
-        private readonly NetworkSendService _networkSendService;
 
-        private readonly NodeSubsystems[] _enabledNodeSubsystems;
+        private readonly InMemoryBus[] _workerBuses;
+        private readonly MultiQueuedHandler _workersHandler;
 
         public PlaygroundVNode(PlaygroundVNodeSettings vNodeSettings)
         {
@@ -89,8 +90,6 @@ namespace EventStore.Web.Playground
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             _controller.SetMainQueue(MainQueue);
 
-            _enabledNodeSubsystems = new NodeSubsystems[0];
-
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringQueue = new QueuedHandler(
@@ -100,13 +99,24 @@ namespace EventStore.Web.Playground
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 
 
-            // NETWORK SEND
-            _networkSendService = new NetworkSendService(
-                tcpQueueCount: vNodeSettings.TcpSendingThreads, httpQueueCount: vNodeSettings.HttpSendingThreads);
+            // MISC WORKERS
+            var workerThreadCount = Math.Max(vNodeSettings.TcpSendingThreads,
+                                             Math.Max(vNodeSettings.HttpSendingThreads, vNodeSettings.HttpReceivingThreads));
+            _workerBuses = Enumerable.Range(0, workerThreadCount).Select(queueNum =>
+                new InMemoryBus(string.Format("Worker #{0} Bus", queueNum + 1),
+                                watchSlowMsg: true,
+                                slowMsgThreshold: TimeSpan.FromMilliseconds(50))).ToArray();
+            _workersHandler = new MultiQueuedHandler(
+                    workerThreadCount,
+                    queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
+                                                            string.Format("Worker #{0}", queueNum + 1),
+                                                            groupName: "Workers",
+                                                            watchSlowMsg: true,
+                                                            slowMsgThreshold: TimeSpan.FromMilliseconds(50)));
 
             // TCP
             var tcpService = new TcpService(
-                MainQueue, _tcpEndPoint, _networkSendService, TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), 
+                MainQueue, _tcpEndPoint, _workersHandler, TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), 
                 ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout, null);
             Bus.Subscribe<SystemMessage.SystemInit>(tcpService);
             Bus.Subscribe<SystemMessage.SystemStart>(tcpService);
@@ -114,46 +124,34 @@ namespace EventStore.Web.Playground
 
             // HTTP
             {
-
-                var queues = new IQueuedHandler[vNodeSettings.HttpReceivingThreads];
-                var buses = new InMemoryBus[vNodeSettings.HttpReceivingThreads];
-                var multiQueuedHandler = new MultiQueuedHandler(queues, null);
-                for (var i = 0; i < vNodeSettings.HttpReceivingThreads; i++)
-                {
-                    buses[i] = new InMemoryBus(string.Format("Incoming HTTP #{0} Bus", i + 1), watchSlowMsg: false);
-                    queues[i] = new QueuedHandlerThreadPool(
-                        buses[i], name: "Incoming HTTP #" + (i + 1), groupName: "Incoming HTTP", watchSlowMsg: true,
-                        slowMsgThreshold: TimeSpan.FromMilliseconds(50));
-                }
-
-                var dispatcher = new IODispatcher(
-                    _mainQueue, new PublishEnvelope(multiQueuedHandler, crossThread: true));
+                var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
 
                 var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
                 var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, 1000);
                 var authenticationProviders = new AuthenticationProvider[]
-                    {
-                        new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
-                        new TrustedAuthenticationProvider(), new AnonymousAuthenticationProvider()
-                    };
+                {
+                    new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
+                    new TrustedAuthenticationProvider(),
+                    new AnonymousAuthenticationProvider()
+                };
 
 
                 _httpService = new HttpService(
-                    ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(), multiQueuedHandler,
-                    authenticationProviders, vNodeSettings.HttpPrefixes);
+                        ServiceAccessibility.Private,
+                        _mainQueue,
+                        new TrieUriRouter(),
+                        _workersHandler,
+                        vNodeSettings.HttpPrefixes);
 
-
-                for (var i = 0; i < vNodeSettings.HttpReceivingThreads; i++)
+                SubscribeWorkers(bus =>
                 {
-                    var bus = buses[i];
-
                     bus.Subscribe(dispatcher.ForwardReader);
                     bus.Subscribe(dispatcher.BackwardReader);
                     bus.Subscribe(dispatcher.Writer);
                     bus.Subscribe(dispatcher.StreamDeleter);
 
-                    _httpService.CreateAndSubscribePipeline(bus);
-                }
+                    HttpService.CreateAndSubscribePipeline(bus, authenticationProviders);
+                });
 
                 _mainBus.Subscribe<SystemMessage.SystemInit>(HttpService);
                 _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
@@ -161,9 +159,9 @@ namespace EventStore.Web.Playground
                 _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(HttpService);
                 HttpService.SetupController(new AdminController(_mainQueue));
                 HttpService.SetupController(new PingController());
-                HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));
-                HttpService.SetupController(new AtomController(_mainQueue, _networkSendService));
-                HttpService.SetupController(new UsersController(_mainQueue, _networkSendService));
+                HttpService.SetupController(new StatController(monitoringQueue, _workersHandler));
+                HttpService.SetupController(new AtomController(_mainQueue, _workersHandler));
+                HttpService.SetupController(new UsersController(_mainQueue, _workersHandler));
             }
 
 
@@ -173,6 +171,14 @@ namespace EventStore.Web.Playground
 
             monitoringQueue.Start();
             MainQueue.Start();
+        }
+
+        private void SubscribeWorkers(Action<InMemoryBus> setup)
+        {
+            foreach (var workerBus in _workerBuses)
+            {
+                setup(workerBus);
+            }
         }
 
         public void Start()

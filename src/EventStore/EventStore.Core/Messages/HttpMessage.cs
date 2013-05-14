@@ -40,8 +40,10 @@ namespace EventStore.Core.Messages
 
     public static class HttpMessage
     {
-        public class HttpSendMessage : Message
+        public abstract class HttpSendMessage : Message, IQueueAffineMessage
         {
+            public int QueueId { get { return HttpEntityManager.GetHashCode(); } }
+
             public readonly IEnvelope Envelope;
             public readonly Guid CorrelationId;
             public readonly HttpEntityManager HttpEntityManager;

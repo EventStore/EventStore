@@ -35,8 +35,10 @@ namespace EventStore.Core.Messages
 {
     public static class TcpMessage
     {
-        public class TcpSend: Message
+        public class TcpSend: Message, IQueueAffineMessage
         {
+            public int QueueId { get { return ConnectionManager.GetHashCode(); } }
+
             public readonly TcpConnectionManager ConnectionManager;
             public readonly Message Message;
 

@@ -37,6 +37,7 @@ using System.Text;
 using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.Tests.Helper;
 using EventStore.Core.Tests.Http.Streams;
 using EventStore.Core.Tests.Http.Users;
 using NUnit.Framework;

@@ -40,13 +40,12 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
-using EventStore.Core.Tests.Helper;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
-namespace EventStore.Core.Tests.ClientAPI.Helpers
+namespace EventStore.Core.Tests.Helper
 {
     public class MiniNode
     {
@@ -84,12 +83,14 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                                                               TimeSpan.FromHours(1),
                                                               StatsStorage.None);
 
-            Log.Info("\n{0,-25} {1} ({2})\n"
-                     + "{3,-25} {4} ({5}-bit)\n"
-                     + "{6,-25} {7}\n"
-                     + "{8,-25} {9}\n"
-                     + "{10,-25} {11}\n"
-                     + "{12,-25} {13}\n",
+            Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
+                     + "{5,-25} {6} ({7})\n"
+                     + "{8,-25} {9} ({10}-bit)\n"
+                     + "{11,-25} {12}\n"
+                     + "{13,-25} {14}\n"
+                     + "{15,-25} {16}\n"
+                     + "{17,-25} {18}\n\n",
+                     "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
                      "OS:", OS.IsLinux ? "Linux" : "Windows", Environment.OSVersion,
                      "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
                      "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
@@ -97,7 +98,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                      "TCP ENDPOINT:", TcpEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
 
-            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, enabledNodeSubsystems: enableProjections ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0], memTableEntryCount: 1000, subsystems: subsystems);
+            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: 1000, subsystems: subsystems);
             Node.HttpService.SetupController(new TestController(Node.MainQueue, Node.NetworkSendService));
         }
 

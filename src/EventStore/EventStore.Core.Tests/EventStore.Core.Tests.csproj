@@ -89,30 +89,31 @@
     <Compile Include="Bus\when_publishing_into_memory_bus.cs" />
     <Compile Include="Bus\when_subscribing_to_memory_bus.cs" />
     <Compile Include="Bus\when_unsubscribing_from_memory_bus.cs" />
-    <Compile Include="ClientAPI\when_having_max_count_set_for_stream.cs" />
-    <Compile Include="ClientAPI\when_working_with_stream_metadata_as_structured_info.cs" />
-    <Compile Include="ClientAPI\Helpers\TestConnection.cs" />
-    <Compile Include="ClientAPI\read_all_events_backward_should.cs" />
-    <Compile Include="ClientAPI\read_all_events_forward_should.cs" />
-    <Compile Include="ClientAPI\subscribe_to_all_should.cs" />
+    <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
     <Compile Include="ClientAPI\append_to_stream.cs" />
-    <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />
-    <Compile Include="ClientAPI\subscribe_to_stream_catching_up_should.cs" />
-    <Compile Include="ClientAPI\subscribe_to_all_catching_up_should.cs" />
-    <Compile Include="ClientAPI\when_committing_empty_transaction.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
     <Compile Include="ClientAPI\event_store_connection_should.cs" />
+    <Compile Include="ClientAPI\Helpers\EventDataComparer.cs" />
+    <Compile Include="ClientAPI\Helpers\EventsStream.cs" />
+    <Compile Include="ClientAPI\Helpers\TestConnection.cs" />
     <Compile Include="ClientAPI\Helpers\TestEvent.cs" />
     <Compile Include="ClientAPI\Helpers\Writer.cs" />
-    <Compile Include="ClientAPI\Helpers\EventsStream.cs" />
-    <Compile Include="ClientAPI\Helpers\MiniNode.cs" />
+    <Compile Include="ClientAPI\read_all_events_backward_should.cs" />
+    <Compile Include="ClientAPI\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
     <Compile Include="ClientAPI\subscribe_should.cs" />
+    <Compile Include="ClientAPI\subscribe_to_all_catching_up_should.cs" />
+    <Compile Include="ClientAPI\subscribe_to_all_should.cs" />
+    <Compile Include="ClientAPI\subscribe_to_stream_catching_up_should.cs" />
+    <Compile Include="ClientAPI\SystemData\clientapi_tcp_package.cs" />
     <Compile Include="ClientAPI\transaction.cs" />
+    <Compile Include="ClientAPI\when_committing_empty_transaction.cs" />
+    <Compile Include="ClientAPI\when_having_max_count_set_for_stream.cs" />
     <Compile Include="ClientAPI\when_working_with_stream_metadata_as_byte_array.cs" />
+    <Compile Include="ClientAPI\when_working_with_stream_metadata_as_structured_info.cs" />
     <Compile Include="Common\Options\OptsHelperTestBase.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_array.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_custom_type.cs" />
@@ -123,7 +124,6 @@
     <Compile Include="Common\Options\opts_helper_for_bool_flag_should.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_flag.cs" />
     <Compile Include="Helper\CollectionsExtensions.cs" />
-    <Compile Include="ClientAPI\Helpers\EventDataComparer.cs" />
     <Compile Include="Helper\HelperExtensions.cs" />
     <Compile Include="DataStructures\pairing_heap_should.cs" />
     <Compile Include="Fakes\FakeLogger.cs" />
@@ -135,6 +135,7 @@
     <Compile Include="Hashes\xxhash_hash_should.cs" />
     <Compile Include="Helper\ClientApiLoggerBridge.cs" />
     <Compile Include="Helper\ManualQueue.cs" />
+    <Compile Include="Helper\MiniNode.cs" />
     <Compile Include="Helper\ReflectionDynamic.cs" />
     <Compile Include="Helper\TcpPortsHelper.cs" />
     <Compile Include="Helper\TestFixtureWithExistingEvents.cs" />
@@ -311,6 +312,7 @@
     <Compile Include="Services\Transport\Http\speed_test.cs" />
     <Compile Include="Services\Transport\Http\uri_router_should.cs" />
     <Compile Include="Services\Transport\Tcp\ssl_connection.cs" />
+    <Compile Include="Services\Transport\Tcp\core_tcp_package.cs" />
     <Compile Include="Services\UserManagementService\user_management_service.cs" />
     <Compile Include="Services\VNode\vnode_fsm_should.cs" />
     <Compile Include="SpecificationWithDirectoryPerTestFixture.cs" />
@@ -417,6 +419,7 @@
   <ItemGroup>
     <EmbeddedResource Include="server.p12" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
