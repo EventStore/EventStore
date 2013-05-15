@@ -104,6 +104,7 @@
     <Compile Include="ClientAPI\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
+    <Compile Include="ClientAPI\Security\authentication_tests.cs" />
     <Compile Include="ClientAPI\subscribe_should.cs" />
     <Compile Include="ClientAPI\subscribe_to_all_catching_up_should.cs" />
     <Compile Include="ClientAPI\subscribe_to_all_should.cs" />

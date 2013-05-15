@@ -158,7 +158,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     {
                         string message = Helper.EatException(() => Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
                         DropSubscription(SubscriptionDropReason.NotAuthenticated,
-                                         new ServerErrorException(string.IsNullOrEmpty(message) ? "Authentication error" : message));
+                                         new NotAuthenticatedException(string.IsNullOrEmpty(message) ? "Authentication error" : message));
                         return new InspectionResult(InspectionDecision.EndOperation);
                     }
 

@@ -390,6 +390,8 @@ namespace EventStore.ClientAPI
         {
             return GetStreamMetadataAsRawBytesAsync(stream, userCredentials).ContinueWith(t =>
             {
+                if (t.Exception != null)
+                    throw t.Exception.InnerException;
                 var res = t.Result;
                 if (res.StreamMetadata == null || res.StreamMetadata.Length == 0)
                     return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion, StreamMetadata.Create());
@@ -411,6 +413,9 @@ namespace EventStore.ClientAPI
             EnqueueOperation(new ReadEventOperation(_settings.Log, source, SystemStreams.MetastreamOf(stream), -1, false, userCredentials));
             return source.Task.ContinueWith(t =>
             {
+                if (t.Exception != null) 
+                    throw t.Exception.InnerException;
+
                 var res = t.Result;
                 switch (res.Result)
                 {
