@@ -56,6 +56,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
             [DataMember]
             public bool IncludeLinks { get; set; }
+
+            [DataMember]
+            public string RunAs { get; set; }
         }
 
         protected readonly QuerySourceOptions _options = new QuerySourceOptions();
@@ -142,6 +145,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public void SetProcessingLag(int processingLag)
         {
             _options.ProcessingLag = processingLag;
+        }
+
+        public void SetRunAs(string runAs)
+        {
+            _options.RunAs = runAs;
         }
 
         protected HashSet<string> ToSet(IEnumerable<string> list)

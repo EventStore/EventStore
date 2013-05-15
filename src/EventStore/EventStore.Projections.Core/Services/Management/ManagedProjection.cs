@@ -905,6 +905,9 @@ namespace EventStore.Projections.Core.Services.Management
             if (_sourceDefinition.Options != null)
                 builder.SetProcessingLag(_sourceDefinition.Options.ProcessingLag);
 
+            if (_sourceDefinition.Options != null)
+                builder.SetRunAs(_sourceDefinition.Options.RunAs);
+
             if (_sourceDefinition.DefinesStateTransform)
                 builder.SetDefinesStateTransform();
         }

@@ -28,6 +28,7 @@ var $projections = {
                 $includeLinks: false,
                 reorderEvents: false,
                 processingLag: 0,
+                runAs: null,
             }, 
         };
 

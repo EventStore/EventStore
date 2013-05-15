@@ -356,6 +356,30 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
+        public class with_runas_option : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    options({
+                        runAs: 'test-user'
+                    });
+                    fromAll().whenAny(
+                        function(state, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual("test-user", _source.Options.RunAs);
+            }
+        }
+
+        [TestFixture]
         public class with_multiple_option_statements : TestFixtureWithJsProjection
         {
             protected override void Given()
