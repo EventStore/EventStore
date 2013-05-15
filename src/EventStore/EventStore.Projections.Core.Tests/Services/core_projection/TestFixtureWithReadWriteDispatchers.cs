@@ -34,7 +34,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     public abstract class TestFixtureWithReadWriteDispatchers : 
-        EventStore.Core.Tests.Helper.TestFixtureWithReadWriteDispatchers
+        EventStore.Core.Tests.Helpers.TestFixtureWithReadWriteDispatchers
     {
         protected
             PublishSubscribeDispatcher

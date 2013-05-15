@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Text;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Data
 {
@@ -41,8 +42,8 @@ namespace EventStore.Core.Data
 
         public Event(Guid eventId, string eventType, bool isJson, string data, string metadata)
             : this(
-                eventId, eventType, isJson, Encoding.UTF8.GetBytes(data),
-                metadata != null ? Encoding.UTF8.GetBytes(metadata) : null)
+                eventId, eventType, isJson, Helper.UTF8NoBom.GetBytes(data),
+                metadata != null ? Helper.UTF8NoBom.GetBytes(metadata) : null)
         {
         }
 

@@ -48,8 +48,9 @@ namespace EventStore.ClientAPI.ClientOperations
                                        bool forward,
                                        string stream,
                                        int expectedVersion,
-                                       IEnumerable<EventData> events)
-            : base(log, source, TcpCommand.WriteEvents, TcpCommand.WriteEventsCompleted)
+                                       IEnumerable<EventData> events,
+                                       UserCredentials userCredentials)
+            : base(log, source, TcpCommand.WriteEvents, TcpCommand.WriteEventsCompleted, userCredentials)
         {
             _forward = forward;
             _stream = stream;

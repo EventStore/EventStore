@@ -138,6 +138,7 @@ namespace EventStore.ClientAPI.Core
 
         public readonly string StreamId;
         public readonly bool ResolveLinkTos;
+        public readonly UserCredentials UserCredentials;
         public readonly Action<EventStoreSubscription, ResolvedEvent> EventAppeared;
         public readonly Action<EventStoreSubscription, SubscriptionDropReason, Exception> SubscriptionDropped;
            
@@ -147,6 +148,7 @@ namespace EventStore.ClientAPI.Core
         public StartSubscriptionMessage(TaskCompletionSource<EventStoreSubscription> source,
                                         string streamId,
                                         bool resolveLinkTos, 
+                                        UserCredentials userCredentials,
                                         Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
                                         Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, 
                                         int maxRetries, 
@@ -158,6 +160,7 @@ namespace EventStore.ClientAPI.Core
             Source = source;
             StreamId = streamId;
             ResolveLinkTos = resolveLinkTos;
+            UserCredentials = userCredentials;
             EventAppeared = eventAppeared;
             SubscriptionDropped = subscriptionDropped;
             MaxRetries = maxRetries;

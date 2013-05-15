@@ -29,6 +29,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -89,7 +90,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             {
                 var result = ReadIndex.ReadEvent("ES", i);
                 Assert.AreEqual(ReadEventResult.Success, result.Result);
-                Assert.AreEqual(Encoding.UTF8.GetBytes("data" + i), result.Record.Data);
+                Assert.AreEqual(Helper.UTF8NoBom.GetBytes("data" + i), result.Record.Data);
             }
         }
     }

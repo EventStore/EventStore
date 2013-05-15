@@ -27,7 +27,6 @@
 // 
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -37,11 +36,10 @@ using System.Text;
 using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Http.Streams;
 using EventStore.Core.Tests.Http.Users;
 using NUnit.Framework;
-using EventStore.Core.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -177,7 +175,7 @@ namespace EventStore.Core.Tests.Http
             var memoryStream = new MemoryStream();
             _lastResponse.GetResponseStream().CopyTo(memoryStream);
             var bytes = memoryStream.ToArray();
-            _lastResponseBody = Encoding.UTF8.GetString(bytes);
+            _lastResponseBody = Helper.UTF8NoBom.GetString(bytes);
             try
             {
                 return _lastResponseBody.ParseJson<JObject>();
@@ -232,7 +230,7 @@ namespace EventStore.Core.Tests.Http
             var memoryStream = new MemoryStream();
             _lastResponse.GetResponseStream().CopyTo(memoryStream);
             var bytes = memoryStream.ToArray();
-            _lastResponseBody = Encoding.UTF8.GetString(bytes);
+            _lastResponseBody = Helper.UTF8NoBom.GetString(bytes);
         }
 
         protected HttpWebResponse GetRequestResponse(HttpWebRequest request)
@@ -369,8 +367,8 @@ namespace EventStore.Core.Tests.Http
             var debugExpression = Expression.Lambda<Func<HttpWebRequest, byte[]>>(body, r);
             return debugExpression.Compile();
         }
-    // System.Text.Encoding.UTF8.GetString(((System.Net.ConnectStream)(_response.CoreResponseData.m_ConnectStream)).m_ReadBuffer) // m_ReadOffset
-    // System.Text.Encoding.UTF8.GetString(((System.Net.HttpWebRequest)(request))._WriteBuffer)
+    // System.Text.Helper.UTF8NoBom.GetString(((System.Net.ConnectStream)(_response.CoreResponseData.m_ConnectStream)).m_ReadBuffer) // m_ReadOffset
+    // System.Text.Helper.UTF8NoBom.GetString(((System.Net.HttpWebRequest)(request))._WriteBuffer)
     // ((System.Net.ConnectStream)(request._SubmitWriteStream)).BufferedData.headChunk.Buffer
     }
 }

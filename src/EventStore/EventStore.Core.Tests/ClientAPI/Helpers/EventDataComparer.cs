@@ -26,8 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System.Text;
 using EventStore.ClientAPI;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
@@ -41,11 +41,11 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             if (expected.Type != actual.EventType)
                 return false;
 
-            var expectedDataString = Encoding.UTF8.GetString(expected.Data ?? new byte[0]);
-            var expectedMetadataString = Encoding.UTF8.GetString(expected.Metadata ?? new byte[0]);
+            var expectedDataString = Helper.UTF8NoBom.GetString(expected.Data ?? new byte[0]);
+            var expectedMetadataString = Helper.UTF8NoBom.GetString(expected.Metadata ?? new byte[0]);
 
-            var actualDataString = Encoding.UTF8.GetString(actual.Data ?? new byte[0]);
-            var actualMetadataDataString = Encoding.UTF8.GetString(actual.Metadata ?? new byte[0]);
+            var actualDataString = Helper.UTF8NoBom.GetString(actual.Data ?? new byte[0]);
+            var actualMetadataDataString = Helper.UTF8NoBom.GetString(actual.Metadata ?? new byte[0]);
 
             return expectedDataString == actualDataString && expectedMetadataString == actualMetadataDataString;
         }

@@ -345,7 +345,7 @@ namespace EventStore.Core.Services.Storage
             {
                 try
                 {
-                    string[] parts = Encoding.UTF8.GetString(eventRecord.Data).Split('@');
+                    string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split('@');
                     int eventNumber = int.Parse(parts[0]);
                     string streamId = parts[1];
 

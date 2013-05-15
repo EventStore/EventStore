@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http.EntityManagement
 {
@@ -48,14 +49,14 @@ namespace EventStore.Transport.Http.EntityManagement
                                             Action<Exception> onError)
         {
             //TODO: add encoding header???
-            self.Reply(Encoding.UTF8.GetBytes(response ?? string.Empty), code, description, type, Encoding.UTF8, headers, onError);
+            self.Reply(Helper.UTF8NoBom.GetBytes(response ?? string.Empty), code, description, type, Helper.UTF8NoBom, headers, onError);
         }
 
         public static void ContinueReplyTextContent(
             this HttpEntityManager self, string response, Action<Exception> onError, Action completed)
         {
             //TODO: add encoding header???
-            var bytes = Encoding.UTF8.GetBytes(response ?? string.Empty);
+            var bytes = Helper.UTF8NoBom.GetBytes(response ?? string.Empty);
             self.ContinueReply(bytes, onError, completed);
         }
 
@@ -71,7 +72,7 @@ namespace EventStore.Transport.Http.EntityManagement
                     if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
                         offset = 3;
 
-                    onSuccess(manager, Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset));
+                    onSuccess(manager, Helper.UTF8NoBom.GetString(bytes, offset, bytes.Length - offset));
                 }, 
                 onError);
         }

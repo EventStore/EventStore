@@ -29,6 +29,7 @@
 using System;
 using System.IO;
 using System.Text;
+using EventStore.Common.Utils;
 
 namespace EventStore.Projections.Core.Services.v8
 {
@@ -45,7 +46,7 @@ namespace EventStore.Projections.Core.Services.v8
         public static Tuple<string, string> GetModuleSource(string name)
         {
             var fullScriptFileName = Path.GetFullPath(Path.Combine(_jsPath, name + ".js"));
-            var scriptSource = File.ReadAllText(fullScriptFileName, Encoding.UTF8);
+            var scriptSource = File.ReadAllText(fullScriptFileName, Helper.UTF8NoBom);
             return Tuple.Create(scriptSource, fullScriptFileName);
         }
     }

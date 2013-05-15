@@ -31,6 +31,7 @@ using System.Threading;
 using EventStore.ClientAPI.Common.Concurrent;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
@@ -47,6 +48,7 @@ namespace EventStore.ClientAPI
 
         private readonly IEventStoreConnection _connection;
         private readonly bool _resolveLinkTos;
+        private readonly UserCredentials _userCredentials;
         private readonly string _streamId;
         
         protected readonly int ReadBatchSize;
@@ -67,13 +69,18 @@ namespace EventStore.ClientAPI
         private int _isDropped;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 
-        protected abstract void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber);
+        protected abstract void ReadEventsTill(IEventStoreConnection connection,
+                                               bool resolveLinkTos,
+                                               UserCredentials userCredentials,
+                                               long? lastCommitPosition,
+                                               int? lastEventNumber);
         protected abstract void TryProcess(ResolvedEvent e);
 
         protected EventStoreCatchUpSubscription(IEventStoreConnection connection, 
                                                 ILogger log,
                                                 string streamId,
                                                 bool resolveLinkTos,
+                                                UserCredentials userCredentials,
                                                 Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared, 
                                                 Action<EventStoreCatchUpSubscription> liveProcessingStarted,
                                                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
@@ -91,6 +98,7 @@ namespace EventStore.ClientAPI
             Log = log;
             _streamId = string.IsNullOrEmpty(streamId) ? string.Empty : streamId;
             _resolveLinkTos = resolveLinkTos;
+            _userCredentials = userCredentials;
             ReadBatchSize = readBatchSize;
             MaxPushQueueSize = maxPushQueueSize;
 
@@ -110,17 +118,17 @@ namespace EventStore.ClientAPI
                 try
                 {
                     if (Verbose) Log.Debug("Catch-up Subscription to {0}: pulling events...", IsSubscribedToAll ? "<all>" : StreamId);
-                    ReadEventsTill(_connection, _resolveLinkTos, null, null);
+                    ReadEventsTill(_connection, _resolveLinkTos, _userCredentials, null, null);
                     if (!_stop)
                     {
                         if (Verbose) Log.Debug("Catch-up Subscription to {0}: subscribing...", IsSubscribedToAll ? "<all>" : StreamId);
                         var subscribeTask = _streamId == string.Empty
-                            ? _connection.SubscribeToAll(_resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped)
-                            : _connection.SubscribeToStream(_streamId, _resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped);
+                            ? _connection.SubscribeToAll(_resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped, _userCredentials)
+                            : _connection.SubscribeToStream(_streamId, _resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped, _userCredentials);
                         _subscription = subscribeTask.Result;
 
                         if (Verbose) Log.Debug("Catch-up Subscription to {0}: pulling events (if left)...", IsSubscribedToAll ? "<all>" : StreamId);
-                        ReadEventsTill(_connection, _resolveLinkTos, _subscription.LastCommitPosition, _subscription.LastEventNumber);
+                        ReadEventsTill(_connection, _resolveLinkTos, _userCredentials, _subscription.LastCommitPosition, _subscription.LastEventNumber);
                     }
                 }
                 catch (Exception exc)
@@ -275,22 +283,25 @@ namespace EventStore.ClientAPI
                                                   ILogger log,
                                                   Position? fromPositionExclusive, /* if null -- from the very beginning */
                                                   bool resolveLinkTos,
+                                                  UserCredentials userCredentials,
                                                   Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                   Action<EventStoreCatchUpSubscription> liveProcessingStarted,
                                                   Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
                                                   bool verboseLogging)
-                : base(connection, log, string.Empty, resolveLinkTos, eventAppeared, liveProcessingStarted, subscriptionDropped, verboseLogging)
+                : base(connection, log, string.Empty, resolveLinkTos, userCredentials, 
+                       eventAppeared, liveProcessingStarted, subscriptionDropped, verboseLogging)
         {
             _lastProcessedPosition = fromPositionExclusive ?? new Position(-1, -1);
             _nextReadPosition = fromPositionExclusive ?? Position.Start;
         }
 
-        protected override void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber)
+        protected override void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, 
+                                               UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
         {
             bool done;
             do
             {
-                AllEventsSlice slice = connection.ReadAllEventsForward(_nextReadPosition, ReadBatchSize, resolveLinkTos);
+                AllEventsSlice slice = connection.ReadAllEventsForward(_nextReadPosition, ReadBatchSize, resolveLinkTos, userCredentials);
                 foreach (var e in slice.Events)
                 {
                     if (e.OriginalPosition == null) throw new Exception("Subscription event came up with no OriginalPosition.");
@@ -339,11 +350,13 @@ namespace EventStore.ClientAPI
                                                      string streamId,
                                                      int? fromEventNumberExclusive, /* if null -- from the very beginning */
                                                      bool resolveLinkTos,
+                                                     UserCredentials userCredentials,
                                                      Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                      Action<EventStoreCatchUpSubscription> liveProcessingStarted,
                                                      Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
                                                      bool verboseLogging)
-            : base(connection, log, streamId, resolveLinkTos, eventAppeared, liveProcessingStarted, subscriptionDropped, verboseLogging)
+            : base(connection, log, streamId, resolveLinkTos, userCredentials, 
+                   eventAppeared, liveProcessingStarted, subscriptionDropped, verboseLogging)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
 
@@ -351,12 +364,13 @@ namespace EventStore.ClientAPI
             _nextReadEventNumber = fromEventNumberExclusive ?? 0;
         }
 
-        protected override void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber)
+        protected override void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, 
+                                               UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
         {
             bool done;
             do
             {
-                var slice = connection.ReadStreamEventsForward(StreamId, _nextReadEventNumber, ReadBatchSize, resolveLinkTos);
+                var slice = connection.ReadStreamEventsForward(StreamId, _nextReadEventNumber, ReadBatchSize, resolveLinkTos, userCredentials);
                 switch (slice.Status)
                 {
                     case SliceReadStatus.Success:

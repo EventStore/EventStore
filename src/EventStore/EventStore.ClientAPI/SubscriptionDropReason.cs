@@ -33,6 +33,7 @@ namespace EventStore.ClientAPI
     public enum SubscriptionDropReason
     {
         UserInitiated,
+        NotAuthenticated,
         AccessDenied,
         SubscribingError,
         ServerError,

@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
@@ -37,6 +38,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Transport.Tcp;
 using EventStore.Transport.Tcp.Framing;
 
@@ -72,11 +74,15 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _heartbeatTimeout;
 
+        private readonly InternalAuthenticationProvider _authProvider;
+        private UserCredentials _defaultUser;
+
         public TcpConnectionManager(string connectionName, 
                                     ITcpDispatcher dispatcher, 
                                     IPublisher publisher, 
                                     ITcpConnection openedConnection,
                                     IPublisher networkSendQueue,
+                                    InternalAuthenticationProvider authProvider,
                                     TimeSpan heartbeatInterval,
                                     TimeSpan heartbeatTimeout,
                                     Action<TcpConnectionManager, SocketError> onConnectionClosed)
@@ -84,6 +90,8 @@ namespace EventStore.Core.Services.Transport.Tcp
             Ensure.NotNull(dispatcher, "dispatcher");
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(openedConnection, "openedConnnection");
+            Ensure.NotNull(networkSendQueue, "networkSendQueue");
+            Ensure.NotNull(authProvider, "authProvider");
 
             ConnectionId = openedConnection.ConnectionId;
             ConnectionName = connectionName;
@@ -91,6 +99,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             _tcpEnvelope = new SendOverTcpEnvelope(this, networkSendQueue);
             _publisher = publisher;
             _dispatcher = dispatcher;
+            _authProvider = authProvider;
 
             EndPoint = openedConnection.EffectiveEndPoint;
 
@@ -116,10 +125,11 @@ namespace EventStore.Core.Services.Transport.Tcp
         public TcpConnectionManager(string connectionName, 
                                     Guid connectionId,
                                     ITcpDispatcher dispatcher,
-                                    IPublisher publisher, 
+                                    IPublisher publisher,
                                     IPEndPoint remoteEndPoint, 
                                     TcpClientConnector connector,
                                     IPublisher networkSendQueue,
+                                    InternalAuthenticationProvider authProvider,
                                     TimeSpan heartbeatInterval,
                                     TimeSpan heartbeatTimeout,
                                     Action<TcpConnectionManager> onConnectionEstablished,
@@ -128,6 +138,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(dispatcher, "dispatcher");
             Ensure.NotNull(publisher, "publisher");
+            Ensure.NotNull(authProvider, "authProvider");
             Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
             Ensure.NotNull(connector, "connector");
 
@@ -137,6 +148,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             _tcpEnvelope = new SendOverTcpEnvelope(this, networkSendQueue);
             _publisher = publisher;
             _dispatcher = dispatcher;
+            _authProvider = authProvider;
 
             EndPoint = remoteEndPoint;
 
@@ -227,35 +239,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             try
             {
-                switch (package.Command)
-                {
-                    case TcpCommand.HeartbeatResponseCommand:
-                        break;
-                    case TcpCommand.HeartbeatRequestCommand:
-                        SendPackage(new TcpPackage(TcpCommand.HeartbeatResponseCommand, package.CorrelationId, null));
-                        break;
-                    case TcpCommand.BadRequest:
-                    {
-                        string reason = string.Empty;
-                        Helper.EatException(() => reason = Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
-                        var exitMessage = string.Format("Bad request received from '{0}' [{1}, {2:B}], will stop server. CorrelationId: {3:B}, Error: {4}.",
-                                                        ConnectionName, EndPoint, ConnectionId, package.CorrelationId,
-                                                        reason.IsEmptyString() ? "<reason missing>" : reason);
-                        Log.Error(exitMessage);
-                        Application.Exit(1, exitMessage);
-                        break;
-                    }
-                    default:
-                    {
-                        var message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, this);
-                        if (message != null)
-                            _publisher.Publish(message);
-                        else
-                            SendBadRequestAndClose(package.CorrelationId, 
-                                                   string.Format("Couldn't unwrap network package for command {0}.", package.Command));
-                        break;
-                    }
-                }
+                ProcessPackage(package);
             }
             catch (Exception e)
             {
@@ -263,11 +247,88 @@ namespace EventStore.Core.Services.Transport.Tcp
             }
         }
 
+        private void ProcessPackage(TcpPackage package)
+        {
+            switch (package.Command)
+            {
+                case TcpCommand.HeartbeatResponseCommand:
+                    break;
+                case TcpCommand.HeartbeatRequestCommand:
+                    SendPackage(new TcpPackage(TcpCommand.HeartbeatResponseCommand, package.CorrelationId, null));
+                    break;
+                case TcpCommand.BadRequest:
+                {
+                    string reason = string.Empty;
+                    Helper.EatException(() => reason = Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
+                    var exitMessage = 
+                        string.Format("Bad request received from '{0}' [{1}, {2:B}], will stop server. CorrelationId: {3:B}, Error: {4}.",
+                                      ConnectionName, EndPoint, ConnectionId, package.CorrelationId, reason.IsEmptyString() ? "<reason missing>" : reason);
+                    Log.Error(exitMessage);
+                    Application.Exit(ExitCode.Error, exitMessage);
+                    break;
+                }
+                case TcpCommand.Authenticated:
+                {
+                    if ((package.Flags & TcpFlags.Authenticated) == 0)
+                        ReplyNotAuthenticated(package.CorrelationId, "No user credentials provided.");
+                    else
+                    {
+                        var defaultUser = new UserCredentials(package.Login, package.Password, null);
+                        Interlocked.Exchange(ref _defaultUser, defaultUser);
+                        _authProvider.Authenticate(new TcpDefaultAuthRequest(this, package.CorrelationId, defaultUser));
+                    }
+                    break;
+                }
+                default:
+                {
+                    var defaultUser = _defaultUser;
+                    if ((package.Flags & TcpFlags.Authenticated) != 0)
+                    {
+                        _authProvider.Authenticate(new TcpAuthRequest(this, package, package.Login, package.Password));
+                    }
+                    else if (defaultUser != null)
+                    {
+                        if (defaultUser.User != null)
+                            UnwrapAndPublishPackage(package, defaultUser.User);
+                        else
+                            _authProvider.Authenticate(new TcpAuthRequest(this, package, defaultUser.Login, defaultUser.Password));
+                    }
+                    else
+                    {
+                        UnwrapAndPublishPackage(package, null);
+                    }
+                    break;
+                }
+            }
+        }
+
+        private void UnwrapAndPublishPackage(TcpPackage package, IPrincipal user)
+        {
+            var message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, this);
+            if (message != null)
+                _publisher.Publish(message);
+            else
+                SendBadRequestAndClose(package.CorrelationId,
+                                       string.Format("Couldn't unwrap network package for command {0}.", package.Command));
+        }
+
+        private void ReplyNotAuthenticated(Guid correlationId, string description)
+        {
+            _tcpEnvelope.ReplyWith(new TcpMessage.NotAuthenticated(correlationId, description));
+        }
+
+        private void ReplyAuthenticated(Guid correlationId, UserCredentials userCredentials, IPrincipal user)
+        {
+            var authCredentials = new UserCredentials(userCredentials.Login, userCredentials.Password, user);
+            Interlocked.CompareExchange(ref _defaultUser, authCredentials, userCredentials);
+            _tcpEnvelope.ReplyWith(new TcpMessage.Authenticated(correlationId));
+        }
+
         public void SendBadRequestAndClose(Guid correlationId, string message)
         {
             Ensure.NotNull(message, "message");
 
-            SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Encoding.UTF8.GetBytes(message)), checkQueueSize: false);
+            SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Helper.UTF8NoBom.GetBytes(message)), checkQueueSize: false);
             Log.Error("Closing connection '{0}' [{1}, {2:B}] due to error. Reason: {3}", ConnectionName, EndPoint, ConnectionId, message);
             _connection.Close(message);
         }
@@ -348,6 +409,78 @@ namespace EventStore.Core.Services.Transport.Tcp
                 var x = _receiver.Target as IHandle<T>;
                 if (x != null)
                     x.Handle(message);
+            }
+        }
+
+        private class TcpAuthRequest: InternalAuthenticationProvider.AuthenticationRequest
+        {
+            private readonly TcpConnectionManager _manager;
+            private readonly TcpPackage _package;
+
+            public TcpAuthRequest(TcpConnectionManager manager, TcpPackage package, string login, string password) 
+                : base(login, password)
+            {
+                _manager = manager;
+                _package = package;
+            }
+
+            public override void Unauthorized()
+            {
+                _manager.ReplyNotAuthenticated(_package.CorrelationId, "Not Authenticated");
+            }
+
+            public override void Authenticated(IPrincipal principal)
+            {
+                _manager.UnwrapAndPublishPackage(_package, principal);
+            }
+
+            public override void Error()
+            {
+                _manager.ReplyNotAuthenticated(_package.CorrelationId, "Internal Server Error");
+            }
+        }
+
+        private class TcpDefaultAuthRequest : InternalAuthenticationProvider.AuthenticationRequest
+        {
+            private readonly TcpConnectionManager _manager;
+            private readonly Guid _correlationId;
+            private readonly UserCredentials _userCredentials;
+
+            public TcpDefaultAuthRequest(TcpConnectionManager manager, Guid correlationId, UserCredentials userCredentials)
+                : base(userCredentials.Login, userCredentials.Password)
+            {
+                _manager = manager;
+                _correlationId = correlationId;
+                _userCredentials = userCredentials;
+            }
+
+            public override void Unauthorized()
+            {
+                _manager.ReplyNotAuthenticated(_correlationId, "Unauthorized");
+            }
+
+            public override void Authenticated(IPrincipal principal)
+            {
+                _manager.ReplyAuthenticated(_correlationId, _userCredentials, principal);
+            }
+
+            public override void Error()
+            {
+                _manager.ReplyNotAuthenticated(_correlationId, "Internal Server Error");
+            }
+        }
+
+        private class UserCredentials
+        {
+            public readonly string Login;
+            public readonly string Password;
+            public readonly IPrincipal User;
+
+            public UserCredentials(string login, string password, IPrincipal user)
+            {
+                Login = login;
+                Password = password;
+                User = user;
             }
         }
     }

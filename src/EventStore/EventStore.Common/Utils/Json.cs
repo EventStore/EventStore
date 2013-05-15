@@ -55,7 +55,7 @@ namespace EventStore.Common.Utils
         public static byte[] ToJsonBytes(this object source)
         {
             string instring = JsonConvert.SerializeObject(source, Formatting.Indented, JsonSettings);
-            return Encoding.UTF8.GetBytes(instring);
+            return Helper.UTF8NoBom.GetBytes(instring);
         }
 
         public static string ToJson(this object source)
@@ -78,7 +78,7 @@ namespace EventStore.Common.Utils
 
         public static T ParseJson<T>(this byte[] json)
         {
-            var result = JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(json), JsonSettings);
+            var result = JsonConvert.DeserializeObject<T>(Helper.UTF8NoBom.GetString(json), JsonSettings);
             return result;
         }
 

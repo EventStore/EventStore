@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration Ok(string contentType)
         {
-            return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType, Encoding.UTF8);
+            return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType, Helper.UTF8NoBom);
         }
 
         public static ResponseConfiguration OkCache(string contentType, Encoding encoding, int seconds)
@@ -76,44 +76,44 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration NotFound()
         {
-            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", null, Encoding.UTF8);
+            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", null, Helper.UTF8NoBom);
         }
 
         public static ResponseConfiguration NotFoundNoCache()
         {
             var headrs = new List<KeyValuePair<string, string>>();
             headrs.Add(new KeyValuePair<string, string>("Cache-Control", "max-age=0, no-cache, must-revalidate"));
-            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", null, Encoding.UTF8, headrs);
+            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", null, Helper.UTF8NoBom, headrs);
         }
 
         public static ResponseConfiguration Gone(string description = null)
         {
-            return new ResponseConfiguration(HttpStatusCode.Gone, description ?? "Deleted", null, Encoding.UTF8);
+            return new ResponseConfiguration(HttpStatusCode.Gone, description ?? "Deleted", null, Helper.UTF8NoBom);
         }
 
         public static ResponseConfiguration NotModified()
         {
-            return new ResponseConfiguration(HttpStatusCode.NotModified, "Not Modified", null, Encoding.UTF8);
+            return new ResponseConfiguration(HttpStatusCode.NotModified, "Not Modified", null, Helper.UTF8NoBom);
         }
 
         public static ResponseConfiguration BadRequest(string description = null)
         {
-            return new ResponseConfiguration(HttpStatusCode.BadRequest, description ?? "Bad Request", null, Encoding.UTF8);
+            return new ResponseConfiguration(HttpStatusCode.BadRequest, description ?? "Bad Request", null, Helper.UTF8NoBom);
         }
 
         public static ResponseConfiguration InternalServerError(string description = null)
         {
-            return new ResponseConfiguration(HttpStatusCode.InternalServerError, description ?? "Internal Server Error", null, Encoding.UTF8);
+            return new ResponseConfiguration(HttpStatusCode.InternalServerError, description ?? "Internal Server Error", null, Helper.UTF8NoBom);
         }
 
         public static ResponseConfiguration NotImplemented(string description = null)
         {
-            return new ResponseConfiguration(HttpStatusCode.NotImplemented, description ?? "Not Implemented", null, Encoding.UTF8);
+            return new ResponseConfiguration(HttpStatusCode.NotImplemented, description ?? "Not Implemented", null, Helper.UTF8NoBom);
         }
 
         public static ResponseConfiguration Unauthorized(string description = null)
         {
-            return new ResponseConfiguration(HttpStatusCode.Unauthorized, description ?? "Unauthorized", null, Encoding.UTF8);
+            return new ResponseConfiguration(HttpStatusCode.Unauthorized, description ?? "Unauthorized", null, Helper.UTF8NoBom);
         }
 
         public static ResponseConfiguration EventEntry(HttpResponseConfiguratorArgs entity, Message message)
@@ -272,7 +272,7 @@ namespace EventStore.Core.Services.Transport.Http
                         HttpStatusCode.Created,
                         "Created",
                         null,
-                        Encoding.UTF8,
+                        Helper.UTF8NoBom,
                         new KeyValuePair<string, string>(
                             "Location",
                             HostName.Combine(entity.RequestedUrl, 
@@ -303,7 +303,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (completed == null)
                 return InternalServerError();
 
-            return completed.Success ? OkNoCache(entity.ResponseCodec.ContentType, Encoding.UTF8) : NotFound();
+            return completed.Success ? OkNoCache(entity.ResponseCodec.ContentType, Helper.UTF8NoBom) : NotFound();
         }
 
         public static ResponseConfiguration DeleteStreamCompleted(HttpResponseConfiguratorArgs entity, Message message)
@@ -315,7 +315,7 @@ namespace EventStore.Core.Services.Transport.Http
             switch (msg.Result)
             {
                 case OperationResult.Success:
-                    return new ResponseConfiguration(HttpStatusCode.NoContent, "Stream deleted", null, Encoding.UTF8);
+                    return new ResponseConfiguration(HttpStatusCode.NoContent, "Stream deleted", null, Helper.UTF8NoBom);
                 case OperationResult.PrepareTimeout:
                 case OperationResult.CommitTimeout:
                 case OperationResult.ForwardTimeout:

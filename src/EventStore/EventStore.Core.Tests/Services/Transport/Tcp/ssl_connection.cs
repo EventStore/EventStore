@@ -33,7 +33,7 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Log;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Tcp;
 using NUnit.Framework;
 

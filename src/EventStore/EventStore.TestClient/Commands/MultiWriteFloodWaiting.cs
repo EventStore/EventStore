@@ -131,7 +131,7 @@ namespace EventStore.TestClient.Commands
                                 new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
                                                                  "type",
                                                                  false,
-                                                                 Encoding.UTF8.GetBytes(data),
+                                                                 Common.Utils.Helper.UTF8NoBom.GetBytes(data),
                                                                  new byte[0])).ToArray(),
                             true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());

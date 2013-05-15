@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -229,7 +230,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var parsed = default(CheckpointTagVersion);
                 if (!newPhysicalStream)
                 {
-                    _debugStreamStartedAs = Encoding.UTF8.GetString(message.Events[0].Event.Metadata);
+                    _debugStreamStartedAs = Helper.UTF8NoBom.GetString(message.Events[0].Event.Metadata);
                     parsed = message.Events[0].Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                     if (_projectionVersion.ProjectionId != parsed.Version.ProjectionId)
                     {
@@ -340,7 +341,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _lastSubmittedOrCommittedMetadata = causedByTag;
                 events.Add(
                     new Event(
-                        e.EventId, e.EventType, true, e.Data != null ? Encoding.UTF8.GetBytes(e.Data) : null,
+                        e.EventId, e.EventType, true, e.Data != null ? Helper.UTF8NoBom.GetBytes(e.Data) : null,
                         e.CausedByTag.ToJsonBytes(_projectionVersion, e.ExtraMetaData())));
                 emittedEvents.Add(e);
             }

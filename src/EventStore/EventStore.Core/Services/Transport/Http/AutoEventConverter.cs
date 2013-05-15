@@ -189,11 +189,11 @@ namespace EventStore.Core.Services.Transport.Http
             if (obj is JObject)
             {
                 isJson = true;
-                return Encoding.UTF8.GetBytes(Codec.Json.To(obj));
+                return Helper.UTF8NoBom.GetBytes(Codec.Json.To(obj));
             }
 
             isJson = false;
-            return Encoding.UTF8.GetBytes((obj as string) ?? string.Empty);
+            return Helper.UTF8NoBom.GetBytes((obj as string) ?? string.Empty);
         }
     }
 }

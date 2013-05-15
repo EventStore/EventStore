@@ -28,7 +28,6 @@
 
 using System;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Tests.Helper;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;

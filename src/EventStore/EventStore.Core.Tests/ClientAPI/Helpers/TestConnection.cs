@@ -29,7 +29,7 @@
 using System;
 using System.Net;
 using EventStore.ClientAPI;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
 {

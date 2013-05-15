@@ -43,6 +43,7 @@ namespace EventStore.ClientAPI.ClientOperations
     {
         private readonly TcpCommand _requestCommand;
         private readonly TcpCommand _responseCommand;
+        private readonly UserCredentials _userCredentials;
 
         protected readonly ILogger Log;
         private readonly TaskCompletionSource<TResult> _source;
@@ -53,7 +54,9 @@ namespace EventStore.ClientAPI.ClientOperations
         protected abstract InspectionResult InspectResponse(TResponse response);
         protected abstract TResult TransformResponse(TResponse response);
 
-        protected OperationBase(ILogger log, TaskCompletionSource<TResult> source, TcpCommand requestCommand, TcpCommand responseCommand)
+        protected OperationBase(ILogger log, TaskCompletionSource<TResult> source,
+                                TcpCommand requestCommand, TcpCommand responseCommand,
+                                UserCredentials userCredentials)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotNull(source, "source");
@@ -62,11 +65,17 @@ namespace EventStore.ClientAPI.ClientOperations
             _source = source;
             _requestCommand = requestCommand;
             _responseCommand = responseCommand;
+            _userCredentials = userCredentials;
         }
 
         public TcpPackage CreateNetworkPackage(Guid correlationId)
         {
-            return new TcpPackage(_requestCommand, correlationId, CreateRequestDto().Serialize());
+            return new TcpPackage(_requestCommand,
+                                  _userCredentials != null ? TcpFlags.Authorized : TcpFlags.None,
+                                  correlationId,
+                                  _userCredentials != null ? _userCredentials.Login : null,
+                                  _userCredentials != null ? _userCredentials.Password : null,
+                                  CreateRequestDto().Serialize());
         }
 
         public virtual InspectionResult InspectPackage(TcpPackage package)
@@ -80,9 +89,10 @@ namespace EventStore.ClientAPI.ClientOperations
                 }
                 switch (package.Command)
                 {
+                    case TcpCommand.NotAuthenticated: return InspectNotAuthenticated(package);
                     case TcpCommand.BadRequest: return InspectBadRequest(package);
                     case TcpCommand.NotHandled: return InspectNotHandled(package);
-                    default: return InspectUnexpectedCommand(package, TcpCommand.TransactionCommitCompleted);
+                    default: return InspectUnexpectedCommand(package, _responseCommand);
                 }
             }
             catch (Exception e)
@@ -111,11 +121,18 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
+        public InspectionResult InspectNotAuthenticated(TcpPackage package)
+        {
+            string message = Helper.EatException(() => Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
+            Fail(new NotAuthenticatedException(string.IsNullOrEmpty(message) ? "Authentication error" : message));
+            return new InspectionResult(InspectionDecision.EndOperation, null);
+        }
+
         public InspectionResult InspectBadRequest(TcpPackage package)
         {
             if (package.Command != TcpCommand.BadRequest)
                 throw new ArgumentException(string.Format("Wrong command: {0}, expected: {1}.", package.Command, TcpCommand.BadRequest));
-            string message = Helper.EatException(() => Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
+            string message = Helper.EatException(() => Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
             Fail(new ServerErrorException(string.IsNullOrEmpty(message) ? "<no message>" : message));
             return new InspectionResult(InspectionDecision.EndOperation, null);
         }

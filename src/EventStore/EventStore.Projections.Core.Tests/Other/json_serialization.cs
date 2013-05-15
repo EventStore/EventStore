@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Other
         {
             CheckpointTag tag = CheckpointTag.FromPosition(-1, 0);
             byte[] bytes = tag.ToJsonBytes(_version);
-            string instring = Encoding.UTF8.GetString(bytes);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
 
             CheckpointTag back = instring.ParseCheckpointTagJson();
@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Other
         {
             CheckpointTag tag = CheckpointTag.FromPreparePosition(0);
             byte[] bytes = tag.ToJsonBytes(_version);
-            string instring = Encoding.UTF8.GetString(bytes);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
 
             CheckpointTag back = instring.ParseCheckpointTagJson();
@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Other
         {
             CheckpointTag tag = CheckpointTag.FromPreparePosition(-1);
             byte[] bytes = tag.ToJsonBytes(_version);
-            string instring = Encoding.UTF8.GetString(bytes);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
 
             CheckpointTag back = instring.ParseCheckpointTagJson();
@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Tests.Other
         {
             CheckpointTag tag = CheckpointTag.FromPreparePosition(1234);
             byte[] bytes = tag.ToJsonBytes(_version);
-            string instring = Encoding.UTF8.GetString(bytes);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
 
             CheckpointTag back = instring.ParseCheckpointTagJson();
@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Tests.Other
         {
             CheckpointTag tag = CheckpointTag.FromStreamPosition("$ce-account", 12345);
             byte[] bytes = tag.ToJsonBytes(_version);
-            string instring = Encoding.UTF8.GetString(bytes);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
 
             CheckpointTag back = instring.ParseCheckpointTagJson();
@@ -116,7 +116,7 @@ namespace EventStore.Projections.Core.Tests.Other
         {
             CheckpointTag tag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"a", 1}, {"b", 2}});
             byte[] bytes = tag.ToJsonBytes(_version);
-            string instring = Encoding.UTF8.GetString(bytes);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
 
             CheckpointTag back = instring.ParseCheckpointTagJson();
@@ -130,7 +130,7 @@ namespace EventStore.Projections.Core.Tests.Other
             CheckpointTag tag = CheckpointTag.FromEventTypeIndexPositions(
                 new TFPos(100, 50), new Dictionary<string, int> {{"a", 1}, {"b", 2}});
             byte[] bytes = tag.ToJsonBytes(_version);
-            string instring = Encoding.UTF8.GetString(bytes);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
 
             CheckpointTag back = instring.ParseCheckpointTagJson();
@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Tests.Other
             CheckpointTag tag = CheckpointTag.FromPosition(-1, 0);
             var extra = new Dictionary<string, string> {{"$$a", "\"b\""}, {"$$c", "\"d\""}};
             byte[] bytes = tag.ToJsonBytes(_version, extra);
-            string instring = Encoding.UTF8.GetString(bytes);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
 
             CheckpointTagVersion back = instring.ParseCheckpointTagVersionExtraJson(_version);
@@ -160,7 +160,7 @@ namespace EventStore.Projections.Core.Tests.Other
         {
             TestData data = new TestData("123");
             byte[] bytes = data.ToJsonBytes();
-            string instring = Encoding.UTF8.GetString(bytes);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
 
             TestData back = instring.ParseJson<TestData>();

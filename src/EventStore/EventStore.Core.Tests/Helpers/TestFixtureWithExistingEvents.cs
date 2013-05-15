@@ -29,7 +29,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -39,7 +38,7 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Helper
+namespace EventStore.Core.Tests.Helpers
 {
     public abstract class TestFixtureWithExistingEvents : TestFixtureWithReadWriteDispatchers,
                                                            IHandle<ClientMessage.ReadStreamEventsBackward>,
@@ -122,8 +121,8 @@ namespace EventStore.Core.Tests.Helper
                 new PrepareLogRecord(
                     _fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
                     _timeProvider.Now, PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, eventType,
-                    Encoding.UTF8.GetBytes(eventData),
-                    eventMetadata == null ? new byte[0] : Encoding.UTF8.GetBytes(eventMetadata)));
+                    Helper.UTF8NoBom.GetBytes(eventData),
+                    eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata)));
             list.Add(eventRecord);
             var eventPosition = new TFPos(_fakePosition + 50, _fakePosition);
             _all.Add(eventPosition, eventRecord);
@@ -346,7 +345,7 @@ namespace EventStore.Core.Tests.Helper
         {
             if (x.EventType == "$>" && resolveLinks)
             {
-                var parts = Encoding.UTF8.GetString(x.Data).Split('@');
+                var parts = Helper.UTF8NoBom.GetString(x.Data).Split('@');
                 var list = _lastMessageReplies[parts[1]];
                 var eventNumber = int.Parse(parts[0]);
                 var target = list[eventNumber];
@@ -361,7 +360,7 @@ namespace EventStore.Core.Tests.Helper
         {
             if (x.EventType == "$>" && resolveLinks)
             {
-                var parts = Encoding.UTF8.GetString(x.Data).Split('@');
+                var parts = Helper.UTF8NoBom.GetString(x.Data).Split('@');
                 var list = _lastMessageReplies[parts[1]];
                 var eventNumber = int.Parse(parts[0]);
                 var target = list[eventNumber];

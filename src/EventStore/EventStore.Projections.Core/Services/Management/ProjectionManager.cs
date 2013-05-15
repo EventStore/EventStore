@@ -486,7 +486,7 @@ namespace EventStore.Projections.Core.Services.Management
                     foreach (var @event in projectionRegistrations)
                     {
                         anyFound = true;
-                        var projectionName = Encoding.UTF8.GetString(@event.Event.Data);
+                        var projectionName = Helper.UTF8NoBom.GetString(@event.Event.Data);
                         if (string.IsNullOrEmpty(projectionName)
                             // NOTE: workaround for a bug allowing to create such projections
                             || _projections.ContainsKey(projectionName))
@@ -622,7 +622,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
-                    new Event(Guid.NewGuid(), "$ProjectionCreated", false, Encoding.UTF8.GetBytes(name), Empty.ByteArray),
+                    new Event(Guid.NewGuid(), "$ProjectionCreated", false, Helper.UTF8NoBom.GetBytes(name), Empty.ByteArray),
                     SystemAccount.Principal),
                 m => WriteProjectionRegistrationCompleted(m, completed, name, eventStreamId));
         }

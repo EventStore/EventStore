@@ -31,7 +31,7 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 

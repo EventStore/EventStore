@@ -114,7 +114,7 @@ namespace EventStore.TestClient.Commands
                                         total,
                                         evnt.EventStreamId,
                                         evnt.EventNumber,
-                                        Encoding.UTF8.GetString(evnt.Data),
+                                        Helper.UTF8NoBom.GetString(evnt.Data),
                                         evnt.EventType);
                         total += 1;
                     }

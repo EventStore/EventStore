@@ -73,7 +73,7 @@ namespace EventStore.Core
 
         private string GetDbPathHash(string dbPath)
         {
-            using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(dbPath)))
+            using (var memStream = new MemoryStream(Helper.UTF8NoBom.GetBytes(dbPath)))
             {
                 return BitConverter.ToString(MD5Hash.GetHashFor(memStream)).Replace("-", "");
             }

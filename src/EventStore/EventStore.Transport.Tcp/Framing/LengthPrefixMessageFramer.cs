@@ -81,6 +81,7 @@ namespace EventStore.Transport.Tcp.Framing
         {
             Parse(data);
         }
+
         /// <summary>
         /// Parses a stream chunking based on length-prefixed framing. 
         /// Calls are re-entrant and hold state internally. Once full message arrives,

@@ -32,16 +32,16 @@ using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http.Codecs
 {
     public class XmlCodec : ICodec
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<XmlCodec>();
-        private static readonly UTF8Encoding UTF8 = new UTF8Encoding(false); // we use our own encoding which doesn't produce BOM
 
         public string ContentType { get { return EventStore.Transport.Http.ContentType.Xml; } }
-        public Encoding Encoding { get { return Encoding.UTF8; } }
+        public Encoding Encoding { get { return Helper.UTF8NoBom; } }
 
         public bool CanParse(MediaType format)
         {
@@ -83,7 +83,7 @@ namespace EventStore.Transport.Http.Codecs
             try
             {
                 using (var memory = new MemoryStream())
-                using (var writer = new XmlTextWriter(memory, UTF8))
+                using (var writer = new XmlTextWriter(memory, Helper.UTF8NoBom))
                 {
                     var serializable = value as IXmlSerializable;
                     if (serializable != null)
@@ -98,7 +98,7 @@ namespace EventStore.Transport.Http.Codecs
                     }
 
                     writer.Flush();
-                    return UTF8.GetString(memory.GetBuffer(), 0, (int)memory.Length);
+                    return Helper.UTF8NoBom.GetString(memory.GetBuffer(), 0, (int)memory.Length);
                 }
             }
             catch (Exception exc)

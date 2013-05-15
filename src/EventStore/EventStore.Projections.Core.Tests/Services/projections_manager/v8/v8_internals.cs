@@ -30,6 +30,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading;
+using EventStore.Common.Utils;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -70,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Func<string, Tuple<string, string>> getModuleSource = name =>
                 {
                     var fullScriptFileName = Path.GetFullPath(Path.Combine(_jsPath, name + ".js"));
-                    var scriptSource = File.ReadAllText(fullScriptFileName, Encoding.UTF8);
+                    var scriptSource = File.ReadAllText(fullScriptFileName, Helper.UTF8NoBom);
                     return Tuple.Create(scriptSource, fullScriptFileName);
                 };
 

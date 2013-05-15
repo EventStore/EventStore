@@ -26,43 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 
 namespace EventStore.Transport.Tcp
 {
     internal static class Helper
     {
-        /// <summary>
-        /// Lazy evaluates a lazy <see cref="IEnumerable{T}"></see> and calls callback when the lazy evaluation is completed
-        /// </summary>
-        /// <param name="wrapped">The wrapped lazy evaluation</param>
-        /// <param name="callback">The callback to call for each passed object after lazy evaluation</param>
-        /// <param name="objects">The array of objects to call callback for</param>
-        /// <returns>A lazily evaluated IEnumerable of the wrapped IEnumerable</returns>
-        public static IEnumerable<TElem> CallAfterEvaluation<TElem, TObj>(
-            this IEnumerable<TElem> wrapped, 
-            Action<TObj> callback, 
-            params TObj[] objects)
-        {
-            if (wrapped == null) 
-                throw new ArgumentNullException("wrapped");
-            if (callback == null) 
-                throw new ArgumentNullException("callback");
-
-            foreach (TElem item in wrapped)
-            {
-                yield return item;
-            }
-
-            if (objects != null)
-            {
-                foreach (var obj in objects)
-                {
-                    callback(obj);
-                }
-            }
-        }
-
         public static void EatException(Action action)
         {
             try

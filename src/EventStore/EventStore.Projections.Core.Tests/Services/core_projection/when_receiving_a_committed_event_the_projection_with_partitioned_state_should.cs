@@ -29,6 +29,7 @@
 using System;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Util;
@@ -134,7 +135,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
             var @event = write.Events[0];
 
-            Assert.AreEqual("account-01", Encoding.UTF8.GetString(@event.Data));
+            Assert.AreEqual("account-01", Helper.UTF8NoBom.GetString(@event.Data));
         }
     }
 }

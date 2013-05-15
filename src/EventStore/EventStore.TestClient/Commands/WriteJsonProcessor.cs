@@ -29,6 +29,7 @@ using System;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
@@ -70,8 +71,8 @@ namespace EventStore.TestClient.Commands
                     new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
                                                      "JsonDataEvent",
                                                      true,
-                                                     Encoding.UTF8.GetBytes(data),
-                                                     Encoding.UTF8.GetBytes(metadata ?? string.Empty))
+                                                     Helper.UTF8NoBom.GetBytes(data),
+                                                     Helper.UTF8NoBom.GetBytes(metadata ?? string.Empty))
                 },
                 true);
             var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());

@@ -28,13 +28,14 @@
 
 using System;
 using System.Text;
+using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http.Codecs
 {
     public class TextCodec : ICodec
     {
-        public string ContentType { get { return EventStore.Transport.Http.ContentType.PlainText; } }
-        public Encoding Encoding { get { return Encoding.UTF8; } }
+        public string ContentType { get { return Http.ContentType.PlainText; } }
+        public Encoding Encoding { get { return Helper.UTF8NoBom; } }
 
         public bool CanParse(MediaType format)
         {

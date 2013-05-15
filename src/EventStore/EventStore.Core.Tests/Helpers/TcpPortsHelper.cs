@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
-namespace EventStore.Core.Tests.Helper
+namespace EventStore.Core.Tests.Helpers
 {
     public static class TcpPortsHelper
     {

@@ -109,8 +109,8 @@ namespace EventStore.TestClient.Commands
                                                 new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray() ,
                                                                                  "TakeSomeSpaceEvent",
                                                                                  false,
-                                                                                 Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()),
-                                                                                 Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()))
+                                                                                 Common.Utils.Helper.UTF8NoBom.GetBytes(Guid.NewGuid().ToString()),
+                                                                                 Common.Utils.Helper.UTF8NoBom.GetBytes(Guid.NewGuid().ToString()))
                                             },
                                             true);
                                         var package = new TcpPackage(TcpCommand.TransactionWrite, Guid.NewGuid(), writeDto.Serialize());

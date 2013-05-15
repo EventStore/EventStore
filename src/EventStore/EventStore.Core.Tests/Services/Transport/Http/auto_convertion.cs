@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -139,7 +140,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         public static string AsString(byte[] bytes)
         {
-            return Encoding.UTF8.GetString(bytes ?? new byte[0]);
+            return Helper.UTF8NoBom.GetString(bytes ?? new byte[0]);
         }
 
         private static string WrapIntoQuotes(string s)
@@ -278,7 +279,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         private string ToString(byte[] bytes)
         {
-            return Encoding.UTF8.GetString(bytes ?? new byte[0]);
+            return Helper.UTF8NoBom.GetString(bytes ?? new byte[0]);
         }
     }
 
@@ -366,7 +367,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         private string ToString(byte[] bytes)
         {
-            return Encoding.UTF8.GetString(bytes ?? new byte[0]);
+            return Helper.UTF8NoBom.GetString(bytes ?? new byte[0]);
         }
     }
 

@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,46 +24,24 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//  
 
-using System;
-using System.Collections.Generic;
-using EventStore.Core.Tests.Helpers;
-using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Tests.Services.projections_manager;
+using EventStore.ClientAPI.Common.Utils;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_system
+namespace EventStore.ClientAPI.SystemData
 {
-    public abstract class with_projection_config : with_projections_subsystem
+    public class UserCredentials
     {
-        protected string _projectionName;
-        protected string _projectionSource;
-        protected Type _fakeProjectionType;
-        protected ProjectionMode _projectionMode;
-        protected bool _checkpointsEnabled;
-        protected bool _emitEnabled;
-        protected bool _projectionEnabled;
+        public readonly string Login;
+        public readonly string Password;
 
-        protected override void Given()
+        public UserCredentials(string login, string password)
         {
-            base.Given();
+            Ensure.NotNull(login, "login");
+            Ensure.NotNull(password, "password");
 
-            _projectionName = "test-projection";
-            _projectionSource = @"";
-            _fakeProjectionType = typeof (FakeProjection);
-            _projectionMode = ProjectionMode.Continuous;
-            _checkpointsEnabled = true;
-            _emitEnabled = true;
-            _projectionEnabled = true;
-
-            NoStream("$projections-" + _projectionName + "-checkpoint");
-            NoStream("$projections-" + _projectionName + "-order");
-            AllWritesSucceed();
-        }
-
-        protected override IEnumerable<WhenStep> PreWhen()
-        {
-            yield return base.PreWhen().ToSteps();
+            Login = login;
+            Password = password;
         }
     }
 }

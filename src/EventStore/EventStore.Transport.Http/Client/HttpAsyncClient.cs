@@ -109,7 +109,7 @@ namespace EventStore.Transport.Http.Client
                           Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
-            var bodyBytes = Encoding.UTF8.GetBytes(body);
+            var bodyBytes = Helper.UTF8NoBom.GetBytes(body);
 
             request.Method = method;
             request.KeepAlive = true;
@@ -170,7 +170,7 @@ namespace EventStore.Transport.Http.Client
 
             state.OutputStream.Seek(0, SeekOrigin.Begin);
             var memStream = (MemoryStream)state.OutputStream;
-            state.Response.Body = Encoding.UTF8.GetString(memStream.GetBuffer(), 0, (int) memStream.Length);
+            state.Response.Body = Helper.UTF8NoBom.GetString(memStream.GetBuffer(), 0, (int) memStream.Length);
 
             state.DisposeIOStreams();
             state.OnSuccess(state.Response);

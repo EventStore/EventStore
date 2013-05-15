@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -51,10 +52,10 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_pos
                 new byte[0], new byte[0]);
             _firstEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(30, 20), "stream1", 1, false, Guid.NewGuid(), "Data", true,
-                Encoding.UTF8.GetBytes("{}"), new byte[0]);
+                Helper.UTF8NoBom.GetBytes("{}"), new byte[0]);
             _secondEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(50, 40), "stream1", 2, false, Guid.NewGuid(), "Data", true,
-                Encoding.UTF8.GetBytes("{}"), new byte[0]);
+                Helper.UTF8NoBom.GetBytes("{}"), new byte[0]);
         }
 
         [Test]

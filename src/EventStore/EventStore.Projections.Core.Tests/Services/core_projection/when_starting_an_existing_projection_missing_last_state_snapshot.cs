@@ -28,6 +28,7 @@
 
 using System;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
@@ -70,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
 
-            var data = Encoding.UTF8.GetString(_writeEventHandler.HandledMessages[0].Events[0].Data);
+            var data = Helper.UTF8NoBom.GetString(_writeEventHandler.HandledMessages[0].Events[0].Data);
             Assert.AreEqual("data", data);
         }
     }

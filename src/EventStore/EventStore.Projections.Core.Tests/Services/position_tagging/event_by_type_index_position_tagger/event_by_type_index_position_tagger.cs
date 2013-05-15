@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -49,19 +50,19 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         {
             _zeroEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(-1, 120), new TFPos(20, 10), "$et-type1", 0, "stream1", 0, true,
-                Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), new byte[0], null, 10f);
+                Guid.NewGuid(), "type1", true, Helper.UTF8NoBom.GetBytes("{}"), new byte[0], null, 10f);
 
             _firstEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(-1, 130), new TFPos(30, 20), "$et-type2", 0, "stream1", 1, true,
-                Guid.NewGuid(), "type2", true, Encoding.UTF8.GetBytes("{}"), new byte[0], null, 20f);
+                Guid.NewGuid(), "type2", true, Helper.UTF8NoBom.GetBytes("{}"), new byte[0], null, 20f);
 
             _secondEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(-1, 140), new TFPos(50, 40), "$et-type1", 1, "stream2", 0, false,
-                Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), new byte[0], null, 30f);
+                Guid.NewGuid(), "type1", true, Helper.UTF8NoBom.GetBytes("{}"), new byte[0], null, 30f);
 
             _thirdEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(-1, 150), new TFPos(70, 60), "$et-type2", 1, "stream2", 1, false,
-                Guid.NewGuid(), "type2", true, Encoding.UTF8.GetBytes("{}"), new byte[0], null, 40f);
+                Guid.NewGuid(), "type2", true, Helper.UTF8NoBom.GetBytes("{}"), new byte[0], null, 40f);
 
 
         }
@@ -241,7 +242,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
             var linkEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(180, 170), "$et-type2", 1, false, Guid.NewGuid(), "$>", false,
-                Encoding.UTF8.GetBytes("0@stream2"), new byte[0]);
+                Helper.UTF8NoBom.GetBytes("0@stream2"), new byte[0]);
             var tag = CheckpointTag.FromEventTypeIndexPositions(
                 new TFPos(70, 60), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
             var updated = t.MakeCheckpointTag(tag, linkEvent);
@@ -256,7 +257,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
             var linkEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(180, 170), "$et-type2", 1, false, Guid.NewGuid(), "$>", false,
-                Encoding.UTF8.GetBytes("0@stream2"), new byte[0]);
+                Helper.UTF8NoBom.GetBytes("0@stream2"), new byte[0]);
             var tag = CheckpointTag.FromEventTypeIndexPositions(
                 new TFPos(270, 260), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
             var updated = t.MakeCheckpointTag(tag, linkEvent);

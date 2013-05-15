@@ -26,11 +26,14 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Text;
 
 namespace EventStore.ClientAPI.Common.Utils
 {
     static class Helper
     {
+        public static readonly UTF8Encoding UTF8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
         public static void EatException(Action action)
         {
             Ensure.NotNull(action, "action");

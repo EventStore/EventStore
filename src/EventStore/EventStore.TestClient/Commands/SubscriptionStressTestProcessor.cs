@@ -27,10 +27,9 @@
 // 
 using System;
 using System.Diagnostics;
-using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.TestClient.Commands
 {

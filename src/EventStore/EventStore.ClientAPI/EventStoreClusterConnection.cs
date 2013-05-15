@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Core;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
@@ -75,14 +76,14 @@ namespace EventStore.ClientAPI
             _conn.Close();
         }
 
-        public void DeleteStream(string stream, int expectedVersion)
+        public void DeleteStream(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
-            _conn.DeleteStream(stream, expectedVersion);
+            _conn.DeleteStream(stream, expectedVersion, userCredentials);
         }
 
-        public Task DeleteStreamAsync(string stream, int expectedVersion)
+        public Task DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
-            return _conn.DeleteStreamAsync(stream, expectedVersion);
+            return _conn.DeleteStreamAsync(stream, expectedVersion, userCredentials);
         }
 
         public void AppendToStream(string stream, int expectedVersion, params EventData[] events)
@@ -90,9 +91,14 @@ namespace EventStore.ClientAPI
             _conn.AppendToStream(stream, expectedVersion, events);
         }
 
-        public void AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events)
+        public void AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
         {
-            _conn.AppendToStream(stream, expectedVersion, events);
+            _conn.AppendToStream(stream, expectedVersion, userCredentials, events);
+        }
+
+        public void AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
+        {
+            _conn.AppendToStream(stream, expectedVersion, events, userCredentials);
         }
 
         public Task AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events)
@@ -100,19 +106,24 @@ namespace EventStore.ClientAPI
             return _conn.AppendToStreamAsync(stream, expectedVersion, events);
         }
 
-        public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events)
+        public Task AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
         {
-            return _conn.AppendToStreamAsync(stream, expectedVersion, events);
+            return _conn.AppendToStreamAsync(stream, expectedVersion, userCredentials, events);
         }
 
-        public EventStoreTransaction StartTransaction(string stream, int expectedVersion)
+        public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
         {
-            return _conn.StartTransaction(stream, expectedVersion);
+            return _conn.AppendToStreamAsync(stream, expectedVersion, events, userCredentials);
         }
 
-        public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion)
+        public EventStoreTransaction StartTransaction(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
-            return _conn.StartTransactionAsync(stream, expectedVersion);
+            return _conn.StartTransaction(stream, expectedVersion, userCredentials);
+        }
+
+        public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
+        {
+            return _conn.StartTransactionAsync(stream, expectedVersion, userCredentials);
         }
 
         public EventStoreTransaction ContinueTransaction(long transactionId)
@@ -120,62 +131,63 @@ namespace EventStore.ClientAPI
             return _conn.ContinueTransaction(transactionId);
         }
 
-        public Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events)
+        public Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events, UserCredentials userCredentials = null)
         {
-            return ((IEventStoreTransactionConnection)_conn).TransactionalWriteAsync(transaction, events);
+            return ((IEventStoreTransactionConnection)_conn).TransactionalWriteAsync(transaction, events, userCredentials);
         }
 
-        public Task CommitTransactionAsync(EventStoreTransaction transaction)
+        public Task CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials = null)
         {
-            return ((IEventStoreTransactionConnection)_conn).CommitTransactionAsync(transaction);
+            return ((IEventStoreTransactionConnection)_conn).CommitTransactionAsync(transaction, userCredentials);
         }
 
-        public StreamEventsSlice ReadStreamEventsForward(string stream, int start, int count, bool resolveLinkTos)
+        public StreamEventsSlice ReadStreamEventsForward(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return _conn.ReadStreamEventsForward(stream, start, count, resolveLinkTos);
+            return _conn.ReadStreamEventsForward(stream, start, count, resolveLinkTos, userCredentials);
         }
 
-        public Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, int start, int count, bool resolveLinkTos)
+        public Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return _conn.ReadStreamEventsForwardAsync(stream, start, count, resolveLinkTos);
+            return _conn.ReadStreamEventsForwardAsync(stream, start, count, resolveLinkTos, userCredentials);
         }
 
-        public StreamEventsSlice ReadStreamEventsBackward(string stream, int start, int count, bool resolveLinkTos)
+        public StreamEventsSlice ReadStreamEventsBackward(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return _conn.ReadStreamEventsBackward(stream, start, count, resolveLinkTos);
+            return _conn.ReadStreamEventsBackward(stream, start, count, resolveLinkTos, userCredentials);
         }
 
-        public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, int start, int count, bool resolveLinkTos)
+        public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return _conn.ReadStreamEventsBackwardAsync(stream, start, count, resolveLinkTos);
+            return _conn.ReadStreamEventsBackwardAsync(stream, start, count, resolveLinkTos, userCredentials);
         }
 
-        public AllEventsSlice ReadAllEventsForward(Position position, int maxCount, bool resolveLinkTos)
+        public AllEventsSlice ReadAllEventsForward(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return _conn.ReadAllEventsForward(position, maxCount, resolveLinkTos);
+            return _conn.ReadAllEventsForward(position, maxCount, resolveLinkTos, userCredentials);
         }
 
-        public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos)
+        public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return _conn.ReadAllEventsForwardAsync(position, maxCount, resolveLinkTos);
+            return _conn.ReadAllEventsForwardAsync(position, maxCount, resolveLinkTos, userCredentials);
         }
 
-        public AllEventsSlice ReadAllEventsBackward(Position position, int maxCount, bool resolveLinkTos)
+        public AllEventsSlice ReadAllEventsBackward(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return _conn.ReadAllEventsBackward(position, maxCount, resolveLinkTos);
+            return _conn.ReadAllEventsBackward(position, maxCount, resolveLinkTos, userCredentials);
         }
 
-        public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos)
+        public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return _conn.ReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos);
+            return _conn.ReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos, userCredentials);
         }
 
         public Task<EventStoreSubscription> SubscribeToStream(string stream, 
                                                               bool resolveLinkTos, 
                                                               Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                                                              Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
+                                                              Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                              UserCredentials userCredentials = null)
         {
-            return _conn.SubscribeToStream(stream, resolveLinkTos, eventAppeared, subscriptionDropped);
+            return _conn.SubscribeToStream(stream, resolveLinkTos, eventAppeared, subscriptionDropped, userCredentials);
         }
 
         public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
@@ -183,67 +195,70 @@ namespace EventStore.ClientAPI
                                                                          bool resolveLinkTos,
                                                                          Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                          Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                                                                         Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
+                                                                         Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                                         UserCredentials userCredentials = null)
         {
-            return _conn.SubscribeToStreamFrom(stream, fromEventNumberExclusive, resolveLinkTos, 
-                                               eventAppeared, liveProcessingStarted, subscriptionDropped);
+            return _conn.SubscribeToStreamFrom(stream, fromEventNumberExclusive, resolveLinkTos,
+                                               eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);
         }
 
         public Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos, 
                                                            Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                                                           Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
+                                                           Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                           UserCredentials userCredentials = null)
         {
-            return _conn.SubscribeToAll(resolveLinkTos, eventAppeared, subscriptionDropped);
+            return _conn.SubscribeToAll(resolveLinkTos, eventAppeared, subscriptionDropped, userCredentials);
         }
 
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? fromPositionExclusive,
                                                                    bool resolveLinkTos,
                                                                    Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                    Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                                                                   Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
+                                                                   Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                                   UserCredentials userCredentials = null)
         {
-            return _conn.SubscribeToAllFrom(fromPositionExclusive, resolveLinkTos, 
-                                            eventAppeared, liveProcessingStarted, subscriptionDropped);
+            return _conn.SubscribeToAllFrom(fromPositionExclusive, resolveLinkTos,
+                                            eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);
         }
 
-        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata)
+        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
-            _conn.SetStreamMetadata(stream, expectedMetastreamVersion, idempotencyId, metadata);
+            _conn.SetStreamMetadata(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials);
         }
 
-        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata)
+        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
-            return _conn.SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata);
+            return _conn.SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials);
         }
 
-        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata)
+        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null)
         {
-            _conn.SetStreamMetadata(stream, expectedMetastreamVersion, idempotencyId, metadata);
+            _conn.SetStreamMetadata(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials);
         }
 
-        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata)
+        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null)
         {
-            return _conn.SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata);
+            return _conn.SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials);
         }
 
-        public StreamMetadataResult GetStreamMetadata(string stream)
+        public StreamMetadataResult GetStreamMetadata(string stream, UserCredentials userCredentials = null)
         {
-            return _conn.GetStreamMetadata(stream);
+            return _conn.GetStreamMetadata(stream, userCredentials);
         }
 
-        public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream)
+        public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null)
         {
-            return _conn.GetStreamMetadataAsync(stream);
+            return _conn.GetStreamMetadataAsync(stream, userCredentials);
         }
 
-        public RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream)
+        public RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream, UserCredentials userCredentials = null)
         {
-            return _conn.GetStreamMetadataAsRawBytes(stream);
+            return _conn.GetStreamMetadataAsRawBytes(stream, userCredentials);
         }
 
-        public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream)
+        public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null)
         {
-            return _conn.GetStreamMetadataAsRawBytesAsync(stream);
+            return _conn.GetStreamMetadataAsRawBytesAsync(stream, userCredentials);
         }
     }
 }

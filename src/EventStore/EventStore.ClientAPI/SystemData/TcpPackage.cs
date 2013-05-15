@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Text;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.SystemData
@@ -46,8 +45,6 @@ namespace EventStore.ClientAPI.SystemData
         public const int AuthOffset = CorrelationOffset + 16;
 
         public const int MandatorySize = AuthOffset;
-
-        private static readonly Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         public readonly TcpCommand Command;
         public readonly TcpFlags Flags;
@@ -76,12 +73,12 @@ namespace EventStore.ClientAPI.SystemData
                 var loginLen = data.Array[data.Offset + AuthOffset];
                 if (AuthOffset + 1 + loginLen + 1 >= data.Count)
                     throw new Exception("Login length is too big, it doesn't fit into TcpPackage.");
-                login = Encoding.UTF8.GetString(data.Array, data.Offset + AuthOffset + 1, loginLen);
+                login = Helper.UTF8NoBom.GetString(data.Array, data.Offset + AuthOffset + 1, loginLen);
 
                 var passLen = data.Array[data.Offset + AuthOffset + 1 + loginLen];
                 if (AuthOffset + 1 + loginLen + 1 + passLen > data.Count)
                     throw new Exception("Password length is too big, it doesn't fit into TcpPackage.");
-                pass = Encoding.UTF8.GetString(data.Array, data.Offset + AuthOffset + 1 + loginLen + 1, passLen);
+                pass = Helper.UTF8NoBom.GetString(data.Array, data.Offset + AuthOffset + 1 + loginLen + 1, passLen);
 
                 headerSize += 1 + loginLen + 1 + passLen;
             }
@@ -134,8 +131,8 @@ namespace EventStore.ClientAPI.SystemData
         {
             if ((Flags & TcpFlags.Authorized) != 0)
             {
-                var loginLen = Utf8NoBom.GetByteCount(Login);
-                var passLen = Utf8NoBom.GetByteCount(Password);
+                var loginLen = Helper.UTF8NoBom.GetByteCount(Login);
+                var passLen = Helper.UTF8NoBom.GetByteCount(Password);
                 if (loginLen > 255) throw new ArgumentException(string.Format("Login serialized length should be less than 256 bytes (but is {0}).", loginLen));
                 if (passLen > 255) throw new ArgumentException(string.Format("Password serialized length should be less than 256 bytes (but is {0}).", passLen));
 
@@ -145,9 +142,9 @@ namespace EventStore.ClientAPI.SystemData
                 Buffer.BlockCopy(CorrelationId.ToByteArray(), 0, res, CorrelationOffset, 16);
 
                 res[AuthOffset] = (byte)loginLen;
-                Utf8NoBom.GetBytes(Login, 0, Login.Length, res, AuthOffset + 1);
+                Helper.UTF8NoBom.GetBytes(Login, 0, Login.Length, res, AuthOffset + 1);
                 res[AuthOffset + 1 + loginLen] = (byte)passLen;
-                Utf8NoBom.GetBytes(Password, 0, Password.Length, res, AuthOffset + 1 + loginLen + 1);
+                Helper.UTF8NoBom.GetBytes(Password, 0, Password.Length, res, AuthOffset + 1 + loginLen + 1);
 
                 Buffer.BlockCopy(Data.Array, Data.Offset, res, res.Length - Data.Count, Data.Count);
                 return res;

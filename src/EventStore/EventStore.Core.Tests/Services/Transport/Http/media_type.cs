@@ -26,7 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 
@@ -109,7 +109,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.AreEqual("json", c.Subtype);
             Assert.AreEqual("application/json", c.Range);
             Assert.IsTrue(c.EncodingSpecified);
-            Assert.AreEqual(Encoding.UTF8, c.Encoding);
+            Assert.AreEqual(Helper.UTF8NoBom, c.Encoding);
         }
 
         [Test]
@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.AreEqual("application/json", c.Range);
             Assert.AreEqual(0.3f, c.Priority);
             Assert.IsTrue(c.EncodingSpecified);
-            Assert.AreEqual(Encoding.UTF8, c.Encoding);
+            Assert.AreEqual(Helper.UTF8NoBom, c.Encoding);
         }
 
         [Test]
@@ -158,7 +158,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.AreEqual("json", c.Subtype);
             Assert.AreEqual("application/json", c.Range);
             Assert.IsTrue(c.EncodingSpecified);
-            Assert.AreEqual(Encoding.UTF8, c.Encoding);
+            Assert.AreEqual(Helper.UTF8NoBom, c.Encoding);
         }
     }
 }

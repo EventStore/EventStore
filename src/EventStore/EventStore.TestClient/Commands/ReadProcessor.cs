@@ -28,6 +28,7 @@
 using System;
 using System.Diagnostics;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -91,8 +92,8 @@ namespace EventStore.TestClient.Commands
                                      dto.Event.Event.EventNumber,
                                      (ReadEventResult)dto.Result,
                                      dto.Event.Event.EventType,
-                                     Encoding.UTF8.GetString(dto.Event.Event.Data ?? new byte[0]),
-                                     Encoding.UTF8.GetString(dto.Event.Event.Metadata ?? new byte[0]));
+                                     Helper.UTF8NoBom.GetString(dto.Event.Event.Data ?? new byte[0]),
+                                     Helper.UTF8NoBom.GetString(dto.Event.Event.Metadata ?? new byte[0]));
 
 
                     if (dto.Result == TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Success)

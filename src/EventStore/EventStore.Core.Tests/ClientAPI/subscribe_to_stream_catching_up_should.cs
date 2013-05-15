@@ -33,7 +33,7 @@ using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.Common.Log;
 using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI

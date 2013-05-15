@@ -27,12 +27,12 @@
 //  
 
 using System;
-using System.Text;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(0, meta.MetastreamVersion);
-            Assert.AreEqual(new UTF8Encoding(false).GetBytes("{}"), meta.StreamMetadata);
+            Assert.AreEqual(Helper.UTF8NoBom.GetBytes("{}"), meta.StreamMetadata);
         }
 
         [Test]
@@ -228,26 +228,26 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "setting_correctly_formatted_metadata_as_raw_allows_to_read_it_as_structured_metadata";
 
-            var rawMeta = Encoding.UTF8.GetBytes(@"{
-                                                        ""$maxCount"": 17,
-                                                        ""$maxAge"": 123321,
-                                                        ""$cacheControl"": 7654321,
-                                                        ""$acl"": {
-                                                            ""$r"": ""readRole"",
-                                                            ""$w"": ""writeRole"",
-                                                            ""$mr"": ""metaReadRole"",
-                                                            ""$mw"": ""metaWriteRole""
-                                                        },
-                                                        ""customString"": ""a string"",
-                                                        ""customInt"": -179,
-                                                        ""customDouble"": 1.7,
-                                                        ""customLong"": 123123123123123123,
-                                                        ""customBool"": true,
-                                                        ""customNullable"": null,
-                                                        ""customRawJson"": {
-                                                            ""subProperty"": 999
-                                                        }
-                                                   }");
+            var rawMeta = Helper.UTF8NoBom.GetBytes(@"{
+                                                           ""$maxCount"": 17,
+                                                           ""$maxAge"": 123321,
+                                                           ""$cacheControl"": 7654321,
+                                                           ""$acl"": {
+                                                               ""$r"": ""readRole"",
+                                                               ""$w"": ""writeRole"",
+                                                               ""$mr"": ""metaReadRole"",
+                                                               ""$mw"": ""metaWriteRole""
+                                                           },
+                                                           ""customString"": ""a string"",
+                                                           ""customInt"": -179,
+                                                           ""customDouble"": 1.7,
+                                                           ""customLong"": 123123123123123123,
+                                                           ""customBool"": true,
+                                                           ""customNullable"": null,
+                                                           ""customRawJson"": {
+                                                               ""subProperty"": 999
+                                                           }
+                                                      }");
 
             _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, Guid.NewGuid(), rawMeta);
 

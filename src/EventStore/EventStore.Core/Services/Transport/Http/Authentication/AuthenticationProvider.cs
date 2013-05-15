@@ -36,8 +36,6 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
 {
     public abstract class AuthenticationProvider
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<AuthenticationProvider>();
-        
         public abstract bool Authenticate(IncomingHttpRequestMessage message);
 
         protected void Authenticated(IncomingHttpRequestMessage message, IPrincipal user)

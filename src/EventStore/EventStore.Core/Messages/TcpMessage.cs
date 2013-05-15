@@ -110,5 +110,27 @@ namespace EventStore.Core.Messages
                 SocketError = socketError;
             }
         }
+
+        public class NotAuthenticated : Message
+        {
+            public readonly Guid CorrelationId;
+            public readonly string Reason;
+
+            public NotAuthenticated(Guid correlationId, string reason)
+            {
+                CorrelationId = correlationId;
+                Reason = reason;
+            }
+        }
+
+        public class Authenticated : Message
+        {
+            public readonly Guid CorrelationId;
+
+            public Authenticated(Guid correlationId)
+            {
+                CorrelationId = correlationId;
+            }
+        }
     }
 }

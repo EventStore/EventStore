@@ -29,6 +29,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
@@ -71,7 +72,7 @@ namespace EventStore.TestClient.Commands
                         Enumerable.Range(0, writeCount).Select(x => new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
                                                                                                      "type",
                                                                                                      false,
-                                                                                                     Encoding.UTF8.GetBytes(data),
+                                                                                                     Helper.UTF8NoBom.GetBytes(data),
                                                                                                      new byte[0])).ToArray(),
                         true);
                     var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize()).AsByteArray();

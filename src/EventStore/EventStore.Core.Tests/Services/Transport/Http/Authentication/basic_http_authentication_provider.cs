@@ -29,15 +29,12 @@
 using System;
 using System.Net;
 using System.Security.Principal;
-using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http.EntityManagement;
 using NUnit.Framework;
 using System.Linq;

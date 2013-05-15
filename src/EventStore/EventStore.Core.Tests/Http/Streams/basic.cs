@@ -28,7 +28,7 @@
 
 using System;
 using System.Net;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
