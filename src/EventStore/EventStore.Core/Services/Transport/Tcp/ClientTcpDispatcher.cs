@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Security.Principal;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -446,7 +445,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private TcpPackage WrapNotHandled(ClientMessage.NotHandled msg)
         {
-            var dto = new TcpClientMessageDto.NotHandled(msg.Reason, msg.AdditionalInfo == null ? null : msg.AdditionalInfo.ToJsonBytes());
+            var dto = new TcpClientMessageDto.NotHandled(msg.Reason, msg.AdditionalInfo == null ? null : msg.AdditionalInfo.SerializeToArray());
             return new TcpPackage(TcpCommand.NotHandled, msg.CorrelationId, dto.Serialize());
         }
 

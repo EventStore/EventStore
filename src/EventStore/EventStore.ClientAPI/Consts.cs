@@ -36,7 +36,7 @@ namespace EventStore.ClientAPI
         public const int DefaultMaxOperationRetries = 10;
         public const int DefaultMaxReconnections = 10;
 
-        public const bool DefaultAllowForwarding = true;
+        public const bool DefaultAllowForwarding = false;
 
         public static readonly TimeSpan DefaultReconnectionDelay = TimeSpan.FromMilliseconds(100);
         public static readonly TimeSpan DefaultOperationTimeout = TimeSpan.FromSeconds(7);
