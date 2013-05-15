@@ -95,8 +95,8 @@ namespace EventStore.Core.Tests.Helpers
         {
             for (int index = 0; index < expected.Count; index++)
             {
-                JToken v = expected[index];
-                JToken vv = response[index];
+                JToken v = expected.Count > index ? expected[index] : new JValue((object)null);
+                JToken vv = response.Count > index ? response[index] : new JValue((object) null);
                 Assert.AreEqual(
                     v.Type, vv.Type, "{0}/{1} type is {2}, but {3} is expected", path, index, vv.Type,
                     v.Type);

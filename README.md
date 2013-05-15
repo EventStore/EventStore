@@ -2,6 +2,8 @@
 
 **The documentation has now moved to the <a href="https://github.com/EventStore/EventStore/wiki">wiki in this repository</a>.** For a quick start, look <a href="https://github.com/EventStore/EventStore/wiki/Running-the-Event-Store">here</a>.
 
+<em><strong>Development is on the "dev" branch (and feature branches). Please make any pull requests to the "dev" branch.</strong></em>
+
 This is the repository for the open source version of Event Store. Binaries and information about the commercial, multi-node version can be found on the Event Store website at http://geteventstore.com.
 
 ##Building from Source
@@ -30,7 +32,7 @@ This step produces a file named js1.dll, which contains the projections framewor
 
 ####Build the Event Store solution using 64-bit msbuild
 
-	C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe /p:Configuration=Debug;Platform="Any CPU" src\EventStore\EventStore.sln
+	C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe /p:Configuration=Debug /p:Platform="Any CPU" src\EventStore\EventStore.sln
 
 *NOTE: EventStore.sln has build configurations set up to be compatible with either xbuild or msbuild. Although named "Any CPU", it in fact targets x64 only.*
 
