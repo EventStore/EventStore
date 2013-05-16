@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_filter
             _ef = null;
             try
             {
-                _ef = _builder.Build(new RealTimeProvider()).EventFilter;
+                _ef = _builder.Build(new RealTimeProvider(), runAs: null).EventFilter;
             }
             catch (Exception ex)
             {

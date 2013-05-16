@@ -92,6 +92,10 @@ namespace EventStore.Projections.Core.Services.Management
 
         private int _readEventsBatchSize = 100;
 
+        private int _lastUsedQueue = 0;
+        private bool _started;
+        private readonly PublishEnvelope _publishEnvelope;
+
         public ProjectionManager(
             IPublisher inputQueue, IPublisher publisher, IPublisher[] queues, ITimeProvider timeProvider,
             bool runProjections, bool initializeSystemProjections = true)
@@ -99,7 +103,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (queues == null) throw new ArgumentNullException("queues");
-            if (queues.Length == 0) throw new ArgumentException("queues");
+            if (queues.Length == 0) throw new ArgumentException("At least one queue is required", "queues");
 
             _inputQueue = inputQueue;
             _publisher = publisher;
@@ -191,6 +195,9 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (!_started)
                 return;
+
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(null, message)) return;
+
             if (message.Name == null)
             {
                 message.Envelope.ReplyWith(
@@ -448,6 +455,37 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher.Handle(message);
         }
 
+        public void Handle(SystemMessage.StateChangeMessage message)
+        {
+            if (message.State == VNodeState.Master)
+            {
+                if (!_started)
+                    Start();
+            }
+            else
+            {
+                if (_started)
+                    Stop();
+            }
+        }
+
+        public void Handle(ProjectionManagementMessage.Internal.Deleted message)
+        {
+            _projections.Remove(message.Name);
+            _projectionsMap.Remove(message.Id);
+        }
+
+        public void Handle(ProjectionManagementMessage.RegisterSystemProjection message)
+        {
+            if (!_projections.ContainsKey(message.Name))
+            {
+                Handle(
+                    new ProjectionManagementMessage.Post(
+                        new PublishEnvelope(_inputQueue), ProjectionMode.Continuous, message.Name,
+                        ProjectionManagementMessage.RunAs.System, message.Handler, message.Query, true, true, true));
+            }
+        }
+
         public void Dispose()
         {
             foreach (var projection in _projections.Values)
@@ -571,7 +609,7 @@ namespace EventStore.Projections.Core.Services.Management
             IEnvelope envelope = new NoopEnvelope();
 
             var postMessage = new ProjectionManagementMessage.Post(
-                envelope, ProjectionMode.Continuous, name, "native:" + handlerType.Namespace + "." + handlerType.Name,
+                envelope, ProjectionMode.Continuous, name, ProjectionManagementMessage.RunAs.System, "native:" + handlerType.Namespace + "." + handlerType.Name,
                 config, enabled: false, checkpointsEnabled: true, emitEnabled: true);
 
             _publisher.Publish(postMessage);
@@ -594,10 +632,6 @@ namespace EventStore.Projections.Core.Services.Management
                 projection.InitializeNew(message, () => completed(projection));
             }
         }
-
-        private int _lastUsedQueue = 0;
-        private bool _started;
-        private PublishEnvelope _publishEnvelope;
 
         private ManagedProjection CreateManagedProjectionInstance(string name, int projectionId)
         {
@@ -648,37 +682,6 @@ namespace EventStore.Projections.Core.Services.Management
             }
             else
                 throw new NotSupportedException("Unsupported error code received");
-        }
-
-        public void Handle(SystemMessage.StateChangeMessage message)
-        {
-            if (message.State == VNodeState.Master)
-            {
-                if (!_started)
-                    Start();
-            }
-            else
-            {
-                if (_started)
-                    Stop();
-            }
-        }
-
-        public void Handle(ProjectionManagementMessage.Internal.Deleted message)
-        {
-            _projections.Remove(message.Name);
-            _projectionsMap.Remove(message.Id);
-        }
-
-        public void Handle(ProjectionManagementMessage.RegisterSystemProjection message)
-        {
-            if (!_projections.ContainsKey(message.Name))
-            {
-                Handle(
-                    new ProjectionManagementMessage.Post(
-                        new PublishEnvelope(_inputQueue), ProjectionMode.Continuous, message.Name, message.Handler,
-                        message.Query, true, true, true));
-            }
         }
     }
 }

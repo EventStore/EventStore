@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                             ?? new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource);
             _firstWriteCorrelationId = Guid.NewGuid();
             _projectionCorrelationId = Guid.NewGuid();
-            _projectionConfig = new ProjectionConfig(
+            _projectionConfig = new ProjectionConfig(null, 
                 _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
                 _createTempStreams, _stopOnEof);
             _coreProjection = CoreProjection.CreateAndPrepare(

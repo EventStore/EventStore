@@ -26,11 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Security.Principal;
 
 namespace EventStore.Projections.Core.Services
 {
     public class ProjectionConfig
     {
+        private readonly IPrincipal _runAs;
         private readonly int _checkpointHandledThreshold;
         private readonly int _checkpointUnhandledBytesThreshold;
         private readonly int _pendingEventsThreshold;
@@ -40,7 +42,7 @@ namespace EventStore.Projections.Core.Services
         private readonly bool _createTempStreams;
         private readonly bool _stopOnEof;
 
-        public ProjectionConfig(int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold,
+        public ProjectionConfig(IPrincipal runAs, int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold,
             int pendingEventsThreshold, int maxWriteBatchLength, bool emitEventEnabled, bool checkpointsEnabled,
             bool createTempStreams, bool stopOnEof)
         {
@@ -58,6 +60,7 @@ namespace EventStore.Projections.Core.Services
                 if (checkpointUnhandledBytesThreshold != 0)
                     throw new ArgumentException("checkpointUnhandledBytesThreshold must be 0");
             }
+            _runAs = runAs;
             _checkpointHandledThreshold = checkpointHandledThreshold;
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _pendingEventsThreshold = pendingEventsThreshold;
@@ -108,9 +111,14 @@ namespace EventStore.Projections.Core.Services
             get { return _stopOnEof; }
         }
 
+        public IPrincipal RunAs
+        {
+            get { return _runAs; }
+        }
+
         public static ProjectionConfig GetTest()
         {
-            return new ProjectionConfig(1000, 1000*1000, 100, 500, true, true, false, false);
+            return new ProjectionConfig(null, 1000, 1000*1000, 100, 500, true, true, false, false);
         }
     }
 }

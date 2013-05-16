@@ -136,7 +136,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 //TODO: factory method can throw!
                 IProjectionStateHandler stateHandler = message.HandlerFactory();
-                // constructor can fail if wrong source defintion
+                // constructor can fail if wrong source definition
                 ProjectionSourceDefinition sourceDefinition;
                 var projection = CoreProjection.CreateAndPrepare(
                     message.Name, message.Version, message.ProjectionId, _publisher, stateHandler, message.Config,

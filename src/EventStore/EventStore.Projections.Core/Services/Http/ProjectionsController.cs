@@ -113,8 +113,8 @@ namespace EventStore.Projections.Core.Services.Http
                 service, "/projection/{name}/query?config={config}", HttpMethod.Get, OnProjectionQueryGet,
                 Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
             Register(
-                service, "/projection/{name}/query?type={type}&emit={emit}", HttpMethod.Put, OnProjectionQueryPut,
-                new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+                service, "/projection/{name}/query?type={type}&emit={emit}&enableRunAs={enableRunAs}&replaceRunAs={replaceRunAs}", HttpMethod.Put,
+                OnProjectionQueryPut, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
             Register(
                 service, "/projection/{name}", HttpMethod.Get, OnProjectionStatusGet, Codec.NoCodecs, SupportedCodecs);
             Register(
@@ -134,14 +134,14 @@ namespace EventStore.Projections.Core.Services.Http
                 service, "/projection/{name}/result?partition={partition}", HttpMethod.Get, OnProjectionResultGet,
                 Codec.NoCodecs, SupportedCodecs);
             Register(
-                service, "/projection/{name}/command/disable", HttpMethod.Post, OnProjectionCommandDisable,
-                Codec.NoCodecs, SupportedCodecs);
+                service, "/projection/{name}/command/disable?enableRunAs={enableRunAs}&replaceRunAs={replaceRunAs}", HttpMethod.Post,
+                OnProjectionCommandDisable, Codec.NoCodecs, SupportedCodecs);
             Register(
-                service, "/projection/{name}/command/enable", HttpMethod.Post, OnProjectionCommandEnable,
-                Codec.NoCodecs, SupportedCodecs);
+                service, "/projection/{name}/command/enable?enableRunAs={enableRunAs}&replaceRunAs={replaceRunAs}", HttpMethod.Post,
+                OnProjectionCommandEnable, Codec.NoCodecs, SupportedCodecs);
             Register(
-                service, "/projection/{name}/command/reset", HttpMethod.Post, OnProjectionCommandReset,
-                Codec.NoCodecs, SupportedCodecs);
+                service, "/projection/{name}/command/reset?enableRunAs={enableRunAs}&replaceRunAs={replaceRunAs}", HttpMethod.Post,
+                OnProjectionCommandReset, Codec.NoCodecs, SupportedCodecs);
         }
 
         private static void OnProjections(HttpEntityManager http, UriTemplateMatch match)
@@ -217,28 +217,28 @@ namespace EventStore.Projections.Core.Services.Http
                 (o, s) =>
                 Publish(
                     new ProjectionManagementMessage.UpdateQuery(
-                        envelope, match.BoundVariables["name"], match.BoundVariables["type"], s, emitEnabled: emitEnabled)), Console.WriteLine);
+                        envelope, match.BoundVariables["name"], GetRunAs(http, match), match.BoundVariables["type"], s, emitEnabled: emitEnabled)), Console.WriteLine);
         }
 
         private void OnProjectionCommandDisable(HttpEntityManager http, UriTemplateMatch match)
         {
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.Disable(envelope, match.BoundVariables["name"]));
+            Publish(new ProjectionManagementMessage.Disable(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
         }
 
         private void OnProjectionCommandEnable(HttpEntityManager http, UriTemplateMatch match)
         {
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.Enable(envelope, match.BoundVariables["name"]));
+            Publish(new ProjectionManagementMessage.Enable(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
         }
 
         private void OnProjectionCommandReset(HttpEntityManager http, UriTemplateMatch match)
         {
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.Reset(envelope, match.BoundVariables["name"]));
+            Publish(new ProjectionManagementMessage.Reset(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
         }
 
         private void OnProjectionStatusGet(HttpEntityManager http, UriTemplateMatch match)
@@ -254,7 +254,7 @@ namespace EventStore.Projections.Core.Services.Http
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
             Publish(
                 new ProjectionManagementMessage.Delete(
-                    envelope, match.BoundVariables["name"],
+                    envelope, match.BoundVariables["name"], GetRunAs(http, match),
                     IsOn(match, "deleteCheckpointStream", false),
                     IsOn(match, "deleteStateStream", false)));
         }
@@ -334,17 +334,16 @@ namespace EventStore.Projections.Core.Services.Http
                         ProjectionManagementMessage.Post postMessage;
                         string handlerType = match.BoundVariables["type"] ?? "JS";
                         bool emitEnabled = IsOn(match, "emit", false);
-                        bool checkpointsEnabled = mode >= ProjectionMode.Continuous
-                                                      ? true
-                                                      : IsOn(match, "checkpoints", false);
+                        bool checkpointsEnabled = mode >= ProjectionMode.Continuous || IsOn(match, "checkpoints", false);
                         bool enabled = IsOn(match, "enabled", def: true);
+                        var runAs = new ProjectionManagementMessage.RunAs(http.User, true, true);
                         if (mode <= ProjectionMode.OneTime && string.IsNullOrEmpty(name))
                             postMessage = new ProjectionManagementMessage.Post(
-                                envelope, mode, Guid.NewGuid().ToString("D"), handlerType, s, enabled: enabled,
+                                envelope, mode, Guid.NewGuid().ToString("D"), runAs, handlerType, s, enabled: enabled,
                                 checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled);
                         else
                             postMessage = new ProjectionManagementMessage.Post(
-                                envelope, mode, name, handlerType, s, enabled: enabled,
+                                envelope, mode, name, runAs, handlerType, s, enabled: enabled,
                                 checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled);
                         Publish(postMessage);
                     }, Console.WriteLine);
@@ -464,8 +463,10 @@ namespace EventStore.Projections.Core.Services.Http
         {
             return new SendToHttpEnvelope<ProjectionManagementMessage.NotFound>(
                 _networkSendQueue, http, NotFoundFormatter, NotFoundConfigurator,
+                new SendToHttpEnvelope<ProjectionManagementMessage.NotAuthorized>(
+                    _networkSendQueue, http, NotAuthorizedFormatter, NotAuthorizedConfigurator,
                 new SendToHttpEnvelope<ProjectionManagementMessage.OperationFailed>(
-                    _networkSendQueue, http, OperationFailedFormatter, OperationFailedConfigurator, null));
+                    _networkSendQueue, http, OperationFailedFormatter, OperationFailedConfigurator, null)));
         }
 
         private ResponseConfiguration NotFoundConfigurator(ICodec codec, ProjectionManagementMessage.NotFound message)
@@ -474,6 +475,17 @@ namespace EventStore.Projections.Core.Services.Http
         }
 
         private string NotFoundFormatter(ICodec codec, ProjectionManagementMessage.NotFound message)
+        {
+            return message.Reason;
+        }
+
+        private ResponseConfiguration NotAuthorizedConfigurator(
+            ICodec codec, ProjectionManagementMessage.NotAuthorized message)
+        {
+            return new ResponseConfiguration(401, "Not Authorized", "text/plain", Encoding.UTF8);
+        }
+
+        private string NotAuthorizedFormatter(ICodec codec, ProjectionManagementMessage.NotAuthorized message)
         {
             return message.Reason;
         }
@@ -497,6 +509,12 @@ namespace EventStore.Projections.Core.Services.Http
         private static string DefaultFormatter<T>(ICodec codec, T message)
         {
             return codec.To(message);
+        }
+
+        private static ProjectionManagementMessage.RunAs GetRunAs(HttpEntityManager http, UriTemplateMatch match)
+        {
+            return new ProjectionManagementMessage.RunAs(
+                http.User, IsOn(match, "enableRunAs", false), IsOn(match, "replaceRunAs", false));
         }
 
         private static bool? IsOn(UriTemplateMatch match, string option, bool? def)

@@ -51,7 +51,5 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "processingLag")]
         public int? ProcessingLag { get; set; }
 
-        [DataMember(Name = "runAs")]
-        public string RunAs { get; set; }
     }
 }

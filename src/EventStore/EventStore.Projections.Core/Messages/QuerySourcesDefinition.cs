@@ -99,8 +99,6 @@ namespace EventStore.Projections.Core.Messages
                     builder.SetReorderEvents(true);
                 if (Options.ProcessingLag != null)
                     builder.SetProcessingLag(Options.ProcessingLag.GetValueOrDefault());
-                if (!string.IsNullOrEmpty(Options.RunAs))
-                    builder.SetRunAs(Options.RunAs);
             }
             if (DefinesStateTransform)
                 builder.SetDefinesStateTransform();

@@ -65,9 +65,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             protected override IEnumerable<WhenStep> When()
             {
                 yield return(new SystemMessage.BecomeMaster(Guid.NewGuid()));
-                yield return(
-                    new ProjectionManagementMessage.Post(
+                yield return
+                    (new ProjectionManagementMessage.Post(
                         new PublishEnvelope(_bus), _projectionMode, _projectionName,
+                        ProjectionManagementMessage.RunAs.Anonymous,
                         "native:" + _fakeProjectionType.AssemblyQualifiedName, _projectionSource, enabled: true,
                         checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
             }

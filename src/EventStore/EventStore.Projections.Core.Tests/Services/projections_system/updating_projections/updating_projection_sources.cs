@@ -62,19 +62,25 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
                 yield return CreateWriteEvent("stream1", "type1", "{\"Data\": 1}");
                 yield return
                     new ProjectionManagementMessage.Post(
-                        Envelope, ProjectionMode.Continuous, _projectionName, "js", GivenOriginalSource(), true,
+                        Envelope, ProjectionMode.Continuous, _projectionName,
+                        ProjectionManagementMessage.RunAs.Anonymous, "js", GivenOriginalSource(), true,
                         _checkpointsEnabled, _emitEnabled);
                 yield return CreateWriteEvent("stream1", "type2", "{\"Data\": 2}");
                 yield return CreateWriteEvent("stream2", "type2", "{\"Data\": 3}");
                 yield return CreateWriteEvent("stream3", "type3", "{\"Data\": 4}");
                 yield return CreateWriteEvent("stream3", "type1", "{\"Data\": 5}");
-                yield return new ProjectionManagementMessage.Disable(Envelope, _projectionName);
+                yield return
+                    new ProjectionManagementMessage.Disable(
+                        Envelope, _projectionName, ProjectionManagementMessage.RunAs.Anonymous);
                 yield return
                     new ProjectionManagementMessage.UpdateQuery(
-                        Envelope, _projectionName, "js", GivenUpdatedSource(), _emitEnabled);
+                        Envelope, _projectionName, ProjectionManagementMessage.RunAs.Anonymous, "js",
+                        GivenUpdatedSource(), _emitEnabled);
                 yield return CreateWriteEvent("stream2", "type3", "{\"Data\": 6}");
                 yield return CreateWriteEvent("stream3", "type4", "{\"Data\": 7}");
-                yield return new ProjectionManagementMessage.Enable(Envelope, _projectionName);
+                yield return
+                    new ProjectionManagementMessage.Enable(
+                        Envelope, _projectionName, ProjectionManagementMessage.RunAs.Anonymous);
                 yield return CreateWriteEvent("stream3", "type4", "{\"Data\": 8}");
                 yield return CreateWriteEvent("stream4", "type5", "{\"Data\": 9}");
                 yield return CreateWriteEvent("stream5", "type1", "{\"Data\": 10}");

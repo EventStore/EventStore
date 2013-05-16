@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
             var result = new ReaderStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(new RealTimeProvider());
+            return result.Build(new RealTimeProvider(), runAs: null);
         }
     }
 }

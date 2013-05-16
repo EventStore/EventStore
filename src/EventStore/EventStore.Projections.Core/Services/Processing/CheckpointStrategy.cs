@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -64,7 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var builder = new Builder();
             sources.ConfigureSourceProcessingStrategy(builder);
-            return builder.Build(config, Processing.ReaderStrategy.Create(sources, timeProvider));
+            return builder.Build(config, Processing.ReaderStrategy.Create(sources, timeProvider, config.RunAs));
         }
 
         public bool UseCheckpoints

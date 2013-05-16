@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Security.Principal;
 using System.Text;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
@@ -346,6 +347,7 @@ namespace EventStore.Projections.Core.Messages
             {
                 get { return _version; }
             }
+
         }
 
         public class CreatePrepared : CoreProjectionManagementMessage

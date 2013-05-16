@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     [TestFixture]
     public class when_creating_a_projection
     {
-        private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
+        private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(null, 
             5, 10, 1000, 250, true, true, true, true);
 
         private
@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
-                                         new ProjectionConfig(-1, 10, 1000, 250, true, true, false, false), _readDispatcher,
+                                         new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false), _readDispatcher,
                                          _writeDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
         }
 
@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
-                                         new ProjectionConfig(0, 10, 1000, 250, true, true, false, false), _readDispatcher,
+                                         new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false), _readDispatcher,
                                          _writeDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
         }
 
@@ -134,7 +134,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
-                                         new ProjectionConfig(10, 5, 1000, 250, true, true, false, false), _readDispatcher,
+                                         new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false), _readDispatcher,
                                          _writeDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
         }
 

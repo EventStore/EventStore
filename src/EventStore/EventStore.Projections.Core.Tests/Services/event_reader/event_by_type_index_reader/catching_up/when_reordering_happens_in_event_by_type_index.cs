@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                         Events = new[] {"type1", "type2"},
                         Options = new QuerySourcesDefinitionOptions {}
                     };
-                _readerStrategy = ReaderStrategy.Create(_sourceDefinition, _timeProvider);
+                _readerStrategy = ReaderStrategy.Create(_sourceDefinition, _timeProvider, runAs: null);
                 _readerSubscriptionOptions = new ReaderSubscriptionOptions(
                     checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, stopOnEof: false,
                     stopAfterNEvents: null);

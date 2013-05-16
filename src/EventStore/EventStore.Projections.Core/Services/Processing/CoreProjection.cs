@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -56,8 +57,10 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher,
-            ILogger logger, ITimeProvider timeProvider)
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.Subscribe,
+                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+                subscriptionDispatcher, ILogger logger, ITimeProvider timeProvider)
         {
             if (name == null) throw new ArgumentNullException("name");
             if (name == "") throw new ArgumentException("name");
@@ -69,8 +72,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
             ProjectionSourceDefinition temp;
             return InternalCreate(
-                name, version, projectionCorrelationId, publisher, projectionStateHandler, projectionConfig, readDispatcher,
-                writeDispatcher, subscriptionDispatcher, logger, timeProvider, sourceDefinition: projectionStateHandler, preparedSourceDefinition: out temp);
+                name, version, projectionCorrelationId, publisher, projectionStateHandler, projectionConfig,
+                readDispatcher, writeDispatcher, subscriptionDispatcher, logger, timeProvider,
+                sourceDefinition: projectionStateHandler, preparedSourceDefinition: out temp);
         }
 
         public static CoreProjection CreateAndPrepare(
@@ -79,8 +83,11 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher,
-            ILogger logger, ITimeProvider timeProvider, out ProjectionSourceDefinition preparedSourceDefinition)
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.Subscribe,
+                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+                subscriptionDispatcher, ILogger logger, ITimeProvider timeProvider, 
+            out ProjectionSourceDefinition preparedSourceDefinition)
         {
             if (name == null) throw new ArgumentNullException("name");
             if (name == "") throw new ArgumentException("name");
@@ -93,7 +100,8 @@ namespace EventStore.Projections.Core.Services.Processing
             return InternalCreate(
                 name, version, projectionCorrelationId, publisher, projectionStateHandler, projectionConfig,
                 readDispatcher, writeDispatcher, subscriptionDispatcher, logger, timeProvider,
-                sourceDefinition: projectionStateHandler, preparedSourceDefinition: out preparedSourceDefinition);
+                sourceDefinition: projectionStateHandler, 
+                preparedSourceDefinition: out preparedSourceDefinition);
         }
 
         public static CoreProjection CreatePrepared(
@@ -105,7 +113,7 @@ namespace EventStore.Projections.Core.Services.Processing
             PublishSubscribeDispatcher
                 <ReaderSubscriptionManagement.Subscribe,
                 ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
-                subscriptionDispatcher, ILogger logger, ITimeProvider timeProvider,
+                subscriptionDispatcher, ILogger logger, ITimeProvider timeProvider, 
             out ProjectionSourceDefinition preparedSourceDefinition)
         {
             if (name == null) throw new ArgumentNullException("name");
@@ -130,7 +138,8 @@ namespace EventStore.Projections.Core.Services.Processing
             PublishSubscribeDispatcher
                 <ReaderSubscriptionManagement.Subscribe,
                 ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
-                subscriptionDispatcher, ILogger logger, ITimeProvider timeProvider, ISourceDefinitionConfigurator sourceDefinition,
+                subscriptionDispatcher, ILogger logger, ITimeProvider timeProvider,
+            ISourceDefinitionConfigurator sourceDefinition, 
             out ProjectionSourceDefinition preparedSourceDefinition)
         {
             var builder = new CheckpointStrategy.Builder();
