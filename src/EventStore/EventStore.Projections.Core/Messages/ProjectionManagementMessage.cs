@@ -110,22 +110,25 @@ namespace EventStore.Projections.Core.Messages
                 get { return _setRunAsAccount; }
             }
 
-            public static bool ValidateRunAs(IPrincipal existingRunAs, ProjectionManagementMessage.ControlMessage message)
+            public static bool ValidateRunAs(IPrincipal existingRunAs, ControlMessage message)
             {
-                if (message.RunAs.SetRunAsAccount && message.RunAs.Principal == null)
+                var requestedPrincipal = message.RunAs.Principal;
+
+                if (message.RunAs.SetRunAsAccount && requestedPrincipal == null)
                 {
-                    message.Envelope.ReplyWith(new ProjectionManagementMessage.NotAuthorized());
+                    message.Envelope.ReplyWith(new NotAuthorized());
                     return false;
                 }
-                var differentIdentity = (message.RunAs.Principal == null && existingRunAs.Identity != null)
-                                        || !String.Equals(
-                                            message.RunAs.Principal.Identity.Name, existingRunAs.Identity.Name,
+                var differentIdentity = (requestedPrincipal == null && existingRunAs != null)
+                                        || requestedPrincipal != null && existingRunAs == null
+                                        || requestedPrincipal != null
+                                        && !String.Equals(
+                                            requestedPrincipal.Identity.Name, existingRunAs.Identity.Name,
                                             StringComparison.OrdinalIgnoreCase);
 
-                if (!message.RunAs.EnableRunAsReplacement
-                    && !differentIdentity)
+                if (!message.RunAs.EnableRunAsReplacement && !differentIdentity)
                 {
-                    message.Envelope.ReplyWith(new ProjectionManagementMessage.NotAuthorized());
+                    message.Envelope.ReplyWith(new NotAuthorized());
                     return false;
                 }
                 return true;
