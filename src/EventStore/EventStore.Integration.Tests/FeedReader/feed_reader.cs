@@ -28,8 +28,7 @@
 
 using System;
 using System.Net;
-using EventStore.Common.Utils;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Integration.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
