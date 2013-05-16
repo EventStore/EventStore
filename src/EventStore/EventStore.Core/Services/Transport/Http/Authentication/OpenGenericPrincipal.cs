@@ -26,50 +26,34 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using System.Security.Principal;
-using EventStore.Core.Services.Transport.Http.Messages;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    public class TrustedAuthenticationProvider : AuthenticationProvider
+    public class OpenGenericPrincipal: IPrincipal
     {
-        public override bool Authenticate(IncomingHttpRequestMessage message)
+        private readonly GenericPrincipal _base;
+        private readonly string[] _roles;
+
+        public OpenGenericPrincipal(IIdentity identity, string[] roles)
         {
-            var header = message.Entity.Request.Headers["X-ES-TrustedAuth"];
-            if (!string.IsNullOrEmpty(header))
-            {
-                var principal = CreatePrincipal(header);
-                if (principal != null)
-                    Authenticated(message, principal);
-                else
-                    ReplyUnauthorized(message.Entity);
-                return true;
-            }
-            return false;
+            _roles = roles;
+            _base = new GenericPrincipal(identity, roles);
         }
 
-        private IPrincipal CreatePrincipal(string header)
+        public bool IsInRole(string role)
         {
-            var loginAndGroups = header.Split(';');
-            if (loginAndGroups.Length == 0 || loginAndGroups.Length > 2)
-                return null;
-            var login = loginAndGroups[0];
-            if (loginAndGroups.Length == 2)
-            {
-                var groups = loginAndGroups[1];
-                var groupsSplit = groups.Split(',');
-                var roles = new string[groupsSplit.Length + 1];
-                Array.Copy(groupsSplit, roles, groupsSplit.Length);
-                roles[roles.Length - 1] = login;
-                for (var i = 0; i < roles.Length; i++)
-                    roles[i] = roles[i].Trim();
-                return new OpenGenericPrincipal(new GenericIdentity(login), roles);
-            }
-            else
-            {
-                return new OpenGenericPrincipal(new GenericIdentity(login), new[] {login});
-            }
+            return _base.IsInRole(role);
+        }
+
+        public IIdentity Identity
+        {
+            get { return _base.Identity; }
+        }
+
+        public string[] Roles
+        {
+            get { return _roles; }
         }
     }
 }

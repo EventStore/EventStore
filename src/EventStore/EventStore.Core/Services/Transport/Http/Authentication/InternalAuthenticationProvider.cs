@@ -136,13 +136,13 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             authenticationRequest.Authenticated(principal);
         }
 
-        private static GenericPrincipal CreatePrincipal(UserData userData)
+        private static OpenGenericPrincipal CreatePrincipal(UserData userData)
         {
             var roles = new string[userData.Groups != null ? userData.Groups.Length + 1 : 1];
             if (userData.Groups != null)
                 Array.Copy(userData.Groups, roles, userData.Groups.Length);
             roles[roles.Length - 1] = userData.LoginName;
-            var principal = new GenericPrincipal(new GenericIdentity(userData.LoginName), roles);
+            var principal = new OpenGenericPrincipal(new GenericIdentity(userData.LoginName), roles);
             return principal;
         }
 
