@@ -206,7 +206,7 @@ namespace EventStore.Core.Services.Monitoring
 
         private void SetStatsStreamMetadata()
         {
-            var metadata = Encoding.UTF8.GetBytes(StreamMetadata);
+            var metadata = Helper.UTF8NoBom.GetBytes(StreamMetadata);
             _mainBus.Publish(new ClientMessage.WriteEvents(Guid.NewGuid(),
                                                            new PublishEnvelope(_monitoringBus),
                                                            true,

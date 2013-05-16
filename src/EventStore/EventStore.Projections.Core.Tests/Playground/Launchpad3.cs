@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.Playground
                     request.Method = "POST";
                     request.Timeout = 5000;
                     var query = File.ReadAllText(Path.Combine(_binFolder, @"Queries\1Query.js"));
-                    var data = Encoding.UTF8.GetBytes(query);
+                    var data = Helper.UTF8NoBom.GetBytes(query);
                     using (var requestStream = request.GetRequestStream())
                         requestStream.Write(data, 0, data.Length);
                     var response = (HttpWebResponse) request.GetResponse();

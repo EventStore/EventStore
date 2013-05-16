@@ -29,8 +29,8 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Net;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
@@ -73,15 +73,17 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="stream">The name of the stream to be deleted</param>
         /// <param name="expectedVersion">The expected version the stream should have when being deleted. <see cref="ExpectedVersion"/></param>
-        void DeleteStream(string stream, int expectedVersion);
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+        void DeleteStream(string stream, int expectedVersion, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Deletes a stream from the Event Store asynchronously
         /// </summary>
         /// <param name="stream">The name of the stream to delete.</param>
         /// <param name="expectedVersion">The expected version that the streams should have when being deleted. <see cref="ExpectedVersion"/></param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task"/> that can be awaited upon by the caller.</returns>
-        Task DeleteStreamAsync(string stream, int expectedVersion);
+        Task DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Appends Events synchronously to a stream.
@@ -118,8 +120,29 @@ namespace EventStore.ClientAPI
         /// </remarks>
         /// <param name="stream">The name of the stream to append the events to.</param>
         /// <param name="expectedVersion">The expected version of the stream</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <param name="events">The events to write to the stream</param>
-        void AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events);
+        void AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events);
+
+        /// <summary>
+        /// Appends Events synchronously to a stream.
+        /// </summary>
+        /// <remarks>
+        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
+        /// make a very large difference in the observed behavior. If no stream exists
+        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
+        /// as an example.
+        /// 
+        /// There are also differences in idempotency between different types of calls.
+        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
+        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
+        /// will do its best to provide idempotency but does not guarantee idempotency.
+        /// </remarks>
+        /// <param name="stream">The name of the stream to append the events to.</param>
+        /// <param name="expectedVersion">The expected version of the stream</param>
+        /// <param name="events">The events to write to the stream</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+        void AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Appends Events asynchronously to a stream.
@@ -157,9 +180,31 @@ namespace EventStore.ClientAPI
         /// </remarks>
         /// <param name="stream">The name of the stream to append events to</param>
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <param name="events">The events to append to the stream</param>
         /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
-        Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events);
+        Task AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events);
+
+        /// <summary>
+        /// Appends Events asynchronously to a stream.
+        /// </summary>
+        /// <remarks>
+        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
+        /// make a very large difference in the observed behavior. If no stream exists
+        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
+        /// as an example.
+        /// 
+        /// There are also differences in idempotency between different types of calls.
+        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
+        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
+        /// will do its best to provide idempotency but does not guarantee idempotency
+        /// </remarks>
+        /// <param name="stream">The name of the stream to append events to</param>
+        /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
+        /// <param name="events">The events to append to the stream</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+        /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
+        Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Starts a transaction in the event store on a given stream
@@ -171,8 +216,9 @@ namespace EventStore.ClientAPI
         /// </remarks>
         /// <param name="stream">The stream to start a transaction on</param>
         /// <param name="expectedVersion">The expected version when starting a transaction</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>An <see cref="EventStoreTransaction"/> that can be used to control a series of operations.</returns>
-        EventStoreTransaction StartTransaction(string stream, int expectedVersion);
+        EventStoreTransaction StartTransaction(string stream, int expectedVersion, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Starts a transaction in the event store on a given stream asynchronously
@@ -184,8 +230,9 @@ namespace EventStore.ClientAPI
         /// </remarks>
         /// <param name="stream">The stream to start a transaction on</param>
         /// <param name="expectedVersion">The expected version of the stream at the time of starting the transaction</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A task the caller can use to control the operation.</returns>
-        Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion);
+        Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Continues transaction by provided transaction ID.
@@ -206,8 +253,9 @@ namespace EventStore.ClientAPI
         /// <param name="start">The starting point to read from</param>
         /// <param name="count">The count of items to read</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="StreamEventsSlice"/> containing the results of the read operation</returns>
-        StreamEventsSlice ReadStreamEventsForward(string stream, int start, int count, bool resolveLinkTos);
+        StreamEventsSlice ReadStreamEventsForward(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start 
@@ -216,8 +264,9 @@ namespace EventStore.ClientAPI
         /// <param name="start">The starting point to read from</param>
         /// <param name="count">The count of items to read</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task&lt;StreamEventsSlice&gt;"/> containing the results of the read operation</returns>
-        Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, int start, int count, bool resolveLinkTos);
+        Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Reads count events from an Event Stream backwards (e.g. newest to oldest) from position
@@ -226,8 +275,9 @@ namespace EventStore.ClientAPI
         /// <param name="start">The position to start reading from</param>
         /// <param name="count">The count to read from the position</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>An <see cref="StreamEventsSlice"/> containing the results of the read operation</returns>
-        StreamEventsSlice ReadStreamEventsBackward(string stream, int start, int count, bool resolveLinkTos);
+        StreamEventsSlice ReadStreamEventsBackward(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Reads count events from an Event Stream backwards (e.g. newest to oldest) from position asynchronously
@@ -236,8 +286,9 @@ namespace EventStore.ClientAPI
         /// <param name="start">The position to start reading from</param>
         /// <param name="count">The count to read from the position</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>An <see cref="Task&lt;StreamEventsSlice&gt;"/> containing the results of the read operation</returns>
-        Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, int start, int count, bool resolveLinkTos);
+        Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Reads All Events in the node forward. (e.g. beginning to end)
@@ -245,8 +296,9 @@ namespace EventStore.ClientAPI
         /// <param name="position">The position to start reading from</param>
         /// <param name="maxCount">The maximum count to read</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        AllEventsSlice ReadAllEventsForward(Position position, int maxCount, bool resolveLinkTos);
+        AllEventsSlice ReadAllEventsForward(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Reads All Events in the node forward asynchronously (e.g. beginning to end)
@@ -254,8 +306,9 @@ namespace EventStore.ClientAPI
         /// <param name="position">The position to start reading from</param>
         /// <param name="maxCount">The maximum count to read</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos);
+        Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Reads All Events in the node backwards (e.g. end to beginning)
@@ -263,8 +316,9 @@ namespace EventStore.ClientAPI
         /// <param name="position">The position to start reading from</param>
         /// <param name="maxCount">The maximum count to read</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        AllEventsSlice ReadAllEventsBackward(Position position, int maxCount, bool resolveLinkTos);
+        AllEventsSlice ReadAllEventsBackward(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Reads All Events in the node backwards (e.g. end to beginning)
@@ -272,38 +326,43 @@ namespace EventStore.ClientAPI
         /// <param name="position">The position to start reading from</param>
         /// <param name="maxCount">The maximum count to read</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos);
+        Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         Task<EventStoreSubscription> SubscribeToStream(string stream,
                                                        bool resolveLinkTos,
                                                        Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-                                                       Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null);
+                                                       Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                       UserCredentials userCredentials = null);
 
         EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
                                                                   int? fromEventNumberExclusive,
                                                                   bool resolveLinkTos,
                                                                   Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                   Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                                                                  Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null);
+                                                                  Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                                  UserCredentials userCredentials = null);
 
         Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos, 
                                                     Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                                                    Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null);
+                                                    Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                    UserCredentials userCredentials = null);
 
         EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? fromPositionExclusive,
                                                             bool resolveLinkTos,
                                                             Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                             Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                                                            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null);
+                                                            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                            UserCredentials userCredentials = null);
 
-        void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata);
-        Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata);
-        void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata);
-        Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata);
-        StreamMetadataResult GetStreamMetadata(string stream);
-        Task<StreamMetadataResult> GetStreamMetadataAsync(string stream);
-        RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream);
-        Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream);
+        void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null);
+        Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null);
+        void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null);
+        Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null);
+        StreamMetadataResult GetStreamMetadata(string stream, UserCredentials userCredentials = null);
+        Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null);
+        RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream, UserCredentials userCredentials = null);
+        Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null);
     }
 }

@@ -59,29 +59,11 @@ namespace EventStore.Core.Services
 
         private ResolvedEvent? _lastResolvedPair;
 
-        private readonly QueuedHandlerThreadPool _queuedHandler;
-        private readonly InMemoryBus _internalBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
-
-        public SubscriptionsService(ISubscriber bus, IReadIndex readIndex)
+        public SubscriptionsService(IReadIndex readIndex)
         {
-            Ensure.NotNull(bus, "bus");
             Ensure.NotNull(readIndex, "readIndex");
 
             _readIndex = readIndex;
-
-            _queuedHandler = new QueuedHandlerThreadPool(_internalBus, "Subscriptions", false);
-            _queuedHandler.Start();
-
-            SubscribeToMessage<TcpMessage.ConnectionClosed>(bus);
-            SubscribeToMessage<ClientMessage.SubscribeToStream>(bus);
-            SubscribeToMessage<ClientMessage.UnsubscribeFromStream>(bus);
-            SubscribeToMessage<StorageMessage.EventCommited>(bus);
-        }
-
-        private void SubscribeToMessage<T>(ISubscriber subscriber) where T : Message
-        {
-            _internalBus.Subscribe((IHandle<T>)this);
-            subscriber.Subscribe(_queuedHandler.WidenFrom<T, Message>());
         }
 
         public void Handle(TcpMessage.ConnectionClosed message)
@@ -220,7 +202,7 @@ namespace EventStore.Core.Services
             {
                 try
                 {
-                    string[] parts = Encoding.UTF8.GetString(eventRecord.Data).Split('@');
+                    string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split('@');
                     int eventNumber = int.Parse(parts[0]);
                     string streamId = parts[1];
 

@@ -28,7 +28,7 @@
 
 using System;
 using System.Collections.Generic;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using System.Linq;

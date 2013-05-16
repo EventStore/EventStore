@@ -114,27 +114,35 @@ namespace EventStore.Web.Playground
                                                             watchSlowMsg: true,
                                                             slowMsgThreshold: TimeSpan.FromMilliseconds(50)));
 
+            // AUTHENTICATION INFRASTRUCTURE
+            var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
+            var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
+            var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, 1000);
+
+            SubscribeWorkers(bus =>
+            {
+                bus.Subscribe(dispatcher.ForwardReader);
+                bus.Subscribe(dispatcher.BackwardReader);
+                bus.Subscribe(dispatcher.Writer);
+                bus.Subscribe(dispatcher.StreamDeleter);
+            });
+
             // TCP
             var tcpService = new TcpService(
                 MainQueue, _tcpEndPoint, _workersHandler, TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), 
-                ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout, null);
+                ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout, internalAuthenticationProvider, null);
             Bus.Subscribe<SystemMessage.SystemInit>(tcpService);
             Bus.Subscribe<SystemMessage.SystemStart>(tcpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             // HTTP
             {
-                var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
-
-                var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
-                var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, 1000);
                 var authenticationProviders = new AuthenticationProvider[]
                 {
                     new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
                     new TrustedAuthenticationProvider(),
                     new AnonymousAuthenticationProvider()
                 };
-
 
                 _httpService = new HttpService(
                         ServiceAccessibility.Private,
@@ -143,15 +151,7 @@ namespace EventStore.Web.Playground
                         _workersHandler,
                         vNodeSettings.HttpPrefixes);
 
-                SubscribeWorkers(bus =>
-                {
-                    bus.Subscribe(dispatcher.ForwardReader);
-                    bus.Subscribe(dispatcher.BackwardReader);
-                    bus.Subscribe(dispatcher.Writer);
-                    bus.Subscribe(dispatcher.StreamDeleter);
-
-                    HttpService.CreateAndSubscribePipeline(bus, authenticationProviders);
-                });
+                SubscribeWorkers(bus => HttpService.CreateAndSubscribePipeline(bus, authenticationProviders));
 
                 _mainBus.Subscribe<SystemMessage.SystemInit>(HttpService);
                 _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);

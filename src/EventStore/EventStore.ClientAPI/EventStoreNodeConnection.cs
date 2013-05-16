@@ -37,6 +37,7 @@ using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Core;
 using EventStore.ClientAPI.Messages;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
@@ -80,18 +81,11 @@ namespace EventStore.ClientAPI
             _handler = new EventStoreConnectionLogicHandler(this, settings);
         }
 
-        /// <summary>
-        /// Connects the <see cref="EventStoreConnection"/> synchronously to a given <see cref="IPEndPoint"/>
-        /// </summary>
         public void Connect()
         {
             ConnectAsync().Wait();
         }
 
-        /// <summary>
-        /// Connects the <see cref="EventStoreConnection"/> asynchronously to a given <see cref="IPEndPoint"/>
-        /// </summary>
-        /// <returns>A <see cref="Task"/> that can be waited upon.</returns>
         public Task ConnectAsync()
         {
             var source = new TaskCompletionSource<object>();
@@ -99,350 +93,183 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        /// <summary>
-        /// Disposes this <see cref="EventStoreConnection"/>
-        /// </summary>
         void IDisposable.Dispose()
         {
             Close();
         }
 
-        /// <summary>
-        /// Closes this <see cref="EventStoreConnection"/>
-        /// </summary>
         public void Close()
         {
             _handler.EnqueueMessage(new CloseConnectionMessage("Connection close requested by client.", null));
         }
 
-        /// <summary>
-        /// Deletes a stream from the Event Store synchronously
-        /// </summary>
-        /// <param name="stream">The name of the stream to be deleted</param>
-        /// <param name="expectedVersion">The expected version the stream should have when being deleted. <see cref="ExpectedVersion"/></param>
-        public void DeleteStream(string stream, int expectedVersion)
+        public void DeleteStream(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
-            DeleteStreamAsync(stream, expectedVersion).Wait();
+            DeleteStreamAsync(stream, expectedVersion, userCredentials).Wait();
         }
 
-        /// <summary>
-        /// Deletes a stream from the Event Store asynchronously
-        /// </summary>
-        /// <param name="stream">The name of the stream to delete.</param>
-        /// <param name="expectedVersion">The expected version that the streams should have when being deleted. <see cref="ExpectedVersion"/></param>
-        /// <returns>A <see cref="Task"/> that can be awaited upon by the caller.</returns>
-        public Task DeleteStreamAsync(string stream, int expectedVersion)
+        public Task DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new DeleteStreamOperation(_settings.Log, source, _settings.AllowForwarding, stream, expectedVersion));
+            EnqueueOperation(new DeleteStreamOperation(_settings.Log, source, _settings.AllowForwarding, 
+                                                       stream, expectedVersion, userCredentials));
             return source.Task;
         }
 
-        /// <summary>
-        /// Appends Events synchronously to a stream.
-        /// </summary>
-        /// <remarks>
-        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
-        /// as an example.
-        /// 
-        /// There are also differences in idempotency between different types of calls.
-        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
-        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
-        /// will do its best to provide idempotency but does not guarantee idempotency.
-        /// </remarks>
-        /// <param name="stream">The name of the stream to append the events to.</param>
-        /// <param name="expectedVersion">The expected version of the stream</param>
-        /// <param name="events">The events to write to the stream</param>
         public void AppendToStream(string stream, int expectedVersion, params EventData[] events)
         {
-            AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>) events).Wait();
+// ReSharper disable RedundantArgumentDefaultValue
+// ReSharper disable RedundantCast
+            AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>) events, null).Wait();
+// ReSharper restore RedundantCast
+// ReSharper restore RedundantArgumentDefaultValue
         }
 
-        /// <summary>
-        /// Appends Events synchronously to a stream.
-        /// </summary>
-        /// <remarks>
-        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
-        /// as an example.
-        /// 
-        /// There are also differences in idempotency between different types of calls.
-        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
-        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
-        /// will do its best to provide idempotency but does not guarantee idempotency.
-        /// </remarks>
-        /// <param name="stream">The name of the stream to append the events to.</param>
-        /// <param name="expectedVersion">The expected version of the stream</param>
-        /// <param name="events">The events to write to the stream</param>
-        public void AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events)
+        public void AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
         {
-            AppendToStreamAsync(stream, expectedVersion, events).Wait();
+// ReSharper disable RedundantCast
+            AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, userCredentials).Wait();
+// ReSharper restore RedundantCast
         }
 
-        /// <summary>
-        /// Appends Events asynchronously to a stream.
-        /// </summary>
-        /// <remarks>
-        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
-        /// as an example.
-        /// 
-        /// There are also differences in idempotency between different types of calls.
-        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
-        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
-        /// will do its best to provide idempotency but does not guarantee idempotency
-        /// </remarks>
-        /// <param name="stream">The name of the stream to append events to</param>
-        /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
-        /// <param name="events">The events to append to the stream</param>
-        /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
+        public void AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
+        {
+            AppendToStreamAsync(stream, expectedVersion, events, userCredentials).Wait();
+        }
+
         public Task AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events)
         {
-            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>) events);
+// ReSharper disable RedundantArgumentDefaultValue
+// ReSharper disable RedundantCast
+            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>) events, null);
+// ReSharper restore RedundantCast
+// ReSharper restore RedundantArgumentDefaultValue
         }
 
-        /// <summary>
-        /// Appends Events asynchronously to a stream.
-        /// </summary>
-        /// <remarks>
-        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
-        /// as an example.
-        /// 
-        /// There are also differences in idempotency between different types of calls.
-        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
-        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
-        /// will do its best to provide idempotency but does not guarantee idempotency
-        /// </remarks>
-        /// <param name="stream">The name of the stream to append events to</param>
-        /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
-        /// <param name="events">The events to append to the stream</param>
-        /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
-        public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events)
+        public Task AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
+        {
+// ReSharper disable RedundantCast
+            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, userCredentials);
+// ReSharper restore RedundantCast
+        }
+
+        public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
         {
 // ReSharper disable PossibleMultipleEnumeration
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new AppendToStreamOperation(_settings.Log, source, _settings.AllowForwarding, stream, expectedVersion, events));
+            EnqueueOperation(new AppendToStreamOperation(_settings.Log, source, _settings.AllowForwarding, 
+                                                         stream, expectedVersion, events, userCredentials));
             return source.Task;
 // ReSharper restore PossibleMultipleEnumeration
         }
 
 
-        /// <summary>
-        /// Starts a transaction in the event store on a given stream
-        /// </summary>
-        /// <remarks>
-        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
-        /// round trips over long periods of time between the caller and the event store. This method
-        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
-        /// </remarks>
-        /// <param name="stream">The stream to start a transaction on</param>
-        /// <param name="expectedVersion">The expected version when starting a transaction</param>
-        /// <returns>An <see cref="EventStoreTransaction"/> that can be used to control a series of operations.</returns>
-        public EventStoreTransaction StartTransaction(string stream, int expectedVersion)
+        public EventStoreTransaction StartTransaction(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
-            return StartTransactionAsync(stream, expectedVersion).Result;
+            return StartTransactionAsync(stream, expectedVersion, userCredentials).Result;
         }
 
-        /// <summary>
-        /// Starts a transaction in the event store on a given stream asynchronously
-        /// </summary>
-        /// <remarks>
-        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
-        /// round trips over long periods of time between the caller and the event store. This method
-        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
-        /// </remarks>
-        /// <param name="stream">The stream to start a transaction on</param>
-        /// <param name="expectedVersion">The expected version of the stream at the time of starting the transaction</param>
-        /// <returns>A task the caller can use to control the operation.</returns>
-        public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion)
+        public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<EventStoreTransaction>();
-            EnqueueOperation(new StartTransactionOperation(_settings.Log, source, _settings.AllowForwarding, stream, expectedVersion, this));
+            EnqueueOperation(new StartTransactionOperation(_settings.Log, source, _settings.AllowForwarding, 
+                                                           stream, expectedVersion, this, userCredentials));
             return source.Task;
         }
 
-        /// <summary>
-        /// Continues transaction by provided transaction ID.
-        /// </summary>
-        /// <remarks>
-        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
-        /// round trips over long periods of time between the caller and the event store. This method
-        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
-        /// </remarks>
-        /// <param name="transactionId">The transaction ID that needs to be continued.</param>
-        /// <returns><see cref="EventStoreTransaction"/> object.</returns>
         public EventStoreTransaction ContinueTransaction(long transactionId)
         {
             Ensure.Nonnegative(transactionId, "transactionId");
             return new EventStoreTransaction(transactionId, this);
         }
 
-        /// <summary>
-        /// Writes to a transaction in the event store asynchronously
-        /// </summary>
-        /// <remarks>
-        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
-        /// round trips over long periods of time between the caller and the event store. This method
-        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
-        /// </remarks>
-        /// <param name="transaction">The <see cref="EventStoreTransaction"/> to write to.</param>
-        /// <param name="events">The events to write</param>
-        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
-        Task IEventStoreTransactionConnection.TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events)
+        Task IEventStoreTransactionConnection.TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events, UserCredentials userCredentials = null)
         {
 // ReSharper disable PossibleMultipleEnumeration
             Ensure.NotNull(transaction, "transaction");
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new TransactionalWriteOperation(_settings.Log, source, _settings.AllowForwarding, transaction.TransactionId, events));
+            EnqueueOperation(new TransactionalWriteOperation(_settings.Log, source, _settings.AllowForwarding, 
+                                                             transaction.TransactionId, events, userCredentials));
             return source.Task;
 // ReSharper restore PossibleMultipleEnumeration
         }
 
-        /// <summary>
-        /// Commits a multi-write transaction in the Event Store
-        /// </summary>
-        /// <param name="transaction">The <see cref="EventStoreTransaction"></see> to commit</param>
-        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
-        Task IEventStoreTransactionConnection.CommitTransactionAsync(EventStoreTransaction transaction)
+        Task IEventStoreTransactionConnection.CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials = null)
         {
             Ensure.NotNull(transaction, "transaction");
 
             var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new CommitTransactionOperation(_settings.Log, source, _settings.AllowForwarding, transaction.TransactionId));
+            EnqueueOperation(new CommitTransactionOperation(_settings.Log, source, _settings.AllowForwarding, 
+                                                            transaction.TransactionId, userCredentials));
             return source.Task;
         }
 
-        /// <summary>
-        /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start
-        /// </summary>
-        /// <param name="stream">The stream to read from</param>
-        /// <param name="start">The starting point to read from</param>
-        /// <param name="count">The count of items to read</param>
-        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>A <see cref="StreamEventsSlice"/> containing the results of the read operation</returns>
-        public StreamEventsSlice ReadStreamEventsForward(string stream, int start, int count, bool resolveLinkTos)
+
+        public StreamEventsSlice ReadStreamEventsForward(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return ReadStreamEventsForwardAsync(stream, start, count, resolveLinkTos).Result;
+            return ReadStreamEventsForwardAsync(stream, start, count, resolveLinkTos, userCredentials).Result;
         }
 
-        /// <summary>
-        /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start 
-        /// </summary>
-        /// <param name="stream">The stream to read from</param>
-        /// <param name="start">The starting point to read from</param>
-        /// <param name="count">The count of items to read</param>
-        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>A <see cref="Task&lt;StreamEventsSlice&gt;"/> containing the results of the read operation</returns>
-        public Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, int start, int count, bool resolveLinkTos)
+        public Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(start, "start");
             Ensure.Positive(count, "count");
 
             var source = new TaskCompletionSource<StreamEventsSlice>();
-            EnqueueOperation(new ReadStreamEventsForwardOperation(_settings.Log, source, stream, start, count, resolveLinkTos));
+            EnqueueOperation(new ReadStreamEventsForwardOperation(_settings.Log, source, stream, start, count, resolveLinkTos, userCredentials));
             return source.Task;
         }
 
-        /// <summary>
-        /// Reads count events from an Event Stream backwards (e.g. newest to oldest) from position
-        /// </summary>
-        /// <param name="stream">The Event Stream to read from</param>
-        /// <param name="start">The position to start reading from</param>
-        /// <param name="count">The count to read from the position</param>
-        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>An <see cref="StreamEventsSlice"/> containing the results of the read operation</returns>
-        public StreamEventsSlice ReadStreamEventsBackward(string stream, int start, int count, bool resolveLinkTos)
+        public StreamEventsSlice ReadStreamEventsBackward(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return ReadStreamEventsBackwardAsync(stream, start, count, resolveLinkTos).Result;
+            return ReadStreamEventsBackwardAsync(stream, start, count, resolveLinkTos, userCredentials).Result;
         }
 
-        /// <summary>
-        /// Reads count events from an Event Stream backwards (e.g. newest to oldest) from position asynchronously
-        /// </summary>
-        /// <param name="stream">The Event Stream to read from</param>
-        /// <param name="start">The position to start reading from</param>
-        /// <param name="count">The count to read from the position</param>
-        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>An <see cref="Task&lt;StreamEventsSlice&gt;"/> containing the results of the read operation</returns>
-        public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, int start, int count, bool resolveLinkTos)
+        public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
 
             var source = new TaskCompletionSource<StreamEventsSlice>();
-            EnqueueOperation(new ReadStreamEventsBackwardOperation(_settings.Log, source, stream, start, count, resolveLinkTos));
+            EnqueueOperation(new ReadStreamEventsBackwardOperation(_settings.Log, source, stream, start, count, resolveLinkTos, userCredentials));
             return source.Task;
         }
 
-        /// <summary>
-        /// Reads All Events in the node forward. (e.g. beginning to end)
-        /// </summary>
-        /// <param name="position">The position to start reading from</param>
-        /// <param name="maxCount">The maximum count to read</param>
-        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        public AllEventsSlice ReadAllEventsForward(Position position, int maxCount, bool resolveLinkTos)
+        public AllEventsSlice ReadAllEventsForward(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return ReadAllEventsForwardAsync(position, maxCount, resolveLinkTos).Result;
+            return ReadAllEventsForwardAsync(position, maxCount, resolveLinkTos, userCredentials).Result;
         }
 
-        /// <summary>
-        /// Reads All Events in the node forward asynchronously (e.g. beginning to end)
-        /// </summary>
-        /// <param name="position">The position to start reading from</param>
-        /// <param name="maxCount">The maximum count to read</param>
-        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos)
+        public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.Positive(maxCount, "maxCount");
 
             var source = new TaskCompletionSource<AllEventsSlice>();
-            EnqueueOperation(new ReadAllEventsForwardOperation(_settings.Log, source, position, maxCount, resolveLinkTos));
+            EnqueueOperation(new ReadAllEventsForwardOperation(_settings.Log, source, position, maxCount, resolveLinkTos, userCredentials));
             return source.Task;
         }
 
-        /// <summary>
-        /// Reads All Events in the node backwards (e.g. end to beginning)
-        /// </summary>
-        /// <param name="position">The position to start reading from</param>
-        /// <param name="maxCount">The maximum count to read</param>
-        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        public AllEventsSlice ReadAllEventsBackward(Position position, int maxCount, bool resolveLinkTos)
+        public AllEventsSlice ReadAllEventsBackward(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
-            return ReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos).Result;
+            return ReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos, userCredentials).Result;
         }
 
-        /// <summary>
-        /// Reads All Events in the node backwards (e.g. end to beginning)
-        /// </summary>
-        /// <param name="position">The position to start reading from</param>
-        /// <param name="maxCount">The maximum count to read</param>
-        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos)
+        public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.Positive(maxCount, "maxCount");
 
             var source = new TaskCompletionSource<AllEventsSlice>();
-            EnqueueOperation(new ReadAllEventsBackwardOperation(_settings.Log, source, position, maxCount, resolveLinkTos));
+            EnqueueOperation(new ReadAllEventsBackwardOperation(_settings.Log, source, position, maxCount, resolveLinkTos, userCredentials));
             return source.Task;
         }
 
@@ -458,14 +285,15 @@ namespace EventStore.ClientAPI
         public Task<EventStoreSubscription> SubscribeToStream(string stream,
                                                               bool resolveLinkTos,
                                                               Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-                                                              Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
+                                                              Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                              UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var source = new TaskCompletionSource<EventStoreSubscription>();
-            _handler.EnqueueMessage(
-                                    new StartSubscriptionMessage(source, stream, resolveLinkTos, eventAppeared, subscriptionDropped, 
+            _handler.EnqueueMessage(new StartSubscriptionMessage(source, stream, resolveLinkTos, userCredentials,
+                                                                 eventAppeared, subscriptionDropped, 
                                                                  _settings.MaxRetries, _settings.OperationTimeout));
             return source.Task;
         }
@@ -475,27 +303,29 @@ namespace EventStore.ClientAPI
                                                                          bool resolveLinkTos,
                                                                          Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                          Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                                                                         Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
+                                                                         Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                                         UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
-            var catchUpSubscription = 
+            var catchUpSubscription =
                     new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, fromEventNumberExclusive, 
-                                                            resolveLinkTos, eventAppeared, liveProcessingStarted, 
-                                                            subscriptionDropped, _settings.VerboseLogging);
+                                                            resolveLinkTos, userCredentials, eventAppeared, 
+                                                            liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
 
         public Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos, 
                                                            Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                                                           Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
+                                                           Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                           UserCredentials userCredentials = null)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var source = new TaskCompletionSource<EventStoreSubscription>();
-            _handler.EnqueueMessage(
-                                    new StartSubscriptionMessage(source, string.Empty, resolveLinkTos, eventAppeared, subscriptionDropped,
+            _handler.EnqueueMessage(new StartSubscriptionMessage(source, string.Empty, resolveLinkTos, userCredentials,
+                                                                 eventAppeared, subscriptionDropped,
                                                                  _settings.MaxRetries, _settings.OperationTimeout));
             return source.Task;
         }
@@ -504,33 +334,35 @@ namespace EventStore.ClientAPI
                                                                    bool resolveLinkTos,
                                                                    Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                    Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                                                                   Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null)
+                                                                   Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                                   UserCredentials userCredentials = null)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription = 
                     new EventStoreAllCatchUpSubscription(this, _settings.Log, fromPositionExclusive, resolveLinkTos,
-                                                         eventAppeared, liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging);
+                                                         userCredentials, eventAppeared, liveProcessingStarted, 
+                                                         subscriptionDropped, _settings.VerboseLogging);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
 
 
-        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata)
+        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
-            SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata).Wait();
+            SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials).Wait();
         }
 
-        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata)
+        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
-            return SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata.AsJsonBytes());
+            return SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata.AsJsonBytes(), userCredentials);
         }
 
-        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata)
+        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null)
         {
-            SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata).Wait();
+            SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials).Wait();
         }
 
-        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata)
+        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             if (SystemStreams.IsMetastream(stream)) 
@@ -544,19 +376,22 @@ namespace EventStore.ClientAPI
                                                          _settings.AllowForwarding,
                                                          SystemStreams.MetastreamOf(stream),
                                                          expectedMetastreamVersion,
-                                                         new[] { metaevent }));
+                                                         new[] { metaevent },
+                                                         userCredentials));
             return source.Task;
         }
 
-        public StreamMetadataResult GetStreamMetadata(string stream)
+        public StreamMetadataResult GetStreamMetadata(string stream, UserCredentials userCredentials = null)
         {
-            return GetStreamMetadataAsync(stream).Result;
+            return GetStreamMetadataAsync(stream, userCredentials).Result;
         }
 
-        public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream)
+        public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null)
         {
-            return GetStreamMetadataAsRawBytesAsync(stream).ContinueWith(t =>
+            return GetStreamMetadataAsRawBytesAsync(stream, userCredentials).ContinueWith(t =>
             {
+                if (t.Exception != null)
+                    throw t.Exception.InnerException;
                 var res = t.Result;
                 if (res.StreamMetadata == null || res.StreamMetadata.Length == 0)
                     return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion, StreamMetadata.Create());
@@ -565,19 +400,22 @@ namespace EventStore.ClientAPI
             });
         }
 
-        public RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream)
+        public RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream, UserCredentials userCredentials = null)
         {
-            return GetStreamMetadataAsRawBytesAsync(stream).Result;
+            return GetStreamMetadataAsRawBytesAsync(stream, userCredentials).Result;
         }
 
-        public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream)
+        public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<ClientMessage.ReadEventCompleted>();
-            EnqueueOperation(new ReadEventOperation(_settings.Log, source, SystemStreams.MetastreamOf(stream), -1, false));
+            EnqueueOperation(new ReadEventOperation(_settings.Log, source, SystemStreams.MetastreamOf(stream), -1, false, userCredentials));
             return source.Task.ContinueWith(t =>
             {
+                if (t.Exception != null) 
+                    throw t.Exception.InnerException;
+
                 var res = t.Result;
                 switch (res.Result)
                 {

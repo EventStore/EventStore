@@ -41,23 +41,13 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
     {
         public abstract class AuthenticationRequest
         {
-            private readonly string _name;
-            private readonly string _suppliedPassword;
+            public readonly string Name;
+            public readonly string SuppliedPassword;
 
             protected AuthenticationRequest(string name, string suppliedPassword)
             {
-                _name = name;
-                _suppliedPassword = suppliedPassword;
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-
-            public string SuppliedPassword
-            {
-                get { return _suppliedPassword; }
+                Name = name;
+                SuppliedPassword = suppliedPassword;
             }
 
             public abstract void Unauthorized();
@@ -66,20 +56,17 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
         }
 
         private readonly IODispatcher _ioDispatcher;
-
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
-
         private readonly LRUCache<string, Tuple<string, IPrincipal>> _userPasswordsCache;
 
-        public InternalAuthenticationProvider(
-            IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm, int cacheSize)
+        public InternalAuthenticationProvider(IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm, int cacheSize)
         {
             _ioDispatcher = ioDispatcher;
             _passwordHashAlgorithm = passwordHashAlgorithm;
             _userPasswordsCache = new LRUCache<string, Tuple<string, IPrincipal>>(cacheSize);
         }
 
-        public void HttpBasicAuthenticate(AuthenticationRequest authenticationRequest)
+        public void Authenticate(AuthenticationRequest authenticationRequest)
         {
             Tuple<string, IPrincipal> cached;
             if (_userPasswordsCache.TryGet(authenticationRequest.Name, out cached))
@@ -89,14 +76,13 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             else
             {
                 var userStreamId = "$user-" + authenticationRequest.Name;
-                _ioDispatcher.ReadBackward(
-                    userStreamId, -1, 1, false, SystemAccount.Principal,
-                    m => ReadUserDataCompleted(m, authenticationRequest));
+                _ioDispatcher.ReadBackward(userStreamId, -1, 1, false, SystemAccount.Principal, 
+                                           m => ReadUserDataCompleted(m, authenticationRequest));
             }
         }
 
-        private void ReadUserDataCompleted(
-            ClientMessage.ReadStreamEventsBackwardCompleted completed, AuthenticationRequest authenticationRequest)
+        private void ReadUserDataCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed, 
+                                           AuthenticationRequest authenticationRequest)
         {
             try
             {
@@ -114,9 +100,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                 if (userData.Disabled)
                     authenticationRequest.Unauthorized();
                 else
-                {
                     AuthenticateWithPasswordHash(authenticationRequest, userData);
-                }
             }
             catch
             {
@@ -151,8 +135,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             _userPasswordsCache.Put(loginName, Tuple.Create(password, principal));
         }
 
-        private void AuthenticateWithPassword(
-            AuthenticationRequest authenticationRequest, string correctPassword, IPrincipal principal)
+        private void AuthenticateWithPassword(AuthenticationRequest authenticationRequest, string correctPassword, IPrincipal principal)
         {
             if (authenticationRequest.SuppliedPassword != correctPassword)
             {

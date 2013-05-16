@@ -29,6 +29,7 @@
 using System;
 using System.Globalization;
 using System.Text;
+using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http
 {
@@ -123,7 +124,6 @@ namespace EventStore.Transport.Http
                 for (var i = 1; i < parts.Length; i++)
                 {
                     var part = parts[i].ToLowerInvariant().Trim();
-
                     if (part.StartsWith("q="))
                     {
                         var quality = part.Substring(2);
@@ -132,13 +132,19 @@ namespace EventStore.Transport.Http
                         {
                             priority = q;
                         }
-                    } else if (part.StartsWith("charset="))
+                    } 
+                    else if (part.StartsWith("charset="))
                     {
                         encodingSpecified = true;
                         try
                         {
-                            encoding = Encoding.GetEncoding(part.Substring(8));
-                        } catch (ArgumentException) {
+                            var encName = part.Substring(8);
+                            encoding = encName.Equals("utf-8", StringComparison.OrdinalIgnoreCase)
+                                               ? Helper.UTF8NoBom
+                                               : Encoding.GetEncoding(encName);
+                        }
+                        catch (ArgumentException)
+                        {
                             encoding = null;
                         }
                     }

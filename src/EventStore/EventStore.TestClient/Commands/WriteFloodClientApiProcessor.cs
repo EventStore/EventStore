@@ -117,8 +117,8 @@ namespace EventStore.TestClient.Commands
                                                               new EventData(Guid.NewGuid(),
                                                                             "TakeSomeSpaceEvent",
                                                                             false,
-                                                                            Encoding.UTF8.GetBytes("DATA" + new string('*', size)),
-                                                                            Encoding.UTF8.GetBytes("METADATA" + new string('$', 100))));
+                                                                            Common.Utils.Helper.UTF8NoBom.GetBytes("DATA" + new string('*', size)),
+                                                                            Common.Utils.Helper.UTF8NoBom.GetBytes("METADATA" + new string('$', 100))));
                         task.ContinueWith(x =>
                         {
                             if (x.IsFaulted)

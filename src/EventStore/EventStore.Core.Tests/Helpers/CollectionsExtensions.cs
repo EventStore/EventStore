@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -28,42 +28,45 @@
 
 using System;
 using System.Collections.Generic;
-using EventStore.Core.Tests.Helpers;
-using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Tests.Services.projections_manager;
+using System.Linq;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_system
+namespace EventStore.Core.Tests.Helpers
 {
-    public abstract class with_projection_config : with_projections_subsystem
+    public static class CollectionsExtensions
     {
-        protected string _projectionName;
-        protected string _projectionSource;
-        protected Type _fakeProjectionType;
-        protected ProjectionMode _projectionMode;
-        protected bool _checkpointsEnabled;
-        protected bool _emitEnabled;
-        protected bool _projectionEnabled;
-
-        protected override void Given()
+        public static bool ContainsNo<TMessage>(this IEnumerable<object> collection)
         {
-            base.Given();
-
-            _projectionName = "test-projection";
-            _projectionSource = @"";
-            _fakeProjectionType = typeof (FakeProjection);
-            _projectionMode = ProjectionMode.Continuous;
-            _checkpointsEnabled = true;
-            _emitEnabled = true;
-            _projectionEnabled = true;
-
-            NoStream("$projections-" + _projectionName + "-checkpoint");
-            NoStream("$projections-" + _projectionName + "-order");
-            AllWritesSucceed();
+            return collection.ContainsNo<TMessage>(v => true);
         }
 
-        protected override IEnumerable<WhenStep> PreWhen()
+        public static bool ContainsNo<TMessage>(this IEnumerable<object> collection, Predicate<TMessage> predicate)
         {
-            yield return base.PreWhen().ToSteps();
+            return collection.ContainsN<TMessage>(0, predicate);
+        }
+
+        public static bool ContainsSingle<TMessage>(this IEnumerable<object> collection)
+        {
+            return collection.ContainsSingle<TMessage>(v => true);
+        }
+
+        public static bool ContainsSingle<TMessage>(this IEnumerable<object> collection, Predicate<TMessage> predicate)
+        {
+            return collection.ContainsN<TMessage>(1, predicate);
+        }
+
+        public static bool ContainsN<TMessage>(this IEnumerable<object> collection, int n)
+        {
+            return collection.ContainsN<TMessage>(n, v => true);
+        }
+
+        public static bool ContainsN<TMessage>(this IEnumerable<object> collection, int n, Predicate<TMessage> predicate)
+        {
+            return collection.OfType<TMessage>().Count(v => predicate(v)) == n;
+        }
+
+        public static bool IsEmpty(this IEnumerable<object> collection)
+        {
+            return !collection.Any();
         }
     }
 }

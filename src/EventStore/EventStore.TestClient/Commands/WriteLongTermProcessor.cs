@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport;
@@ -197,8 +198,8 @@ namespace EventStore.TestClient.Commands
                                     Guid.NewGuid().ToByteArray(),
                                     "TakeSomeSpaceEvent",
                                     false,
-                                    Encoding.UTF8.GetBytes("DATA" + dataSize.ToString(" 00000 ") + new string('*', dataSize)),
-                                    Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
+                                    Helper.UTF8NoBom.GetBytes("DATA" + dataSize.ToString(" 00000 ") + new string('*', dataSize)),
+                                    Helper.UTF8NoBom.GetBytes("METADATA" + new string('$', 100)))
                             },
                             true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());

@@ -32,7 +32,7 @@ using EventStore.Common.Utils;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 
-namespace EventStore.Core.Tests.Helper
+namespace EventStore.Core.Tests.Helpers
 {
     public static class HelperExtensions
     {

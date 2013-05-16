@@ -28,6 +28,7 @@
 
 using System;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -76,9 +77,9 @@ namespace EventStore.Projections.Core.Services.Processing
             Timestamp = timestamp;
 
             //TODO: handle utf-8 conversion exception
-            Data = Encoding.UTF8.GetString(data);
-            Metadata = Encoding.UTF8.GetString(metadata);
-            PositionMetadata = positionMetadata != null ? Encoding.UTF8.GetString(positionMetadata) : null;
+            Data = Helper.UTF8NoBom.GetString(data);
+            Metadata = Helper.UTF8NoBom.GetString(metadata);
+            PositionMetadata = positionMetadata != null ? Helper.UTF8NoBom.GetString(positionMetadata) : null;
         }
 
 

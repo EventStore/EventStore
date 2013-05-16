@@ -33,6 +33,7 @@ using System.Linq;
 using System.Text;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.SystemData;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -76,8 +77,6 @@ namespace EventStore.ClientAPI
 
     public class StreamMetadata
     {
-        private static readonly Encoding UTF8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-
         public readonly int? MaxCount;
         public readonly TimeSpan? MaxAge;
         public readonly TimeSpan? CacheControl;
@@ -168,7 +167,7 @@ namespace EventStore.ClientAPI
         {
             using (var memoryStream = new MemoryStream())
             {
-                using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream, UTF8NoBom)))
+                using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream, Helper.UTF8NoBom)))
                 {
                     WriteAsJson(jsonWriter);
                 }

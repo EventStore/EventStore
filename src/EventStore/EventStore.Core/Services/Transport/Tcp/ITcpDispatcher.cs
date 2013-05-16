@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System.Security.Principal;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.Transport.Tcp
@@ -32,6 +34,6 @@ namespace EventStore.Core.Services.Transport.Tcp
     public interface ITcpDispatcher
     {
         TcpPackage? WrapMessage(Message message);
-        Message UnwrapPackage(TcpPackage package, IEnvelope envelope, TcpConnectionManager connection);
+        Message UnwrapPackage(TcpPackage package, IEnvelope envelope, IPrincipal user, TcpConnectionManager connection);
     }
 }

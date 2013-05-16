@@ -30,7 +30,7 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
-namespace EventStore.Core.Tests.Helper
+namespace EventStore.Core.Tests.Helpers
 {
     public class ClientApiLoggerBridge : EventStore.ClientAPI.ILogger
     {

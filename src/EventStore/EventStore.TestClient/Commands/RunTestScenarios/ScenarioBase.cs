@@ -33,13 +33,12 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using ConsoleLogger = EventStore.ClientAPI.Common.Log.ConsoleLogger;
 using ILogger = EventStore.Common.Log.ILogger;
 

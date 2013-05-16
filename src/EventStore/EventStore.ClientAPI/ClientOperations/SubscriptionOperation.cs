@@ -45,6 +45,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly Action<TcpPackage> _sendPackage;
         private readonly string _streamId;
         private readonly bool _resolveLinkTos;
+        private readonly UserCredentials _userCredentials;
         private readonly Action<EventStoreSubscription, ResolvedEvent> _eventAppeared;
         private readonly Action<EventStoreSubscription, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly bool _verboseLogging;
@@ -60,6 +61,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                      Action<TcpPackage> sendPackage,
                                      string streamId,
                                      bool resolveLinkTos,
+                                     UserCredentials userCredentials,
                                      Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
                                      Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
                                      bool verboseLogging)
@@ -74,6 +76,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _sendPackage = sendPackage;
             _streamId = string.IsNullOrEmpty(streamId) ? string.Empty : streamId;
             _resolveLinkTos = resolveLinkTos;
+            _userCredentials = userCredentials;
             _eventAppeared = eventAppeared;
             _subscriptionDropped = subscriptionDropped ?? ((x, y, z) => { });
             _verboseLogging = verboseLogging;
@@ -92,7 +95,12 @@ namespace EventStore.ClientAPI.ClientOperations
         private TcpPackage CreateSubscriptionPackage()
         {
             var dto = new ClientMessage.SubscribeToStream(_streamId, _resolveLinkTos);
-            return new TcpPackage(TcpCommand.SubscribeToStream, _correlationId, dto.Serialize());
+            return new TcpPackage(TcpCommand.SubscribeToStream,
+                                  _userCredentials != null ? TcpFlags.Authorized : TcpFlags.None,
+                                  _correlationId,
+                                  _userCredentials != null ? _userCredentials.Login : null,
+                                  _userCredentials != null ? _userCredentials.Password : null,
+                                  dto.Serialize());
         }
 
         public void Unsubscribe()
@@ -146,9 +154,17 @@ namespace EventStore.ClientAPI.ClientOperations
                         return new InspectionResult(InspectionDecision.EndOperation);
                     }
 
+                    case TcpCommand.NotAuthenticated:
+                    {
+                        string message = Helper.EatException(() => Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
+                        DropSubscription(SubscriptionDropReason.NotAuthenticated,
+                                         new NotAuthenticatedException(string.IsNullOrEmpty(message) ? "Authentication error" : message));
+                        return new InspectionResult(InspectionDecision.EndOperation);
+                    }
+
                     case TcpCommand.BadRequest:
                     {
-                        string message = Helper.EatException(() => Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
+                        string message = Helper.EatException(() => Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
                         DropSubscription(SubscriptionDropReason.ServerError, 
                                          new ServerErrorException(string.IsNullOrEmpty(message) ? "<no message>" : message));
                         return new InspectionResult(InspectionDecision.EndOperation);

@@ -52,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                 string suppliedPassword = basicIdentity.Password;
 
                 var authenticationRequest = new HttpBasicAuthenticationRequest(this, message, name, suppliedPassword);
-                _internalAuthenticationProvider.HttpBasicAuthenticate(authenticationRequest);
+                _internalAuthenticationProvider.Authenticate(authenticationRequest);
                 return true;
             }
             return false;

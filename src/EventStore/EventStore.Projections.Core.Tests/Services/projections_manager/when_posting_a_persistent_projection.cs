@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -82,8 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First().Events[0].EventType);
             Assert.AreEqual(
                 _projectionName,
-                Encoding.UTF8.GetString(
-                    _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First().Events[0].Data));
+                Helper.UTF8NoBom.GetString(_consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First().Events[0].Data));
         }
 
         [Test, Category("v8")]

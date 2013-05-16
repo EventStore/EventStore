@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
@@ -69,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 yield return
                     (ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                         _reader, new TFPos(100, 50), new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(),
-                        "type", false, Encoding.UTF8.GetBytes("1"), new byte[0], 100, 33.3f));
+                        "type", false, Helper.UTF8NoBom.GetBytes("1"), new byte[0], 100, 33.3f));
             }
         }
 

@@ -28,6 +28,7 @@
 
 using System;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
@@ -71,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.AreEqual(1, _writeEventHandler.HandledMessages.ToStream("state-stream").Count);
 
             var message = _writeEventHandler.HandledMessages.ToStream("state-stream")[0];
-            var data = Encoding.UTF8.GetString(message.Events[0].Data);
+            var data = Helper.UTF8NoBom.GetString(message.Events[0].Data);
             Assert.AreEqual("data", data);
             Assert.AreEqual("state-stream", message.EventStreamId);
         }

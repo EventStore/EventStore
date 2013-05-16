@@ -33,7 +33,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using System.Linq;
 
-namespace EventStore.Core.Tests.Helper
+namespace EventStore.Core.Tests.Helpers
 {
     public class ManualQueue : IPublisher
     {

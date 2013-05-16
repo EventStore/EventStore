@@ -29,6 +29,7 @@
 using System;
 using System.Text;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
@@ -56,8 +57,8 @@ namespace EventStore.Transport.Http.Codecs
         };
 
 
-        public string ContentType { get { return EventStore.Transport.Http.ContentType.Json; } }
-        public Encoding Encoding { get { return Encoding.UTF8; } }
+        public string ContentType { get { return Http.ContentType.Json; } }
+        public Encoding Encoding { get { return Helper.UTF8NoBom; } }
 
         public bool CanParse(MediaType format)
         {

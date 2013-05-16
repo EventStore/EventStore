@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -302,7 +303,6 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         internal readonly Mode Mode_;
-        private static readonly Encoding _utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         public static CheckpointTag FromPosition(long commitPosition, long preparePosition)
         {
@@ -448,7 +448,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             using (var memoryStream = new MemoryStream())
             {
-                using (var textWriter = new StreamWriter(memoryStream, _utf8NoBom))
+                using (var textWriter = new StreamWriter(memoryStream, Helper.UTF8NoBom))
                 using (var jsonWriter = new JsonTextWriter(textWriter))
                 {
                     WriteTo(projectionVersion, extraMetaData, jsonWriter);

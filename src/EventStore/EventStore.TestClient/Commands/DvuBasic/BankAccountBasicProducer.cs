@@ -29,6 +29,7 @@ using System;
 using System.Globalization;
 using System.Text;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Transport.Http.Codecs;
 
@@ -51,7 +52,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             var accountObject = BankAccountEventFactory.CreateAccountObject(version);
 
             var serializedObject = Codec.Json.To(accountObject);
-            var @event = new Event(Guid.NewGuid(), accountObject.GetType().Name, true,  Encoding.UTF8.GetBytes(serializedObject), new byte[0]);
+            var @event = new Event(Guid.NewGuid(), accountObject.GetType().Name, true, Helper.UTF8NoBom.GetBytes(serializedObject), new byte[0]);
 
             return @event;
         }
@@ -95,7 +96,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
         private object Deserialize(string eventType, byte[] actualData)
         {
             object result = null;
-            var strData = Encoding.UTF8.GetString(actualData);
+            var strData = Helper.UTF8NoBom.GetString(actualData);
             if (eventType == typeof(AccountCreated).FullName)
             {
                 result = Codec.Json.From<AccountCreated>(strData);

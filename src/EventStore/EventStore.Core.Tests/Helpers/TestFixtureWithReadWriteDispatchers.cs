@@ -29,7 +29,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
@@ -39,7 +38,7 @@ using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
 using System.Linq;
 
-namespace EventStore.Core.Tests.Helper
+namespace EventStore.Core.Tests.Helpers
 {
     public abstract class TestFixtureWithReadWriteDispatchers
     {

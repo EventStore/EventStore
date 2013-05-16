@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -79,8 +80,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             var writeEvents = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().SelectMany(v => v.Events).ToArray();
             Assert.AreEqual(2, writeEvents.Length);
-            Assert.AreEqual("1@pa", Encoding.UTF8.GetString(writeEvents[0].Data));
-            Assert.AreEqual("1@pb", Encoding.UTF8.GetString(writeEvents[1].Data));
+            Assert.AreEqual("1@pa", Helper.UTF8NoBom.GetString(writeEvents[0].Data));
+            Assert.AreEqual("1@pb", Helper.UTF8NoBom.GetString(writeEvents[1].Data));
         }
 
     }

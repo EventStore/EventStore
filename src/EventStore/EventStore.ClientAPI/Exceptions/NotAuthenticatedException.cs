@@ -27,46 +27,26 @@
 // 
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.Serialization;
 
-namespace EventStore.Core.Tests.Helper
+namespace EventStore.ClientAPI.Exceptions
 {
-    public static class CollectionsExtensions
+    public class NotAuthenticatedException : EventStoreConnectionException
     {
-        public static bool ContainsNo<TMessage>(this IEnumerable<object> collection)
+        public NotAuthenticatedException(): base("Authentication error")
         {
-            return collection.ContainsNo<TMessage>(v => true);
         }
 
-        public static bool ContainsNo<TMessage>(this IEnumerable<object> collection, Predicate<TMessage> predicate)
+        public NotAuthenticatedException(string message) : base(message)
         {
-            return collection.ContainsN<TMessage>(0, predicate);
         }
 
-        public static bool ContainsSingle<TMessage>(this IEnumerable<object> collection)
+        public NotAuthenticatedException(string message, Exception innerException) : base(message, innerException)
         {
-            return collection.ContainsSingle<TMessage>(v => true);
         }
 
-        public static bool ContainsSingle<TMessage>(this IEnumerable<object> collection, Predicate<TMessage> predicate)
+        protected NotAuthenticatedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            return collection.ContainsN<TMessage>(1, predicate);
-        }
-
-        public static bool ContainsN<TMessage>(this IEnumerable<object> collection, int n)
-        {
-            return collection.ContainsN<TMessage>(n, v => true);
-        }
-
-        public static bool ContainsN<TMessage>(this IEnumerable<object> collection, int n, Predicate<TMessage> predicate)
-        {
-            return collection.OfType<TMessage>().Count(v => predicate(v)) == n;
-        }
-
-        public static bool IsEmpty(this IEnumerable<object> collection)
-        {
-            return !collection.Any();
         }
     }
 }

@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -86,7 +87,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //TODO: pass correct expected version
             _checkpointEventToBePublished = new Event(
                 Guid.NewGuid(), "$ProjectionCheckpoint", true,
-                requestedCheckpointState == null ? null : Encoding.UTF8.GetBytes(requestedCheckpointState),
+                requestedCheckpointState == null ? null : Helper.UTF8NoBom.GetBytes(requestedCheckpointState),
                 requestedCheckpointPosition.ToJsonBytes(projectionVersion: _projectionVersion));
             PublishWriteCheckpointEvent();
         }
@@ -219,7 +220,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     else
                     {
                         //TODO: check epoch and correctly set _lastWrittenCheckpointEventNumber
-                        var checkpointData = Encoding.UTF8.GetString(checkpoint.Data);
+                        var checkpointData = Helper.UTF8NoBom.GetString(checkpoint.Data);
                         _lastWrittenCheckpointEventNumber = checkpoint.EventNumber;
                         var adjustedTag = parsed.AdjustBy(_positionTagger, _projectionVersion);
                         CheckpointLoaded(adjustedTag, checkpointData);
@@ -291,7 +292,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         if (loadedStateCheckpointTag < requestedStateCheckpointTag)
                         {
                             var state = PartitionState.Deserialize(
-                                Encoding.UTF8.GetString(@event.Data), loadedStateCheckpointTag);
+                                Helper.UTF8NoBom.GetString(@event.Data), loadedStateCheckpointTag);
                             loadCompleted(state);
                             return;
                         }

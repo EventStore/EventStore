@@ -29,6 +29,7 @@
 using System;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
@@ -70,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             Assert.IsTrue(
                 _writeEventHandler.HandledMessages.Any(
-                    v => Encoding.UTF8.GetString(v.Events[0].Data) == FakeProjectionStateHandler._emit1Data));
+                    v => Helper.UTF8NoBom.GetString(v.Events[0].Data) == FakeProjectionStateHandler._emit1Data));
         }
 
         [Test]

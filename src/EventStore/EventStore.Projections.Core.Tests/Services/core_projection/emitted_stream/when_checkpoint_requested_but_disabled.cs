@@ -28,7 +28,6 @@
 
 using System;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Helper;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;

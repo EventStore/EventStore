@@ -198,11 +198,23 @@ namespace EventStore.Core
                                                             watchSlowMsg: true,
                                                             slowMsgThreshold: TimeSpan.FromMilliseconds(50)));
 
+            // AUTHENTICATION INFRASTRUCTURE
+            var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
+            var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
+            var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
+            SubscribeWorkers(bus =>
+            {
+                bus.Subscribe(dispatcher.ForwardReader);
+                bus.Subscribe(dispatcher.BackwardReader);
+                bus.Subscribe(dispatcher.Writer);
+                bus.Subscribe(dispatcher.StreamDeleter);
+            });
+
             // TCP
             var tcpService = new TcpService(_mainQueue, _tcpEndPoint, _workersHandler, 
                                             TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), 
                                             ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout,
-                                            null);
+                                            internalAuthenticationProvider, null);
             _mainBus.Subscribe<SystemMessage.SystemInit>(tcpService);
             _mainBus.Subscribe<SystemMessage.SystemStart>(tcpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
@@ -216,10 +228,7 @@ namespace EventStore.Core
             });
 
             // HTTP
-            var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
             {
-                var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
-                var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
                 var authenticationProviders = new AuthenticationProvider[]
                 {
                     new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
@@ -242,11 +251,6 @@ namespace EventStore.Core
 
                 SubscribeWorkers(bus =>
                 {
-                    bus.Subscribe(dispatcher.ForwardReader);
-                    bus.Subscribe(dispatcher.BackwardReader);
-                    bus.Subscribe(dispatcher.Writer);
-                    bus.Subscribe(dispatcher.StreamDeleter);
-
                     var httpSendService = new HttpSendService();
                     bus.Subscribe<HttpMessage.HttpSend>(httpSendService);
                     bus.Subscribe<HttpMessage.HttpSendPart>(httpSendService);
@@ -256,10 +260,6 @@ namespace EventStore.Core
                     HttpService.CreateAndSubscribePipeline(bus, authenticationProviders);
                 });
             }
-
-            SubscribeWorkers(bus =>
-            {
-            });
 
             // REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(_mainQueue, 1, 1, vNodeSettings.PrepareTimeout, vNodeSettings.CommitTimeout);
@@ -279,7 +279,19 @@ namespace EventStore.Core
             _mainBus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
             _mainBus.Subscribe<StorageMessage.RequestManagerTimerTick>(requestManagement);
 
-            new SubscriptionsService(_mainBus, readIndex); // subscribes internally
+            // SUBSCRIPTIONS
+            var subscrBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
+            var subscription = new SubscriptionsService(readIndex);
+            subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);
+            subscrBus.Subscribe<ClientMessage.SubscribeToStream>(subscription);
+            subscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(subscription);
+            subscrBus.Subscribe<StorageMessage.EventCommited>(subscription);
+
+            var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", false);
+            _mainBus.Subscribe(subscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
+            _mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.SubscribeToStream, Message>());
+            _mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
+            _mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommited, Message>());
 
             // USER MANAGEMENT
             var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
@@ -309,6 +321,7 @@ namespace EventStore.Core
             _workersHandler.Start();
             _mainQueue.Start();
             monitoringQueue.Start();
+            subscrQueue.Start();
 
             if (subsystems != null)
                 foreach (var subsystem in subsystems)

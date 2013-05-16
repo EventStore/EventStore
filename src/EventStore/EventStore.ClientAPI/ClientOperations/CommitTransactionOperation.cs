@@ -39,8 +39,9 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly bool _forward;
         private readonly long _transactionId;
 
-        public CommitTransactionOperation(ILogger log, TaskCompletionSource<object> source, bool forward, long transactionId)
-            : base(log, source, TcpCommand.TransactionCommit, TcpCommand.TransactionCommitCompleted)
+        public CommitTransactionOperation(ILogger log, TaskCompletionSource<object> source,
+                                          bool forward, long transactionId, UserCredentials userCredentials)
+            : base(log, source, TcpCommand.TransactionCommit, TcpCommand.TransactionCommitCompleted, userCredentials)
         {
             _forward = forward;
             _transactionId = transactionId;

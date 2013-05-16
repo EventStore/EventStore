@@ -149,7 +149,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                                 eventStreamId,
                                                 eventNumber - 1,
                                                 "some-type",
-                                                Encoding.UTF8.GetBytes(data),
+                                                Helper.UTF8NoBom.GetBytes(data),
                                                 null,
                                                 timestamp);
             long pos;
@@ -192,7 +192,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                                 SystemStreams.MetastreamOf(eventStreamId),
                                                 eventNumber - 1,
                                                 SystemEventTypes.StreamMetadata,
-                                                Encoding.UTF8.GetBytes(metadata),
+                                                Helper.UTF8NoBom.GetBytes(metadata),
                                                 null,
                                                 timestamp ?? DateTime.UtcNow,
                                                 PrepareFlags.IsJson);
@@ -217,7 +217,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                             expectedVersion,
                                             PrepareFlags.Data | PrepareFlags.TransactionBegin,
                                             "some-type",
-                                            Encoding.UTF8.GetBytes(eventData),
+                                            Helper.UTF8NoBom.GetBytes(eventData),
                                             null);
             long pos;
             Assert.IsTrue(Writer.Write(prepare, out pos));
@@ -250,7 +250,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                             ExpectedVersion.Any,
                                             flags,
                                             "some-type",
-                                            Encoding.UTF8.GetBytes(eventData),
+                                            Helper.UTF8NoBom.GetBytes(eventData),
                                             null);
 
             if (retryOnFail)
@@ -308,7 +308,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                                 streamId,
                                                 expectedVersion,
                                                 eventType.IsEmptyString() ? "some-type" : eventType,
-                                                data.IsEmptyString() ? LogRecord.NoData : Encoding.UTF8.GetBytes(data),
+                                                data.IsEmptyString() ? LogRecord.NoData : Helper.UTF8NoBom.GetBytes(data),
                                                 LogRecord.NoData,
                                                 DateTime.UtcNow);
             Assert.IsTrue(Writer.Write(prepare, out pos));

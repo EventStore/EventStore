@@ -30,7 +30,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
@@ -544,6 +543,7 @@ namespace EventStore.ClientAPI.Core
                                                       },
                                                       msg.StreamId,
                                                       msg.ResolveLinkTos,
+                                                      msg.UserCredentials,
                                                       msg.EventAppeared,
                                                       msg.SubscriptionDropped,
                                                       _settings.VerboseLogging);
@@ -573,7 +573,7 @@ namespace EventStore.ClientAPI.Core
             {
                 if (_settings.ErrorOccurred != null)
                 {
-                    string message = Helper.EatException(() => Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
+                    string message = Helper.EatException(() => Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
                     var exc = new EventStoreConnectionException(
                         string.Format("BadRequest received from server. Error: {0}", string.IsNullOrEmpty(message) ? "<no message>" : message));
                     CloseConnection("Connection-wide BadRequest received. Too dangerous to continue.", exc);

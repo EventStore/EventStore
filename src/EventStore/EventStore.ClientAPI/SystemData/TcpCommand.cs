@@ -86,6 +86,9 @@ namespace EventStore.ClientAPI.SystemData
         ScavengeDatabase = 0xD0,
 
         BadRequest = 0xF0,
-        NotHandled = 0xF1
-    }
+        NotHandled = 0xF1,
+        Authenticate = 0xF2,
+        Authenticated = 0xF3,
+        NotAuthenticated = 0xF4
+   }
 }

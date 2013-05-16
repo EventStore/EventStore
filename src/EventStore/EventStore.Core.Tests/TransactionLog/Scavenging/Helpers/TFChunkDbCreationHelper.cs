@@ -241,7 +241,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             if (rec.Metadata == null) return null;
 
             var meta = rec.Metadata.Value;
-            return Encoding.UTF8.GetBytes(
+            return Helper.UTF8NoBom.GetBytes(
                 string.Format("{{{0}{1}{2}}}",
                               meta.MaxCount == null ? "" : string.Format("$maxCount:{0}", meta.MaxCount),
                               meta.MaxCount.HasValue ? "," : "",

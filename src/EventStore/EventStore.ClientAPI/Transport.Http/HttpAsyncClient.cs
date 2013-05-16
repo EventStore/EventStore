@@ -36,6 +36,8 @@ namespace EventStore.ClientAPI.Transport.Http
 {
     internal class HttpAsyncClient
     {
+        private static readonly UTF8Encoding UTF8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
         static HttpAsyncClient()
         {
             ServicePointManager.MaxServicePointIdleTime = 10000;
@@ -109,7 +111,7 @@ namespace EventStore.ClientAPI.Transport.Http
         private void Send(string method, string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
-            var bodyBytes = Encoding.UTF8.GetBytes(body);
+            var bodyBytes = UTF8NoBom.GetBytes(body);
 
             request.Method = method;
             request.KeepAlive = true;
@@ -163,7 +165,7 @@ namespace EventStore.ClientAPI.Transport.Http
 
             state.OutputStream.Seek(0, SeekOrigin.Begin);
             var memStream = (MemoryStream)state.OutputStream;
-            state.Response.Body = Encoding.UTF8.GetString(memStream.GetBuffer(), 0, (int)memStream.Length);
+            state.Response.Body = UTF8NoBom.GetString(memStream.GetBuffer(), 0, (int)memStream.Length);
 
             state.Dispose();
             state.OnSuccess(state.Response);

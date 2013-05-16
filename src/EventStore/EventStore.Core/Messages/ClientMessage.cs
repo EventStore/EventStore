@@ -133,20 +133,6 @@ namespace EventStore.Core.Messages
                 Reason = reason;
                 AdditionalInfo = additionalInfo;
             }
-
-            public class MasterInfo
-            {
-                public readonly IPEndPoint ExternalTcpEndPoint;
-                public readonly IPEndPoint ExternalHttpEndPoint;
-
-                public MasterInfo(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint)
-                {
-                    Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
-                    Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
-                    ExternalTcpEndPoint = externalTcpEndPoint;
-                    ExternalHttpEndPoint = externalHttpEndPoint;
-                }
-            }
         }
 
         public class WriteEvents : WriteRequestMessage

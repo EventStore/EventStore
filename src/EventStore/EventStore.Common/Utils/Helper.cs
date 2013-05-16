@@ -28,11 +28,14 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Text;
 
 namespace EventStore.Common.Utils
 {
     public static class Helper
     {
+        public static readonly UTF8Encoding UTF8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
         public static void EatException(Action action)
         {
             try

@@ -33,6 +33,7 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Transport.Tcp;
 
 namespace EventStore.Core.Services.Transport.Tcp
@@ -64,6 +65,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly Func<Guid, IPEndPoint, ITcpDispatcher> _dispatcherFactory;
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _heartbeatTimeout;
+        private readonly InternalAuthenticationProvider _authProvider;
         private readonly X509Certificate _certificate;
 
         public TcpService(IPublisher publisher,
@@ -74,9 +76,10 @@ namespace EventStore.Core.Services.Transport.Tcp
                           ITcpDispatcher dispatcher,
                           TimeSpan heartbeatInterval,
                           TimeSpan heartbeatTimeout,
+                          InternalAuthenticationProvider authProvider,
                           X509Certificate certificate)
             : this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher, 
-                   heartbeatInterval, heartbeatTimeout, certificate)
+                   heartbeatInterval, heartbeatTimeout, authProvider, certificate)
         {
         }
 
@@ -88,12 +91,14 @@ namespace EventStore.Core.Services.Transport.Tcp
                           Func<Guid, IPEndPoint, ITcpDispatcher> dispatcherFactory,
                           TimeSpan heartbeatInterval,
                           TimeSpan heartbeatTimeout,
+                          InternalAuthenticationProvider authProvider,
                           X509Certificate certificate)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(serverEndPoint, "serverEndPoint");
             Ensure.NotNull(networkSendQueue, "networkSendQueue");
             Ensure.NotNull(dispatcherFactory, "dispatcherFactory");
+            Ensure.NotNull(authProvider, "authProvider");
             if (securityType == TcpSecurityType.Secure)
                 Ensure.NotNull(certificate, "certificate");
 
@@ -106,6 +111,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             _dispatcherFactory = dispatcherFactory;
             _heartbeatInterval = heartbeatInterval;
             _heartbeatTimeout = heartbeatTimeout;
+            _authProvider = authProvider;
             _certificate = certificate;
         }
 
@@ -145,6 +151,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                     _publisher,
                     conn,
                     _networkSendQueue,
+                    _authProvider,
                     _heartbeatInterval,
                     _heartbeatTimeout,
                     onConnectionClosed: (m, e) => _publisher.Publish(new TcpMessage.ConnectionClosed(m, e))); // TODO AN: race condition

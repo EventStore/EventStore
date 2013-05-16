@@ -32,8 +32,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.Common.Utils;
 using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using System.Linq;
 
@@ -210,8 +211,10 @@ namespace EventStore.Core.Tests.ClientAPI
                 var slice = store.ReadStreamEventsForward(stream, 0, totalTranWrites + totalPlainWrites, false);
                 Assert.That(slice.Events.Length, Is.EqualTo(totalTranWrites + totalPlainWrites));
 
-                Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Event.Metadata) == "trans write"), Is.EqualTo(totalTranWrites));
-                Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Event.Metadata) == "plain write"), Is.EqualTo(totalPlainWrites));
+                Assert.That(slice.Events.Count(ent => Helper.UTF8NoBom.GetString(ent.Event.Metadata) == "trans write"),
+                            Is.EqualTo(totalTranWrites));
+                Assert.That(slice.Events.Count(ent => Helper.UTF8NoBom.GetString(ent.Event.Metadata) == "plain write"),
+                            Is.EqualTo(totalPlainWrites));
             }
         }
 
@@ -275,7 +278,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var e = new EventData(Guid.NewGuid(), "SomethingHappened", true, Encoding.UTF8.GetBytes("{Value:42}"), null);
+                var e = new EventData(Guid.NewGuid(), "SomethingHappened", true, Helper.UTF8NoBom.GetBytes("{Value:42}"), null);
 
                 var transaction1 = store.StartTransaction(streamId, ExpectedVersion.Any);
                 transaction1.Write(new[] {e});

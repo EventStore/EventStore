@@ -28,7 +28,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
@@ -37,8 +37,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public static class HttpHelpers
     {
-        private static readonly Encoding _encoding = new UTF8Encoding(false);
-
         public static void RegisterRedirectAction(IHttpService service, string fromUrl, string toUrl)
         {
             service.RegisterControllerAction(
@@ -60,8 +58,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             this HttpEntityManager http, string response, int code, string description, string contentType,
             IEnumerable<KeyValuePair<string, string>> headers = null)
         {
-            http.Reply(
-                _encoding.GetBytes(response), code, description, contentType, _encoding, headers, exception => { });
+            http.Reply(Helper.UTF8NoBom.GetBytes(response), code, description, contentType, Helper.UTF8NoBom, headers, exception => { });
         }
     }
 }

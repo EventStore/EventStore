@@ -30,8 +30,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
@@ -129,7 +129,7 @@ namespace EventStore.Core.Util
 #if RELEASE || CACHE_WEB_CONTENT
             return Configure.OkCache(contentType, 60 * 60); //1 hour
 #else
-            return Configure.OkNoCache(contentType, contentType.StartsWith("image") ? null : Encoding.UTF8);
+            return Configure.OkNoCache(contentType, contentType.StartsWith("image") ? null : Helper.UTF8NoBom);
 #endif
         }
 

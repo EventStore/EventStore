@@ -29,7 +29,7 @@
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Transport.Http.Authentication;
 using NUnit.Framework;
 

@@ -357,9 +357,9 @@ namespace EventStore.Projections.Core.Services.Http
             else
                 return state.Position != null
                            ? Configure.OkNoCache(
-                               "application/json", Encoding.UTF8,
+                               "application/json", Helper.UTF8NoBom,
                                new KeyValuePair<string, string>("X-ES-Position", state.Position.ToJsonString()))
-                           : Configure.OkNoCache("application/json", Encoding.UTF8);
+                           : Configure.OkNoCache("application/json", Helper.UTF8NoBom);
         }
 
         private ResponseConfiguration ResultConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionResult state)
@@ -369,14 +369,14 @@ namespace EventStore.Projections.Core.Services.Http
             else
                 return state.Position != null
                            ? Configure.OkNoCache(
-                               "application/json", Encoding.UTF8,
+                               "application/json", Helper.UTF8NoBom,
                                new KeyValuePair<string, string>("X-ES-Position", state.Position.ToJsonString()))
-                           : Configure.OkNoCache("application/json", Encoding.UTF8);
+                           : Configure.OkNoCache("application/json", Helper.UTF8NoBom);
         }
 
         private ResponseConfiguration FeedPageConfigurator(ICodec codec, FeedReaderMessage.FeedPage page)
         {
-            return Configure.OkNoCache("application/json", Encoding.UTF8);
+            return Configure.OkNoCache("application/json", Helper.UTF8NoBom);
         }
 
         private string StateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionState state)
@@ -432,7 +432,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration QueryConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
         {
-            return Configure.OkNoCache("application/javascript", Encoding.UTF8);
+            return Configure.OkNoCache("application/javascript", Helper.UTF8NoBom);
         }
 
         private string QueryFormatter(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
@@ -447,12 +447,12 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration QueryConfigConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
         {
-            return Configure.OkNoCache("application/json", Encoding.UTF8);
+            return Configure.OkNoCache("application/json", Helper.UTF8NoBom);
         }
 
         private ResponseConfiguration OkResponseConfigurator<T>(ICodec codec, T message)
         {
-            return new ResponseConfiguration(200, "OK", codec.ContentType, Encoding.UTF8);
+            return new ResponseConfiguration(200, "OK", codec.ContentType, Helper.UTF8NoBom);
         }
 
         private ResponseConfiguration OkNoCacheResponseConfigurator<T>(ICodec codec, T message)
@@ -470,7 +470,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration NotFoundConfigurator(ICodec codec, ProjectionManagementMessage.NotFound message)
         {
-            return new ResponseConfiguration(404, "Not Found", "text/plain", Encoding.UTF8);
+            return new ResponseConfiguration(404, "Not Found", "text/plain", Helper.UTF8NoBom);
         }
 
         private string NotFoundFormatter(ICodec codec, ProjectionManagementMessage.NotFound message)
@@ -481,7 +481,7 @@ namespace EventStore.Projections.Core.Services.Http
         private ResponseConfiguration OperationFailedConfigurator(
             ICodec codec, ProjectionManagementMessage.OperationFailed message)
         {
-            return new ResponseConfiguration(500, "Failed", "text/plain", Encoding.UTF8);
+            return new ResponseConfiguration(500, "Failed", "text/plain", Helper.UTF8NoBom);
         }
 
         private string OperationFailedFormatter(ICodec codec, ProjectionManagementMessage.OperationFailed message)

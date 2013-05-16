@@ -39,9 +39,9 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
 
-    public abstract class TestFixtureWithExistingEvents : EventStore.Core.Tests.Helper.TestFixtureWithExistingEvents,
-                                                           IHandle<ProjectionCoreServiceMessage.CoreTick>,
-                                                           IHandle<ReaderCoreServiceMessage.ReaderTick>
+    public abstract class TestFixtureWithExistingEvents : EventStore.Core.Tests.Helpers.TestFixtureWithExistingEvents,
+                                                          IHandle<ProjectionCoreServiceMessage.CoreTick>,
+                                                          IHandle<ReaderCoreServiceMessage.ReaderTick>
 
     {
         protected

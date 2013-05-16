@@ -29,6 +29,7 @@
 using System;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
@@ -82,11 +83,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             Assert.AreEqual(
                 FakeProjectionStateHandler._emit1Data,
-                Encoding.UTF8.GetString(
+                Helper.UTF8NoBom.GetString(
                     _writeEventHandler.HandledMessages.Single(v => v.EventStreamId == "/emit2").Events[0].Data));
             Assert.AreEqual(
                 FakeProjectionStateHandler._emit2Data,
-                Encoding.UTF8.GetString(
+                Helper.UTF8NoBom.GetString(
                     _writeEventHandler.HandledMessages.Single(v => v.EventStreamId == "/emit2").Events[1].Data));
         }
     }

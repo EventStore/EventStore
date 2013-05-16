@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -186,7 +187,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //NOTE: we do manual link-to resolution as we write links to the position events
             //      which may in turn be a link.  This is necessary to provide a correct 
             //       ResolvedEvent when replaying from the -order stream
-            var linkTo = Encoding.UTF8.GetString(@event.Data);
+            var linkTo = Helper.UTF8NoBom.GetString(@event.Data);
             string[] parts = linkTo.Split('@');
             int eventNumber = int.Parse(parts[0]);
             string streamId = parts[1];

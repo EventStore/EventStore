@@ -57,14 +57,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private static readonly char[] ETagSeparator = new[] { ';' };
 
         private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
-        private static readonly ICodec EventStoreJsonCodec = Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Encoding.UTF8);
+        private static readonly ICodec EventStoreJsonCodec = Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Helper.UTF8NoBom);
 
         private static readonly ICodec[] AtomCodecs = new[]
                                                       {
                                                           EventStoreJsonCodec,
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Encoding.UTF8),
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom),
                                                           Codec.Json,
                                                           Codec.EventXml,
                                                           Codec.EventJson,
@@ -76,7 +76,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   EventStoreJsonCodec,
                                                                   Codec.Xml,
                                                                   Codec.ApplicationXml,
-                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom, Encoding.UTF8),
+                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom),
                                                                   Codec.Json,
                                                                   Codec.EventXml,
                                                                   Codec.EventJson,
@@ -592,7 +592,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     internal class HtmlFeedCodec : ICodec, IRichAtomCodec
     {
         public string ContentType  { get { return "text/html"; } }
-        public Encoding Encoding { get { return Encoding.UTF8; } }
+        public Encoding Encoding { get { return Helper.UTF8NoBom; } }
 
         public bool CanParse(MediaType format)
         {

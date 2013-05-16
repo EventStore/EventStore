@@ -29,6 +29,7 @@
 using System;
 using System.Text;
 using EventStore.ClientAPI;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
@@ -41,8 +42,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
         public static EventData NewTestEvent(Guid eventId, string data = null, string metadata = null)
         {
-            var encodedData = Encoding.UTF8.GetBytes(data ?? eventId.ToString());
-            var encodedMetadata = Encoding.UTF8.GetBytes(metadata ?? "metadata");
+            var encodedData = Helper.UTF8NoBom.GetBytes(data ?? eventId.ToString());
+            var encodedMetadata = Helper.UTF8NoBom.GetBytes(metadata ?? "metadata");
 
             return new EventData(eventId, "TestEvent", false, encodedData, encodedMetadata);
         }

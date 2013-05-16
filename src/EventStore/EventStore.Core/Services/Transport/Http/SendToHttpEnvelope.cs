@@ -131,7 +131,7 @@ namespace EventStore.Core.Services.Transport.Http
             catch (InvalidCastException)
             {
                 //NOTE: using exceptions to allow handling errors in debugger
-                return new ResponseConfiguration(500, "Internal server error", "text/plain", Encoding.UTF8);
+                return new ResponseConfiguration(500, "Internal server error", "text/plain", Helper.UTF8NoBom);
             }
         }
 

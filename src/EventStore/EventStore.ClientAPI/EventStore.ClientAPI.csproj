@@ -108,6 +108,7 @@
     <Compile Include="EventStoreClusterConnection.cs" />
     <Compile Include="EventStoreNodeConnection.cs" />
     <Compile Include="Exceptions\ClusterException.cs" />
+    <Compile Include="Exceptions\NotAuthenticatedException.cs" />
     <Compile Include="IEventStoreConnection.cs" />
     <Compile Include="Core\IEventStoreTransactionConnection.cs" />
     <Compile Include="SubscriptionDropReason.cs" />
@@ -154,6 +155,7 @@
     <Compile Include="RecordedEvent.cs" />
     <Compile Include="SliceReadStatus.cs" />
     <Compile Include="StreamPosition.cs" />
+    <Compile Include="SystemData\UserCredentials.cs" />
     <Compile Include="SystemData\StatusCode.cs" />
     <Compile Include="ExpectedVersion.cs" />
     <Compile Include="SystemData\InspectionResult.cs" />

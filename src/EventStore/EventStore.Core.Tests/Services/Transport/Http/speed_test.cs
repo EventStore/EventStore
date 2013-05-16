@@ -30,8 +30,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http;
@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             {
                 _http.RegisterControllerAction(new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs), (x, y) =>
                 {
-                    x.Reply(new byte[0], 200, "", "", Encoding.UTF8, null, e => new Exception());
+                    x.Reply(new byte[0], 200, "", "", Helper.UTF8NoBom, null, e => new Exception());
                     CountdownEvent.Signal();
                 });
             }
