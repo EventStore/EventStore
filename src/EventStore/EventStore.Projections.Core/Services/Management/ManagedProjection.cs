@@ -421,6 +421,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         private SerializedRunAs SerializePrincipal(ProjectionManagementMessage.RunAs runAs)
         {
+            if (runAs.Principal == null)
+                return null; // anonymous
             if (runAs.Principal == SystemAccount.Principal)
                 return new SerializedRunAs {Name = "$system"};
 
@@ -520,6 +522,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         private IPrincipal DeserializePrincipal(SerializedRunAs runAs)
         {
+            if (runAs == null)
+                return null;
             if (runAs.Name == null)
                 return null;
             if (runAs.Name == "$system") //TODO: make sure nobody else uses it

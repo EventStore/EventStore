@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private static readonly RunAs _anonymous = new RunAs(null, false, false);
-            private static readonly RunAs _system = new RunAs(SystemAccount.Principal, true, false);
+            private static readonly RunAs _system = new RunAs(SystemAccount.Principal, true, true);
 
             public static RunAs Anonymous
             {
@@ -126,7 +126,7 @@ namespace EventStore.Projections.Core.Messages
                                             requestedPrincipal.Identity.Name, existingRunAs.Identity.Name,
                                             StringComparison.OrdinalIgnoreCase);
 
-                if (!message.RunAs.EnableRunAsReplacement && !differentIdentity)
+                if (!message.RunAs.EnableRunAsReplacement && differentIdentity)
                 {
                     message.Envelope.ReplyWith(new NotAuthorized());
                     return false;
