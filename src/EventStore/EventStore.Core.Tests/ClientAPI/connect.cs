@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_not_throw_exception_when_server_is_down()
         {
             var ip = IPAddress.Loopback;
-            int port = TcpPortsHelper.GetAvailablePort(ip);
+            int port = PortsHelper.GetAvailablePort(ip);
             try
             {
                 using (var connection = TestConnection.Create(new IPEndPoint(ip, port)))
@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.ClientAPI
             }
             finally
             {
-                TcpPortsHelper.ReturnPort(port);
+                PortsHelper.ReturnPort(port);
             }
         }
 
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                              .FailOnNoServerResponse();
 
             var ip = IPAddress.Loopback;
-            int port = TcpPortsHelper.GetAvailablePort(ip);
+            int port = PortsHelper.GetAvailablePort(ip);
             try
             {
                 using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
@@ -88,7 +88,7 @@ namespace EventStore.Core.Tests.ClientAPI
             }
             finally
             {
-                TcpPortsHelper.ReturnPort(port);
+                PortsHelper.ReturnPort(port);
             }
         }
 
@@ -110,7 +110,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                              .FailOnNoServerResponse();
 
             var ip = IPAddress.Loopback;
-            int port = TcpPortsHelper.GetAvailablePort(ip);
+            int port = PortsHelper.GetAvailablePort(ip);
             try
             {
                 using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
@@ -127,7 +127,7 @@ namespace EventStore.Core.Tests.ClientAPI
             }
             finally
             {
-                TcpPortsHelper.ReturnPort(port);
+                PortsHelper.ReturnPort(port);
             }
         }
     }

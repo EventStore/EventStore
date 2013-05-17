@@ -64,9 +64,9 @@ namespace EventStore.Core.Tests.Helpers
         {
             IPAddress ip = IPAddress.Loopback; //GetLocalIp();
 
-            int extTcpPort = tcpPort ?? TcpPortsHelper.GetAvailablePort(ip);
-            int extSecTcpPort = tcpSecPort ?? TcpPortsHelper.GetAvailablePort(ip);
-            int extHttpPort = httpPort ?? TcpPortsHelper.GetAvailablePort(ip);
+            int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
+            int extSecTcpPort = tcpSecPort ?? PortsHelper.GetAvailablePort(ip);
+            int extHttpPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
 
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}", extTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
@@ -129,8 +129,8 @@ namespace EventStore.Core.Tests.Helpers
             
             if (!keepPorts)
             {
-                TcpPortsHelper.ReturnPort(TcpEndPoint.Port);
-                TcpPortsHelper.ReturnPort(HttpEndPoint.Port);
+                PortsHelper.ReturnPort(TcpEndPoint.Port);
+                PortsHelper.ReturnPort(HttpEndPoint.Port);
             }
             
             if (!keepDb)

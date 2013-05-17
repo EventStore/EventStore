@@ -138,7 +138,7 @@
     <Compile Include="Helpers\ManualQueue.cs" />
     <Compile Include="Helpers\MiniNode.cs" />
     <Compile Include="Helpers\ReflectionDynamic.cs" />
-    <Compile Include="Helpers\TcpPortsHelper.cs" />
+    <Compile Include="Helpers\PortsHelper.cs" />
     <Compile Include="Helpers\TestFixtureWithExistingEvents.cs" />
     <Compile Include="Helpers\TestFixtureWithReadWriteDispatchers.cs" />
     <Compile Include="Http\BasicAuthentication\basic_authentication.cs" />

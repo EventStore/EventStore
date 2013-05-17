@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
         public void should_connect_to_each_other_and_send_data()
         {
             var ip = IPAddress.Loopback;
-            var port = TcpPortsHelper.GetAvailablePort(ip);
+            var port = PortsHelper.GetAvailablePort(ip);
             var serverEndPoint = new IPEndPoint(ip, port);
             X509Certificate cert = GetCertificate();
 

@@ -26,10 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Runtime.InteropServices;
-using EventStore.Common.Log;
-using EventStore.Common.Utils;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests
@@ -37,33 +33,18 @@ namespace EventStore.Projections.Core.Tests
     [SetUpFixture]
     public class TestsInitFixture
     {
+        private readonly EventStore.Core.Tests.TestsInitFixture _initFixture = new EventStore.Core.Tests.TestsInitFixture();
+
         [SetUp]
         public void SetUp()
         {
-            Console.WriteLine("Initializing tests (setting console loggers)...");
-            LogManager.SetLogFactory(x => new ConsoleLogger(x));
-
-            LogEnvironemntInfo();
-        }
-
-        private void LogEnvironemntInfo()
-        {
-            var log = LogManager.GetLoggerFor<TestsInitFixture>();
-
-            log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
-                     + "{5,-25} {6} ({7})\n"
-                     + "{8,-25} {9} ({10}-bit)\n"
-                     + "{11,-25} {12}\n\n",
-                     "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
-                     "OS:", OS.IsLinux ? "Linux" : "Windows", Environment.OSVersion,
-                     "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
-                     "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
+            _initFixture.SetUp();
         }
 
         [TearDown]
         public void TearDown()
         {
-            LogManager.Finish();
+            _initFixture.TearDown();
         }
     }
 }

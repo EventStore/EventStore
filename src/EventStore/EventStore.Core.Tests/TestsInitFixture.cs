@@ -27,9 +27,11 @@
 // 
 
 using System;
+using System.Net;
 using System.Runtime.InteropServices;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests
@@ -42,8 +44,10 @@ namespace EventStore.Core.Tests
         {
             Console.WriteLine("Initializing tests (setting console loggers)...");
             LogManager.SetLogFactory(x => new ConsoleLogger(x));
-
+            Application.AddDefines(new[] { Application.AdditionalCommitChecks });
             LogEnvironmentInfo();
+
+            PortsHelper.InitPorts(IPAddress.Loopback);
         }
 
         private void LogEnvironmentInfo()
