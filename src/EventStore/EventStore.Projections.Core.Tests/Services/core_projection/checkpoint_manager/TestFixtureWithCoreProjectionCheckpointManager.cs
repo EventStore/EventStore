@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             Given();
             _namingBuilder = ProjectionNamesBuilder.CreateForTest("projection");
-            _config = new ProjectionConfig(_checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
+            _config = new ProjectionConfig(null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
                 _pendingEventsThreshold, _maxWriteBatchLength, _emitEventEnabled,
                 _checkpointsEnabled, _createTempStreams, _stopOnEof);
             _resultEmitter = new ResultEmitter(_namingBuilder);

@@ -46,7 +46,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             _projectionQuery = @"fromAll(); on_any(function(){});log(1);";
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            yield return (new ProjectionManagementMessage.Post(new PublishEnvelope(_bus), _projectionQuery, enabled: true));
+            yield return
+                (new ProjectionManagementMessage.Post(
+                    new PublishEnvelope(_bus), ProjectionManagementMessage.RunAs.Anonymous, _projectionQuery,
+                    enabled: true));
             _projectionName = _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Single().Name;
         }
 

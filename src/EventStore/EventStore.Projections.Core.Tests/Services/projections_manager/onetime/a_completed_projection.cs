@@ -72,7 +72,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             {
                 foreach (var m in base.When()) yield return m;
 
-                yield return (new ProjectionManagementMessage.Disable(new PublishEnvelope(_bus), _projectionName));
+                yield return
+                    (new ProjectionManagementMessage.Disable(
+                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
             }
 
             [Test]
@@ -115,7 +117,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
-                yield return (new ProjectionManagementMessage.Enable(new PublishEnvelope(_bus), _projectionName));
+                yield return
+                    (new ProjectionManagementMessage.Enable(
+                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
             }
 
             [Test]

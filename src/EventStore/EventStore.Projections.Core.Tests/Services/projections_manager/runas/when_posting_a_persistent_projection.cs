@@ -27,41 +27,50 @@
 // 
 
 using System;
-using EventStore.Core.Services.TimerService;
-using EventStore.Projections.Core.Services.Processing;
+using System.Collections.Generic;
+using System.Security.Principal;
+using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Http.Authentication;
+using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.event_filter
+namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
 {
-    public class TestFixtureWithEventFilter
+    [TestFixture]
+    public class when_posting_a_persistent_projection : TestFixtureWithProjectionCoreAndManagementServices
     {
-        protected ReaderStrategy.Builder _builder;
-        protected EventFilter _ef;
-        protected Exception _exception;
+        private string _projectionName;
+        private OpenGenericPrincipal _testUserPrincipal;
 
-        [SetUp]
-        public void Setup()
+        private string _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
+
+        protected override void Given()
         {
-            _builder = new ReaderStrategy.Builder();
-            Given();
-            When();
+            _projectionName = "test-projection";
+            _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
+            _testUserPrincipal = new OpenGenericPrincipal(
+                new GenericIdentity("test-user"), new[] {"test-role1", "test-role2"});
+
+            AllWritesSucceed();
+            NoOtherStreams();
         }
 
-        protected virtual void Given()
+        protected override IEnumerable<WhenStep> When()
         {
+            yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            yield return
+                new ProjectionManagementMessage.Post(
+                    new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
+                    new ProjectionManagementMessage.RunAs(_testUserPrincipal, true, true), "JS", _projectionBody,
+                    enabled: true, checkpointsEnabled: true, emitEnabled: true);
         }
 
-        protected virtual void When()
+        [Test]
+        public void just()
         {
-            _ef = null;
-            try
-            {
-                _ef = _builder.Build(new RealTimeProvider(), runAs: null).EventFilter;
-            }
-            catch (Exception ex)
-            {
-                _exception = ex;
-            }
+            Assert.Inconclusive();
         }
     }
 }

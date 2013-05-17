@@ -355,11 +355,14 @@ namespace EventStore.Core.Tests.Http
                 "Buffer",
                 BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy
                 | BindingFlags.Instance);
+            var submitWriteStreamExpression = Expression.Field(r, fi_SubmitWriteStream);
             var headChunk =
+                Expression.Condition(Expression.ReferenceNotEqual(submitWriteStreamExpression, Expression.Constant(null, submitWriteStreamExpression.Type)),
                 Expression.Field(
                     Expression.Property(
-                        Expression.Convert(Expression.Field(r, fi_SubmitWriteStream), connectStreamType), piBufferedData),
-                    fiheadChunk);
+                        Expression.Convert(submitWriteStreamExpression, connectStreamType), piBufferedData),
+                    fiheadChunk),
+                    Expression.Constant(null, fiheadChunk.FieldType));
             var body =
                 Expression.Condition(
                     Expression.ReferenceNotEqual(headChunk, Expression.Constant(null, headChunk.Type)),

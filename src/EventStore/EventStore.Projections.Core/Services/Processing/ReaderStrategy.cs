@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Services.TimerService;
@@ -44,6 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _includeLinks;
         private readonly HashSet<string> _events;
         private readonly bool _reorderEvents;
+        private readonly IPrincipal _runAs;
         private readonly int _processingLag;
 
 
@@ -54,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
-            public IReaderStrategy Build(ITimeProvider timeProvider)
+            public IReaderStrategy Build(ITimeProvider timeProvider, IPrincipal runAs)
             {
                 base.Validate();
                 HashSet<string> categories = ToSet(_categories);
@@ -64,21 +66,23 @@ namespace EventStore.Projections.Core.Services.Processing
                 bool reorderEvents = _options.ReorderEvents;
                 int processingLag = _options.ProcessingLag;
                 var readerStrategy = new ReaderStrategy(
-                    _allStreams, categories, streams, _allEvents, includeLinks, events, processingLag, reorderEvents, timeProvider);
+                    _allStreams, categories, streams, _allEvents, includeLinks, events, processingLag, reorderEvents,
+                    runAs, timeProvider);
                 return readerStrategy;
             }
         }
 
-        public static IReaderStrategy Create(ISourceDefinitionConfigurator sources, ITimeProvider timeProvider)
+        public static IReaderStrategy Create(
+            ISourceDefinitionConfigurator sources, ITimeProvider timeProvider, IPrincipal runAs)
         {
             var builder = new Builder();
             sources.ConfigureSourceProcessingStrategy(builder);
-            return builder.Build(timeProvider);
+            return builder.Build(timeProvider, runAs);
         }
 
         private ReaderStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, bool includeLinks,
-            HashSet<string> events, int processingLag, bool reorderEvents, ITimeProvider timeProvider)
+            HashSet<string> events, int processingLag, bool reorderEvents, IPrincipal runAs, ITimeProvider timeProvider)
         {
             _allStreams = allStreams;
             _categories = categories;
@@ -88,6 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _events = events;
             _processingLag = processingLag;
             _reorderEvents = reorderEvents;
+            _runAs = runAs;
 
             _eventFilter = CreateEventFilter();
             _positionTagger = CreatePositionTagger();

@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,42 +26,34 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Core.Services.TimerService;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
+using System.Security.Principal;
 
-namespace EventStore.Projections.Core.Tests.Services.event_filter
+namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    public class TestFixtureWithEventFilter
+    public class OpenGenericPrincipal: IPrincipal
     {
-        protected ReaderStrategy.Builder _builder;
-        protected EventFilter _ef;
-        protected Exception _exception;
+        private readonly GenericPrincipal _base;
+        private readonly string[] _roles;
 
-        [SetUp]
-        public void Setup()
+        public OpenGenericPrincipal(IIdentity identity, string[] roles)
         {
-            _builder = new ReaderStrategy.Builder();
-            Given();
-            When();
+            _roles = roles;
+            _base = new GenericPrincipal(identity, roles);
         }
 
-        protected virtual void Given()
+        public bool IsInRole(string role)
         {
+            return _base.IsInRole(role);
         }
 
-        protected virtual void When()
+        public IIdentity Identity
         {
-            _ef = null;
-            try
-            {
-                _ef = _builder.Build(new RealTimeProvider(), runAs: null).EventFilter;
-            }
-            catch (Exception ex)
-            {
-                _exception = ex;
-            }
+            get { return _base.Identity; }
+        }
+
+        public string[] Roles
+        {
+            get { return _roles; }
         }
     }
 }

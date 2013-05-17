@@ -26,7 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Security.Principal;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -59,9 +61,99 @@ namespace EventStore.Projections.Core.Messages
 
         }
 
-        public class Post : Message
+        public class NotAuthorized : OperationFailed
+        {
+            public NotAuthorized()
+                : base("Not authorized")
+            {
+            }
+        }
+
+        public sealed class RunAs
+        {
+            private readonly IPrincipal _runAs;
+            private readonly bool _setRunAsAccount;
+            private readonly bool _enableRunAsReplacement;
+
+            public RunAs(IPrincipal runAs, bool setRunAsAccount, bool enableRunAsReplacement)
+            {
+                _runAs = runAs;
+                _setRunAsAccount = setRunAsAccount;
+                _enableRunAsReplacement = enableRunAsReplacement;
+            }
+
+            public bool EnableRunAsReplacement
+            {
+                get { return _enableRunAsReplacement; }
+            }
+
+            private static readonly RunAs _anonymous = new RunAs(null, false, false);
+            private static readonly RunAs _system = new RunAs(SystemAccount.Principal, true, true);
+
+            public static RunAs Anonymous
+            {
+                get { return _anonymous; }
+            }
+
+            public static RunAs System
+            {
+                get { return _system; }
+            }
+
+            public IPrincipal Principal
+            {
+                get { return _runAs; }
+            }
+
+            public bool SetRunAsAccount
+            {
+                get { return _setRunAsAccount; }
+            }
+
+            public static bool ValidateRunAs(IPrincipal existingRunAs, ControlMessage message)
+            {
+                var requestedPrincipal = message.RunAs.Principal;
+
+                if (message.RunAs.SetRunAsAccount && requestedPrincipal == null)
+                {
+                    message.Envelope.ReplyWith(new NotAuthorized());
+                    return false;
+                }
+                var differentIdentity = (requestedPrincipal == null && existingRunAs != null)
+                                        || requestedPrincipal != null && existingRunAs == null
+                                        || requestedPrincipal != null
+                                        && !String.Equals(
+                                            requestedPrincipal.Identity.Name, existingRunAs.Identity.Name,
+                                            StringComparison.OrdinalIgnoreCase);
+
+                if (!message.RunAs.EnableRunAsReplacement && differentIdentity)
+                {
+                    message.Envelope.ReplyWith(new NotAuthorized());
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        public abstract class ControlMessage: Message
         {
             private readonly IEnvelope _envelope;
+            public readonly RunAs RunAs;
+
+            protected ControlMessage(IEnvelope envelope, RunAs runAs)
+            {
+                _envelope = envelope;
+                RunAs = runAs;
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+        }
+
+        public class Post : ControlMessage
+        {
             private readonly ProjectionMode _mode;
             private readonly string _name;
             private readonly string _handlerType;
@@ -71,10 +163,10 @@ namespace EventStore.Projections.Core.Messages
             private readonly bool _emitEnabled;
 
             public Post(
-                IEnvelope envelope, ProjectionMode mode, string name, string handlerType, string query, bool enabled,
-                bool checkpointsEnabled, bool emitEnabled)
+                IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, string handlerType, string query,
+                bool enabled, bool checkpointsEnabled, bool emitEnabled)
+                : base(envelope, runAs)
             {
-                _envelope = envelope;
                 _name = name;
                 _handlerType = handlerType;
                 _mode = mode;
@@ -85,9 +177,9 @@ namespace EventStore.Projections.Core.Messages
             }
 
             // shortcut for posting ad-hoc JS queries
-            public Post(IEnvelope envelope, string query, bool enabled)
+            public Post(IEnvelope envelope, RunAs runAs, string query, bool enabled)
+                : base(envelope, runAs)
             {
-                _envelope = envelope;
                 _name = Guid.NewGuid().ToString("D");
                 _handlerType = "JS";
                 _mode = ProjectionMode.Transient;
@@ -105,11 +197,6 @@ namespace EventStore.Projections.Core.Messages
             public string Query
             {
                 get { return _query; }
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
             }
 
             public string Name
@@ -138,17 +225,49 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class UpdateQuery : Message
+        public class Disable : ControlMessage
         {
-            private readonly IEnvelope _envelope;
+            private readonly string _name;
+
+            public Disable(IEnvelope envelope, string name, RunAs runAs)
+                : base(envelope, runAs)
+            {
+                _name = name;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+        }
+
+        public class Enable : ControlMessage
+        {
+            private readonly string _name;
+
+            public Enable(IEnvelope envelope, string name, RunAs runAs)
+                : base(envelope, runAs)
+            {
+                _name = name;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+        }
+
+        public class UpdateQuery : ControlMessage
+        {
             private readonly string _name;
             private readonly string _handlerType;
             private readonly string _query;
             private readonly bool? _emitEnabled;
 
-            public UpdateQuery(IEnvelope envelope, string name, string handlerType, string query, bool? emitEnabled)
+            public UpdateQuery(
+                IEnvelope envelope, string name, RunAs runAs, string handlerType, string query, bool? emitEnabled)
+                : base(envelope, runAs)
             {
-                _envelope = envelope;
                 _name = name;
                 _handlerType = handlerType;
                 _query = query;
@@ -158,11 +277,6 @@ namespace EventStore.Projections.Core.Messages
             public string Query
             {
                 get { return _query; }
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
             }
 
             public string Name
@@ -178,6 +292,53 @@ namespace EventStore.Projections.Core.Messages
             public bool? EmitEnabled
             {
                 get { return _emitEnabled; }
+            }
+        }
+
+        public class Reset : ControlMessage
+        {
+            private readonly string _name;
+
+            public Reset(IEnvelope envelope, string name, RunAs runAs)
+                : base(envelope, runAs)
+            {
+                _name = name;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+        }
+
+        public class Delete : ControlMessage
+        {
+            private readonly string _name;
+            private readonly bool _deleteCheckpointStream;
+            private readonly bool _deleteStateStream;
+
+            public Delete(
+                IEnvelope envelope, string name, RunAs runAs, bool deleteCheckpointStream, bool deleteStateStream)
+                : base(envelope, runAs)
+            {
+                _name = name;
+                _deleteCheckpointStream = deleteCheckpointStream;
+                _deleteStateStream = deleteStateStream;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public bool DeleteCheckpointStream
+            {
+                get { return _deleteCheckpointStream; }
+            }
+
+            public bool DeleteStateStream
+            {
+                get { return _deleteStateStream; }
             }
         }
 
@@ -200,42 +361,6 @@ namespace EventStore.Projections.Core.Messages
             public string Name
             {
                 get { return _name; }
-            }
-        }
-
-        public class Delete : Message
-        {
-            private readonly IEnvelope _envelope;
-            private readonly string _name;
-            private readonly bool _deleteCheckpointStream;
-            private readonly bool _deleteStateStream;
-
-            public Delete(IEnvelope envelope, string name, bool deleteCheckpointStream, bool deleteStateStream)
-            {
-                _envelope = envelope;
-                _name = name;
-                _deleteCheckpointStream = deleteCheckpointStream;
-                _deleteStateStream = deleteStateStream;
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-
-            public bool DeleteCheckpointStream
-            {
-                get { return _deleteCheckpointStream; }
-            }
-
-            public bool DeleteStateStream
-            {
-                get { return _deleteStateStream; }
             }
         }
 
@@ -474,72 +599,6 @@ namespace EventStore.Projections.Core.Messages
             public ProjectionSourceDefinition Definition
             {
                 get { return _definition; }
-            }
-        }
-
-        public class Disable : Message
-        {
-            private readonly IEnvelope _envelope;
-            private readonly string _name;
-
-            public Disable(IEnvelope envelope, string name)
-            {
-                _envelope = envelope;
-                _name = name;
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-        }
-
-        public class Enable : Message
-        {
-            private readonly IEnvelope _envelope;
-            private readonly string _name;
-
-            public Enable(IEnvelope envelope, string name)
-            {
-                _envelope = envelope;
-                _name = name;
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-        }
-
-        public class Reset : Message
-        {
-            private readonly IEnvelope _envelope;
-            private readonly string _name;
-
-            public Reset(IEnvelope envelope, string name)
-            {
-                _envelope = envelope;
-                _name = name;
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
-            }
-
-            public string Name
-            {
-                get { return _name; }
             }
         }
 

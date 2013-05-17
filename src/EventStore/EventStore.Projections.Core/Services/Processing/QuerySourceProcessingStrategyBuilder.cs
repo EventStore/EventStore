@@ -56,6 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             [DataMember]
             public bool IncludeLinks { get; set; }
+
         }
 
         protected readonly QuerySourceOptions _options = new QuerySourceOptions();

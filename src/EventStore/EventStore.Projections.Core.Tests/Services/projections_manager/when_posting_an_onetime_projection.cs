@@ -42,9 +42,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override IEnumerable<WhenStep> When()
         {
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            yield return (
-                new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
+            yield return
+                (new ProjectionManagementMessage.Post(
+                    new PublishEnvelope(_bus), ProjectionManagementMessage.RunAs.Anonymous,
+                    @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
         }
 
         [Test, Category("v8")]

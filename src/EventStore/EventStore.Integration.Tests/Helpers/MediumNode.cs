@@ -28,7 +28,7 @@
 
 using EventStore.Core;
 using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core;
 using EventStore.Web.Users;
 

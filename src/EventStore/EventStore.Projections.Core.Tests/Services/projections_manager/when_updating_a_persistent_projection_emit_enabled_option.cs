@@ -60,14 +60,16 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _projectionName = "test-projection";
             _source = @"fromAll(); on_any(function(){});log(1);";
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            yield return (
-                new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS", _source, enabled: true,
-                    checkpointsEnabled: true, emitEnabled: true));
+            yield return
+                (new ProjectionManagementMessage.Post(
+                    new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
+                    ProjectionManagementMessage.RunAs.Anonymous, "JS", _source, enabled: true, checkpointsEnabled: true,
+                    emitEnabled: true));
             // when
-            yield return (
-                new ProjectionManagementMessage.UpdateQuery(
-                    new PublishEnvelope(_bus), _projectionName, "JS", _source, emitEnabled: false));
+            yield return
+                (new ProjectionManagementMessage.UpdateQuery(
+                    new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous, "JS",
+                    _source, emitEnabled: false));
         }
 
         [Test, Category("v8")]

@@ -59,15 +59,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             _projectionName = "test-projection";
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            yield return (
-                new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS",
-                    @"fromAll(); on_any(function(){});log(1****);", enabled: false, checkpointsEnabled: true, emitEnabled: true));
+            yield return
+                (new ProjectionManagementMessage.Post(
+                    new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
+                    ProjectionManagementMessage.RunAs.Anonymous, "JS", @"fromAll(); on_any(function(){});log(1****);",
+                    enabled: false, checkpointsEnabled: true, emitEnabled: true));
             // when
             _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
-            yield return (
-                new ProjectionManagementMessage.UpdateQuery(
-                    new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource, emitEnabled: null));
+            yield return
+                (new ProjectionManagementMessage.UpdateQuery(
+                    new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous, "JS",
+                    _newProjectionSource, emitEnabled: null));
         }
 
         [Test, Category("v8")]

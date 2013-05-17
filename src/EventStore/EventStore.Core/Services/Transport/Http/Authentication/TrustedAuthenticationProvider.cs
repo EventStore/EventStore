@@ -64,11 +64,11 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                 roles[roles.Length - 1] = login;
                 for (var i = 0; i < roles.Length; i++)
                     roles[i] = roles[i].Trim();
-                return new GenericPrincipal(new GenericIdentity(login), roles);
+                return new OpenGenericPrincipal(new GenericIdentity(login), roles);
             }
             else
             {
-                return new GenericPrincipal(new GenericIdentity(login), new[] {login});
+                return new OpenGenericPrincipal(new GenericIdentity(login), new[] {login});
             }
         }
     }
