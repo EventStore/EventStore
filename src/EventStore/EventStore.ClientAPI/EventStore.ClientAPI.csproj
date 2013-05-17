@@ -178,6 +178,7 @@
     <Compile Include="Transport.Tcp\TcpConnection.cs" />
     <Compile Include="Transport.Tcp\LengthPrefixFramer.cs" />
     <Compile Include="Transport.Tcp\TcpConnectionMonitor.cs" />
+    <Compile Include="Transport.Tcp\TcpConnectionSsl.cs" />
     <Compile Include="Transport.Tcp\TcpStats.cs" />
     <Compile Include="Transport.Tcp\TcpPackageConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

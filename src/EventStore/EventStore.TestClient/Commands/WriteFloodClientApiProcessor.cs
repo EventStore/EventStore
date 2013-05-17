@@ -95,7 +95,7 @@ namespace EventStore.TestClient.Commands
                     .EnableOperationsForwarding()
                     .LimitReconnectionsTo(10)
                     //.KeepReconnecting()
-                    .LimitRetriesForOperationTo(0)
+                    .LimitRetriesForOperationTo(100)
                     //.KeepRetrying()
                     .LimitOperationsQueueTo(10000)
                     .LimitConcurrentOperationsTo(context.Client.Options.WriteWindow/clientsCnt)

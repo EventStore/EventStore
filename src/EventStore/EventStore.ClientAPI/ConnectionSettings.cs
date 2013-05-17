@@ -90,6 +90,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly TimeSpan OperationTimeoutCheckPeriod;
 
+        public readonly bool UseSslConnection;
+        public readonly string TargetHost;
+        public readonly bool ValidateServer;
+
         /// <summary>
         /// Raised whenever the internal error occurs
         /// </summary>
@@ -125,6 +129,9 @@ namespace EventStore.ClientAPI
                                     TimeSpan reconnectionDelay,
                                     TimeSpan operationTimeout,
                                     TimeSpan operationTimeoutCheckPeriod,
+                                    bool useSslConnection,
+                                    string targetHost,
+                                    bool validateServer,
                                     Action<IEventStoreConnection, Exception> errorOccurred,
                                     Action<IEventStoreConnection, string> closed,
                                     Action<IEventStoreConnection> connected,
@@ -141,6 +148,8 @@ namespace EventStore.ClientAPI
                 throw new ArgumentOutOfRangeException("maxRetries", string.Format("maxRetries value is out of range: {0}. Allowed range: [-1, infinity].", maxRetries));
             if (maxReconnections < -1)
                 throw new ArgumentOutOfRangeException("maxReconnections", string.Format("maxReconnections value is out of range: {0}. Allowed range: [-1, infinity].", maxRetries));
+            if (useSslConnection)
+                Ensure.NotNullOrEmpty(targetHost, "targetHost");
 
             Log = log;
             VerboseLogging = verboseLogging;
@@ -152,6 +161,10 @@ namespace EventStore.ClientAPI
             ReconnectionDelay = reconnectionDelay;
             OperationTimeout = operationTimeout;
             OperationTimeoutCheckPeriod = operationTimeoutCheckPeriod;
+
+            UseSslConnection = useSslConnection;
+            TargetHost = targetHost;
+            ValidateServer = validateServer;
 
             ErrorOccurred = errorOccurred;
             Closed = closed;

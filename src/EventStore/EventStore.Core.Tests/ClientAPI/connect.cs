@@ -35,9 +35,16 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture(TcpType.Normal), TestFixture(TcpType.Ssl), Category("LongRunning")]
     public class connect : SpecificationWithDirectoryPerTestFixture
     {
+        private readonly TcpType _tcpType;
+
+        public connect(TcpType tcpType)
+        {
+            _tcpType = tcpType;
+        }
+
         [Test]
         [Category("Network")]
         public void should_not_throw_exception_when_server_is_down()
@@ -46,7 +53,7 @@ namespace EventStore.Core.Tests.ClientAPI
             int port = PortsHelper.GetAvailablePort(ip);
             try
             {
-                using (var connection = TestConnection.Create(new IPEndPoint(ip, port)))
+                using (var connection = TestConnection.Create(new IPEndPoint(ip, port), _tcpType))
                 {
                     Assert.DoesNotThrow(() => connection.Connect());
                 }
@@ -69,6 +76,8 @@ namespace EventStore.Core.Tests.ClientAPI
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
                                              .OnClosed((x, r) => closed.Set())
                                              .FailOnNoServerResponse();
+            if (_tcpType == TcpType.Ssl)
+                settings.UseSslConnection("ES", false);
 
             var ip = IPAddress.Loopback;
             int port = PortsHelper.GetAvailablePort(ip);
@@ -108,6 +117,8 @@ namespace EventStore.Core.Tests.ClientAPI
                                              .OnDisconnected(x => Console.WriteLine("Disconnected..."))
                                              .OnErrorOccurred((x, exc) => Console.WriteLine("Error: {0}", exc))
                                              .FailOnNoServerResponse();
+            if (_tcpType == TcpType.Ssl)
+                settings.UseSslConnection("ES", false);
 
             var ip = IPAddress.Loopback;
             int port = PortsHelper.GetAvailablePort(ip);

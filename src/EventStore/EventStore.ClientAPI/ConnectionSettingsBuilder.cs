@@ -50,6 +50,10 @@ namespace EventStore.ClientAPI
         private TimeSpan _operationTimeout = Consts.DefaultOperationTimeout;
         private TimeSpan _operationTimeoutCheckPeriod = Consts.DefaultOperationTimeoutCheckPeriod;
 
+        private bool _useSslConnection;
+        private string _targetHost;
+        private bool _validateServer;
+
         private Action<IEventStoreConnection, Exception> _errorOccurred;
         private Action<IEventStoreConnection, string> _closed;
         private Action<IEventStoreConnection> _connected;
@@ -262,6 +266,34 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+
+        /// <summary>
+        /// Tells to use SSL TCP connection.
+        /// </summary>
+        /// <param name="targetHost">HostName of server certificate.</param>
+        /// <param name="validateServer">Whether to accept connection from server with not trusted certificate.</param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder UseSslConnection(string targetHost, bool validateServer)
+        {
+            Ensure.NotNullOrEmpty(targetHost, "targetHost");
+            _useSslConnection = true;
+            _targetHost = targetHost;
+            _validateServer = validateServer;
+            return this;
+        }
+
+        /// <summary>
+        /// Tells to use normal TCP connection.
+        /// </summary>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder UseNormalConnection()
+        {
+            _useSslConnection = false;
+            _targetHost = null;
+            _validateServer = true;
+            return this;
+        }
+
         /// <summary>
         /// Sets handler of internal connection errors.
         /// </summary>
@@ -353,6 +385,9 @@ namespace EventStore.ClientAPI
                                           builder._reconnectionDelay,
                                           builder._operationTimeout,
                                           builder._operationTimeoutCheckPeriod,
+                                          builder._useSslConnection,
+                                          builder._targetHost,
+                                          builder._validateServer,
                                           builder._errorOccurred,
                                           builder._closed,
                                           builder._connected,

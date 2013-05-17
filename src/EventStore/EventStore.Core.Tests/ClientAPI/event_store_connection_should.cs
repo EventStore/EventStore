@@ -34,10 +34,16 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture(TcpType.Normal), TestFixture(TcpType.Ssl), Category("LongRunning")]
     public class event_store_connection_should: SpecificationWithDirectoryPerTestFixture
     {
+        private readonly TcpType _tcpType;
         private MiniNode _node;
+
+        public event_store_connection_should(TcpType tcpType)
+        {
+            _tcpType = tcpType;
+        }
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
@@ -58,7 +64,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void not_throw_on_close_if_connect_was_not_called()
         {
-            var connection = TestConnection.Create(_node.TcpEndPoint);
+            var connection = TestConnection.To(_node, _tcpType);
             Assert.DoesNotThrow(connection.Close);
         }
 
@@ -66,7 +72,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void not_throw_on_close_if_called_multiple_times()
         {
-            var connection = TestConnection.Create(_node.TcpEndPoint);
+            var connection = TestConnection.To(_node, _tcpType);
             connection.Connect();
             connection.Close();
             Assert.DoesNotThrow(connection.Close);
@@ -76,7 +82,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void throw_on_connect_called_more_than_once()
         {
-            var connection = TestConnection.Create(_node.TcpEndPoint);
+            var connection = TestConnection.To(_node, _tcpType);
             Assert.DoesNotThrow(() => connection.Connect());
 
             Assert.That(() => connection.Connect(),
@@ -87,7 +93,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void throw_on_connect_called_after_close()
         {
-            var connection = TestConnection.Create(_node.TcpEndPoint);
+            var connection = TestConnection.To(_node, _tcpType);
             connection.Connect();
             connection.Close();
 
@@ -99,7 +105,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void throw_invalid_operation_on_every_api_call_if_connect_was_not_called()
         {
-            var connection = TestConnection.Create(_node.TcpEndPoint);
+            var connection = TestConnection.To(_node, _tcpType);
 
             const string s = "stream";
             var events = new[] { TestEvent.NewTestEvent() };

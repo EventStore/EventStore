@@ -52,14 +52,29 @@ namespace EventStore.ClientAPI.Transport.Tcp
             return socketArgs;
         }
 
-        public TcpConnection ConnectTo(Guid connectionId,
-                                       IPEndPoint remoteEndPoint, 
-                                       Action<TcpConnection> onConnectionEstablished = null,
-                                       Action<TcpConnection, SocketError> onConnectionFailed = null,
-                                       Action<TcpConnection, SocketError> onConnectionClosed = null)
+        public ITcpConnection ConnectTo(ILogger log, 
+                                        Guid connectionId,
+                                        IPEndPoint remoteEndPoint, 
+                                        bool ssl,
+                                        string targetHost,
+                                        bool validateServer,
+                                        Action<ITcpConnection> onConnectionEstablished = null,
+                                        Action<ITcpConnection, SocketError> onConnectionFailed = null,
+                                        Action<ITcpConnection, SocketError> onConnectionClosed = null)
         {
             Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
-            return TcpConnection.CreateConnectingTcpConnection(connectionId, remoteEndPoint, this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
+            if (ssl)
+            {
+                Ensure.NotNullOrEmpty(targetHost, "targetHost");
+                return TcpConnectionSsl.CreateConnectingConnection(log, connectionId, remoteEndPoint,
+                                                                   targetHost, validateServer, 
+                                                                   this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
+            }
+            else
+            {
+                return TcpConnection.CreateConnectingConnection(log, connectionId, remoteEndPoint,
+                                                                this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
+            }
         }
 
         internal void InitConnect(IPEndPoint serverEndPoint,
