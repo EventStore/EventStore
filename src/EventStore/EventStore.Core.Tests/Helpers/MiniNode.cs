@@ -41,6 +41,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.Http;
+using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -52,31 +53,34 @@ namespace EventStore.Core.Tests.Helpers
         private static readonly ILogger Log = LogManager.GetLoggerFor<MiniNode>();
 
         public IPEndPoint TcpEndPoint { get; private set; }
+        public IPEndPoint TcpSecEndPoint { get; private set; }
         public IPEndPoint HttpEndPoint { get; private set; }
 
         public readonly SingleVNode Node;
         public readonly TFChunkDb Db;
         private readonly string _dbPath;
 
-        public MiniNode(string pathname, int? tcpPort = null, int? httpPort = null, bool enableProjections = false, ISubsystem[] subsystems = null)
+        public MiniNode(string pathname, int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null, bool enableProjections = false, ISubsystem[] subsystems = null)
         {
             IPAddress ip = IPAddress.Loopback; //GetLocalIp();
 
-            int extTcpPort = tcpPort ?? TcpPortsHelper.GetAvailablePort(ip);
-            int extHttpPort = httpPort ?? TcpPortsHelper.GetAvailablePort(ip);
+            int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
+            int extSecTcpPort = tcpSecPort ?? PortsHelper.GetAvailablePort(ip);
+            int extHttpPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
 
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}", extTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
             Db = new TFChunkDb(CreateDbConfig(1024*1024, _dbPath, 1024*1024 + ChunkHeader.Size + ChunkFooter.Size));
 
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
+            TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
             HttpEndPoint = new IPEndPoint(ip, extHttpPort);
 
             var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint,
+                                                              TcpSecEndPoint,
                                                               HttpEndPoint,
                                                               new[] {HttpEndPoint.ToHttpUrl()},
-                                                              1,
-                                                              1,
+                                                              ssl_connections.GetCertificate(),
                                                               1,
                                                               TimeSpan.FromSeconds(2),
                                                               TimeSpan.FromSeconds(2),
@@ -125,8 +129,8 @@ namespace EventStore.Core.Tests.Helpers
             
             if (!keepPorts)
             {
-                TcpPortsHelper.ReturnPort(TcpEndPoint.Port);
-                TcpPortsHelper.ReturnPort(HttpEndPoint.Port);
+                PortsHelper.ReturnPort(TcpEndPoint.Port);
+                PortsHelper.ReturnPort(HttpEndPoint.Port);
             }
             
             if (!keepDb)

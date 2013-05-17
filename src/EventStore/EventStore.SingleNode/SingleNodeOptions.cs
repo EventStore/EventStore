@@ -41,6 +41,7 @@ namespace EventStore.SingleNode
 
         public IPAddress Ip { get { return _helper.Get(() => Ip); } }
         public int TcpPort { get { return _helper.Get(() => TcpPort); } }
+        public int SecureTcpPort { get { return _helper.Get(() => SecureTcpPort); } }
         public int HttpPort { get { return _helper.Get(() => HttpPort); } }
 
         public int StatsPeriodSec { get { return _helper.Get(() => StatsPeriodSec); } }
@@ -52,10 +53,13 @@ namespace EventStore.SingleNode
         public bool SkipDbVerify { get { return _helper.Get(() => SkipDbVerify); } }
         public bool RunProjections { get { return _helper.Get(() => RunProjections); } }
         public int ProjectionThreads { get { return _helper.Get(() => ProjectionThreads); } }
-        public int TcpSendThreads { get { return _helper.Get(() => TcpSendThreads); } }
-        public int HttpReceiveThreads { get { return _helper.Get(() => HttpReceiveThreads); } }
-        public int HttpSendThreads { get { return _helper.Get(() => HttpSendThreads); } }
+        public int WorkerThreads { get { return _helper.Get(() => WorkerThreads); } }
         public string[] HttpPrefixes { get { return _helper.Get(() => HttpPrefixes); } }
+
+        public string CertificateStore { get { return _helper.Get(() => CertificateStore); } }
+        public string CertificateName { get { return _helper.Get(() => CertificateName); } }
+        public string CertificateFile { get { return _helper.Get(() => CertificateFile); } }
+        public string CertificatePassword { get { return _helper.Get(() => CertificatePassword); } }
 
         public int PrepareTimeoutMs { get { return _helper.Get(() => PrepareTimeoutMs); } }
         public int CommitTimeoutMs { get { return _helper.Get(() => CommitTimeoutMs); } }
@@ -74,6 +78,7 @@ namespace EventStore.SingleNode
 
             _helper.RegisterRef(() => Ip, "i|ip=", "IP", "ip", IPAddress.Loopback, "The IP address to bind to.");
             _helper.Register(() => TcpPort, "t|tcp-port=", "TCP_PORT", "tcpPort", 1113, "The port to run the TCP server on.");
+            _helper.Register(() => SecureTcpPort, "st|sec-tcp-port|secure-tcp-port=", "SEC_TCP_PORT", "secureTcpPort", 0, "The port to run the secure TCP server on.");
             _helper.Register(() => HttpPort, "h|http-port=", "HTTP_PORT", "httpPort", 2113, "The port to run the HTTP server on.");
 
             _helper.Register(() => StatsPeriodSec, Opts.StatsPeriodCmd, Opts.StatsPeriodEnv, Opts.StatsPeriodJson, Opts.StatsPeriodDefault, Opts.StatsPeriodDescr);
@@ -85,10 +90,13 @@ namespace EventStore.SingleNode
             _helper.Register(() => SkipDbVerify, Opts.SkipDbVerifyCmd, Opts.SkipDbVerifyEnv, Opts.SkipDbVerifyJson, Opts.SkipDbVerifyDefault, Opts.SkipDbVerifyDescr);
             _helper.Register(() => RunProjections, Opts.RunProjectionsCmd, Opts.RunProjectionsEnv, Opts.RunProjectionsJson, Opts.RunProjectionsDefault, Opts.RunProjectionsDescr);
             _helper.Register(() => ProjectionThreads, Opts.ProjectionThreadsCmd, Opts.ProjectionThreadsEnv, Opts.ProjectionThreadsJson, Opts.ProjectionThreadsDefault, Opts.ProjectionThreadsDescr);
-            _helper.Register(() => TcpSendThreads, Opts.TcpSendThreadsCmd, Opts.TcpSendThreadsEnv, Opts.TcpSendThreadsJson, Opts.TcpSendThreadsDefault, Opts.TcpSendThreadsDescr);
-            _helper.Register(() => HttpReceiveThreads, Opts.HttpReceiveThreadsCmd, Opts.HttpReceiveThreadsEnv, Opts.HttpReceiveThreadsJson, Opts.HttpReceiveThreadsDefault, Opts.HttpReceiveThreadsDescr);
-            _helper.Register(() => HttpSendThreads, Opts.HttpSendThreadsCmd, Opts.HttpSendThreadsEnv, Opts.HttpSendThreadsJson, Opts.HttpSendThreadsDefault, Opts.HttpSendThreadsDescr);
+            _helper.Register(() => WorkerThreads, Opts.WorkerThreadsCmd, Opts.WorkerThreadsEnv, Opts.WorkerThreadsJson, Opts.WorkerThreadsDefault, Opts.WorkerThreadsDescr);
             _helper.RegisterArray(() => HttpPrefixes, Opts.HttpPrefixesCmd, Opts.HttpPrefixesEnv, ",", Opts.HttpPrefixesJson, Opts.HttpPrefixesDefault, Opts.HttpPrefixesDescr);
+
+            _helper.RegisterRef(() => CertificateStore, Opts.CertificateStoreCmd, Opts.CertificateStoreEnv, Opts.CertificateStoreJson, Opts.CertificateStoreDefault, Opts.CertificateStoreDescr);
+            _helper.RegisterRef(() => CertificateName, Opts.CertificateNameCmd, Opts.CertificateNameEnv, Opts.CertificateNameJson, Opts.CertificateNameDefault, Opts.CertificateNameDescr);
+            _helper.RegisterRef(() => CertificateFile, Opts.CertificateFileCmd, Opts.CertificateFileEnv, Opts.CertificateFileJson, Opts.CertificateFileDefault, Opts.CertificateFileDescr);
+            _helper.RegisterRef(() => CertificatePassword, Opts.CertificatePasswordCmd, Opts.CertificatePasswordEnv, Opts.CertificatePasswordJson, Opts.CertificatePasswordDefault, Opts.CertificatePasswordDescr);
 
             _helper.Register(() => PrepareTimeoutMs, Opts.PrepareTimeoutMsCmd, Opts.PrepareTimeoutMsEnv, Opts.PrepareTimeoutMsJson, Opts.PrepareTimeoutMsDefault, Opts.PrepareTimeoutMsDescr);
             _helper.Register(() => CommitTimeoutMs, Opts.CommitTimeoutMsCmd, Opts.CommitTimeoutMsEnv, Opts.CommitTimeoutMsJson, Opts.CommitTimeoutMsDefault, Opts.CommitTimeoutMsDescr);

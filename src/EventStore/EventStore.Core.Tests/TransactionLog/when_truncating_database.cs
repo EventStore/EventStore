@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.TransactionLog
             miniNode.Shutdown(keepDb: true, keepPorts: true);
 
             // --- first restart and truncation
-            miniNode = new MiniNode(PathName, tcpPort, httpPort);
+            miniNode = new MiniNode(PathName, tcpPort, null, httpPort);
             
             miniNode.Start();
             Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.TransactionLog
             miniNode.Shutdown(keepDb: true, keepPorts: true);
 
             // -- second restart
-            miniNode = new MiniNode(PathName, tcpPort, httpPort);
+            miniNode = new MiniNode(PathName, tcpPort, null, httpPort);
             Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
             miniNode.Start();
 

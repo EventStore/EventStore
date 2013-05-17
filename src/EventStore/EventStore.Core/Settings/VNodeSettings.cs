@@ -28,6 +28,7 @@
 
 using System;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
 
@@ -36,11 +37,11 @@ namespace EventStore.Core.Settings
     public class SingleVNodeSettings
     {
         public readonly IPEndPoint ExternalTcpEndPoint;
+        public readonly IPEndPoint ExternalSecureTcpEndPoint;
         public readonly IPEndPoint ExternalHttpEndPoint;
         public readonly string[] HttpPrefixes;
-        public readonly int HttpSendingThreads;
-        public readonly int HttpReceivingThreads;
-        public readonly int TcpSendingThreads;
+        public readonly X509Certificate2 Certificate;
+        public readonly int WorkerThreads;
 
         public readonly TimeSpan PrepareTimeout;
         public readonly TimeSpan CommitTimeout;
@@ -49,11 +50,11 @@ namespace EventStore.Core.Settings
         public readonly StatsStorage StatsStorage;
 
         public SingleVNodeSettings(IPEndPoint externalTcpEndPoint, 
+                                   IPEndPoint externalSecureTcpEndPoint,
                                    IPEndPoint externalHttpEndPoint, 
                                    string[] httpPrefixes,
-                                   int httpSendingThreads, 
-                                   int httpReceivingThreads, 
-                                   int tcpSendingThreads,
+                                   X509Certificate2 certificate,
+                                   int workerThreads, 
                                    TimeSpan prepareTimeout,
                                    TimeSpan commitTimeout,
                                    TimeSpan statsPeriod, 
@@ -62,16 +63,16 @@ namespace EventStore.Core.Settings
             Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
             Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
             Ensure.NotNull(httpPrefixes, "httpPrefixes");
-            Ensure.Positive(httpReceivingThreads, "httpReceivingThreads");
-            Ensure.Positive(httpSendingThreads, "httpSendingThreads");
-            Ensure.Positive(tcpSendingThreads, "tcpSendingThreads");
-            
+            if (externalSecureTcpEndPoint != null)
+                Ensure.NotNull(certificate, "certificate");
+            Ensure.Positive(workerThreads, "workerThreads");
+
             ExternalTcpEndPoint = externalTcpEndPoint;
+            ExternalSecureTcpEndPoint = externalSecureTcpEndPoint;
             ExternalHttpEndPoint = externalHttpEndPoint;
             HttpPrefixes = httpPrefixes;
-            HttpSendingThreads = httpSendingThreads;
-            HttpReceivingThreads = httpReceivingThreads;
-            TcpSendingThreads = tcpSendingThreads;
+            Certificate = certificate;
+            WorkerThreads = workerThreads;
 
             PrepareTimeout = prepareTimeout;
             CommitTimeout = commitTimeout;
@@ -83,21 +84,21 @@ namespace EventStore.Core.Settings
         public override string ToString()
         {
             return string.Format("ExternalTcpEndPoint: {0},\n"
-                                 + "ExternalHttpEndPoint: {1},\n"
-                                 + "HttpPrefixes: {2},\n"
-                                 + "HttpSendingThreads: {3}\n" 
-                                 + "HttpReceivingThreads: {4}\n"
-                                 + "TcpSendingThreads: {5}\n"
+                                 + "ExternalSecureTcpEndPoint: {1},\n"
+                                 + "ExternalHttpEndPoint: {2},\n"
+                                 + "HttpPrefixes: {3},\n"
+                                 + "Certificate: {4},\n"
+                                 + "WorkerThreads: {5}\n" 
                                  + "PrepareTimeout: {6}\n"
                                  + "CommitTimeout: {7}\n"
                                  + "StatsPeriod: {8}\n"
                                  + "StatsStorage: {9}",
                                  ExternalTcpEndPoint,
+                                 ExternalSecureTcpEndPoint == null ? "n/a" : ExternalSecureTcpEndPoint.ToString(),
                                  ExternalHttpEndPoint,
                                  string.Join(", ", HttpPrefixes),
-                                 HttpSendingThreads,
-                                 HttpReceivingThreads,
-                                 TcpSendingThreads,
+                                 Certificate == null ? "n/a" : Certificate.ToString(verbose: true),
+                                 WorkerThreads,
                                  PrepareTimeout,
                                  CommitTimeout,
                                  StatsPeriod,

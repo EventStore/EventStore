@@ -80,9 +80,7 @@ namespace EventStore.Web.Playground
             var tcpEndPoint = new IPEndPoint(options.Ip, options.TcpPort);
             var httpEndPoint = new IPEndPoint(options.Ip, options.HttpPort);
             var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] {httpEndPoint.ToHttpUrl()};
-            var vnodeSettings = new PlaygroundVNodeSettings(
-                tcpEndPoint, httpEndPoint, prefixes.Select(p => p.Trim()).ToArray(), options.HttpSendThreads,
-                options.HttpReceiveThreads, options.TcpSendThreads);
+            var vnodeSettings = new PlaygroundVNodeSettings(tcpEndPoint, httpEndPoint, prefixes.Select(p => p.Trim()).ToArray(), options.WorkerThreads);
             return vnodeSettings;
         }
 

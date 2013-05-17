@@ -27,8 +27,10 @@
 // 
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
@@ -201,6 +203,30 @@ namespace EventStore.Core
                                                  epochChk,
                                                  truncateChk);
             return nodeConfig;
+        }
+
+        protected static X509Certificate2 LoadCertificateFromFile(string path, string password)
+        {
+            return new X509Certificate2(path, password);
+        }
+
+        protected static X509Certificate2 LoadCertificateFromStore(string storeName, string certName)
+        {
+            var store = new X509Store(storeName);
+            try
+            {
+                store.Open(OpenFlags.OpenExistingOnly);
+            }
+            catch (Exception exc)
+            {
+                throw new Exception(string.Format("Couldn't open certificates store '{0}'.", storeName), exc);
+            }
+            foreach (var cert in store.Certificates)
+            {
+                if (cert.Subject == certName)
+                    return cert;
+            }
+            throw new ArgumentException(string.Format("Certificate '{0}' not found in storage '{1}'.", certName, storeName));
         }
     }
 }

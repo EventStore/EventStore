@@ -103,8 +103,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 _dbPath = CreateNewDbPath(dbParentPath);
                 _nodeConnection = new NodeConnectionInfo(ipAddress,
-                                                         TcpPortsHelper.GetAvailablePort(ipAddress),
-                                                         TcpPortsHelper.GetAvailablePort(ipAddress));
+                                                         PortsHelper.GetAvailablePort(ipAddress),
+                                                         PortsHelper.GetAvailablePort(ipAddress));
             }
 
             _connections = new IEventStoreConnection[connections];
@@ -427,8 +427,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 {
                     _startedNodesProcIds.Remove(processId);
 
-                    TcpPortsHelper.ReturnPort(_nodeConnection.TcpPort);
-                    TcpPortsHelper.ReturnPort(_nodeConnection.HttpPort);
+                    PortsHelper.ReturnPort(_nodeConnection.TcpPort);
+                    PortsHelper.ReturnPort(_nodeConnection.HttpPort);
 
                     Log.Info("Killed process {0}, wait a bit.", processId);
                     Thread.Sleep(1000); // wait for system to release port used by HttpListener.

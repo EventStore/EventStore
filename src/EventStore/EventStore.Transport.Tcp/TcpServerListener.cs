@@ -62,13 +62,13 @@ namespace EventStore.Transport.Tcp
             return socketArgs;
         }
 
-        public void StartListening(Action<IPEndPoint, Socket> callback)
+        public void StartListening(Action<IPEndPoint, Socket> callback, string securityType)
         {
             Ensure.NotNull(callback, "callback");
 
             _onSocketAccepted = callback;
 
-            Log.Info("Starting TCP listening on TCP endpoint: {0}.", _serverEndPoint);
+            Log.Info("Starting {0} TCP listening on TCP endpoint: {1}.", securityType, _serverEndPoint);
             try
             {
                 _listeningSocket.Bind(_serverEndPoint);

@@ -603,14 +603,14 @@ namespace EventStore.ClientAPI.Core
                     default:
                         throw new ArgumentOutOfRangeException(string.Format("Unknown InspectionDecision: {0}.", result.Decision));
                 }
-            } 
+            }
             else if (_subscriptions.TryGetValue(package.CorrelationId, out subscription))
             {
                 var result = subscription.Operation.InspectPackage(package);
                 if (_verbose) _log.Debug("EventStoreConnection '{0}': HandleTcpPackage SUBSCRIPTION DECISION {1}, {2}.", _esConnection.ConnectionName, result.Decision, subscription);
                 switch (result.Decision)
                 {
-                    case InspectionDecision.DoNothing: 
+                    case InspectionDecision.DoNothing:
                         break;
                     case InspectionDecision.EndOperation:
                         RemoveSubscription(subscription);
@@ -627,6 +627,11 @@ namespace EventStore.ClientAPI.Core
                     default:
                         throw new ArgumentOutOfRangeException(string.Format("Unknown InspectionDecision: {0}.", result.Decision));
                 }
+            }
+            else
+            {
+                _log.Debug("EventStoreConnection '{0}': HandleTcpPackage COULDN'T MAP PACKAGE with CorrelationId {1:B}, Command: {2}.",
+                           _esConnection.ConnectionName, package.CorrelationId, package.Command);
             }
         }
 

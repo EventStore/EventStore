@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
         public void should_connect_to_each_other_and_send_data()
         {
             var ip = IPAddress.Loopback;
-            var port = TcpPortsHelper.GetAvailablePort(ip);
+            var port = PortsHelper.GetAvailablePort(ip);
             var serverEndPoint = new IPEndPoint(ip, port);
             X509Certificate cert = GetCertificate();
 
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                         ssl.ReceiveAsync(callback);
                 };
                 ssl.ReceiveAsync(callback);
-            });
+            }, "Secure");
 
             var clientSsl = TcpConnectionSsl.CreateConnectingConnection(
                 Guid.NewGuid(), 
@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
             Assert.AreEqual(sent, received.ToArray());
         }
 
-        private X509Certificate GetCertificate()
+        public static X509Certificate2 GetCertificate()
         {
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("EventStore.Core.Tests.server.p12"))
             using (var mem = new MemoryStream())

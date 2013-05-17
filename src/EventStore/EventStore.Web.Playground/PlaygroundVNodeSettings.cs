@@ -36,38 +36,33 @@ namespace EventStore.Web.Playground
         public readonly IPEndPoint ExternalTcpEndPoint;
         public readonly IPEndPoint ExternalHttpEndPoint;
         public readonly string[] HttpPrefixes;
-        public readonly int HttpSendingThreads;
-        public readonly int HttpReceivingThreads;
-        public readonly int TcpSendingThreads;
+        public readonly int WorkerThreads;
 
 
-        public PlaygroundVNodeSettings(
-            IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint, string[] httpPrefixes,
-            int httpSendingThreads, int httpReceivingThreads, int tcpSendingThreads)
+        public PlaygroundVNodeSettings(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint, string[] httpPrefixes,
+            int workerThreads)
         {
             Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
             Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
             Ensure.NotNull(httpPrefixes, "httpPrefixes");
-            Ensure.Positive(httpReceivingThreads, "httpReceivingThreads");
-            Ensure.Positive(httpSendingThreads, "httpSendingThreads");
-            Ensure.Positive(tcpSendingThreads, "tcpSendingThreads");
+            Ensure.Positive(workerThreads, "workerThreads");
 
             ExternalTcpEndPoint = externalTcpEndPoint;
             ExternalHttpEndPoint = externalHttpEndPoint;
             HttpPrefixes = httpPrefixes;
-            HttpSendingThreads = httpSendingThreads;
-            HttpReceivingThreads = httpReceivingThreads;
-            TcpSendingThreads = tcpSendingThreads;
+            WorkerThreads = workerThreads;
         }
 
         public override string ToString()
         {
-            return
-                string.Format(
-                    "ExternalTcpEndPoint: {0},\n" + "ExternalHttpEndPoint: {1},\n" + "HttpPrefixes: {2},\n"
-                    + "HttpSendingThreads: {3}\n" + "HttpReceivingThreads: {4}\n" + "TcpSendingThreads: {5}\n",
-                    ExternalTcpEndPoint, ExternalHttpEndPoint, string.Join(", ", HttpPrefixes), HttpSendingThreads,
-                    HttpReceivingThreads, TcpSendingThreads);
+            return string.Format("ExternalTcpEndPoint: {0},\n"
+                                 + "ExternalHttpEndPoint: {1},\n"
+                                 + "HttpPrefixes: {2},\n"
+                                 + "WorkerThreads: {3}\n",
+                                 ExternalTcpEndPoint,
+                                 ExternalHttpEndPoint,
+                                 string.Join(", ", HttpPrefixes),
+                                 WorkerThreads);
         }
     }
 }

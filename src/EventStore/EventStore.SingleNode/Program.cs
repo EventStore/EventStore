@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Core;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
@@ -114,15 +115,27 @@ namespace EventStore.SingleNode
 
         private static SingleVNodeSettings GetVNodeSettings(SingleNodeOptions options)
         {
+            X509Certificate2 certificate = null;
+            if (options.SecureTcpPort > 0)
+            {
+                if (options.CertificateStore.IsNotEmptyString())
+                    certificate = LoadCertificateFromStore(options.CertificateStore, options.CertificateName);
+                else if (options.CertificateFile.IsNotEmptyString())
+                    certificate = LoadCertificateFromFile(options.CertificateFile, options.CertificatePassword);
+                else
+                    throw new Exception("No server certificate specified.");
+            }
+
             var tcpEndPoint = new IPEndPoint(options.Ip, options.TcpPort);
+            var secureTcpEndPoint = options.SecureTcpPort > 0 ? new IPEndPoint(options.Ip, options.SecureTcpPort) : null;
             var httpEndPoint = new IPEndPoint(options.Ip, options.HttpPort);
             var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] {httpEndPoint.ToHttpUrl()};
             var vnodeSettings = new SingleVNodeSettings(tcpEndPoint,
+                                                        secureTcpEndPoint,
                                                         httpEndPoint, 
                                                         prefixes.Select(p => p.Trim()).ToArray(),
-                                                        options.HttpSendThreads,
-                                                        options.HttpReceiveThreads,
-                                                        options.TcpSendThreads,
+                                                        certificate,
+                                                        options.WorkerThreads,
                                                         TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
                                                         TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
                                                         TimeSpan.FromSeconds(options.StatsPeriodSec),

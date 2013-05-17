@@ -26,9 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Linq.Expressions;
 using System.Net;
-using System.Reflection;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
@@ -85,15 +83,19 @@ namespace EventStore.Transport.Http.Server
         {
             try
             {
-				var counter = 10;
-				while (_listener.IsListening && counter-- > 0)
-				{
-					_listener.Abort();
-					_listener.Stop();
-					_listener.Close();
-					if (_listener.IsListening)
-						System.Threading.Thread.Sleep(50);
-				}
+                var counter = 10;
+                while (_listener.IsListening && counter-- > 0)
+                {
+                    _listener.Abort();
+                    _listener.Stop();
+                    _listener.Close();
+                    if (_listener.IsListening)
+                        System.Threading.Thread.Sleep(50);
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // that's ok
             }
             catch (Exception e)
             {
@@ -156,20 +158,24 @@ namespace EventStore.Transport.Http.Server
                 handler(this, context);
         }
 
- #if __MonoCS__
+#if __MonoCS__
        private static Func<HttpListenerRequest, HttpListenerContext> CreateGetContext()
         {
-            var r = Expression.Parameter(typeof (HttpListenerRequest), "r");
-            var piHttpListenerContext = typeof (HttpListenerRequest).GetProperty(
-                "HttpListenerContext",
-                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
-            var fiContext = typeof (HttpListenerRequest).GetField(
-                "context",
-                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var r = System.Linq.Expressions.Expression.Parameter(typeof (HttpListenerRequest), "r");
+            var piHttpListenerContext = typeof (HttpListenerRequest).GetProperty("HttpListenerContext",
+                                                                                 System.Reflection.BindingFlags.GetProperty
+                                                                                 | System.Reflection.BindingFlags.NonPublic
+                                                                                 | System.Reflection.BindingFlags.FlattenHierarchy
+                                                                                 | System.Reflection.BindingFlags.Instance);
+            var fiContext = typeof (HttpListenerRequest).GetField("context",
+                                                                  System.Reflection.BindingFlags.GetProperty
+                                                                  | System.Reflection.BindingFlags.NonPublic
+                                                                  | System.Reflection.BindingFlags.FlattenHierarchy
+                                                                  | System.Reflection.BindingFlags.Instance);
             var body = piHttpListenerContext != null
-                           ? Expression.Property(r, piHttpListenerContext)
-                           : Expression.Field(r, fiContext);
-            var debugExpression = Expression.Lambda<Func<HttpListenerRequest, HttpListenerContext>>(body, r);
+                           ? System.Linq.Expressions.Expression.Property(r, piHttpListenerContext)
+                           : System.Linq.Expressions.Expression.Field(r, fiContext);
+            var debugExpression = System.Linq.Expressions.Expression.Lambda<Func<HttpListenerRequest, HttpListenerContext>>(body, r);
             return debugExpression.Compile();
         }
 #endif
