@@ -89,7 +89,6 @@ namespace EventStore.Core.Services.Transport.Tcp
         NotHandled = 0xF1,
         Authenticate = 0xF2,
         Authenticated = 0xF3,
-        NotAuthenticated = 0xF4,
-        NotAuthorized = 0xF5
+        NotAuthenticated = 0xF4
     }
 }

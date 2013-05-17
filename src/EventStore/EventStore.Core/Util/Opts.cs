@@ -111,23 +111,11 @@ namespace EventStore.Core.Util
         public const string ProjectionThreadsDescr = "The number of threads to use for projections.";
         public const int    ProjectionThreadsDefault = 3;
 
-        public const string TcpSendThreadsCmd = "tcp-send-threads=";
-        public const string TcpSendThreadsEnv = "TCP_SEND_THREADS";
-        public const string TcpSendThreadsJson = "tcpSendThreads";
-        public const string TcpSendThreadsDescr = "The number of threads to use for sending to TCP sockets.";
-        public const int    TcpSendThreadsDefault = 3;
-
-        public const string HttpReceiveThreadsCmd = "http-receive-threads=";
-        public const string HttpReceiveThreadsEnv = "HTTP_RECEIVE_THREADS";
-        public const string HttpReceiveThreadsJson = "httpReceiveThreads";
-        public const string HttpReceiveThreadsDescr = "The number of threads to use for receiving from HTTP.";
-        public const int    HttpReceiveThreadsDefault = 5;
-
-        public const string HttpSendThreadsCmd = "http-send-threads=";
-        public const string HttpSendThreadsEnv = "HTTP_SEND_THREADS";
-        public const string HttpSendThreadsJson = "httpSendThreads";
-        public const string HttpSendThreadsDescr = "The number of threads for sending over HTTP.";
-        public const int    HttpSendThreadsDefault = 3;
+        public const string WorkerThreadsCmd = "worker-threads=";
+        public const string WorkerThreadsEnv = "WORKER_THREADS";
+        public const string WorkerThreadsJson = "workerThreads";
+        public const string WorkerThreadsDescr = "The number of threads to use for pool of worker services.";
+        public const int    WorkerThreadsDefault = 5;
 
         public const string HttpPrefixesCmd = "prefixes|http-prefix=";
         public const string HttpPrefixesEnv = "HTTP_PREFIXES";
@@ -146,6 +134,30 @@ namespace EventStore.Core.Util
         public const string CommitTimeoutMsJson = "commitTimeoutMs";
         public const string CommitTimeoutMsDescr = "Commit timeout (in milliseconds).";
         public static readonly int CommitTimeoutMsDefault = 2000; // 2 seconds
+
+        public const string CertificateStoreCmd = "certificate-store=";
+        public const string CertificateStoreEnv = "CERTIFICATE_STORE";
+        public const string CertificateStoreJson = "certificateStore";
+        public const string CertificateStoreDescr = "The name of certificate store.";
+        public static readonly string CertificateStoreDefault = string.Empty;
+
+        public const string CertificateNameCmd = "certificate-name=";
+        public const string CertificateNameEnv = "CERTIFICATE_NAME";
+        public const string CertificateNameJson = "certificateName";
+        public const string CertificateNameDescr = "The name of certificate in store.";
+        public static readonly string CertificateNameDefault = string.Empty;
+
+        public const string CertificateFileCmd = "certificate-file=";
+        public const string CertificateFileEnv = "CERTIFICATE_FILE";
+        public const string CertificateFileJson = "certificateFile";
+        public const string CertificateFileDescr = "The path to certificate file.";
+        public static readonly string CertificateFileDefault = string.Empty;
+
+        public const string CertificatePasswordCmd = "certificate-password=";
+        public const string CertificatePasswordEnv = "CERTIFICATE_PASSWORD";
+        public const string CertificatePasswordJson = "certificatePassword";
+        public const string CertificatePasswordDescr = "The password to certificate in file.";
+        public static readonly string CertificatePasswordDefault = string.Empty;
 
         /*
          *  CLUSTER OPTIONS
@@ -166,31 +178,43 @@ namespace EventStore.Core.Util
         public const string InternalHttpPortEnv = "INT_HTTP_PORT";
         public const string InternalHttpPortJson = "internalHttpPort";
         public const string InternalHttpPortDescr = "Internal HTTP Port.";
-        public static readonly int InternalHttpPortDefault = 2112;
+        public const int    InternalHttpPortDefault = 2112;
 
         public const string ExternalHttpPortCmd = "ext-http-port|external-http-port=";
         public const string ExternalHttpPortEnv = "EXT_HTTP_PORT";
         public const string ExternalHttpPortJson = "externalHttpPort";
         public const string ExternalHttpPortDescr = "External HTTP Port.";
-        public static readonly int ExternalHttpPortDefault = 2113;
+        public const int    ExternalHttpPortDefault = 2113;
 
         public const string InternalTcpPortCmd = "int-tcp-port|internal-tcp-port=";
         public const string InternalTcpPortEnv = "INT_TCP_PORT";
         public const string InternalTcpPortJson = "internalTcpPort";
         public const string InternalTcpPortDescr = "Internal TCP Port.";
-        public static readonly int InternalTcpPortDefault = 1112;
+        public const int    InternalTcpPortDefault = 1112;
+
+        public const string InternalSecureTcpPortCmd = "int-sec-tcp-port|internal-secure-tcp-port=";
+        public const string InternalSecureTcpPortEnv = "INT_SEC_TCP_PORT";
+        public const string InternalSecureTcpPortJson = "internalSecureTcpPort";
+        public const string InternalSecureTcpPortDescr = "Internal Secure TCP Port.";
+        public const int    InternalSecureTcpPortDefault = 0;
 
         public const string ExternalTcpPortCmd = "ext-tcp-port|external-tcp-port=";
         public const string ExternalTcpPortEnv = "EXT_TCP_PORT";
         public const string ExternalTcpPortJson = "externalTcpPort";
         public const string ExternalTcpPortDescr = "External TCP Port.";
-        public static readonly int ExternalTcpPortDefault = 1113;
+        public const int    ExternalTcpPortDefault = 1113;
+
+        public const string ExternalSecureTcpPortCmd = "ext-sec-tcp-port|external-secure-tcp-port=";
+        public const string ExternalSecureTcpPortEnv = "EXT_SEC_TCP_PORT";
+        public const string ExternalSecureTcpPortJson = "externalSecureTcpPort";
+        public const string ExternalSecureTcpPortDescr = "External Secure TCP Port.";
+        public const int    ExternalSecureTcpPortDefault = 0;
 
         public const string ClusterDnsCmd = "cluster-dns=";
         public const string ClusterDnsEnv = "CLUSTER_DNS";
         public const string ClusterDnsJson = "clusterDns";
         public const string ClusterDnsDescr = null;
-        public static readonly string ClusterDnsDefault = "fake.dns";
+        public const string ClusterDnsDefault = "fake.dns";
 
         public const string ClusterSizeCmd = "nodes-count|cluster-size=";
         public const string ClusterSizeEnv = "CLUSTER_SIZE";

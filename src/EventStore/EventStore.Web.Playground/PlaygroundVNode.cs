@@ -100,14 +100,12 @@ namespace EventStore.Web.Playground
 
 
             // MISC WORKERS
-            var workerThreadCount = Math.Max(vNodeSettings.TcpSendingThreads,
-                                             Math.Max(vNodeSettings.HttpSendingThreads, vNodeSettings.HttpReceivingThreads));
-            _workerBuses = Enumerable.Range(0, workerThreadCount).Select(queueNum =>
+            _workerBuses = Enumerable.Range(0, vNodeSettings.WorkerThreads).Select(queueNum =>
                 new InMemoryBus(string.Format("Worker #{0} Bus", queueNum + 1),
                                 watchSlowMsg: true,
                                 slowMsgThreshold: TimeSpan.FromMilliseconds(50))).ToArray();
             _workersHandler = new MultiQueuedHandler(
-                    workerThreadCount,
+                    vNodeSettings.WorkerThreads,
                     queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
                                                             string.Format("Worker #{0}", queueNum + 1),
                                                             groupName: "Workers",

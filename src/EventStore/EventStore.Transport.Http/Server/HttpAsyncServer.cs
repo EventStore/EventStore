@@ -26,9 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Linq.Expressions;
 using System.Net;
-using System.Reflection;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
@@ -85,15 +83,19 @@ namespace EventStore.Transport.Http.Server
         {
             try
             {
-				var counter = 10;
-				while (_listener.IsListening && counter-- > 0)
-				{
-					_listener.Abort();
-					_listener.Stop();
-					_listener.Close();
-					if (_listener.IsListening)
-						System.Threading.Thread.Sleep(50);
-				}
+                var counter = 10;
+                while (_listener.IsListening && counter-- > 0)
+                {
+                    _listener.Abort();
+                    _listener.Stop();
+                    _listener.Close();
+                    if (_listener.IsListening)
+                        System.Threading.Thread.Sleep(50);
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // that's ok
             }
             catch (Exception e)
             {

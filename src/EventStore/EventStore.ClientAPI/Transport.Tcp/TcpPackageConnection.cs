@@ -101,8 +101,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 (conn, error) =>
                 {
                     connectionCreated.Wait();
-                    _log.Debug("Connection [{0}, {1:B}] was closed {2}",
-                               conn.EffectiveEndPoint, ConnectionId, error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
+                    log.Debug("Connection [{0}, {1:B}] was closed {2}",
+                              conn.EffectiveEndPoint, ConnectionId, error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
 
                     if (_connectionClosed != null)
                         _connectionClosed(this, EffectiveEndPoint, error);

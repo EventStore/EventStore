@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
             Assert.AreEqual(sent, received.ToArray());
         }
 
-        private X509Certificate GetCertificate()
+        public static X509Certificate2 GetCertificate()
         {
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("EventStore.Core.Tests.server.p12"))
             using (var mem = new MemoryStream())

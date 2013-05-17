@@ -221,11 +221,10 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void StartReceive()
         {
-            var buffer = new ArraySegment<byte>(new byte[TcpConfiguration.SocketBufferSize]);
-
             try
             {
                 NotifyReceiveStarting();
+                var buffer = new ArraySegment<byte>(new byte[TcpConfiguration.SocketBufferSize]);
                 _receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
                 var firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(_receiveSocketArgs);
                 if (!firedAsync)
