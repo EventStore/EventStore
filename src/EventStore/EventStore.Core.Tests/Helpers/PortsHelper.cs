@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Helpers
                 }
                 catch (Exception exc)
                 {
-                    Log.TraceException(exc, "PortsHelper: port {0} unavailable for TcpListener. Error: {1}.", exc.Message);
+                    Log.TraceException(exc, "PortsHelper: port {0} unavailable for TcpListener. Error: {1}.", port, exc.Message);
                     continue;
                 }
 
