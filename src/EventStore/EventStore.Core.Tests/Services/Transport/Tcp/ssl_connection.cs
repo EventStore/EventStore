@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                         ssl.ReceiveAsync(callback);
                 };
                 ssl.ReceiveAsync(callback);
-            });
+            }, "Secure");
 
             var clientSsl = TcpConnectionSsl.CreateConnectingConnection(
                 Guid.NewGuid(), 

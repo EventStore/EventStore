@@ -119,7 +119,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             try
             {
-                _serverListener.StartListening(OnConnectionAccepted);
+                _serverListener.StartListening(OnConnectionAccepted, _securityType.ToString());
             }
             catch (Exception e)
             {

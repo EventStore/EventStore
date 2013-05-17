@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Helpers
         public const int PortCount = 200;
 
         private static readonly EventStore.Common.Concurrent.ConcurrentQueue<int> AvailablePorts = 
-            new EventStore.Common.Concurrent.ConcurrentQueue<int>();
+            new EventStore.Common.Concurrent.ConcurrentQueue<int>(Enumerable.Range(PortStart, PortCount));
 
         public static void InitPorts(IPAddress ip)
         {
@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Helpers
             {
             }
 
-            Log.Trace("PortsHelper: starting to examine ports at [0].", ip);
+            Log.Trace("PortsHelper: starting to examine ports at [{0}].", ip);
 
             int succ = 0;
             for (int port = PortStart; port < PortStart + PortCount; ++port)

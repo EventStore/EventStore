@@ -29,7 +29,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Net;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
@@ -69,9 +68,7 @@ namespace EventStore.Core
 
         internal MultiQueuedHandler WorkersHandler { get { return _workersHandler; } }
 
-        private readonly IPEndPoint _tcpEndPoint;
-        private readonly IPEndPoint _httpEndPoint;
-
+        private readonly SingleVNodeSettings _settings;
         private readonly QueuedHandler _mainQueue;
         private readonly InMemoryBus _mainBus;
 
@@ -93,11 +90,10 @@ namespace EventStore.Core
             Ensure.NotNull(db, "db");
             Ensure.NotNull(vNodeSettings, "vNodeSettings");
 
-            _tcpEndPoint = vNodeSettings.ExternalTcpEndPoint;
-            _httpEndPoint = vNodeSettings.ExternalHttpEndPoint;
+            _settings = vNodeSettings;
 
             _mainBus = new InMemoryBus("MainBus");
-            _controller = new SingleVNodeController(_mainBus, _httpEndPoint, db, this);
+            _controller = new SingleVNodeController(_mainBus, _settings.ExternalHttpEndPoint, db, this);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             _controller.SetMainQueue(_mainQueue);
 
@@ -107,13 +103,13 @@ namespace EventStore.Core
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
             var monitoringQueue = new QueuedHandler(monitoringInnerBus, "MonitoringQueue", true, TimeSpan.FromMilliseconds(100));
-            var monitoring = new MonitoringService(monitoringQueue, 
-                                                   monitoringRequestBus, 
-                                                   _mainQueue, 
-                                                   db.Config.WriterCheckpoint, 
-                                                   db.Config.Path, 
-                                                   vNodeSettings.StatsPeriod, 
-                                                   _httpEndPoint,
+            var monitoring = new MonitoringService(monitoringQueue,
+                                                   monitoringRequestBus,
+                                                   _mainQueue,
+                                                   db.Config.WriterCheckpoint,
+                                                   db.Config.Path,
+                                                   vNodeSettings.StatsPeriod,
+                                                   _settings.ExternalHttpEndPoint,
                                                    vNodeSettings.StatsStorage);
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
@@ -143,11 +139,11 @@ namespace EventStore.Core
                                             maxSizeForMemory: memTableEntryCount,
                                             maxTablesPerLevel: 2);
 
-            var readIndex = new ReadIndex(_mainQueue, 
-                                          ESConsts.PTableInitialReaderCount, 
-                                          ESConsts.PTableMaxReaderCount, 
-                                          () => new TFChunkReader(db, db.Config.WriterCheckpoint), 
-                                          tableIndex, 
+            var readIndex = new ReadIndex(_mainQueue,
+                                          ESConsts.PTableInitialReaderCount,
+                                          ESConsts.PTableMaxReaderCount,
+                                          () => new TFChunkReader(db, db.Config.WriterCheckpoint),
+                                          tableIndex,
                                           new XXHashUnsafe(),
                                           new LRUCache<string, StreamCacheInfo>(ESConsts.StreamMetadataCacheCapacity),
                                           Application.IsDefined(Application.AdditionalCommitChecks),
@@ -162,7 +158,7 @@ namespace EventStore.Core
             epochManager.Init();
 
             new StorageWriterService(_mainQueue, _mainBus, db, writer, readIndex, epochManager); // subscribes internally
-            
+
             var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderThreadCount, db.Config.WriterCheckpoint);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
@@ -170,7 +166,7 @@ namespace EventStore.Core
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
             var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
-            var storageChaser = new StorageChaser(_mainQueue, db.Config.WriterCheckpoint, chaser, readIndex, epochManager, _tcpEndPoint);
+            var storageChaser = new StorageChaser(_mainQueue, db.Config.WriterCheckpoint, chaser, readIndex, epochManager, _settings.ExternalTcpEndPoint);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
             _mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
@@ -179,14 +175,14 @@ namespace EventStore.Core
                                                         readIndex,
                                                         Application.IsDefined(Application.AlwaysKeepScavenged),
                                                         !Application.IsDefined(Application.DisableMergeChunks));
-// ReSharper disable RedundantTypeArgumentsOfMethod
+            // ReSharper disable RedundantTypeArgumentsOfMethod
             _mainBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
-// ReSharper restore RedundantTypeArgumentsOfMethod
+            // ReSharper restore RedundantTypeArgumentsOfMethod
 
             // MISC WORKERS
             _workerBuses = Enumerable.Range(0, vNodeSettings.WorkerThreads).Select(queueNum =>
-                new InMemoryBus(string.Format("Worker #{0} Bus", queueNum + 1), 
-                                watchSlowMsg: true, 
+                new InMemoryBus(string.Format("Worker #{0} Bus", queueNum + 1),
+                                watchSlowMsg: true,
                                 slowMsgThreshold: TimeSpan.FromMilliseconds(50))).ToArray();
             _workersHandler = new MultiQueuedHandler(
                     vNodeSettings.WorkerThreads,
@@ -209,20 +205,34 @@ namespace EventStore.Core
             });
 
             // TCP
-            var tcpService = new TcpService(_mainQueue, _tcpEndPoint, _workersHandler, 
-                                            TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), 
-                                            ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout,
-                                            internalAuthenticationProvider, null);
-            _mainBus.Subscribe<SystemMessage.SystemInit>(tcpService);
-            _mainBus.Subscribe<SystemMessage.SystemStart>(tcpService);
-            _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
+            {
+                var tcpService = new TcpService(_mainQueue, _settings.ExternalTcpEndPoint, _workersHandler,
+                                                TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(),
+                                                ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout,
+                                                internalAuthenticationProvider, null);
+                _mainBus.Subscribe<SystemMessage.SystemInit>(tcpService);
+                _mainBus.Subscribe<SystemMessage.SystemStart>(tcpService);
+                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
+            }
+
+            // SECURE TCP
+            if (vNodeSettings.ExternalSecureTcpEndPoint != null)
+            {
+                var secureTcpService = new TcpService(_mainQueue, _settings.ExternalSecureTcpEndPoint, _workersHandler,
+                                                        TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(),
+                                                        ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout,
+                                                        internalAuthenticationProvider, _settings.Certificate);
+                _mainBus.Subscribe<SystemMessage.SystemInit>(secureTcpService);
+                _mainBus.Subscribe<SystemMessage.SystemStart>(secureTcpService);
+                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(secureTcpService);
+            }
 
             SubscribeWorkers(bus =>
             {
                 var tcpSendService = new TcpSendService();
-// ReSharper disable RedundantTypeArgumentsOfMethod
+                // ReSharper disable RedundantTypeArgumentsOfMethod
                 bus.Subscribe<TcpMessage.TcpSend>(tcpSendService);
-// ReSharper restore RedundantTypeArgumentsOfMethod
+                // ReSharper restore RedundantTypeArgumentsOfMethod
             });
 
             // HTTP
@@ -234,7 +244,7 @@ namespace EventStore.Core
                     new AnonymousAuthenticationProvider()
                 };
 
-                _httpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(), 
+                _httpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
                                                _workersHandler, vNodeSettings.HttpPrefixes);
                 _httpService.SetupController(new AdminController(_mainQueue));
                 _httpService.SetupController(new PingController());
@@ -312,9 +322,9 @@ namespace EventStore.Core
             // TIMER
             _timeProvider = new RealTimeProvider();
             _timerService = new TimerService(new ThreadBasedScheduler(_timeProvider));
-// ReSharper disable RedundantTypeArgumentsOfMethod
+            // ReSharper disable RedundantTypeArgumentsOfMethod
             _mainBus.Subscribe<TimerMessage.Schedule>(_timerService);
-// ReSharper restore RedundantTypeArgumentsOfMethod
+            // ReSharper restore RedundantTypeArgumentsOfMethod
 
             _workersHandler.Start();
             _mainQueue.Start();
@@ -354,7 +364,10 @@ namespace EventStore.Core
 
         public override string ToString()
         {
-            return string.Format("[{0}, {1}]", _tcpEndPoint, _httpEndPoint);
+            return string.Format("[{0}, {1}, {2}]",
+                                 _settings.ExternalTcpEndPoint,
+                                 _settings.ExternalSecureTcpEndPoint == null ? "n/a" : _settings.ExternalSecureTcpEndPoint.ToString(),
+                                 _settings.ExternalHttpEndPoint);
         }
     }
 }
