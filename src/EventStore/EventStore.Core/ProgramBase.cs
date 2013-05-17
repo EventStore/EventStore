@@ -213,7 +213,14 @@ namespace EventStore.Core
         protected static X509Certificate2 LoadCertificateFromStore(string storeName, string certName)
         {
             var store = new X509Store(storeName);
-            store.Open(OpenFlags.OpenExistingOnly);
+            try
+            {
+                store.Open(OpenFlags.OpenExistingOnly);
+            }
+            catch (Exception exc)
+            {
+                throw new Exception(string.Format("Couldn't open certificates store '{0}'.", storeName), exc);
+            }
             foreach (var cert in store.Certificates)
             {
                 if (cert.Subject == certName)

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
 using EventStore.Common.Log;
@@ -47,7 +48,8 @@ namespace EventStore.Core.Tests
             Application.AddDefines(new[] { Application.AdditionalCommitChecks });
             LogEnvironmentInfo();
 
-            PortsHelper.InitPorts(IPAddress.Loopback);
+            if (!Debugger.IsAttached)
+                PortsHelper.InitPorts(IPAddress.Loopback);
         }
 
         private void LogEnvironmentInfo()
