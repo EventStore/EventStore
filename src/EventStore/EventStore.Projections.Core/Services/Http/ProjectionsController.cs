@@ -336,7 +336,7 @@ namespace EventStore.Projections.Core.Services.Http
                         bool emitEnabled = IsOn(match, "emit", false);
                         bool checkpointsEnabled = mode >= ProjectionMode.Continuous || IsOn(match, "checkpoints", false);
                         bool enabled = IsOn(match, "enabled", def: true);
-                        var runAs = new ProjectionManagementMessage.RunAs(http.User, true, true);
+                        var runAs = GetRunAs(http, match);
                         if (mode <= ProjectionMode.OneTime && string.IsNullOrEmpty(name))
                             postMessage = new ProjectionManagementMessage.Post(
                                 envelope, mode, Guid.NewGuid().ToString("D"), runAs, handlerType, s, enabled: enabled,
