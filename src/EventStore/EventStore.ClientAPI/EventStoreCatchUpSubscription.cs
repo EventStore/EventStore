@@ -122,10 +122,9 @@ namespace EventStore.ClientAPI
                     if (!_stop)
                     {
                         if (Verbose) Log.Debug("Catch-up Subscription to {0}: subscribing...", IsSubscribedToAll ? "<all>" : StreamId);
-                        var subscribeTask = _streamId == string.Empty
+                        _subscription = _streamId == string.Empty
                             ? _connection.SubscribeToAll(_resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped, _userCredentials)
                             : _connection.SubscribeToStream(_streamId, _resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped, _userCredentials);
-                        _subscription = subscribeTask.Result;
 
                         if (Verbose) Log.Debug("Catch-up Subscription to {0}: pulling events (if left)...", IsSubscribedToAll ? "<all>" : StreamId);
                         ReadEventsTill(_connection, _resolveLinkTos, _userCredentials, _subscription.LastCommitPosition, _subscription.LastEventNumber);

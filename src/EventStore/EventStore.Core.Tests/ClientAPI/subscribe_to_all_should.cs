@@ -66,8 +66,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
-                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
-                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
+                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
                 {
                     var create = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
                     Assert.IsTrue(create.Wait(Timeout), "StreamCreateAsync timed out.");
@@ -87,7 +87,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
-                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
                 {
                     var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                     Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");

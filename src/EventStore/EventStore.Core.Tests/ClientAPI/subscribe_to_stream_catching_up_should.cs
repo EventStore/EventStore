@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                (_, __, ___) => dropped.Signal());
 
                 Thread.Sleep(100); // give time for first pull phase
-                var dummySubscr = store.SubscribeToStream(stream, false, (s, x) => { }, (s, r, e) => { }).Result; // wait for dummy subscription to complete
+                store.SubscribeToStream(stream, false, (s, x) => { }, (s, r, e) => { });
                 Thread.Sleep(100);
                 Assert.IsFalse(appeared.Wait(0), "Some event appeared!");
                 Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
