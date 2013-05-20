@@ -450,7 +450,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
                 var writerWorkItem = _writerWorkItem;
                 if (writerWorkItem != null)
-                    writerWorkItem.UnmanagedMemoryStream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite);
+                {
+                    writerWorkItem.UnmanagedMemoryStream =
+                        new UnmanagedMemoryStream((byte*) _cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite);
+                }
 
                 Log.Trace("CACHED TFChunk #{0}-{1} ({2}) in {3}.", 
                           _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename), sw.Elapsed);
@@ -465,7 +468,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 if (workItem.IsMemory)
                     throw new InvalidOperationException("When trying to build cache, reader worker is already in-memory reader.");
 
-                _cachedLength = (int)workItem.Stream.Length;
+                _cachedLength = (_isReadOnly ? _physicalDataSize : _chunkHeader.ChunkSize) + ChunkHeader.Size + ChunkFooter.Size;
                 var cachedData = Marshal.AllocHGlobal(_cachedLength);
                 try
                 {

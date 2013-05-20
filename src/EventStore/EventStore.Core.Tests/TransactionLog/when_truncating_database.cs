@@ -90,7 +90,54 @@ namespace EventStore.Core.Tests.TransactionLog
             miniNode.Shutdown();
         }
 
-        private static void WriteEvents(int cnt, MiniNode miniNode, CountdownEvent countdown)
+        [Test, Category("LongRunning"), Category("Network")]
+        public void with_truncate_position_in_completed_chunk_everything_should_go_fine()
+        {
+            const int chunkSize = 1024*1024;
+            const int cachedSize = chunkSize*3;
+
+            var miniNode = new MiniNode(PathName, chunkSize: chunkSize, cachedChunkSize: cachedSize);
+            miniNode.Start();
+
+            var tcpPort = miniNode.TcpEndPoint.Port;
+            var httpPort = miniNode.HttpEndPoint.Port;
+            const int cnt = 1;
+            var countdown = new CountdownEvent(cnt);
+
+            // --- first part of events
+            WriteEvents(cnt, miniNode, countdown, MiniNode.ChunkSize / 5 * 3);
+            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Too long writing first part of events.");
+            countdown.Reset();
+
+            // -- set up truncation
+            var truncatePosition = miniNode.Db.Config.WriterCheckpoint.ReadNonFlushed();
+            miniNode.Db.Config.TruncateCheckpoint.Write(truncatePosition);
+            miniNode.Db.Config.TruncateCheckpoint.Flush();
+
+            // --- second part of events
+            WriteEvents(cnt, miniNode, countdown, MiniNode.ChunkSize / 2);
+            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Too long writing second part of events.");
+            countdown.Reset();
+
+            miniNode.Shutdown(keepDb: true, keepPorts: true);
+
+            // --- first restart and truncation
+            miniNode = new MiniNode(PathName, tcpPort, null, httpPort, chunkSize: chunkSize, cachedChunkSize: cachedSize);
+
+            miniNode.Start();
+            Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
+            Assert.That(miniNode.Db.Config.WriterCheckpoint.Read(), Is.GreaterThanOrEqualTo(truncatePosition));
+
+            // -- third part of events
+            WriteEvents(cnt, miniNode, countdown, MiniNode.ChunkSize / 5);
+            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Too long writing third part of events.");
+            countdown.Reset();
+
+            // -- if we get here -- then everything is ok
+            miniNode.Shutdown();
+        }
+
+        private static void WriteEvents(int cnt, MiniNode miniNode, CountdownEvent countdown, int dataSize = 4000)
         {
             for (int i = 0; i < cnt; ++i)
             {
@@ -99,6 +146,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                                   new CallbackEnvelope(m =>
                                                   {
                                                       Assert.IsInstanceOf<ClientMessage.WriteEventsCompleted>(m);
+                                                      var msg = (ClientMessage.WriteEventsCompleted) m;
+                                                      Assert.AreEqual(OperationResult.Success, msg.Result);
                                                       countdown.Signal();
                                                   }),
                                                   false,
@@ -106,7 +155,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                   ExpectedVersion.Any,
                                                   new[]
                                                   {
-                                                      new Event(Guid.NewGuid(), "test-event-type", false, new byte[4000], null)
+                                                      new Event(Guid.NewGuid(), "test-event-type", false, new byte[dataSize], null)
                                                   },
                                                   null));
             }

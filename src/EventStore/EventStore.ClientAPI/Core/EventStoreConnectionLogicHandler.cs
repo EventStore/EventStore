@@ -190,6 +190,16 @@ namespace EventStore.ClientAPI.Core
             _connection.StartReceiving();
         }
 
+        private void TcpConnectionError(TcpPackageConnection connection, Exception exception)
+        {
+            if (_disposed || _connection != connection) 
+                return;
+
+            if (_verbose) _log.Debug("EventStoreConnection '{0}': TcpConnectionError connId {1}, exc {2}.", _esConnection.ConnectionName, connection.ConnectionId, exception);
+
+            CloseConnection("Exception occurred.", exception);
+        }
+
         private void CloseConnection(string reason, Exception exception = null)
         {
             if (_disposed)
@@ -221,7 +231,7 @@ namespace EventStore.ClientAPI.Core
             foreach (var subscription in _subscriptions.Values.Concat(_retryPendingSubscriptions))
             {
                 subscription.Operation.DropSubscription(
-                    SubscriptionDropReason.ConnectionClosed, 
+                    SubscriptionDropReason.ConnectionClosed,
                     new ConnectionClosedException(string.Format("Connection '{0}' was closed.", _esConnection.ConnectionName)));
             }
             _subscriptions.Clear();
@@ -634,16 +644,6 @@ namespace EventStore.ClientAPI.Core
                 _log.Debug("EventStoreConnection '{0}': HandleTcpPackage COULDN'T MAP PACKAGE with CorrelationId {1:B}, Command: {2}.",
                            _esConnection.ConnectionName, package.CorrelationId, package.Command);
             }
-        }
-
-        private void TcpConnectionError(TcpPackageConnection connection, Exception exception)
-        {
-            if (_disposed || _connection != connection) 
-                return;
-
-            if (_verbose) _log.Debug("EventStoreConnection '{0}': TcpConnectionError connId {1}, exc {2}.", _esConnection.ConnectionName, connection.ConnectionId, exception);
-
-            CloseConnection("Exception occurred.", exception);
         }
 
         private bool RemoveOperation(OperationItem operation)
