@@ -330,39 +330,63 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
         Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null);
 
-        Task<EventStoreSubscription> SubscribeToStream(string stream,
-                                                       bool resolveLinkTos,
-                                                       Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-                                                       Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                                                       UserCredentials userCredentials = null);
+        EventStoreSubscription SubscribeToStream(
+                string stream,
+                bool resolveLinkTos,
+                Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null);
 
-        EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
-                                                                  int? fromEventNumberExclusive,
-                                                                  bool resolveLinkTos,
-                                                                  Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
-                                                                  Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                                                                  Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                                                                  UserCredentials userCredentials = null);
+        Task<EventStoreSubscription> SubscribeToStreamAsync(
+                string stream,
+                bool resolveLinkTos,
+                Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null);
 
-        Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos, 
-                                                    Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                                                    Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                                                    UserCredentials userCredentials = null);
+        EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
+                string stream,
+                int? fromEventNumberExclusive,
+                bool resolveLinkTos,
+                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+                Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null);
 
-        EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? fromPositionExclusive,
-                                                            bool resolveLinkTos,
-                                                            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
-                                                            Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                                                            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                                                            UserCredentials userCredentials = null);
+        EventStoreSubscription SubscribeToAll(
+                bool resolveLinkTos, 
+                Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
+                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null);
+
+        Task<EventStoreSubscription> SubscribeToAllAsync(
+                bool resolveLinkTos,
+                Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null);
+
+        EventStoreAllCatchUpSubscription SubscribeToAllFrom(
+                Position? fromPositionExclusive,
+                bool resolveLinkTos,
+                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+                Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null);
 
         void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null);
+        
         Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null);
+        
         void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null);
+        
         Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null);
+        
         StreamMetadataResult GetStreamMetadata(string stream, UserCredentials userCredentials = null);
+        
         Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null);
+        
         RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream, UserCredentials userCredentials = null);
+        
         Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null);
     }
 }

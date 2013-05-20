@@ -35,19 +35,28 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
     public static class TestConnection
     {
-        public static IEventStoreConnection Create(IPEndPoint endPoint)
+        public static IEventStoreConnection Create(IPEndPoint endPoint, TcpType tcpType = TcpType.Normal)
         {
-            return EventStoreConnection.Create(Settings(), endPoint);
+            return EventStoreConnection.Create(Settings(tcpType), endPoint);
         }
 
-        private static ConnectionSettingsBuilder Settings()
+        public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType)
         {
-            return ConnectionSettings.Create()
-                                     .UseCustomLogger(ClientApiLoggerBridge.Default)
-                                     .EnableVerboseLogging()
-                                     .DisableVerboseLogging()
-                                     .FailOnNoServerResponse()
-                                     .SetOperationTimeoutTo(TimeSpan.FromDays(1));
+            return EventStoreConnection.Create(Settings(tcpType),
+                                               tcpType == TcpType.Ssl ? miniNode.TcpSecEndPoint : miniNode.TcpEndPoint);
+        }
+
+        private static ConnectionSettingsBuilder Settings(TcpType tcpType)
+        {
+            var settings = ConnectionSettings.Create()
+                                             .UseCustomLogger(ClientApiLoggerBridge.Default)
+                                             .EnableVerboseLogging()
+                                             .DisableVerboseLogging()
+                                             .FailOnNoServerResponse()
+                                             .SetOperationTimeoutTo(TimeSpan.FromDays(1));
+            if (tcpType == TcpType.Ssl)
+                settings.UseSslConnection("ES", false);
+            return settings;
         }
     }
 }

@@ -26,22 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
-using System.Collections.Generic;
-using System.Net;
-
-namespace EventStore.ClientAPI.Transport.Tcp
+namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
-    internal interface ITcpConnection
+    public enum TcpType
     {
-        Guid ConnectionId { get; }
-        IPEndPoint EffectiveEndPoint { get; }
-        int SendQueueSize { get; }
-        bool IsClosed { get; }
-
-        void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback);
-        void EnqueueSend(IEnumerable<ArraySegment<byte>> data);
-        void Close(string reason);
+        Normal,
+        Ssl
     }
 }
-        

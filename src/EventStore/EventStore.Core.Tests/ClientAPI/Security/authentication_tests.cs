@@ -460,13 +460,13 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         protected void SubscribeToStream(string streamId, string login, string password)
         {
             Connection.SubscribeToStream(streamId, false, (x, y) => { }, (x, y, z) => { },
-                                         login == null && password == null ? null : new UserCredentials(login, password)).Wait();
+                                         login == null && password == null ? null : new UserCredentials(login, password));
         }
 
         protected void SubscribeToAll(string login, string password)
         {
             Connection.SubscribeToAll(false, (x, y) => { }, (x, y, z) => { },
-                                      login == null && password == null ? null : new UserCredentials(login, password)).Wait();
+                                      login == null && password == null ? null : new UserCredentials(login, password));
         }
 
         protected void Expect<T>(Action action) where T : Exception

@@ -36,10 +36,16 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture(TcpType.Normal), TestFixture(TcpType.Ssl), Category("LongRunning")]
     public class append_to_stream : SpecificationWithDirectoryPerTestFixture
     {
+        private readonly TcpType _tcpType;
         private MiniNode _node;
+
+        public append_to_stream(TcpType tcpType)
+        {
+            _tcpType = tcpType;
+        }
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
@@ -61,7 +67,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_create_stream_with_no_stream_exp_ver_on_first_write_if_does_not_exist()
         {
             const string stream = "should_create_stream_with_no_stream_exp_ver_on_first_write_if_does_not_exist";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, new[] { TestEvent.NewTestEvent() });
@@ -78,7 +84,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_create_stream_with_any_exp_ver_on_first_write_if_does_not_exist()
         {
             const string stream = "should_create_stream_with_any_exp_ver_on_first_write_if_does_not_exist";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { TestEvent.NewTestEvent() });
@@ -95,7 +101,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_fail_writing_with_correct_exp_ver_to_deleted_stream()
         {
             const string stream = "should_fail_writing_with_correct_exp_ver_to_deleted_stream";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
 
@@ -112,7 +118,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_fail_writing_with_any_exp_ver_to_deleted_stream()
         {
             const string stream = "should_fail_writing_with_any_exp_ver_to_deleted_stream";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
 
@@ -129,7 +135,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_fail_writing_with_invalid_exp_ver_to_deleted_stream()
         {
             const string stream = "should_fail_writing_with_invalid_exp_ver_to_deleted_stream";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
 
@@ -146,7 +152,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_append_with_correct_exp_ver_to_existing_stream()
         {
             const string stream = "should_append_with_correct_exp_ver_to_existing_stream";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
                 store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
@@ -161,7 +167,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_append_with_any_exp_ver_to_existing_stream()
         {
             const string stream = "should_append_with_any_exp_ver_to_existing_stream";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
                 store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
@@ -176,7 +182,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_fail_appending_with_wrong_exp_ver_to_existing_stream()
         {
             const string stream = "should_fail_appending_with_wrong_exp_ver_to_existing_stream";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
                 store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
@@ -191,7 +197,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void can_append_multiple_events_at_once()
         {
             const string stream = "can_append_multiple_events_at_once";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
 

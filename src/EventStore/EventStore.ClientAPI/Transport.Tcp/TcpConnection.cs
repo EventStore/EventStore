@@ -39,20 +39,21 @@ namespace EventStore.ClientAPI.Transport.Tcp
 {
     internal class TcpConnection : TcpConnectionBase, ITcpConnection
     {
-        private const int MaxSendPacketSize = 64 * 1024;
+        internal const int MaxSendPacketSize = 64 * 1024;
 
         private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool", 
                                                                                    TcpConfiguration.SendReceivePoolSize, 
                                                                                    () => new SocketAsyncEventArgs());
 
-        internal static TcpConnection CreateConnectingTcpConnection(Guid connectionId, 
-                                                                    IPEndPoint remoteEndPoint,
-                                                                    TcpClientConnector connector,
-                                                                    Action<TcpConnection> onConnectionEstablished,
-                                                                    Action<TcpConnection, SocketError> onConnectionFailed,
-                                                                    Action<TcpConnection, SocketError> onConnectionClosed)
+        internal static ITcpConnection CreateConnectingConnection(ILogger log,
+                                                                  Guid connectionId, 
+                                                                  IPEndPoint remoteEndPoint,
+                                                                  TcpClientConnector connector,
+                                                                  Action<ITcpConnection> onConnectionEstablished,
+                                                                  Action<ITcpConnection, SocketError> onConnectionFailed,
+                                                                  Action<ITcpConnection, SocketError> onConnectionClosed)
         {
-            var connection = new TcpConnection(connectionId, remoteEndPoint, onConnectionClosed);
+            var connection = new TcpConnection(log, connectionId, remoteEndPoint, onConnectionClosed);
             // ReSharper disable ImplicitlyCapturedClosure
             connector.InitConnect(remoteEndPoint,
                                   (_, socket) =>
@@ -70,11 +71,13 @@ namespace EventStore.ClientAPI.Transport.Tcp
             return connection;
         }
 
-        public readonly Guid ConnectionId;
+        public Guid ConnectionId { get { return _connectionId; } }
         public IPEndPoint EffectiveEndPoint { get { return _effectiveEndPoint; } }
         public int SendQueueSize { get { return _sendQueue.Count; } }
 
+        private readonly Guid _connectionId;
         private readonly IPEndPoint _effectiveEndPoint;
+        private readonly ILogger _log;
 
         private Socket _socket;
         private SocketAsyncEventArgs _receiveSocketArgs;
@@ -90,21 +93,23 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private int _closed;
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
-        private readonly Action<TcpConnection, SocketError> _onConnectionClosed;
+        private readonly Action<ITcpConnection, SocketError> _onConnectionClosed;
 
-        private TcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, Action<TcpConnection, SocketError> onConnectionClosed)
+        private TcpConnection(ILogger log, Guid connectionId, IPEndPoint effectiveEndPoint, Action<ITcpConnection, SocketError> onConnectionClosed)
         {
+            Ensure.NotNull(log, "log");
             Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(effectiveEndPoint, "effectiveEndPoint");
 
-            ConnectionId = connectionId;
+            _connectionId = connectionId;
             _effectiveEndPoint = effectiveEndPoint;
+            _log = log;
             _onConnectionClosed = onConnectionClosed;
         }
 
         private void InitSocket(Socket socket)
         {
-            //Console.WriteLine("TcpConnection::InitSocket[{0}]", socket.RemoteEndPoint);
+            //_log.Info("TcpConnection::InitSocket[{0}]", socket.RemoteEndPoint);
 
             InitSocket(socket, _effectiveEndPoint);
             using (_sendingLock.Acquire())
@@ -311,13 +316,13 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             NotifyClosed();
 
-            Console.WriteLine("[{0:HH:mm:ss.fff}: {1}]:\nConnection ID: {2:B}\nReceived bytes: {3}, Sent bytes: {4}\n"
-                              + "Send calls: {5}, callbacks: {6}\nReceive calls: {7}, callbacks: {8}\nClose reason: [{9}] {10}\n",
-                              DateTime.UtcNow, EffectiveEndPoint, ConnectionId,
-                              TotalBytesReceived, TotalBytesSent,
-                              SendCalls, SendCallbacks,
-                              ReceiveCalls, ReceiveCallbacks,
-                              socketError, reason);
+            _log.Info("[{0:HH:mm:ss.fff}: {1}]:\nConnection ID: {2:B}\nReceived bytes: {3}, Sent bytes: {4}\n"
+                      + "Send calls: {5}, callbacks: {6}\nReceive calls: {7}, callbacks: {8}\nClose reason: [{9}] {10}\n",
+                      DateTime.UtcNow, EffectiveEndPoint, _connectionId,
+                      TotalBytesReceived, TotalBytesSent,
+                      SendCalls, SendCallbacks,
+                      ReceiveCalls, ReceiveCallbacks,
+                      socketError, reason);
 
             if (_socket != null)
             {

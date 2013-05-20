@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -39,8 +38,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
 {
     internal class TcpPackageConnection
     {
-        private static readonly ArraySegment<byte>[] HeartbeatResponse = new LengthPrefixMessageFramer().FrameData(
-            new TcpPackage(TcpCommand.HeartbeatResponseCommand, Guid.NewGuid(), null).AsArraySegment()).ToArray();
         private static readonly TcpClientConnector Connector = new TcpClientConnector();
 
         public bool IsClosed { get { return _connection.IsClosed; } }
@@ -54,11 +51,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private readonly Action<TcpPackageConnection, IPEndPoint, SocketError> _connectionClosed;
 
         private readonly LengthPrefixMessageFramer _framer;
-        private readonly TcpConnection _connection;
+        private readonly ITcpConnection _connection;
 
         public TcpPackageConnection(ILogger log,
                                     IPEndPoint tcpEndPoint,
                                     Guid connectionId,
+                                    bool ssl,
+                                    string targetHost,
+                                    bool validateServer,
                                     Action<TcpPackageConnection, TcpPackage> handlePackage,
                                     Action<TcpPackageConnection, Exception> onError,
                                     Action<TcpPackageConnection> connectionEstablished,
@@ -68,6 +68,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
             Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(handlePackage, "handlePackage");
+            if (ssl)
+                Ensure.NotNullOrEmpty(targetHost, "targetHost");
 
             EffectiveEndPoint = tcpEndPoint;
             ConnectionId = connectionId;
@@ -81,9 +83,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
             _framer.RegisterMessageArrivedCallback(IncomingMessageArrived);
 
             var connectionCreated = new ManualResetEventSlim();
+// ReSharper disable ImplicitlyCapturedClosure
             _connection = Connector.ConnectTo(
+                log,
                 connectionId,
                 tcpEndPoint,
+                ssl,
+                targetHost,
+                validateServer,
                 tcpConnection =>
                 {
                     connectionCreated.Wait();
@@ -107,6 +114,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     if (_connectionClosed != null)
                         _connectionClosed(this, EffectiveEndPoint, error);
                 });
+// ReSharper restore ImplicitlyCapturedClosure
 
             connectionCreated.Set();
         }

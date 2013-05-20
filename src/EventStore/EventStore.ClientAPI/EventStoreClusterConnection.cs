@@ -181,41 +181,64 @@ namespace EventStore.ClientAPI
             return _conn.ReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos, userCredentials);
         }
 
-        public Task<EventStoreSubscription> SubscribeToStream(string stream, 
-                                                              bool resolveLinkTos, 
-                                                              Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                                                              Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                                                              UserCredentials userCredentials = null)
+        public EventStoreSubscription SubscribeToStream(
+                string stream,
+                bool resolveLinkTos,
+                Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null)
         {
             return _conn.SubscribeToStream(stream, resolveLinkTos, eventAppeared, subscriptionDropped, userCredentials);
         }
 
-        public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
-                                                                         int? fromEventNumberExclusive,
-                                                                         bool resolveLinkTos,
-                                                                         Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
-                                                                         Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                                                                         Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                                                                         UserCredentials userCredentials = null)
+        public Task<EventStoreSubscription> SubscribeToStreamAsync(
+                string stream, 
+                bool resolveLinkTos, 
+                Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
+                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null)
+        {
+            return _conn.SubscribeToStreamAsync(stream, resolveLinkTos, eventAppeared, subscriptionDropped, userCredentials);
+        }
+
+        public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
+                string stream,
+                int? fromEventNumberExclusive,
+                bool resolveLinkTos,
+                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+                Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null)
         {
             return _conn.SubscribeToStreamFrom(stream, fromEventNumberExclusive, resolveLinkTos,
                                                eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);
         }
 
-        public Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos, 
-                                                           Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                                                           Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                                                           UserCredentials userCredentials = null)
+        public EventStoreSubscription SubscribeToAll(
+                bool resolveLinkTos, 
+                Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
+                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null)
         {
             return _conn.SubscribeToAll(resolveLinkTos, eventAppeared, subscriptionDropped, userCredentials);
         }
 
-        public EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? fromPositionExclusive,
-                                                                   bool resolveLinkTos,
-                                                                   Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
-                                                                   Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                                                                   Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                                                                   UserCredentials userCredentials = null)
+        public Task<EventStoreSubscription> SubscribeToAllAsync(
+                bool resolveLinkTos,
+                Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null)
+        {
+            return _conn.SubscribeToAllAsync(resolveLinkTos, eventAppeared, subscriptionDropped, userCredentials);
+        }
+
+        public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
+                Position? fromPositionExclusive,
+                bool resolveLinkTos,
+                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+                Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null)
         {
             return _conn.SubscribeToAllFrom(fromPositionExclusive, resolveLinkTos,
                                             eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);

@@ -74,7 +74,7 @@ namespace EventStore.TestClient.Commands
                             context.Log.Trace("Received total {0} events ({1} per sec)...", c, 100000.0/sw.Elapsed.TotalSeconds);
                             sw.Restart();
                         }
-                    }).Result;
+                    });
             }
             context.Log.Info("Subscribed to {0} streams...", subscriptionCount);
             return true;

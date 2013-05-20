@@ -50,6 +50,9 @@ namespace EventStore.Core.Tests.Helpers
 {
     public class MiniNode
     {
+        public const int ChunkSize = 1024*1024;
+        public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
+
         private static readonly ILogger Log = LogManager.GetLoggerFor<MiniNode>();
 
         public IPEndPoint TcpEndPoint { get; private set; }
@@ -60,7 +63,10 @@ namespace EventStore.Core.Tests.Helpers
         public readonly TFChunkDb Db;
         private readonly string _dbPath;
 
-        public MiniNode(string pathname, int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null, bool enableProjections = false, ISubsystem[] subsystems = null)
+        public MiniNode(string pathname, 
+                        int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null, 
+                        ISubsystem[] subsystems = null,
+                        int? chunkSize = null, int? cachedChunkSize = null)
         {
             IPAddress ip = IPAddress.Loopback; //GetLocalIp();
 
@@ -70,7 +76,7 @@ namespace EventStore.Core.Tests.Helpers
 
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}", extTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
-            Db = new TFChunkDb(CreateDbConfig(1024*1024, _dbPath, 1024*1024 + ChunkHeader.Size + ChunkFooter.Size));
+            Db = new TFChunkDb(CreateDbConfig(chunkSize ?? ChunkSize, _dbPath, cachedChunkSize ?? CachedChunkSize));
 
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
