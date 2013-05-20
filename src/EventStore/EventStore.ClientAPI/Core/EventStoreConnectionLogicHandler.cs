@@ -45,7 +45,7 @@ namespace EventStore.ClientAPI.Core
     {
         private static readonly IComparer<OperationItem> SeqNoComparer = new OperationItemSeqNoComparer();
 
-        public int TotalOperationCount { get { return _operationCount; } }
+        public int TotalOperationCount { get { return _totalOperationCount; } }
 
         private readonly IEventStoreConnection _esConnection;
         private readonly ConnectionSettings _settings;
@@ -69,11 +69,10 @@ namespace EventStore.ClientAPI.Core
         private readonly Dictionary<Guid, SubscriptionItem> _subscriptions = new Dictionary<Guid, SubscriptionItem>();
         private readonly List<SubscriptionItem> _retryPendingSubscriptions = new List<SubscriptionItem>();
 
-        private readonly Dictionary<Guid, OperationItem> _operations = new Dictionary<Guid, OperationItem>();
+        private readonly Dictionary<Guid, OperationItem> _inProgressOperations = new Dictionary<Guid, OperationItem>();
         private readonly Queue<OperationItem> _waitingOperations = new Queue<OperationItem>();
         private readonly List<OperationItem> _retryPendingOperations = new List<OperationItem>();
-        private int _operationCount;
-        private int _operationsInProgressCount;
+        private int _totalOperationCount;
 
         private int _packageNumber;
         private int _lastPackageNumber;
@@ -210,15 +209,14 @@ namespace EventStore.ClientAPI.Core
             CloseTcpConnection(reason);
             _timer.Dispose();
 
-            foreach (var operation in _operations.Values.Concat(_waitingOperations).Concat(_retryPendingOperations))
+            foreach (var operation in _inProgressOperations.Values.Concat(_waitingOperations).Concat(_retryPendingOperations))
             {
                 operation.Operation.Fail(new ConnectionClosedException(string.Format("Connection '{0}' was closed.", _esConnection.ConnectionName)));
             }
-            _operations.Clear();
+            _inProgressOperations.Clear();
             _waitingOperations.Clear();
             _retryPendingOperations.Clear();
-            _operationCount = 0;
-            _operationsInProgressCount = 0;
+            _totalOperationCount = 0;
 
             foreach (var subscription in _subscriptions.Values.Concat(_retryPendingSubscriptions))
             {
@@ -354,7 +352,7 @@ namespace EventStore.ClientAPI.Core
 
             var retryOperations = new List<OperationItem>();
             var removeOperations = new List<OperationItem>();
-            foreach (var operation in _operations.Values)
+            foreach (var operation in _inProgressOperations.Values)
             {
                 if (operation.ConnectionId != _connection.ConnectionId)
                 {
@@ -586,7 +584,7 @@ namespace EventStore.ClientAPI.Core
 
             OperationItem operation;
             SubscriptionItem subscription;
-            if (_operations.TryGetValue(package.CorrelationId, out operation))
+            if (_inProgressOperations.TryGetValue(package.CorrelationId, out operation))
             {
                 var result = operation.Operation.InspectPackage(package);
                 if (_verbose) _log.Debug("EventStoreConnection '{0}': HandleTcpPackage OPERATION DECISION {1}, {2}.", _esConnection.ConnectionName, result.Decision, operation);
@@ -650,7 +648,7 @@ namespace EventStore.ClientAPI.Core
 
         private bool RemoveOperation(OperationItem operation)
         {
-            if (!_operations.Remove(operation.CorrelationId))
+            if (!_inProgressOperations.Remove(operation.CorrelationId))
             {
                 if (_verbose) _log.Debug("EventStoreConnection '{0}': RemoveOperation FAILED for {1}.", _esConnection.ConnectionName, operation);
                 return false;
@@ -658,10 +656,9 @@ namespace EventStore.ClientAPI.Core
 
             if (_verbose) _log.Debug("EventStoreConnection '{0}': RemoveOperation for {1}.", _esConnection.ConnectionName, operation);
 
-            _operationsInProgressCount -= 1;
-            _operationCount -= 1;
+            _totalOperationCount = _inProgressOperations.Count + _waitingOperations.Count;
             
-            while (_waitingOperations.Count > 0 && _operationsInProgressCount < _settings.MaxConcurrentItems)
+            while (_waitingOperations.Count > 0 && _inProgressOperations.Count < _settings.MaxConcurrentItems)
             {
                 ScheduleOperation(_waitingOperations.Dequeue());
             }
@@ -704,27 +701,23 @@ namespace EventStore.ClientAPI.Core
         {
             Ensure.NotNull(_connection, "_connection");
 
-            if (_operationsInProgressCount >= _settings.MaxConcurrentItems)
+            if (_inProgressOperations.Count >= _settings.MaxConcurrentItems)
             {
                 if (_verbose) _log.Debug("EventStoreConnection '{0}': ScheduleOperation WAITING for {1}.", _esConnection.ConnectionName, operation);
-
                 _waitingOperations.Enqueue(operation);
-                return;
+            }
+            else
+            {
+                operation.ConnectionId = _connection.ConnectionId;
+                operation.LastUpdated = DateTime.UtcNow;
+                _inProgressOperations.Add(operation.CorrelationId, operation);
+
+                var package = operation.Operation.CreateNetworkPackage(operation.CorrelationId);
+                if (_verbose) _log.Debug("EventStoreConnection '{0}': ScheduleOperation package {1}, {2}, {3}.", _esConnection.ConnectionName, package.Command, package.CorrelationId, operation);
+                _connection.EnqueueSend(package);
             }
 
-            _operationsInProgressCount += 1;
-
-            operation.ConnectionId = _connection.ConnectionId;
-            operation.LastUpdated = DateTime.UtcNow;
-
-            _operations.Add(operation.CorrelationId, operation);
-            _operationCount += 1;
-
-            var package = operation.Operation.CreateNetworkPackage(operation.CorrelationId);
-
-            if (_verbose) _log.Debug("EventStoreConnection '{0}': ScheduleOperation package {1}, {2}, {3}.", _esConnection.ConnectionName, package.Command, package.CorrelationId, operation);
-
-            _connection.EnqueueSend(package);
+            _totalOperationCount = _inProgressOperations.Count + _waitingOperations.Count;
         }
 
         private bool RemoveSubscription(SubscriptionItem subscription)
