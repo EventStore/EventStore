@@ -58,6 +58,7 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<ProjectionManagementMessage.GetResult>,
                                      IHandle<ProjectionManagementMessage.Disable>,
                                      IHandle<ProjectionManagementMessage.Enable>,
+                                     IHandle<ProjectionManagementMessage.SetRunAs>,
                                      IHandle<ProjectionManagementMessage.Reset>,
                                      IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
                                      IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
@@ -274,6 +275,22 @@ namespace EventStore.Projections.Core.Services.Management
             if (!_started)
                 return;
             _logger.Info("Enabling '{0}' projection", message.Name);
+
+            var projection = GetProjection(message.Name);
+            if (projection == null)
+            {
+                _logger.Error("DBG: PROJECTION *{0}* NOT FOUND!!!", message.Name);
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
+            }
+            else
+                projection.Handle(message);
+        }
+
+        public void Handle(ProjectionManagementMessage.SetRunAs message)
+        {
+            if (!_started)
+                return;
+            _logger.Info("Setting RunAs account for '{0}' projection", message.Name);
 
             var projection = GetProjection(message.Name);
             if (projection == null)
@@ -684,5 +701,6 @@ namespace EventStore.Projections.Core.Services.Management
             else
                 throw new NotSupportedException("Unsupported error code received");
         }
+
     }
 }

@@ -103,6 +103,11 @@ namespace EventStore.Projections.Core.Messages
                     message.Envelope.ReplyWith(new NotAuthorized());
                     return false;
                 }
+                if (replace && message.RunAs.Principal != null)
+                    return true; // enable this operation while no projection permissions are defined
+
+                return true;
+
                 if (existingRunAs == null)
                     return true;
                 if (message.RunAs.Principal == null
@@ -244,6 +249,35 @@ namespace EventStore.Projections.Core.Messages
             public string Name
             {
                 get { return _name; }
+            }
+        }
+
+        public class SetRunAs : ControlMessage
+        {
+            public enum SetRemove
+            {
+                Set,
+                Rmeove
+            };
+
+            private readonly string _name;
+            private readonly SetRemove _action;
+
+            public SetRunAs(IEnvelope envelope, string name, RunAs runAs, SetRemove action)
+                : base(envelope, runAs)
+            {
+                _name = name;
+                _action = action;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public SetRemove Action
+            {
+                get { return _action; }
             }
         }
 

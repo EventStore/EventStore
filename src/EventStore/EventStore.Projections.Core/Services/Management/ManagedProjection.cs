@@ -292,6 +292,34 @@ namespace EventStore.Projections.Core.Services.Management
             Prepare(() => BeginWrite(completed));
         }
 
+        public void Handle(ProjectionManagementMessage.SetRunAs message)
+        {
+            _lastAccessed = _timeProvider.Now;
+            if (
+                !ProjectionManagementMessage.RunAs.ValidateRunAs(
+                    _runAs, message, message.Action == ProjectionManagementMessage.SetRunAs.SetRemove.Set)) return;
+
+
+            Stop(
+                () =>
+                    {
+                        UpdateProjectionVersion();
+                        _persistedState.RunAs = message.Action == ProjectionManagementMessage.SetRunAs.SetRemove.Set
+                                                    ? SerializePrincipal(message.RunAs)
+                                                    : null;
+                        _runAs = DeserializePrincipal(_persistedState.RunAs);
+
+                        Prepare(
+                            () => BeginWrite(
+                                () =>
+                                    {
+                                        StartOrLoadStopped(() => { });
+                                        message.Envelope.ReplyWith(
+                                            new ProjectionManagementMessage.Updated(message.Name));
+                                    }));
+                    });
+        }
+
         public void Handle(ProjectionManagementMessage.Reset message)
         {
             _lastAccessed = _timeProvider.Now;
