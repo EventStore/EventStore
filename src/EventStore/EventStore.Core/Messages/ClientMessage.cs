@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Net;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -79,10 +78,6 @@ namespace EventStore.Core.Messages
 
                 User = user;
             }
-        }
-
-        public abstract class WriteResponseMessage : Message
-        {
         }
 
         public abstract class ReadRequestMessage: Message
@@ -167,7 +162,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteEventsCompleted : WriteResponseMessage
+        public class WriteEventsCompleted : Message
         {
             public readonly Guid CorrelationId;
             public readonly OperationResult Result;
@@ -213,7 +208,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class TransactionStartCompleted : WriteResponseMessage
+        public class TransactionStartCompleted : Message
         {
             public readonly Guid CorrelationId;
             public readonly long TransactionId;
@@ -247,7 +242,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class TransactionWriteCompleted : WriteResponseMessage
+        public class TransactionWriteCompleted : Message
         {
             public readonly Guid CorrelationId;
             public readonly long TransactionId;
@@ -276,7 +271,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class TransactionCommitCompleted : WriteResponseMessage
+        public class TransactionCommitCompleted : Message
         {
             public readonly Guid CorrelationId;
             public readonly long TransactionId;
@@ -309,7 +304,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class DeleteStreamCompleted : WriteResponseMessage
+        public class DeleteStreamCompleted : Message
         {
             public readonly Guid CorrelationId;
             public readonly OperationResult Result;

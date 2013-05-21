@@ -39,14 +39,14 @@ namespace EventStore.Core.Tests.ClientAPI.SystemData
         public void should_throw_argument_null_exception_when_created_as_authorized_but_login_not_provided()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authorized, Guid.NewGuid(), null, "pa$$", new byte[] { 1, 2, 3 }));
+                new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authenticated, Guid.NewGuid(), null, "pa$$", new byte[] { 1, 2, 3 }));
         }
 
         [Test]
         public void should_throw_argument_null_exception_when_created_as_authorized_but_password_not_provided()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authorized, Guid.NewGuid(), "login", null, new byte[] { 1, 2, 3 }));
+                new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authenticated, Guid.NewGuid(), "login", null, new byte[] { 1, 2, 3 }));
         }
 
         [Test]
@@ -104,12 +104,12 @@ namespace EventStore.Core.Tests.ClientAPI.SystemData
         public void authorized_with_data_should_serialize_and_deserialize_correctly()
         {
             var corrId = Guid.NewGuid();
-            var refPkg = new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authorized, corrId, "login", "pa$$", new byte[] { 1, 2, 3 });
+            var refPkg = new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authenticated, corrId, "login", "pa$$", new byte[] { 1, 2, 3 });
             var bytes = refPkg.AsArraySegment();
 
             var pkg = TcpPackage.FromArraySegment(bytes);
             Assert.AreEqual(TcpCommand.BadRequest, pkg.Command);
-            Assert.AreEqual(TcpFlags.Authorized, pkg.Flags);
+            Assert.AreEqual(TcpFlags.Authenticated, pkg.Flags);
             Assert.AreEqual(corrId, pkg.CorrelationId);
             Assert.AreEqual("login", pkg.Login);
             Assert.AreEqual("pa$$", pkg.Password);
@@ -124,12 +124,12 @@ namespace EventStore.Core.Tests.ClientAPI.SystemData
         public void authorized_with_empty_data_should_serialize_and_deserialize_correctly()
         {
             var corrId = Guid.NewGuid();
-            var refPkg = new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authorized, corrId, "login", "pa$$", new byte[0]);
+            var refPkg = new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authenticated, corrId, "login", "pa$$", new byte[0]);
             var bytes = refPkg.AsArraySegment();
 
             var pkg = TcpPackage.FromArraySegment(bytes);
             Assert.AreEqual(TcpCommand.BadRequest, pkg.Command);
-            Assert.AreEqual(TcpFlags.Authorized, pkg.Flags);
+            Assert.AreEqual(TcpFlags.Authenticated, pkg.Flags);
             Assert.AreEqual(corrId, pkg.CorrelationId);
             Assert.AreEqual("login", pkg.Login);
             Assert.AreEqual("pa$$", pkg.Password);
@@ -140,14 +140,14 @@ namespace EventStore.Core.Tests.ClientAPI.SystemData
         [Test]
         public void should_throw_argument_exception_on_serialization_when_login_too_long()
         {
-            var pkg = new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authorized, Guid.NewGuid(), new string('*', 256), "pa$$", new byte[] { 1, 2, 3 });
+            var pkg = new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authenticated, Guid.NewGuid(), new string('*', 256), "pa$$", new byte[] { 1, 2, 3 });
             Assert.Throws<ArgumentException>(() => pkg.AsByteArray());
         }
 
         [Test]
         public void should_throw_argument_exception_on_serialization_when_password_too_long()
         {
-            var pkg = new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authorized, Guid.NewGuid(), "login", new string('*', 256), new byte[] { 1, 2, 3 });
+            var pkg = new TcpPackage(TcpCommand.BadRequest, TcpFlags.Authenticated, Guid.NewGuid(), "login", new string('*', 256), new byte[] { 1, 2, 3 });
             Assert.Throws<ArgumentException>(() => pkg.AsByteArray());
         }
 

@@ -28,7 +28,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -41,7 +40,6 @@ using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Monitoring
 {
@@ -80,6 +78,7 @@ namespace EventStore.Core.Services.Monitoring
         private readonly Timer _timer;
         private readonly string _nodeStatsStream;
         private bool _statsStreamCreated;
+        private Guid _streamMetadataWriteCorrId;
 
         public MonitoringService(IPublisher monitoringBus,
                                  IPublisher statsCollectionBus,
@@ -207,7 +206,8 @@ namespace EventStore.Core.Services.Monitoring
         private void SetStatsStreamMetadata()
         {
             var metadata = Helper.UTF8NoBom.GetBytes(StreamMetadata);
-            _mainBus.Publish(new ClientMessage.WriteEvents(Guid.NewGuid(),
+            _streamMetadataWriteCorrId = Guid.NewGuid();
+            _mainBus.Publish(new ClientMessage.WriteEvents(_streamMetadataWriteCorrId,
                                                            new PublishEnvelope(_monitoringBus),
                                                            true,
                                                            SystemStreams.MetastreamOf(_nodeStatsStream),
@@ -218,6 +218,8 @@ namespace EventStore.Core.Services.Monitoring
 
         public void Handle(ClientMessage.WriteEventsCompleted message)
         {
+            if (message.CorrelationId != _streamMetadataWriteCorrId)
+                return;
             switch (message.Result)
             {
                 case OperationResult.Success:

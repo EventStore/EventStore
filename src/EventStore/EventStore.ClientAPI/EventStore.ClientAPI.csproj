@@ -103,8 +103,11 @@
     <Compile Include="ConnectionSettingsBuilder.cs" />
     <Compile Include="ClusterSettings.cs" />
     <Compile Include="ClusterSettingsBuilder.cs" />
+    <Compile Include="Core\EventStoreConnectionLogicHandler.cs" />
     <Compile Include="Core\IEndPointDiscoverer.cs" />
+    <Compile Include="Core\OperationsManager.cs" />
     <Compile Include="Core\StaticEndPointDiscoverer.cs" />
+    <Compile Include="Core\SubscriptionsManager.cs" />
     <Compile Include="EventStoreClusterConnection.cs" />
     <Compile Include="EventStoreNodeConnection.cs" />
     <Compile Include="Exceptions\ClusterException.cs" />
@@ -115,7 +118,6 @@
     <Compile Include="Exceptions\AccessDeniedException.cs" />
     <Compile Include="StreamMetadata.cs" />
     <Compile Include="Core\ClusterDnsEndPointDiscoverer.cs" />
-    <Compile Include="Core\EventStoreConnectionLogicHandler.cs" />
     <Compile Include="Core\Messages.cs" />
     <Compile Include="Core\SimpleQueuedHandler.cs" />
     <Compile Include="Consts.cs" />

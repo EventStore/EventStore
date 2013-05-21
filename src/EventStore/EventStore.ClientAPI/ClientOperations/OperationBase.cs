@@ -70,7 +70,7 @@ namespace EventStore.ClientAPI.ClientOperations
         public TcpPackage CreateNetworkPackage(Guid correlationId)
         {
             return new TcpPackage(_requestCommand,
-                                  _userCredentials != null ? TcpFlags.Authorized : TcpFlags.None,
+                                  _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
                                   correlationId,
                                   _userCredentials != null ? _userCredentials.Login : null,
                                   _userCredentials != null ? _userCredentials.Password : null,
@@ -150,7 +150,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
                 case ClientMessage.NotHandled.NotHandledReason.NotMaster:
                     var masterInfo = message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.MasterInfo>();
-                    return new InspectionResult(InspectionDecision.Reconnect, masterInfo.ExternalTcpEndPoint);
+                    return new InspectionResult(InspectionDecision.Reconnect, masterInfo.ExternalTcpEndPoint, masterInfo.ExternalSecureTcpEndPoint);
 
                 default:
                     Log.Error("Unknown NotHandledReason: {0}.", message.Reason);

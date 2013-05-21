@@ -28,6 +28,7 @@
 
 using System;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
@@ -90,6 +91,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly TimeSpan OperationTimeoutCheckPeriod;
 
+        public readonly UserCredentials DefaultUserCredentials;
         public readonly bool UseSslConnection;
         public readonly string TargetHost;
         public readonly bool ValidateServer;
@@ -114,6 +116,10 @@ namespace EventStore.ClientAPI
         /// Raised whenever the internal connection is reconnecting to the event store
         /// </summary>
         public Action<IEventStoreConnection> Reconnecting;
+        /// <summary>
+        /// Raised whenever the connection default user credentials authentication fails
+        /// </summary>
+        public Action<IEventStoreConnection, string> AuthenticationFailed;
 
         public readonly bool FailOnNoServerResponse;
         public readonly TimeSpan HeartbeatInterval;
@@ -129,6 +135,7 @@ namespace EventStore.ClientAPI
                                     TimeSpan reconnectionDelay,
                                     TimeSpan operationTimeout,
                                     TimeSpan operationTimeoutCheckPeriod,
+                                    UserCredentials defaultUserCredentials,
                                     bool useSslConnection,
                                     string targetHost,
                                     bool validateServer,
@@ -137,6 +144,7 @@ namespace EventStore.ClientAPI
                                     Action<IEventStoreConnection> connected,
                                     Action<IEventStoreConnection> disconnected,
                                     Action<IEventStoreConnection> reconnecting,
+                                    Action<IEventStoreConnection, string> authenticationFailed,
                                     bool failOnNoServerResponse,
                                     TimeSpan heartbeatInterval,
                                     TimeSpan heartbeatTimeout)
@@ -162,6 +170,7 @@ namespace EventStore.ClientAPI
             OperationTimeout = operationTimeout;
             OperationTimeoutCheckPeriod = operationTimeoutCheckPeriod;
 
+            DefaultUserCredentials = defaultUserCredentials;
             UseSslConnection = useSslConnection;
             TargetHost = targetHost;
             ValidateServer = validateServer;
@@ -171,6 +180,7 @@ namespace EventStore.ClientAPI
             Connected = connected;
             Disconnected = disconnected;
             Reconnecting = reconnecting;
+            AuthenticationFailed = authenticationFailed;
 
             FailOnNoServerResponse = failOnNoServerResponse;
             HeartbeatInterval = heartbeatInterval;

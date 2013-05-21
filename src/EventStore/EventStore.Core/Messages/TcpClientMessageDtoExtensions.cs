@@ -68,10 +68,12 @@ namespace EventStore.Core.Messages
         {
             public partial class MasterInfo
             {
-                public MasterInfo(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint)
+                public MasterInfo(IPEndPoint externalTcpEndPoint, IPEndPoint externalSecureTcpEndPoint, IPEndPoint externalHttpEndPoint)
                 {
                     ExternalTcpAddress = externalTcpEndPoint.Address.ToString();
                     ExternalTcpPort = externalTcpEndPoint.Port;
+                    ExternalSecureTcpAddress = externalSecureTcpEndPoint == null ? null : externalSecureTcpEndPoint.Address.ToString();
+                    ExternalSecureTcpPort = externalSecureTcpEndPoint == null ? (int?)null : externalSecureTcpEndPoint.Port;
                     ExternalHttpAddress = externalHttpEndPoint.Address.ToString();
                     ExternalHttpPort = externalHttpEndPoint.Port;
                 }

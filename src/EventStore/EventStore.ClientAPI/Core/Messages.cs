@@ -27,7 +27,6 @@
 //  
 
 using System;
-using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
@@ -43,12 +42,6 @@ namespace EventStore.ClientAPI.Core
 
     internal class TimerTickMessage: Message
     {
-        public readonly TimeSpan Timestamp;
-
-        public TimerTickMessage(TimeSpan timestamp)
-        {
-            Timestamp = timestamp;
-        }
     }
 
     internal class StartConnectionMessage : Message
@@ -78,18 +71,13 @@ namespace EventStore.ClientAPI.Core
         }
     }
 
-    internal class DiscoverEndPoint : Message
-    {
-    }
-
     internal class EstablishTcpConnectionMessage: Message
     {
-        public readonly IPEndPoint EndPoint;
+        public readonly NodeEndPoints EndPoints;
 
-        public EstablishTcpConnectionMessage(IPEndPoint endPoint)
+        public EstablishTcpConnectionMessage(NodeEndPoints endPoints)
         {
-            Ensure.NotNull(endPoint, "endPoint");
-            EndPoint = endPoint;
+            EndPoints = endPoints;
         }
     }
 

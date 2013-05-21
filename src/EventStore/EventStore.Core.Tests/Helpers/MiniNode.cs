@@ -50,6 +50,11 @@ namespace EventStore.Core.Tests.Helpers
 {
     public class MiniNode
     {
+        public static int RunCount = 0;
+        public static readonly Stopwatch RunningTime = new Stopwatch();
+        public static readonly Stopwatch StartingTime = new Stopwatch();
+        public static readonly Stopwatch StoppingTime = new Stopwatch();
+
         public const int ChunkSize = 1024*1024;
         public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
 
@@ -68,6 +73,9 @@ namespace EventStore.Core.Tests.Helpers
                         ISubsystem[] subsystems = null,
                         int? chunkSize = null, int? cachedChunkSize = null)
         {
+            RunningTime.Start();
+            RunCount += 1;
+
             IPAddress ip = IPAddress.Loopback; //GetLocalIp();
 
             int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
@@ -114,6 +122,8 @@ namespace EventStore.Core.Tests.Helpers
 
         public void Start()
         {
+            StartingTime.Start();
+
             var startedEvent = new ManualResetEventSlim(false);
             Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(m => startedEvent.Set()));
 
@@ -121,10 +131,14 @@ namespace EventStore.Core.Tests.Helpers
 
             if (!startedEvent.Wait(60000))
                 throw new TimeoutException("MiniNode haven't started in 60 seconds.");
+
+            StartingTime.Stop();
         }
 
         public void Shutdown(bool keepDb = false, bool keepPorts = false)
         {
+            StoppingTime.Start();
+
             var shutdownEvent = new ManualResetEventSlim(false);
             Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(m => shutdownEvent.Set()));
 
@@ -141,6 +155,9 @@ namespace EventStore.Core.Tests.Helpers
             
             if (!keepDb)
                 TryDeleteDirectory(_dbPath);
+
+            StoppingTime.Stop();
+            RunningTime.Stop();
         }
 
         private void TryDeleteDirectory(string directory)

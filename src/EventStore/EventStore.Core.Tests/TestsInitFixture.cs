@@ -30,6 +30,7 @@ using System;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
+using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.Helpers;
@@ -69,6 +70,16 @@ namespace EventStore.Core.Tests
         [TearDown]
         public void TearDown()
         {
+            var runCount = Math.Max(1, MiniNode.RunCount);
+            var msg = string.Format("Total running time of MiniNode: {0} (mean {1})\n" +
+                                    "Total starting time of MiniNode: {2} (mean {3})\n" +
+                                    "Total stopping time of MiniNode: {4} (mean {5})\n" +
+                                    "Total run count: {6}",
+                                    MiniNode.RunningTime.Elapsed, TimeSpan.FromTicks(MiniNode.RunningTime.Elapsed.Ticks/runCount),
+                                    MiniNode.StartingTime.Elapsed, TimeSpan.FromTicks(MiniNode.StartingTime.Elapsed.Ticks/runCount),
+                                    MiniNode.StoppingTime.Elapsed, TimeSpan.FromTicks(MiniNode.StoppingTime.Elapsed.Ticks/runCount),
+                                    MiniNode.RunCount);
+            Console.WriteLine(msg);
             LogManager.Finish();
         }
     }

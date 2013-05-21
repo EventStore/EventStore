@@ -27,7 +27,6 @@
 //  
 
 using System;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
@@ -42,13 +41,13 @@ namespace EventStore.ClientAPI.ClientOperations
     {
         private readonly ILogger _log;
         private readonly TaskCompletionSource<EventStoreSubscription> _source;
-        private readonly Action<TcpPackage> _sendPackage;
         private readonly string _streamId;
         private readonly bool _resolveLinkTos;
         private readonly UserCredentials _userCredentials;
         private readonly Action<EventStoreSubscription, ResolvedEvent> _eventAppeared;
         private readonly Action<EventStoreSubscription, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly bool _verboseLogging;
+        private readonly Func<TcpPackageConnection> _getConnection;
 
         private readonly Common.Concurrent.ConcurrentQueue<Action> _actionQueue = new Common.Concurrent.ConcurrentQueue<Action>();
         private int _actionExecuting;
@@ -58,37 +57,39 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public SubscriptionOperation(ILogger log,
                                      TaskCompletionSource<EventStoreSubscription> source,
-                                     Action<TcpPackage> sendPackage,
                                      string streamId,
                                      bool resolveLinkTos,
                                      UserCredentials userCredentials,
                                      Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
                                      Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
-                                     bool verboseLogging)
+                                     bool verboseLogging,
+                                     Func<TcpPackageConnection> getConnection)
         {
             Ensure.NotNull(log, "log");
-            Ensure.NotNull(sendPackage, "sendPackage");
             Ensure.NotNull(source, "source");
             Ensure.NotNull(eventAppeared, "eventAppeared");
+            Ensure.NotNull(getConnection, "getConnection");
 
             _log = log;
             _source = source;
-            _sendPackage = sendPackage;
             _streamId = string.IsNullOrEmpty(streamId) ? string.Empty : streamId;
             _resolveLinkTos = resolveLinkTos;
             _userCredentials = userCredentials;
             _eventAppeared = eventAppeared;
             _subscriptionDropped = subscriptionDropped ?? ((x, y, z) => { });
             _verboseLogging = verboseLogging;
+            _getConnection = getConnection;
         }
 
-        public bool Subscribe(Guid correlationId)
+        public bool Subscribe(Guid correlationId, TcpPackageConnection connection)
         {
+            Ensure.NotNull(connection, "connection");
+
             if (_subscription != null || _unsubscribed != 0)
                 return false;
 
             _correlationId = correlationId;
-            _sendPackage(CreateSubscriptionPackage());
+            connection.EnqueueSend(CreateSubscriptionPackage());
             return true;
         }
 
@@ -96,7 +97,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             var dto = new ClientMessage.SubscribeToStream(_streamId, _resolveLinkTos);
             return new TcpPackage(TcpCommand.SubscribeToStream,
-                                  _userCredentials != null ? TcpFlags.Authorized : TcpFlags.None,
+                                  _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
                                   _correlationId,
                                   _userCredentials != null ? _userCredentials.Login : null,
                                   _userCredentials != null ? _userCredentials.Password : null,
@@ -105,7 +106,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public void Unsubscribe()
         {
-            DropSubscription(SubscriptionDropReason.UserInitiated, null);
+            DropSubscription(SubscriptionDropReason.UserInitiated, null, _getConnection());
         }
 
         private TcpPackage CreateUnsubscriptionPackage()
@@ -184,7 +185,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
                             case ClientMessage.NotHandled.NotHandledReason.NotMaster:
                                 var masterInfo = message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.MasterInfo>();
-                                return new InspectionResult(InspectionDecision.Reconnect, masterInfo.ExternalTcpEndPoint);
+                                return new InspectionResult(InspectionDecision.Reconnect, masterInfo.ExternalTcpEndPoint, masterInfo.ExternalSecureTcpEndPoint);
 
                             default:
                                 _log.Info("Unknown NotHandledReason: {0}.", message.Reason);
@@ -220,7 +221,7 @@ namespace EventStore.ClientAPI.ClientOperations
             return true;
         }
 
-        internal void DropSubscription(SubscriptionDropReason reason, Exception exc)
+        internal void DropSubscription(SubscriptionDropReason reason, Exception exc, TcpPackageConnection connection = null)
         {
             if (Interlocked.CompareExchange(ref _unsubscribed, 1, 0) == 0)
             {
@@ -234,8 +235,8 @@ namespace EventStore.ClientAPI.ClientOperations
                     _source.TrySetException(exc);
                 }
 
-                if (reason == SubscriptionDropReason.UserInitiated && _subscription != null)
-                    _sendPackage(CreateUnsubscriptionPackage());
+                if (reason == SubscriptionDropReason.UserInitiated && _subscription != null && connection != null)
+                    connection.EnqueueSend(CreateUnsubscriptionPackage());
 
                 if (_subscription != null)
                     ExecuteActionAsync(() => _subscriptionDropped(_subscription, reason, exc));

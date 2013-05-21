@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             var settings = ConnectionSettings.Create()
                                              .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .EnableVerboseLogging()
-                                             .DisableVerboseLogging()
+                                             //.DisableVerboseLogging()
                                              .FailOnNoServerResponse()
                                              .SetOperationTimeoutTo(TimeSpan.FromDays(1));
             if (tcpType == TcpType.Ssl)

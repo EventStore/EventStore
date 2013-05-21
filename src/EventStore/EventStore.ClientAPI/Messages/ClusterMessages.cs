@@ -54,9 +54,11 @@ namespace EventStore.ClientAPI.Messages
 
             public string InternalTcpIp { get; set; }
             public int InternalTcpPort { get; set; }
+            public int InternalSecureTcpPort { get; set; }
         
             public string ExternalTcpIp { get; set; }
             public int ExternalTcpPort { get; set; }
+            public int ExternalSecureTcpPort { get; set; }
 
             public string InternalHttpIp { get; set; }
             public int InternalHttpPort { get; set; }
@@ -79,11 +81,13 @@ namespace EventStore.ClientAPI.Messages
                                          InternalHttpIp, InternalHttpPort,
                                          ExternalHttpIp, ExternalHttpPort,
                                          TimeStamp);
-                return string.Format("VND <{0}> [{1}, {2}:{3}, {4}:{5}, {6}:{7}, {8}:{9}] {10}/{11}/E{12}@{13}:{14:B} | {15}",
+                return string.Format("VND <{0}> [{1}, {2}:{3}, {4}, {5}:{6}, {7}, {8}:{9}, {10}:{11}] {12}/{13}/E{14}@{15}:{16:B} | {17}",
                                      IsAlive ? "LIVE" : "DEAD",
                                      State,
                                      InternalTcpIp, InternalTcpPort,
+                                     InternalSecureTcpPort > 0 ? string.Format("{0}:{1}", InternalTcpIp, InternalSecureTcpPort) : "n/a",
                                      ExternalTcpIp, ExternalTcpPort,
+                                     ExternalSecureTcpPort > 0 ? string.Format("{0}:{1}", ExternalTcpIp, ExternalSecureTcpPort) : "n/a",
                                      InternalHttpIp, InternalHttpPort,
                                      ExternalHttpIp, ExternalHttpPort,
                                      WriterCheckpoint, ChaserCheckpoint,

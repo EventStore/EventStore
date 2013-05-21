@@ -58,8 +58,8 @@ namespace EventStore.Core.Data
             EventType = eventType;
             IsJson = isJson;
 
-            Data = data ?? Common.Utils.Empty.ByteArray;
-            Metadata = metadata ?? Common.Utils.Empty.ByteArray;
+            Data = data ?? Empty.ByteArray;
+            Metadata = metadata ?? Empty.ByteArray;
         }
     }
 }

@@ -731,14 +731,22 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"external_http_port", DataFormat = DataFormat.TwosComplement)]
     public readonly int ExternalHttpPort;
   
+    [ProtoMember(5, IsRequired = false, Name=@"external_secure_tcp_address", DataFormat = DataFormat.Default)]
+    public readonly string ExternalSecureTcpAddress;
+  
+    [ProtoMember(6, IsRequired = false, Name=@"external_secure_tcp_port", DataFormat = DataFormat.TwosComplement)]
+    public readonly int? ExternalSecureTcpPort;
+  
     private MasterInfo() {}
   
-    public MasterInfo(string externalTcpAddress, int externalTcpPort, string externalHttpAddress, int externalHttpPort)
+    public MasterInfo(string externalTcpAddress, int externalTcpPort, string externalHttpAddress, int externalHttpPort, string externalSecureTcpAddress, int? externalSecureTcpPort)
     {
         ExternalTcpAddress = externalTcpAddress;
         ExternalTcpPort = externalTcpPort;
         ExternalHttpAddress = externalHttpAddress;
         ExternalHttpPort = externalHttpPort;
+        ExternalSecureTcpAddress = externalSecureTcpAddress;
+        ExternalSecureTcpPort = externalSecureTcpPort;
     }
   }
   

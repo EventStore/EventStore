@@ -28,6 +28,7 @@
 using System;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
@@ -50,6 +51,7 @@ namespace EventStore.ClientAPI
         private TimeSpan _operationTimeout = Consts.DefaultOperationTimeout;
         private TimeSpan _operationTimeoutCheckPeriod = Consts.DefaultOperationTimeoutCheckPeriod;
 
+        private UserCredentials _defaultUserCredentials;
         private bool _useSslConnection;
         private string _targetHost;
         private bool _validateServer;
@@ -59,6 +61,7 @@ namespace EventStore.ClientAPI
         private Action<IEventStoreConnection> _connected;
         private Action<IEventStoreConnection> _disconnected;
         private Action<IEventStoreConnection> _reconnecting;
+        private Action<IEventStoreConnection, string> _authenticationFailed;
 
         private bool _failOnNoServerResponse;
         private TimeSpan _heartbeatInterval = TimeSpan.FromMilliseconds(750);
@@ -266,6 +269,11 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+        public ConnectionSettingsBuilder SetDefaultUserCredentials(UserCredentials userCredentials)
+        {
+            _defaultUserCredentials = userCredentials;
+            return this;
+        }
 
         /// <summary>
         /// Tells to use SSL TCP connection.
@@ -349,6 +357,17 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+        /// <summary>
+        /// Sets handler called when authentication failure occurs.
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder OnAuthenticationFailed(Action<IEventStoreConnection, string> handler)
+        {
+            _authenticationFailed = handler;
+            return this;
+        }
+
         public ConnectionSettingsBuilder FailOnNoServerResponse()
         {
             _failOnNoServerResponse = true;
@@ -385,6 +404,7 @@ namespace EventStore.ClientAPI
                                           builder._reconnectionDelay,
                                           builder._operationTimeout,
                                           builder._operationTimeoutCheckPeriod,
+                                          builder._defaultUserCredentials,
                                           builder._useSslConnection,
                                           builder._targetHost,
                                           builder._validateServer,
@@ -393,6 +413,7 @@ namespace EventStore.ClientAPI
                                           builder._connected,
                                           builder._disconnected,
                                           builder._reconnecting,
+                                          builder._authenticationFailed,
                                           builder._failOnNoServerResponse,
                                           builder._heartbeatInterval,
                                           builder._heartbeatTimeout);

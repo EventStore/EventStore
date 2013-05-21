@@ -233,5 +233,7 @@ message NotHandled {
 		required int32 external_tcp_port = 2;
 		required string external_http_address = 3;
 		required int32 external_http_port = 4;
+		optional string external_secure_tcp_address = 5;
+		optional int32 external_secure_tcp_port = 6;
 	}
 }

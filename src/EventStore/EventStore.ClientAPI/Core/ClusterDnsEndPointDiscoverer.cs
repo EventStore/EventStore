@@ -69,7 +69,7 @@ namespace EventStore.ClientAPI.Core
             _client = new HttpAsyncClient(log);
         }
 
-        public Task<IPEndPoint> DiscoverAsync(IPEndPoint failedTcpEndPoint)
+        public Task<NodeEndPoints> DiscoverAsync(IPEndPoint failedTcpEndPoint)
         {
             return Task.Factory.StartNew(() =>
             {
@@ -78,11 +78,11 @@ namespace EventStore.ClientAPI.Core
                     _log.Info("Discovering cluster. Attempt {0}/{1}...", attempt, _maxDiscoverAttempts);
                     try
                     {
-                        var endPoint = DiscoverEndPoint(failedTcpEndPoint);
-                        if (endPoint != null)
+                        var endPoints = DiscoverEndPoint(failedTcpEndPoint);
+                        if (endPoints != null)
                         {
-                            _log.Info("Discovering attempt {0}/{1} successful: best candidate is [{2}].", attempt, _maxDiscoverAttempts, endPoint);
-                            return endPoint;
+                            _log.Info("Discovering attempt {0}/{1} successful: best candidate is {2}.", attempt, _maxDiscoverAttempts, endPoints);
+                            return endPoints.Value;
                         }
 
                         _log.Info("Discovering attempt {0}/{1} failed: no candidate found.", attempt, _maxDiscoverAttempts);
@@ -98,7 +98,7 @@ namespace EventStore.ClientAPI.Core
             });
         }
 
-        private IPEndPoint DiscoverEndPoint(IPEndPoint failedEndPoint)
+        private NodeEndPoints? DiscoverEndPoint(IPEndPoint failedEndPoint)
         {
             var oldGossip = Interlocked.Exchange(ref _oldGossip, null);
             var gossipCandidates = oldGossip != null
@@ -229,7 +229,7 @@ namespace EventStore.ClientAPI.Core
             return result;
         }
 
-        private IPEndPoint TryDetermineBestNode(IEnumerable<ClusterMessages.MemberInfoDto> members)
+        private NodeEndPoints? TryDetermineBestNode(IEnumerable<ClusterMessages.MemberInfoDto> members)
         {
             var notAllowedStates = new[]
             {
@@ -248,7 +248,11 @@ namespace EventStore.ClientAPI.Core
             }
 
             _log.Info("Best choice found: [{0}:{1}] ({2}).", node.ExternalTcpIp, node.ExternalTcpPort, node.State);
-            return new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalTcpPort);
+            var normTcp = new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalTcpPort);
+            var secTcp = node.ExternalSecureTcpPort > 0
+                                 ? new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalSecureTcpPort)
+                                 : null;
+            return new NodeEndPoints(normTcp, secTcp);
         }
     }
 }

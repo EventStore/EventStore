@@ -111,8 +111,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     log.Debug("Connection [{0}, {1:B}] was closed {2}",
                               conn.EffectiveEndPoint, ConnectionId, error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
 
-                    if (_connectionClosed != null)
-                        _connectionClosed(this, EffectiveEndPoint, error);
+                    if (connectionClosed != null)
+                        connectionClosed(this, EffectiveEndPoint, error);
                 });
 // ReSharper restore ImplicitlyCapturedClosure
 

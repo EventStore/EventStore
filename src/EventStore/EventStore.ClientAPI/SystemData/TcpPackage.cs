@@ -34,7 +34,7 @@ namespace EventStore.ClientAPI.SystemData
     public enum TcpFlags : byte
     {
         None = 0x00,
-        Authorized = 0x01,
+        Authenticated = 0x01,
     }
 
     public struct TcpPackage
@@ -68,7 +68,7 @@ namespace EventStore.ClientAPI.SystemData
             var headerSize = MandatorySize;
             string login = null;
             string pass = null;
-            if ((flags & TcpFlags.Authorized) != 0)
+            if ((flags & TcpFlags.Authenticated) != 0)
             {
                 var loginLen = data.Array[data.Offset + AuthOffset];
                 if (AuthOffset + 1 + loginLen + 1 >= data.Count)
@@ -108,7 +108,7 @@ namespace EventStore.ClientAPI.SystemData
 
         public TcpPackage(TcpCommand command, TcpFlags flags, Guid correlationId, string login, string password, ArraySegment<byte> data)
         {
-            if ((flags & TcpFlags.Authorized) != 0)
+            if ((flags & TcpFlags.Authenticated) != 0)
             {
                 Ensure.NotNull(login, "login");
                 Ensure.NotNull(password, "password");
@@ -129,7 +129,7 @@ namespace EventStore.ClientAPI.SystemData
 
         public byte[] AsByteArray()
         {
-            if ((Flags & TcpFlags.Authorized) != 0)
+            if ((Flags & TcpFlags.Authenticated) != 0)
             {
                 var loginLen = Helper.UTF8NoBom.GetByteCount(Login);
                 var passLen = Helper.UTF8NoBom.GetByteCount(Password);

@@ -36,8 +36,9 @@ namespace EventStore.ClientAPI.SystemData
     {
         public readonly InspectionDecision Decision;
         public readonly IPEndPoint TcpEndPoint;
+        public readonly IPEndPoint SecureTcpEndPoint;
 
-        public InspectionResult(InspectionDecision decision, IPEndPoint tcpEndPoint = null)
+        public InspectionResult(InspectionDecision decision, IPEndPoint tcpEndPoint = null, IPEndPoint secureTcpEndPoint = null)
         {
             if (decision == InspectionDecision.Reconnect)
                 Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
@@ -49,6 +50,7 @@ namespace EventStore.ClientAPI.SystemData
 
             Decision = decision;
             TcpEndPoint = tcpEndPoint;
+            SecureTcpEndPoint = secureTcpEndPoint;
         }
     }
 }
