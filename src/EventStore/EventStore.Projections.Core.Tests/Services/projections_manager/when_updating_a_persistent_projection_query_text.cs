@@ -74,7 +74,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test, Category("v8")]
         public void the_projection_source_can_be_retrieved()
         {
-            _manager.Handle(new ProjectionManagementMessage.GetQuery(new PublishEnvelope(_bus), _projectionName));
+            _manager.Handle(
+                new ProjectionManagementMessage.GetQuery(
+                    new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Count());
             var projectionQuery =
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Single();
@@ -85,7 +87,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test, Category("v8")]
         public void emit_enabled_options_remains_unchanged()
         {
-            _manager.Handle(new ProjectionManagementMessage.GetQuery(new PublishEnvelope(_bus), _projectionName));
+            _manager.Handle(
+                new ProjectionManagementMessage.GetQuery(
+                    new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Count());
             var projectionQuery =
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Single();

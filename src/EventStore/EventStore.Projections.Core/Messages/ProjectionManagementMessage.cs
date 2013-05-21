@@ -72,23 +72,14 @@ namespace EventStore.Projections.Core.Messages
         public sealed class RunAs
         {
             private readonly IPrincipal _runAs;
-            private readonly bool _setRunAsAccount;
-            private readonly bool _enableRunAsReplacement;
 
-            public RunAs(IPrincipal runAs, bool setRunAsAccount, bool enableRunAsReplacement)
+            public RunAs(IPrincipal runAs)
             {
                 _runAs = runAs;
-                _setRunAsAccount = setRunAsAccount;
-                _enableRunAsReplacement = enableRunAsReplacement;
             }
 
-            public bool EnableRunAsReplacement
-            {
-                get { return _enableRunAsReplacement; }
-            }
-
-            private static readonly RunAs _anonymous = new RunAs(null, false, false);
-            private static readonly RunAs _system = new RunAs(SystemAccount.Principal, true, true);
+            private static readonly RunAs _anonymous = new RunAs(null);
+            private static readonly RunAs _system = new RunAs(SystemAccount.Principal);
 
             public static RunAs Anonymous
             {
@@ -105,34 +96,31 @@ namespace EventStore.Projections.Core.Messages
                 get { return _runAs; }
             }
 
-            public bool SetRunAsAccount
+            public static bool ValidateRunAs(IPrincipal existingRunAs, ControlMessage message, bool replace = false)
             {
-                get { return _setRunAsAccount; }
-            }
-
-            public static bool ValidateRunAs(IPrincipal existingRunAs, ControlMessage message)
-            {
-                var requestedPrincipal = message.RunAs.Principal;
-
-                if (message.RunAs.SetRunAsAccount && requestedPrincipal == null)
+                if (replace && message.RunAs.Principal == null)
                 {
                     message.Envelope.ReplyWith(new NotAuthorized());
                     return false;
                 }
-                var differentIdentity = (requestedPrincipal == null && existingRunAs != null)
-                                        || requestedPrincipal != null && existingRunAs == null
-                                        || requestedPrincipal != null
-                                        && !String.Equals(
-                                            requestedPrincipal.Identity.Name, existingRunAs.Identity.Name,
-                                            StringComparison.OrdinalIgnoreCase);
+                if (replace && message.RunAs.Principal != null)
+                    return true; // enable this operation while no projection permissions are defined
 
-                if (!message.RunAs.EnableRunAsReplacement && differentIdentity)
+                return true;
+
+                if (existingRunAs == null)
+                    return true;
+                if (message.RunAs.Principal == null
+                    || !string.Equals(
+                        existingRunAs.Identity.Name, message.RunAs.Principal.Identity.Name,
+                        StringComparison.OrdinalIgnoreCase))
                 {
                     message.Envelope.ReplyWith(new NotAuthorized());
                     return false;
                 }
                 return true;
             }
+
         }
 
         public abstract class ControlMessage: Message
@@ -161,10 +149,11 @@ namespace EventStore.Projections.Core.Messages
             private readonly bool _enabled;
             private readonly bool _checkpointsEnabled;
             private readonly bool _emitEnabled;
+            private readonly bool _enableRunAs;
 
             public Post(
                 IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, string handlerType, string query,
-                bool enabled, bool checkpointsEnabled, bool emitEnabled)
+                bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs = false)
                 : base(envelope, runAs)
             {
                 _name = name;
@@ -174,6 +163,7 @@ namespace EventStore.Projections.Core.Messages
                 _enabled = enabled;
                 _checkpointsEnabled = checkpointsEnabled;
                 _emitEnabled = emitEnabled;
+                _enableRunAs = enableRunAs;
             }
 
             // shortcut for posting ad-hoc JS queries
@@ -223,6 +213,11 @@ namespace EventStore.Projections.Core.Messages
             {
                 get { return _checkpointsEnabled; }
             }
+
+            public bool EnableRunAs
+            {
+                get { return _enableRunAs; }
+            }
         }
 
         public class Disable : ControlMessage
@@ -254,6 +249,35 @@ namespace EventStore.Projections.Core.Messages
             public string Name
             {
                 get { return _name; }
+            }
+        }
+
+        public class SetRunAs : ControlMessage
+        {
+            public enum SetRemove
+            {
+                Set,
+                Rmeove
+            };
+
+            private readonly string _name;
+            private readonly SetRemove _action;
+
+            public SetRunAs(IEnvelope envelope, string name, RunAs runAs, SetRemove action)
+                : base(envelope, runAs)
+            {
+                _name = name;
+                _action = action;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public SetRemove Action
+            {
+                get { return _action; }
             }
         }
 
@@ -342,20 +366,14 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class GetQuery : Message
+        public class GetQuery : ControlMessage
         {
-            private readonly IEnvelope _envelope;
             private readonly string _name;
 
-            public GetQuery(IEnvelope envelope, string name)
+            public GetQuery(IEnvelope envelope, string name, RunAs runAs):
+                base(envelope, runAs)
             {
-                _envelope = envelope;
                 _name = name;
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
             }
 
             public string Name

@@ -58,6 +58,7 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<ProjectionManagementMessage.GetResult>,
                                      IHandle<ProjectionManagementMessage.Disable>,
                                      IHandle<ProjectionManagementMessage.Enable>,
+                                     IHandle<ProjectionManagementMessage.SetRunAs>,
                                      IHandle<ProjectionManagementMessage.Reset>,
                                      IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
                                      IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
@@ -196,7 +197,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (!_started)
                 return;
 
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(null, message)) return;
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(null, message, replace: message.EnableRunAs)) return;
 
             if (message.Name == null)
             {
@@ -274,6 +275,22 @@ namespace EventStore.Projections.Core.Services.Management
             if (!_started)
                 return;
             _logger.Info("Enabling '{0}' projection", message.Name);
+
+            var projection = GetProjection(message.Name);
+            if (projection == null)
+            {
+                _logger.Error("DBG: PROJECTION *{0}* NOT FOUND!!!", message.Name);
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
+            }
+            else
+                projection.Handle(message);
+        }
+
+        public void Handle(ProjectionManagementMessage.SetRunAs message)
+        {
+            if (!_started)
+                return;
+            _logger.Info("Setting RunAs account for '{0}' projection", message.Name);
 
             var projection = GetProjection(message.Name);
             if (projection == null)
@@ -482,7 +499,8 @@ namespace EventStore.Projections.Core.Services.Management
                 Handle(
                     new ProjectionManagementMessage.Post(
                         new PublishEnvelope(_inputQueue), ProjectionMode.Continuous, message.Name,
-                        ProjectionManagementMessage.RunAs.System, message.Handler, message.Query, true, true, true));
+                        ProjectionManagementMessage.RunAs.System, message.Handler, message.Query, true, true, true,
+                        enableRunAs: true));
             }
         }
 
@@ -610,7 +628,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             var postMessage = new ProjectionManagementMessage.Post(
                 envelope, ProjectionMode.Continuous, name, ProjectionManagementMessage.RunAs.System, "native:" + handlerType.Namespace + "." + handlerType.Name,
-                config, enabled: false, checkpointsEnabled: true, emitEnabled: true);
+                config, enabled: false, checkpointsEnabled: true, emitEnabled: true, enableRunAs: true);
 
             _publisher.Publish(postMessage);
         }
@@ -683,5 +701,6 @@ namespace EventStore.Projections.Core.Services.Management
             else
                 throw new NotSupportedException("Unsupported error code received");
         }
+
     }
 }

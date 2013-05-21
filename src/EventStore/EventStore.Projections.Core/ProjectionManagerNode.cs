@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<ProjectionManagementMessage.GetResult>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Disable>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Enable>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.SetRunAs>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Reset>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.RegisterSystemProjection>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_projectionManager);
