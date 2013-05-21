@@ -88,7 +88,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
                     new ProjectionManagementMessage.GetStatistics(
                         Envelope, ProjectionMode.AllNonTransient, _projectionName, false);
                 yield return new ProjectionManagementMessage.GetState(Envelope, _projectionName, "");
-                yield return new ProjectionManagementMessage.GetQuery(Envelope, _projectionName);
+                yield return
+                    new ProjectionManagementMessage.GetQuery(
+                        Envelope, _projectionName, ProjectionManagementMessage.RunAs.Anonymous);
 
                 _allStatistics = HandledMessages.OfType<ProjectionManagementMessage.Statistics>().LastOrDefault();
                 _statistics = _allStatistics != null ? _allStatistics.Projections.SingleOrDefault() : null;

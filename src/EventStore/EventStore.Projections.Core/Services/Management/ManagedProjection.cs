@@ -226,6 +226,8 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.GetQuery message)
         {
             _lastAccessed = _timeProvider.Now;
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(_runAs, message)) return;
+
             var emitEnabled = _persistedState.EmitEnabled ?? false;
             message.Envelope.ReplyWith(
                 new ProjectionManagementMessage.ProjectionQuery(_name, Query, emitEnabled, _persistedState.SourceDefinition));
@@ -413,7 +415,7 @@ namespace EventStore.Projections.Core.Services.Management
                         CheckpointsDisabled = !message.CheckpointsEnabled,
                         Epoch = -1,
                         Version = -1,
-                        RunAs = SerializePrincipal(message.RunAs),
+                        RunAs = message.EnableRunAs ? SerializePrincipal(message.RunAs) : null,
                     });
             UpdateProjectionVersion();
             Prepare(() => BeginWrite(() => StartOrLoadStopped(completed)));

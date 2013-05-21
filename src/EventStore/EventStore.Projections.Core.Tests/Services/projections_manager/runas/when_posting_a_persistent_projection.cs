@@ -35,42 +35,68 @@ using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
+using System.Linq;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
 {
-    [TestFixture]
-    public class when_posting_a_persistent_projection : TestFixtureWithProjectionCoreAndManagementServices
+    namespace when_posting_a_persistent_projection
     {
-        private string _projectionName;
-        private OpenGenericPrincipal _testUserPrincipal;
 
-        private string _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
-
-        protected override void Given()
+        [TestFixture]
+        public class authenticated : TestFixtureWithProjectionCoreAndManagementServices
         {
-            _projectionName = "test-projection";
-            _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
-            _testUserPrincipal = new OpenGenericPrincipal(
-                new GenericIdentity("test-user"), new[] {"test-role1", "test-role2"});
+            private string _projectionName;
+            private OpenGenericPrincipal _testUserPrincipal;
 
-            AllWritesSucceed();
-            NoOtherStreams();
-        }
+            private string _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
 
-        protected override IEnumerable<WhenStep> When()
-        {
-            yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
-            yield return
-                new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
-                    new ProjectionManagementMessage.RunAs(_testUserPrincipal, true, true), "JS", _projectionBody,
-                    enabled: true, checkpointsEnabled: true, emitEnabled: true);
-        }
+            protected override void Given()
+            {
+                _projectionName = "test-projection";
+                _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
+                _testUserPrincipal = new OpenGenericPrincipal(
+                    new GenericIdentity("test-user"), new[] {"test-role1", "test-role2"});
 
-        [Test]
-        public void just()
-        {
-            Assert.Inconclusive();
+                AllWritesSucceed();
+                NoOtherStreams();
+            }
+
+            protected override IEnumerable<WhenStep> When()
+            {
+                yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+                yield return
+                    new ProjectionManagementMessage.Post(
+                        new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
+                        new ProjectionManagementMessage.RunAs(_testUserPrincipal), "JS", _projectionBody, enabled: true,
+                        checkpointsEnabled: true, emitEnabled: true, enableRunAs: true);
+            }
+
+            [Test]
+            public void anonymous_cannot_retrieve_projection_query()
+            {
+                GetInputQueue()
+                    .Publish(
+                        new ProjectionManagementMessage.GetQuery(
+                            Envelope, _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+                _queue.Process();
+
+                Assert.IsTrue(HandledMessages.OfType<ProjectionManagementMessage.NotAuthorized>().Any());
+            }
+
+            [Test]
+            public void projection_owner_can_retrieve_projection_query()
+            {
+                GetInputQueue()
+                    .Publish(
+                        new ProjectionManagementMessage.GetQuery(
+                            Envelope, _projectionName, new ProjectionManagementMessage.RunAs(_testUserPrincipal)));
+                _queue.Process();
+
+                var query = HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().FirstOrDefault();
+                Assert.NotNull(query);
+                Assert.AreEqual(_projectionBody, query.Query);
+            }
+
         }
     }
 }

@@ -196,7 +196,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (!_started)
                 return;
 
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(null, message)) return;
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(null, message, replace: message.EnableRunAs)) return;
 
             if (message.Name == null)
             {
@@ -482,7 +482,8 @@ namespace EventStore.Projections.Core.Services.Management
                 Handle(
                     new ProjectionManagementMessage.Post(
                         new PublishEnvelope(_inputQueue), ProjectionMode.Continuous, message.Name,
-                        ProjectionManagementMessage.RunAs.System, message.Handler, message.Query, true, true, true));
+                        ProjectionManagementMessage.RunAs.System, message.Handler, message.Query, true, true, true,
+                        enableRunAs: true));
             }
         }
 
@@ -610,7 +611,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             var postMessage = new ProjectionManagementMessage.Post(
                 envelope, ProjectionMode.Continuous, name, ProjectionManagementMessage.RunAs.System, "native:" + handlerType.Namespace + "." + handlerType.Name,
-                config, enabled: false, checkpointsEnabled: true, emitEnabled: true);
+                config, enabled: false, checkpointsEnabled: true, emitEnabled: true, enableRunAs: true);
 
             _publisher.Publish(postMessage);
         }

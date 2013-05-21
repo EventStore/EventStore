@@ -44,7 +44,7 @@ namespace EventStore.Integration.Tests.Helpers
         private Projections.Core.ProjectionsSubsystem _projections;
 
         private MediumNode(string pathname, ProjectionsSubsystem projectionsSubsystem, bool runProjections)
-            : base(pathname, enableProjections: runProjections, subsystems: new []{projectionsSubsystem})
+            : base(pathname, subsystems: new []{projectionsSubsystem})
         {
             _projections = projectionsSubsystem;
             RegisterWebControllers(new[] {NodeSubsystems.Projections} );

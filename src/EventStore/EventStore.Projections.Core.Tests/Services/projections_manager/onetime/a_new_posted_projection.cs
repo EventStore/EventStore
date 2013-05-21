@@ -80,7 +80,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
-                yield return(new ProjectionManagementMessage.GetQuery(new PublishEnvelope(_bus), _projectionName));
+                yield return
+                    (new ProjectionManagementMessage.GetQuery(
+                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
             }
 
             [Test]

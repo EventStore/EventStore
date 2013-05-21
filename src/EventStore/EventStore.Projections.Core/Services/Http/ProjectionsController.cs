@@ -113,8 +113,8 @@ namespace EventStore.Projections.Core.Services.Http
                 service, "/projection/{name}/query?config={config}", HttpMethod.Get, OnProjectionQueryGet,
                 Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
             Register(
-                service, "/projection/{name}/query?type={type}&emit={emit}&enableRunAs={enableRunAs}&replaceRunAs={replaceRunAs}", HttpMethod.Put,
-                OnProjectionQueryPut, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+                service, "/projection/{name}/query?type={type}&emit={emit}", HttpMethod.Put, OnProjectionQueryPut,
+                new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
             Register(
                 service, "/projection/{name}", HttpMethod.Get, OnProjectionStatusGet, Codec.NoCodecs, SupportedCodecs);
             Register(
@@ -134,13 +134,13 @@ namespace EventStore.Projections.Core.Services.Http
                 service, "/projection/{name}/result?partition={partition}", HttpMethod.Get, OnProjectionResultGet,
                 Codec.NoCodecs, SupportedCodecs);
             Register(
-                service, "/projection/{name}/command/disable?enableRunAs={enableRunAs}&replaceRunAs={replaceRunAs}", HttpMethod.Post,
+                service, "/projection/{name}/command/disable?enableRunAs={enableRunAs}", HttpMethod.Post,
                 OnProjectionCommandDisable, Codec.NoCodecs, SupportedCodecs);
             Register(
-                service, "/projection/{name}/command/enable?enableRunAs={enableRunAs}&replaceRunAs={replaceRunAs}", HttpMethod.Post,
+                service, "/projection/{name}/command/enable?enableRunAs={enableRunAs}", HttpMethod.Post,
                 OnProjectionCommandEnable, Codec.NoCodecs, SupportedCodecs);
             Register(
-                service, "/projection/{name}/command/reset?enableRunAs={enableRunAs}&replaceRunAs={replaceRunAs}", HttpMethod.Post,
+                service, "/projection/{name}/command/reset?enableRunAs={enableRunAs}", HttpMethod.Post,
                 OnProjectionCommandReset, Codec.NoCodecs, SupportedCodecs);
         }
 
@@ -205,7 +205,7 @@ namespace EventStore.Projections.Core.Services.Http
             else
                 envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionQuery>(
                     _networkSendQueue, http, QueryFormatter, QueryConfigurator, ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.GetQuery(envelope, match.BoundVariables["name"]));
+            Publish(new ProjectionManagementMessage.GetQuery(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
         }
 
         private void OnProjectionQueryPut(HttpEntityManager http, UriTemplateMatch match)
@@ -513,8 +513,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private static ProjectionManagementMessage.RunAs GetRunAs(HttpEntityManager http, UriTemplateMatch match)
         {
-            return new ProjectionManagementMessage.RunAs(
-                http.User, IsOn(match, "enableRunAs", false), IsOn(match, "replaceRunAs", false));
+            return new ProjectionManagementMessage.RunAs(http.User);
         }
 
         private static bool? IsOn(UriTemplateMatch match, string option, bool? def)
