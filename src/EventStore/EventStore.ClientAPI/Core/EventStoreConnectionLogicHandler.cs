@@ -210,7 +210,7 @@ namespace EventStore.ClientAPI.Core
             _subscriptions.CleanUp();
             CloseTcpConnection(reason);
 
-            LogInfo("closed. Reason: {1}.", _esConnection.ConnectionName, reason);
+            LogInfo("closed. Reason: {0}.", reason);
 
             if (exception != null && _settings.ErrorOccurred != null)
                 _settings.ErrorOccurred(_esConnection, exception);
@@ -239,8 +239,8 @@ namespace EventStore.ClientAPI.Core
             if (_state == ConnectionState.Closed || _connection != connection)
             {
                 LogDebug("IGNORED (_state: {0}, _conn.ID: {1}, conn.ID: {2}): TCP connection to [{3}] closed.", 
-                         _state, connection.EffectiveEndPoint, 
-                         _connection == null ? Guid.Empty : _connection.ConnectionId,  connection.ConnectionId);
+                         _state, _connection == null ? Guid.Empty : _connection.ConnectionId,  connection.ConnectionId, 
+                         connection.EffectiveEndPoint);
                 return;
             }
 

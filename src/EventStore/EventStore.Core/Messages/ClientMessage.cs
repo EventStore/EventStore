@@ -143,7 +143,6 @@ namespace EventStore.Core.Messages
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (expectedVersion < Data.ExpectedVersion.Any) throw new ArgumentOutOfRangeException("expectedVersion");
                 Ensure.NotNull(events, "events");
-                Ensure.Positive(events.Length, "events.Length");
 
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
@@ -235,7 +234,6 @@ namespace EventStore.Core.Messages
             {
                 Ensure.Nonnegative(transactionId, "transactionId");
                 Ensure.NotNull(events, "events");
-                Ensure.Positive(events.Length, "events.Length");
 
                 TransactionId = transactionId;
                 Events = events;

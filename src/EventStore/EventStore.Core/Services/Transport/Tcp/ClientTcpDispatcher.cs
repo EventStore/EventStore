@@ -114,7 +114,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = package.Data.Deserialize<TcpClientMessageDto.WriteEvents>();
             if (dto == null) return null;
             
-            var events = new Event[dto.Events.Length];
+            var events = new Event[dto.Events == null ? 0 : dto.Events.Length];
             for (int i = 0; i < events.Length; ++i)
             {
                 var e = dto.Events[i];
@@ -186,7 +186,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = package.Data.Deserialize<TcpClientMessageDto.TransactionWrite>();
             if (dto == null) return null;
 
-            var events = new Event[dto.Events.Length];
+            var events = new Event[dto.Events == null ? 0 : dto.Events.Length];
             for (int i = 0; i < events.Length; ++i)
             {
                 var e = dto.Events[i];

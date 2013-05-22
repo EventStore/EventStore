@@ -225,37 +225,51 @@ namespace EventStore.Core.Services.Storage
                 if (message.LiveUntil < DateTime.UtcNow)
                     return;
 
-                Debug.Assert(message.Events.Length > 0);
-
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
-                var transactionPosition = logPosition;
-
-                for (int i = 0; i < message.Events.Length; ++i)
+                if (message.Events.Length > 0)
                 {
-                    var evnt = message.Events[i];
-                    var flags = PrepareFlags.Data;
-                    if (i == 0) 
-                        flags |= PrepareFlags.TransactionBegin;
-                    if (i == message.Events.Length - 1) 
-                        flags |= PrepareFlags.TransactionEnd;
-                    if (evnt.IsJson)
-                        flags |= PrepareFlags.IsJson;
+                    var transactionPosition = logPosition;
+                    for (int i = 0; i < message.Events.Length; ++i)
+                    {
+                        var evnt = message.Events[i];
+                        var flags = PrepareFlags.Data;
+                        if (i == 0)
+                            flags |= PrepareFlags.TransactionBegin;
+                        if (i == message.Events.Length - 1)
+                            flags |= PrepareFlags.TransactionEnd;
+                        if (evnt.IsJson)
+                            flags |= PrepareFlags.IsJson;
 
-                    var expectedVersion = i == 0 ? message.ExpectedVersion : ExpectedVersion.Any;
-                    var res = WritePrepareWithRetry(LogRecord.Prepare(logPosition,
-                                                                      message.CorrelationId,
-                                                                      evnt.EventId,
-                                                                      transactionPosition,
-                                                                      i,
-                                                                      message.EventStreamId,
-                                                                      expectedVersion,
-                                                                      flags,
-                                                                      evnt.EventType,
-                                                                      evnt.Data,
-                                                                      evnt.Metadata));
-                    logPosition = res.NewPos;
-                    if (i == 0)
-                        transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
+                        var expectedVersion = i == 0 ? message.ExpectedVersion : ExpectedVersion.Any;
+                        var res = WritePrepareWithRetry(LogRecord.Prepare(logPosition,
+                                                                          message.CorrelationId,
+                                                                          evnt.EventId,
+                                                                          transactionPosition,
+                                                                          i,
+                                                                          message.EventStreamId,
+                                                                          expectedVersion,
+                                                                          flags,
+                                                                          evnt.EventType,
+                                                                          evnt.Data,
+                                                                          evnt.Metadata));
+                        logPosition = res.NewPos;
+                        if (i == 0)
+                            transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
+                    }
+                }
+                else
+                {
+                    WritePrepareWithRetry(LogRecord.Prepare(logPosition,
+                                                            message.CorrelationId,
+                                                            Guid.NewGuid(),
+                                                            logPosition,
+                                                            -1,
+                                                            message.EventStreamId,
+                                                            message.ExpectedVersion,
+                                                            PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                                                            null,
+                                                            Empty.ByteArray,
+                                                            Empty.ByteArray));
                 }
             }
             catch (Exception exc)
@@ -300,31 +314,32 @@ namespace EventStore.Core.Services.Storage
             Interlocked.Decrement(ref FlushMessagesInQueue);
             try
             {
-                Debug.Assert(message.Events.Length > 0);
-
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
                 var transactionInfo = ReadIndex.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
                 CheckTransactionInfo(message.TransactionId, transactionInfo);
 
-                for (int i = 0; i < message.Events.Length; ++i)
+                if (message.Events.Length > 0)
                 {
-                    var evnt = message.Events[i];
-                    var record = LogRecord.TransactionWrite(logPosition,
-                                                            message.CorrelationId,
-                                                            evnt.EventId,
-                                                            message.TransactionId,
-                                                            transactionInfo.TransactionOffset + i + 1,
-                                                            transactionInfo.EventStreamId,
-                                                            evnt.EventType,
-                                                            evnt.Data,
-                                                            evnt.Metadata,
-                                                            evnt.IsJson);
-                    var res = WritePrepareWithRetry(record);
-                    logPosition = res.NewPos;
+                    for (int i = 0; i < message.Events.Length; ++i)
+                    {
+                        var evnt = message.Events[i];
+                        var record = LogRecord.TransactionWrite(logPosition,
+                                                                message.CorrelationId,
+                                                                evnt.EventId,
+                                                                message.TransactionId,
+                                                                transactionInfo.TransactionOffset + i + 1,
+                                                                transactionInfo.EventStreamId,
+                                                                evnt.EventType,
+                                                                evnt.Data,
+                                                                evnt.Metadata,
+                                                                evnt.IsJson);
+                        var res = WritePrepareWithRetry(record);
+                        logPosition = res.NewPos;
+                    }
+                    ReadIndex.UpdateTransactionInfo(message.TransactionId,
+                                                    new TransactionInfo(transactionInfo.TransactionOffset + message.Events.Length,
+                                                                        transactionInfo.EventStreamId));
                 }
-                ReadIndex.UpdateTransactionInfo(message.TransactionId,
-                                                new TransactionInfo(transactionInfo.TransactionOffset + message.Events.Length,
-                                                                    transactionInfo.EventStreamId));
             }
             catch (Exception exc)
             {

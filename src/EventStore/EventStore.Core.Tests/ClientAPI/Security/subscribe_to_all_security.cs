@@ -25,40 +25,36 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+using EventStore.ClientAPI.Exceptions;
+using NUnit.Framework;
 
-using System;
-using System.Net;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Tests.Helpers;
-
-namespace EventStore.Core.Tests.ClientAPI.Helpers
+namespace EventStore.Core.Tests.ClientAPI.Security
 {
-    public static class TestConnection
+    [TestFixture, Category("LongRunning"), Category("Network")]
+    public class subscribe_to_all_security : AuthenticationTestBase
     {
-        public static IEventStoreConnection Create(IPEndPoint endPoint, TcpType tcpType = TcpType.Normal, UserCredentials userCredentials = null)
+        [Test, Category("LongRunning"), Category("Network")]
+        public void subscribing_to_all_with_not_existing_credentials_is_not_authenticated()
         {
-            return EventStoreConnection.Create(Settings(tcpType, userCredentials), endPoint);
+            Expect<NotAuthenticatedException>(() => SubscribeToAll("badlogin", "badpass"));
         }
 
-        public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType, UserCredentials userCredentials = null)
+        [Test, Category("LongRunning"), Category("Network")]
+        public void subscribing_to_all_with_no_credentials_is_denied()
         {
-            return EventStoreConnection.Create(Settings(tcpType, userCredentials),
-                                               tcpType == TcpType.Ssl ? miniNode.TcpSecEndPoint : miniNode.TcpEndPoint);
+            Expect<AccessDeniedException>(() => SubscribeToAll(null, null));
         }
 
-        private static ConnectionSettingsBuilder Settings(TcpType tcpType, UserCredentials userCredentials)
+        [Test, Category("LongRunning"), Category("Network")]
+        public void subscribing_to_all_with_not_authorized_user_credentials_is_denied()
         {
-            var settings = ConnectionSettings.Create()
-                                             .SetDefaultUserCredentials(userCredentials)
-                                             .UseCustomLogger(ClientApiLoggerBridge.Default)
-                                             .EnableVerboseLogging()
-                                             //.DisableVerboseLogging()
-                                             .FailOnNoServerResponse()
-                                             .SetOperationTimeoutTo(TimeSpan.FromDays(1));
-            if (tcpType == TcpType.Ssl)
-                settings.UseSslConnection("ES", false);
-            return settings;
+            Expect<AccessDeniedException>(() => SubscribeToAll("user2", "pa$$2"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void subscribing_to_all_with_authorized_user_credentials_succeeds()
+        {
+            ExpectNoException(() => SubscribeToAll("user1", "pa$$1"));
         }
     }
 }
