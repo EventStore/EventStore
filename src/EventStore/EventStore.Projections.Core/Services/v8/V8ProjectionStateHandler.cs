@@ -33,6 +33,8 @@ using EventStore.Common.Utils;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.v8;
+using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace EventStore.Projections.Core.Services.v8
 {
@@ -76,6 +78,14 @@ namespace EventStore.Projections.Core.Services.v8
 
             [DataMember] public string body;
 
+            [DataMember] public Dictionary<string, JRaw> metadata;
+
+            public ExtraMetaData GetExtraMetadata()
+            {
+                if (metadata == null)
+                    return null;
+                return new ExtraMetaData(metadata);
+            }
         }
 
 
@@ -92,7 +102,10 @@ namespace EventStore.Projections.Core.Services.v8
             }
             if (_emittedEvents == null)
                 _emittedEvents = new List<EmittedEvent>();
-            _emittedEvents.Add(new EmittedDataEvent(emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body, _eventPosition, expectedTag: null));
+            _emittedEvents.Add(
+                new EmittedDataEvent(
+                    emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body,
+                    emittedEvent.GetExtraMetadata(), _eventPosition, expectedTag: null));
         }
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)

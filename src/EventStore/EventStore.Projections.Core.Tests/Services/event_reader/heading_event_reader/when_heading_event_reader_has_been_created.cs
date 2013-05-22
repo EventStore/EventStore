@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             var eventReaderId = Guid.NewGuid();
             _point.Start(
                 eventReaderId,
-                new TransactionFileEventReader(_bus, eventReaderId, new TFPos(0, -1), new RealTimeProvider()));
+                new TransactionFileEventReader(_bus, eventReaderId, null, new TFPos(0, -1), new RealTimeProvider()));
         }
     }
 }

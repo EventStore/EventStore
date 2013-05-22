@@ -26,47 +26,29 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
+using System.Collections.Generic;
 using System.Linq;
-using EventStore.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
+using Newtonsoft.Json.Linq;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
+namespace EventStore.Projections.Core.Services.Processing
 {
-    [TestFixture]
-    public class when_the_stream_is_started_with_already_emitted_events : TestFixtureWithExistingEvents
+    public class ExtraMetaData
     {
-        private EmittedStream _stream;
-        private TestCheckpointManagerMessageHandler _readyHandler;
+        private readonly Dictionary<string, string> _metadata;
 
-        protected override void Given()
+        public ExtraMetaData(Dictionary<string, JRaw> metadata)
         {
-            base.Given();
-            NoStream("test");
+            _metadata = metadata.ToDictionary(v => v.Key, v => v.Value.ToString());
         }
 
-        [SetUp]
-        public void setup()
+        public ExtraMetaData(Dictionary<string, string> metadata)
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _stream = new EmittedStream(
-                "test", new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher,
-                _readyHandler, 50);
-            _stream.EmitEvents(
-                new[]
-                    {
-                        new EmittedDataEvent(
-                    "test", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(100, 50), null)
-                    });
-            _stream.Start();
+            _metadata = metadata.ToDictionary(v => v.Key, v => v.Value);
         }
 
-        [Test]
-        public void publishes_write_events()
+        public Dictionary<string, string> Metadata
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+            get { return _metadata; }
         }
     }
 }

@@ -56,11 +56,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             return new EmittedEvent[]
                 {
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type1", "data", CheckpointTag.FromPosition(100, 50), null, v => _1 = v),
+                        "test_stream", Guid.NewGuid(), "type1", "data", null, CheckpointTag.FromPosition(100, 50), null,
+                        v => _1 = v),
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type2", "data", CheckpointTag.FromPosition(100, 50), null, v => _2 = v),
+                        "test_stream", Guid.NewGuid(), "type2", "data", null, CheckpointTag.FromPosition(100, 50), null,
+                        v => _2 = v),
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type3", "data", CheckpointTag.FromPosition(100, 50), null, v => _3 = v)
+                        "test_stream", Guid.NewGuid(), "type3", "data", null, CheckpointTag.FromPosition(100, 50), null,
+                        v => _3 = v)
                 };
         }
 

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -50,9 +51,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _deliveredEvents;
 
         public StreamEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, string streamName, int fromSequenceNumber,
-            ITimeProvider timeProvider, bool resolveLinkTos, bool stopOnEof = false, int? stopAfterNEvents = null)
-            : base(publisher, eventReaderCorrelationId, stopOnEof, stopAfterNEvents)
+            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal principal, string streamName,
+            int fromSequenceNumber, ITimeProvider timeProvider, bool resolveLinkTos, bool stopOnEof = false,
+            int? stopAfterNEvents = null)
+            : base(publisher, eventReaderCorrelationId, principal, stopOnEof, stopAfterNEvents)
         {
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
             if (streamName == null) throw new ArgumentNullException("streamName");

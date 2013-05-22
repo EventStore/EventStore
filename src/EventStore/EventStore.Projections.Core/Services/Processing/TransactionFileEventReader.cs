@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -49,10 +50,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _deliveredEvents;
 
         public TransactionFileEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, TFPos @from, ITimeProvider timeProvider,
-            bool stopOnEof = false, bool deliverEndOfTFPosition = true, bool resolveLinkTos = true,
-            int? stopAfterNEvents = null)
-            : base(publisher, eventReaderCorrelationId, stopOnEof, stopAfterNEvents)
+            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal principal, TFPos @from,
+            ITimeProvider timeProvider, bool stopOnEof = false, bool deliverEndOfTFPosition = true,
+            bool resolveLinkTos = true, int? stopAfterNEvents = null)
+            : base(publisher, eventReaderCorrelationId, principal, stopOnEof, stopAfterNEvents)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             _from = @from;

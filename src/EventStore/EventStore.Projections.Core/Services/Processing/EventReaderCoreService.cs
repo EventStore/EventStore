@@ -32,6 +32,7 @@ using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 
@@ -198,14 +199,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void StartReaders()
         {
-//TODO: do we need to clear subscribed projections here?
+            //TODO: do we need to clear subscribed projections here?
             //TODO: do we need to clear subscribed distribution points here?
             _stopped = false;
             var distributionPointCorrelationId = Guid.NewGuid();
             var transactionFileReader = new TransactionFileEventReader(
-                _publisher, distributionPointCorrelationId,
-                new TFPos(_writerCheckpoint.Read(), -1), new RealTimeProvider(),
-                deliverEndOfTFPosition: false);
+                _publisher, distributionPointCorrelationId, SystemAccount.Principal,
+                new TFPos(_writerCheckpoint.Read(), -1), new RealTimeProvider(), deliverEndOfTFPosition: false);
             _eventReaders.Add(distributionPointCorrelationId, transactionFileReader);
             if (_runHeadingReader)
                 _headingEventReader.Start(distributionPointCorrelationId, transactionFileReader);

@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
             _distibutionPointCorrelationId = Guid.NewGuid();
             _fakeTimeProvider = new FakeTimeProvider();
             _edp = new TransactionFileEventReader(
-                _bus, _distibutionPointCorrelationId, new TFPos(100, 50), _fakeTimeProvider,
+                _bus, _distibutionPointCorrelationId, null, new TFPos(100, 50), _fakeTimeProvider,
                 deliverEndOfTFPosition: false, stopOnEof: true);
             _edp.Resume();
             _firstEventId = Guid.NewGuid();

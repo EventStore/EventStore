@@ -58,7 +58,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 _readyHandler, 50);
             _stream.Start();
             _stream.EmitEvents(
-                new[] { new EmittedDataEvent("test", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(10, 5), null) });
+                new[]
+                    {
+                        new EmittedDataEvent(
+                    "test", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(10, 5), null)
+                    });
             var msg = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First();
             _bus.Publish(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, 0));
             _stream.Checkpoint();

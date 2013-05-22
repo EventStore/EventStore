@@ -57,8 +57,9 @@ namespace EventStore.Projections.Core.Services.Processing
             if (string.IsNullOrEmpty(partition))
             {
                 var result = projectionResult == null
-                                 ? new EmittedDataEvent(streamId, Guid.NewGuid(), "ResultRemoved", null, at, null)
-                                 : new EmittedDataEvent(streamId, Guid.NewGuid(), "Result", projectionResult, at, null);
+                                 ? new EmittedDataEvent(streamId, Guid.NewGuid(), "ResultRemoved", null, null, at, null)
+                                 : new EmittedDataEvent(
+                                       streamId, Guid.NewGuid(), "Result", projectionResult, null, at, null);
                 return new EmittedEvent[] {result};
             }
             else
@@ -66,10 +67,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 var linkTo = new EmittedLinkTo(allResultsStreamId, Guid.NewGuid(), streamId, at, null);
                 var result = projectionResult == null
                                  ? new EmittedDataEvent(
-                                       streamId, Guid.NewGuid(), "ResultRemoved", null, at, null,
+                                       streamId, Guid.NewGuid(), "ResultRemoved", null, null, at, null,
                                        linkTo.SetTargetEventNumber)
                                  : new EmittedDataEvent(
-                                       streamId, Guid.NewGuid(), "Result", projectionResult, at, null,
+                                       streamId, Guid.NewGuid(), "Result", projectionResult, null, at, null,
                                        linkTo.SetTargetEventNumber);
                 return new EmittedEvent[] {result, linkTo};
             }

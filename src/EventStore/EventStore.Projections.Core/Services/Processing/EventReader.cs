@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -37,6 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public abstract class EventReader : IEventReader
     {
         protected readonly Guid EventReaderCorrelationId;
+        private readonly IPrincipal _principal;
         protected readonly IPublisher _publisher;
         protected readonly ILogger _logger = LogManager.GetLoggerFor<EventReader>();
 
@@ -47,13 +49,15 @@ namespace EventStore.Projections.Core.Services.Processing
         protected bool _disposed;
 
         protected EventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, bool stopOnEof, int? stopAfterNEvents)
+            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal principal, bool stopOnEof,
+            int? stopAfterNEvents)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (eventReaderCorrelationId == Guid.Empty)
                 throw new ArgumentException("eventReaderCorrelationId");
             _publisher = publisher;
             EventReaderCorrelationId = eventReaderCorrelationId;
+            _principal = principal;
             _stopOnEof = stopOnEof;
             _stopAfterNEvents = stopAfterNEvents;
         }

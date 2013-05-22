@@ -57,8 +57,9 @@
         },
       
         event_type1: function(s, e) {
-            //  emit('streamId', 'eventType', {/* event body */});
-            //  linkTo('streamId', e);
+            //  emit('streamId', 'eventType', {/* event body */} [, {/* optional event metadata */}]);
+            //  linkTo('streamId', e [, {/* optional link-to-event metadata */}]);
+            //  copyTo('streamId', e);
             s.count1 += 1;
             return s;
         },
@@ -76,7 +77,7 @@
     // .filterBy(f)/transformBy(f)
     // .outputTo(name[, namePattern]) // defines a name for the output stream               
                         
-    //NOTE: filterBy(), transformBy(), emit(), linkTo() require "emit enabled" (see checkbox below)
+    //NOTE: filterBy(), transformBy(), emit(), linkTo(), copyTo() require "emit enabled" (see checkbox below)
                             
                         </div>
                     </div>

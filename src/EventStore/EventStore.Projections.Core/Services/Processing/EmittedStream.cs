@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -76,7 +75,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _disposed;
         private CheckpointTag _last;
         private bool _recoveryCompleted;
-        private string _debugStreamStartedAs;
 
 
         public EmittedStream(
@@ -230,7 +228,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 var parsed = default(CheckpointTagVersion);
                 if (!newPhysicalStream)
                 {
-                    _debugStreamStartedAs = Helper.UTF8NoBom.GetString(message.Events[0].Event.Metadata);
                     parsed = message.Events[0].Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                     if (_projectionVersion.ProjectionId != parsed.Version.ProjectionId)
                     {

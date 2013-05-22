@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -60,9 +61,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _deliveredEvents;
 
         public MultiStreamEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, string[] streams, Dictionary<string, int> fromPositions,
-            bool resolveLinkTos, ITimeProvider timeProvider, bool stopOnEof = false, int? stopAfterNEvents = null)
-            : base(publisher, eventReaderCorrelationId, stopOnEof, stopAfterNEvents)
+            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal principal, string[] streams,
+            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
+            bool stopOnEof = false, int? stopAfterNEvents = null)
+            : base(publisher, eventReaderCorrelationId, principal, stopOnEof, stopAfterNEvents)
         {
             if (streams == null) throw new ArgumentNullException("streams");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");

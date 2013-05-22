@@ -27,23 +27,22 @@
 // 
 
 using System;
-using System.Text;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using System.Linq;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
 {
-
     [TestFixture]
-    public class when_running_emitting_v8_projection : TestFixtureWithJsProjection
+    public class when_running_a_v8_projection_emitting_metadata : TestFixtureWithJsProjection
     {
         protected override void Given()
         {
             _projection = @"
                 fromAll().when({$any: 
                     function(state, event) {
-                    emit('output-stream' + event.sequenceNumber, 'emitted-event' + event.sequenceNumber, {a: JSON.parse(event.bodyRaw).a});
+                    emit('output-stream' + event.sequenceNumber, 'emitted-event' + event.sequenceNumber, {a: JSON.parse(event.bodyRaw).a}, {m1: 1, m2: ""2""});
                     return {};
                 }});
             ";
@@ -75,6 +74,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.AreEqual("emitted-event0", emittedEvents[0].EventType);
             Assert.AreEqual("output-stream0", emittedEvents[0].StreamId);
             Assert.AreEqual(@"{""a"":""b""}", emittedEvents[0].Data);
+            var extraMetaData = emittedEvents[0].ExtraMetaData().ToArray();
+            Assert.IsNotNull(extraMetaData);
+            Assert.AreEqual(2, extraMetaData.Length);
         }
 
         [Test, Category("v8"), Category("Manual"), Explicit]
@@ -85,8 +87,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 string state;
                 EmittedEvent[] emittedEvents;
                 var result = _stateHandler.ProcessEvent(
-                    "", CheckpointTag.FromPosition(i * 10 + 20, i * 10 + 10), "stream" + i, "type" + i, "category", Guid.NewGuid(), i,
-                    "metadata", @"{""a"":""" + i + @"""}", out state, out emittedEvents);
+                    "", CheckpointTag.FromPosition(i*10 + 20, i*10 + 10), "stream" + i, "type" + i, "category",
+                    Guid.NewGuid(), i, "metadata", @"{""a"":""" + i + @"""}", out state, out emittedEvents);
 
                 Assert.IsNotNull(emittedEvents);
                 Assert.AreEqual(1, emittedEvents.Length);

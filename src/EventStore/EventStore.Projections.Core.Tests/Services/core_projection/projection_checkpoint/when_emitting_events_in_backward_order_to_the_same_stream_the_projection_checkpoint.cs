@@ -50,11 +50,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             try
             {
                 _checkpoint.ValidateOrderAndEmitEvents(
-                    new[] {new EmittedDataEvent("stream1", Guid.NewGuid(), "type", "data",
-                    CheckpointTag.FromPosition(140, 130), null)});
+                    new[]
+                        {
+                            new EmittedDataEvent(
+                        "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(140, 130), null)
+                        });
                 _checkpoint.ValidateOrderAndEmitEvents(
-                    new[] {new EmittedDataEvent("stream1", Guid.NewGuid(), "type", "data2",
-                    CheckpointTag.FromPosition(120, 110), null)});
+                    new[]
+                        {
+                            new EmittedDataEvent(
+                        "stream1", Guid.NewGuid(), "type", "data2", null, CheckpointTag.FromPosition(120, 110), null)
+                        });
             }
             catch (Exception ex)
             {
