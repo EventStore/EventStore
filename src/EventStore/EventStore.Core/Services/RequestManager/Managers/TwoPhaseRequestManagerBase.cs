@@ -46,12 +46,15 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                        IHandle<StorageMessage.StreamDeleted>,
                                                        IHandle<StorageMessage.RequestManagerTimerTick>
     {
+        internal static readonly TimeSpan TimeoutOffset = TimeSpan.FromMilliseconds(30);
 
         protected IEnvelope PublishEnvelope { get { return _publishEnvelope; } }
         protected IEnvelope ResponseEnvelope { get { return _responseEnvelope; } }
         protected Guid CorrelationId { get { return _correlationId; } }
         protected long TransactionPosition { get { return _transactionPos; } }
         protected readonly IPublisher Publisher;
+        protected DateTime NextTimeoutTime { get { return _nextTimeoutTime; } }
+
         private readonly IEnvelope _publishEnvelope;
         
         protected readonly TimeSpan PrepareTimeout;
@@ -87,7 +90,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         protected abstract void OnSecurityAccessGranted();
 
-        protected void Init(IEnvelope responseEnvelope, Guid correlationId, string eventStreamId, IPrincipal user, long preparePos)
+        protected void Init(IEnvelope responseEnvelope, Guid correlationId, string eventStreamId, IPrincipal user, long? transactionId)
         {
             if (_initialized)
                 throw new InvalidOperationException();
@@ -96,20 +99,12 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _responseEnvelope = responseEnvelope;
             _correlationId = correlationId;
-            _transactionPos = preparePos;
+            _transactionPos = transactionId ?? -1;
         
             _nextTimeoutTime = DateTime.UtcNow + PrepareTimeout;
 
-            if (eventStreamId != null)
-            {
-                Publisher.Publish(new StorageMessage.CheckStreamAccess(
-                    PublishEnvelope, correlationId, eventStreamId, StreamAccessType.Write, user));
-            }
-            else
-            {
-                Publisher.Publish(new StorageMessage.CheckStreamAccessCompleted(
-                    correlationId, null, StreamAccessType.Write, StreamAccessResult.Granted));
-            }
+            Publisher.Publish(new StorageMessage.CheckStreamAccess(
+                PublishEnvelope, correlationId, eventStreamId, transactionId, StreamAccessType.Write, user));
         }
 
         public void Handle(StorageMessage.CheckStreamAccessCompleted message)

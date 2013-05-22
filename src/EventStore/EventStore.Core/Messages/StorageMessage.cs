@@ -326,15 +326,23 @@ namespace EventStore.Core.Messages
         {
             public readonly IEnvelope Envelope;
             public readonly Guid CorrelationId;
+
             public readonly string EventStreamId;
+            public readonly long? TransactionId;
+
             public readonly StreamAccessType AccessType;
             public readonly IPrincipal User;
 
-            public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, StreamAccessType accessType, IPrincipal user)
+            public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, long? transactionId, 
+                                     StreamAccessType accessType, IPrincipal user)
             {
+                if (eventStreamId == null && transactionId == null)
+                    throw new ArgumentException("Neither eventStreamId nor transactionId is specified.");
+
                 Envelope = envelope;
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
+                TransactionId = transactionId;
                 AccessType = accessType;
                 User = user;
             }
@@ -344,13 +352,16 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
+            public readonly long? TransactionId;
             public readonly StreamAccessType AccessType;
             public readonly StreamAccessResult AccessResult;
 
-            public CheckStreamAccessCompleted(Guid correlationId, string eventStreamId, StreamAccessType accessType, StreamAccessResult accessResult)
+            public CheckStreamAccessCompleted(Guid correlationId, string eventStreamId, long? transactionId, 
+                                              StreamAccessType accessType, StreamAccessResult accessResult)
             {
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
+                TransactionId = transactionId;
                 AccessType = accessType;
                 AccessResult = accessResult;
             }

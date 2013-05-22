@@ -238,15 +238,32 @@ namespace EventStore.Core.Services.Storage
 
         private StorageMessage.CheckStreamAccessCompleted CheckStreamAccess(StorageMessage.CheckStreamAccess msg)
         {
+            string streamId = msg.EventStreamId;
             try
             {
-                var result = _readIndex.CheckStreamAccess(msg.EventStreamId, msg.AccessType, msg.User);
-                return new StorageMessage.CheckStreamAccessCompleted(msg.CorrelationId, msg.EventStreamId, msg.AccessType, result);
+                if (msg.EventStreamId == null)
+                {
+                    if (msg.TransactionId == null) throw new Exception("No transaction ID specified.");
+                    var transInfo = _readIndex.GetTransactionInfo(_writerCheckpoint.Read(), msg.TransactionId.Value);
+                    if (transInfo.TransactionOffset < -1 || transInfo.EventStreamId.IsEmptyString())
+                    {
+                        throw new Exception(
+                            string.Format("Invalid transaction info found for transaction ID {0}. "
+                                            + "Possibly wrong transaction ID provided. TransactionOffset: {1}, EventStreamId: {2}",
+                                            msg.TransactionId, transInfo.TransactionOffset,
+                                            transInfo.EventStreamId.IsEmptyString() ? "<null>" : transInfo.EventStreamId));
+                    }
+                    streamId = transInfo.EventStreamId;
+                }
+
+                var result = _readIndex.CheckStreamAccess(streamId, msg.AccessType, msg.User);
+                return new StorageMessage.CheckStreamAccessCompleted(msg.CorrelationId, streamId, msg.TransactionId, msg.AccessType, result);
             }
             catch (Exception exc)
             {
-                Log.ErrorException(exc, "Error during processing CheckStreamAccess request.");
-                return new StorageMessage.CheckStreamAccessCompleted(msg.CorrelationId, msg.EventStreamId, msg.AccessType, StreamAccessResult.Denied);
+                Log.ErrorException(exc, "Error during processing CheckStreamAccess({0}, {1}) request.", msg.EventStreamId, msg.TransactionId);
+                return new StorageMessage.CheckStreamAccessCompleted(msg.CorrelationId, streamId, msg.TransactionId, 
+                                                                     msg.AccessType, StreamAccessResult.Denied);
             }
         }
 

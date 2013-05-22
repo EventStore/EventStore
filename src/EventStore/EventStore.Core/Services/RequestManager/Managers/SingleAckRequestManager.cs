@@ -32,12 +32,14 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
     public class SingleAckRequestManager : IRequestManager,
                                            IHandle<ClientMessage.TransactionStart>,
                                            IHandle<ClientMessage.TransactionWrite>,
+                                           IHandle<StorageMessage.CheckStreamAccessCompleted>, 
                                            IHandle<StorageMessage.PrepareAck>,
                                            IHandle<StorageMessage.WrongExpectedVersion>,
                                            IHandle<StorageMessage.InvalidTransaction>,
@@ -58,6 +60,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
         private DateTime _nextTimeoutTime;
 
         private RequestType _requestType;
+        private ClientMessage.TransactionStart _request;
 
         public SingleAckRequestManager(IPublisher bus, TimeSpan prepareTimeout)
         {
@@ -80,12 +83,32 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _transactionId = -1; // not known yet
 
-            _bus.Publish(new StorageMessage.WriteTransactionStart(_correlationId,
-                                                                  _publishEnvelope,
-                                                                  request.EventStreamId,
-                                                                  request.ExpectedVersion,
-                                                                  liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks * 9 / 10)));
+            _request = request;
+            _bus.Publish(new StorageMessage.CheckStreamAccess(
+                _publishEnvelope, _correlationId, request.EventStreamId, null, StreamAccessType.Write, request.User));
+
             _nextTimeoutTime = DateTime.UtcNow + _prepareTimeout;
+        }
+
+        public void Handle(StorageMessage.CheckStreamAccessCompleted message)
+        {
+            if (_requestType != RequestType.TransactionStart || _request == null)
+                throw new Exception(string.Format("TransactionStart request manager invariant violation: reqType: {0}, req: {1}.", _requestType, _request));
+
+            switch (message.AccessResult)
+            {
+                case StreamAccessResult.Granted:
+                    _bus.Publish(new StorageMessage.WriteTransactionStart(
+                        _correlationId, _publishEnvelope, _request.EventStreamId, _request.ExpectedVersion,
+                        liveUntil: _nextTimeoutTime - TwoPhaseRequestManagerBase.TimeoutOffset));
+                    _request = null;
+                    break;
+                case StreamAccessResult.Denied:
+                    CompleteFailedRequest(_correlationId, _transactionId, OperationResult.AccessDenied, "Access denied.");
+                    break;
+                default: throw new Exception(string.Format("Unexpected SecurityAccessResult '{0}'.", message.AccessResult));
+            }
+
         }
 
         public void Handle(ClientMessage.TransactionWrite request)

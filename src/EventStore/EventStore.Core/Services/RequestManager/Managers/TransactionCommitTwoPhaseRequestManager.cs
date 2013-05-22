@@ -56,10 +56,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
             Publisher.Publish(
                 new StorageMessage.WriteTransactionPrepare(
-                    _request.CorrelationId,
-                    PublishEnvelope,
-                    _request.TransactionId,
-                    liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
+                    _request.CorrelationId, PublishEnvelope, _request.TransactionId,
+                    liveUntil: NextTimeoutTime - TimeoutOffset));
             _request = null;
         }
 
