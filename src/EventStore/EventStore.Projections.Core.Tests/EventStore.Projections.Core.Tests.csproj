@@ -136,6 +136,7 @@
     <Compile Include="Services\core_projection\emitted_stream\another_projection\when_handling_an_emit_with_expected_tag_the_started_in_recovery_stream.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_checkpoint_requested_but_disabled.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_committed_callback.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_extra_metadata.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_not_ready_event.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_in_invalid_order.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_with_previously_written_events.cs" />

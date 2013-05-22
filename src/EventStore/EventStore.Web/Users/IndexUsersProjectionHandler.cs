@@ -91,7 +91,7 @@ namespace EventStore.Web.Users
                         userData.LoginName));
 
             emittedEvents = new EmittedEvent[]
-                {new EmittedDataEvent(UsersStream, Guid.NewGuid(), UserEventType, loginName, eventPosition, null)};
+                {new EmittedDataEvent(UsersStream, Guid.NewGuid(), UserEventType, loginName, null, eventPosition, null)};
             newState = "";
             return true;
         }

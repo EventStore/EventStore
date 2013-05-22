@@ -91,8 +91,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         new EmittedDataEvent(
                     orderStreamName, Guid.NewGuid(), "$>",
-                    resolvedEvent.PositionSequenceNumber + "@" + resolvedEvent.PositionStreamId, orderCheckpointTag,
-                    _lastOrderCheckpointTag, v => committed())
+                    resolvedEvent.PositionSequenceNumber + "@" + resolvedEvent.PositionStreamId, null,
+                    orderCheckpointTag, _lastOrderCheckpointTag, v => committed())
                     });
             _lastOrderCheckpointTag = orderCheckpointTag;
         }

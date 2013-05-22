@@ -182,8 +182,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 new[]
                     {
                         new EmittedDataEvent(
-                    _namingBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "$partition", partition,
-                    at, null)
+                    _namingBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "$partition", partition, null, at,
+                    null)
                     });
         }
 

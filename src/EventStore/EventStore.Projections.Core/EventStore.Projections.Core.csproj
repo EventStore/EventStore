@@ -197,6 +197,7 @@
     <Compile Include="Services\Processing\EventByTypeIndexPositionTagger.cs" />
     <Compile Include="Services\Processing\EventProcessedResult.cs" />
     <Compile Include="Services\Processing\EventReorderingReaderSubscription.cs" />
+    <Compile Include="Services\Processing\ExtraMetaData.cs" />
     <Compile Include="Services\Processing\GetDataWorkItemBase.cs" />
     <Compile Include="Services\Processing\GetResultWorkItem.cs" />
     <Compile Include="Services\Processing\GetStateWorkItem.cs" />

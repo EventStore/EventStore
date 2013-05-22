@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Standard
                 {
                     new EmittedDataEvent(
                         SystemStreams.StreamsStream, Guid.NewGuid(), SystemEventTypes.LinkTo,
-                        data.EventSequenceNumber + "@" + data.EventStreamId, eventPosition, expectedTag: null)
+                        data.EventSequenceNumber + "@" + data.EventStreamId, null, eventPosition, expectedTag: null)
                 };
 
             return true;

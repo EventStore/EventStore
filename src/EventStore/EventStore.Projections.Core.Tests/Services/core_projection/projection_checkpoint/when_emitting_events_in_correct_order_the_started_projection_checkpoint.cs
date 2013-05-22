@@ -59,14 +59,19 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[]
                     {
-                        new EmittedDataEvent("stream2", Guid.NewGuid(), "type", "data2", CheckpointTag.FromPosition(120, 110), null),
-                        new EmittedDataEvent("stream3", Guid.NewGuid(), "type", "data3", CheckpointTag.FromPosition(120, 110), null),
-                        new EmittedDataEvent("stream2", Guid.NewGuid(), "type", "data4", CheckpointTag.FromPosition(120, 110), null),
-                    }
-                );
+                        new EmittedDataEvent(
+                    "stream2", Guid.NewGuid(), "type", "data2", null, CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedDataEvent(
+                    "stream3", Guid.NewGuid(), "type", "data3", null, CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedDataEvent(
+                    "stream2", Guid.NewGuid(), "type", "data4", null, CheckpointTag.FromPosition(120, 110), null),
+                    });
             _checkpoint.ValidateOrderAndEmitEvents(
-                new[] {new EmittedDataEvent("stream1", Guid.NewGuid(), "type", "data",
-                CheckpointTag.FromPosition(140, 130), null)});
+                new[]
+                    {
+                        new EmittedDataEvent(
+                    "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(140, 130), null)
+                    });
         }
 
         [Test]
@@ -102,8 +107,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         public void should_not_write_a_secong_group_until_the_first_write_completes()
         {
             _checkpoint.ValidateOrderAndEmitEvents(
-                new[] {new EmittedDataEvent("stream1", Guid.NewGuid(), "type", "data",
-                CheckpointTag.FromPosition(170, 160), null)});
+                new[]
+                    {
+                        new EmittedDataEvent(
+                    "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(170, 160), null)
+                    });
             var writeRequests = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(v => v.EventStreamId == "stream1");
             var writeEvents = writeRequests.Single();
             writeEvents.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writeEvents.CorrelationId, 0));

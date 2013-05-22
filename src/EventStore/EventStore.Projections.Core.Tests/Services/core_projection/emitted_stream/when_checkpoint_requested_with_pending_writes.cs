@@ -59,7 +59,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 _readyHandler, 50);
             _stream.Start();
             _stream.EmitEvents(
-                new[] { new EmittedDataEvent("test", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(100, 50), null) });
+                new[]
+                    {
+                        new EmittedDataEvent(
+                    "test", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(100, 50), null)
+                    });
             _stream.Checkpoint();
         }
 

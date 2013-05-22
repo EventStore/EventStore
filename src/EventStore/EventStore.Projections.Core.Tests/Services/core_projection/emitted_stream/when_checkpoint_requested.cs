@@ -58,7 +58,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void emit_events_throws_invalid_operation_exception()
         {
             _stream.EmitEvents(
-                new[] { new EmittedDataEvent("test", Guid.NewGuid(), "type2", "data2", CheckpointTag.FromPosition(-1, -1), null) });
+                new[]
+                    {
+                        new EmittedDataEvent(
+                    "test", Guid.NewGuid(), "type2", "data2", null, CheckpointTag.FromPosition(-1, -1), null)
+                    });
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
