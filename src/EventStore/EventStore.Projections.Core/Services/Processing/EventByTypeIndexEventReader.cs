@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -70,10 +71,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, string> _streamToEventType;
 
         public EventByTypeIndexEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, string[] eventTypes, TFPos fromTfPosition,
-            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
+            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal principal, string[] eventTypes,
+            TFPos fromTfPosition, Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
             bool stopOnEof = false, int? stopAfterNEvents = null)
-            : base(publisher, eventReaderCorrelationId, stopOnEof, stopAfterNEvents)
+            : base(publisher, eventReaderCorrelationId, principal, stopOnEof, stopAfterNEvents)
         {
             if (eventTypes == null) throw new ArgumentNullException("eventTypes");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
