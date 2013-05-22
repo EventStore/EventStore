@@ -25,40 +25,40 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+using EventStore.ClientAPI.Exceptions;
+using NUnit.Framework;
 
-using System;
-using System.Net;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Tests.Helpers;
-
-namespace EventStore.Core.Tests.ClientAPI.Helpers
+namespace EventStore.Core.Tests.ClientAPI.Security
 {
-    public static class TestConnection
+    [TestFixture, Category("LongRunning"), Category("Network")]
+    public class read_all_security : AuthenticationTestBase
     {
-        public static IEventStoreConnection Create(IPEndPoint endPoint, TcpType tcpType = TcpType.Normal, UserCredentials userCredentials = null)
+        [Test, Category("LongRunning"), Category("Network")]
+        public void reading_all_with_not_existing_credentials_is_not_authenticated()
         {
-            return EventStoreConnection.Create(Settings(tcpType, userCredentials), endPoint);
+            Expect<NotAuthenticatedException>(() => ReadAllForward("badlogin", "badpass"));
+            Expect<NotAuthenticatedException>(() => ReadAllBackward("badlogin", "badpass"));
         }
 
-        public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType, UserCredentials userCredentials = null)
+        [Test, Category("LongRunning"), Category("Network")]
+        public void reading_all_with_no_credentials_is_denied()
         {
-            return EventStoreConnection.Create(Settings(tcpType, userCredentials),
-                                               tcpType == TcpType.Ssl ? miniNode.TcpSecEndPoint : miniNode.TcpEndPoint);
+            Expect<AccessDeniedException>(() => ReadAllForward(null, null));
+            Expect<AccessDeniedException>(() => ReadAllBackward(null, null));
         }
 
-        private static ConnectionSettingsBuilder Settings(TcpType tcpType, UserCredentials userCredentials)
+        [Test, Category("LongRunning"), Category("Network")]
+        public void reading_all_with_not_authorized_user_credentials_is_denied()
         {
-            var settings = ConnectionSettings.Create()
-                                             .SetDefaultUserCredentials(userCredentials)
-                                             .UseCustomLogger(ClientApiLoggerBridge.Default)
-                                             .EnableVerboseLogging()
-                                             //.DisableVerboseLogging()
-                                             .FailOnNoServerResponse()
-                                             .SetOperationTimeoutTo(TimeSpan.FromDays(1));
-            if (tcpType == TcpType.Ssl)
-                settings.UseSslConnection("ES", false);
-            return settings;
+            Expect<AccessDeniedException>(() => ReadAllForward("user2", "pa$$2"));
+            Expect<AccessDeniedException>(() => ReadAllBackward("user2", "pa$$2"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void reading_all_with_authorized_user_credentials_succeeds()
+        {
+            ExpectNoException(() => ReadAllForward("user1", "pa$$1"));
+            ExpectNoException(() => ReadAllBackward("user1", "pa$$1"));
         }
     }
 }

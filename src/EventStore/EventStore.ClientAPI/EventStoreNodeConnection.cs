@@ -184,10 +184,10 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        public EventStoreTransaction ContinueTransaction(long transactionId)
+        public EventStoreTransaction ContinueTransaction(long transactionId, UserCredentials userCredentials = null)
         {
             Ensure.Nonnegative(transactionId, "transactionId");
-            return new EventStoreTransaction(transactionId, this);
+            return new EventStoreTransaction(transactionId, userCredentials, this);
         }
 
         Task IEventStoreTransactionConnection.TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events, UserCredentials userCredentials = null)
