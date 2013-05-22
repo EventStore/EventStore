@@ -46,6 +46,7 @@ namespace EventStore.Core.Tests.TransactionLog
             miniNode.Start();
 
             var tcpPort = miniNode.TcpEndPoint.Port;
+            var tcpSecPort = miniNode.TcpSecEndPoint.Port;
             var httpPort = miniNode.HttpEndPoint.Port;
             const int cnt = 50;
             var countdown = new CountdownEvent(cnt);
@@ -68,7 +69,7 @@ namespace EventStore.Core.Tests.TransactionLog
             miniNode.Shutdown(keepDb: true, keepPorts: true);
 
             // --- first restart and truncation
-            miniNode = new MiniNode(PathName, tcpPort, null, httpPort);
+            miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort);
             
             miniNode.Start();
             Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
@@ -82,7 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog
             miniNode.Shutdown(keepDb: true, keepPorts: true);
 
             // -- second restart
-            miniNode = new MiniNode(PathName, tcpPort, null, httpPort);
+            miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort);
             Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
             miniNode.Start();
 
@@ -100,6 +101,7 @@ namespace EventStore.Core.Tests.TransactionLog
             miniNode.Start();
 
             var tcpPort = miniNode.TcpEndPoint.Port;
+            var tcpSecPort = miniNode.TcpSecEndPoint.Port;
             var httpPort = miniNode.HttpEndPoint.Port;
             const int cnt = 1;
             var countdown = new CountdownEvent(cnt);
@@ -122,7 +124,7 @@ namespace EventStore.Core.Tests.TransactionLog
             miniNode.Shutdown(keepDb: true, keepPorts: true);
 
             // --- first restart and truncation
-            miniNode = new MiniNode(PathName, tcpPort, null, httpPort, chunkSize: chunkSize, cachedChunkSize: cachedSize);
+            miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort, chunkSize: chunkSize, cachedChunkSize: cachedSize);
 
             miniNode.Start();
             Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
