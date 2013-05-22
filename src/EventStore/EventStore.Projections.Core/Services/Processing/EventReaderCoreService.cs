@@ -197,7 +197,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Handle(new ReaderSubscriptionManagement.Unsubscribe(projectionId));
         }
 
-        public void StartReaders()
+        private void StartReaders()
         {
             //TODO: do we need to clear subscribed projections here?
             //TODO: do we need to clear subscribed distribution points here?
@@ -211,7 +211,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _headingEventReader.Start(distributionPointCorrelationId, transactionFileReader);
         }
 
-        public void StopReaders()
+        private void StopReaders()
         {
 
             if (_subscriptions.Count > 0)

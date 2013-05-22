@@ -176,10 +176,14 @@ function scope($on, $notify) {
 
         var em = event.metadata;
         if (em)
-            for (var p in em) m[p] = em[p];
+            for (var p1 in em)
+                if (p1.indexOf("$") !== 0)
+                    m[p1] = em[p1];
 
         if (metadata) 
-            for (var p in metadata) m[p] = metadata[p];
+            for (var p2 in metadata)
+                if (p2.indexOf("$") !== 0)
+                    m[p2] = metadata[p2];
 
         var message = { streamId: streamId, eventName: event.eventType, body: event.bodyRaw, metadata: m };
         eventProcessor.emit(message);
@@ -201,7 +205,8 @@ function scope($on, $notify) {
         fromStreams: fromStreams,
         options: options,
         emit: emit, 
-        linkTo: linkTo, 
+        linkTo: linkTo,
+        copyTo: copyTo,
         require: modules.require,
     };
 };

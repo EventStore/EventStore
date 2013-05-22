@@ -148,7 +148,7 @@ var $projections = {
 
         Object.defineProperty(envelope.prototype, "metadata", {
             get: function () {
-                if (!this.metadata_) {
+                if (!this.metadata_ && this.metadataRaw) {
                     this.metadata_ = JSON.parse(this.metadataRaw);
                 }
                 return this.metadata_;
