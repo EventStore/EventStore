@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
@@ -162,6 +163,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             if (package.Command == expectedCommand)
                 throw new ArgumentException(string.Format("Command shouldn't be {0}.", package.Command));
+            if (Debugger.IsAttached) Debugger.Break(); else Debugger.Launch();
             Fail(new CommandNotExpectedException(expectedCommand.ToString(), package.Command.ToString()));
             return new InspectionResult(InspectionDecision.EndOperation, null);
         }

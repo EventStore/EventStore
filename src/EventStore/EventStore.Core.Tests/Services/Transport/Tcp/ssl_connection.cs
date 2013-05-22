@@ -72,13 +72,21 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                     foreach (var arraySegment in y)
                     {
                         received.Write(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
+                        Log.Info("Received: {0} bytes, total: {1}.", arraySegment.Count, received.Length);
                     }
 
                     if (received.Length >= sent.Length)
+                    {
+                        Log.Info("Done receiving...");
                         done.Set();
+                    }
                     else
+                    {
+                        Log.Info("Receiving...");
                         ssl.ReceiveAsync(callback);
+                    }
                 };
+                Log.Info("Receiving...");
                 ssl.ReceiveAsync(callback);
             }, "Secure");
 
@@ -90,6 +98,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                 new TcpClientConnector(),
                 conn =>
                 {
+                    Log.Info("Sending bytes...");
                     conn.EnqueueSend(new[] {new ArraySegment<byte>(sent)});
                 },
                 (conn, err) =>
@@ -99,11 +108,13 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                 },
                 verbose: true);
 
-            done.Wait();
+            Assert.IsTrue(done.Wait(2000), "Too long didn't receive completion.");
 
+            Log.Info("Stopping listener...");
             listener.Stop();
+            Log.Info("Closing client ssl connection...");
             clientSsl.Close("Normal close.");
-
+            Log.Info("Checking received data...");
             Assert.AreEqual(sent, received.ToArray());
         }
 
