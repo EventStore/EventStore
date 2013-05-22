@@ -25,56 +25,66 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-
 using System;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Projections.Core.Messages;
+using System.Collections.Generic;
+using System.Linq;
+using EventStore.Common.Utils;
+using EventStore.Core.Messages;
+using EventStore.Core.Services.Transport.Http.Authentication;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using Newtonsoft.Json.Linq;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint
+namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class the_started_checkpoint_with_some_events_emitted : TestFixtureWithExistingEvents
+    public class when_handling_an_emit_with_write_as_configured : TestFixtureWithExistingEvents
     {
-        private ProjectionCheckpoint _checkpoint;
+        private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;
+        private OpenGenericPrincipal _writeAs;
+
+        protected override void Given()
+        {
+            AllWritesQueueUp();
+            ExistingEvent("test_stream", "type", @"{""c"": 100, ""p"": 50}", "data");
+        }
 
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _checkpoint = new ProjectionCheckpoint(
-                _readDispatcher, _writeDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
-                CheckpointTag.FromPosition(100, 50), new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), 250);
-            _checkpoint.Start();
-            _checkpoint.ValidateOrderAndEmitEvents(
+            _readyHandler = new TestCheckpointManagerMessageHandler();
+            _writeAs = new OpenGenericPrincipal("test-user");
+            _stream = new EmittedStream(
+                "test_stream", new ProjectionVersion(1, 0, 0), _writeAs,
+                new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1),
+                CheckpointTag.FromPosition(40, 30), _readDispatcher, _writeDispatcher, _readyHandler,
+                maxWriteBatchLength: 50);
+            _stream.Start();
+
+            _stream.EmitEvents(
                 new[]
                     {
                         new EmittedDataEvent(
-                    "stream2", Guid.NewGuid(), "type", "data2", null, CheckpointTag.FromPosition(120, 110), null),
-                        new EmittedDataEvent(
-                    "stream2", Guid.NewGuid(), "type", "data4", null, CheckpointTag.FromPosition(120, 110), null),
+                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null)
                     });
-            _checkpoint.ValidateOrderAndEmitEvents(
-                new[]
-                    {
-                        new EmittedDataEvent(
-                    "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(140, 130), null)
-                    });
-            _checkpoint.ValidateOrderAndEmitEvents(
-                new[]
-                    {
-                        new EmittedDataEvent(
-                    "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(160, 150), null)
-                    });
+
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void requesting_checkpoints_with_position_before_the_last_known_throws_invalid_operation_exception()
+        [Test]
+        public void publishes_not_yet_published_events()
         {
-            _checkpoint.Prepare(CheckpointTag.FromPosition(140, 130));
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
+
+        [Test]
+        public void publishes_write_event_with_correct_user_account()
+        {
+            var writeEvent = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single();
+
+            Assert.AreSame(_writeAs, writeEvent.User);
+        }
+
     }
 }

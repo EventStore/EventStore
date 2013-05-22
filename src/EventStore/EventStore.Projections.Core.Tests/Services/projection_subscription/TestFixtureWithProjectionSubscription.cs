@@ -106,7 +106,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 result.AllEvents();
             }
             var config = ProjectionConfig.GetTest();
-            return result.Build(config, readerBuilder.Build(new RealTimeProvider(), runAs: null));
+            return result.Build(config, null, readerBuilder.Build(new RealTimeProvider(), runAs: null));
         }
     }
 }

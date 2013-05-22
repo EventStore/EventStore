@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Principal;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -42,6 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class DefaultCheckpointManager : CoreProjectionCheckpointManager
     {
         private readonly string _projectionCheckpointStreamId;
+        private readonly IPrincipal _runAs;
         private int _inCheckpointWriteAttempt;
         private int _lastWrittenCheckpointEventNumber;
         private int _nextStateIndexToRequest;
@@ -58,7 +60,8 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
         private readonly PositionTagger _positionTagger;
 
-        public DefaultCheckpointManager(IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion,  
+        public DefaultCheckpointManager(
+            IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
@@ -66,12 +69,13 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints = false)
             : base(
-                publisher, projectionCorrelationId, projectionConfig,
-                name, positionTagger, namingBuilder, resultEmitter, useCheckpoints, emitPartitionCheckpoints)
+                publisher, projectionCorrelationId, projectionConfig, name, positionTagger, namingBuilder, resultEmitter,
+                useCheckpoints, emitPartitionCheckpoints)
         {
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
             if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
             _projectionVersion = projectionVersion;
+            _runAs = runAs;
             _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
             _positionTagger = positionTagger;
@@ -320,7 +324,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition)
         {
             return new ProjectionCheckpoint(
-                _readDispatcher, _writeDispatcher, _projectionVersion, this, checkpointPosition,
+                _readDispatcher, _writeDispatcher, _projectionVersion, _runAs, this, checkpointPosition,
                 _positionTagger, _zeroTag, _projectionConfig.MaxWriteBatchLength, _logger);
         }
     }

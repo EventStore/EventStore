@@ -42,14 +42,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _useCheckpoints;
         private readonly bool _definesStateTransform;
         private readonly IReaderStrategy _readerStrategy;
+        private readonly IPrincipal _runAs;
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
-            public CheckpointStrategy Build(ProjectionConfig config, IReaderStrategy readerStrategy)
+            public CheckpointStrategy Build(ProjectionConfig config, IPrincipal runAs, IReaderStrategy readerStrategy)
             {
                 base.Validate();
                 return new CheckpointStrategy(
-                    _byStream, _byCustomPartitions, config.CheckpointsEnabled, _definesStateTransform, readerStrategy);
+                    _byStream, _byCustomPartitions, config.CheckpointsEnabled, _definesStateTransform, runAs, readerStrategy);
             }
 
             public void Validate(ProjectionConfig config)
@@ -65,7 +66,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var builder = new Builder();
             sources.ConfigureSourceProcessingStrategy(builder);
-            return builder.Build(config, Processing.ReaderStrategy.Create(sources, timeProvider, config.RunAs));
+            return builder.Build(
+                config, config.RunAs, Processing.ReaderStrategy.Create(sources, timeProvider, config.RunAs));
         }
 
         public bool UseCheckpoints
@@ -79,7 +81,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private CheckpointStrategy(
-            bool byStream, bool byCustomPartitions, bool useCheckpoints, bool definesStateTransform,
+            bool byStream, bool byCustomPartitions, bool useCheckpoints, bool definesStateTransform, IPrincipal runAs,
             IReaderStrategy readerStrategy)
         {
             _readerStrategy = readerStrategy;
@@ -87,6 +89,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _byCustomPartitions = byCustomPartitions;
             _useCheckpoints = useCheckpoints;
             _definesStateTransform = definesStateTransform;
+            _runAs = runAs;
         }
 
         public StatePartitionSelector CreateStatePartitionSelector(IProjectionStateHandler projectionStateHandler)
@@ -116,14 +119,14 @@ namespace EventStore.Projections.Core.Services.Processing
             if (emitAny && !ReaderStrategy.IsReadingOrderRepeatable)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
-                    publisher, projectionCorrelationId, projectionVersion, readDispatcher, writeDispatcher,
+                    publisher, projectionCorrelationId, projectionVersion, _runAs, readDispatcher, writeDispatcher,
                     projectionConfig, name, ReaderStrategy.PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
             else
             {
                 return new DefaultCheckpointManager(
-                    publisher, projectionCorrelationId, projectionVersion, readDispatcher, writeDispatcher,
+                    publisher, projectionCorrelationId, projectionVersion, _runAs, readDispatcher, writeDispatcher,
                     projectionConfig, name, ReaderStrategy.PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
                     emitPartitionCheckpoints);
             }

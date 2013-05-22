@@ -28,6 +28,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using System.Linq;
 using EventStore.Core.Messages;
@@ -42,6 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ILogger _logger;
 
         private readonly Dictionary<string, EmittedStream> _emittedStreams = new Dictionary<string, EmittedStream>();
+        private readonly IPrincipal _runAs;
         private readonly CheckpointTag _from;
         private CheckpointTag _last;
         private readonly IProjectionCheckpointManager _readyHandler;
@@ -67,8 +69,9 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ProjectionVersion projectionVersion, IProjectionCheckpointManager readyHandler, CheckpointTag from,
-            PositionTagger positionTagger, CheckpointTag zero, int maxWriteBatchLength, ILogger logger = null)
+            ProjectionVersion projectionVersion, IPrincipal runAs, IProjectionCheckpointManager readyHandler,
+            CheckpointTag from, PositionTagger positionTagger, CheckpointTag zero, int maxWriteBatchLength,
+            ILogger logger = null)
         {
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
             if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
@@ -80,6 +83,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
             _projectionVersion = projectionVersion;
+            _runAs = runAs;
             _readyHandler = readyHandler;
             _positionTagger = positionTagger;
             _zero = zero;
@@ -163,8 +167,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_emittedStreams.TryGetValue(streamId, out stream))
             {
                 stream = new EmittedStream(
-                    streamId, _projectionVersion, _positionTagger, _zero, _from, _readDispatcher, _writeDispatcher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength,
-                    logger: _logger);
+                    streamId, _projectionVersion, _runAs, _positionTagger, _zero, _from, _readDispatcher,
+                    _writeDispatcher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
                 if (_started)
                     stream.Start();
                 _emittedStreams.Add(streamId, stream);
