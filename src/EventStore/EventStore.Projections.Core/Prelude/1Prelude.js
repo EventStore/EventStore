@@ -172,7 +172,16 @@ function scope($on, $notify) {
     }
 
     function copyTo(streamId, event, metadata) {
-        var message = { streamId: streamId, eventName: event.eventType, body: event.bodyRaw, metadata: metadata };
+        var m = {};
+
+        var em = event.metadata;
+        if (em)
+            for (var p in em) m[p] = em[p];
+
+        if (metadata) 
+            for (var p in metadata) m[p] = metadata[p];
+
+        var message = { streamId: streamId, eventName: event.eventType, body: event.bodyRaw, metadata: m };
         eventProcessor.emit(message);
     }
 
