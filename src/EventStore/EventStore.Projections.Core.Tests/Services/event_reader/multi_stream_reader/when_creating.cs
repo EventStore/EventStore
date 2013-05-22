@@ -53,45 +53,46 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         [Test]
         public void it_can_be_created()
         {
-            var edp = new MultiStreamEventReader(_bus, Guid.NewGuid(), _abStreams, _ab12Tag, false, _timeProvider);
+            var edp = new MultiStreamEventReader(_bus, Guid.NewGuid(), null, _abStreams, _ab12Tag, false, _timeProvider);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            var edp = new MultiStreamEventReader(null, Guid.NewGuid(), _abStreams, _ab12Tag, false, _timeProvider);
+            var edp = new MultiStreamEventReader(null, Guid.NewGuid(), null, _abStreams, _ab12Tag, false, _timeProvider);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_event_reader_id_throws_argument_exception()
         {
-            var edp = new MultiStreamEventReader(_bus, Guid.Empty, _abStreams, _ab12Tag, false, _timeProvider);
+            var edp = new MultiStreamEventReader(_bus, Guid.Empty, null, _abStreams, _ab12Tag, false, _timeProvider);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_streams_throws_argument_null_exception()
         {
-            var edp = new MultiStreamEventReader(_bus, Guid.NewGuid(), null, _ab12Tag, false, _timeProvider);
+            var edp = new MultiStreamEventReader(_bus, Guid.NewGuid(), null, null, _ab12Tag, false, _timeProvider);
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
         public void null_time_provider_throws_argument_null_exception()
         {
-            var edp = new MultiStreamEventReader(_bus, Guid.NewGuid(), _abStreams, _ab12Tag, false, null);
+            var edp = new MultiStreamEventReader(_bus, Guid.NewGuid(), null, _abStreams, _ab12Tag, false, null);
         }
 
         [Test, ExpectedException(typeof(ArgumentException))]
         public void empty_streams_throws_argument_exception()
         {
-            var edp = new MultiStreamEventReader(_bus, Guid.NewGuid(), new string[0], _ab12Tag, false, _timeProvider);
+            var edp = new MultiStreamEventReader(
+                _bus, Guid.NewGuid(), null, new string[0], _ab12Tag, false, _timeProvider);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void invalid_from_tag_throws_argument_exception()
         {
             var edp = new MultiStreamEventReader(
-                _bus, Guid.NewGuid(), _abStreams,
-                new Dictionary<string, int> {{"a", 1}, {"c", 2}}, false, _timeProvider);
+                _bus, Guid.NewGuid(), null, _abStreams, new Dictionary<string, int> {{"a", 1}, {"c", 2}}, false,
+                _timeProvider);
         }
     }
 }

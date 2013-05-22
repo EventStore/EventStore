@@ -49,7 +49,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
-            _edp = new StreamEventReader(_bus, _distibutionPointCorrelationId, "stream", 0, new RealTimeProvider(), false);
+            _edp = new StreamEventReader(
+                _bus, _distibutionPointCorrelationId, null, "stream", 0, new RealTimeProvider(), false);
         }
 
         [Test]
