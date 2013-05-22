@@ -35,7 +35,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
@@ -71,10 +70,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, string> _streamToEventType;
 
         public EventByTypeIndexEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal principal, string[] eventTypes,
+            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, string[] eventTypes,
             TFPos fromTfPosition, Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
             bool stopOnEof = false, int? stopAfterNEvents = null)
-            : base(publisher, eventReaderCorrelationId, principal, stopOnEof, stopAfterNEvents)
+            : base(publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
         {
             if (eventTypes == null) throw new ArgumentNullException("eventTypes");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
@@ -89,7 +88,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ValidateTag(fromPositions);
 
             _fromPositions = fromPositions;
-            _state = new IndexBased(_eventTypes, this);
+            _state = new IndexBased(_eventTypes, this, readAs);
         }
 
         private void ValidateTag(Dictionary<string, int> fromPositions)
@@ -162,10 +161,12 @@ namespace EventStore.Projections.Core.Services.Processing
             public abstract void Dispose();
 
             protected readonly EventByTypeIndexEventReader _reader;
+            protected readonly IPrincipal _readAs;
 
-            protected State(EventByTypeIndexEventReader reader)
+            protected State(EventByTypeIndexEventReader reader, IPrincipal readAs)
             {
                 _reader = reader;
+                _readAs = readAs;
             }
 
             protected void DeliverEvent(float progress, ResolvedEvent resolvedEvent, TFPos position)
@@ -200,8 +201,8 @@ namespace EventStore.Projections.Core.Services.Processing
             private bool _disposed;
             private readonly IPublisher _publisher;
 
-            public IndexBased(HashSet<string> eventTypes, EventByTypeIndexEventReader reader)
-                : base(reader)
+            public IndexBased(HashSet<string> eventTypes, EventByTypeIndexEventReader reader, IPrincipal readAs)
+                : base(reader, readAs)
             {
                 _streamToEventType = eventTypes.ToDictionary(v => "$et-" + v, v => v);
                 _eofs = _streamToEventType.Keys.ToDictionary(v => v, v => false);
@@ -426,13 +427,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     readRequest = new ClientMessage.ReadStreamEventsBackward(
                         _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et", -1, 1, false, null,
-                        SystemAccount.Principal);
+                        _readAs);
                 }
                 else
                 {
                     readRequest = new ClientMessage.ReadStreamEventsForward(
                         _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et",
-                        _lastKnownIndexCheckpointEventNumber + 1, 100, false, null, SystemAccount.Principal);
+                        _lastKnownIndexCheckpointEventNumber + 1, 100, false, null, _readAs);
                 }
                 _reader.PublishIORequest(delay, readRequest);
             }
@@ -454,7 +455,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                     _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), stream,
                     _reader._fromPositions[stream], _maxReadCount, _reader._resolveLinkTos, null,
-                    SystemAccount.Principal);
+                    _readAs);
                 _reader.PublishIORequest(delay, readEventsForward);
             }
 
@@ -516,8 +517,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
             public TfBased(
                 ITimeProvider timeProvider, EventByTypeIndexEventReader reader, TFPos fromTfPosition,
-                IPublisher publisher)
-                : base(reader)
+                IPublisher publisher, IPrincipal readAs)
+                : base(reader, readAs)
             {
                 _timeProvider = timeProvider;
                 _eventTypes = reader._eventTypes;
@@ -607,7 +608,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _reader.EventReaderCorrelationId, new SendToThisEnvelope(this),
                     _fromTfPosition.CommitPosition,
                     _fromTfPosition.PreparePosition == -1 ? 0 : _fromTfPosition.PreparePosition, 111,
-                    true, null, SystemAccount.Principal);
+                    true, null, _readAs);
                 _reader.PublishIORequest(delay, readRequest);
             }
 
@@ -663,7 +664,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (lastKnownIndexCheckpointPosition > _lastEventPosition)
                 _lastEventPosition = lastKnownIndexCheckpointPosition;
 
-            _state = new TfBased(_timeProvider, this, _lastEventPosition, this._publisher);
+            _state = new TfBased(_timeProvider, this, _lastEventPosition, this._publisher, ReadAs);
             _state.RequestEvents(delay: false);
         }
     }

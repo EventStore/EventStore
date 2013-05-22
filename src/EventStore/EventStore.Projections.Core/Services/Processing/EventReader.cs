@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public abstract class EventReader : IEventReader
     {
         protected readonly Guid EventReaderCorrelationId;
-        private readonly IPrincipal _principal;
+        private readonly IPrincipal _readAs;
         protected readonly IPublisher _publisher;
         protected readonly ILogger _logger = LogManager.GetLoggerFor<EventReader>();
 
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected bool _disposed;
 
         protected EventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal principal, bool stopOnEof,
+            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, bool stopOnEof,
             int? stopAfterNEvents)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new ArgumentException("eventReaderCorrelationId");
             _publisher = publisher;
             EventReaderCorrelationId = eventReaderCorrelationId;
-            _principal = principal;
+            _readAs = readAs;
             _stopOnEof = stopOnEof;
             _stopAfterNEvents = stopAfterNEvents;
         }
@@ -70,6 +70,11 @@ namespace EventStore.Projections.Core.Services.Processing
         protected bool Paused
         {
             get { return _paused; }
+        }
+
+        protected IPrincipal ReadAs
+        {
+            get { return _readAs; }
         }
 
         public void Resume()

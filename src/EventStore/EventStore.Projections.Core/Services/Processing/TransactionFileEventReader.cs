@@ -33,7 +33,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
@@ -50,10 +49,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _deliveredEvents;
 
         public TransactionFileEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal principal, TFPos @from,
+            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, TFPos @from,
             ITimeProvider timeProvider, bool stopOnEof = false, bool deliverEndOfTFPosition = true,
             bool resolveLinkTos = true, int? stopAfterNEvents = null)
-            : base(publisher, eventReaderCorrelationId, principal, stopOnEof, stopAfterNEvents)
+            : base(publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             _from = @from;
@@ -151,7 +150,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return new ClientMessage.ReadAllEventsForward(
                 EventReaderCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
                 _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, 
-                _resolveLinkTos, null, SystemAccount.Principal);
+                _resolveLinkTos, null, ReadAs);
         }
 
         private void DeliverLastCommitPosition(TFPos lastPosition)
