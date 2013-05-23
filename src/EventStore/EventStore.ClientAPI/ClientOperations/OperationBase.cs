@@ -168,6 +168,26 @@ namespace EventStore.ClientAPI.ClientOperations
                       "Flags: {2}, CorrelationId: {3}, TcpPackage Data Dump:\n{4}", 
                       expectedCommand, package.Command, package.Flags, package.CorrelationId, 
                       Helper.FormatBinaryDump(package.Data));
+            Log.Error("Unexpected TcpCommand: operation {0}", this);
+            TResponse response = null;
+            ClientMessage.WriteEvents request = null;
+            try
+            {
+                response = package.Data.Deserialize<TResponse>();
+            }
+            catch (Exception exc)
+            {
+                Log.Error(exc, "Unexpected TcpCommand: error deserializing {0}: {1}.", typeof(TResponse).Name, exc.Message);
+            }
+            try
+            {
+                request = package.Data.Deserialize<ClientMessage.WriteEvents>();
+            }
+            catch (Exception exc)
+            {
+                Log.Error(exc, "Unexpected TcpCommand: error deserializing WriteEvents: {0}.", exc.Message);
+            }
+
             if (Debugger.IsAttached) Debugger.Break(); else Debugger.Launch();
 
             Fail(new CommandNotExpectedException(expectedCommand.ToString(), package.Command.ToString()));
