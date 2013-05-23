@@ -121,20 +121,23 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         }
 
                         var countItemSuccess = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount);
-                        var sumCheckSuccess = CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
+                        success = countItemSuccess && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
 
-                        if (!countItemSuccess)
-                            Log.Error("Projection '{0}' has faulted state.", countItem);
-                        if (!countItemSuccess)
-                            Log.Error("Projection '{0}' has faulted state.", sumCheckForBankAccount0);
-
-                        success = countItemSuccess && sumCheckSuccess;
                         if (success)
                             break;
 
                         Thread.Sleep(4000);
-
                     }
+
+                    var countItemSuccessFinal = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount);
+                    var sumCheckSuccessFinal = CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
+
+                    if (!countItemSuccessFinal)
+                        Log.Error("Projection '{0}' has not completed with expected result in time. ", countItem);
+
+                    if (!sumCheckSuccessFinal)
+                        Log.Error("Projection '{0}' has not completed with expected result in time.", sumCheckForBankAccount0);
+
                     return success;
                 });
 
