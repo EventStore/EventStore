@@ -149,6 +149,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         public void Run()
         {
+            const int maxReconnections = 200;
+            const int maxOperationRetries = 200;
+
             for (int i = 0; i < Connections; ++i)
             {
                 _connections[i] = EventStoreConnection.Create(
@@ -156,8 +159,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                         .DisableVerboseLogging()
                                         .UseCustomLogger(ApiLogger)
                                         .LimitConcurrentOperationsTo(MaxConcurrentRequests)
-                                        .KeepRetrying()
-                                        .KeepReconnecting()
+                                        .LimitRetriesForOperationTo(maxReconnections)
+                                        .LimitReconnectionsTo(maxOperationRetries)
                                         .FailOnNoServerResponse()
                                         .OnClosed((c, s) => Log.Debug("[SCENARIO] {0} closed.", c.ConnectionName))
                                         .OnConnected(c => Log.Debug("[SCENARIO] {0} connected.", c.ConnectionName))
