@@ -30,6 +30,7 @@ using System;
 using System.Net;
 using System.Threading;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using EventStore.Common.Utils;
@@ -46,7 +47,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         public http_service_should()
         {
-            _serverEndPoint = new IPEndPoint(IPAddress.Loopback, 7777);
+            var port = PortsHelper.GetAvailablePort(IPAddress.Loopback);
+            _serverEndPoint = new IPEndPoint(IPAddress.Loopback, port);
             _portableServer = new PortableServer(_serverEndPoint);
         }
 
@@ -60,6 +62,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public void TearDown()
         {
             _portableServer.TearDown();
+        }
+
+        [TestFixtureTearDown]
+        public void TestFixtureTearDown()
+        {
+            PortsHelper.ReturnPort(_serverEndPoint.Port);            
         }
 
         [Test]
