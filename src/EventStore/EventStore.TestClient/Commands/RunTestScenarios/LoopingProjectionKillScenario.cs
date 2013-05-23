@@ -107,36 +107,39 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
 
             var successTask = Task.Factory.StartNew(() => 
+            {
+                var success = false;
+                var stopWatch = new Stopwatch();
+                while (stopWatch.Elapsed < _iterationLoopDuration)
                 {
-                    var success = false;
-                    var stopWatch = new Stopwatch();
-                    while (stopWatch.Elapsed < _iterationLoopDuration)
+                    if (writeTask.IsFaulted)
+                        throw new ApplicationException("Failed to write data");
+
+                    if (writeTask.IsCompleted && !stopWatch.IsRunning)
                     {
-                        if (writeTask.IsFaulted)
-                            throw new ApplicationException("Failed to write data");
-
-                        if (writeTask.IsCompleted && !stopWatch.IsRunning)
-                        {
-                            stopWatch.Start();
-                        }
-
-                        var countItemSuccess = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount);
-                        var sumCheckSuccess = CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
-
-                        if (!countItemSuccess)
-                            Log.Error("Projection '{0}' has faulted state.", countItem);
-                        if (!countItemSuccess)
-                            Log.Error("Projection '{0}' has faulted state.", sumCheckForBankAccount0);
-
-                        success = countItemSuccess && sumCheckSuccess;
-                        if (success)
-                            break;
-
-                        Thread.Sleep(4000);
-
+                        stopWatch.Start();
                     }
-                    return success;
-                });
+
+                    success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
+                              && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
+                    if (success)
+                        break;
+                    Thread.Sleep(4000);
+                }
+                if (!success)
+                {
+                    Log.Error("Some of projections has faulted state.");
+
+                    var countItemSuccess = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount);
+                    var sumCheckSuccess = CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
+
+                    if (!countItemSuccess)
+                        Log.Error("Projection '{0}' has faulted state.", countItem);
+                    if (!sumCheckSuccess)
+                        Log.Error("Projection '{0}' has faulted state.", sumCheckForBankAccount0);
+                }
+                return success;
+            });
 
             writeTask.Wait();
 
