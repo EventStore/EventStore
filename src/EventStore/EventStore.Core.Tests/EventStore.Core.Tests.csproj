@@ -333,6 +333,7 @@
     <Compile Include="Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
     <Compile Include="TestsInitFixture.cs" />
+    <Compile Include="TransactionLog\Scavenging\scavenged_chunk.cs" />
     <Compile Include="TransactionLog\Truncation\TruncateAndReOpenDbScenario.cs" />
     <Compile Include="TransactionLog\Truncation\TruncateScenario.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_few_chunks_with_index_on_disk.cs" />
