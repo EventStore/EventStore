@@ -58,7 +58,7 @@ namespace EventStore.Transport.Tcp
                                         bool verbose = true)
         {
             Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
-            return TcpConnection.CreateConnectingTcpConnection(connectionId, remoteEndPoint, this, onConnectionEstablished, onConnectionFailed, verbose);
+            return TcpConnectionLockless.CreateConnectingTcpConnection(connectionId, remoteEndPoint, this, onConnectionEstablished, onConnectionFailed, verbose);
         }
 
         internal void InitConnect(IPEndPoint serverEndPoint,
