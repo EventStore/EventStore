@@ -43,7 +43,7 @@ namespace EventStore.ClientAPI.ClientOperations
     {
         private readonly TcpCommand _requestCommand;
         private readonly TcpCommand _responseCommand;
-        private readonly UserCredentials _userCredentials;
+        protected readonly UserCredentials UserCredentials;
 
         protected readonly ILogger Log;
         private readonly TaskCompletionSource<TResult> _source;
@@ -65,16 +65,16 @@ namespace EventStore.ClientAPI.ClientOperations
             _source = source;
             _requestCommand = requestCommand;
             _responseCommand = responseCommand;
-            _userCredentials = userCredentials;
+            UserCredentials = userCredentials;
         }
 
         public TcpPackage CreateNetworkPackage(Guid correlationId)
         {
             return new TcpPackage(_requestCommand,
-                                  _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
+                                  UserCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
                                   correlationId,
-                                  _userCredentials != null ? _userCredentials.Login : null,
-                                  _userCredentials != null ? _userCredentials.Password : null,
+                                  UserCredentials != null ? UserCredentials.Login : null,
+                                  UserCredentials != null ? UserCredentials.Password : null,
                                   CreateRequestDto().Serialize());
         }
 

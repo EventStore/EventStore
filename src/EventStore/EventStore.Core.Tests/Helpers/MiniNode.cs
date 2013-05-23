@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.Helpers
             int extSecTcpPort = tcpSecPort ?? PortsHelper.GetAvailablePort(ip);
             int extHttpPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
 
-            _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}", extTcpPort, extHttpPort));
+            _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}-{2}", extTcpPort, extSecTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
             Db = new TFChunkDb(CreateDbConfig(chunkSize ?? ChunkSize, _dbPath, cachedChunkSize ?? CachedChunkSize));
 
@@ -114,6 +114,7 @@ namespace EventStore.Core.Tests.Helpers
                      "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
                      "DBPATH:", _dbPath,
                      "TCP ENDPOINT:", TcpEndPoint,
+                     "TCP SECURE ENDPOINT:", TcpSecEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
 
             Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: 1000, subsystems: subsystems);
@@ -150,6 +151,7 @@ namespace EventStore.Core.Tests.Helpers
             if (!keepPorts)
             {
                 PortsHelper.ReturnPort(TcpEndPoint.Port);
+                PortsHelper.ReturnPort(TcpSecEndPoint.Port);
                 PortsHelper.ReturnPort(HttpEndPoint.Port);
             }
             

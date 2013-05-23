@@ -29,12 +29,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
@@ -60,9 +60,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _deliveredEvents;
 
         public MultiStreamEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, string[] streams, Dictionary<string, int> fromPositions,
-            bool resolveLinkTos, ITimeProvider timeProvider, bool stopOnEof = false, int? stopAfterNEvents = null)
-            : base(publisher, eventReaderCorrelationId, stopOnEof, stopAfterNEvents)
+            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, string[] streams,
+            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
+            bool stopOnEof = false, int? stopAfterNEvents = null)
+            : base(publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
         {
             if (streams == null) throw new ArgumentNullException("streams");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
@@ -251,7 +252,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                 EventReaderCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
-                _maxReadCount, _resolveLinkTos, null, SystemAccount.Principal);
+                _maxReadCount, _resolveLinkTos, null, ReadAs);
             if (delay)
                 _publisher.Publish(
                     TimerMessage.Schedule.Create(
@@ -302,27 +303,27 @@ namespace EventStore.Projections.Core.Services.Processing
                     _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: this.GetType()));
         }
 
-        protected virtual long? EventPairToPosition(EventStore.Core.Data.ResolvedEvent resolvedEvent)
+        private long? EventPairToPosition(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
             return resolvedEvent.OriginalEvent.LogPosition;
         }
 
-        protected virtual long? MessageToLastCommitPosition(ClientMessage.ReadStreamEventsForwardCompleted message)
+        private long? MessageToLastCommitPosition(ClientMessage.ReadStreamEventsForwardCompleted message)
         {
             return GetLastCommitPositionFrom(message);
         }
 
-        protected virtual long GetItemPosition(Tuple<EventRecord, EventRecord, float> head)
+        private long GetItemPosition(Tuple<EventRecord, EventRecord, float> head)
         {
             return head.Item2.LogPosition;
         }
 
-        protected virtual long GetMaxPosition()
+        private long GetMaxPosition()
         {
             return long.MaxValue;
         }
 
-        protected virtual long? PositionToSafeJoinPosition(long? safePositionToJoin)
+        private long? PositionToSafeJoinPosition(long? safePositionToJoin)
         {
             return safePositionToJoin;
         }

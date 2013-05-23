@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Principal;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -50,7 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private CheckpointTag _loadingPrerecordedEventsFrom;
 
         public MultiStreamMultiOutputCheckpointManager(
-            IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, 
+            IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
@@ -58,7 +59,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints = false)
             : base(
-                publisher, projectionCorrelationId, projectionVersion, readDispatcher, writeDispatcher,
+                publisher, projectionCorrelationId, projectionVersion, runAs, readDispatcher, writeDispatcher,
                 projectionConfig, name, positionTagger, namingBuilder, resultEmitter, useCheckpoints,
                 emitPartitionCheckpoints)
         {
@@ -91,8 +92,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         new EmittedDataEvent(
                     orderStreamName, Guid.NewGuid(), "$>",
-                    resolvedEvent.PositionSequenceNumber + "@" + resolvedEvent.PositionStreamId, orderCheckpointTag,
-                    _lastOrderCheckpointTag, v => committed())
+                    resolvedEvent.PositionSequenceNumber + "@" + resolvedEvent.PositionStreamId, null,
+                    orderCheckpointTag, _lastOrderCheckpointTag, v => committed())
                     });
             _lastOrderCheckpointTag = orderCheckpointTag;
         }
@@ -100,9 +101,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private EmittedStream CreateOrderStream(CheckpointTag from)
         {
             return new EmittedStream(
-                _namingBuilder.GetOrderStreamName(), _projectionVersion, _positionTagger, _positionTagger.MakeZeroCheckpointTag(), from,
-                _readDispatcher, _writeDispatcher, /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger,
-                noCheckpoints: true);
+                _namingBuilder.GetOrderStreamName(), _projectionVersion, SystemAccount.Principal, _positionTagger,
+                _positionTagger.MakeZeroCheckpointTag(), from, _readDispatcher, _writeDispatcher,
+                /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger, noCheckpoints: true);
         }
 
         public override void GetStatistics(ProjectionStatistics info)

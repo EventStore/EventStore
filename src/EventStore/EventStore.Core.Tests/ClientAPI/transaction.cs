@@ -128,6 +128,24 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
+        [Test, Category("Network")]
+        public void should_do_nothing_if_transactionally_writing_no_events_to_empty_stream()
+        {
+            const string stream = "should_do_nothing_if_transactionally_writing_no_events_to_empty_stream";
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            {
+                store.Connect();
+                using (var transaction = store.StartTransaction(stream, ExpectedVersion.NoStream))
+                {
+                    Assert.DoesNotThrow(() => transaction.Write());
+                    Assert.DoesNotThrow(() => transaction.Commit());
+                }
+
+                var result = store.ReadStreamEventsForward(stream, 0, 1, resolveLinkTos: false);
+                Assert.That(result.Events.Length, Is.EqualTo(0));
+            }
+        }
+
         [Test]
         [Category("Network")]
         public void should_validate_expectations_on_commit()

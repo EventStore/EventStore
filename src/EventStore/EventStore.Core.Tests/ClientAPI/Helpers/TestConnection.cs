@@ -29,26 +29,28 @@
 using System;
 using System.Net;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
     public static class TestConnection
     {
-        public static IEventStoreConnection Create(IPEndPoint endPoint, TcpType tcpType = TcpType.Normal)
+        public static IEventStoreConnection Create(IPEndPoint endPoint, TcpType tcpType = TcpType.Normal, UserCredentials userCredentials = null)
         {
-            return EventStoreConnection.Create(Settings(tcpType), endPoint);
+            return EventStoreConnection.Create(Settings(tcpType, userCredentials), endPoint);
         }
 
-        public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType)
+        public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType, UserCredentials userCredentials = null)
         {
-            return EventStoreConnection.Create(Settings(tcpType),
+            return EventStoreConnection.Create(Settings(tcpType, userCredentials),
                                                tcpType == TcpType.Ssl ? miniNode.TcpSecEndPoint : miniNode.TcpEndPoint);
         }
 
-        private static ConnectionSettingsBuilder Settings(TcpType tcpType)
+        private static ConnectionSettingsBuilder Settings(TcpType tcpType, UserCredentials userCredentials)
         {
             var settings = ConnectionSettings.Create()
+                                             .SetDefaultUserCredentials(userCredentials)
                                              .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .EnableVerboseLogging()
                                              //.DisableVerboseLogging()

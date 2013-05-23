@@ -146,9 +146,9 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_allStreams)
             {
                 var eventReader = new TransactionFileEventReader(
-                    publisher, eventReaderId,
-                    new TFPos(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value),
-                    _timeProvider, deliverEndOfTFPosition: true, stopOnEof: stopOnEof, resolveLinkTos: false,
+                    publisher, eventReaderId, _runAs,
+                    new TFPos(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value), _timeProvider,
+                    deliverEndOfTFPosition: true, stopOnEof: stopOnEof, resolveLinkTos: false,
                     stopAfterNEvents: stopAfterNEvents);
                 return eventReader;
             }
@@ -224,7 +224,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var lastProcessedSequenceNumber = checkpointTag.Streams.Values.First();
             var fromSequenceNumber = lastProcessedSequenceNumber + 1;
             var eventReader = new StreamEventReader(
-                publisher, eventReaderId, streamName, fromSequenceNumber, _timeProvider, resolveLinkTos,
+                publisher, eventReaderId, _runAs, streamName, fromSequenceNumber, _timeProvider, resolveLinkTos,
                 stopOnEof, stopAfterNEvents);
             return eventReader;
         }
@@ -239,8 +239,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 v => "$et-" + v, v => checkpointTag.Streams.TryGetValue(v, out p) ? p + 1 : 0);
 
             return new EventByTypeIndexEventReader(
-                publisher, eventReaderId, eventTypes.ToArray(), checkpointTag.Position, nextPositions, resolveLinkTos,
-                _timeProvider, stopOnEof, stopAfterNEvents);
+                publisher, eventReaderId, _runAs, eventTypes.ToArray(), checkpointTag.Position, nextPositions,
+                resolveLinkTos, _timeProvider, stopOnEof, stopAfterNEvents);
         }
 
         private IEventReader CreatePausedMultiStreamEventReader(
@@ -250,7 +250,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
 
             return new MultiStreamEventReader(
-                publisher, eventReaderId, streams.ToArray(), nextPositions, resolveLinkTos, _timeProvider,
+                publisher, eventReaderId, _runAs, streams.ToArray(), nextPositions, resolveLinkTos, _timeProvider,
                 stopOnEof, stopAfterNEvents);
         }
     }

@@ -66,8 +66,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 
         protected virtual void When()
         {
-            _manager = new DefaultCheckpointManager(_bus, _projectionCorrelationId, new ProjectionVersion(1, 0, 0), _readDispatcher, _writeDispatcher, _config, "projection",
-                new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter, _checkpointsEnabled);
+            _manager = new DefaultCheckpointManager(
+                _bus, _projectionCorrelationId, new ProjectionVersion(1, 0, 0), null, _readDispatcher, _writeDispatcher,
+                _config, "projection", new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter,
+                _checkpointsEnabled);
 
         }
 

@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(),
+                "test_stream", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
                 CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher,
                 _readyHandler, maxWriteBatchLength: 50);
             _stream.Start();
@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                     {
                         new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(100, 50), null,
+                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(100, 50), null,
                     v => invoked = true)
                     });
             Assert.IsTrue(invoked);
@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                     {
                         new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(200, 150), null,
+                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null,
                     v => invoked = true)
                     });
             Assert.IsTrue(invoked);

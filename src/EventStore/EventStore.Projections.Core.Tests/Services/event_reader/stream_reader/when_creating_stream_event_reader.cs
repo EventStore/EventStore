@@ -40,37 +40,37 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         [Test]
         public void it_can_be_created()
         {
-            var edp = new StreamEventReader(_bus, Guid.NewGuid(), "stream", 0, new RealTimeProvider(), false);
+            var edp = new StreamEventReader(_bus, Guid.NewGuid(), null, "stream", 0, new RealTimeProvider(), false);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            var edp = new StreamEventReader(null, Guid.NewGuid(), "stream", 0, new RealTimeProvider(), false);
+            var edp = new StreamEventReader(null, Guid.NewGuid(), null, "stream", 0, new RealTimeProvider(), false);
         }
 
         [Test, ExpectedException(typeof(ArgumentException))]
         public void empty_event_reader_id_throws_argument_exception()
         {
-            var edp = new StreamEventReader(_bus, Guid.Empty, "stream", 0, new RealTimeProvider(), false);
+            var edp = new StreamEventReader(_bus, Guid.Empty, null, "stream", 0, new RealTimeProvider(), false);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_stream_name_throws_argument_null_exception()
         {
-            var edp = new StreamEventReader(_bus, Guid.NewGuid(), null, 0, new RealTimeProvider(), false);
+            var edp = new StreamEventReader(_bus, Guid.NewGuid(), null, null, 0, new RealTimeProvider(), false);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_stream_name_throws_argument_exception()
         {
-            var edp = new StreamEventReader(_bus, Guid.NewGuid(), "", 0, new RealTimeProvider(), false);
+            var edp = new StreamEventReader(_bus, Guid.NewGuid(), null, "", 0, new RealTimeProvider(), false);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void negative_event_sequence_number_throws_argument_exception()
         {
-            var edp = new StreamEventReader(_bus, Guid.NewGuid(), "", -1, new RealTimeProvider(), false);
+            var edp = new StreamEventReader(_bus, Guid.NewGuid(), null, "", -1, new RealTimeProvider(), false);
         }
     }
 }

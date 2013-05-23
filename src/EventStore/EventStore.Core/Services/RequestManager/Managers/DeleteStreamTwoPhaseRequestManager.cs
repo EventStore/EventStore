@@ -49,18 +49,15 @@ namespace EventStore.Core.Services.RequestManager.Managers
         public void Handle(ClientMessage.DeleteStream request)
         {
             _request = request;
-            Init(request.Envelope, request.CorrelationId, request.EventStreamId, request.User, -1);
+            Init(request.Envelope, request.CorrelationId, request.EventStreamId, request.User, null);
         }
 
         protected override void OnSecurityAccessGranted()
         {
             Publisher.Publish(
                 new StorageMessage.WriteDelete(
-                    _request.CorrelationId,
-                    PublishEnvelope,
-                    _request.EventStreamId,
-                    _request.ExpectedVersion,
-                    liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
+                    _request.CorrelationId, PublishEnvelope, _request.EventStreamId, _request.ExpectedVersion,
+                    liveUntil: NextTimeoutTime - TimeoutOffset));
             _request = null;
         }
 

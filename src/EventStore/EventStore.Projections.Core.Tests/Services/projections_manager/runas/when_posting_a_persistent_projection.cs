@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
                         checkpointsEnabled: true, emitEnabled: true, enableRunAs: true);
             }
 
-            [Test]
+            [Test, Ignore]
             public void anonymous_cannot_retrieve_projection_query()
             {
                 GetInputQueue()

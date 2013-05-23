@@ -243,8 +243,9 @@ namespace EventStore.ClientAPI
         /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
         /// </remarks>
         /// <param name="transactionId">The transaction ID that needs to be continued.</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns><see cref="EventStoreTransaction"/> object.</returns>
-        EventStoreTransaction ContinueTransaction(long transactionId);
+        EventStoreTransaction ContinueTransaction(long transactionId, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start

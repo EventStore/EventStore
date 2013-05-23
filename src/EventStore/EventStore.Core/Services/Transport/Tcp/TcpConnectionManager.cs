@@ -267,7 +267,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                     Application.Exit(ExitCode.Error, exitMessage);
                     break;
                 }
-                case TcpCommand.Authenticated:
+                case TcpCommand.Authenticate:
                 {
                     if ((package.Flags & TcpFlags.Authenticated) == 0)
                         ReplyNotAuthenticated(package.CorrelationId, "No user credentials provided.");

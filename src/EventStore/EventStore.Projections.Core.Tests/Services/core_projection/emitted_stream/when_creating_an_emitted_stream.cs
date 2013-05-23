@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_stream_id_throws_argument_null_exception()
         {
             var s = new EmittedStream(
-                null, new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(),
+                null, new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
                 CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher,
                 new TestCheckpointManagerMessageHandler(), 50);
         }
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void empty_stream_id_throws_argument_exception()
         {
             var s = new EmittedStream(
-                "", new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(),
+                "", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
                 CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher,
                 new TestCheckpointManagerMessageHandler(), 50);
         }
@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_zero_position_throws_argument_exception()
         {
             var s = new EmittedStream(
-                "", new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(), null,
+                "", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(), null,
                 CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher,
                 new TestCheckpointManagerMessageHandler(), 50);
         }
@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_from_throws_argument_exception()
         {
             var s = new EmittedStream(
-                "", new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(),
+                "", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
                 CheckpointTag.FromPosition(0, -1), null, _readDispatcher, _writeDispatcher,
                 new TestCheckpointManagerMessageHandler(), 50);
         }
@@ -103,7 +103,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_read_dispatcher_throws_argument_null_exception()
         {
             var s = new EmittedStream(
-                "test", new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), null, _writeDispatcher,
+                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
+                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), null, _writeDispatcher,
                 new TestCheckpointManagerMessageHandler(), 50);
         }
 
@@ -111,7 +112,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_write_dispatcher_throws_argument_null_exception()
         {
             var s = new EmittedStream(
-                "test", new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, null,
+                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
+                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, null,
                 new TestCheckpointManagerMessageHandler(), 50);
         }
 
@@ -119,14 +121,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_ready_handler_throws_argumenbt_null_exception()
         {
             var s = new EmittedStream(
-                "test", new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, null, 50);
+                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
+                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher,
+                null, 50);
         }
 
         [Test]
         public void it_can_be_created()
         {
             var s = new EmittedStream(
-                "test", new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher,
+                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
+                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher,
                 new TestCheckpointManagerMessageHandler(), 50);
         }
     }

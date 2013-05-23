@@ -106,40 +106,37 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
             var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
 
-            var successTask = Task.Factory.StartNew(() => 
+            var successTask = Task.Factory.StartNew(() =>
+            {
+                var success = false;
+                var stopWatch = new Stopwatch();
+                while (stopWatch.Elapsed < _iterationLoopDuration)
                 {
-                    var success = false;
-                    var stopWatch = new Stopwatch();
-                    while (stopWatch.Elapsed < _iterationLoopDuration)
+                    if (writeTask.IsFaulted)
+                        throw new ApplicationException("Failed to write data");
+
+                    if (writeTask.IsCompleted && !stopWatch.IsRunning)
                     {
-                        if (writeTask.IsFaulted)
-                            throw new ApplicationException("Failed to write data");
-
-                        if (writeTask.IsCompleted && !stopWatch.IsRunning)
-                        {
-                            stopWatch.Start();
-                        }
-
-                        var countItemSuccess = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount);
-                        success = countItemSuccess && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
-
-                        if (success)
-                            break;
-
-                        Thread.Sleep(4000);
+                        stopWatch.Start();
                     }
 
-                    var countItemSuccessFinal = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount);
-                    var sumCheckSuccessFinal = CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
+                    success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
+                              && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
 
-                    if (!countItemSuccessFinal)
-                        Log.Error("Projection '{0}' has not completed with expected result in time. ", countItem);
+                    if (success)
+                        break;
 
-                    if (!sumCheckSuccessFinal)
-                        Log.Error("Projection '{0}' has not completed with expected result in time.", sumCheckForBankAccount0);
+                    Thread.Sleep(4000);
+                }
 
-                    return success;
-                });
+                if (! CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount))
+                    Log.Error("Projection '{0}' has not completed with expected result {1} in time. ", countItem, expectedAllEventsCount);
+
+                if (!CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion))
+                    Log.Error("Projection '{0}' has not completed with expected result {1} in time.", sumCheckForBankAccount0, lastExpectedEventVersion);
+
+                return success;
+            });
 
             writeTask.Wait();
 

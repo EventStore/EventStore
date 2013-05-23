@@ -323,7 +323,10 @@ namespace EventStore.ClientAPI.Transport.Tcp
             Ensure.NotNull(callback, "callback");
 
             if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
+            {
+                _log.Error("ReceiveAsync called again while previous call wasn't fulfilled");
                 throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+            }
             TryDequeueReceivedData();
         }
 
@@ -400,11 +403,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 return;
             do
             {
-                if (_receiveQueue.Count >= 0 && _receiveCallback != null)
+                if (_receiveQueue.Count > 0 && _receiveCallback != null)
                 {
                     var callback = Interlocked.Exchange(ref _receiveCallback, null);
                     if (callback == null)
+                    {
+                        _log.Error("Some threading issue in TryDequeueReceivedData! Callback is null!");
                         throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
+                    }
 
                     var dequeueResultList = new List<Tuple<ArraySegment<byte>, int>>(_receiveQueue.Count);
                     Tuple<ArraySegment<byte>, int> piece;
@@ -413,8 +419,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                         dequeueResultList.Add(piece);
                     }
 
-                    callback(this, dequeueResultList.Select(v =>
-                        new ArraySegment<byte>(v.Item1.Array, v.Item1.Offset, v.Item2)));
+                    callback(this, dequeueResultList.Select(v => new ArraySegment<byte>(v.Item1.Array, v.Item1.Offset, v.Item2)));
 
                     int bytes = 0;
                     for (int i = 0, n = dequeueResultList.Count; i < n; ++i)

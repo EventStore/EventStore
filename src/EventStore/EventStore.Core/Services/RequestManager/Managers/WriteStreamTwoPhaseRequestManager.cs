@@ -49,19 +49,15 @@ namespace EventStore.Core.Services.RequestManager.Managers
         public void Handle(ClientMessage.WriteEvents request)
         {
             _request = request;
-            Init(request.Envelope, request.CorrelationId, request.EventStreamId, request.User, -1);
+            Init(request.Envelope, request.CorrelationId, request.EventStreamId, request.User, null);
         }
 
         protected override void OnSecurityAccessGranted()
         {
             Publisher.Publish(
                 new StorageMessage.WritePrepares(
-                    CorrelationId,
-                    PublishEnvelope,
-                    _request.EventStreamId,
-                    _request.ExpectedVersion,
-                    _request.Events,
-                    liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(PrepareTimeout.Ticks * 9 / 10)));
+                    CorrelationId, PublishEnvelope, _request.EventStreamId, _request.ExpectedVersion, _request.Events,
+                    liveUntil: NextTimeoutTime - TimeoutOffset));
             _request = null;
         }
 

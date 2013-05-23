@@ -105,7 +105,16 @@
     <Compile Include="ClientAPI\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
-    <Compile Include="ClientAPI\Security\authentication_tests.cs" />
+    <Compile Include="ClientAPI\Security\read_stream_security.cs" />
+    <Compile Include="ClientAPI\Security\read_all_security.cs" />
+    <Compile Include="ClientAPI\Security\read_stream_meta_security.cs" />
+    <Compile Include="ClientAPI\Security\AuthenticationTestBase.cs" />
+    <Compile Include="ClientAPI\Security\authorized_default_credentials_security.cs" />
+    <Compile Include="ClientAPI\Security\subscribe_to_all_security.cs" />
+    <Compile Include="ClientAPI\Security\subscribe_to_stream_security.cs" />
+    <Compile Include="ClientAPI\Security\transactional_write_stream_security.cs" />
+    <Compile Include="ClientAPI\Security\write_stream_meta_security.cs" />
+    <Compile Include="ClientAPI\Security\write_stream_security.cs" />
     <Compile Include="ClientAPI\subscribe_should.cs" />
     <Compile Include="ClientAPI\subscribe_to_all_catching_up_should.cs" />
     <Compile Include="ClientAPI\subscribe_to_all_should.cs" />

@@ -161,13 +161,31 @@ function scope($on, $notify) {
         };
     }
 
-    function emit(streamId, eventName, eventBody) {
-        var message = { streamId: streamId, eventName: eventName , body: JSON.stringify(eventBody) };
+    function emit(streamId, eventName, eventBody, metadata) {
+        var message = { streamId: streamId, eventName: eventName , body: JSON.stringify(eventBody), metadata: metadata };
         eventProcessor.emit(message);
     }
 
-    function linkTo(streamId, event) {
-        var message = { streamId: streamId, eventName: "$>", body: event.sequenceNumber + "@" + event.streamId };
+    function linkTo(streamId, event, metadata) {
+        var message = { streamId: streamId, eventName: "$>", body: event.sequenceNumber + "@" + event.streamId, metadata: metadata };
+        eventProcessor.emit(message);
+    }
+
+    function copyTo(streamId, event, metadata) {
+        var m = {};
+
+        var em = event.metadata;
+        if (em)
+            for (var p1 in em)
+                if (p1.indexOf("$") !== 0)
+                    m[p1] = em[p1];
+
+        if (metadata) 
+            for (var p2 in metadata)
+                if (p2.indexOf("$") !== 0)
+                    m[p2] = metadata[p2];
+
+        var message = { streamId: streamId, eventName: event.eventType, body: event.bodyRaw, metadata: m };
         eventProcessor.emit(message);
     }
 
@@ -187,7 +205,8 @@ function scope($on, $notify) {
         fromStreams: fromStreams,
         options: options,
         emit: emit, 
-        linkTo: linkTo, 
+        linkTo: linkTo,
+        copyTo: copyTo,
         require: modules.require,
     };
 };

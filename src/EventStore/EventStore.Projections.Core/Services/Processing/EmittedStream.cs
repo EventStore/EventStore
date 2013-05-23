@@ -28,7 +28,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -53,6 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ILogger _logger;
         private readonly string _streamId;
         private readonly ProjectionVersion _projectionVersion;
+        private readonly IPrincipal _writeAs;
         private readonly PositionTagger _positionTagger;
         private readonly CheckpointTag _zeroPosition;
         private readonly CheckpointTag _from;
@@ -76,11 +77,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _disposed;
         private CheckpointTag _last;
         private bool _recoveryCompleted;
-        private string _debugStreamStartedAs;
 
 
         public EmittedStream(
-            string streamId, ProjectionVersion projectionVersion, PositionTagger positionTagger, CheckpointTag zeroPosition, CheckpointTag from,
+            string streamId, ProjectionVersion projectionVersion, IPrincipal writeAs, PositionTagger positionTagger,
+            CheckpointTag zeroPosition, CheckpointTag from,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
@@ -97,6 +98,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
             _projectionVersion = projectionVersion;
+            _writeAs = writeAs;
             _positionTagger = positionTagger;
             _zeroPosition = zeroPosition;
             _from = @from;
@@ -230,7 +232,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 var parsed = default(CheckpointTagVersion);
                 if (!newPhysicalStream)
                 {
-                    _debugStreamStartedAs = Helper.UTF8NoBom.GetString(message.Events[0].Event.Metadata);
                     parsed = message.Events[0].Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                     if (_projectionVersion.ProjectionId != parsed.Version.ProjectionId)
                     {
@@ -378,9 +379,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private void PublishWriteEvents()
         {
             _writeDispatcher.Publish(
-                new ClientMessage.WriteEvents(Guid.NewGuid(), _writeDispatcher.Envelope, true, _streamId,
-                                              _lastKnownEventNumber, _submittedToWriteEvents, SystemAccount.Principal), 
-                Handle);
+                new ClientMessage.WriteEvents(
+                    Guid.NewGuid(), _writeDispatcher.Envelope, true, _streamId, _lastKnownEventNumber,
+                    _submittedToWriteEvents, _writeAs), Handle);
+
         }
 
         private void EnsureCheckpointNotRequested()

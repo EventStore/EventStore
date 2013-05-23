@@ -41,6 +41,12 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             _base = new GenericPrincipal(identity, roles);
         }
 
+        public OpenGenericPrincipal(string identity, params string[] roles)
+        {
+            _roles = roles;
+            _base = new GenericPrincipal(new GenericIdentity(identity), roles);
+        }
+
         public bool IsInRole(string role)
         {
             return _base.IsInRole(role);

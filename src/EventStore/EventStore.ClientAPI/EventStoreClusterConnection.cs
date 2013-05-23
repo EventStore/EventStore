@@ -126,9 +126,9 @@ namespace EventStore.ClientAPI
             return _conn.StartTransactionAsync(stream, expectedVersion, userCredentials);
         }
 
-        public EventStoreTransaction ContinueTransaction(long transactionId)
+        public EventStoreTransaction ContinueTransaction(long transactionId, UserCredentials userCredentials = null)
         {
-            return _conn.ContinueTransaction(transactionId);
+            return _conn.ContinueTransaction(transactionId, userCredentials);
         }
 
         public Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events, UserCredentials userCredentials = null)

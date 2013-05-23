@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             _point.Start(
                 _distibutionPointCorrelationId,
                 new TransactionFileEventReader(
-                    _bus, _distibutionPointCorrelationId, new TFPos(0, -1), new RealTimeProvider()));
+                    _bus, _distibutionPointCorrelationId, null, new TFPos(0, -1), new RealTimeProvider()));
             _point.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     _distibutionPointCorrelationId, new TFPos(20, 10), "stream", 10, false, Guid.NewGuid(),

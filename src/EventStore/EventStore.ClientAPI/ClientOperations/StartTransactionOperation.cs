@@ -89,7 +89,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override EventStoreTransaction TransformResponse(ClientMessage.TransactionStartCompleted response)
         {
-            return new EventStoreTransaction(response.TransactionId, _parentConnection);
+            return new EventStoreTransaction(response.TransactionId, UserCredentials, _parentConnection);
         }
 
         public override string ToString()
