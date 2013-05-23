@@ -468,7 +468,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 if (workItem.IsMemory)
                     throw new InvalidOperationException("When trying to build cache, reader worker is already in-memory reader.");
 
-                _cachedLength = (_isReadOnly ? _physicalDataSize : _chunkHeader.ChunkSize) + ChunkHeader.Size + ChunkFooter.Size;
+                var dataSize = _isReadOnly ? _physicalDataSize + ChunkFooter.MapSize : _chunkHeader.ChunkSize;
+                _cachedLength = ChunkHeader.Size + dataSize + ChunkFooter.Size;
                 var cachedData = Marshal.AllocHGlobal(_cachedLength);
                 try
                 {
