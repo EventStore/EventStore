@@ -101,7 +101,7 @@ namespace EventStore.Transport.Tcp
         private readonly SpinLock2 _sendingLock = new SpinLock2();
         private bool _isSending;
         private int _receiveHandling;
-        private int _closed;
+        private volatile int _closed;
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
@@ -162,11 +162,8 @@ namespace EventStore.Transport.Tcp
         {
             using (_sendingLock.Acquire())
             {
-                if (_isSending || _sendQueue.Count == 0 || _socket == null)
-                    return;
-
-                if (TcpConnectionMonitor.Default.IsSendBlocked())
-                    return;
+                if (_isSending || _sendQueue.Count == 0 || _socket == null) return;
+                if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
                 _isSending = true;
             }
 
@@ -216,7 +213,10 @@ namespace EventStore.Transport.Tcp
                 {
                     _isSending = false;
                 }
-                TrySend();
+                if (_closed != 0)
+                    ReturnSendingSocketArgs();
+                else
+                    TrySend();
             }
         }
 
@@ -226,7 +226,10 @@ namespace EventStore.Transport.Tcp
                 throw new ArgumentNullException("callback");
 
             if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
+            {
+                Log.Fatal("ReceiveAsync called again while previous call wasn't fulfilled");
                 throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+            }
             TryDequeueReceivedData();
         }
 
@@ -271,8 +274,7 @@ namespace EventStore.Transport.Tcp
             
             var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count);
             _receiveQueue.Enqueue(Tuple.Create(fullBuffer, socketArgs.BytesTransferred));
-
-            _receiveSocketArgs.SetBuffer(null, 0, 0);
+            socketArgs.SetBuffer(null, 0, 0);
 
             StartReceive();
             TryDequeueReceivedData();
@@ -284,11 +286,14 @@ namespace EventStore.Transport.Tcp
                 return;
             do
             {
-                if (_receiveQueue.Count >= 0 && _receiveCallback != null)
+                if (_receiveQueue.Count > 0 && _receiveCallback != null)
                 {
                     var callback = Interlocked.Exchange(ref _receiveCallback, null);
-                    if (callback == null) 
+                    if (callback == null)
+                    {
+                        Log.Fatal("Some threading issue in TryDequeueReceivedData! Callback is null!");
                         throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
+                    }
 
                     var dequeueResultList = new List<Tuple<ArraySegment<byte>, int>>(_receiveQueue.Count);
                     Tuple<ArraySegment<byte>, int> piece;
@@ -297,8 +302,7 @@ namespace EventStore.Transport.Tcp
                         dequeueResultList.Add(piece);
                     }
 
-                    callback(this, dequeueResultList.Select(v => 
-                        new ArraySegment<byte>(v.Item1.Array, v.Item1.Offset, v.Item2)));
+                    callback(this, dequeueResultList.Select(v => new ArraySegment<byte>(v.Item1.Array, v.Item1.Offset, v.Item2)));
 
                     int bytes = 0;
                     for (int i = 0, n = dequeueResultList.Count; i < n; ++i)
@@ -322,8 +326,10 @@ namespace EventStore.Transport.Tcp
 
         private void CloseInternal(SocketError socketError, string reason)
         {
+#pragma warning disable 420
             if (Interlocked.CompareExchange(ref _closed, 1, 0) != 0)
                 return;
+#pragma warning restore 420
 
             NotifyClosed();
 

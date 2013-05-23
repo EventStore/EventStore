@@ -416,7 +416,10 @@ namespace EventStore.Transport.Tcp
             Ensure.NotNull(callback, "callback");
 
             if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
+            {
+                Log.Fatal("ReceiveAsync called again while previous call wasn't fulfilled"); 
                 throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+            }
             TryDequeueReceivedData();
         }
 
@@ -495,11 +498,14 @@ namespace EventStore.Transport.Tcp
                 return;
             do
             {
-                if (_receiveQueue.Count >= 0 && _receiveCallback != null)
+                if (_receiveQueue.Count > 0 && _receiveCallback != null)
                 {
                     var callback = Interlocked.Exchange(ref _receiveCallback, null);
                     if (callback == null)
+                    {
+                        Log.Fatal("Some threading issue in TryDequeueReceivedData! Callback is null!");
                         throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
+                    }
 
                     var dequeueResultList = new List<Tuple<ArraySegment<byte>, int>>(_receiveQueue.Count);
                     Tuple<ArraySegment<byte>, int> piece;
