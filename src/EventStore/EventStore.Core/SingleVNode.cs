@@ -183,14 +183,14 @@ namespace EventStore.Core
             _workerBuses = Enumerable.Range(0, vNodeSettings.WorkerThreads).Select(queueNum =>
                 new InMemoryBus(string.Format("Worker #{0} Bus", queueNum + 1),
                                 watchSlowMsg: true,
-                                slowMsgThreshold: TimeSpan.FromMilliseconds(50))).ToArray();
+                                slowMsgThreshold: TimeSpan.FromMilliseconds(200))).ToArray();
             _workersHandler = new MultiQueuedHandler(
                     vNodeSettings.WorkerThreads,
                     queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
                                                             string.Format("Worker #{0}", queueNum + 1),
                                                             groupName: "Workers",
                                                             watchSlowMsg: true,
-                                                            slowMsgThreshold: TimeSpan.FromMilliseconds(50)));
+                                                            slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
 
             // AUTHENTICATION INFRASTRUCTURE
             var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
