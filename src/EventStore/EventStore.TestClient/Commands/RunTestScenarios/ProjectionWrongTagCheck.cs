@@ -142,6 +142,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 KillNode(nodeProcessId);
 
+                if (!success)
+                    throw new ApplicationException(string.Format("Projection {0} has not completed with expected result {1} in time.", sumCheckForBankAccount0, lastExpectedEventVersion));
+
                 return success;
 
             });

@@ -106,7 +106,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
             var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
 
-            var successTask = Task.Factory.StartNew(() => 
+            var successTask = Task.Factory.StartNew(() =>
             {
                 var success = false;
                 var stopWatch = new Stopwatch();
@@ -122,22 +122,19 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                     success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
                               && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
+
                     if (success)
                         break;
+
                     Thread.Sleep(4000);
                 }
-                if (!success)
-                {
-                    Log.Error("Some of projections has faulted state.");
 
-                    var countItemSuccess = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount);
-                    var sumCheckSuccess = CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
+                if (! CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount))
+                    Log.Error("Projection '{0}' has not completed with expected result {1} in time. ", countItem, expectedAllEventsCount);
 
-                    if (!countItemSuccess)
-                        Log.Error("Projection '{0}' has faulted state.", countItem);
-                    if (!sumCheckSuccess)
-                        Log.Error("Projection '{0}' has faulted state.", sumCheckForBankAccount0);
-                }
+                if (!CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion))
+                    Log.Error("Projection '{0}' has not completed with expected result {1} in time.", sumCheckForBankAccount0, lastExpectedEventVersion);
+
                 return success;
             });
 
