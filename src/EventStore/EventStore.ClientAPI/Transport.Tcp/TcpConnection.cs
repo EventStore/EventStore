@@ -84,12 +84,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private SocketAsyncEventArgs _sendSocketArgs;
 
         private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
-        private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _receiveQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
+        private readonly Queue<ArraySegment<byte>> _receiveQueue = new Queue<ArraySegment<byte>>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
+        private readonly object _receivingLock = new object();
         private readonly SpinLock2 _sendingLock = new SpinLock2();
         private bool _isSending;
-        private int _receiveHandling;
         private volatile int _closed;
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
@@ -122,6 +122,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 catch (ObjectDisposedException)
                 {
                     CloseInternal(SocketError.Shutdown, "Socket disposed.");
+                    _socket = null;
                     return;
                 }
 
@@ -194,6 +195,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void ProcessSend(SocketAsyncEventArgs socketArgs)
         {
+            if (socketArgs != _sendSocketArgs)
+            {
+                _log.Error("Invalid send socket args received");
+                throw new Exception("Invalid send socket args received");
+            }
             if (socketArgs.SocketError != SocketError.Success)
             {
                 NotifySendCompleted(0);
@@ -219,22 +225,37 @@ namespace EventStore.ClientAPI.Transport.Tcp
             if (callback == null)
                 throw new ArgumentNullException("callback");
 
-            if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
+            lock (_receivingLock)
             {
-                _log.Error("ReceiveAsync called again while previous call wasn't fulfilled"); 
-                throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                if (_receiveCallback != null)
+                {
+                    _log.Error("ReceiveAsync called again while previous call wasn't fulfilled");
+                    throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                }
+                _receiveCallback = callback;
             }
+
             TryDequeueReceivedData();
         }
 
         private void StartReceive()
         {
+            var buffer = new ArraySegment<byte>(new byte[TcpConfiguration.SocketBufferSize]);
+            // TODO AN: do we need to lock on _receiveSocketArgs?..
+            lock (_receiveSocketArgs) 
+            {
+                _receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
+                if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was not set");
+            }
             try
             {
                 NotifyReceiveStarting();
-                var buffer = new ArraySegment<byte>(new byte[TcpConfiguration.SocketBufferSize]);
-                _receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
-                var firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(_receiveSocketArgs);
+                bool firedAsync;
+                lock (_receiveSocketArgs)
+                {
+                    if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was lost");
+                    firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(_receiveSocketArgs);
+                }
                 if (!firedAsync)
                     ProcessReceive(_receiveSocketArgs);
             }
@@ -252,6 +273,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void ProcessReceive(SocketAsyncEventArgs socketArgs)
         {
+            if (socketArgs != _receiveSocketArgs)
+            {
+                _log.Error("Invalid receive socket args received");
+                throw new Exception("Invalid receive socket args received");
+            }
             // socket closed normally or some error occurred
             if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
             {
@@ -264,9 +290,17 @@ namespace EventStore.ClientAPI.Transport.Tcp
             NotifyReceiveCompleted(socketArgs.BytesTransferred);
 
             var receiveBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
-            _receiveQueue.Enqueue(receiveBuffer);
+            lock (_receivingLock)
+            {
+                _receiveQueue.Enqueue(receiveBuffer);
+            }
 
-            socketArgs.SetBuffer(null, 0, 0);
+            lock (_receiveSocketArgs)
+            {
+                if (socketArgs.Buffer == null)
+                    throw new Exception("Cleaning already null buffer");
+                socketArgs.SetBuffer(null, 0, 0);
+            }
 
             StartReceive();
             TryDequeueReceivedData();
@@ -274,39 +308,33 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void TryDequeueReceivedData()
         {
-            if (Interlocked.CompareExchange(ref _receiveHandling, 1, 0) != 0)
-                return;
-            do
+            Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback;
+            List<ArraySegment<byte>> res;
+            lock (_receivingLock)
             {
-                if (_receiveQueue.Count > 0 && _receiveCallback != null)
+                // no awaiting callback or no data to dequeue
+                if (_receiveCallback == null || _receiveQueue.Count == 0)
+                    return;
+
+                res = new List<ArraySegment<byte>>(_receiveQueue.Count);
+                while (_receiveQueue.Count > 0)
                 {
-                    var callback = Interlocked.Exchange(ref _receiveCallback, null);
-                    if (callback == null)
-                    {
-                        _log.Error("Some threading issue in TryDequeueReceivedData! Callback is null!");
-                        throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
-                    }
-
-                    var dequeueResultList = new List<ArraySegment<byte>>(_receiveQueue.Count);
-                    ArraySegment<byte> piece;
-                    while (_receiveQueue.TryDequeue(out piece))
-                    {
-                        dequeueResultList.Add(piece);
-                    }
-
-                    callback(this, dequeueResultList);
-
-                    int bytes = 0;
-                    for (int i = 0, n = dequeueResultList.Count; i < n; ++i)
-                    {
-                        bytes += dequeueResultList[i].Count;
-                    }
-                    NotifyReceiveDispatched(bytes);
+                    var arraySegments = _receiveQueue.Dequeue();
+                    res.Add(arraySegments);
                 }
-                Interlocked.Exchange(ref _receiveHandling, 0);
-            } while (_receiveQueue.Count > 0
-                     && _receiveCallback != null
-                     && Interlocked.CompareExchange(ref _receiveHandling, 1, 0) == 0);
+
+                callback = _receiveCallback;
+                _receiveCallback = null;
+            }
+
+            callback(this, res);
+
+            int bytes = 0;
+            for (int i = 0, n = res.Count; i < n; ++i)
+            {
+                bytes += res[i].Count;
+            }
+            NotifyReceiveDispatched(bytes);
         }
 
         public void Close(string reason)

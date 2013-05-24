@@ -486,7 +486,7 @@ namespace EventStore.Transport.Tcp
             if (buffer.Array == null || buffer.Count == 0 || buffer.Array.Length < buffer.Offset + buffer.Count)
                 throw new Exception("Invalid buffer allocated.");
             Buffer.BlockCopy(_receiveBuffer, 0, buffer.Array, buffer.Offset, bytesRead);
-            _receiveQueue.Enqueue(Tuple.Create(buffer, bytesRead));
+            _receiveQueue.Enqueue(Tuple.Create(new ArraySegment<byte>(buffer.Array, buffer.Offset, bytesRead), buffer.Count));
 
             StartReceive();
             TryDequeueReceivedData();
@@ -514,15 +514,14 @@ namespace EventStore.Transport.Tcp
                         dequeueResultList.Add(piece);
                     }
 
-                    callback(this, dequeueResultList.Select(v =>
-                        new ArraySegment<byte>(v.Item1.Array, v.Item1.Offset, v.Item2)));
+                    callback(this, dequeueResultList.Select(v => v.Item1).ToArray());
 
                     int bytes = 0;
                     for (int i = 0, n = dequeueResultList.Count; i < n; ++i)
                     {
                         var tuple = dequeueResultList[i];
-                        bytes += tuple.Item2;
-                        TcpConnection.BufferManager.CheckIn(tuple.Item1); // dispose buffers
+                        bytes += tuple.Item1.Count;
+                        TcpConnection.BufferManager.CheckIn(new ArraySegment<byte>(tuple.Item1.Array, tuple.Item1.Offset, tuple.Item2)); // dispose buffers
                     }
                     NotifyReceiveDispatched(bytes);
                 }

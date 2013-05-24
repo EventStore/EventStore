@@ -174,6 +174,7 @@ namespace EventStore.ClientAPI.ClientOperations
             try
             {
                 response = package.Data.Deserialize<TResponse>();
+                Log.Error("Unexpected TcpCommand: successfully deserialized {0}.", typeof(TResponse).Name);
             }
             catch (Exception exc)
             {
@@ -182,6 +183,7 @@ namespace EventStore.ClientAPI.ClientOperations
             try
             {
                 request = package.Data.Deserialize<ClientMessage.WriteEvents>();
+                Log.Error("Unexpected TcpCommand: successfully deserialized {0}.", typeof(ClientMessage.WriteEvents).Name);
             }
             catch (Exception exc)
             {

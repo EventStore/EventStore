@@ -95,12 +95,12 @@ namespace EventStore.Transport.Tcp
         private SocketAsyncEventArgs _sendSocketArgs;
 
         private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
-        private readonly Common.Concurrent.ConcurrentQueue<Tuple<ArraySegment<byte>, int>> _receiveQueue = new Common.Concurrent.ConcurrentQueue<Tuple<ArraySegment<byte>, int>>();
+        private readonly Queue<Tuple<ArraySegment<byte>, int>> _receiveQueue = new Queue<Tuple<ArraySegment<byte>, int>>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
+        private readonly object _receivingLock = new object();
         private readonly SpinLock2 _sendingLock = new SpinLock2();
         private bool _isSending;
-        private int _receiveHandling;
         private volatile int _closed;
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
@@ -128,6 +128,7 @@ namespace EventStore.Transport.Tcp
                 catch (ObjectDisposedException)
                 {
                     CloseInternal(SocketError.Shutdown, "Socket disposed.");
+                    _socket = null;
                     return;
                 }
 
@@ -200,6 +201,11 @@ namespace EventStore.Transport.Tcp
 
         private void ProcessSend(SocketAsyncEventArgs socketArgs)
         {
+            if (socketArgs != _sendSocketArgs)
+            {
+                Log.Fatal("Invalid send socket args received");
+                throw new Exception("Invalid send socket args received");
+            }
             if (socketArgs.SocketError != SocketError.Success)
             {
                 NotifySendCompleted(0);
@@ -225,11 +231,16 @@ namespace EventStore.Transport.Tcp
             if (callback == null)
                 throw new ArgumentNullException("callback");
 
-            if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
+            lock (_receivingLock)
             {
-                Log.Fatal("ReceiveAsync called again while previous call wasn't fulfilled");
-                throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                if (_receiveCallback != null)
+                {
+                    Log.Fatal("ReceiveAsync called again while previous call wasn't fulfilled");
+                    throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                }
+                _receiveCallback = callback;
             }
+
             TryDequeueReceivedData();
         }
 
@@ -238,12 +249,21 @@ namespace EventStore.Transport.Tcp
             var buffer = BufferManager.CheckOut();
             if (buffer.Array == null || buffer.Count == 0 || buffer.Array.Length < buffer.Offset + buffer.Count)
                 throw new Exception("Invalid buffer allocated");
-
+            // TODO AN: do we need to lock on _receiveSocketArgs?..
+            lock (_receiveSocketArgs) 
+            {
+                _receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
+                if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was not set");
+            }
             try
             {
                 NotifyReceiveStarting();
-                _receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
-                var firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(_receiveSocketArgs);
+                bool firedAsync;
+                lock (_receiveSocketArgs)
+                {
+                    if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was lost");
+                    firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(_receiveSocketArgs);
+                }
                 if (!firedAsync)
                     ProcessReceive(_receiveSocketArgs);
             }
@@ -261,6 +281,11 @@ namespace EventStore.Transport.Tcp
 
         private void ProcessReceive(SocketAsyncEventArgs socketArgs)
         {
+            if (socketArgs != _receiveSocketArgs)
+            {
+                Log.Fatal("Invalid receive socket args received");
+                throw new Exception("Invalid receive socket args received");
+            }
             // socket closed normally or some error occurred
             if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
             {
@@ -271,10 +296,19 @@ namespace EventStore.Transport.Tcp
             }
             
             NotifyReceiveCompleted(socketArgs.BytesTransferred);
-            
-            var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count);
-            _receiveQueue.Enqueue(Tuple.Create(fullBuffer, socketArgs.BytesTransferred));
-            socketArgs.SetBuffer(null, 0, 0);
+
+            lock (_receivingLock)
+            {
+                var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
+                _receiveQueue.Enqueue(Tuple.Create(fullBuffer, socketArgs.Count));
+            }
+
+            lock (_receiveSocketArgs)
+            {
+                if (socketArgs.Buffer == null)
+                    throw new Exception("Cleaning already null buffer");
+                socketArgs.SetBuffer(null, 0, 0);
+            }
 
             StartReceive();
             TryDequeueReceivedData();
@@ -282,41 +316,35 @@ namespace EventStore.Transport.Tcp
 
         private void TryDequeueReceivedData()
         {
-            if (Interlocked.CompareExchange(ref _receiveHandling, 1, 0) != 0)
-                return;
-            do
+            Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback;
+            List<Tuple<ArraySegment<byte>, int>> res;
+            lock (_receivingLock)
             {
-                if (_receiveQueue.Count > 0 && _receiveCallback != null)
+                // no awaiting callback or no data to dequeue
+                if (_receiveCallback == null || _receiveQueue.Count == 0)
+                    return;
+
+                res = new List<Tuple<ArraySegment<byte>, int>>(_receiveQueue.Count);
+                while (_receiveQueue.Count > 0)
                 {
-                    var callback = Interlocked.Exchange(ref _receiveCallback, null);
-                    if (callback == null)
-                    {
-                        Log.Fatal("Some threading issue in TryDequeueReceivedData! Callback is null!");
-                        throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
-                    }
-
-                    var dequeueResultList = new List<Tuple<ArraySegment<byte>, int>>(_receiveQueue.Count);
-                    Tuple<ArraySegment<byte>, int> piece;
-                    while (_receiveQueue.TryDequeue(out piece))
-                    {
-                        dequeueResultList.Add(piece);
-                    }
-
-                    callback(this, dequeueResultList.Select(v => new ArraySegment<byte>(v.Item1.Array, v.Item1.Offset, v.Item2)));
-
-                    int bytes = 0;
-                    for (int i = 0, n = dequeueResultList.Count; i < n; ++i)
-                    {
-                        var tuple = dequeueResultList[i];
-                        bytes += tuple.Item2;
-                        BufferManager.CheckIn(tuple.Item1); // dispose buffers
-                    }
-                    NotifyReceiveDispatched(bytes);
+                    var arraySegments = _receiveQueue.Dequeue();
+                    res.Add(arraySegments);
                 }
-                Interlocked.Exchange(ref _receiveHandling, 0);
-            } while (_receiveQueue.Count > 0
-                     && _receiveCallback != null
-                     && Interlocked.CompareExchange(ref _receiveHandling, 1, 0) == 0);
+
+                callback = _receiveCallback;
+                _receiveCallback = null;
+            }
+
+            callback(this, res.Select(v => v.Item1).ToArray());
+
+            int bytes = 0;
+            for (int i = 0, n = res.Count; i < n; ++i)
+            {
+                var tuple = res[i];
+                bytes += tuple.Item1.Count;
+                BufferManager.CheckIn(new ArraySegment<byte>(tuple.Item1.Array, tuple.Item1.Offset, tuple.Item2)); // dispose buffers
+            }
+            NotifyReceiveDispatched(bytes);
         }
 
         public void Close(string reason)
