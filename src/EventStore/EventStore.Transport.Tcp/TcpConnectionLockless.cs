@@ -60,8 +60,13 @@ namespace EventStore.Transport.Tcp
             connector.InitConnect(remoteEndPoint,
                                   (_, socket) =>
                                   {
-                                      if (connection.InitSocket(socket) && onConnectionEstablished != null)
-                                          onConnectionEstablished(connection);
+                                      if (connection.InitSocket(socket))
+                                      {
+                                          if (onConnectionEstablished != null)
+                                              onConnectionEstablished(connection);
+                                          connection.StartReceive();
+                                          connection.TrySend();
+                                      }
                                   },
                                   (_, socketError) =>
                                   {
@@ -76,6 +81,8 @@ namespace EventStore.Transport.Tcp
         {
             var connection = new TcpConnectionLockless(connectionId, effectiveEndPoint, verbose);
             connection.InitSocket(socket);
+            connection.StartReceive();
+            connection.TrySend();
             return connection;
         }
 
@@ -147,8 +154,6 @@ namespace EventStore.Transport.Tcp
                 return false;
             }
 
-            StartReceive();
-            TrySend();
             return true;
         }
 
@@ -206,9 +211,10 @@ namespace EventStore.Transport.Tcp
                     return;
                 }
                 Interlocked.Exchange(ref _sending, 0);
-                if (_closed != 0 && Interlocked.CompareExchange(ref _sending, 1, 0) == 0)
+                if (_closed != 0)
                 {
-                    ReturnSendingSocketArgs();
+                    if (Interlocked.CompareExchange(ref _sending, 1, 0) == 0)
+                        ReturnSendingSocketArgs();
                     return;
                 }
             } while (_sendQueue.Count > 0 && _sendSocketArgs != null && Interlocked.CompareExchange(ref _sending, 1, 0) == 0);
@@ -222,6 +228,12 @@ namespace EventStore.Transport.Tcp
 
         private void ProcessSend(SocketAsyncEventArgs socketArgs)
         {
+            if (socketArgs != _sendSocketArgs)
+            {
+                Log.Fatal("Wrong send socket args.");
+                throw new Exception("Wrong send socket args.");
+            }
+
             if (socketArgs.SocketError != SocketError.Success)
             {
                 NotifySendCompleted(0);
@@ -283,6 +295,12 @@ namespace EventStore.Transport.Tcp
 
         private void ProcessReceive(SocketAsyncEventArgs socketArgs)
         {
+            if (socketArgs != _receiveSocketArgs)
+            {
+                Log.Fatal("Wrong receive socket args.");
+                throw new Exception("Wrong receive socket args.");
+            }
+
             // socket closed normally or some error occurred
             if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
             {
@@ -294,8 +312,8 @@ namespace EventStore.Transport.Tcp
             
             NotifyReceiveCompleted(socketArgs.BytesTransferred);
             
-            var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count);
-            _receiveQueue.Enqueue(Tuple.Create(fullBuffer, socketArgs.BytesTransferred));
+            var dataBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
+            _receiveQueue.Enqueue(Tuple.Create(dataBuffer, socketArgs.Count));
             socketArgs.SetBuffer(null, 0, 0);
 
             StartReceive();
@@ -324,14 +342,14 @@ namespace EventStore.Transport.Tcp
                         dequeueResultList.Add(piece);
                     }
 
-                    callback(this, dequeueResultList.Select(v => new ArraySegment<byte>(v.Item1.Array, v.Item1.Offset, v.Item2)));
+                    callback(this, dequeueResultList.Select(v => v.Item1));
 
                     int bytes = 0;
                     for (int i = 0, n = dequeueResultList.Count; i < n; ++i)
                     {
                         var tuple = dequeueResultList[i];
-                        bytes += tuple.Item2;
-                        BufferManager.CheckIn(tuple.Item1); // dispose buffers
+                        bytes += tuple.Item1.Count;
+                        BufferManager.CheckIn(new ArraySegment<byte>(tuple.Item1.Array, tuple.Item1.Offset, tuple.Item2));
                     }
                     NotifyReceiveDispatched(bytes);
                 }
