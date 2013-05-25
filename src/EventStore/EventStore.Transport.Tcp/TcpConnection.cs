@@ -342,6 +342,8 @@ namespace EventStore.Transport.Tcp
             {
                 var tuple = res[i];
                 bytes += tuple.Item1.Count;
+                
+                Array.Clear(tuple.Item1.Array, tuple.Item1.Offset, tuple.Item2);
                 BufferManager.CheckIn(new ArraySegment<byte>(tuple.Item1.Array, tuple.Item1.Offset, tuple.Item2)); // dispose buffers
             }
             NotifyReceiveDispatched(bytes);
@@ -412,6 +414,7 @@ namespace EventStore.Transport.Tcp
                 socketArgs.AcceptSocket = null;
                 if (socketArgs.Buffer != null)
                 {
+                    Array.Clear(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count);
                     BufferManager.CheckIn(new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count));
                     socketArgs.SetBuffer(null, 0, 0);
                 }
