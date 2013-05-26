@@ -177,7 +177,7 @@ function scope($on, $notify) {
         var em = event.metadata;
         if (em)
             for (var p1 in em)
-                if (p1.indexOf("$") !== 0)
+                if (p1.indexOf("$") !== 0 || p1 === "$correlationId")
                     m[p1] = em[p1];
 
         if (metadata) 

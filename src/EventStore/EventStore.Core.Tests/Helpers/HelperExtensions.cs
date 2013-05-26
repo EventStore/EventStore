@@ -55,35 +55,38 @@ namespace EventStore.Core.Tests.Helpers
             foreach (KeyValuePair<string, JToken> v in expected)
             {
                 JToken vv;
-                if (v.Key.EndsWith("___"))
+                var propertyName = v.Key;
+                if (propertyName.StartsWith("___"))
+                    propertyName = "$" + propertyName.Substring(3);
+                if (propertyName.EndsWith("___"))
                 {
-                    if (response.TryGetValue(v.Key.Substring(0, v.Key.Length - "___".Length), out vv))
+                    if (response.TryGetValue(propertyName.Substring(0, propertyName.Length - "___".Length), out vv))
                     {
-                        Assert.Fail("{0}/{1} found, but it is explicitly forbidden", path, v.Key);
+                        Assert.Fail("{0}/{1} found, but it is explicitly forbidden", path, propertyName);
                     }
                 }
-                else if (!response.TryGetValue(v.Key, out vv))
+                else if (!response.TryGetValue(propertyName, out vv))
                 {
-                    Assert.Fail("{0}/{1} not found in '{2}'", path, v.Key, response.ToString());
+                    Assert.Fail("{0}/{1} not found in '{2}'", path, propertyName, response.ToString());
                 }
                 else
                 {
                     Assert.AreEqual(
-                        v.Value.Type, vv.Type, "{0}/{1} type is {2}, but {3} is expected", path, v.Key, vv.Type,
+                        v.Value.Type, vv.Type, "{0}/{1} type is {2}, but {3} is expected", path, propertyName, vv.Type,
                         v.Value.Type);
                     if (v.Value.Type == JTokenType.Object)
                     {
-                        AssertJObject(v.Value as JObject, vv as JObject, path + "/" + v.Key);
+                        AssertJObject(v.Value as JObject, vv as JObject, path + "/" + propertyName);
                     }
                     else if (v.Value.Type == JTokenType.Array)
                     {
-                        AssertJArray(v.Value as JArray, vv as JArray, path + "/" + v.Key);
+                        AssertJArray(v.Value as JArray, vv as JArray, path + "/" + propertyName);
                     }
                     else if (v.Value is JValue)
                     {
                         Assert.AreEqual(
                             ((JValue) (v.Value)).Value, ((JValue) vv).Value,
-                            "{0}/{1} value is '{2}' but '{3}' is expected", path, v.Key, vv, v.Value);
+                            "{0}/{1} value is '{2}' but '{3}' is expected", path, propertyName, vv, v.Value);
                     }
                     else
                         Assert.Fail();

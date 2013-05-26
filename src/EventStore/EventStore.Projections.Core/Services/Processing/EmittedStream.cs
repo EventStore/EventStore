@@ -363,18 +363,27 @@ namespace EventStore.Projections.Core.Services.Processing
                 _awaitingWriteCompleted = false;
         }
 
-        private IEnumerable<KeyValuePair<string, JToken>> MetadataWithCausedByAndCorrelationId(EmittedEvent emittedEvent)
+        private IEnumerable<KeyValuePair<string, JToken>> MetadataWithCausedByAndCorrelationId(
+            EmittedEvent emittedEvent)
         {
             var extraMetaData = emittedEvent.ExtraMetaData();
+            var correlationIdFound = false;
             if (extraMetaData != null)
                 foreach (var valuePair in from pair in extraMetaData
-                                          where pair.Key != "$correlationId" && pair.Key != "$causedBy"
+                                          where pair.Key != "$causedBy"
                                           select pair)
+                {
+                    if (valuePair.Key == "$correlationId")
+                        correlationIdFound = true;
                     yield return new KeyValuePair<string, JToken>(valuePair.Key, new JRaw(valuePair.Value));
+                }
             if (emittedEvent.CausedBy != Guid.Empty)
-                yield return new KeyValuePair<string, JToken>("$causedBy", JValue.CreateString(emittedEvent.CausedBy.ToString("D")));
-            if (!string.IsNullOrEmpty(emittedEvent.CorrelationId))
-                yield return new KeyValuePair<string, JToken>("$correlationId", JValue.CreateString(emittedEvent.CorrelationId));
+                yield return
+                    new KeyValuePair<string, JToken>(
+                        "$causedBy", JValue.CreateString(emittedEvent.CausedBy.ToString("D")));
+            if (!correlationIdFound && !string.IsNullOrEmpty(emittedEvent.CorrelationId))
+                yield return
+                    new KeyValuePair<string, JToken>("$correlationId", JValue.CreateString(emittedEvent.CorrelationId));
         }
 
         private bool DetectConcurrencyViolations(CheckpointTag expectedTag)
