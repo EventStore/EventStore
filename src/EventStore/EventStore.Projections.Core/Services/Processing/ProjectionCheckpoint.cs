@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             UpdateLastPosition(events);
             EnsureCheckpointNotRequested();
-            
+
             var groupedEvents = events.GroupBy(v => v.StreamId);
             foreach (var eventGroup in groupedEvents)
             {
@@ -160,8 +160,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Checkpoint requested");
         }
 
-        private void EmitEventsToStream(
-            string streamId, EmittedEvent[] emittedEvents)
+        private void EmitEventsToStream(string streamId, EmittedEvent[] emittedEvents)
         {
             EmittedStream stream;
             if (!_emittedStreams.TryGetValue(streamId, out stream))
@@ -238,5 +237,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 foreach (var stream in awaitingStreams)
                     stream.ReplyWith(message);
         }
+
     }
 }

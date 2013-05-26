@@ -38,6 +38,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CheckpointTag _causedByTag;
         private readonly CheckpointTag _expectedTag;
         private readonly Action<int> _onCommitted;
+        private Guid _causedBy;
+        private string _correlationId;
 
         protected EmittedEvent(
             string streamId, Guid eventId, string eventType, CheckpointTag causedByTag,
@@ -69,11 +71,31 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _onCommitted; }
         }
 
+        public Guid CausedBy
+        {
+            get { return _causedBy; }
+        }
+
+        public string CorrelationId
+        {
+            get { return _correlationId; }
+        }
+
         public abstract bool IsReady();
 
         public virtual IEnumerable<KeyValuePair<string, string>> ExtraMetaData()
         {
             return null;
+        }
+
+        public void SetCausedBy(Guid causedBy)
+        {
+            _causedBy = causedBy;
+        }
+
+        public void SetCorrelationId(string correlationId)
+        {
+            _correlationId = correlationId;
         }
     }
 }

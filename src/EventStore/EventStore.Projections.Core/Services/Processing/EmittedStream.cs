@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -37,6 +38,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -349,7 +351,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 events.Add(
                     new Event(
                         e.EventId, e.EventType, true, e.Data != null ? Helper.UTF8NoBom.GetBytes(e.Data) : null,
-                        e.CausedByTag.ToJsonBytes(_projectionVersion, e.ExtraMetaData())));
+                        e.CausedByTag.ToJsonBytes(_projectionVersion, MetadataWithCausedByAndCorrelationId(e))));
                 emittedEvents.Add(e);
             }
             _submittedToWriteEvents = events.ToArray();
@@ -359,6 +361,20 @@ namespace EventStore.Projections.Core.Services.Processing
                 PublishWriteEvents();
             else
                 _awaitingWriteCompleted = false;
+        }
+
+        private IEnumerable<KeyValuePair<string, JToken>> MetadataWithCausedByAndCorrelationId(EmittedEvent emittedEvent)
+        {
+            var extraMetaData = emittedEvent.ExtraMetaData();
+            if (extraMetaData != null)
+                foreach (var valuePair in from pair in extraMetaData
+                                          where pair.Key != "$correlationId" && pair.Key != "$causedBy"
+                                          select pair)
+                    yield return new KeyValuePair<string, JToken>(valuePair.Key, new JRaw(valuePair.Value));
+            if (emittedEvent.CausedBy != Guid.Empty)
+                yield return new KeyValuePair<string, JToken>("$causedBy", JValue.CreateString(emittedEvent.CausedBy.ToString("D")));
+            if (!string.IsNullOrEmpty(emittedEvent.CorrelationId))
+                yield return new KeyValuePair<string, JToken>("$correlationId", JValue.CreateString(emittedEvent.CorrelationId));
         }
 
         private bool DetectConcurrencyViolations(CheckpointTag expectedTag)

@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing
             PreparePosition
         }
 
-        private CheckpointTag(TFPos position, Dictionary<string, int> streams)
+        internal CheckpointTag(TFPos position, Dictionary<string, int> streams)
         {
             Position = position;
             Streams = streams;
@@ -442,7 +442,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return resultDictionary;
         }
 
-        public byte[] ToJsonBytes(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
+        public byte[] ToJsonBytes(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, JToken>> extraMetaData = null)
         {
             if (projectionVersion.ProjectionId <= 0) throw new ArgumentException("projectionId is required", "projectionVersion");
 
@@ -457,7 +457,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public string ToJsonString(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
+        public string ToJsonString(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, JToken>> extraMetaData = null)
         {
             if (projectionVersion.ProjectionId <= 0) throw new ArgumentException("projectionId is required", "projectionVersion");
 
@@ -471,7 +471,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public string ToJsonString(IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
+        public string ToJsonString(IEnumerable<KeyValuePair<string, JToken>> extraMetaData = null)
         {
             using (var textWriter = new StringWriter())
             {
@@ -483,7 +483,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public JRaw ToJsonRaw(IEnumerable<KeyValuePair<string, string>> extraMetaData = null)
+        public JRaw ToJsonRaw(IEnumerable<KeyValuePair<string, JToken>> extraMetaData = null)
         {
             using (var textWriter = new StringWriter())
             {
@@ -495,7 +495,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void WriteTo(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, string>> extraMetaData, JsonTextWriter jsonWriter)
+        private void WriteTo(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, JToken>> extraMetaData, JsonTextWriter jsonWriter)
         {
             jsonWriter.WriteStartObject();
             if (projectionVersion.ProjectionId > 0)
@@ -535,7 +535,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 foreach (var pair in extraMetaData)
                 {
                     jsonWriter.WritePropertyName(pair.Key);
-                    jsonWriter.WriteRawValue(pair.Value);
+                    pair.Value.WriteTo(jsonWriter);
                 }
             }
             jsonWriter.WriteEndObject();
@@ -647,13 +647,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 };
         }
 
-        private static void Check(JsonToken type, JsonReader reader)
+        public static void Check(JsonToken type, JsonReader reader)
         {
             if (reader.TokenType != type)
                 throw new Exception("Invalid JSON");
-        } 
+        }
 
-        private static void Check(bool read, JsonReader reader)
+        public static void Check(bool read, JsonReader reader)
         {
             if (!read)
                 throw new Exception("Invalid JSON");

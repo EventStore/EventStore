@@ -141,7 +141,7 @@ namespace EventStore.Projections.Core.Tests.Other
         public void extra_metadata_are_preserved()
         {
             CheckpointTag tag = CheckpointTag.FromPosition(-1, 0);
-            var extra = new Dictionary<string, string> {{"$$a", "\"b\""}, {"$$c", "\"d\""}};
+            var extra = new Dictionary<string, JToken> {{"$$a", new JRaw("\"b\"")}, {"$$c", new JRaw("\"d\"")}};
             byte[] bytes = tag.ToJsonBytes(_version, extra);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);

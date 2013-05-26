@@ -180,15 +180,14 @@ namespace EventStore.Projections.Core.Services.Processing
                                         : info.CheckpointStatus;
         }
 
-        protected override void RegisterNewPartition(string partition, CheckpointTag at)
+        protected override EmittedEvent[] RegisterNewPartition(string partition, CheckpointTag at)
         {
-            EventsEmitted(
-                new[]
-                    {
-                        new EmittedDataEvent(
-                    _namingBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "$partition", partition, null, at,
-                    null)
-                    });
+            return new[]
+                {
+                    new EmittedDataEvent(
+                        _namingBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "$partition", partition, null,
+                        at, null)
+                };
         }
 
         protected override void BeforeBeginLoadState()

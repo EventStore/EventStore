@@ -26,8 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
 using System.IO;
+using EventStore.Core.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -92,5 +94,41 @@ namespace EventStore.Projections.Core.Services.Processing
             var reader = new JsonTextReader(new StringReader(source));
             return CheckpointTag.FromJson(reader, default(ProjectionVersion)).ExtraMetadata;
         }
+
+        public static string ParseCheckpointTagCorrelationId(this string source)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(source))
+                    return null;
+                var reader = new JsonTextReader(new StringReader(source));
+                if (!reader.Read()) return null;
+                if (reader.TokenType != JsonToken.StartObject) return null;
+                while (true)
+                {
+                    CheckpointTag.Check(reader.Read(), reader);
+                    if (reader.TokenType == JsonToken.EndObject)
+                        break;
+                    if (reader.TokenType != JsonToken.PropertyName) return null;
+                    var name = (string) reader.Value;
+                    switch (name)
+                    {
+                        default:
+                            if (!reader.Read()) return null;
+                            var jToken = JToken.ReadFrom(reader);
+                            if (name == "$correlationId")
+                                return jToken.ToString();
+                            break;
+                    }
+                }
+                return null;
+            }
+            catch (JsonReaderException ex)
+            {
+                return null;
+            }
+        }
+
+
     }
 }

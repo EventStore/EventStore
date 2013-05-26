@@ -37,14 +37,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PartitionState _newState;
         private readonly string _partition;
         private readonly CheckpointTag _checkpointTag;
+        private readonly Guid _causedBy;
+        private readonly string _correlationId;
 
         public EventProcessedResult(
             string partition, CheckpointTag checkpointTag, PartitionState oldState, PartitionState newState,
-            EmittedEvent[] emittedEvents)
+            EmittedEvent[] emittedEvents, Guid causedBy, string correlationId)
         {
             if (partition == null) throw new ArgumentNullException("partition");
             if (checkpointTag == null) throw new ArgumentNullException("checkpointTag");
             _emittedEvents = emittedEvents;
+            _causedBy = causedBy;
+            _correlationId = correlationId;
             _oldState = oldState;
             _newState = newState;
             _partition = partition;
@@ -79,5 +83,16 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _checkpointTag; }
         }
 
+        public Guid CausedBy
+        {
+            get { return _causedBy; }
+        }
+
+        public string CorrelationId
+        {
+            get { return _correlationId; }
+        }
     }
 }
+
+

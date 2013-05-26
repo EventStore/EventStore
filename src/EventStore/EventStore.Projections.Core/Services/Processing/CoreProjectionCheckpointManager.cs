@@ -184,13 +184,17 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void NewPartition(string partition, CheckpointTag eventCheckpointTag)
         {
-            RegisterNewPartition(partition, eventCheckpointTag);
-            var result = _resultEmitter.NewPartition(partition, eventCheckpointTag);
+            var result = RegisterNewPartition(partition, eventCheckpointTag);
             if (result != null)
-                EventsEmitted(result);
+                EventsEmitted(result, Guid.Empty, correlationId: null);
+
+            result = _resultEmitter.NewPartition(partition, eventCheckpointTag);
+            if (result != null)
+                EventsEmitted(result, Guid.Empty, correlationId: null);
         }
 
-        public void StateUpdated(string partition, PartitionState oldState, PartitionState newState)
+        public void StateUpdated(
+            string partition, PartitionState oldState, PartitionState newState, Guid causedBy, string correlationId)
         {
             if (_stopped)
                 return;
@@ -202,7 +206,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var result = ResultUpdated(partition, oldState, newState);
                 if (result != null)
-                    EventsEmitted(result);
+                    EventsEmitted(result, causedBy, correlationId);
             }
 
             if (_emitPartitionCheckpoints && partition != "")
@@ -229,7 +233,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _handledEventsAfterCheckpoint++;
         }
 
-        public void EventsEmitted(EmittedEvent[] scheduledWrites)
+        public void EventsEmitted(EmittedEvent[] scheduledWrites, Guid causedBy, string correlationId)
         {
             if (_stopped)
                 return;
@@ -237,7 +241,14 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
             if (scheduledWrites != null)
+            {
+                foreach (EmittedEvent @event in scheduledWrites)
+                {
+                    @event.SetCausedBy(causedBy);
+                    @event.SetCorrelationId(correlationId);
+                }
                 _currentCheckpoint.ValidateOrderAndEmitEvents(scheduledWrites);
+            }
         }
 
         public bool CheckpointSuggested(CheckpointTag checkpointTag, float progress)
@@ -283,7 +294,7 @@ namespace EventStore.Projections.Core.Services.Processing
             string statePartition, CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted);
 
         protected abstract ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition);
-        protected abstract void RegisterNewPartition(string partition, CheckpointTag at);
+        protected abstract EmittedEvent[] RegisterNewPartition(string partition, CheckpointTag at);
         protected abstract void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
         protected abstract void BeforeBeginLoadState();
         protected abstract void RequestLoadState();

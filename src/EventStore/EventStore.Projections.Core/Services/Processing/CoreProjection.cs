@@ -798,8 +798,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 _partitionStateCache.CacheAndLockPartitionState(partition, partitionState, lockPartitionStateAt);
             }
             if (stateWasChanged || eventsWereEmitted || projectionResultChanged)
+            {
+                var correlationId = message.Data.IsJson ? message.Data.Metadata.ParseCheckpointTagCorrelationId() : null;
                 return new EventProcessedResult(
-                    partition, message.CheckpointTag, oldState, partitionState, emittedEvents);
+                    partition, message.CheckpointTag, oldState, partitionState, emittedEvents, message.Data.EventId,
+                    correlationId);
+            }
+
             else return null;
         }
 
@@ -1016,9 +1021,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (result.Partition != "" && result.OldState.CausedBy == _zeroCheckpointTag)
                         _checkpointManager.NewPartition(result.Partition, eventCheckpointTag);
                     if (result.EmittedEvents != null)
-                        _checkpointManager.EventsEmitted(result.EmittedEvents);
+                        _checkpointManager.EventsEmitted(result.EmittedEvents, result.CausedBy, result.CorrelationId);
                     if (result.NewState != null)
-                        _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState);
+                        _checkpointManager.StateUpdated(
+                            result.Partition, result.OldState, result.NewState, result.CausedBy, result.CorrelationId);
                 }
                 _checkpointManager.EventProcessed(eventCheckpointTag, progress);
             }
@@ -1080,7 +1086,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         return;
 
                     if (_state == State.Running)
-                        _checkpointManager.EventsEmitted(emittedEvents);
+                        _checkpointManager.EventsEmitted(emittedEvents, Guid.Empty, correlationId: null);
                 }
             }
         }
