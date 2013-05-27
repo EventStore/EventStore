@@ -45,8 +45,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _tcpType = tcpType;
         }
 
-        [Test]
-        [Category("Network")]
+        [Test, Category("Network")]
         public void should_not_throw_exception_when_server_is_down()
         {
             var ip = IPAddress.Loopback;
@@ -64,8 +63,7 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
-        [Test]
-        [Category("Network")]
+        [Test, Category("Network"), Platform("WIN")]
         public void should_throw_exception_when_trying_to_reopen_closed_connection()
         {
             ClientApiLoggerBridge.Default.Info("Starting '{0}' test...", "should_throw_exception_when_trying_to_reopen_closed_connection");
@@ -103,8 +101,7 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
-        [Test]
-        [Category("Network")]
+        [Test, Category("Network"), Platform("WIN")]
         public void should_close_connection_after_configured_amount_of_failed_reconnections()
         {
             var closed = new ManualResetEventSlim();
