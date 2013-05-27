@@ -30,7 +30,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Principal;
-using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -289,22 +288,22 @@ namespace EventStore.Core.Services.Transport.Tcp
                     else if (defaultUser != null)
                     {
                         if (defaultUser.User != null)
-                            UnwrapAndPublishPackage(package, defaultUser.User);
+                            UnwrapAndPublishPackage(package, defaultUser.User, defaultUser.Login, defaultUser.Password);
                         else
                             _authProvider.Authenticate(new TcpAuthRequest(this, package, defaultUser.Login, defaultUser.Password));
                     }
                     else
                     {
-                        UnwrapAndPublishPackage(package, null);
+                        UnwrapAndPublishPackage(package, null, null, null);
                     }
                     break;
                 }
             }
         }
 
-        private void UnwrapAndPublishPackage(TcpPackage package, IPrincipal user)
+        private void UnwrapAndPublishPackage(TcpPackage package, IPrincipal user, string login, string password)
         {
-            var message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, this);
+            var message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, login, password, this);
             if (message != null)
                 _publisher.Publish(message);
             else
@@ -431,7 +430,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             public override void Authenticated(IPrincipal principal)
             {
-                _manager.UnwrapAndPublishPackage(_package, principal);
+                _manager.UnwrapAndPublishPackage(_package, principal, Name, SuppliedPassword);
             }
 
             public override void Error()

@@ -66,8 +66,11 @@ namespace EventStore.Core.Messages
             public readonly bool AllowForwarding;
 
             public readonly IPrincipal User;
+            public readonly string Login;
+            public readonly string Password;
 
-            protected WriteRequestMessage(Guid correlationId, IEnvelope envelope, bool allowForwarding, IPrincipal user)
+            protected WriteRequestMessage(Guid correlationId, IEnvelope envelope, bool allowForwarding,
+                                          IPrincipal user, string login, string password)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -77,6 +80,8 @@ namespace EventStore.Core.Messages
                 AllowForwarding = allowForwarding;
 
                 User = user;
+                Login = login;
+                Password = password;
             }
         }
 
@@ -110,6 +115,8 @@ namespace EventStore.Core.Messages
 
             public ForwardMessage(Message message)
             {
+                Ensure.NotNull(message, "message");
+
                 Message = message;
             }
         }
@@ -137,8 +144,9 @@ namespace EventStore.Core.Messages
             public readonly Event[] Events;
 
             public WriteEvents(Guid correlationId, IEnvelope envelope, bool allowForwarding, 
-                               string eventStreamId, int expectedVersion, Event[] events, IPrincipal user)
-                : base(correlationId, envelope, allowForwarding, user)
+                               string eventStreamId, int expectedVersion, Event[] events,
+                               IPrincipal user, string login = null, string password = null)
+                : base(correlationId, envelope, allowForwarding, user, login, password)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (expectedVersion < Data.ExpectedVersion.Any) throw new ArgumentOutOfRangeException("expectedVersion");
@@ -196,8 +204,9 @@ namespace EventStore.Core.Messages
             public readonly int ExpectedVersion;
 
             public TransactionStart(Guid correlationId, IEnvelope envelope, bool allowForwarding,
-                                    string eventStreamId, int expectedVersion, IPrincipal user)
-                : base(correlationId, envelope, allowForwarding, user)
+                                    string eventStreamId, int expectedVersion,
+                                    IPrincipal user, string login = null, string password = null)
+                : base(correlationId, envelope, allowForwarding, user, login, password)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (expectedVersion < Data.ExpectedVersion.Any) throw new ArgumentOutOfRangeException("expectedVersion");
@@ -229,8 +238,8 @@ namespace EventStore.Core.Messages
             public readonly Event[] Events;
 
             public TransactionWrite(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId,
-                                    Event[] events, IPrincipal user)
-                : base(correlationId, envelope, allowForwarding, user)
+                                    Event[] events, IPrincipal user, string login = null, string password = null)
+                : base(correlationId, envelope, allowForwarding, user, login, password)
             {
                 Ensure.Nonnegative(transactionId, "transactionId");
                 Ensure.NotNull(events, "events");
@@ -260,9 +269,9 @@ namespace EventStore.Core.Messages
         {
             public readonly long TransactionId;
 
-            public TransactionCommit(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId, 
-                                     IPrincipal user)
-                : base(correlationId, envelope, allowForwarding, user)
+            public TransactionCommit(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId,
+                                     IPrincipal user, string login = null, string password = null)
+                : base(correlationId, envelope, allowForwarding, user, login, password)
             {
                 Ensure.Nonnegative(transactionId, "transactionId");
                 TransactionId = transactionId;
@@ -291,8 +300,9 @@ namespace EventStore.Core.Messages
             public readonly int ExpectedVersion;
 
             public DeleteStream(Guid correlationId, IEnvelope envelope, bool allowForwarding,
-                                string eventStreamId, int expectedVersion, IPrincipal user)
-                : base(correlationId, envelope, allowForwarding, user)
+                                string eventStreamId, int expectedVersion,
+                                IPrincipal user, string login = null, string password = null)
+                : base(correlationId, envelope, allowForwarding, user, login, password)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (expectedVersion < Data.ExpectedVersion.Any) throw new ArgumentOutOfRangeException("expectedVersion");

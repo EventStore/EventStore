@@ -171,24 +171,17 @@ namespace EventStore.ClientAPI.ClientOperations
             Log.Error("Unexpected TcpCommand: operation {0}", this);
             TResponse response = null;
             ClientMessage.WriteEvents request = null;
-            try
-            {
-                response = package.Data.Deserialize<TResponse>();
+            response = package.Data.Deserialize<TResponse>();
+            if (response != null)
                 Log.Error("Unexpected TcpCommand: successfully deserialized {0}.", typeof(TResponse).Name);
-            }
-            catch (Exception exc)
-            {
-                Log.Error(exc, "Unexpected TcpCommand: error deserializing {0}: {1}.", typeof(TResponse).Name, exc.Message);
-            }
-            try
-            {
-                request = package.Data.Deserialize<ClientMessage.WriteEvents>();
+            else
+                Log.Error("Unexpected TcpCommand: error deserializing {0}.", typeof(TResponse).Name);
+
+            request = package.Data.Deserialize<ClientMessage.WriteEvents>();
+            if (request != null)
                 Log.Error("Unexpected TcpCommand: successfully deserialized {0}.", typeof(ClientMessage.WriteEvents).Name);
-            }
-            catch (Exception exc)
-            {
-                Log.Error(exc, "Unexpected TcpCommand: error deserializing WriteEvents: {0}.", exc.Message);
-            }
+            else
+                Log.Error("Unexpected TcpCommand: error deserializing WriteEvents.");
 
             if (Debugger.IsAttached) Debugger.Break(); else Debugger.Launch();
 

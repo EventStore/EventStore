@@ -34,6 +34,6 @@ namespace EventStore.Core.Services.Transport.Tcp
     public interface ITcpDispatcher
     {
         TcpPackage? WrapMessage(Message message);
-        Message UnwrapPackage(TcpPackage package, IEnvelope envelope, IPrincipal user, TcpConnectionManager connection);
+        Message UnwrapPackage(TcpPackage package, IEnvelope envelope, IPrincipal user, string login, string pass, TcpConnectionManager connection);
     }
 }
