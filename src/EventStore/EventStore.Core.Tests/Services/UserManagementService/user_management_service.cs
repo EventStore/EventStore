@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
 
                 _replyTo = new PublishEnvelope(_bus);
                 _users = new Core.Services.UserManagement.UserManagementService(
-                    _bus, _ioDispatcher, new StubPasswordHashAlgorithm());
+                    _bus, _ioDispatcher, new StubPasswordHashAlgorithm(), skipInitializeStandardUsersCheck: true);
             }
 
             [SetUp]

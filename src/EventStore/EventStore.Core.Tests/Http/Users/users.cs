@@ -27,6 +27,7 @@
 // 
 
 using System.Net;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
@@ -35,8 +36,20 @@ namespace EventStore.Core.Tests.Http.Users
 {
     namespace users
     {
+
+        abstract class with_admin_user : HttpBehaviorSpecification
+        {
+            protected readonly ICredentials _admin = new NetworkCredential(
+                SystemUsers.Admin, SystemUsers.DefaultAdminPassword);
+
+            protected override bool GivenSkipInitializeStandardUsersCheck()
+            {
+                return false;
+            }
+        }
+
         [TestFixture, Category("LongRunning")]
-        class when_creating_a_user : HttpBehaviorSpecification
+        class when_creating_a_user : with_admin_user
         {
             private HttpWebResponse _response;
 
@@ -54,7 +67,7 @@ namespace EventStore.Core.Tests.Http.Users
                             FullName = "User Full Name",
                             Groups = new[] {"admin", "other"},
                             Password = "Pa55w0rd!"
-                        });
+                        }, _admin);
             }
 
             [Test]
@@ -66,7 +79,7 @@ namespace EventStore.Core.Tests.Http.Users
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_retrieving_a_user_details : HttpBehaviorSpecification
+        class when_retrieving_a_user_details : with_admin_user
         {
             private JObject _response;
 
@@ -80,7 +93,7 @@ namespace EventStore.Core.Tests.Http.Users
                             FullName = "User Full Name",
                             Groups = new[] {"admin", "other"},
                             Password = "Pa55w0rd!"
-                        });
+                        }, _admin);
             }
 
             protected override void When()
@@ -116,21 +129,21 @@ namespace EventStore.Core.Tests.Http.Users
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_creating_an_already_existing_user_account : HttpBehaviorSpecification
+        class when_creating_an_already_existing_user_account : with_admin_user
         {
             private HttpWebResponse _response;
 
             protected override void Given()
             {
                 var response = MakeJsonPost(
-                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
        
             protected override void When()
             {
                 _response = MakeJsonPost(
-                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
             }
 
             [Test]
@@ -141,18 +154,19 @@ namespace EventStore.Core.Tests.Http.Users
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_disabling_an_enabled_user_account : HttpBehaviorSpecification
+        class when_disabling_an_enabled_user_account : with_admin_user
         {
             private HttpWebResponse _response;
 
             protected override void Given()
             {
-                MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
             }
 
             protected override void When()
             {
-                _response = MakePost("/users/test1/command/disable");
+                _response = MakePost("/users/test1/command/disable", _admin);
             }
 
             [Test]
@@ -172,19 +186,20 @@ namespace EventStore.Core.Tests.Http.Users
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_enabling_a_disabled_user_account : HttpBehaviorSpecification
+        class when_enabling_a_disabled_user_account : with_admin_user
         {
             private HttpWebResponse _response;
 
             protected override void Given()
             {
-                MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
-                MakePost("/users/test1/command/disable");
+                MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
+                MakePost("/users/test1/command/disable", _admin);
             }
 
             protected override void When()
             {
-                _response = MakePost("/users/test1/command/enable");
+                _response = MakePost("/users/test1/command/enable", _admin);
             }
 
             [Test]
@@ -204,18 +219,19 @@ namespace EventStore.Core.Tests.Http.Users
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_updating_user_details : HttpBehaviorSpecification
+        class when_updating_user_details : with_admin_user
         {
             private HttpWebResponse _response;
 
             protected override void Given()
             {
-                MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
             }
 
             protected override void When()
             {
-                _response = MakeJsonPut("/users/test1", new {FullName = "Updated Full Name"});
+                _response = MakeJsonPut("/users/test1", new {FullName = "Updated Full Name"}, _admin);
             }
 
             [Test]
@@ -235,18 +251,20 @@ namespace EventStore.Core.Tests.Http.Users
 
 
         [TestFixture, Category("LongRunning")]
-        class when_resetting_a_password : HttpBehaviorSpecification
+        class when_resetting_a_password : with_admin_user
         {
             private HttpWebResponse _response;
 
             protected override void Given()
             {
-                MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
             }
 
             protected override void When()
             {
-                _response = MakeJsonPost("/users/test1/command/reset-password", new {NewPassword = "NewPassword!"});
+                _response = MakeJsonPost(
+                    "/users/test1/command/reset-password", new {NewPassword = "NewPassword!"}, _admin);
             }
 
             [Test]
@@ -267,18 +285,19 @@ namespace EventStore.Core.Tests.Http.Users
 
 
         [TestFixture, Category("LongRunning")]
-        class when_deleting_a_user_account : HttpBehaviorSpecification
+        class when_deleting_a_user_account : with_admin_user
         {
             private HttpWebResponse _response;
 
             protected override void Given()
             {
-                MakeJsonPost("/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                MakeJsonPost(
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
             }
 
             protected override void When()
             {
-                _response = MakeDelete("/users/test1");
+                _response = MakeDelete("/users/test1", _admin);
             }
 
             [Test]

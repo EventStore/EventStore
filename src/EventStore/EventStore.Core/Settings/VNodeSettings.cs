@@ -49,6 +49,8 @@ namespace EventStore.Core.Settings
         public readonly TimeSpan StatsPeriod;
         public readonly StatsStorage StatsStorage;
 
+        public readonly bool SkipInitializeStandardUsersCheck;
+
         public SingleVNodeSettings(IPEndPoint externalTcpEndPoint, 
                                    IPEndPoint externalSecureTcpEndPoint,
                                    IPEndPoint externalHttpEndPoint, 
@@ -58,7 +60,8 @@ namespace EventStore.Core.Settings
                                    TimeSpan prepareTimeout,
                                    TimeSpan commitTimeout,
                                    TimeSpan statsPeriod, 
-                                   StatsStorage statsStorage = StatsStorage.StreamAndCsv)
+                                   StatsStorage statsStorage = StatsStorage.StreamAndCsv,
+                                   bool skipInitializeStandardUsersCheck = false)
         {
             Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
             Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
@@ -79,6 +82,8 @@ namespace EventStore.Core.Settings
 
             StatsPeriod = statsPeriod;
             StatsStorage = statsStorage;
+
+            SkipInitializeStandardUsersCheck = skipInitializeStandardUsersCheck;
         }
 
         public override string ToString()

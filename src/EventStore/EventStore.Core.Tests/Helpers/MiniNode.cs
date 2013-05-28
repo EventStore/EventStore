@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Helpers
         public MiniNode(string pathname, 
                         int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null, 
                         ISubsystem[] subsystems = null,
-                        int? chunkSize = null, int? cachedChunkSize = null)
+                        int? chunkSize = null, int? cachedChunkSize = null, bool skipInitializeStandardUsersCheck = true)
         {
             RunningTime.Start();
             RunCount += 1;
@@ -93,13 +93,14 @@ namespace EventStore.Core.Tests.Helpers
             var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint,
                                                               TcpSecEndPoint,
                                                               HttpEndPoint,
-                                                              new[] {HttpEndPoint.ToHttpUrl()},
+                                                              new[] { HttpEndPoint.ToHttpUrl() },
                                                               ssl_connections.GetCertificate(),
                                                               1,
                                                               TimeSpan.FromSeconds(2),
                                                               TimeSpan.FromSeconds(2),
                                                               TimeSpan.FromHours(1),
-                                                              StatsStorage.None);
+                                                              StatsStorage.None,
+                                                              skipInitializeStandardUsersCheck: skipInitializeStandardUsersCheck);
 
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"
@@ -127,7 +128,8 @@ namespace EventStore.Core.Tests.Helpers
             StartingTime.Start();
 
             var startedEvent = new ManualResetEventSlim(false);
-            Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(m => startedEvent.Set()));
+            Node.MainBus.Subscribe(
+                new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(m => startedEvent.Set()));
 
             Node.Start();
 

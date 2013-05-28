@@ -253,5 +253,9 @@ namespace EventStore.Core.Messages
                 Data = null;
             }
         }
+
+        public sealed class UserManagementServiceInitialized : Message
+        {
+        }
     }
 }

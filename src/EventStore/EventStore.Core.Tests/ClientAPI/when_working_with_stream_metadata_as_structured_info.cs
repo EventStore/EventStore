@@ -235,7 +235,6 @@ namespace EventStore.Core.Tests.ClientAPI
                                                            ""$acl"": {
                                                                ""$r"": ""readRole"",
                                                                ""$w"": ""writeRole"",
-                                                               ""$mr"": ""metaReadRole"",
                                                                ""$mw"": ""metaWriteRole""
                                                            },
                                                            ""customString"": ""a string"",
@@ -262,7 +261,8 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.NotNull(meta.StreamMetadata.Acl);
             Assert.AreEqual("readRole", meta.StreamMetadata.Acl.ReadRole);
             Assert.AreEqual("writeRole", meta.StreamMetadata.Acl.WriteRole);
-            Assert.AreEqual("metaReadRole", meta.StreamMetadata.Acl.MetaReadRole);
+            // meta role removed to allow reading
+//            Assert.AreEqual("metaReadRole", meta.StreamMetadata.Acl.MetaReadRole);
             Assert.AreEqual("metaWriteRole", meta.StreamMetadata.Acl.MetaWriteRole);
 
             Assert.AreEqual("a string", meta.StreamMetadata.GetValue<string>("customString"));
@@ -285,7 +285,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                     .SetCacheControl(TimeSpan.FromSeconds(7654321))
                                                     .SetReadRole("readRole")
                                                     .SetWriteRole("writeRole")
-                                                    .SetMetadataReadRole("metaReadRole")
+                                                    //.SetMetadataReadRole("metaReadRole")
                                                     .SetMetadataWriteRole("metaWriteRole")
                                                     .SetCustomProperty("customString", "a string")
                                                     .SetCustomProperty("customInt", -179)
@@ -311,7 +311,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.NotNull(meta.StreamMetadata.Acl);
             Assert.AreEqual("readRole", meta.StreamMetadata.Acl.ReadRole);
             Assert.AreEqual("writeRole", meta.StreamMetadata.Acl.WriteRole);
-            Assert.AreEqual("metaReadRole", meta.StreamMetadata.Acl.MetaReadRole);
+            //Assert.AreEqual("metaReadRole", meta.StreamMetadata.Acl.MetaReadRole);
             Assert.AreEqual("metaWriteRole", meta.StreamMetadata.Acl.MetaWriteRole);
             
             Assert.AreEqual("a string", meta.StreamMetadata.GetValue<string>("customString"));
