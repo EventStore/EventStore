@@ -31,6 +31,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Threading;
 using EventStore.BufferManagement;
 using EventStore.Common.Locks;
@@ -105,6 +106,8 @@ namespace EventStore.Transport.Tcp
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
+        private readonly FileStream _sendFile, _recvFile;
+
         private TcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, bool verbose)
         {
             Ensure.NotEmptyGuid(connectionId, "connectionId");
@@ -113,6 +116,11 @@ namespace EventStore.Transport.Tcp
             _connectionId = connectionId;
             _effectiveEndPoint = effectiveEndPoint;
             _verbose = verbose;
+
+            var root = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            var type = Assembly.GetEntryAssembly().Location.Contains("EventStore.TestClient.exe") ? "client" : "server";
+            _sendFile = File.Create(Path.Combine(root, string.Format("{0:B}-{1}.send", _connectionId, type)));
+            _recvFile = File.Create(Path.Combine(root, string.Format("{0:B}-{1}.recv", _connectionId, type)));
         }
 
         private void InitSocket(Socket socket)
@@ -183,6 +191,7 @@ namespace EventStore.Transport.Tcp
             }
 
             _sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), 0, (int) _memoryStream.Length);
+            _sendFile.Write(_memoryStream.GetBuffer(), 0, (int)_memoryStream.Length);
 
             try
             {
@@ -308,6 +317,8 @@ namespace EventStore.Transport.Tcp
             
             NotifyReceiveCompleted(socketArgs.BytesTransferred);
 
+            _recvFile.Write(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
+
             lock (_receivingLock)
             {
                 var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
@@ -397,6 +408,9 @@ namespace EventStore.Transport.Tcp
                 if (!_isSending)
                     ReturnSendingSocketArgs();
             }
+
+            _sendFile.Close();
+            _recvFile.Close();
 
             var handler = ConnectionClosed;
             if (handler != null)

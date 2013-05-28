@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Threading;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
@@ -95,6 +96,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
         private readonly Action<ITcpConnection, SocketError> _onConnectionClosed;
 
+        private readonly FileStream _sendFile, _recvFile;
+
         private TcpConnection(ILogger log, Guid connectionId, IPEndPoint effectiveEndPoint, Action<ITcpConnection, SocketError> onConnectionClosed)
         {
             Ensure.NotNull(log, "log");
@@ -105,6 +108,10 @@ namespace EventStore.ClientAPI.Transport.Tcp
             _effectiveEndPoint = effectiveEndPoint;
             _log = log;
             _onConnectionClosed = onConnectionClosed;
+
+            var root = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            _sendFile = File.Create(Path.Combine(root, string.Format("{0:B}-client.send", _connectionId)));
+            _recvFile = File.Create(Path.Combine(root, string.Format("{0:B}-client.recv", _connectionId)));
         }
 
         private void InitSocket(Socket socket)
@@ -177,6 +184,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
 
             _sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), 0, (int) _memoryStream.Length);
+            _sendFile.Write(_memoryStream.GetBuffer(), 0, (int)_memoryStream.Length);
 
             try
             {
@@ -302,6 +310,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             NotifyReceiveCompleted(socketArgs.BytesTransferred);
 
+            _recvFile.Write(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
+
             var receiveBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
             lock (_receivingLock)
             {
@@ -384,6 +394,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 if (!_isSending)
                     ReturnSendingSocketArgs();
             }
+
+            _sendFile.Close();
+            _recvFile.Close();
 
             if (_onConnectionClosed != null)
                 _onConnectionClosed(this, socketError);

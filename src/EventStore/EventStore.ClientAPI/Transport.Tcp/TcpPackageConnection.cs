@@ -146,10 +146,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 package = TcpPackage.FromArraySegment(data);
                 
                 var cmd = (TcpCommand)data.Array[data.Offset];
-                if (cmd == TcpCommand.WriteEvents || cmd == TcpCommand.ReadStreamEventsForward)
+                if (cmd == TcpCommand.WriteEvents || cmd == TcpCommand.ReadStreamEventsForward || cmd == TcpCommand.TransactionStart)
                 {
-                    _log.Error("{0} IS RECEIVED AS A REPLY!!!\nStackTrace: {1}\n\nTcpCommand:{2}, TcpFlags: {3}, CorrelationId: {4}, TcpPackage Data Dump:\n{5}",
-                               cmd, new StackTrace(true), package.Command, package.Flags, package.CorrelationId, Helper.FormatBinaryDump(package.Data));
+                    var conn = (TcpConnection) _connection;
+                    _log.Error("{0} IS RECEIVED AS A REPLY!!!\nStackTrace: {1}\n\nTcpCommand:{2}, TcpFlags: {3}, CorrelationId: {4}, TcpPackage Data Dump:\n{5}\n"
+                               + "ConnectionID: {6:B}, SentBytes: {7}, ReceivedBytes: {8}, PendingSendBytes: {9}, PendingReceivedBytes: {10}, InSendBytes: {11}.\n\n",
+                               cmd, new StackTrace(true), package.Command, package.Flags, package.CorrelationId, Helper.FormatBinaryDump(package.Data),
+                               _connection.ConnectionId, conn.TotalBytesSent, conn.TotalBytesReceived, conn.PendingSendBytes, conn.PendingReceivedBytes, conn.InSendBytes);
+                    conn.Close("Wrong packages came.");
                 }
 
                 valid = true;
