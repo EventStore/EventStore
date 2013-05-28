@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -143,6 +144,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
             try
             {
                 package = TcpPackage.FromArraySegment(data);
+                
+                var cmd = (TcpCommand)data.Array[data.Offset];
+                if (cmd == TcpCommand.WriteEvents || cmd == TcpCommand.ReadStreamEventsForward)
+                {
+                    _log.Error("{0} IS RECEIVED AS A REPLY!!!\nStackTrace: {1}\n\nTcpCommand:{2}, TcpFlags: {3}, CorrelationId: {4}, TcpPackage Data Dump:\n{5}",
+                               cmd, new StackTrace(true), package.Command, package.Flags, package.CorrelationId, Helper.FormatBinaryDump(package.Data));
+                }
+
                 valid = true;
                 _handlePackage(this, package);
             }

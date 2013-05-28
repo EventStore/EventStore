@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Principal;
@@ -343,13 +344,23 @@ namespace EventStore.Core.Services.Transport.Tcp
         public void SendMessage(Message message)
         {
             var package = _dispatcher.WrapMessage(message);
+            if (message is ClientMessage.WriteEvents || message is ClientMessage.ReadStreamEventsForward)
+                Log.Error("{0} IS SEND AS A REPLY!!!\nMessage: {1}\nStackTrace: {2}", message.GetType(), message, new StackTrace(true));
             if (package != null)
                 SendPackage(package.Value);
         }
 
         private void SendPackage(TcpPackage package, bool checkQueueSize = true)
         {
-            var data = package.AsArraySegment();  
+            var data = package.AsArraySegment();
+
+            var cmd = (TcpCommand) data.Array[data.Offset];
+            if (cmd == TcpCommand.WriteEvents || cmd == TcpCommand.ReadStreamEventsForward)
+            {
+                Log.Error("{0} IS SEND AS A REPLY!!!\nStackTrace: {1}\n\nTcpCommand:{2}, TcpFlags: {3}, CorrelationId: {4}, TcpPackage Data Dump:\n{5}",
+                          cmd, new StackTrace(true), package.Command, package.Flags, package.CorrelationId, Helper.FormatBinaryDump(package.Data));
+            }
+
             var framed = _framer.FrameData(data);
             _connection.EnqueueSend(framed);
 
