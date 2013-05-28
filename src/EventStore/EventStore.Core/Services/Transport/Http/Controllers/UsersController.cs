@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void GetUsers(HttpEntityManager http, UriTemplateMatch match)
         {
             var envelope = CreateReplyEnvelope<UserManagementMessage.AllUserDetailsResult>(http);
-            var message = new UserManagementMessage.GetAll(envelope);
+            var message = new UserManagementMessage.GetAll(envelope, http.User);
             Publish(message);
         }
 
@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var envelope = CreateReplyEnvelope<UserManagementMessage.UserDetailsResult>(http);
             var login = match.BoundVariables["login"];
-            var message = new UserManagementMessage.Get(envelope, login);
+            var message = new UserManagementMessage.Get(envelope, http.User, login);
             Publish(message);
         }
 
@@ -88,7 +88,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     });
             var data = http.RequestCodec.From<PostUserData>(s);
             var message = new UserManagementMessage.Create(
-                envelope, data.LoginName, data.FullName, data.Groups, data.Password);
+                envelope, http.User, data.LoginName, data.FullName, data.Groups, data.Password);
             Publish(message);
         }
 
@@ -97,7 +97,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];
             var data = http.RequestCodec.From<PutUserData>(s);
-            var message = new UserManagementMessage.Update(envelope, login, data.FullName, data.Groups);
+            var message = new UserManagementMessage.Update(envelope, http.User, login, data.FullName, data.Groups);
             Publish(message);
         }
 
@@ -105,7 +105,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];
-            var message = new UserManagementMessage.Delete(envelope, login);
+            var message = new UserManagementMessage.Delete(envelope, http.User, login);
             Publish(message);
         }
 
@@ -113,7 +113,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];
-            var message = new UserManagementMessage.Enable(envelope, login);
+            var message = new UserManagementMessage.Enable(envelope, http.User, login);
             Publish(message);
         }
 
@@ -121,7 +121,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];
-            var message = new UserManagementMessage.Disable(envelope, login);
+            var message = new UserManagementMessage.Disable(envelope, http.User, login);
             Publish(message);
         }
 
@@ -130,7 +130,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];
             var data = http.RequestCodec.From<ResetPasswordData>(s);
-            var message = new UserManagementMessage.ResetPassword(envelope, login, data.NewPassword);
+            var message = new UserManagementMessage.ResetPassword(envelope, http.User, login, data.NewPassword);
             Publish(message);
         }
 
@@ -140,7 +140,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var login = match.BoundVariables["login"];
             var data = http.RequestCodec.From<ChangePasswordData>(s);
             var message = new UserManagementMessage.ChangePassword(
-                envelope, login, data.CurrentPassword, data.NewPassword);
+                envelope, http.User, login, data.CurrentPassword, data.NewPassword);
             Publish(message);
         }
 

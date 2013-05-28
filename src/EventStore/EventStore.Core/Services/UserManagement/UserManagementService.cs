@@ -34,7 +34,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http.Authentication;
 
 namespace EventStore.Core.Services.UserManagement
@@ -54,6 +53,7 @@ namespace EventStore.Core.Services.UserManagement
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
         private ILogger _log;
+
         public UserManagementService(
             IPublisher publisher, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm)
         {
@@ -65,27 +65,32 @@ namespace EventStore.Core.Services.UserManagement
 
         public void Handle(UserManagementMessage.Create message)
         {
+            if (!DemandAdmin(message)) return;
             var userData = CreateUserData(message);
             WriteUserEvent(message, userData, "$UserCreated", ExpectedVersion.NoStream);
         }
 
         public void Handle(UserManagementMessage.Update message)
         {
+            if (!DemandAdmin(message)) return;
             ReadUpdateWriteReply(message, data => data.SetFullName(message.FullName).SetGroups(message.Groups));
         }
 
         public void Handle(UserManagementMessage.Enable message)
         {
+            if (!DemandAdmin(message)) return;
             ReadUpdateWriteReply(message, data => data.SetEnabled());
         }
 
         public void Handle(UserManagementMessage.Disable message)
         {
+            if (!DemandAdmin(message)) return;
             ReadUpdateWriteReply(message, data => data.SetDisabled());
         }
 
         public void Handle(UserManagementMessage.ResetPassword message)
         {
+            if (!DemandAdmin(message)) return;
             string hash;
             string salt;
             _passwordHashAlgorithm.Hash(message.NewPassword, out hash, out salt);
@@ -110,6 +115,7 @@ namespace EventStore.Core.Services.UserManagement
 
         public void Handle(UserManagementMessage.Delete message)
         {
+            if (!DemandAdmin(message)) return;
             ReadUpdateCheckAnd(
                 message,
                 (completed, data) =>
@@ -159,6 +165,18 @@ namespace EventStore.Core.Services.UserManagement
                         : new UserManagementMessage.AllUserDetailsResult(error)));
         }
 
+        public void Handle(SystemMessage.BecomeMaster message)
+        {
+            BeginReadUserDetails(
+                "admin", completed =>
+                    {
+                        if (completed.Result == ReadStreamResult.NoStream)
+                        {
+                            CreateAdminUser();
+                        }
+                    });
+        }
+
         private UserData CreateUserData(UserManagementMessage.Create message)
         {
             return CreateUserData(message.LoginName, message.FullName, message.Groups, message.Password);
@@ -177,33 +195,35 @@ namespace EventStore.Core.Services.UserManagement
             Action<ClientMessage.ReadStreamEventsBackwardCompleted, UserData> action)
         {
             string loginName = message.LoginName;
-            BeginReadUserDetails(loginName, completed =>
-                {
-                    switch (completed.Result)
+            BeginReadUserDetails(
+                loginName, completed =>
                     {
-                        case ReadStreamResult.NoStream:
-                            ReplyNotFound(message);
-                            break;
-                        case ReadStreamResult.StreamDeleted:
-                            ReplyNotFound(message);
-                            break;
-                        case ReadStreamResult.Success:
-                            if (completed.Events.Length == 0)
+                        switch (completed.Result)
+                        {
+                            case ReadStreamResult.NoStream:
                                 ReplyNotFound(message);
-                            else
-                            {
-                                var data1 = completed.Events[0].Event.Data.ParseJson<UserData>();
-                                action(completed, data1);
-                            }
-                            break;
-                        default:
-                            ReplyInternalError(message);
-                            break;
-                    }
-                });
+                                break;
+                            case ReadStreamResult.StreamDeleted:
+                                ReplyNotFound(message);
+                                break;
+                            case ReadStreamResult.Success:
+                                if (completed.Events.Length == 0)
+                                    ReplyNotFound(message);
+                                else
+                                {
+                                    var data1 = completed.Events[0].Event.Data.ParseJson<UserData>();
+                                    action(completed, data1);
+                                }
+                                break;
+                            default:
+                                ReplyInternalError(message);
+                                break;
+                        }
+                    });
         }
 
-        private void BeginReadUserDetails(string loginName, Action<ClientMessage.ReadStreamEventsBackwardCompleted> completed)
+        private void BeginReadUserDetails(
+            string loginName, Action<ClientMessage.ReadStreamEventsBackwardCompleted> completed)
         {
             var streamId = "$user-" + loginName;
             _ioDispatcher.ReadBackward(streamId, -1, 1, false, SystemAccount.Principal, completed);
@@ -232,7 +252,8 @@ namespace EventStore.Core.Services.UserManagement
             UserManagementMessage.UserManagementRequestMessage message, UserData userData, string eventType,
             int expectedVersion)
         {
-            WriteUserEvent(userData, eventType, expectedVersion, completed => WriteUserCreatedCompleted(completed, message));
+            WriteUserEvent(
+                userData, eventType, expectedVersion, completed => WriteUserCreatedCompleted(completed, message));
         }
 
         private void WriteUserEvent(
@@ -321,40 +342,39 @@ namespace EventStore.Core.Services.UserManagement
             }
         }
 
-        public void Handle(SystemMessage.BecomeMaster message)
-        {
-            BeginReadUserDetails(
-                "admin", completed =>
-                    {
-                        if (completed.Result == ReadStreamResult.NoStream)
-                        {
-                            CreateAdminUser();
-                        }
-                    });
-        }
-
         private void CreateAdminUser()
         {
             var userData = CreateUserData(
                 SystemUsers.Admin, "Event Store Administrator", new[] {SystemUserGroups.Admins},
                 SystemUsers.DefaultAdminPassword);
-            WriteUserEvent(userData, "$UserCreated", ExpectedVersion.NoStream, completed =>
-                {
-                    switch (completed.Result)
+            WriteUserEvent(
+                userData, "$UserCreated", ExpectedVersion.NoStream, completed =>
                     {
-                        case OperationResult.Success:
-                            _log.Info("'admin' user account has been created");                            
-                            break;
-                        case OperationResult.CommitTimeout:
-                        case OperationResult.PrepareTimeout:
-                            CreateAdminUser();
-                            break;
-                        default:
-                            _log.Error("'admin' user account could not be created");                            
-                            break;
-                    }
-                })
-                                                                                                ;
+                        switch (completed.Result)
+                        {
+                            case OperationResult.Success:
+                                _log.Info("'admin' user account has been created");
+                                break;
+                            case OperationResult.CommitTimeout:
+                            case OperationResult.PrepareTimeout:
+                                CreateAdminUser();
+                                break;
+                            default:
+                                _log.Error("'admin' user account could not be created");
+                                break;
+                        }
+                    });
         }
+
+        private bool DemandAdmin(UserManagementMessage.UserManagementRequestMessage message)
+        {
+            if (message.Principal == null || !message.Principal.IsInRole(SystemUserGroups.Admins))
+            {
+                ReplyUnauthorized(message);
+                return false;
+            }
+            return true;
+        }
+
     }
 }
