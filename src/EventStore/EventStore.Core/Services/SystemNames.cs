@@ -75,4 +75,15 @@ namespace EventStore.Core.Services
         public const string LinkTo = "$>";
         public const string StreamMetadata = "$metadata";
     }
+
+    public static class SystemUsers
+    {
+        public const string Admin = "admin";
+        public const string DefaultAdminPassword = "changeit";
+    }
+
+    public static class SystemUserGroups
+    {
+        public const string Admins = "$admins";
+    }
 }

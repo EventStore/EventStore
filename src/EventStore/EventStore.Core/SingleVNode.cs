@@ -318,6 +318,7 @@ namespace EventStore.Core
             _mainBus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.Get>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
+            _mainBus.Subscribe<SystemMessage.BecomeMaster>(userManagement);
 
             // TIMER
             _timeProvider = new RealTimeProvider();

@@ -28,11 +28,13 @@
 
 using System;
 using System.Linq;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http.Authentication;
 
 namespace EventStore.Core.Services.UserManagement
@@ -45,15 +47,17 @@ namespace EventStore.Core.Services.UserManagement
                                          IHandle<UserManagementMessage.Disable>,
                                          IHandle<UserManagementMessage.ResetPassword>,
                                          IHandle<UserManagementMessage.ChangePassword>,
-                                         IHandle<UserManagementMessage.Delete>
+                                         IHandle<UserManagementMessage.Delete>,
+                                         IHandle<SystemMessage.BecomeMaster>
     {
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
-
+        private ILogger _log;
         public UserManagementService(
             IPublisher publisher, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm)
         {
+            _log = LogManager.GetLoggerFor<UserManagementService>();
             _publisher = publisher;
             _ioDispatcher = ioDispatcher;
             _passwordHashAlgorithm = passwordHashAlgorithm;
@@ -157,42 +161,52 @@ namespace EventStore.Core.Services.UserManagement
 
         private UserData CreateUserData(UserManagementMessage.Create message)
         {
+            return CreateUserData(message.LoginName, message.FullName, message.Groups, message.Password);
+        }
+
+        private UserData CreateUserData(string loginName, string fullName, string[] groups, string password)
+        {
             string hash;
             string salt;
-            _passwordHashAlgorithm.Hash(message.Password, out hash, out salt);
-            return new UserData(message.LoginName, message.FullName, message.Groups, hash, salt, disabled: false);
+            _passwordHashAlgorithm.Hash(password, out hash, out salt);
+            return new UserData(loginName, fullName, groups, hash, salt, disabled: false);
         }
 
         private void ReadUserDetailsAnd(
             UserManagementMessage.UserManagementRequestMessage message,
             Action<ClientMessage.ReadStreamEventsBackwardCompleted, UserData> action)
         {
-            var streamId = "$user-" + message.LoginName;
-            _ioDispatcher.ReadBackward(
-                streamId, -1, 1, false, SystemAccount.Principal, completed =>
+            string loginName = message.LoginName;
+            BeginReadUserDetails(loginName, completed =>
+                {
+                    switch (completed.Result)
                     {
-                        switch (completed.Result)
-                        {
-                            case ReadStreamResult.NoStream:
+                        case ReadStreamResult.NoStream:
+                            ReplyNotFound(message);
+                            break;
+                        case ReadStreamResult.StreamDeleted:
+                            ReplyNotFound(message);
+                            break;
+                        case ReadStreamResult.Success:
+                            if (completed.Events.Length == 0)
                                 ReplyNotFound(message);
-                                break;
-                            case ReadStreamResult.StreamDeleted:
-                                ReplyNotFound(message);
-                                break;
-                            case ReadStreamResult.Success:
-                                if (completed.Events.Length == 0)
-                                    ReplyNotFound(message);
-                                else
-                                {
-                                    var data = completed.Events[0].Event.Data.ParseJson<UserData>();
-                                    action(completed, data);
-                                }
-                                break;
-                            default:
-                                ReplyInternalError(message);
-                                break;
-                        }
-                    });
+                            else
+                            {
+                                var data1 = completed.Events[0].Event.Data.ParseJson<UserData>();
+                                action(completed, data1);
+                            }
+                            break;
+                        default:
+                            ReplyInternalError(message);
+                            break;
+                    }
+                });
+        }
+
+        private void BeginReadUserDetails(string loginName, Action<ClientMessage.ReadStreamEventsBackwardCompleted> completed)
+        {
+            var streamId = "$user-" + loginName;
+            _ioDispatcher.ReadBackward(streamId, -1, 1, false, SystemAccount.Principal, completed);
         }
 
         private void ReadUpdateWriteReply(
@@ -218,10 +232,17 @@ namespace EventStore.Core.Services.UserManagement
             UserManagementMessage.UserManagementRequestMessage message, UserData userData, string eventType,
             int expectedVersion)
         {
+            WriteUserEvent(userData, eventType, expectedVersion, completed => WriteUserCreatedCompleted(completed, message));
+        }
+
+        private void WriteUserEvent(
+            UserData userData, string eventType, int expectedVersion,
+            Action<ClientMessage.WriteEventsCompleted> onCompleted)
+        {
             var userCreatedEvent = new Event(Guid.NewGuid(), eventType, true, userData.ToJsonBytes(), null);
             _ioDispatcher.WriteEvents(
-                "$user-" + message.LoginName, expectedVersion, new[] {userCreatedEvent}, SystemAccount.Principal,
-                completed => WriteUserCreatedCompleted(completed, message));
+                "$user-" + userData.LoginName, expectedVersion, new[] {userCreatedEvent}, SystemAccount.Principal,
+                onCompleted);
         }
 
         private static void WriteUserCreatedCompleted(
@@ -298,6 +319,42 @@ namespace EventStore.Core.Services.UserManagement
                     ReplyInternalError(message);
                     break;
             }
+        }
+
+        public void Handle(SystemMessage.BecomeMaster message)
+        {
+            BeginReadUserDetails(
+                "admin", completed =>
+                    {
+                        if (completed.Result == ReadStreamResult.NoStream)
+                        {
+                            CreateAdminUser();
+                        }
+                    });
+        }
+
+        private void CreateAdminUser()
+        {
+            var userData = CreateUserData(
+                SystemUsers.Admin, "Event Store Administrator", new[] {SystemUserGroups.Admins},
+                SystemUsers.DefaultAdminPassword);
+            WriteUserEvent(userData, "$UserCreated", ExpectedVersion.NoStream, completed =>
+                {
+                    switch (completed.Result)
+                    {
+                        case OperationResult.Success:
+                            _log.Info("'admin' user account has been created");                            
+                            break;
+                        case OperationResult.CommitTimeout:
+                        case OperationResult.PrepareTimeout:
+                            CreateAdminUser();
+                            break;
+                        default:
+                            _log.Error("'admin' user account could not be created");                            
+                            break;
+                    }
+                })
+                                                                                                ;
         }
     }
 }
