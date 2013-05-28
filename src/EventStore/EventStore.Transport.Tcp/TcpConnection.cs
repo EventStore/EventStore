@@ -116,11 +116,12 @@ namespace EventStore.Transport.Tcp
             _connectionId = connectionId;
             _effectiveEndPoint = effectiveEndPoint;
             _verbose = verbose;
-
+#if DUMPT_TCP
             var root = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             var type = Assembly.GetEntryAssembly().Location.Contains("EventStore.TestClient.exe") ? "client" : "server";
             _sendFile = File.Create(Path.Combine(root, string.Format("{0:B}-{1}.send", _connectionId, type)));
             _recvFile = File.Create(Path.Combine(root, string.Format("{0:B}-{1}.recv", _connectionId, type)));
+#endif
         }
 
         private void InitSocket(Socket socket)
@@ -191,8 +192,9 @@ namespace EventStore.Transport.Tcp
             }
 
             _sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), 0, (int) _memoryStream.Length);
+#if DUMP_TCP
             _sendFile.Write(_memoryStream.GetBuffer(), 0, (int)_memoryStream.Length);
-
+#endif
             try
             {
                 NotifySendStarting(_sendSocketArgs.Count);
@@ -317,8 +319,9 @@ namespace EventStore.Transport.Tcp
             
             NotifyReceiveCompleted(socketArgs.BytesTransferred);
 
+#if DUMP_TCP
             _recvFile.Write(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
-
+#endif
             lock (_receivingLock)
             {
                 var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
@@ -409,8 +412,8 @@ namespace EventStore.Transport.Tcp
                     ReturnSendingSocketArgs();
             }
 
-            _sendFile.Close();
-            _recvFile.Close();
+            if (_sendFile != null) _sendFile.Close();
+            if (_recvFile != null) _recvFile.Close();
 
             var handler = ConnectionClosed;
             if (handler != null)
