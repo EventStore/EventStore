@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                 },
                 verbose: true);
 
-            Assert.IsTrue(done.Wait(2000), "Too long didn't receive completion.");
+            Assert.IsTrue(done.Wait(20000), "Too long didn't receive completion.");
 
             Log.Info("Stopping listener...");
             listener.Stop();
