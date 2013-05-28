@@ -60,6 +60,7 @@ namespace EventStore.ClientAPI.Common.Utils
                 return defaultValue;
             }
         }
+   
         public static string FormatBinaryDump(byte[] logBulk)
         {
             return FormatBinaryDump(new ArraySegment<byte>(logBulk ?? Empty.ByteArray));

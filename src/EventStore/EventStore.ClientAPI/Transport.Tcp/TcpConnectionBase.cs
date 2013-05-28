@@ -44,7 +44,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         public int PendingSendBytes { get { return _pendingSendBytes; } }
         public int InSendBytes { get { return _inSendBytes; } }
         public int PendingReceivedBytes { get { return _pendingReceivedBytes; } }
-        public long TotalBytesSent { get { return Interlocked.Read(ref _totalBytesReceived); } }
+        public long TotalBytesSent { get { return Interlocked.Read(ref _totalBytesSent); } }
         public long TotalBytesReceived { get { return Interlocked.Read(ref _totalBytesReceived); } }
         public int SendCalls { get { return _sentAsyncs; } }
         public int SendCallbacks { get { return _sentAsyncCallbacks; } }
