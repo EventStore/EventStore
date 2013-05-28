@@ -132,13 +132,17 @@ namespace EventStore.Transport.Tcp
                     return;
                 }
 
-                _receiveSocketArgs = SocketArgsPool.Get();
+                var receiveSocketArgs = SocketArgsPool.Get();
+                _receiveSocketArgs = receiveSocketArgs;
                 _receiveSocketArgs.AcceptSocket = socket;
                 _receiveSocketArgs.Completed += OnReceiveAsyncCompleted;
 
-                _sendSocketArgs = SocketArgsPool.Get();
+                var sendSocketArgs = SocketArgsPool.Get();
+                _sendSocketArgs = sendSocketArgs;
                 _sendSocketArgs.AcceptSocket = socket;
                 _sendSocketArgs.Completed += OnSendAsyncCompleted;
+
+                Log.Info("Connection '{0:B}': receive args {1}, send args {2}.", ConnectionId, receiveSocketArgs.GetHashCode(), sendSocketArgs.GetHashCode());
             }
             StartReceive();
             TrySend();
@@ -206,6 +210,8 @@ namespace EventStore.Transport.Tcp
                 Log.Fatal("Invalid send socket args received");
                 throw new Exception("Invalid send socket args received");
             }
+            if (socketArgs.LastOperation != SocketAsyncOperation.Send)
+                Log.Fatal("Invalid last send socket operation: {0}", socketArgs.LastOperation);
             if (socketArgs.SocketError != SocketError.Success)
             {
                 NotifySendCompleted(0);
@@ -219,6 +225,8 @@ namespace EventStore.Transport.Tcp
                 {
                     _isSending = false;
                 }
+                if (socketArgs.LastOperation != SocketAsyncOperation.Send)
+                    Log.Fatal("Invalid last send socket operation: {0}", socketArgs.LastOperation);
                 if (_closed != 0)
                     ReturnSendingSocketArgs();
                 else
@@ -286,6 +294,9 @@ namespace EventStore.Transport.Tcp
                 Log.Fatal("Invalid receive socket args received");
                 throw new Exception("Invalid receive socket args received");
             }
+            if (socketArgs.LastOperation != SocketAsyncOperation.Receive)
+                Log.Fatal("Invalid last receive socket operation: {0}", socketArgs.LastOperation);
+
             // socket closed normally or some error occurred
             if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
             {
