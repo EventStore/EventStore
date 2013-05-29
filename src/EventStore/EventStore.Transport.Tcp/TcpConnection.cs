@@ -107,6 +107,7 @@ namespace EventStore.Transport.Tcp
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
         private FileStream _sendFile, _recvFile;
+        private readonly bool _dumpTcp = Application.IsDefined("DUMP_TCP");
 
         private TcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, bool verbose)
         {
@@ -120,12 +121,13 @@ namespace EventStore.Transport.Tcp
 
         private void InitSocket(Socket socket)
         {
-#if DUMP_TCP
-            var root = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-            var type = Assembly.GetEntryAssembly().Location.Contains("EventStore.TestClient.exe") ? "client" : "server";
-            _sendFile = File.Create(Path.Combine(root, string.Format("{0:B}-{1}.send", _connectionId, type)));
-            _recvFile = File.Create(Path.Combine(root, string.Format("{0:B}-{1}.recv", _connectionId, type)));
-#endif
+            if (_dumpTcp)
+            {
+                var root = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+                var type = Assembly.GetEntryAssembly().Location.Contains("EventStore.TestClient.exe") ? "client" : "server";
+                _sendFile = File.Create(Path.Combine(root, string.Format("{0:B}-{1}.send", _connectionId, type)));
+                _recvFile = File.Create(Path.Combine(root, string.Format("{0:B}-{1}.recv", _connectionId, type)));
+            }
 
             InitSocket(socket, _effectiveEndPoint);
             using (_sendingLock.Acquire()) 
@@ -142,12 +144,12 @@ namespace EventStore.Transport.Tcp
                     return;
                 }
 
-                var receiveSocketArgs = SocketArgsPool.Get();
+                var receiveSocketArgs = new SocketAsyncEventArgs();//SocketArgsPool.Get();
                 _receiveSocketArgs = receiveSocketArgs;
                 _receiveSocketArgs.AcceptSocket = socket;
                 _receiveSocketArgs.Completed += OnReceiveAsyncCompleted;
 
-                var sendSocketArgs = SocketArgsPool.Get();
+                var sendSocketArgs = new SocketAsyncEventArgs();//SocketArgsPool.Get();
                 _sendSocketArgs = sendSocketArgs;
                 _sendSocketArgs.AcceptSocket = socket;
                 _sendSocketArgs.Completed += OnSendAsyncCompleted;
@@ -193,9 +195,8 @@ namespace EventStore.Transport.Tcp
             }
 
             _sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), 0, (int) _memoryStream.Length);
-#if DUMP_TCP
-            _sendFile.Write(_memoryStream.GetBuffer(), 0, (int)_memoryStream.Length);
-#endif
+            if (_dumpTcp) _sendFile.Write(_memoryStream.GetBuffer(), 0, (int)_memoryStream.Length);
+
             try
             {
                 NotifySendStarting(_sendSocketArgs.Count);
@@ -320,9 +321,8 @@ namespace EventStore.Transport.Tcp
             
             NotifyReceiveCompleted(socketArgs.BytesTransferred);
 
-#if DUMP_TCP
-            _recvFile.Write(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
-#endif
+            if (_dumpTcp) _recvFile.Write(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
+
             lock (_receivingLock)
             {
                 var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
@@ -430,7 +430,7 @@ namespace EventStore.Transport.Tcp
                 socketArgs.AcceptSocket = null;
                 if (socketArgs.Buffer != null)
                     socketArgs.SetBuffer(null, 0, 0);
-                SocketArgsPool.Return(socketArgs);
+                //SocketArgsPool.Return(socketArgs);
             }
         }
 
@@ -447,7 +447,7 @@ namespace EventStore.Transport.Tcp
                     BufferManager.CheckIn(new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count));
                     socketArgs.SetBuffer(null, 0, 0);
                 }
-                SocketArgsPool.Return(socketArgs);
+                //SocketArgsPool.Return(socketArgs);
             }
         }
         

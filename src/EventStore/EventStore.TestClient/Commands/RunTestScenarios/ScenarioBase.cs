@@ -37,6 +37,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Tests.Helpers;
 using ConsoleLogger = EventStore.ClientAPI.Common.Log.ConsoleLogger;
@@ -149,6 +150,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         public void Run()
         {
+            //EventStore.ClientAPI.Transport.Tcp.TcpConnectionBase.DumpTcp = true;
+
             const int maxReconnections = 200;
             const int maxOperationRetries = 200;
 
@@ -353,12 +356,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 argumentsHead = "";
             }
 
-            var arguments = string.Format("{0} --run-projections --ip {1} -t {2} -h {3} --db {4}",
+            var arguments = string.Format("{0} --run-projections --ip {1} -t {2} -h {3} --db {4} {5}",
                                           argumentsHead,
                                           _nodeConnection.IpAddress,
                                           _nodeConnection.TcpPort,
                                           _nodeConnection.HttpPort,
-                                          _dbPath);
+                                          _dbPath,
+                                          Runtime.IsMono ? "" : ""/*"--define TCP_DUMP"*/);
 
             Log.Info("Starting [{0} {1}]...", fileName, arguments);
 
