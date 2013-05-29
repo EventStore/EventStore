@@ -150,7 +150,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         public void Run()
         {
-            //EventStore.ClientAPI.Transport.Tcp.TcpConnectionBase.DumpTcp = true;
+            if (!Runtime.IsMono) EventStore.ClientAPI.Transport.Tcp.TcpConnectionBase.DumpTcp = true;
 
             const int maxReconnections = 200;
             const int maxOperationRetries = 200;
@@ -362,7 +362,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                           _nodeConnection.TcpPort,
                                           _nodeConnection.HttpPort,
                                           _dbPath,
-                                          Runtime.IsMono ? "" : ""/*"--define TCP_DUMP"*/);
+                                          Runtime.IsMono ? "" : "--define TCP_DUMP");
 
             Log.Info("Starting [{0} {1}]...", fileName, arguments);
 
