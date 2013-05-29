@@ -106,7 +106,7 @@ namespace EventStore.Transport.Tcp
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
-        private readonly FileStream _sendFile, _recvFile;
+        private FileStream _sendFile, _recvFile;
 
         private TcpConnection(Guid connectionId, IPEndPoint effectiveEndPoint, bool verbose)
         {
@@ -116,16 +116,17 @@ namespace EventStore.Transport.Tcp
             _connectionId = connectionId;
             _effectiveEndPoint = effectiveEndPoint;
             _verbose = verbose;
-#if DUMPT_TCP
+        }
+
+        private void InitSocket(Socket socket)
+        {
+#if DUMP_TCP
             var root = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             var type = Assembly.GetEntryAssembly().Location.Contains("EventStore.TestClient.exe") ? "client" : "server";
             _sendFile = File.Create(Path.Combine(root, string.Format("{0:B}-{1}.send", _connectionId, type)));
             _recvFile = File.Create(Path.Combine(root, string.Format("{0:B}-{1}.recv", _connectionId, type)));
 #endif
-        }
 
-        private void InitSocket(Socket socket)
-        {
             InitSocket(socket, _effectiveEndPoint);
             using (_sendingLock.Acquire()) 
             {

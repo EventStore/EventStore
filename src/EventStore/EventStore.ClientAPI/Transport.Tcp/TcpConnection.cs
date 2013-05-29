@@ -96,7 +96,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
         private readonly Action<ITcpConnection, SocketError> _onConnectionClosed;
 
-        private readonly FileStream _sendFile, _recvFile;
+        private FileStream _sendFile, _recvFile;
 
         private TcpConnection(ILogger log, Guid connectionId, IPEndPoint effectiveEndPoint, Action<ITcpConnection, SocketError> onConnectionClosed)
         {
@@ -108,16 +108,16 @@ namespace EventStore.ClientAPI.Transport.Tcp
             _effectiveEndPoint = effectiveEndPoint;
             _log = log;
             _onConnectionClosed = onConnectionClosed;
-#if DUMP_TCP
-            var root = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-            _sendFile = File.Create(Path.Combine(root, string.Format("{0:B}-client.send", _connectionId)));
-            _recvFile = File.Create(Path.Combine(root, string.Format("{0:B}-client.recv", _connectionId)));
-#endif
         }
 
         private void InitSocket(Socket socket)
         {
             //_log.Info("TcpConnection::InitSocket[{0}]", socket.RemoteEndPoint);
+#if DUMP_TCP
+            var root = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            _sendFile = File.Create(Path.Combine(root, string.Format("{0:B}-client.send", _connectionId)));
+            _recvFile = File.Create(Path.Combine(root, string.Format("{0:B}-client.recv", _connectionId)));
+#endif
 
             InitSocket(socket, _effectiveEndPoint);
             using (_sendingLock.Acquire())
