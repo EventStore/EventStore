@@ -85,10 +85,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   HtmlFeedCodec // initialization order matters
                                                               };
 
+        private readonly IHttpService _httpService;
         private readonly IPublisher _networkSendQueue;
 
-        public AtomController(IPublisher publisher, IPublisher networkSendQueue): base(publisher)
+        public AtomController(IHttpService httpService, IPublisher publisher, IPublisher networkSendQueue): base(publisher)
         {
+            _httpService = httpService;
             _networkSendQueue = networkSendQueue;
         }
 
@@ -133,6 +135,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         // STREAMS
         private void PostEvent(HttpEntityManager manager, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(manager))
+                return;
+            
             var stream = match.BoundVariables["stream"];
             if (stream.IsEmptyString())
             {
@@ -151,6 +156,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void DeleteStream(HttpEntityManager manager, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(manager))
+                return;
+
             var stream = match.BoundVariables["stream"];
             int expectedVersion;
             if (stream.IsEmptyString())
@@ -281,6 +289,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         // METASTREAMS
         private void PostMetastreamEvent(HttpEntityManager manager, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(manager))
+                return;
+
             var stream = match.BoundVariables["stream"];
             int expectedVersion;
             if (stream.IsEmptyString() || SystemStreams.IsMetastream(stream))

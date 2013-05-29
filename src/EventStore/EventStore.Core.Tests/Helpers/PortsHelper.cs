@@ -129,17 +129,19 @@ namespace EventStore.Core.Tests.Helpers
                 if (!AvailablePorts.TryDequeue(out port))
                     throw new Exception("Couldn't get free TCP port for MiniNode.");
 
-//                try
-//                {
-//                    var listener = new TcpListener(ip, port);
-//                    listener.Start();
-//                    listener.Stop();
-//                }
-//                catch (Exception)
-//                {
-//                    AvailablePorts.Enqueue(port);
-//                    continue;
-//                }
+/*
+                try
+                {
+                    var listener = new TcpListener(ip, port);
+                    listener.Start();
+                    listener.Stop();
+                }
+                catch (Exception)
+                {
+                    AvailablePorts.Enqueue(port);
+                    continue;
+                }
+*/
 
                 try
                 {

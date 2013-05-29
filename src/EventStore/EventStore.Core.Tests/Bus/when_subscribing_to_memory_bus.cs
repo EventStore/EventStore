@@ -191,7 +191,7 @@ namespace EventStore.Core.Tests.Bus
                         handler3.HandledMessages.ContainsSingle<TestMessage3>() );
         }
 
-        [Test]
+        [Test/*, Ignore("This logic is confused when having hierarchy flattening on subscription in InMemoryBus.")*/]
         public void same_handler_to_same_message_few_times_then_message_should_be_handled_only_once()
         {
             var handler = new TestHandler<TestMessage>();

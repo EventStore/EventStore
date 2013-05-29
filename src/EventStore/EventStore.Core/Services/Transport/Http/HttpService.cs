@@ -29,8 +29,10 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -43,26 +45,17 @@ namespace EventStore.Core.Services.Transport.Http
 {
     public class HttpService : IHttpService,
                                IHandle<SystemMessage.SystemInit>,
+                               IHandle<SystemMessage.StateChangeMessage>,
                                IHandle<SystemMessage.BecomeShuttingDown>,
                                IHandle<HttpMessage.SendOverHttp>,
                                IHandle<HttpMessage.PurgeTimedOutRequests>
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<HttpService>();
         private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
 
-        public bool IsListening
-        {
-            get { return _server.IsListening; }
-        }
-
-        public IEnumerable<string> ListenPrefixes
-        {
-            get { return _server.ListenPrefixes; }
-        }
-
-        public ServiceAccessibility Accessibility
-        {
-            get { return _accessibility; }
-        }
+        public bool IsListening { get { return _server.IsListening; } }
+        public IEnumerable<string> ListenPrefixes { get { return _server.ListenPrefixes; } }
+        public ServiceAccessibility Accessibility { get { return _accessibility; } }
 
         private readonly ServiceAccessibility _accessibility;
         private readonly IPublisher _inputBus;
@@ -72,10 +65,12 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly HttpMessagePipe _httpPipe;
         private readonly HttpAsyncServer _server;
         private readonly MultiQueuedHandler _requestsMultiHandler;
+        private readonly bool _forwardRequests;
 
-        public HttpService(
-            ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
-            MultiQueuedHandler multiQueuedHandler, params string[] prefixes)
+        private VNodeState _state;
+
+        public HttpService(ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
+                           MultiQueuedHandler multiQueuedHandler, bool forwardRequests, params string[] prefixes)
         {
             Ensure.NotNull(inputBus, "inputBus");
             Ensure.NotNull(uriRouter, "uriRouter");
@@ -89,6 +84,7 @@ namespace EventStore.Core.Services.Transport.Http
             _httpPipe = new HttpMessagePipe();
 
             _requestsMultiHandler = multiQueuedHandler;
+            _forwardRequests = forwardRequests;
 
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
@@ -122,6 +118,11 @@ namespace EventStore.Core.Services.Transport.Http
                                  string.Format("Http async server failed to start listening at [{0}].", 
                                                string.Join(", ", _server.ListenPrefixes)));
             }
+        }
+
+        public void Handle(SystemMessage.StateChangeMessage message)
+        {
+            _state = message.State;
         }
 
         public void Handle(SystemMessage.BecomeShuttingDown message)
@@ -178,6 +179,16 @@ namespace EventStore.Core.Services.Transport.Http
         public List<UriToActionMatch> GetAllUriMatches(Uri uri)
         {
             return _uriRouter.GetAllUriMatches(uri);
+        }
+
+        public bool ForwardRequest(HttpEntityManager manager)
+        {
+            if (_forwardRequests && _state != VNodeState.Master && _state != VNodeState.PreMaster)
+            {
+                _inputBus.Publish(new HttpMessage.HttpForwardRequestedMessage(manager));
+                return true;
+            }
+            return false;
         }
     }
 }

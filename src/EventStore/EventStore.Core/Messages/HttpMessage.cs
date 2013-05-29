@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Net;
+using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
@@ -166,6 +167,32 @@ namespace EventStore.Core.Messages
             public PurgeTimedOutRequests(ServiceAccessibility accessibility)
             {
                 Accessibility = accessibility;
+            }
+        }
+
+        public class HttpForwardRequestedMessage : Message
+        {
+            public readonly HttpEntityManager Manager;
+
+            public HttpForwardRequestedMessage(HttpEntityManager manager)
+            {
+                Ensure.NotNull(manager, "manager");
+                Manager = manager;
+            }
+        }
+
+        public class HttpForwardMessage : Message
+        {
+            public readonly HttpEntityManager Manager;
+            public readonly Uri BaseUri;
+
+            public HttpForwardMessage(HttpEntityManager manager, Uri baseUri)
+            {
+                Ensure.NotNull(manager, "manager");
+                Ensure.NotNull(baseUri, "baseUri");
+
+                Manager = manager;
+                BaseUri = baseUri;
             }
         }
 

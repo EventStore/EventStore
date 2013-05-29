@@ -147,19 +147,21 @@ namespace EventStore.Web.Playground
                         _mainQueue,
                         new TrieUriRouter(),
                         _workersHandler,
+                        false,
                         vNodeSettings.HttpPrefixes);
 
                 SubscribeWorkers(bus => HttpService.CreateAndSubscribePipeline(bus, authenticationProviders));
 
                 _mainBus.Subscribe<SystemMessage.SystemInit>(HttpService);
+                _mainBus.Subscribe<SystemMessage.StateChangeMessage>(HttpService);
                 _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
                 _mainBus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
                 _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(HttpService);
                 HttpService.SetupController(new AdminController(_mainQueue));
                 HttpService.SetupController(new PingController());
                 HttpService.SetupController(new StatController(monitoringQueue, _workersHandler));
-                HttpService.SetupController(new AtomController(_mainQueue, _workersHandler));
-                HttpService.SetupController(new UsersController(_mainQueue, _workersHandler));
+                HttpService.SetupController(new AtomController(HttpService, _mainQueue, _workersHandler));
+                HttpService.SetupController(new UsersController(HttpService, _mainQueue, _workersHandler));
             }
 
 

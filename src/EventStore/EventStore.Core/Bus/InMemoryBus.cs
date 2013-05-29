@@ -79,7 +79,7 @@ namespace EventStore.Core.Bus
                 handlers = new List<IMessageHandler>();
                 _typeHash.Add(typeof(T), handlers);
             }
-            if (!handlers.Any(x => x.IsSame(handler)))
+            if (!handlers.Any(x => x.IsSame<T>(handler)))
                 handlers.Add(new MessageHandler<T>(handler, handler.GetType().Name));
         }
 
@@ -90,7 +90,7 @@ namespace EventStore.Core.Bus
             List<IMessageHandler> handlers;
             if (_typeHash.TryGetValue(typeof(T), out handlers))
             {
-                var messageHandler = handlers.FirstOrDefault(x => x.IsSame(handler));
+                var messageHandler = handlers.FirstOrDefault(x => x.IsSame<T>(handler));
                 if (messageHandler != null)
                     handlers.Remove(messageHandler);
             }
@@ -196,7 +196,7 @@ namespace EventStore.Core.Bus
                     handlers = new List<IMessageHandler>();
                     _typeHash.Add(descendant, handlers);
                 }
-                if (!handlers.Any(x => x.IsSame(handler)))
+                if (!handlers.Any(x => x.IsSame<T>(handler)))
                     handlers.Add(new MessageHandler<T>(handler, handler.GetType().Name));
             }
 
@@ -215,7 +215,7 @@ namespace EventStore.Core.Bus
                 List<IMessageHandler> handlers;
                 if (_typeHash.TryGetValue(descendant, out handlers))
                 {
-                    var messageHandler = handlers.FirstOrDefault(x => x.IsSame(handler));
+                    var messageHandler = handlers.FirstOrDefault(x => x.IsSame<T>(handler));
                     if (messageHandler != null)
                         handlers.Remove(messageHandler);
                 }
