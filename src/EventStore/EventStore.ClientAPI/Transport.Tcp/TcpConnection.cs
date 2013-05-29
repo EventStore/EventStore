@@ -262,27 +262,18 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private void StartReceive()
         {
             var buffer = new ArraySegment<byte>(new byte[TcpConfiguration.SocketBufferSize]);
-            // TODO AN: do we need to lock on _receiveSocketArgs?..
-            lock (_receiveSocketArgs) 
-            {
-                _receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
-                if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was not set");
-            }
+            var args = new SocketAsyncEventArgs();
+            args.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
             try
             {
                 NotifyReceiveStarting();
-                bool firedAsync;
-                lock (_receiveSocketArgs)
-                {
-                    if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was lost");
-                    firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(_receiveSocketArgs);
-                }
+                bool firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(args);
                 if (!firedAsync)
                     ProcessReceive(_receiveSocketArgs);
             }
             catch (ObjectDisposedException)
             {
-                ReturnReceivingSocketArgs();
+                //ReturnReceivingSocketArgs();
             }
         }
 
@@ -306,7 +297,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
             {
                 NotifyReceiveCompleted(0);
-                ReturnReceivingSocketArgs();
+                //ReturnReceivingSocketArgs();
                 CloseInternal(socketArgs.SocketError, socketArgs.SocketError != SocketError.Success ? "Socket receive error" : "Socket closed");
                 return;
             }
@@ -420,15 +411,15 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void ReturnReceivingSocketArgs()
         {
-            var socketArgs = Interlocked.Exchange(ref _receiveSocketArgs, null);
-            if (socketArgs != null)
-            {
-                socketArgs.Completed -= OnReceiveAsyncCompleted;
-                socketArgs.AcceptSocket = null;
-                if (socketArgs.Buffer != null)
-                    socketArgs.SetBuffer(null, 0, 0);
-                SocketArgsPool.Return(socketArgs);
-            }
+            //var socketArgs = Interlocked.Exchange(ref _receiveSocketArgs, null);
+            //if (socketArgs != null)
+            //{
+            //    socketArgs.Completed -= OnReceiveAsyncCompleted;
+            //    socketArgs.AcceptSocket = null;
+            //    if (socketArgs.Buffer != null)
+            //        socketArgs.SetBuffer(null, 0, 0);
+            //    SocketArgsPool.Return(socketArgs);
+            //}
         }
 
         public override string ToString()

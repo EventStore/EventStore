@@ -113,7 +113,12 @@ namespace EventStore.Core.Tests.Http
 
         protected virtual MiniNode CreateMiniNode()
         {
-            return new MiniNode(PathName);
+            return new MiniNode(PathName, skipInitializeStandardUsersCheck: GivenSkipInitializeStandardUsersCheck());
+        }
+
+        protected virtual bool GivenSkipInitializeStandardUsersCheck()
+        {
+            return true;
         }
 
         [TestFixtureTearDown]
@@ -144,10 +149,15 @@ namespace EventStore.Core.Tests.Http
             return httpWebRequest;
         }
 
-        protected HttpWebRequest CreateRequest(string path, string method)
+        protected HttpWebRequest CreateRequest(string path, string method, ICredentials credentials = null)
         {
             var httpWebRequest = (HttpWebRequest) WebRequest.Create(MakeUrl(path));
             httpWebRequest.Method = method;
+            httpWebRequest.UseDefaultCredentials = false;
+            if (credentials != null)
+            {
+                httpWebRequest.Credentials = credentials;
+            }
             return httpWebRequest;
         }
 
@@ -187,23 +197,23 @@ namespace EventStore.Core.Tests.Http
             }
         }
 
-        protected HttpWebResponse MakeJsonPut<T>(string path, T body)
+        protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials)
         {
-            var request = CreateJsonPostRequest(path, "PUT", body);
+            var request = CreateJsonPostRequest(path, "PUT", body, credentials);
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }
 
-        protected HttpWebResponse MakeDelete(string path)
+        protected HttpWebResponse MakeDelete(string path, ICredentials credentials = null)
         {
-            var request = CreateRequest(path, "DELETE");
+            var request = CreateRequest(path, "DELETE", credentials);
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }
 
-        protected HttpWebResponse MakePost(string path)
+        protected HttpWebResponse MakePost(string path, ICredentials credentials = null)
         {
-            var request = CreateJsonPostRequest(path);
+            var request = CreateJsonPostRequest(path, credentials);
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }
@@ -273,16 +283,17 @@ namespace EventStore.Core.Tests.Http
             return index < 0 ? bytes.Length : index;
         }
 
-        protected HttpWebRequest CreateJsonPostRequest<T>(string path, string method, T body, ICredentials credentials = null)
+        protected HttpWebRequest CreateJsonPostRequest<T>(
+            string path, string method, T body, ICredentials credentials = null)
         {
             var request = CreateRequest(path, method, "application/json", credentials);
             request.GetRequestStream().WriteJson(body);
             return request;
         }
 
-        private HttpWebRequest CreateJsonPostRequest(string path)
+        private HttpWebRequest CreateJsonPostRequest(string path, ICredentials credentials = null)
         {
-            var request = CreateRequest(path, "POST");
+            var request = CreateRequest(path, "POST", credentials);
             request.ContentLength = 0;
             return request;
         }

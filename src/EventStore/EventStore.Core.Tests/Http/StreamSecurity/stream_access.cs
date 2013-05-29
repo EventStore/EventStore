@@ -55,7 +55,15 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
                 var jsonMetadata = metadata.AsJsonString();
                 _response = MakeJsonPost(
                     TestMetadataStream,
-                    new[] {new {EventId = Guid.NewGuid(), EventType = SystemEventTypes.StreamMetadata, Data = new JRaw(jsonMetadata)}});
+                    new[]
+                        {
+                            new
+                                {
+                                    EventId = Guid.NewGuid(),
+                                    EventType = SystemEventTypes.StreamMetadata,
+                                    Data = new JRaw(jsonMetadata)
+                                }
+                        });
             }
 
             [Test]

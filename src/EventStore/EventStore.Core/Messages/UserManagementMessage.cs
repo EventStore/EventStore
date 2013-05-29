@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Security.Principal;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages
@@ -36,10 +37,12 @@ namespace EventStore.Core.Messages
         public class RequestMessage : Message
         {
             public readonly IEnvelope Envelope;
+            public readonly IPrincipal Principal;
 
-            public RequestMessage(IEnvelope envelope)
+            public RequestMessage(IEnvelope envelope, IPrincipal principal)
             {
                 Envelope = envelope;
+                Principal = principal;
             }
         }
 
@@ -59,8 +62,8 @@ namespace EventStore.Core.Messages
         {
             public readonly string LoginName;
 
-            protected UserManagementRequestMessage(IEnvelope envelope, string loginName)
-                : base(envelope)
+            protected UserManagementRequestMessage(IEnvelope envelope, IPrincipal principal, string loginName)
+                : base(envelope, principal)
             {
                 LoginName = loginName;
             }
@@ -72,8 +75,10 @@ namespace EventStore.Core.Messages
             public readonly string[] Groups;
             public readonly string Password;
 
-            public Create(IEnvelope envelope, string loginName, string fullName, string[] groups, string password)
-                : base(envelope, loginName)
+            public Create(
+                IEnvelope envelope, IPrincipal principal, string loginName, string fullName, string[] groups,
+                string password)
+                : base(envelope, principal, loginName)
             {
                 FullName = fullName;
                 Groups = groups;
@@ -86,8 +91,8 @@ namespace EventStore.Core.Messages
             public readonly string FullName;
             public readonly string[] Groups;
 
-            public Update(IEnvelope envelope, string loginName, string fullName, string[] groups)
-                : base(envelope, loginName)
+            public Update(IEnvelope envelope, IPrincipal principal, string loginName, string fullName, string[] groups)
+                : base(envelope, principal, loginName)
             {
                 FullName = fullName;
                 Groups = groups;
@@ -96,24 +101,24 @@ namespace EventStore.Core.Messages
 
         public sealed class Disable : UserManagementRequestMessage
         {
-            public Disable(IEnvelope envelope, string loginName)
-                : base(envelope, loginName)
+            public Disable(IEnvelope envelope, IPrincipal principal, string loginName)
+                : base(envelope, principal, loginName)
             {
             }
         }
 
         public sealed class Enable : UserManagementRequestMessage
         {
-            public Enable(IEnvelope envelope, string loginName)
-                : base(envelope, loginName)
+            public Enable(IEnvelope envelope, IPrincipal principal, string loginName)
+                : base(envelope, principal, loginName)
             {
             }
         }
 
         public sealed class Delete : UserManagementRequestMessage
         {
-            public Delete(IEnvelope envelope, string loginName)
-                : base(envelope, loginName)
+            public Delete(IEnvelope envelope, IPrincipal principal, string loginName)
+                : base(envelope, principal, loginName)
             {
             }
         }
@@ -122,8 +127,8 @@ namespace EventStore.Core.Messages
         {
             public readonly string NewPassword;
 
-            public ResetPassword(IEnvelope envelope, string loginName, string newPassword)
-                : base(envelope, loginName)
+            public ResetPassword(IEnvelope envelope, IPrincipal principal, string loginName, string newPassword)
+                : base(envelope, principal, loginName)
             {
                 NewPassword = newPassword;
             }
@@ -134,8 +139,9 @@ namespace EventStore.Core.Messages
             public readonly string CurrentPassword;
             public readonly string NewPassword;
 
-            public ChangePassword(IEnvelope envelope, string loginName, string currentPassword, string newPassword)
-                : base(envelope, loginName)
+            public ChangePassword(
+                IEnvelope envelope, IPrincipal principal, string loginName, string currentPassword, string newPassword)
+                : base(envelope, principal, loginName)
             {
                 CurrentPassword = currentPassword;
                 NewPassword = newPassword;
@@ -144,16 +150,16 @@ namespace EventStore.Core.Messages
 
         public sealed class GetAll : RequestMessage
         {
-            public GetAll(IEnvelope envelope)
-                : base(envelope)
+            public GetAll(IEnvelope envelope, IPrincipal principal)
+                : base(envelope, principal)
             {
             }
         }
 
         public sealed class Get : UserManagementRequestMessage
         {
-            public Get(IEnvelope envelope, string loginName)
-                : base(envelope, loginName)
+            public Get(IEnvelope envelope, IPrincipal principal, string loginName)
+                : base(envelope, principal, loginName)
             {
             }
         }
@@ -246,6 +252,10 @@ namespace EventStore.Core.Messages
             {
                 Data = null;
             }
+        }
+
+        public sealed class UserManagementServiceInitialized : Message
+        {
         }
     }
 }

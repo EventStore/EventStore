@@ -31,6 +31,7 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -56,24 +57,30 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             _node.Start();
 
             var userCreateEvent1 = new ManualResetEventSlim();
-            _node.Node.MainQueue.Publish(new UserManagementMessage.Create(new CallbackEnvelope(m =>
-            {
-                Assert.IsTrue(m is UserManagementMessage.UpdateResult);
-                var msg = (UserManagementMessage.UpdateResult) m;
-                Assert.IsTrue(msg.Success);
+            _node.Node.MainQueue.Publish(
+                new UserManagementMessage.Create(
+                    new CallbackEnvelope(
+                        m =>
+                            {
+                                Assert.IsTrue(m is UserManagementMessage.UpdateResult);
+                                var msg = (UserManagementMessage.UpdateResult) m;
+                                Assert.IsTrue(msg.Success);
 
-                userCreateEvent1.Set();
-            }), "user1", "Test User 1", new string[0], "pa$$1"));
+                                userCreateEvent1.Set();
+                            }), SystemAccount.Principal, "user1", "Test User 1", new string[0], "pa$$1"));
 
             var userCreateEvent2 = new ManualResetEventSlim();
-            _node.Node.MainQueue.Publish(new UserManagementMessage.Create(new CallbackEnvelope(m =>
-            {
-                Assert.IsTrue(m is UserManagementMessage.UpdateResult);
-                var msg = (UserManagementMessage.UpdateResult)m;
-                Assert.IsTrue(msg.Success);
+            _node.Node.MainQueue.Publish(
+                new UserManagementMessage.Create(
+                    new CallbackEnvelope(
+                        m =>
+                            {
+                                Assert.IsTrue(m is UserManagementMessage.UpdateResult);
+                                var msg = (UserManagementMessage.UpdateResult) m;
+                                Assert.IsTrue(msg.Success);
 
-                userCreateEvent2.Set();
-            }), "user2", "Test User 2", new string[0], "pa$$2"));
+                                userCreateEvent2.Set();
+                            }), SystemAccount.Principal, "user2", "Test User 2", new string[0], "pa$$2"));
 
             Assert.IsTrue(userCreateEvent1.Wait(5000), "User 1 creation failed");
             Assert.IsTrue(userCreateEvent2.Wait(5000), "User 2 creation failed");

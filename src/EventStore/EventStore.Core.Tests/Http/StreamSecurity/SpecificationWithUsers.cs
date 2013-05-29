@@ -30,6 +30,7 @@ using System;
 using System.Linq;
 using System.Net;
 using EventStore.ClientAPI;
+using EventStore.Core.Services;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 
@@ -39,16 +40,24 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
     {
         protected override void Given()
         {
-            PostUser("admin", "Administrator", "admin!", "admin", "other");
             PostUser("user1", "User 1", "user1!", "other");
             PostUser("user2", "User 2", "user2!", "other");
             PostUser("guest", "Guest", "guest!");
         }
 
+        protected readonly ICredentials _admin = new NetworkCredential(
+            SystemUsers.Admin, SystemUsers.DefaultAdminPassword);
+
+        protected override bool GivenSkipInitializeStandardUsersCheck()
+        {
+            return false;
+        }
+
         protected void PostUser(string login, string userFullName, string password, params string[] groups)
         {
             var response = MakeJsonPost(
-                "/users/", new {LoginName = login + Tag, FullName = userFullName, Groups = groups, Password = password});
+                "/users/", new {LoginName = login + Tag, FullName = userFullName, Groups = groups, Password = password},
+                _admin);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
         }
 

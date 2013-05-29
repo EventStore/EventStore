@@ -61,7 +61,14 @@
                 </div>
             </div>
             <div class="control-group">
-                <label class="control-label add-on" for="input-password">Current Password</label>
+                <label class="control-label add-on" for="input-is-admin">Is Administrator</label>
+                <div class="controls">
+                    <input type="checkbox" id="input-is-admin" name="input-is-admin"/>
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label add-on" for="input-password-current">Current Password</label>
                 <div class="controls">
                     <input type="password" id="input-password-current" name="input-password-current"/>
                     <span class="help-inline"></span>
@@ -243,6 +250,7 @@
                     return {
                         loginName: get("input-login-name"),
                         fullName: get("input-full-name"),
+                        isAdmin: get("input-is-admin"),
                         currentPassword: get("input-password-current"),
                         password: get("input-password"),
                         confirmPassword: get("input-password-confirm"),
@@ -250,6 +258,7 @@
                         validate: function () {
                             this.loginName.reset();
                             this.fullName.reset();
+                            this.isAdmin.reset();
                             this.password.reset();
                             this.confirmPassword.reset();
 
@@ -296,7 +305,7 @@
                     if (inputData.validate()) {
                         var data = {
                             loginName: inputData.loginName.val,
-                            password: inputData.password.val,
+                            newPassword: inputData.password.val,
                         };
                         users.setPassword(data, succeeded, failed);
                     }
@@ -415,13 +424,14 @@
                     $("#edit-user-details-dialog").dialog({
                         modal: true,
                         width: 600,
-                        height: 400,
+                        height: 360,
                         title: "Create User Account",
                         autoResize: true,
                         open: function (event, ui) {
                             var inputs = getInput();
                             inputs.loginName.configure("normal");
                             inputs.fullName.configure("normal");
+                            inputs.isAdmin.configure("normal");
                             inputs.currentPassword.configure("unused");
                             inputs.password.configure("normal");
                             inputs.confirmPassword.configure("normal");
@@ -443,6 +453,7 @@
                             var inputs = getInput();
                             inputs.loginName.configure("readonly");
                             inputs.fullName.configure("normal");
+                            inputs.isAdmin.configure("normal");
                             inputs.currentPassword.configure("unused");
                             inputs.password.configure("unused");
                             inputs.confirmPassword.configure("unused");
@@ -468,6 +479,7 @@
                             var inputs = getInput();
                             inputs.loginName.configure("readonly");
                             inputs.fullName.configure("unused");
+                            inputs.isAdmin.configure("unused");
                             inputs.currentPassword.configure("unused");
                             inputs.password.configure("normal");
                             inputs.confirmPassword.configure("normal");
@@ -493,6 +505,7 @@
                             var inputs = getInput();
                             inputs.loginName.configure("readonly");
                             inputs.fullName.configure("readonly");
+                            inputs.isAdmin.configure("unused");
                             inputs.currentPassword.configure("unused");
                             inputs.password.configure("unused");
                             inputs.confirmPassword.configure("unused");
@@ -519,6 +532,7 @@
                             var inputs = getInput();
                             inputs.loginName.configure("readonly");
                             inputs.fullName.configure("readonly");
+                            inputs.isAdmin.configure("unused");
                             inputs.currentPassword.configure("unused");
                             inputs.password.configure("unused");
                             inputs.confirmPassword.configure("unused");
@@ -543,6 +557,7 @@
                             var inputs = getInput();
                             inputs.loginName.configure("readonly");
                             inputs.fullName.configure("readonly");
+                            inputs.isAdmin.configure("unused");
                             inputs.currentPassword.configure("unused");
                             inputs.password.configure("unused");
                             inputs.confirmPassword.configure("unused");

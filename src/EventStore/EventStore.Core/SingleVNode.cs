@@ -308,7 +308,8 @@ namespace EventStore.Core
             _mainBus.Subscribe(ioDispatcher.Writer);
             _mainBus.Subscribe(ioDispatcher.StreamDeleter);
 
-            var userManagement = new UserManagementService(_mainQueue, ioDispatcher, passwordHashAlgorithm);
+            var userManagement = new UserManagementService(
+                _mainQueue, ioDispatcher, passwordHashAlgorithm, vNodeSettings.SkipInitializeStandardUsersCheck);
             _mainBus.Subscribe<UserManagementMessage.Create>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.Update>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
@@ -318,6 +319,7 @@ namespace EventStore.Core
             _mainBus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.Get>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
+            _mainBus.Subscribe<SystemMessage.BecomeMaster>(userManagement);
 
             // TIMER
             _timeProvider = new RealTimeProvider();

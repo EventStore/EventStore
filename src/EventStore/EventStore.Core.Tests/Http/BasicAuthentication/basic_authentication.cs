@@ -27,6 +27,7 @@
 // 
 
 using System.Net;
+using EventStore.Core.Services;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 
@@ -34,8 +35,19 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 {
     namespace basic_authentication
     {
+        abstract class with_admin_user : HttpBehaviorSpecification
+        {
+            protected readonly ICredentials _admin = new NetworkCredential(
+                SystemUsers.Admin, SystemUsers.DefaultAdminPassword);
+
+            protected override bool GivenSkipInitializeStandardUsersCheck()
+            {
+                return false;
+            }
+        }
+
         [TestFixture, Category("LongRunning")]
-        class when_requesting_an_unprotected_resource : HttpBehaviorSpecification
+        class when_requesting_an_unprotected_resource : with_admin_user
         {
             protected override void Given()
             {
@@ -60,7 +72,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_protected_resource : HttpBehaviorSpecification
+        class when_requesting_a_protected_resource : with_admin_user
         {
             protected override void Given()
             {
@@ -85,14 +97,14 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_protected_resource_with_credentials_provided : HttpBehaviorSpecification
+        class when_requesting_a_protected_resource_with_credentials_provided : with_admin_user
         {
             private JObject _json;
 
             protected override void Given()
             {
                 var response = MakeJsonPost(
-                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
 
@@ -109,14 +121,14 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_protected_resource_with_invalid_credentials_provided : HttpBehaviorSpecification
+        class when_requesting_a_protected_resource_with_invalid_credentials_provided : with_admin_user
         {
             private JObject _json;
 
             protected override void Given()
             {
                 var response = MakeJsonPost(
-                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
 
@@ -133,16 +145,16 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_protected_resource_with_credentials_of_disabled_user_account : HttpBehaviorSpecification
+        class when_requesting_a_protected_resource_with_credentials_of_disabled_user_account : with_admin_user
         {
             private JObject _json;
 
             protected override void Given()
             {
                 var response = MakeJsonPost(
-                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                response = MakePost("/users/test1/command/disable");
+                response = MakePost("/users/test1/command/disable", _admin);
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             }
 
@@ -159,16 +171,16 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_protected_resource_with_credentials_of_deleted_user_account : HttpBehaviorSpecification
+        class when_requesting_a_protected_resource_with_credentials_of_deleted_user_account : with_admin_user
         {
             private JObject _json;
 
             protected override void Given()
             {
                 var response = MakeJsonPost(
-                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"});
+                    "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                response = MakeDelete("/users/test1");
+                response = MakeDelete("/users/test1", _admin);
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             }
 
