@@ -102,6 +102,7 @@
                     <tr>
                         <th style="width: 70px;">Login Name</th>
                         <th style="width: 120px;">Full Name</th>
+                        <th style="width: 150px;">Groups</th>
                         <th style="width: 50px;">Disabled</th>
                         <th style="width: 50px;">Updated</th>
                     </tr>
@@ -111,6 +112,7 @@
                     <tr>
                       <td><a href="#" class="user-login" data-login="{{>loginName}}">{{>loginName}}<a/></td>
                       <td>{{>fullName}}</td>
+                      <td>{{>groups}}</td>
                       <td>{{>disabled}}</td>
                       <td>{{:~formatDate(dateLastUpdated)}}</td>
                     </tr>
@@ -127,6 +129,10 @@
             <div class="control-group">
                 <div class="control-label"><label>Full Name:</label></div>
                 <div class="controls">{{>fullName}}</div>
+            </div>
+            <div class="control-group">
+                <div class="control-label"><label>Groups:</label></div>
+                <div class="controls">{{>groups}}</div>
             </div>
             <div class="control-group">
                 <div class="control-label"><label>Disabled:</label></div>
@@ -188,9 +194,15 @@
                     var jInput = $("#" + input);
                     var jControlGroup = jInput.closest(".control-group");
                     return {
-                        val: jInput.val(),
-                        set: function(v) {
-                            jInput.val(v);
+                        val: jInput.attr("type") === "checkbox" ? jInput.attr("checked") === "checked" : jInput.val(),
+                        set: function (v) {
+                            if (jInput.attr("type") === "checkbox") {
+                                if (v)
+                                    jInput.attr("checked", "checked");
+                                else 
+                                    jInput.removeAttr("checked");
+                            } else
+                                jInput.val(v);
                         },
                         reset: function () {
                             var group = jInput.closest(".control-group");
@@ -248,9 +260,9 @@
                     }
 
                     return {
+                        isAdmin: get("input-is-admin"),
                         loginName: get("input-login-name"),
                         fullName: get("input-full-name"),
-                        isAdmin: get("input-is-admin"),
                         currentPassword: get("input-password-current"),
                         password: get("input-password"),
                         confirmPassword: get("input-password-confirm"),
@@ -284,6 +296,7 @@
                             loginName: inputData.loginName.val,
                             fullName: inputData.fullName.val,
                             password: inputData.password.val,
+                            groups: inputData.isAdmin.val ? ["$admins"] : [],
                         };
                         users.create(data, createSucceeded, createFailed);
                     }
@@ -295,6 +308,7 @@
                         var data = {
                             loginName: inputData.loginName.val,
                             fullName: inputData.fullName.val,
+                            groups: inputData.isAdmin.val ? ["$admins"] : [],
                         };
                         users.update(data, succeeded, failed);
                     }
@@ -376,11 +390,11 @@
                 function initializeUserDetails(login) {
                     users.get(login, function (userData) {
                         $("#user-details-dialog-content").html($.render.userTemplate(userData.data, { formatDate: formatDate }));
-                        $("#button-details-edit").click(function (e) {
+                        $("#button-details-edit").unbind('click').click(function (e) {
                             e.preventDefault();
                             displayEditUser(userData);
                         });
-                        $("#button-details-reset-password").click(function (e) {
+                        $("#button-details-reset-password").unbind('click').click(function (e) {
                             e.preventDefault();
                             displayResetPassword(userData);
                         });
@@ -391,15 +405,15 @@
                             $("#button-details-disable").show();
                             $("#button-details-enable").hide();
                         }
-                        $("#button-details-disable").click(function (e) {
+                        $("#button-details-disable").unbind('click').click(function (e) {
                             e.preventDefault();
                             displayDisableUserAccount(userData);
                         });
-                        $("#button-details-enable").click(function (e) {
+                        $("#button-details-enable").unbind('click').click(function (e) {
                             e.preventDefault();
                             displayEnableUserAccount(userData);
                         });
-                        $("#button-details-delete").click(function (e) {
+                        $("#button-details-delete").unbind('click').click(function (e) {
                             e.preventDefault();
                             displayDeleteUser(userData);
                         });
@@ -410,7 +424,7 @@
                     $("#user-details-dialog").dialog({
                         modal: true,
                         width: 600,
-                        height: 300,
+                        height: 350,
                         title: "User Account Details",
                         autoResize: true,
                         open: function (event, ui) {
@@ -446,7 +460,7 @@
                     $("#edit-user-details-dialog").dialog({
                         modal: true,
                         width: 600,
-                        height: 220,
+                        height: 280,
                         title: "Edit User Account",
                         autoResize: true,
                         open: function (event, ui) {
@@ -460,6 +474,7 @@
 
                             inputs.loginName.set(userData.data.loginName);
                             inputs.fullName.set(userData.data.fullName);
+                            inputs.isAdmin.set($.inArray("$admins", userData.data.groups) !== -1),
 
                             $("#button-ok").text("Update");
                         }
