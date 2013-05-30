@@ -47,6 +47,18 @@ namespace EventStore.Common.Utils
             }
         }
 
+        public static T EatException<T>(Func<T> action, T defaultValue = default(T))
+        {
+            try
+            {
+                return action();
+            }
+            catch (Exception)
+            {
+                return defaultValue;
+            }
+        }
+
         public static string GetDefaultLogsDir()
         {
             return Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location) , "es-logs");

@@ -27,7 +27,6 @@
 // 
 
 using System.Security.Principal;
-using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;

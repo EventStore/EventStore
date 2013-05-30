@@ -57,21 +57,21 @@ namespace EventStore.Projections.Core.Services.Http
         private readonly MiniWeb _singleNodeJs;
         private readonly MiniWeb _miniWebPrelude;
         private readonly MiniWeb _miniWebResources;
+        private readonly IHttpService _httpService;
         private readonly IPublisher _networkSendQueue;
 
-        public ProjectionsController(IPublisher publisher, IPublisher networkSendQueue)
+        public ProjectionsController(IHttpService httpService, IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
         {
+            _httpService = httpService;
+
             var singleNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.SingleNode.Web");
             _singleNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(singleNodeFSRoot, Path.Combine("singlenode-web", "js", "projections")));
-            
+
             var fileSystemWebRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Projections.Core");
             _networkSendQueue = networkSendQueue;
-            _miniWebPrelude = new MiniWeb(
-                "/web/es/js/projections/v8/Prelude", Path.Combine(fileSystemWebRoot, @"Prelude"));
-
-            _miniWebResources = new MiniWeb(
-                "/web/es/js/projections/resources", Path.Combine(fileSystemWebRoot, Path.Combine("web-resources", "js")));
+            _miniWebPrelude = new MiniWeb("/web/es/js/projections/v8/Prelude", Path.Combine(fileSystemWebRoot, @"Prelude"));
+            _miniWebResources = new MiniWeb("/web/es/js/projections/resources", Path.Combine(fileSystemWebRoot, Path.Combine("web-resources", "js")));
         }
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
@@ -83,69 +83,53 @@ namespace EventStore.Projections.Core.Services.Http
 
             HttpHelpers.RegisterRedirectAction(service, "/web/projections", "/web/projections.htm");
 
-            Register(
-                service, "/projections", HttpMethod.Get, OnProjections, Codec.NoCodecs,
-                new ICodec[] {Codec.ManualEncoding});
-            Register(service, "/projections/any", HttpMethod.Get, OnProjectionsGetAny, Codec.NoCodecs, SupportedCodecs);
-            Register(
-                service, "/projections/all-non-transient", HttpMethod.Get, OnProjectionsGetAllNonTransient,
-                Codec.NoCodecs, SupportedCodecs);
-            Register(
-                service, "/projections/transient", HttpMethod.Get, OnProjectionsGetTransient, Codec.NoCodecs,
-                SupportedCodecs);
-            Register(
-                service, "/projections/onetime", HttpMethod.Get, OnProjectionsGetOneTime, Codec.NoCodecs,
-                SupportedCodecs);
-            Register(
-                service, "/projections/continuous", HttpMethod.Get, OnProjectionsGetContinuous, Codec.NoCodecs,
-                SupportedCodecs);
-            Register(
-                service, "/projections/transient?name={name}&type={type}&enabled={enabled}", HttpMethod.Post,
-                OnProjectionsPostTransient, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
-            Register(
-                service,
-                "/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}",
-                HttpMethod.Post, OnProjectionsPostOneTime, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
-            Register(
-                service, "/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}",
-                HttpMethod.Post, OnProjectionsPostContinuous, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
-            Register(
-                service, "/projection/{name}/query?config={config}", HttpMethod.Get, OnProjectionQueryGet,
-                Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
-            Register(
-                service, "/projection/{name}/query?type={type}&emit={emit}", HttpMethod.Put, OnProjectionQueryPut,
-                new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
-            Register(
-                service, "/projection/{name}", HttpMethod.Get, OnProjectionStatusGet, Codec.NoCodecs, SupportedCodecs);
-            Register(
-                service,
-                "/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}",
-                HttpMethod.Delete, OnProjectionDelete, Codec.NoCodecs, SupportedCodecs);
-            Register(
-                service, "/projection/{name}/statistics", HttpMethod.Get, OnProjectionStatisticsGet, Codec.NoCodecs,
-                SupportedCodecs);
-            RegisterTextBody(
-                service, "/projections/read-events", HttpMethod.Post, OnProjectionsReadEvents,
-                requestCodecs: SupportedCodecs, responseCodecs: SupportedCodecs);
-            Register(
-                service, "/projection/{name}/state?partition={partition}", HttpMethod.Get, OnProjectionStateGet,
-                Codec.NoCodecs, SupportedCodecs);
-            Register(
-                service, "/projection/{name}/result?partition={partition}", HttpMethod.Get, OnProjectionResultGet,
-                Codec.NoCodecs, SupportedCodecs);
-            Register(
-                service, "/projection/{name}/command/disable?enableRunAs={enableRunAs}", HttpMethod.Post,
-                OnProjectionCommandDisable, Codec.NoCodecs, SupportedCodecs);
-            Register(
-                service, "/projection/{name}/command/enable?enableRunAs={enableRunAs}", HttpMethod.Post,
-                OnProjectionCommandEnable, Codec.NoCodecs, SupportedCodecs);
-            Register(
-                service, "/projection/{name}/command/reset?enableRunAs={enableRunAs}", HttpMethod.Post,
-                OnProjectionCommandReset, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projections",
+                     HttpMethod.Get, OnProjections, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
+            Register(service, "/projections/any",
+                     HttpMethod.Get, OnProjectionsGetAny, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projections/all-non-transient",
+                     HttpMethod.Get, OnProjectionsGetAllNonTransient, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projections/transient",
+                     HttpMethod.Get, OnProjectionsGetTransient, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projections/onetime",
+                     HttpMethod.Get, OnProjectionsGetOneTime, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projections/continuous",
+                     HttpMethod.Get, OnProjectionsGetContinuous, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projections/transient?name={name}&type={type}&enabled={enabled}",
+                     HttpMethod.Post, OnProjectionsPostTransient, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+            Register(service, "/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}",
+                     HttpMethod.Post, OnProjectionsPostOneTime, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+            Register(service, "/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}",
+                     HttpMethod.Post, OnProjectionsPostContinuous, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+            Register(service, "/projection/{name}/query?config={config}",
+                     HttpMethod.Get, OnProjectionQueryGet, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
+            Register(service, "/projection/{name}/query?type={type}&emit={emit}",
+                     HttpMethod.Put, OnProjectionQueryPut, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+            Register(service, "/projection/{name}",
+                     HttpMethod.Get, OnProjectionStatusGet, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}",
+                     HttpMethod.Delete, OnProjectionDelete, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projection/{name}/statistics",
+                     HttpMethod.Get, OnProjectionStatisticsGet, Codec.NoCodecs, SupportedCodecs);
+            RegisterTextBody(service, "/projections/read-events",
+                     HttpMethod.Post, OnProjectionsReadEvents, SupportedCodecs, SupportedCodecs);
+            Register(service, "/projection/{name}/state?partition={partition}",
+                     HttpMethod.Get, OnProjectionStateGet, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projection/{name}/result?partition={partition}",
+                     HttpMethod.Get, OnProjectionResultGet, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projection/{name}/command/disable?enableRunAs={enableRunAs}",
+                     HttpMethod.Post, OnProjectionCommandDisable, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projection/{name}/command/enable?enableRunAs={enableRunAs}",
+                     HttpMethod.Post, OnProjectionCommandEnable, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projection/{name}/command/reset?enableRunAs={enableRunAs}",
+                     HttpMethod.Post, OnProjectionCommandReset, Codec.NoCodecs, SupportedCodecs);
         }
 
-        private static void OnProjections(HttpEntityManager http, UriTemplateMatch match)
+        private void OnProjections(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             http.ReplyTextContent(
                 "Moved", 302, "Found", "text/plain",
                 new[]
@@ -197,6 +181,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionQueryGet(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             SendToHttpEnvelope<ProjectionManagementMessage.ProjectionQuery> envelope;
             var withConfig = IsOn(match, "config", false);
             if (withConfig)
@@ -210,6 +197,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionQueryPut(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
             var emitEnabled = IsOn(match, "emit", null);
@@ -222,6 +212,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionCommandDisable(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
             Publish(new ProjectionManagementMessage.Disable(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
@@ -229,6 +222,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionCommandEnable(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
             Publish(new ProjectionManagementMessage.Enable(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
@@ -236,6 +232,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionCommandReset(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
             Publish(new ProjectionManagementMessage.Reset(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
@@ -243,6 +242,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionStatusGet(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             http.ReplyStatus(
                 HttpStatusCode.NotImplemented, "Not Implemented",
                 e => Log.ErrorException(e, "Error while closing http connection (http service core)"));
@@ -250,6 +252,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionDelete(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
             Publish(
@@ -261,6 +266,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionStatisticsGet(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             var envelope =
                 new SendToHttpWithConversionEnvelope
                     <ProjectionManagementMessage.Statistics, ProjectionsStatisticsHttpFormatted>(
@@ -272,6 +280,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionStateGet(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionState>(
                 _networkSendQueue, http, StateFormatter, StateConfigurator, ErrorsEnvelope(http));
             Publish(
@@ -281,6 +292,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionResultGet(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionResult>(
                 _networkSendQueue, http, ResultFormatter, ResultConfigurator, ErrorsEnvelope(http));
             Publish(
@@ -297,6 +311,8 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionsReadEvents(HttpEntityManager http, UriTemplateMatch match, string body)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
 
             var bodyParsed = body.ParseJson<ReadEventsBody>();
             var fromPosition = CheckpointTag.FromJson(new JTokenReader(bodyParsed.Position), new ProjectionVersion(0, 0, 0));
@@ -310,6 +326,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void ProjectionsGet(HttpEntityManager http, UriTemplateMatch match, ProjectionMode? mode)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             var envelope =
                 new SendToHttpWithConversionEnvelope<ProjectionManagementMessage.Statistics, ProjectionsStatisticsHttpFormatted>(
                     _networkSendQueue, http, DefaultFormatter, OkNoCacheResponseConfigurator,
@@ -320,6 +339,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void ProjectionsPost(HttpEntityManager http, UriTemplateMatch match, ProjectionMode mode, string name)
         {
+            if (_httpService.ForwardRequest(http))
+                return;
+
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, (codec, message) =>
                     {
@@ -396,37 +418,30 @@ namespace EventStore.Projections.Core.Services.Http
 
         private string FeedPageFormatter(ICodec codec, FeedReaderMessage.FeedPage page)
         {
-            return
-                new
-                    {
-                        CorrelationId = page.CorrelationId,
-                        ReaderPosition = page.LastReaderPosition.ToJsonRaw(),
-                        Events = (from e in page.Events
-                                  let resolvedEvent = e.ResolvedEvent
-                                  let isJson = resolvedEvent.IsJson
-                                  let data =
-                                      isJson
-                                          ? EatException(
-                                              () => (object) (resolvedEvent.Data.ParseJson<JObject>()), resolvedEvent.Data)
-                                          : resolvedEvent.Data
-                                  let metadata =
-                                      isJson
-                                          ? EatException(
-                                              () => (object) (resolvedEvent.Metadata.ParseJson<JObject>()),
-                                              resolvedEvent.Metadata)
-                                          : resolvedEvent.Metadata
-                                  select
-                                      new
-                                          {
-                                              EventStreamId = resolvedEvent.EventStreamId,
-                                              EventNumber = resolvedEvent.EventSequenceNumber,
-                                              EventType = resolvedEvent.EventType,
-                                              Data = data,
-                                              Metadata = metadata,
-                                              IsJson = isJson,
-                                              ReaderPosition = e.ReaderPosition.ToJsonRaw(),
-                                          }).ToArray()
-                    }.ToJson();
+            return new
+            {
+                CorrelationId = page.CorrelationId,
+                ReaderPosition = page.LastReaderPosition.ToJsonRaw(),
+                Events = (from e in page.Events
+                          let resolvedEvent = e.ResolvedEvent
+                          let isJson = resolvedEvent.IsJson
+                          let data = isJson 
+                                   ? EatException(() => (object) (resolvedEvent.Data.ParseJson<JObject>()), resolvedEvent.Data)
+                                   : resolvedEvent.Data
+                          let metadata = isJson
+                                       ? EatException(() => (object) (resolvedEvent.Metadata.ParseJson<JObject>()), resolvedEvent.Metadata)
+                                       : resolvedEvent.Metadata
+                          select new
+                          {
+                              EventStreamId = resolvedEvent.EventStreamId,
+                              EventNumber = resolvedEvent.EventSequenceNumber,
+                              EventType = resolvedEvent.EventType,
+                              Data = data,
+                              Metadata = metadata,
+                              IsJson = isJson,
+                              ReaderPosition = e.ReaderPosition.ToJsonRaw(),
+                          }).ToArray()
+            }.ToJson();
         }
 
         private ResponseConfiguration QueryConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)

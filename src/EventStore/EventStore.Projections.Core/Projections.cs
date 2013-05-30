@@ -56,10 +56,10 @@ namespace EventStore.Projections.Core
 
         public void Register(
             TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService,
-            ITimeProvider timeProvider, HttpService httpService, IPublisher networkSendService)
+            ITimeProvider timeProvider, HttpService[] httpServices, IPublisher networkSendService)
         {
             _projections = new EventStore.Projections.Core.Projections(
-                db, mainQueue, mainBus, timerService, timeProvider, httpService, networkSendService,
+                db, mainQueue, mainBus, timerService, timeProvider, httpServices, networkSendService,
                 projectionWorkerThreadCount: _projectionWorkerThreadCount, runProjections: _runProjections);
         }
 
@@ -86,16 +86,16 @@ namespace EventStore.Projections.Core
 
         public Projections(
             TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService, ITimeProvider timeProvider,
-            HttpService httpService, IPublisher networkSendQueue, int projectionWorkerThreadCount, bool runProjections)
+            HttpService[] httpServices, IPublisher networkSendQueue, int projectionWorkerThreadCount, bool runProjections)
         {
             _projectionWorkerThreadCount = projectionWorkerThreadCount;
-            SetupMessaging(db, mainQueue, mainBus, timerService, timeProvider, httpService, networkSendQueue, runProjections);
+            SetupMessaging(db, mainQueue, mainBus, timerService, timeProvider, httpServices, networkSendQueue, runProjections);
 
         }
 
         private void SetupMessaging(
             TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService, ITimeProvider timeProvider,
-            HttpService httpService, IPublisher networkSendQueue, bool runProjections)
+            HttpService[] httpServices, IPublisher networkSendQueue, bool runProjections)
         {
             _coreQueues = new List<QueuedHandler>();
             _managerInputBus = new InMemoryBus("manager input bus");
@@ -151,7 +151,7 @@ namespace EventStore.Projections.Core
             Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(_coreQueues.Cast<IPublisher>().ToArray()));
 
             _projectionManagerNode = ProjectionManagerNode.Create(
-                db, _managerInputQueue, httpService, networkSendQueue, _coreQueues.Cast<IPublisher>().ToArray(),
+                db, _managerInputQueue, httpServices, networkSendQueue, _coreQueues.Cast<IPublisher>().ToArray(),
                 runProjections);
             _projectionManagerNode.SetupMessaging(_managerInputBus);
             {

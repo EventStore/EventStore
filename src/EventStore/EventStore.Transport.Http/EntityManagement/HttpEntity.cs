@@ -37,7 +37,6 @@ namespace EventStore.Transport.Http.EntityManagement
     {
         public readonly Uri RequestedUrl;
 
-
         public readonly HttpListenerRequest Request;
         internal readonly HttpListenerResponse Response;
         public readonly IPrincipal User;
@@ -49,7 +48,6 @@ namespace EventStore.Transport.Http.EntityManagement
 
             RequestedUrl = request.Url;
 
-
             Request = request;
             Response = response;
             User = user;
@@ -59,7 +57,6 @@ namespace EventStore.Transport.Http.EntityManagement
         {
             RequestedUrl = null;
 
-
             Request = null;
             Response = null;
             User = user;
@@ -68,7 +65,6 @@ namespace EventStore.Transport.Http.EntityManagement
         private HttpEntity(HttpEntity httpEntity, IPrincipal user)
         {
             RequestedUrl = httpEntity.RequestedUrl;
-
 
             Request = httpEntity.Request;
             Response = httpEntity.Response;

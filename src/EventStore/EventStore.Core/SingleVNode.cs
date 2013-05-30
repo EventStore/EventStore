@@ -245,14 +245,15 @@ namespace EventStore.Core
                 };
 
                 _httpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
-                                               _workersHandler, vNodeSettings.HttpPrefixes);
+                                               _workersHandler, false, vNodeSettings.HttpPrefixes);
                 _httpService.SetupController(new AdminController(_mainQueue));
                 _httpService.SetupController(new PingController());
                 _httpService.SetupController(new StatController(monitoringQueue, _workersHandler));
-                _httpService.SetupController(new AtomController(_mainQueue, _workersHandler));
-                _httpService.SetupController(new UsersController(_mainQueue, _workersHandler));
+                _httpService.SetupController(new AtomController(_httpService, _mainQueue, _workersHandler));
+                _httpService.SetupController(new UsersController(_httpService, _mainQueue, _workersHandler));
 
                 _mainBus.Subscribe<SystemMessage.SystemInit>(_httpService);
+                _mainBus.Subscribe<SystemMessage.StateChangeMessage>(_httpService);
                 _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_httpService);
                 _mainBus.Subscribe<HttpMessage.SendOverHttp>(_httpService);
                 _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_httpService);
@@ -335,7 +336,7 @@ namespace EventStore.Core
 
             if (subsystems != null)
                 foreach (var subsystem in subsystems)
-                    subsystem.Register(db, _mainQueue, _mainBus, _timerService, _timeProvider, _httpService, _workersHandler);
+                    subsystem.Register(db, _mainQueue, _mainBus, _timerService, _timeProvider, new[]{_httpService}, _workersHandler);
         }
 
         private void SubscribeWorkers(Action<InMemoryBus> setup)
