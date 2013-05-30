@@ -36,8 +36,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
 {
     public class TcpConnectionBase : IMonitoredTcpConnection
     {
-        public static bool DumpTcp;
-
         public IPEndPoint EndPoint { get { return _endPoint; } }
         public bool IsInitialized { get { return _socket != null; } }
         public bool IsClosed { get { return _isClosed; } }

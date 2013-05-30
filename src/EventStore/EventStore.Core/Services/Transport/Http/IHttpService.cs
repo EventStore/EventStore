@@ -34,5 +34,6 @@ namespace EventStore.Core.Services.Transport.Http
     {
         ServiceAccessibility Accessibility { get; }
         void RegisterControllerAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler);
+        bool ForwardRequest(HttpEntityManager manager);
     }
 }

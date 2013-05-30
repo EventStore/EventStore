@@ -164,26 +164,12 @@ namespace EventStore.ClientAPI.ClientOperations
             if (package.Command == expectedCommand)
                 throw new ArgumentException(string.Format("Command shouldn't be {0}.", package.Command));
 
-            Log.Error("Unexpected TcpCommand received. Expected: {0}, actual: {1}.\n" +
-                      "Flags: {2}, CorrelationId: {3}, TcpPackage Data Dump:\n{4}", 
+            Log.Error("Unexpected TcpCommand received.\n"
+                      + "Expected: {0}, Actual: {1}, Flags: {2}, CorrelationId: {3}\n"
+                      + "Operation ({4}): {5}\n"
+                      +"TcpPackage Data Dump:\n{6}", 
                       expectedCommand, package.Command, package.Flags, package.CorrelationId, 
-                      Helper.FormatBinaryDump(package.Data));
-            Log.Error("Unexpected TcpCommand: operation {0}", this);
-            TResponse response = null;
-            ClientMessage.WriteEvents request = null;
-            response = package.Data.Deserialize<TResponse>();
-            if (response != null)
-                Log.Error("Unexpected TcpCommand: successfully deserialized {0}.", typeof(TResponse).Name);
-            else
-                Log.Error("Unexpected TcpCommand: error deserializing {0}.", typeof(TResponse).Name);
-
-            request = package.Data.Deserialize<ClientMessage.WriteEvents>();
-            if (request != null)
-                Log.Error("Unexpected TcpCommand: successfully deserialized {0}.", typeof(ClientMessage.WriteEvents).Name);
-            else
-                Log.Error("Unexpected TcpCommand: error deserializing WriteEvents.");
-
-            if (Debugger.IsAttached) Debugger.Break(); else Debugger.Launch();
+                      GetType().Name, this, Helper.FormatBinaryDump(package.Data));
 
             Fail(new CommandNotExpectedException(expectedCommand.ToString(), package.Command.ToString()));
             return new InspectionResult(InspectionDecision.EndOperation, null);

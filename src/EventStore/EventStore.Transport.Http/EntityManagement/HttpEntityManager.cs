@@ -126,8 +126,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (ArgumentException e)
             {
-                Log.InfoException(
-                    e, "Description string '{0}' did not pass validation. Status description was not set.", desc);
+                Log.InfoException(e, "Description string '{0}' did not pass validation. Status description was not set.", desc);
             }
         }
 
@@ -177,13 +176,10 @@ namespace EventStore.Transport.Http.EntityManagement
             try
             {
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Methods", string.Join(", ", _allowedMethods));
-                HttpEntity.Response.AddHeader(
-                    "Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-PINGOTHER");
+                HttpEntity.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-PINGOTHER");
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Origin", "*");
 				if (HttpEntity.Response.StatusCode == HttpStatusCode.Unauthorized) 
-				{
 					HttpEntity.Response.AddHeader("WWW-Authenticate", "Basic realm=\"ES\"");
-				}
             }
             catch (Exception e)
             {
@@ -278,6 +274,72 @@ namespace EventStore.Transport.Http.EntityManagement
                 BeginWriteResponse();
                 ContinueWriteResponseAsync(response, () => { }, onError, () => { });
                 EndWriteResponse();
+            }
+        }
+
+        public void ForwardReply(HttpWebResponse response, Action<Exception> onError)
+        {
+            Ensure.NotNull(response, "response");
+            Ensure.NotNull(onError, "onError");
+
+            if (Interlocked.CompareExchange(ref _processing, 1, 0) != 0)
+                return;
+            
+            try
+            {
+                HttpEntity.Response.StatusCode = (int)response.StatusCode;
+                HttpEntity.Response.StatusDescription = response.StatusDescription;
+
+                HttpEntity.Response.ContentType = response.ContentType;
+                HttpEntity.Response.ContentLength64 = response.ContentLength;
+
+                foreach (var headerKey in response.Headers.AllKeys)
+                {
+                    switch (headerKey)
+                    {
+                        case "Accept":
+                        case "Connection":
+                        case "Content-Type":
+                        case "Content-Length":
+                        case "Date":
+                        case "Expect":
+                        case "Host":
+                        case "If-Modified-Since":
+                        case "Proxy-Connection":
+                        case "Range":
+                        case "Referer":
+                        case "Transfer-Encoding":
+                        case "User-Agent":
+                            // Restricted
+                            break;
+
+                        default:
+                            HttpEntity.Response.Headers.Add(headerKey, response.Headers[headerKey]);
+                            break;
+                    }
+                }
+
+                if (response.ContentLength > 0)
+                {
+                    new AsyncStreamCopier<object>(
+                        response.GetResponseStream(), HttpEntity.Response.OutputStream, null,
+                        copier =>
+                        {
+                            if (copier.Error != null)
+                                Log.ErrorException(copier.Error, "Error copying forwarded response stream for '{0}'", RequestedUrl);
+                            Helper.EatException(response.Close);
+                            Helper.EatException(HttpEntity.Response.Close);
+                        }).Start();
+                }
+                else
+                {
+                    Helper.EatException(response.Close);
+                    Helper.EatException(HttpEntity.Response.Close);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.InfoException(e, "Failed to set up forwarded response parameters for '{0}'.", RequestedUrl);
             }
         }
 

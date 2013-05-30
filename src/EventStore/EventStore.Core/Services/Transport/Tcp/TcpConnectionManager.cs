@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Principal;
@@ -344,17 +343,6 @@ namespace EventStore.Core.Services.Transport.Tcp
         public void SendMessage(Message message)
         {
             var package = _dispatcher.WrapMessage(message);
-            if (message is ClientMessage.WriteEvents || message is ClientMessage.ReadStreamEventsForward ||
-                message is ClientMessage.TransactionStart)
-            {
-                var conn = (TcpConnection)_connection;
-                Log.Error("{0} IS SENT AS A REPLY!!!\nStackTrace: {1}\n\nTcpCommand:{2}, TcpFlags: {3}, CorrelationId: {4}, TcpPackage Data Dump:\n{5}\n"
-                           + "ConnectionID: {6:B}, SentBytes: {7}, ReceivedBytes: {8}, PendingSendBytes: {9}, PendingReceivedBytes: {10}, InSendBytes: {11}.\n"
-                           +"Message: {12}\n\n",
-                           message.GetType(), new StackTrace(true), package.Value.Command, package.Value.Flags, package.Value.CorrelationId, Helper.FormatBinaryDump(package.Value.Data),
-                           _connection.ConnectionId, conn.TotalBytesSent, conn.TotalBytesReceived, conn.PendingSendBytes, conn.PendingReceivedBytes, conn.InSendBytes,
-                           message);
-            }
             if (package != null)
                 SendPackage(package.Value);
         }
@@ -362,14 +350,6 @@ namespace EventStore.Core.Services.Transport.Tcp
         private void SendPackage(TcpPackage package, bool checkQueueSize = true)
         {
             var data = package.AsArraySegment();
-
-            var cmd = (TcpCommand) data.Array[data.Offset];
-            if (cmd == TcpCommand.WriteEvents || cmd == TcpCommand.ReadStreamEventsForward)
-            {
-                Log.Error("{0} IS SEND AS A REPLY!!!\nStackTrace: {1}\n\nTcpCommand:{2}, TcpFlags: {3}, CorrelationId: {4}, TcpPackage Data Dump:\n{5}",
-                          cmd, new StackTrace(true), package.Command, package.Flags, package.CorrelationId, Helper.FormatBinaryDump(package.Data));
-            }
-
             var framed = _framer.FrameData(data);
             _connection.EnqueueSend(framed);
 

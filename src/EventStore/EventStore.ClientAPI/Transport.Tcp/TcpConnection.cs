@@ -96,8 +96,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
         private readonly Action<ITcpConnection, SocketError> _onConnectionClosed;
 
-        private FileStream _sendFile, _recvFile;
-
         private TcpConnection(ILogger log, Guid connectionId, IPEndPoint effectiveEndPoint, Action<ITcpConnection, SocketError> onConnectionClosed)
         {
             Ensure.NotNull(log, "log");
@@ -113,13 +111,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private void InitSocket(Socket socket)
         {
             //_log.Info("TcpConnection::InitSocket[{0}]", socket.RemoteEndPoint);
-            if (DumpTcp)
-            {
-                var root = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-                _sendFile = File.Create(Path.Combine(root, string.Format("{0:B}-client.send", _connectionId)));
-                _recvFile = File.Create(Path.Combine(root, string.Format("{0:B}-client.recv", _connectionId)));
-            }
-
             InitSocket(socket, _effectiveEndPoint);
             using (_sendingLock.Acquire())
             {
@@ -135,17 +126,15 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     return;
                 }
 
-                var receiveSocketArgs = new SocketAsyncEventArgs();//SocketArgsPool.Get();
+                var receiveSocketArgs = SocketArgsPool.Get();
                 _receiveSocketArgs = receiveSocketArgs;
                 _receiveSocketArgs.AcceptSocket = socket;
                 _receiveSocketArgs.Completed += OnReceiveAsyncCompleted;
 
-                var sendSocketArgs = new SocketAsyncEventArgs();//SocketArgsPool.Get();
+                var sendSocketArgs = SocketArgsPool.Get();
                 _sendSocketArgs = sendSocketArgs;
                 _sendSocketArgs.AcceptSocket = socket;
                 _sendSocketArgs.Completed += OnSendAsyncCompleted;
-
-                _log.Info("Connection '{0:B}': receive args {1}, send args {2}.", ConnectionId, receiveSocketArgs.GetHashCode(), sendSocketArgs.GetHashCode());
             }
             StartReceive();
             TrySend();
@@ -186,7 +175,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
 
             _sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), 0, (int) _memoryStream.Length);
-            if (DumpTcp) _sendFile.Write(_memoryStream.GetBuffer(), 0, (int)_memoryStream.Length);
 
             try
             {
@@ -209,14 +197,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void ProcessSend(SocketAsyncEventArgs socketArgs)
         {
-            if (socketArgs != _sendSocketArgs)
-            {
-                _log.Error("Invalid send socket args received");
-                throw new Exception("Invalid send socket args received");
-            }
-            if (socketArgs.LastOperation != SocketAsyncOperation.Send)
-                _log.Error("Invalid last send socket operation: {0}", socketArgs.LastOperation);
-
             if (socketArgs.SocketError != SocketError.Success)
             {
                 NotifySendCompleted(0);
@@ -230,9 +210,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 {
                     _isSending = false;
                 }
-                if (socketArgs.LastOperation != SocketAsyncOperation.Send)
-                    _log.Error("Invalid last send socket operation: {0}", socketArgs.LastOperation);
-
                 if (_closed != 0)
                     ReturnSendingSocketArgs();
                 else
@@ -248,10 +225,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             lock (_receivingLock)
             {
                 if (_receiveCallback != null)
-                {
-                    _log.Error("ReceiveAsync called again while previous call wasn't fulfilled");
                     throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
-                }
                 _receiveCallback = callback;
             }
 
@@ -271,7 +245,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
             catch (ObjectDisposedException)
             {
-                //ReturnReceivingSocketArgs();
+                ReturnReceivingSocketArgs();
             }
         }
 
@@ -283,25 +257,16 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void ProcessReceive(SocketAsyncEventArgs socketArgs)
         {
-            if (socketArgs != _receiveSocketArgs)
-            {
-                _log.Error("Invalid receive socket args received");
-                throw new Exception("Invalid receive socket args received");
-            }
-            if (socketArgs.LastOperation != SocketAsyncOperation.Receive)
-                _log.Error("Invalid last receive socket operation: {0}", socketArgs.LastOperation);
-
             // socket closed normally or some error occurred
             if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
             {
                 NotifyReceiveCompleted(0);
-                //ReturnReceivingSocketArgs();
+                ReturnReceivingSocketArgs();
                 CloseInternal(socketArgs.SocketError, socketArgs.SocketError != SocketError.Success ? "Socket receive error" : "Socket closed");
                 return;
             }
 
             NotifyReceiveCompleted(socketArgs.BytesTransferred);
-            if (DumpTcp) _recvFile.Write(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
 
             var receiveBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
             lock (_receivingLock)
@@ -348,7 +313,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             {
                 bytes += res[i].Count;
             }
-            NotifyReceiveDispatched(bytes);
+                NotifyReceiveDispatched(bytes);
         }
 
         public void Close(string reason)
@@ -385,9 +350,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 if (!_isSending)
                     ReturnSendingSocketArgs();
             }
-
-            if (_sendFile != null) _sendFile.Close();
-            if (_recvFile != null) _recvFile.Close();
 
             if (_onConnectionClosed != null)
                 _onConnectionClosed(this, socketError);

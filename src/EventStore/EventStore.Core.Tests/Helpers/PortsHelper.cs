@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Helpers
     {
         private static readonly ILogger Log = LogManager.GetLogger("PortsHelper");
 
-        public const int PortStart = 50000;
+        public const int PortStart = 45000;
         public const int PortCount = 200;
 
         private static readonly EventStore.Common.Concurrent.ConcurrentQueue<int> AvailablePorts = 
@@ -129,17 +129,19 @@ namespace EventStore.Core.Tests.Helpers
                 if (!AvailablePorts.TryDequeue(out port))
                     throw new Exception("Couldn't get free TCP port for MiniNode.");
 
-//                try
-//                {
-//                    var listener = new TcpListener(ip, port);
-//                    listener.Start();
-//                    listener.Stop();
-//                }
-//                catch (Exception)
-//                {
-//                    AvailablePorts.Enqueue(port);
-//                    continue;
-//                }
+/*
+                try
+                {
+                    var listener = new TcpListener(ip, port);
+                    listener.Start();
+                    listener.Stop();
+                }
+                catch (Exception)
+                {
+                    AvailablePorts.Enqueue(port);
+                    continue;
+                }
+*/
 
                 try
                 {

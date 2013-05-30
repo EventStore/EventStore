@@ -26,11 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Net;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Transport.Http.EntityManagement;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Messages
@@ -109,11 +111,11 @@ namespace EventStore.Core.Messages
             internal static readonly ResolvedEvent[] EmptyRecords = new ResolvedEvent[0];
         }
 
-        public class ForwardMessage: Message
+        public class TcpForwardMessage: Message
         {
             public readonly Message Message;
 
-            public ForwardMessage(Message message)
+            public TcpForwardMessage(Message message)
             {
                 Ensure.NotNull(message, "message");
 

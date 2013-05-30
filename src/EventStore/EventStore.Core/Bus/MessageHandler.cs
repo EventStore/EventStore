@@ -34,7 +34,7 @@ namespace EventStore.Core.Bus
     {
         string HandlerName { get; }
         bool TryHandle(Message message);
-        bool IsSame(object handler);
+        bool IsSame<T>(object handler);
     }
 
     internal class MessageHandler<T> : IMessageHandler where T : Message
@@ -62,9 +62,9 @@ namespace EventStore.Core.Bus
             return false;
         }
 
-        public bool IsSame(object handler)
+        public bool IsSame<T2>(object handler)
         {
-            return ReferenceEquals(_handler, handler);
+            return ReferenceEquals(_handler, handler) && typeof(T) == typeof(T2);
         }
 
         public override string ToString()

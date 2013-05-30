@@ -37,7 +37,7 @@ namespace EventStore.Core
     {
         void Register(
             TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService,
-            ITimeProvider timeProvider, HttpService httpService, IPublisher networkSendService);
+            ITimeProvider timeProvider, HttpService[] httpServices, IPublisher networkSendService);
 
         void Start();
         void Stop();
