@@ -117,15 +117,15 @@ namespace EventStore.Transport.Http.Server
             }
             catch (HttpListenerException e)
             {
-                Logger.ErrorException(e, "EndGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
+                Logger.DebugException(e, "EndGetContext exception. Status : {0}.", IsListening ? "listening" : "stopped");
             }
 			catch (ObjectDisposedException e)
 			{
-				Logger.ErrorException(e, "EndGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
+				Logger.DebugException(e, "EndGetContext exception. Status : {0}.", IsListening ? "listening" : "stopped");
 			}
             catch (InvalidOperationException e)
             {
-                Logger.ErrorException(e, "EndGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
+                Logger.DebugException(e, "EndGetContext exception. Status : {0}.", IsListening ? "listening" : "stopped");
             }
 
             if (success)
@@ -138,6 +138,10 @@ namespace EventStore.Transport.Http.Server
             catch (HttpListenerException e)
             {
                 Logger.ErrorException(e, "BeginGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
+            }
+            catch (ObjectDisposedException)
+            {
+                // that's ok, do not continue to accept requests
             }
             catch (InvalidOperationException e)
             {

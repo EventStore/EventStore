@@ -40,8 +40,6 @@ namespace EventStore.Core.Tests.Services.Replication
 {
     public abstract class RequestManagerSpecification
     {
-        protected static readonly IPEndPoint SomeEndPoint = new IPEndPoint(IPAddress.Loopback, 7777);
-
         protected TwoPhaseRequestManagerBase manager;
         protected abstract TwoPhaseRequestManagerBase OnManager(FakePublisher publisher);
         protected List<Message> produced;

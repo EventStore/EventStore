@@ -181,18 +181,15 @@ namespace EventStore.Core.Messages
         public class PrepareAck : Message
         {
             public readonly Guid CorrelationId;
-            public readonly IPEndPoint VNodeEndPoint;
             public readonly long LogPosition;
             public readonly PrepareFlags Flags;
 
-            public PrepareAck(Guid correlationId, IPEndPoint vnodeEndPoint, long logPosition, PrepareFlags flags)
+            public PrepareAck(Guid correlationId, long logPosition, PrepareFlags flags)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
                 Ensure.Nonnegative(logPosition, "logPosition");
 
                 CorrelationId = correlationId;
-                VNodeEndPoint = vnodeEndPoint;
                 LogPosition = logPosition;
                 Flags = flags;
             }
@@ -201,21 +198,18 @@ namespace EventStore.Core.Messages
         public class CommitAck : Message
         {
             public readonly Guid CorrelationId;
-            public readonly IPEndPoint VNodeEndPoint;
             public readonly long LogPosition;
             public readonly long TransactionPosition;
             public readonly int FirstEventNumber;
 
-            public CommitAck(Guid correlationId, IPEndPoint vnodeEndPoint, long logPosition, long transactionPosition, int firstEventNumber)
+            public CommitAck(Guid correlationId, long logPosition, long transactionPosition, int firstEventNumber)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
                 Ensure.Nonnegative(logPosition, "logPosition");
                 Ensure.Nonnegative(transactionPosition, "transactionPosition");
                 Ensure.Nonnegative(firstEventNumber, "firstEventNumber");
 
                 CorrelationId = correlationId;
-                VNodeEndPoint = vnodeEndPoint;
                 LogPosition = logPosition;
                 TransactionPosition = transactionPosition;
                 FirstEventNumber = firstEventNumber;

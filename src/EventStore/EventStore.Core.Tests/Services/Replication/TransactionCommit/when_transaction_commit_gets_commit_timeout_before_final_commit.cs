@@ -49,10 +49,10 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
         protected override IEnumerable<Message> WithInitialMessages()
         {
             yield return new ClientMessage.TransactionCommit(CorrelationId, Envelope, false, 4, null);
-            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.CommitAck(CorrelationId, SomeEndPoint, 3, 2, 3);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.CommitAck(CorrelationId, 3, 2, 3);
         }
 
         protected override Message When()

@@ -56,6 +56,11 @@ namespace EventStore.Core.Services.Transport.Tcp
             _unwrappers[(byte)command] = (pkg, env, user, login, pass, conn) => unwrapper(pkg, env);
         }
 
+        protected void AddUnwrapper<T>(TcpCommand command, Func<TcpPackage, IEnvelope, TcpConnectionManager, T> unwrapper) where T : Message
+        {
+            _unwrappers[(byte)command] = (pkg, env, user, login, pass, conn) => unwrapper(pkg, env, conn);
+        }
+
         protected void AddUnwrapper<T>(TcpCommand command, Func<TcpPackage, IEnvelope, IPrincipal, T> unwrapper) where T : Message
         {
             _unwrappers[(byte)command] = (pkg, env, user, login, pass, conn) => unwrapper(pkg, env, user);

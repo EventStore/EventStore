@@ -61,6 +61,25 @@ namespace EventStore.Transport.Tcp
             return TcpConnection.CreateConnectingTcpConnection(connectionId, remoteEndPoint, this, onConnectionEstablished, onConnectionFailed, verbose);
         }
 
+        public ITcpConnection ConnectSslTo(Guid connectionId,
+                                           IPEndPoint remoteEndPoint,
+                                           string targetHost,
+                                           bool validateServer,
+                                           Action<ITcpConnection> onConnectionEstablished = null,
+                                           Action<ITcpConnection, SocketError> onConnectionFailed = null,
+                                           bool verbose = true)
+        {
+            Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
+            return TcpConnectionSsl.CreateConnectingConnection(connectionId,
+                                                               remoteEndPoint,
+                                                               targetHost,
+                                                               validateServer,
+                                                               this,
+                                                               onConnectionEstablished,
+                                                               onConnectionFailed,
+                                                               verbose);
+        }
+
         internal void InitConnect(IPEndPoint serverEndPoint,
                                   Action<IPEndPoint, Socket> onConnectionEstablished,
                                   Action<IPEndPoint, SocketError> onConnectionFailed)
