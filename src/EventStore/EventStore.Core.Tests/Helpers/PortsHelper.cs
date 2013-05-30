@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Helpers
     {
         private static readonly ILogger Log = LogManager.GetLogger("PortsHelper");
 
-        public const int PortStart = 50000;
+        public const int PortStart = 45000;
         public const int PortCount = 200;
 
         private static readonly EventStore.Common.Concurrent.ConcurrentQueue<int> AvailablePorts = 

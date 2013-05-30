@@ -54,11 +54,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var man = _manager.Target as TcpConnectionManager;
             if (man != null)
-            {
-                if (message is ClientMessage.WriteEvents || message is ClientMessage.ReadStreamEventsForward)
-                    Log.Error("{0} IS SEND AS A REPLY!!!\nMessage: {1}\nStackTrace: {2}", message.GetType(), message, new StackTrace(true));
                 _networkSendQueue.Publish(new TcpMessage.TcpSend(man, message));
-            }
         }
     }
 }
