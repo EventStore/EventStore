@@ -561,7 +561,8 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     _logger.Info(
                         "Projection manager is initializing from the empty {0} stream", completed.EventStreamId);
-                    if (completed.Result == ReadStreamResult.Success && completed.Events.Length == 0)
+                    if ((completed.Result == ReadStreamResult.Success
+                         || completed.Result == ReadStreamResult.NoStream) && completed.Events.Length == 0)
                         CreateFakeProjection(CreateSystemProjections);
                     else
                         CreateSystemProjections();
