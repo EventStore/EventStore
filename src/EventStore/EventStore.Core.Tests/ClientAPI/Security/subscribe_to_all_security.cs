@@ -56,5 +56,11 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             ExpectNoException(() => SubscribeToAll("user1", "pa$$1"));
         }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void subscribing_to_all_with_admin_user_credentials_succeeds()
+        {
+            ExpectNoException(() => SubscribeToAll("adm", "admpa$$"));
+        }
     }
 }

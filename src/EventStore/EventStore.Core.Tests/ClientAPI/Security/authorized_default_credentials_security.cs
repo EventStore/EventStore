@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             });
 
             ExpectNoException(() => ReadMeta("metaread-stream", null, null));
-            ExpectNoException(() => WriteMeta("metawrite-stream", null, null));
+            ExpectNoException(() => WriteMeta("metawrite-stream", null, null, "user1"));
 
             ExpectNoException(() => SubscribeToStream("read-stream", null, null));
             ExpectNoException(() => SubscribeToAll(null, null));
@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             };
 
             Expect<NotAuthenticatedException>(() => ReadMeta("metaread-stream", "badlogin", "badpass"));
-            Expect<NotAuthenticatedException>(() => WriteMeta("metawrite-stream", "badlogin", "badpass"));
+            Expect<NotAuthenticatedException>(() => WriteMeta("metawrite-stream", "badlogin", "badpass", "user1"));
 
             Expect<NotAuthenticatedException>(() => SubscribeToStream("read-stream", "badlogin", "badpass"));
             Expect<NotAuthenticatedException>(() => SubscribeToAll("badlogin", "badpass"));
@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             };
 
             Expect<AccessDeniedException>(() => ReadMeta("metaread-stream", "user2", "pa$$2"));
-            Expect<AccessDeniedException>(() => WriteMeta("metawrite-stream", "user2", "pa$$2"));
+            Expect<AccessDeniedException>(() => WriteMeta("metawrite-stream", "user2", "pa$$2", "user1"));
 
             Expect<AccessDeniedException>(() => SubscribeToStream("read-stream", "user2", "pa$$2"));
             Expect<AccessDeniedException>(() => SubscribeToAll("user2", "pa$$2"));

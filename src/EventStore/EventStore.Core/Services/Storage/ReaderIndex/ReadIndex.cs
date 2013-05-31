@@ -579,21 +579,30 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 }
             }
 
+            if (user != null && user.IsInRole(SystemUserGroups.Admins))
+                return StreamAccessResult.Granted;
+
             var meta = GetStreamMetadataCached(reader, streamId);
-            if (meta.Acl == null) return StreamAccessResult.Granted;
+            var isSystemStream = SystemStreams.IsSystemStream(streamId);
             switch (streamAccessType)
             {
-                case StreamAccessType.Read: return CheckRoleAccess(meta.Acl.ReadRole, user);
-                case StreamAccessType.Write: return CheckRoleAccess(meta.Acl.WriteRole, user);
-                case StreamAccessType.MetaRead: return CheckRoleAccess(meta.Acl.MetaReadRole, user);
-                case StreamAccessType.MetaWrite: return CheckRoleAccess(meta.Acl.MetaWriteRole, user);
+                case StreamAccessType.Read: 
+                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.ReadRole, user, isSystemStream && streamId != SystemStreams.AllStream);
+                case StreamAccessType.Write:
+                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.WriteRole, user, isSystemStream);
+                case StreamAccessType.MetaRead:
+                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.MetaReadRole, user, isSystemStream && streamId != SystemStreams.AllStream);
+                case StreamAccessType.MetaWrite:
+                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.MetaWriteRole, user, isSystemStream);
                 default: throw new ArgumentOutOfRangeException("streamAccessType");
             }
         }
 
-        private StreamAccessResult CheckRoleAccess(string role, IPrincipal user)
+        private StreamAccessResult CheckRoleAccess(string role, IPrincipal user, bool isSystemStream)
         {
-            return role == null || (user != null && user.IsInRole(role)) ? StreamAccessResult.Granted : StreamAccessResult.Denied;
+            if (role == null)
+                return isSystemStream ? StreamAccessResult.Denied : StreamAccessResult.Granted;
+            return (user != null && user.IsInRole(role)) ? StreamAccessResult.Granted : StreamAccessResult.Denied;
         }
 
         private int GetLastStreamEventNumberCached(ITransactionFileReader reader, string streamId)
@@ -896,7 +905,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         endEventNumber = prepInfo.Item2;
                         first = false;
                     }
-                    return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber);
+                    return first /* no data in transaction */ 
+                        ? new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1)
+                        : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber);
                 }
                 else if (expectedVersion < curVersion)
                 {
@@ -921,7 +932,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                         first = false;
                     }
-                    return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber);
+                    return first /* no data in transaction */
+                        ? new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1)
+                        : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber);
                 }
                 else if (expectedVersion > curVersion)
                 {

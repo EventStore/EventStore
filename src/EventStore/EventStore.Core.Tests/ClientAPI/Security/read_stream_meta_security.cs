@@ -57,11 +57,23 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => ReadMeta("metaread-stream", "user1", "pa$$1"));
         }
 
+        [Test, Category("LongRunning"), Category("Network")]
+        public void reading_stream_meta_with_admin_user_credentials_succeeds()
+        {
+            ExpectNoException(() => ReadMeta("metaread-stream", "adm", "admpa$$"));
+        }
+
 
         [Test, Category("LongRunning"), Category("Network")]
         public void reading_no_acl_stream_meta_succeeds_when_no_credentials_are_passed()
         {
             ExpectNoException(() => ReadMeta("noacl-stream", null, null));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void reading_no_acl_stream_meta_is_not_authenticated_when_not_existing_credentials_are_passed()
+        {
+            Expect<NotAuthenticatedException>(() => ReadMeta("noacl-stream", "badlogin", "badpass"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
@@ -72,9 +84,9 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void reading_no_acl_stream_meta_is_not_authenticated_when_not_existing_credentials_are_passed()
+        public void reading_no_acl_stream_meta_succeeds_when_admin_user_credentials_are_passed()
         {
-            Expect<NotAuthenticatedException>(() => ReadMeta("noacl-stream", "badlogin", "badpass"));
+            ExpectNoException(() => ReadMeta("noacl-stream", "adm", "admpa$$"));
         }
     }
 }

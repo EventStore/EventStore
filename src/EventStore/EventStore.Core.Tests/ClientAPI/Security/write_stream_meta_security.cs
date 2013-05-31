@@ -36,45 +36,57 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void writing_meta_with_not_existing_credentials_is_not_authenticated()
         {
-            Expect<NotAuthenticatedException>(() => WriteMeta("metawrite-stream", "badlogin", "badpass"));
+            Expect<NotAuthenticatedException>(() => WriteMeta("metawrite-stream", "badlogin", "badpass", "user1"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void writing_meta_to_stream_with_no_credentials_is_denied()
         {
-            Expect<AccessDeniedException>(() => WriteMeta("metawrite-stream", null, null));
+            Expect<AccessDeniedException>(() => WriteMeta("metawrite-stream", null, null, "user1"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void writing_meta_to_stream_with_not_authorized_user_credentials_is_denied()
         {
-            Expect<AccessDeniedException>(() => WriteMeta("metawrite-stream", "user2", "pa$$2"));
+            Expect<AccessDeniedException>(() => WriteMeta("metawrite-stream", "user2", "pa$$2", "user1"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void writing_meta_to_stream_with_authorized_user_credentials_succeeds()
         {
-            ExpectNoException(() => WriteMeta("metawrite-stream", "user1", "pa$$1"));
+            ExpectNoException(() => WriteMeta("metawrite-stream", "user1", "pa$$1", "user1"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void writing_meta_to_stream_with_admin_user_credentials_succeeds()
+        {
+            ExpectNoException(() => WriteMeta("metawrite-stream", "adm", "admpa$$", "user1"));
         }
 
 
         [Test, Category("LongRunning"), Category("Network")]
         public void writing_meta_to_no_acl_stream_succeeds_when_no_credentials_are_passed()
         {
-            ExpectNoException(() => WriteMeta("noacl-stream", null, null));
-        }
-
-        [Test, Category("LongRunning"), Category("Network")]
-        public void writing_meta_to_no_acl_stream_succeeds_when_any_existing_user_credentials_are_passed()
-        {
-            ExpectNoException(() => WriteMeta("noacl-stream", "user1", "pa$$1"));
-            ExpectNoException(() => WriteMeta("noacl-stream", "user2", "pa$$2"));
+            ExpectNoException(() => WriteMeta("noacl-stream", null, null, null));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void writing_meta_to_no_acl_stream_is_not_authenticated_when_not_existing_credentials_are_passed()
         {
-            Expect<NotAuthenticatedException>(() => WriteMeta("noacl-stream", "badlogin", "badpass"));
+            Expect<NotAuthenticatedException>(() => WriteMeta("noacl-stream", "badlogin", "badpass", null));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void writing_meta_to_no_acl_stream_succeeds_when_any_existing_user_credentials_are_passed()
+        {
+            ExpectNoException(() => WriteMeta("noacl-stream", "user1", "pa$$1", null));
+            ExpectNoException(() => WriteMeta("noacl-stream", "user2", "pa$$2", null));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void writing_meta_to_no_acl_stream_succeeds_when_admin_user_credentials_are_passed()
+        {
+            ExpectNoException(() => WriteMeta("noacl-stream", "adm", "admpa$$", null));
         }
     }
 }
