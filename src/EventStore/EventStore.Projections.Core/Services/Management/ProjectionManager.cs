@@ -550,8 +550,12 @@ namespace EventStore.Projections.Core.Services.Management
                             //TODO: log this event as it should not happen
                             continue; // ignore older attempts to create a projection
                         }
+                        var projectionId = @event.Event.EventNumber;
+                        //NOTE: fixing 0 projection problem
+                        if (projectionId == 0)
+                            projectionId = Int32.MaxValue - 1;
                         var managedProjection = CreateManagedProjectionInstance(
-                            projectionName, @event.Event.EventNumber);
+                            projectionName, projectionId);
                         managedProjection.InitializeExisting(projectionName);
                     }
             }
