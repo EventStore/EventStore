@@ -49,17 +49,17 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
         protected override IEnumerable<Message> WithInitialMessages()
         {
             yield return new ClientMessage.DeleteStream(CorrelationId, Envelope, false, "test123", ExpectedVersion.Any, null);
-            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.StreamDelete);
-            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.StreamDelete);
-            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.StreamDelete);
-            yield return new StorageMessage.CommitAck(CorrelationId, SomeEndPoint, 100, 2, 3);
-            yield return new StorageMessage.CommitAck(CorrelationId, SomeEndPoint, 100, 2, 3);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.StreamDelete);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.StreamDelete);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.StreamDelete);
+            yield return new StorageMessage.CommitAck(CorrelationId, 100, 2, 3);
+            yield return new StorageMessage.CommitAck(CorrelationId, 100, 2, 3);
 
         }
 
         protected override Message When()
         {
-            return new StorageMessage.CommitAck(CorrelationId, SomeEndPoint, 100, 2, 3);
+            return new StorageMessage.CommitAck(CorrelationId, 100, 2, 3);
         }
 
         [Test]

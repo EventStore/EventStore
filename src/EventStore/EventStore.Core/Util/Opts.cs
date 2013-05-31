@@ -269,5 +269,23 @@ namespace EventStore.Core.Util
         public const string FakeDnsIpsJson = "fakeDnsIps";
         public const string FakeDnsIpsDescr = null;
         public static readonly IPAddress[] FakeDnsIpsDefault = new IPAddress[0];
+
+        public const string UseInternalSslCmd = "use-internal-ssl";
+        public const string UseInternalSslEnv = "USE_INTERNAL_SSL";
+        public const string UseInternalSslJson = "useInternalSsl";
+        public const string UseInternalSslDescr = "Whether to use secure internal communication.";
+        public const bool   UseInternalSslDefault = false;
+
+        public const string SslTargetHostCmd = "ssl-target-host=";
+        public const string SslTargetHostEnv = "SSL_TARGET_HOST";
+        public const string SslTargetHostJson = "sslTargetHost";
+        public const string SslTargetHostDescr = "Target host of server's SSL certificate.";
+        public static readonly string SslTargetHostDefault = "n/a";
+
+        public const string SslValidateServerCmd = "ssl-validate-server";
+        public const string SslValidateServerEnv = "SSL_VALIDATE_SERVER";
+        public const string SslValidateServerJson = "sslValidateServer";
+        public const string SslValidateServerDescr = "Whether to validate that server's certificate is trusted.";
+        public const bool   SslValidateServerDefault = true;
     }
 }

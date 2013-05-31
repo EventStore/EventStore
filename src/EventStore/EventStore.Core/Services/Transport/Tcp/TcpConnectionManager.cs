@@ -127,6 +127,9 @@ namespace EventStore.Core.Services.Transport.Tcp
                                     IPublisher publisher,
                                     IPEndPoint remoteEndPoint, 
                                     TcpClientConnector connector,
+                                    bool useSsl,
+                                    string sslTargetHost,
+                                    bool sslValidateServer,
                                     IPublisher networkSendQueue,
                                     InternalAuthenticationProvider authProvider,
                                     TimeSpan heartbeatInterval,
@@ -140,6 +143,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             Ensure.NotNull(authProvider, "authProvider");
             Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
             Ensure.NotNull(connector, "connector");
+            if (useSsl) Ensure.NotNull(sslTargetHost, "sslTargetHost");
 
             ConnectionId = connectionId;
             ConnectionName = connectionName;
@@ -160,7 +164,9 @@ namespace EventStore.Core.Services.Transport.Tcp
             _connectionEstablished = onConnectionEstablished;
             _connectionClosed = onConnectionClosed;
 
-            _connection = connector.ConnectTo(ConnectionId, remoteEndPoint, OnConnectionEstablished, OnConnectionFailed);
+            _connection = useSsl 
+                ? connector.ConnectSslTo(ConnectionId, remoteEndPoint, sslTargetHost, sslValidateServer, OnConnectionEstablished, OnConnectionFailed)
+                : connector.ConnectTo(ConnectionId, remoteEndPoint, OnConnectionEstablished, OnConnectionFailed);
             _connection.ConnectionClosed += OnConnectionClosed;
             if (_connection.IsClosed)
                 OnConnectionClosed(_connection, SocketError.Success);

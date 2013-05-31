@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Diagnostics;
-using System.Net;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -60,7 +59,6 @@ namespace EventStore.Core.Services.Storage
         private readonly ITransactionFileChaser _chaser;
         private readonly IReadIndex _readIndex;
         private readonly IEpochManager _epochManager;
-        private readonly IPEndPoint _vnodeEndPoint;
         private Thread _thread;
         private volatile bool _stop;
 
@@ -74,21 +72,18 @@ namespace EventStore.Core.Services.Storage
                              ICheckpoint writerCheckpoint, 
                              ITransactionFileChaser chaser, 
                              IReadIndex readIndex, 
-                             IEpochManager epochManager,
-                             IPEndPoint vnodeEndPoint)
+                             IEpochManager epochManager)
         {
             Ensure.NotNull(masterBus, "masterBus");
             Ensure.NotNull(chaser, "chaser");
             Ensure.NotNull(readIndex, "readIndex");
             Ensure.NotNull(epochManager, "epochManager");
-            Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
 
             _masterBus = masterBus;
             _writerCheckpoint = writerCheckpoint;
             _chaser = chaser;
             _readIndex = readIndex;
             _epochManager = epochManager;
-            _vnodeEndPoint = vnodeEndPoint;
 
             _flushDelay = 0;
             _lastFlush = _watch.ElapsedTicks;
@@ -131,10 +126,7 @@ namespace EventStore.Core.Services.Storage
                                 var record = (PrepareLogRecord) result.LogRecord;
                                 if ((record.Flags & (PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd)) != 0)
                                 {
-                                    _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId,
-                                                                                     _vnodeEndPoint,
-                                                                                     record.LogPosition,
-                                                                                     record.Flags));
+                                    _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
                                 }
 
                                 break;
@@ -142,8 +134,7 @@ namespace EventStore.Core.Services.Storage
                             case LogRecordType.Commit:
                             {
                                 var record = (CommitLogRecord) result.LogRecord;
-                                _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
-                                                                                _vnodeEndPoint,
+                                _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, 
                                                                                 record.LogPosition,
                                                                                 record.TransactionPosition,
                                                                                 record.FirstEventNumber));
