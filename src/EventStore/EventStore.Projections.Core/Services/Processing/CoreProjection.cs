@@ -204,7 +204,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _subscribed;
         private bool _startOnLoad;
         private bool _completed;
-
+        //TODO: consider not exposing this field as public property
+        private CheckpointTag _lastProcessedEventPosition;
 
 
         private CoreProjection(
@@ -246,7 +247,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointManager = coreProjectionCheckpointManager;
             _projectionStateHandler = projectionStateHandler;
             _zeroCheckpointTag = _checkpointStrategy.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag();
-
+            _lastProcessedEventPosition = _zeroCheckpointTag;
             namingBuilder.GetPartitionCatalogStreamName();
             GoToState(State.Initial);
         }
@@ -614,6 +615,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, _zeroCheckpointTag), null);
             _expectedSubscriptionMessageSequenceNumber = -1; // this is to be overridden when subscribing
             _currentSubscriptionId = Guid.Empty;
+            _lastProcessedEventPosition = _zeroCheckpointTag;
             // NOTE: this is to workaround exception in GetState requests submitted by client
         }
 
@@ -890,6 +892,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
             _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(state, checkpointTag), null);
             _checkpointManager.Start(checkpointTag);
+            _lastProcessedEventPosition = checkpointTag;
             _processingQueue.InitializeQueue(checkpointTag);
             NewCheckpointStarted(checkpointTag);
             GoToState(State.StateLoaded);
@@ -1027,6 +1030,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             result.Partition, result.OldState, result.NewState, result.CausedBy, result.CorrelationId);
                 }
                 _checkpointManager.EventProcessed(eventCheckpointTag, progress);
+                _lastProcessedEventPosition = eventCheckpointTag;
             }
         }
 
@@ -1089,6 +1093,11 @@ namespace EventStore.Projections.Core.Services.Processing
                         _checkpointManager.EventsEmitted(emittedEvents, Guid.Empty, correlationId: null);
                 }
             }
+        }
+
+        public CheckpointTag LastProcessedEventPosition
+        {
+            get { return _lastProcessedEventPosition; }
         }
     }
 }
