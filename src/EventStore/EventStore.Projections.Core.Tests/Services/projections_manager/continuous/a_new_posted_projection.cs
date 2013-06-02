@@ -127,11 +127,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 Assert.AreEqual(
                     _projectionName,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().Name);
+                //at least projection initializaed message is here
                 Assert.AreEqual(
-                    "", _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().State);
+                    "{\"data\": 1}", _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().State);
                 Assert.AreEqual(
                     _all.Last().Key,
-                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().Position);
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().Position.Position);
             }
         }
 
