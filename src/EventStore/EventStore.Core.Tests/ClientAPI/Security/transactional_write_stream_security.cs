@@ -58,6 +58,12 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => TransStart("write-stream", "user1", "pa$$1"));
         }
 
+        [Test, Category("LongRunning"), Category("Network")]
+        public void starting_transaction_to_stream_with_admin_user_credentials_succeeds()
+        {
+            ExpectNoException(() => TransStart("write-stream", "adm", "admpa$$"));
+        }
+
 
         [Test, Category("LongRunning"), Category("Network")]
         public void committing_transaction_with_not_existing_credentials_is_not_authenticated()
@@ -95,6 +101,15 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => t2.Commit());
         }
 
+        [Test, Category("LongRunning"), Category("Network")]
+        public void committing_transaction_to_stream_with_admin_user_credentials_succeeds()
+        {
+            var transId = TransStart("write-stream", "user1", "pa$$1").TransactionId;
+            var t2 = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+            t2.Write();
+            ExpectNoException(() => t2.Commit());
+        }
+
 
         [Test, Category("LongRunning"), Category("Network")]
         public void transaction_to_no_acl_stream_succeeds_when_no_credentials_are_passed()
@@ -105,6 +120,12 @@ namespace EventStore.Core.Tests.ClientAPI.Security
                 t.Write(CreateEvents());
                 t.Commit();
             });
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void transaction_to_no_acl_stream_is_not_authenticated_when_not_existing_credentials_are_passed()
+        {
+            Expect<NotAuthenticatedException>(() => TransStart("noacl-stream", "badlogin", "badpass"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
@@ -125,9 +146,14 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void transaction_to_no_acl_stream_is_not_authenticated_when_not_existing_credentials_are_passed()
+        public void transaction_to_no_acl_stream_succeeds_when_admin_user_credentials_are_passed()
         {
-            Expect<NotAuthenticatedException>(() => TransStart("noacl-stream", "badlogin", "badpass"));
+            ExpectNoException(() =>
+            {
+                var t = TransStart("noacl-stream", "adm", "admpa$$");
+                t.Write(CreateEvents());
+                t.Commit();
+            });
         }
     }
 }

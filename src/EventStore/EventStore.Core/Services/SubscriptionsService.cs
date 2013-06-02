@@ -97,7 +97,7 @@ namespace EventStore.Core.Services
         public void Handle(ClientMessage.SubscribeToStream msg)
         {
             var streamAccess = _readIndex.CheckStreamAccess(
-                msg.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : msg.EventStreamId, StreamAccessType.Read, null);
+                msg.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : msg.EventStreamId, StreamAccessType.Read, msg.User);
 
             switch (streamAccess)
             {

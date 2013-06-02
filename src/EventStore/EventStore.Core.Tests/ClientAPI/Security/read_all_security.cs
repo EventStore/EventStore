@@ -60,5 +60,12 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => ReadAllForward("user1", "pa$$1"));
             ExpectNoException(() => ReadAllBackward("user1", "pa$$1"));
         }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void reading_all_with_admin_credentials_succeeds()
+        {
+            ExpectNoException(() => ReadAllForward("adm", "admpa$$"));
+            ExpectNoException(() => ReadAllBackward("adm", "admpa$$"));
+        }
     }
 }

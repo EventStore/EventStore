@@ -62,12 +62,25 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => ReadStreamBackward("read-stream", "user1", "pa$$1"));
         }
 
+        [Test, Category("LongRunning"), Category("Network")]
+        public void reading_stream_with_admin_user_credentials_succeeds()
+        {
+            ExpectNoException(() => ReadStreamForward("read-stream", "adm", "admpa$$"));
+        }
+
 
         [Test, Category("LongRunning"), Category("Network")]
         public void reading_no_acl_stream_succeeds_when_no_credentials_are_passed()
         {
             ExpectNoException(() => ReadStreamForward("noacl-stream", null, null));
             ExpectNoException(() => ReadStreamBackward("noacl-stream", null, null));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void reading_no_acl_stream_is_not_authenticated_when_not_existing_credentials_are_passed()
+        {
+            Expect<NotAuthenticatedException>(() => ReadStreamForward("noacl-stream", "badlogin", "badpass"));
+            Expect<NotAuthenticatedException>(() => ReadStreamBackward("noacl-stream", "badlogin", "badpass"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
@@ -80,10 +93,10 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void reading_no_acl_stream_is_not_authenticated_when_not_existing_credentials_are_passed()
+        public void reading_no_acl_stream_succeeds_when_admin_user_credentials_are_passed()
         {
-            Expect<NotAuthenticatedException>(() => ReadStreamForward("noacl-stream", "badlogin", "badpass"));
-            Expect<NotAuthenticatedException>(() => ReadStreamBackward("noacl-stream", "badlogin", "badpass"));
+            ExpectNoException(() => ReadStreamForward("noacl-stream", "adm", "admpa$$"));
+            ExpectNoException(() => ReadStreamBackward("noacl-stream", "adm", "admpa$$"));
         }
     }
 }

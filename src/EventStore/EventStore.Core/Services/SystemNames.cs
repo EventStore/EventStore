@@ -39,6 +39,11 @@ namespace EventStore.Core.Services
         public const string StreamsStream = "$streams";
         public const string StatsStreamPrefix = "$stats";
 
+        public static bool IsSystemStream(string streamId)
+        {
+            return streamId.StartsWith("$");
+        }
+
         public static string MetastreamOf(string streamId)
         {
             return "$$" + streamId;
