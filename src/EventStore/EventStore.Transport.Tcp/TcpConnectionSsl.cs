@@ -182,7 +182,8 @@ namespace EventStore.Transport.Tcp
                 {
                     var sslStream = (SslStream) ar.AsyncState;
                     sslStream.EndAuthenticateAsServer(ar);
-                    DisplaySslStreamInfo(sslStream);
+                    if (_verbose)
+                        DisplaySslStreamInfo(sslStream);
                     _isAuthenticated = true;
                 }
                 StartReceive();
@@ -255,7 +256,8 @@ namespace EventStore.Transport.Tcp
                 {
                     var sslStream = (SslStream) ar.AsyncState;
                     sslStream.EndAuthenticateAsClient(ar);
-                    DisplaySslStreamInfo(sslStream);
+                    if (_verbose)
+                        DisplaySslStreamInfo(sslStream);
                     _isAuthenticated = true;
                 }
                 StartReceive();

@@ -31,6 +31,7 @@ namespace EventStore.Core.Services
     public static class SystemHeader
     {
         public const string ExpectedVersion = "X-ES-ExpectedVersion";
+        public const string Forwarding = "X-ES-Forwarding";
     }
 
     public static class SystemStreams

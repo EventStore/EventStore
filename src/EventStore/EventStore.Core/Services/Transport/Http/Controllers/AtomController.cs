@@ -69,7 +69,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Codec.EventXml,
                                                           Codec.EventJson,
                                                           Codec.EventsXml,
-                                                          Codec.EventsJson,
+                                                          Codec.EventsJson
                                                       };
         private static readonly ICodec[] AtomWithHtmlCodecs = new[]
                                                               {
@@ -135,9 +135,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         // STREAMS
         private void PostEvent(HttpEntityManager manager, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(manager))
-                return;
-            
             var stream = match.BoundVariables["stream"];
             if (stream.IsEmptyString())
             {
@@ -150,31 +147,41 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, "Expected version in wrong format.");
                 return;
             }
-
-            PostEntry(manager, expectedVersion, stream);
+            bool allowForwarding;
+            if (!GetForwarding(manager, out allowForwarding))
+            {
+                SendBadRequest(manager, "Forwarding header in wrong format.");
+                return;
+            }
+            if (allowForwarding && _httpService.ForwardRequest(manager))
+                return;
+            PostEntry(manager, expectedVersion, allowForwarding, stream);
         }
 
         private void DeleteStream(HttpEntityManager manager, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(manager))
-                return;
-
             var stream = match.BoundVariables["stream"];
-            int expectedVersion;
             if (stream.IsEmptyString())
             {
                 SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
                 return;
             }
+            int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
                 SendBadRequest(manager, "Expected version in wrong format.");
                 return;
             }
-
+            bool allowForwarding;
+            if (!GetForwarding(manager, out allowForwarding))
+            {
+                SendBadRequest(manager, "Forwarding header in wrong format.");
+                return;
+            }
+            if (allowForwarding && _httpService.ForwardRequest(manager))
+                return;
             var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.Atom.DeleteStreamCompleted, Configure.DeleteStreamCompleted);
-            // TODO AN: get expected version from X-ES-ExpectedVersion
-            Publish(new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, true, stream, ExpectedVersion.Any, manager.User));
+            Publish(new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, allowForwarding, stream, expectedVersion, manager.User));
         }
 
         private void GetStreamEvent(HttpEntityManager manager, UriTemplateMatch match)
@@ -289,23 +296,27 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         // METASTREAMS
         private void PostMetastreamEvent(HttpEntityManager manager, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(manager))
-                return;
-
             var stream = match.BoundVariables["stream"];
-            int expectedVersion;
             if (stream.IsEmptyString() || SystemStreams.IsMetastream(stream))
             {
                 SendBadRequest(manager, string.Format("Invalid request. Stream must be non-empty string and should not be metastream"));
                 return;
             }
+            int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
                 SendBadRequest(manager, "Expected version in wrong format.");
                 return;
             }
-
-            PostEntry(manager, expectedVersion, SystemStreams.MetastreamOf(stream));
+            bool allowForwarding;
+            if (!GetForwarding(manager, out allowForwarding))
+            {
+                SendBadRequest(manager, "Forwarding header in wrong format.");
+                return;
+            }
+            if (allowForwarding && _httpService.ForwardRequest(manager))
+                return;
+            PostEntry(manager, expectedVersion, allowForwarding, SystemStreams.MetastreamOf(stream));
         }
 
         private void GetMetastreamEvent(HttpEntityManager manager, UriTemplateMatch match)
@@ -489,7 +500,23 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             return int.TryParse(expVer, out expectedVersion) && expectedVersion >= ExpectedVersion.Any;
         }
 
-        public void PostEntry(HttpEntityManager manager, int expectedVersion, string stream)
+        private bool GetForwarding(HttpEntityManager manager, out bool allowForwarding)
+        {
+            allowForwarding = true;
+            var forwarding = manager.HttpEntity.Request.Headers[SystemHeader.Forwarding];
+            if (forwarding == null) 
+                return true;
+            if (string.Equals(forwarding, "Disable", StringComparison.OrdinalIgnoreCase))
+            {
+                allowForwarding = false;
+                return true;
+            }
+            if (string.Equals(forwarding, "Enable", StringComparison.OrdinalIgnoreCase))
+                return true;
+            return false;
+        }
+
+        public void PostEntry(HttpEntityManager manager, int expectedVersion, bool allowForwarding, string stream)
         {
             manager.ReadTextRequestAsync(
                 (man, body) =>
@@ -505,7 +532,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           manager,
                                                           Format.WriteEventsCompleted,
                                                           (a, m) => Configure.WriteEventsCompleted(a, m, stream));
-                    var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, true, stream, expectedVersion, events, manager.User);
+                    var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, allowForwarding, stream, expectedVersion, events, manager.User);
                     Publish(msg);
                 },
                 e => Log.ErrorException(e, "Error while reading request (POST entry)."));

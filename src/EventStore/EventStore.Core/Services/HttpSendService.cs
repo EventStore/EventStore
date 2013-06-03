@@ -114,7 +114,7 @@ namespace EventStore.Core.Services
         public void Handle(HttpMessage.HttpForwardMessage message)
         {
             var srcUrl = message.Manager.RequestedUrl;
-            var srcBase = new Uri(string.Format("{0}://{1}:{2}/", srcUrl.Scheme, srcUrl.Host, srcUrl.Port));
+            var srcBase = new Uri(string.Format("{0}://{1}:{2}/", srcUrl.Scheme, srcUrl.Host, srcUrl.Port), UriKind.Absolute);
             var forwardUri = new Uri(message.BaseUri, srcBase.MakeRelativeUri(srcUrl));
             ForwardRequest(message.Manager, forwardUri);
         }
