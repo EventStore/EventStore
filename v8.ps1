@@ -134,7 +134,7 @@ Task Clean-V8 {
 Task Patch-V8GypFile {
     Push-Location (Join-Path $v8Directory "build")
     $gypPatch = Join-Path $patchesDirectory "fix-v8-all-gyp.patch"
-    Exec { git apply $gypPatch }
+    Exec { git apply --ignore-whitespace $gypPatch }
     Pop-Location
 }
 
