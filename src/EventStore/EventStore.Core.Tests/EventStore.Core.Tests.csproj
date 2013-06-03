@@ -101,6 +101,7 @@
     <Compile Include="ClientAPI\Helpers\TestConnection.cs" />
     <Compile Include="ClientAPI\Helpers\TestEvent.cs" />
     <Compile Include="ClientAPI\Helpers\Writer.cs" />
+    <Compile Include="ClientAPI\isjson_flag_on_event.cs" />
     <Compile Include="ClientAPI\read_all_events_backward_should.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
