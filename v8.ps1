@@ -36,14 +36,10 @@ Task ? -description "Writes script documentation to the host" {
     Write-Host ""
 }
 
-
-# Configuration Parameters
+# Parameters
 Properties {
-    #These are set later by the Setup-ConfigurationParameters task
-    $v8VisualStudioPlatform = "x64"
-    $v8VisualStudioConfiguration = "Release"
-    $v8Platform = "x64"
-    $v8OutputDirectory = "Release"
+    Assert ($platform -ne $null) "No platform specified. Should be either x86 or x64"
+    Assert ($configuration -ne $null) "No configuration specified. Should be either Release or Debug"
 }
 
 # Directories
@@ -71,8 +67,8 @@ Properties {
     
     #GYP
     $gypRepository = "http://gyp.googlecode.com/svn/trunk"
-    $gypRevision = "" #trunk
-    $gypDirectory = Join-Path $v8Directory (Join-Path "third_party" "gyp")
+    $gypRevision = "1642"
+    $gypDirectory = Join-Path $v8Directory (Join-Path "build" "gyp")
     
     #Cygwin
     $cygwinRepository = "http://src.chromium.org/svn/trunk/deps/third_party/cygwin"
@@ -85,7 +81,7 @@ Properties {
     $pythonExecutable = Join-Path $pythonDirectory "python.exe"
 }
 
-Task Build-V8Libraries -Depends Setup-ConfigurationParameters, Clean-V8, Patch-V8GypFile, Build-V8, Copy-V8ToLibs
+Task Build-V8Libraries -Depends Clean-V8, Build-V8, Copy-V8ToLibs
 
 Task Get-V8AndDependencies {
     Get-GitRepoAtCommitOrTag -Verbose "V8" $v8Repository $v8Directory $v8Tag
@@ -94,34 +90,9 @@ Task Get-V8AndDependencies {
     Get-SvnRepoAtRevision -Verbose "CygWin" $cygwinRepository $cygwinDirectory $cygwinRevision
 }
 
-Task Setup-ConfigurationParameters {
-    Assert ($platform -ne $null) "No platform specified. Should be either x86 or x64"
-    Assert ($configuration -ne $null) "No configuration specified. Should be either Release or Debug"
-
-    if ([string]::Compare($platform, "x64", $True)) {
-        $v8VisualStudioPlatform = "x64"
-        $v8Platform = "x64"
-    } elseif ([string]::Compare($platform, "x86", $True)) {
-        $v8VisualStudioPlatform = "Win32"
-        $v8Platform = ""
-    } else {
-        throw "Platform $platform is not supported. If you think it should be, edit the Setup-ConfigurationParameters task to add it."
-    }
-
-    if ([string]::Compare($configuration, "release", $True)) {
-        $v8VisualStudioConfiguration = "Release"
-        $v8OutputDirectory = Join-Path $v8Directory (Join-Path "build" (Join-Path "Release" "lib"))
-    } elseif ([string]::Compare($configuration, "debug", $True)) {
-        $v8VisualStudioConfiguration = "Debug"
-        $v8OutputDirectory = Join-Path $v8Directory (Join-Path "build" (Join-Path "Debug" "lib"))
-    } else {
-        throw "Configuration $configuration is not supported. If you think it should be, edit the Setup-ConfigurationParameters task to add it."
-    }
-}
-
 Task Clean-V8 {
     Push-Location $v8Directory
-    Exec { git clean --quiet -dfx -- build }
+    Exec { git clean --quiet -fx -- build }
     Exec { git clean --quiet -dfx -- src }
     Exec { git clean --quiet -dfx -- test } 
     Exec { git clean --quiet -dfx -- tools }
@@ -131,19 +102,27 @@ Task Clean-V8 {
     Pop-Location
 }
 
-Task Patch-V8GypFile {
-    Push-Location (Join-Path $v8Directory "build")
-    $gypPatch = Join-Path $patchesDirectory "fix-v8-all-gyp.patch"
-    Exec { git apply --ignore-whitespace $gypPatch }
-    Pop-Location
-}
-
-Task Build-V8 -Depends Patch-V8GypFile, Setup-ConfigurationParameters {
+Task Build-V8 {
     Push-Location $v8Directory
     Copy-Item -Container -Recurse .\third_party\gyp\ .\build\gyp\
-    
-    if ($v8Platform -ne "") {
-        $v8PlatformParameter = "-Dtarget_arch=" + $v8Platform
+
+    if ($platform -eq "x64") {
+        $v8VisualStudioPlatform = "x64"
+        $v8Platform = "x64"
+	$v8PlatformParameter = "-Dtarget_arch=x64"
+    } elseif ($platform -eq "x86") {
+        $v8VisualStudioPlatform = "Win32"
+        $v8Platform = ""
+    } else {
+        throw "Platform $platform is not supported." 
+    }
+
+    if ($configuration -eq "release") { 
+        $v8VisualStudioConfiguration = "Release"
+    } elseif ($configuration -eq "debug") {
+        $v8VisualStudioConfiguration = "Debug"
+    } else {
+        throw "Configuration $configuration is not supported. If you think it should be, edit the Setup-ConfigurationParameters task to add it."
     }
 
     $gypFile = Join-Path $v8Directory (Join-Path "build" "gyp_v8")
@@ -152,7 +131,18 @@ Task Build-V8 -Depends Patch-V8GypFile, Setup-ConfigurationParameters {
     Pop-Location
 }
 
-Task Copy-V8ToLibs -Depends Setup-ConfigurationParameters, Build-V8 {
+Task Copy-V8ToLibs -Depends Build-V8 {
+
+    if ($configuration -eq "release") {
+        $v8VisualStudioConfiguration = "Release"
+        $v8OutputDirectory = Join-Path $v8Directory (Join-Path "build" (Join-Path "Release" "lib"))
+    } elseif ($configuration -eq "debug") {
+        $v8VisualStudioConfiguration = "Debug"
+        $v8OutputDirectory = Join-Path $v8Directory (Join-Path "build" (Join-Path "Debug" "lib"))
+    } else {
+        throw "Configuration $configuration is not supported. If you think it should be, edit the Setup-ConfigurationParameters task to add it."
+    }
+
     $v8LibsSource = Join-Path $v8Directory (Join-Path "build" (Join-Path $v8OutputDirectory (Join-Path "lib" "*.lib")))
     $v8IncludeSource = Join-Path $v8Directory (Join-Path "include" "*.h")
     
@@ -161,14 +151,12 @@ Task Copy-V8ToLibs -Depends Setup-ConfigurationParameters, Build-V8 {
     New-Item -ItemType Container -Path $v8IncludeDestination -ErrorAction SilentlyContinue
     Copy-Item $v8IncludeSource $v8IncludeDestination -Recurse -Force -ErrorAction Stop
 
-    if ($v8Platform -eq "x64") {
-        Push-Location $v8LibsDestination
-        foreach ($libFile in Get-ChildItem) {
-           $newName = $libFile.Name.Replace(".x64.lib", ".lib")
-            Rename-Item -Path $libFile -NewName $newName
-        }
-        Pop-Location
+    Push-Location $v8LibsDestination
+    foreach ($libFile in Get-ChildItem) {
+       $newName = $libFile.Name.Replace(".x64.lib", ".lib")
+       Rename-Item -Path $libFile -NewName $newName
     }
+    Pop-Location
 }
 
 # Helper Functions - some of these rely on psake-provided constructs such as Exec { }.
