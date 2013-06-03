@@ -34,7 +34,8 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public interface IReaderSubscription : IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>,
                                                IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderEof>
+                                               IHandle<ReaderSubscriptionMessage.EventReaderEof>,
+                                               IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>
     {
         IEventReader CreatePausedEventReader(IPublisher publisher, Guid forkedEventReaderId);
     }

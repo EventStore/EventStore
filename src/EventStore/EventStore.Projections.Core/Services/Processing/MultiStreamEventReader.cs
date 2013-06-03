@@ -145,7 +145,8 @@ namespace EventStore.Projections.Core.Services.Processing
                             var @event = message.Events[index].Event;
                             var @link = message.Events[index].Link;
                             EventRecord positionEvent = (link ?? @event);
-                            UpdateSafePositionToJoin(positionEvent.EventStreamId, EventPairToPosition(message.Events[index]));
+                            UpdateSafePositionToJoin(
+                                positionEvent.EventStreamId, EventPairToPosition(message.Events[index]));
                             Queue<Tuple<EventRecord, EventRecord, float>> queue;
                             if (!_buffers.TryGetValue(positionEvent.EventStreamId, out queue))
                             {
@@ -163,6 +164,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     _eventsRequested.Remove(message.EventStreamId);
                     PauseOrContinueProcessing(delay: message.Events.Length == 0);
                     break;
+                case ReadStreamResult.AccessDenied:
+                    SendNotAuthorized();
+                    return;
                 default:
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));

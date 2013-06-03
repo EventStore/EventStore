@@ -34,5 +34,6 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         void Resume();
         void Pause();
+        void SendNotAuthorized();
     }
 }

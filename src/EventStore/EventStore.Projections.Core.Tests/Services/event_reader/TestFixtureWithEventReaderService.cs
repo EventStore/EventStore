@@ -68,6 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
                 _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
 
 
             _bus.Subscribe<ReaderCoreServiceMessage.StartReader>(_readerService);
@@ -75,6 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             _bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_readerService);
+            _bus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Pause>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Resume>(_readerService);

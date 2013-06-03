@@ -75,6 +75,16 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public sealed class NotAuthorized : EventReaderSubscriptionMessage
+        {
+            public NotAuthorized(
+                Guid subscriptionId, CheckpointTag checkpointTag, float progress, long subscriptionMessageSequenceNumber,
+                object source = null)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber, source)
+            {
+            }
+        }
+
         public class EofReached : EventReaderSubscriptionMessage
         {
             public EofReached(

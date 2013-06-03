@@ -269,6 +269,7 @@
     <Compile Include="Services\projections_manager\when_updating_a_faulted_projection_query_text_invalid_defintion.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_persistent_projection_emit_enabled_option.cs" />
     <Compile Include="Services\projections_system\updating_projections\updating_projection_sources.cs" />
+    <Compile Include="Services\projections_system\when_requesting_state_from_a_faulted_projection.cs" />
     <Compile Include="Services\projections_system\with_projection_config.cs" />
     <Compile Include="Services\projections_system\with_projections_subsystem.cs" />
     <Compile Include="Services\projections_system\startup.cs" />

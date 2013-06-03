@@ -244,10 +244,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             [Test]
             public void projection_position_is_correct()
             {
-                var pos = GetTfPos("stream5", 0);
-                Assert.AreEqual(
+                var pos = GetTfPos("stream2", 1);
+                Assert.That(
                     CheckpointTag.FromEventTypeIndexPositions(
-                        pos, new Dictionary<string, int> {{"type3", 1}}), _state.Position);
+                        pos, new Dictionary<string, int> {{"type3", 1}}) <= _state.Position);
             }
         }
 

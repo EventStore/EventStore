@@ -181,6 +181,11 @@ namespace EventStore.Projections.Core.Services.Processing
                         _reader.EventReaderCorrelationId, resolvedEvent,
                         _reader._stopOnEof ? (long?) null : position.PreparePosition, progress, source: this.GetType()));
             }
+
+            protected void SendNotAuthorized()
+            {
+                _reader.SendNotAuthorized();
+            }
         }
 
         private class IndexBased : State,
@@ -221,6 +226,11 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (_disposed)
                     return;
+                if (message.Result == ReadStreamResult.AccessDenied)
+                {
+                    SendNotAuthorized();
+                    return;
+                }
                 if (message.EventStreamId == "$et")
                 {
                     ReadIndexCheckpointStreamCompleted(message.Result, message.Events);
@@ -274,6 +284,11 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (_disposed)
                     return;
+                if (message.Result == ReadStreamResult.AccessDenied)
+                {
+                    SendNotAuthorized();
+                    return;
+                }
                 ReadIndexCheckpointStreamCompleted(message.Result, message.Events);
             }
 
@@ -531,6 +546,11 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (_disposed)
                     return;
+                if (message.Result == ReadAllResult.AccessDenied)
+                {
+                    SendNotAuthorized();
+                    return;
+                }
 
                 if (!_tfEventsRequested)
                     throw new InvalidOperationException("TF events has not been requested");

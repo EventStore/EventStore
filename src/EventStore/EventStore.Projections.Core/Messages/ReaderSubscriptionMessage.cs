@@ -88,6 +88,15 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public sealed class EventReaderNotAuthorized : SubscriptionMessage
+        {
+            public EventReaderNotAuthorized(Guid correlationId, object source = null)
+                : base(correlationId, source)
+            {
+            }
+
+        }
+
         public class CommittedEventDistributed : SubscriptionMessage
         {
             public static CommittedEventDistributed Sample(

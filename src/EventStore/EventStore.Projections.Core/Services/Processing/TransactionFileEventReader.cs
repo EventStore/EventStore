@@ -76,6 +76,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
 
+            if (message.Result == ReadAllResult.AccessDenied)
+            {
+                SendNotAuthorized();
+                return;
+            }
 
             var eof = message.Events.Length == 0;
             var willDispose = _stopOnEof && eof;

@@ -150,6 +150,13 @@ namespace EventStore.Projections.Core.Services.Processing
                     _subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
         }
 
+        private void PublishNotAuthorized()
+        {
+            _publisher.Publish(
+                new EventReaderSubscriptionMessage.NotAuthorized(
+                    _subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
+        }
+
         private void SuggestCheckpoint(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
@@ -179,6 +186,17 @@ namespace EventStore.Projections.Core.Services.Processing
                     new EventReaderSubscriptionMessage.EofReached(
                         _subscriptionId, _positionTracker.LastTag,
                         _subscriptionMessageSequenceNumber++));
+            }
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message)
+        {
+            if (_stopOnEof)
+            {
+                _eofReached = true;
+                _publisher.Publish(
+                    new EventReaderSubscriptionMessage.NotAuthorized(
+                        _subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
             }
         }
 

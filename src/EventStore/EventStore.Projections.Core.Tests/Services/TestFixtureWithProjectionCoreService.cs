@@ -56,6 +56,9 @@ namespace EventStore.Projections.Core.Tests.Services
             public List<EventReaderSubscriptionMessage.ProgressChanged> HandledProgress =
                 new List<EventReaderSubscriptionMessage.ProgressChanged>();
 
+            public List<EventReaderSubscriptionMessage.NotAuthorized> HandledNotAuthorized =
+                new List<EventReaderSubscriptionMessage.NotAuthorized>();
+
             public List<EventReaderSubscriptionMessage.EofReached> HandledEof =
                 new List<EventReaderSubscriptionMessage.EofReached>();
 
@@ -82,6 +85,11 @@ namespace EventStore.Projections.Core.Tests.Services
             public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
             {
                 HandledProgress.Add(message);
+            }
+
+            public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
+            {
+                HandledNotAuthorized.Add(message);
             }
 
             public void Handle(EventReaderSubscriptionMessage.EofReached message)
@@ -134,6 +142,7 @@ namespace EventStore.Projections.Core.Tests.Services
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
             _readerService.Handle(new Messages.ReaderCoreServiceMessage.StartReader());
             _service.Handle(new ProjectionCoreServiceMessage.StartCore());
         }
