@@ -51,7 +51,7 @@ Properties {
 Properties {
     #V8
     $v8Repository = "https://github.com/v8/v8.git"
-    $v8Tag = "3.7.11"
+    $v8Tag = "3.19.7"
     $v8Directory = Join-Path $baseDirectory "v8"
     
     #Python
@@ -101,7 +101,6 @@ Task Build-V8 {
     Assert ($configuration -ne $null) "No configuration specified. Should be either Release or Debug"
     
     Push-Location $v8Directory
-    Copy-Item -Container -Recurse .\third_party\gyp\ .\build\gyp\
 
     if ($platform -eq "x64") {
         $v8VisualStudioPlatform = "x64"
@@ -123,7 +122,10 @@ Task Build-V8 {
     }
 
     $gypFile = Join-Path $v8Directory (Join-Path "build" "gyp_v8")
-    Exec { & $pythonExecutable $gypFile $v8PlatformParameter }
+    $commonGypiPath = Join-Path $v8Directory (Join-Path "build" "common.gypi")
+    $includeParameter = "-I$commonGypiPath"
+
+    Exec { & $pythonExecutable $gypFile $includeParameter $v8PlatformParameter }
     Exec { msbuild .\build\all.sln /m /p:Configuration=$v8VisualStudioConfiguration /p:Platform=$v8VisualStudioPlatform }
     Pop-Location
 }
@@ -140,7 +142,7 @@ Task Copy-V8ToLibs -Depends Build-V8 {
         throw "Configuration $configuration is not supported. If you think it should be, edit the Setup-ConfigurationParameters task to add it."
     }
 
-    $v8LibsSource = Join-Path $v8Directory (Join-Path "build" (Join-Path $v8OutputDirectory (Join-Path "lib" "*.lib")))
+    $v8LibsSource = Join-Path $v8OutputDirectory "*.lib"
     $v8IncludeSource = Join-Path $v8Directory (Join-Path "include" "*.h")
     
     New-Item -ItemType Container -Path $v8LibsDestination -ErrorAction SilentlyContinue
@@ -150,8 +152,10 @@ Task Copy-V8ToLibs -Depends Build-V8 {
 
     Push-Location $v8LibsDestination
     foreach ($libFile in Get-ChildItem) {
-       $newName = $libFile.Name.Replace(".x64.lib", ".lib")
-       Rename-Item -Path $libFile -NewName $newName
+        $newName = $libFile.Name.Replace(".x64.lib", ".lib")
+        if ($newName -ne $libFile.Name) {
+            Rename-Item -Path $libFile -NewName $newName
+        }
     }
     Pop-Location
 }
