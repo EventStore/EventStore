@@ -42,9 +42,6 @@ Properties {
     $srcDirectory = Join-Path $baseDirectory (Join-Path "src" "EventStore")
     $libsDirectory = Join-Path $srcDirectory "libs"
     $patchesDirectory = Join-Path $baseDirectory "patches"
-
-    $v8LibsDestination = Join-Path $libsDirectory $v8Platform
-    $v8IncludeDestination = Join-Path $libsDirectory "include"
 }
 
 # Dependencies
@@ -142,6 +139,16 @@ Task Copy-V8ToLibs -Depends Build-V8 {
         throw "Configuration $configuration is not supported. If you think it should be, edit the Setup-ConfigurationParameters task to add it."
     }
 
+    if ($platform -eq "x64") {
+	$v8LibsDestination = Join-Path $libsDirectory "x64"
+    } elseif ($platform -eq "x86") {
+	$v8LibsDestination = Join-Path $libsDirectory "Win32"
+    } else {
+	throw "Configuration $configuration is not supported."
+    }
+
+    $v8IncludeDestination = Join-Path $libsDirectory "include"
+    
     $v8LibsSource = Join-Path $v8OutputDirectory "*.lib"
     $v8IncludeSource = Join-Path $v8Directory (Join-Path "include" "*.h")
     
