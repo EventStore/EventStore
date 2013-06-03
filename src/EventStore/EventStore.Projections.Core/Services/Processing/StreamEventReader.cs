@@ -121,6 +121,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     }
 
                     break;
+                case ReadStreamResult.AccessDenied:
+                    SendNotAuthorized();
+                    return;
                 default:
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));

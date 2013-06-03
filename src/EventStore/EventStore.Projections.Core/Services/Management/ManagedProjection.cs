@@ -488,6 +488,7 @@ namespace EventStore.Projections.Core.Services.Management
                 _lastWrittenVersion = completed.Events[0].Event.EventNumber;
                 FixUpOldFormat(completed, persistedState);
                 FixupOldProjectionModes(persistedState);
+                FixUpOldProjectionRunAs(persistedState);
 
                 LoadPersistedState(persistedState);
                 //TODO: encapsulate this into managed projection
@@ -507,6 +508,15 @@ namespace EventStore.Projections.Core.Services.Management
             _logger.Trace(
                 "Projection manager did not find any projection configuration records in the {0} stream.  Projection stays in CREATING state",
                 completed.EventStreamId);
+        }
+
+        private void FixUpOldProjectionRunAs(PersistedState persistedState)
+        {
+            if (persistedState.RunAs == null || string.IsNullOrEmpty(persistedState.RunAs.Name))
+            {
+                _runAs = SystemAccount.Principal;
+                persistedState.RunAs = SerializePrincipal(ProjectionManagementMessage.RunAs.System);
+            }
         }
 
         private void FixUpOldFormat(ClientMessage.ReadStreamEventsBackwardCompleted completed, PersistedState persistedState)

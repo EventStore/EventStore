@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -40,10 +41,13 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 {
     public class FeedReader : IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
                               IHandle<EventReaderSubscriptionMessage.EofReached>,
-                              IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>
+                              IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
+                              IHandle<EventReaderSubscriptionMessage.NotAuthorized>
     {
         private readonly
             PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> _subscriptionDispatcher;
+
+        private readonly IPrincipal _user;
 
         private readonly QuerySourcesDefinition _querySource;
         private readonly CheckpointTag _fromPosition;
@@ -64,7 +68,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
                 publishSubscribeDispatcher, FeedReaderMessage.ReadPage message, ITimeProvider timeProvider)
         {
             return new FeedReader(
-                publishSubscribeDispatcher, message.QuerySource, message.FromPosition, message.MaxEvents,
+                publishSubscribeDispatcher, message.User, message.QuerySource, message.FromPosition, message.MaxEvents,
                 message.CorrelationId, message.Envelope, timeProvider);
         }
 
@@ -72,8 +76,8 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
             PublishSubscribeDispatcher
                 <ReaderSubscriptionManagement.Subscribe,
                 ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
-                subscriptionDispatcher, QuerySourcesDefinition querySource, CheckpointTag fromPosition, int maxEvents,
-            Guid requestCorrelationId, IEnvelope replyEnvelope, ITimeProvider timeProvider)
+                subscriptionDispatcher, IPrincipal user, QuerySourcesDefinition querySource, CheckpointTag fromPosition,
+            int maxEvents, Guid requestCorrelationId, IEnvelope replyEnvelope, ITimeProvider timeProvider)
         {
             if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
             if (querySource == null) throw new ArgumentNullException("querySource");
@@ -82,6 +86,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
             if (maxEvents <= 0) throw new ArgumentException("non-negative expected", "maxEvents");
 
             _subscriptionDispatcher = subscriptionDispatcher;
+            _user = user;
             _querySource = querySource;
             _fromPosition = fromPosition;
             _maxEvents = maxEvents;
@@ -92,7 +97,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 
         public void Start()
         {
-            var readerStrategy = ReaderStrategy.Create(_querySource, _timeProvider, runAs: null);
+            var readerStrategy = ReaderStrategy.Create(_querySource, _timeProvider, runAs: _user);
             //TODO: make reader mode explicit
             var readerOptions = new ReaderSubscriptionOptions(
                 1024*1024, _maxEvents + 1, stopOnEof: true, stopAfterNEvents: _maxEvents);
@@ -129,8 +134,23 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 
         private void Reply()
         {
-            _replyEnvelope.ReplyWith(new FeedReaderMessage.FeedPage(_requestCorrelationId, _batch.ToArray(), _lastReaderPosition));
+            _replyEnvelope.ReplyWith(
+                new FeedReaderMessage.FeedPage(
+                    _requestCorrelationId, FeedReaderMessage.FeedPage.ErrorStatus.Success, _batch.ToArray(),
+                    _lastReaderPosition));
         }
 
+        private void ReplyNotAuthorized()
+        {
+            _replyEnvelope.ReplyWith(
+                new FeedReaderMessage.FeedPage(
+                    _requestCorrelationId, FeedReaderMessage.FeedPage.ErrorStatus.NotAuthorized, null,
+                    _lastReaderPosition));
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
+        {
+            ReplyNotAuthorized();
+        }
     }
 }

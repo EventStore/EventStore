@@ -27,8 +27,6 @@
 // 
 
 using System;
-using System.Collections.Generic;
-using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -49,6 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                   IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
                                   IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
                                   IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
+                                  IHandle<EventReaderSubscriptionMessage.NotAuthorized>,
                                   IHandle<EventReaderSubscriptionMessage.EofReached>
     {
         public static CoreProjection CreateAndPrepare(
@@ -343,6 +342,25 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var progressWorkItem = new ProgressWorkItem(this, _checkpointManager, message.Progress);
+                _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
+                _processingQueue.ProcessEvent();
+            }
+            catch (Exception ex)
+            {
+                SetFaulted(ex);
+            }
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
+        {
+            if (IsOutOfOrderSubscriptionMessage(message))
+                return;
+            RegisterSubscriptionMessage(message);
+
+            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            try
+            {
+                var progressWorkItem = new NotAuthorizedWorkItem(this);
                 _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 _processingQueue.ProcessEvent();
             }

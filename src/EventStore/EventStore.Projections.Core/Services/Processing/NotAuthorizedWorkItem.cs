@@ -25,20 +25,22 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using EventStore.Core.Bus;
 
-namespace EventStore.Projections.Core.Messages
+using System;
+
+namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface ICoreProjection : IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
-                                       IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
-                                       IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
-                                       IHandle<EventReaderSubscriptionMessage.NotAuthorized>,
-                                       IHandle<EventReaderSubscriptionMessage.EofReached>,
-                                       IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>,
-                                       IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>,
-                                       IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
-                                       IHandle<CoreProjectionProcessingMessage.RestartRequested>,
-                                       IHandle<CoreProjectionProcessingMessage.Failed>
+    class NotAuthorizedWorkItem : CheckpointWorkItemBase
     {
+
+        public NotAuthorizedWorkItem(CoreProjection projection)
+            : base(projection, null)
+        {
+        }
+
+        protected override void ProcessEvent()
+        {
+            throw new Exception("Projection cannot read its source. Not authorized.");
+        }
     }
 }

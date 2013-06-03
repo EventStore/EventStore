@@ -298,5 +298,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
         }
 
+        public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
+        {
+            if (_subscriptionDispatcher.Handle(message))
+                return;
+        }
+
     }
 }

@@ -92,6 +92,11 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotImplementedException();
         }
 
+        public bool Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message)
+        {
+            throw new NotImplementedException();
+        }
+
         private void ValidateEventOrder(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             if (_lastEventPosition >= message.Data.Position)

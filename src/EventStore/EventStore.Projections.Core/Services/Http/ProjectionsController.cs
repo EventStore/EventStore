@@ -35,6 +35,7 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
@@ -319,9 +320,10 @@ namespace EventStore.Projections.Core.Services.Http
 
             var envelope = new SendToHttpEnvelope<FeedReaderMessage.FeedPage>(
                 _networkSendQueue, http, FeedPageFormatter, FeedPageConfigurator, ErrorsEnvelope(http));
+
             Publish(
-                new FeedReaderMessage.ReadPage(Guid.NewGuid(), 
-                    envelope, bodyParsed.Query, fromPosition.Tag, bodyParsed.MaxEvents ?? 10));
+                new FeedReaderMessage.ReadPage(
+                    Guid.NewGuid(), envelope, http.User, bodyParsed.Query, fromPosition.Tag, bodyParsed.MaxEvents ?? 10));
         }
 
         private void ProjectionsGet(HttpEntityManager http, UriTemplateMatch match, ProjectionMode? mode)
@@ -397,6 +399,8 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration FeedPageConfigurator(ICodec codec, FeedReaderMessage.FeedPage page)
         {
+            if (page.Error == FeedReaderMessage.FeedPage.ErrorStatus.NotAuthorized)
+                return Configure.Unauthorized();
             return Configure.OkNoCache("application/json", Helper.UTF8NoBom);
         }
 
@@ -418,6 +422,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         private string FeedPageFormatter(ICodec codec, FeedReaderMessage.FeedPage page)
         {
+            if (page.Error != FeedReaderMessage.FeedPage.ErrorStatus.Success) 
+                return null;
+
             return new
             {
                 CorrelationId = page.CorrelationId,

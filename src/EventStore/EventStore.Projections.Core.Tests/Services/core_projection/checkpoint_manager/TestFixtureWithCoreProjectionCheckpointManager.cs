@@ -87,6 +87,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _bus.Subscribe<EventReaderSubscriptionMessage.CheckpointSuggested>(_projection);
             _bus.Subscribe<EventReaderSubscriptionMessage.EofReached>(_projection);
             _bus.Subscribe<EventReaderSubscriptionMessage.ProgressChanged>(_projection);
+            _bus.Subscribe<EventReaderSubscriptionMessage.NotAuthorized>(_projection);
             _checkpointHandledThreshold = 2;
             _checkpointUnhandledBytesThreshold = 5;
             _pendingEventsThreshold = 5;

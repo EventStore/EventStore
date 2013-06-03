@@ -122,6 +122,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        public void SendNotAuthorized()
+        {
+            _publisher.Publish(new ReaderSubscriptionMessage.EventReaderNotAuthorized(EventReaderCorrelationId));
+            Dispose();
+        }
+
         protected static long? GetLastCommitPositionFrom(ClientMessage.ReadStreamEventsForwardCompleted msg)
         {
             return (msg.IsEndOfStream 
