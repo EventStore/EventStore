@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
 
-            [Test, ExpectedException(typeof(ArgumentNullException))]
+            [Test]
             public void null_user_account_is_allowed()
             {
                 var feedReader = new FeedReader(
