@@ -36,12 +36,6 @@ Task ? -description "Writes script documentation to the host" {
     Write-Host ""
 }
 
-# Parameters
-Properties {
-    Assert ($platform -ne $null) "No platform specified. Should be either x86 or x64"
-    Assert ($configuration -ne $null) "No configuration specified. Should be either Release or Debug"
-}
-
 # Directories
 Properties {
     $baseDirectory = Resolve-Path .
@@ -103,6 +97,9 @@ Task Clean-V8 {
 }
 
 Task Build-V8 {
+    Assert ($platform -ne $null) "No platform specified. Should be either x86 or x64"
+    Assert ($configuration -ne $null) "No configuration specified. Should be either Release or Debug"
+    
     Push-Location $v8Directory
     Copy-Item -Container -Recurse .\third_party\gyp\ .\build\gyp\
 
