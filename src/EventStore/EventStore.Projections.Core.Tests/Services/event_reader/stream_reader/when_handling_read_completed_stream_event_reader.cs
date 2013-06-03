@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                             DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsJson,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, "", 12, 11, true, 200));
+                        }, null, "", 12, 11, true, 200));
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
@@ -155,7 +155,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                             DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type", new byte[0], new byte[0]), null)
-                        }, "", 11, 10, true, 100));
+                        }, null, "", 11, 10, true, 100));
         }
 
         [Test]
@@ -172,7 +172,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                             DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type", new byte[0], new byte[0]), null)
-                        }, "", 13, 11, true, 300));
+                        }, null, "", 13, 11, true, 300));
         }
     }
 }

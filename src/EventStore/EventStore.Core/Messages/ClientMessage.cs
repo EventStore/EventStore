@@ -26,13 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Net;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
-using EventStore.Transport.Http.EntityManagement;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Messages
@@ -197,6 +195,11 @@ namespace EventStore.Core.Messages
                 Result = result;
                 Message = message;
                 FirstEventNumber = EventNumber.Invalid;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("WRITE COMPLETED: CorrelationId: {0}, Result: {1}, Message: {2}, FirstEventNumber: {3}", CorrelationId, Result, Message, FirstEventNumber);
             }
         }
 
@@ -420,6 +423,7 @@ namespace EventStore.Core.Messages
             public readonly ReadStreamResult Result;
             public readonly ResolvedEvent[] Events;
             public readonly string Error;
+            public readonly StreamMetadata Metadata;
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
             public readonly bool IsEndOfStream;
@@ -431,6 +435,7 @@ namespace EventStore.Core.Messages
                                                     int maxCount,
                                                     ReadStreamResult result,
                                                     ResolvedEvent[] events,
+                                                    StreamMetadata metadata,
                                                     string error,
                                                     int nextEventNumber,
                                                     int lastEventNumber,
@@ -453,6 +458,7 @@ namespace EventStore.Core.Messages
 
                 Result = result;
                 Events = events;
+                Metadata = metadata;
                 Error = error;
                 NextEventNumber = nextEventNumber;
                 LastEventNumber = lastEventNumber;
@@ -460,11 +466,11 @@ namespace EventStore.Core.Messages
                 LastCommitPosition = lastCommitPosition;
             }
 
-            public static ReadStreamEventsForwardCompleted NoRecords(ReadStreamResult result, Guid correlationId,  string eventStreamId,
-                                                                     int fromEventNumber, int maxCount, long lastCommitPosition, string message = null)
+            public static ReadStreamEventsForwardCompleted NoData(ReadStreamResult result, Guid correlationId,  string eventStreamId,
+                                                                  int fromEventNumber, int maxCount, long lastCommitPosition, string message = null)
             {
                 return new ReadStreamEventsForwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount, 
-                                                            result, EmptyRecords, message ?? string.Empty, 
+                                                            result, EmptyRecords, null, message ?? string.Empty, 
                                                             -1, -1, true, lastCommitPosition);
             }
         }
@@ -513,6 +519,7 @@ namespace EventStore.Core.Messages
 
             public readonly ReadStreamResult Result;
             public readonly ResolvedEvent[] Events;
+            public readonly StreamMetadata Metadata;
             public readonly string Error;
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
@@ -525,6 +532,7 @@ namespace EventStore.Core.Messages
                                                      int maxCount,
                                                      ReadStreamResult result,
                                                      ResolvedEvent[] events,
+                                                     StreamMetadata metadata,
                                                      string error,
                                                      int nextEventNumber,
                                                      int lastEventNumber,
@@ -547,6 +555,7 @@ namespace EventStore.Core.Messages
 
                 Result = result;
                 Events = events;
+                Metadata = metadata;
                 Error = error;
                 NextEventNumber = nextEventNumber;
                 LastEventNumber = lastEventNumber;
@@ -554,11 +563,11 @@ namespace EventStore.Core.Messages
                 LastCommitPosition = lastCommitPosition;
             }
 
-            public static ReadStreamEventsBackwardCompleted NoRecords(ReadStreamResult result, Guid correlationId, string eventStreamId,
-                                                                      int fromEventNumber, int maxCount, long lastCommitPosition, string message = null)
+            public static ReadStreamEventsBackwardCompleted NoData(ReadStreamResult result, Guid correlationId, string eventStreamId,
+                                                                   int fromEventNumber, int maxCount, long lastCommitPosition, string message = null)
             {
                 return new ReadStreamEventsBackwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
-                                                             result, EmptyRecords, message ?? string.Empty,
+                                                             result, EmptyRecords, null, message ?? string.Empty,
                                                              -1, -1, true, lastCommitPosition);
             }
         }
@@ -599,14 +608,16 @@ namespace EventStore.Core.Messages
             public readonly string Error;
 
             public readonly ResolvedEvent[] Events;
+            public readonly StreamMetadata Metadata;
             public readonly int MaxCount;
             public readonly TFPos CurrentPos;
             public readonly TFPos NextPos;
             public readonly TFPos PrevPos;
             public readonly long TfEofPosition;
 
-            public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events, 
-                                                 int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
+            public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events,
+                                                 StreamMetadata metadata, int maxCount,
+                                                 TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
             {
                 Ensure.NotNull(events, "events");
 
@@ -614,6 +625,7 @@ namespace EventStore.Core.Messages
                 Result = result;
                 Error = error;
                 Events = events;
+                Metadata = metadata;
                 MaxCount = maxCount;
                 CurrentPos = currentPos;
                 NextPos = nextPos;
@@ -658,6 +670,7 @@ namespace EventStore.Core.Messages
             public readonly string Error;
 
             public readonly ResolvedEvent[] Events;
+            public readonly StreamMetadata Metadata;
             public readonly int MaxCount;
             public readonly TFPos CurrentPos;
             public readonly TFPos NextPos;
@@ -665,7 +678,8 @@ namespace EventStore.Core.Messages
             public readonly long TfEofPosition;
 
             public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events, 
-                                                  int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
+                                                  StreamMetadata metadata, int maxCount,
+                                                  TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
             {
                 Ensure.NotNull(events, "events");
 
@@ -673,6 +687,7 @@ namespace EventStore.Core.Messages
                 Result = result;
                 Error = error;
                 Events = events;
+                Metadata = metadata;
                 MaxCount = maxCount;
                 CurrentPos = currentPos;
                 NextPos = nextPos;

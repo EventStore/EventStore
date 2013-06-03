@@ -101,6 +101,7 @@
     <Compile Include="Data\EventRecord.cs" />
     <Compile Include="Data\ReadAllResult.cs" />
     <Compile Include="Data\ReadStreamResult.cs" />
+    <Compile Include="Data\StreamMetadata.cs" />
     <Compile Include="Data\TFPos.cs" />
     <Compile Include="Exceptions\BadChunkInDatabaseException.cs" />
     <Compile Include="Exceptions\ChunkNotFoundException.cs" />
@@ -166,7 +167,6 @@
     <Compile Include="Services\Storage\ReaderIndex\IndexReadStreamResult.cs" />
     <Compile Include="Data\ReadEventResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\StreamCacheInfo.cs" />
-    <Compile Include="Services\Storage\ReaderIndex\StreamMetadata.cs" />
     <Compile Include="Services\Storage\StorageReaderWorker.cs" />
     <Compile Include="Services\Storage\StorageScavenger.cs" />
     <Compile Include="Services\SystemNames.cs" />

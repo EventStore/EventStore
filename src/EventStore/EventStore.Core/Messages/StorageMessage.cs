@@ -300,22 +300,6 @@ namespace EventStore.Core.Messages
         {
         }
 
-        public class ForwardingTimeout : Message
-        {
-            public readonly Guid ForwardingId;
-            public readonly Guid CorrelationId;
-            public readonly Message TimeoutMessage;
-
-            public ForwardingTimeout(Guid forwardingId, Guid correlationId, Message timeoutMessage)
-            {
-                Ensure.NotNull(timeoutMessage, "timeoutMessage");
-
-                ForwardingId = forwardingId;
-                CorrelationId = correlationId;
-                TimeoutMessage = timeoutMessage;
-            }
-        }
-
         public class CheckStreamAccess: Message
         {
             public readonly IEnvelope Envelope;

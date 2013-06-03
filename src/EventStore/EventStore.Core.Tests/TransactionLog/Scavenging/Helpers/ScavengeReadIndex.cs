@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
             StreamInfo streamInfo;
             if (_streams.TryGetValue(streamId, out streamInfo))
-                return streamInfo.StreamMetadata;
+                return streamInfo.StreamMetadata ?? StreamMetadata.Empty;
             return new StreamMetadata(null, null, null, null);
         }
 

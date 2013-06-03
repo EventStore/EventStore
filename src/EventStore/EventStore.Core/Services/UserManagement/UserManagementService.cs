@@ -34,8 +34,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
@@ -56,7 +54,7 @@ namespace EventStore.Core.Services.UserManagement
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
         private readonly bool _skipInitializeStandardUsersCheck;
-        private ILogger _log;
+        private readonly ILogger _log;
 
         public UserManagementService(
             IPublisher publisher, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm,
@@ -180,9 +178,7 @@ namespace EventStore.Core.Services.UserManagement
                     "admin", completed =>
                         {
                             if (completed.Result == ReadStreamResult.NoStream)
-                            {
                                 CreateAdminUser();
-                            }
                             else
                                 NotifyInitialized();
                         });
@@ -405,40 +401,40 @@ namespace EventStore.Core.Services.UserManagement
                 SystemUsers.DefaultAdminPassword);
             WriteStreamAcl(
                 SystemUsers.Admin, completed1 =>
+                {
+                    switch (completed1.Result)
                     {
-                        switch (completed1.Result)
-                        {
-                            case OperationResult.CommitTimeout:
-                            case OperationResult.PrepareTimeout:
-                                CreateAdminUser();
-                                break;
-                            default:
-                                _log.Error("'admin' user account could not be created");
-                                NotifyInitialized();
-                                break;
-                            case OperationResult.Success:
-                                WriteUserEvent(
-                                    userData, "$UserCreated", ExpectedVersion.NoStream, completed =>
+                        case OperationResult.CommitTimeout:
+                        case OperationResult.PrepareTimeout:
+                            CreateAdminUser();
+                            break;
+                        default:
+                            _log.Error("'admin' user account could not be created");
+                            NotifyInitialized();
+                            break;
+                        case OperationResult.Success:
+                            WriteUserEvent(
+                                userData, "$UserCreated", ExpectedVersion.NoStream, completed =>
+                                    {
+                                        switch (completed.Result)
                                         {
-                                            switch (completed.Result)
-                                            {
-                                                case OperationResult.Success:
-                                                    _log.Info("'admin' user account has been created");
-                                                    NotifyInitialized();
-                                                    break;
-                                                case OperationResult.CommitTimeout:
-                                                case OperationResult.PrepareTimeout:
-                                                    CreateAdminUser();
-                                                    break;
-                                                default:
-                                                    _log.Error("'admin' user account could not be created");
-                                                    NotifyInitialized();
-                                                    break;
-                                            }
-                                        });
-                                break;
-                        }
-                    });
+                                            case OperationResult.Success:
+                                                _log.Info("'admin' user account has been created");
+                                                NotifyInitialized();
+                                                break;
+                                            case OperationResult.CommitTimeout:
+                                            case OperationResult.PrepareTimeout:
+                                                CreateAdminUser();
+                                                break;
+                                            default:
+                                                _log.Error("'admin' user account could not be created");
+                                                NotifyInitialized();
+                                                break;
+                                        }
+                                    });
+                            break;
+                    }
+                });
         }
 
         private bool DemandAdmin(UserManagementMessage.UserManagementRequestMessage message)

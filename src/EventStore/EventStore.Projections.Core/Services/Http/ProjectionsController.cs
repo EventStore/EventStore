@@ -379,10 +379,9 @@ namespace EventStore.Projections.Core.Services.Http
                 return Configure.InternalServerError();
             else
                 return state.Position != null
-                           ? Configure.OkNoCache(
-                               "application/json", Helper.UTF8NoBom,
-                               new KeyValuePair<string, string>("X-ES-Position", state.Position.ToJsonString()))
-                           : Configure.OkNoCache("application/json", Helper.UTF8NoBom);
+                           ? Configure.Ok("application/json", Helper.UTF8NoBom, null, null,
+                                          new KeyValuePair<string, string>("X-ES-Position", state.Position.ToJsonString()))
+                           : Configure.Ok("application/json", Helper.UTF8NoBom, null, null);
         }
 
         private ResponseConfiguration ResultConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionResult state)
@@ -391,17 +390,16 @@ namespace EventStore.Projections.Core.Services.Http
                 return Configure.InternalServerError();
             else
                 return state.Position != null
-                           ? Configure.OkNoCache(
-                               "application/json", Helper.UTF8NoBom,
-                               new KeyValuePair<string, string>("X-ES-Position", state.Position.ToJsonString()))
-                           : Configure.OkNoCache("application/json", Helper.UTF8NoBom);
+                           ? Configure.Ok("application/json", Helper.UTF8NoBom, null, null,
+                                          new KeyValuePair<string, string>("X-ES-Position", state.Position.ToJsonString()))
+                           : Configure.Ok("application/json", Helper.UTF8NoBom, null, null);
         }
 
         private ResponseConfiguration FeedPageConfigurator(ICodec codec, FeedReaderMessage.FeedPage page)
         {
             if (page.Error == FeedReaderMessage.FeedPage.ErrorStatus.NotAuthorized)
                 return Configure.Unauthorized();
-            return Configure.OkNoCache("application/json", Helper.UTF8NoBom);
+            return Configure.Ok("application/json", Helper.UTF8NoBom, null, null);
         }
 
         private string StateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionState state)
@@ -453,7 +451,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration QueryConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
         {
-            return Configure.OkNoCache("application/javascript", Helper.UTF8NoBom);
+            return Configure.Ok("application/javascript", Helper.UTF8NoBom, null, null);
         }
 
         private string QueryFormatter(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
@@ -468,7 +466,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration QueryConfigConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
         {
-            return Configure.OkNoCache("application/json", Helper.UTF8NoBom);
+            return Configure.Ok("application/json", Helper.UTF8NoBom, null, null);
         }
 
         private ResponseConfiguration OkResponseConfigurator<T>(ICodec codec, T message)
@@ -478,7 +476,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration OkNoCacheResponseConfigurator<T>(ICodec codec, T message)
         {
-            return Configure.OkNoCache(codec.ContentType, codec.Encoding);
+            return Configure.Ok(codec.ContentType, codec.Encoding, null, null);
         }
 
         private IEnvelope ErrorsEnvelope(HttpEntityManager http)

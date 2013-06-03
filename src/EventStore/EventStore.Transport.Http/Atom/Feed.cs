@@ -32,7 +32,6 @@ using System.Xml.Schema;
 using System.Xml.Serialization;
 using EventStore.Common.Utils;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace EventStore.Transport.Http.Atom
 {
@@ -42,9 +41,6 @@ namespace EventStore.Transport.Http.Atom
         public string Id { get; set; }
         public string Updated { get; set; }
         public PersonElement Author { get; set; }
-        public bool HeadOfStream { get; set; }
-        public string SelfUrl { get; set; }
-        public string ETag { get; set; }
 
         public List<LinkElement> Links { get; set; }
         public List<EntryElement> Entries { get; set; }
@@ -125,21 +121,6 @@ namespace EventStore.Transport.Http.Atom
             Entries.ForEach(entry => entry.WriteXml(writer, usePrefix: false));
 
             writer.WriteEndElement();
-        }
-
-        public void SetHeadOfStream(bool headOfStream)
-        {
-            this.HeadOfStream = headOfStream;
-        }
-
-        public void SetSelfUrl(string self)
-        {
-            this.SelfUrl = self;
-        }
-
-        public void SetETag(string etag)
-        {
-            this.ETag = etag;
         }
     }
 

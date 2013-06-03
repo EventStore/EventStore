@@ -126,11 +126,16 @@ namespace EventStore.Core.Util
 
         private static ResponseConfiguration GetWebPageConfig(string contentType)
         {
+            var encoding = contentType.StartsWith("image") ? null : Helper.UTF8NoBom;
+            int? cacheSeconds =
 #if RELEASE || CACHE_WEB_CONTENT
-            return Configure.OkCache(contentType, 60 * 60); //1 hour
+                60*60; // 1 hour
 #else
-            return Configure.OkNoCache(contentType, contentType.StartsWith("image") ? null : Helper.UTF8NoBom);
+                null; // no caching
 #endif
+// ReSharper disable ExpressionIsAlwaysNull
+            return Configure.Ok(contentType, encoding, null, cacheSeconds);
+// ReSharper restore ExpressionIsAlwaysNull
         }
 
         public static string GetWebRootFileSystemDirectory(string debugPath = null)

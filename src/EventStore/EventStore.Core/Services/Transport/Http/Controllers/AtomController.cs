@@ -53,8 +53,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
     public class AtomController : CommunicationController
     {
+        public const char ETagSeparator = ';';
+        public static readonly char[] ETagSeparatorArray = new[] { ';' };
+
         private static readonly ILogger Log = LogManager.GetLoggerFor<AtomController>();
-        private static readonly char[] ETagSeparator = new[] { ';' };
 
         private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
         private static readonly ICodec EventStoreJsonCodec = Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Helper.UTF8NoBom);
@@ -582,7 +584,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             if (etag.IsNotEmptyString())
             {
                 // etag format is version;contenttypehash
-                var splitted = etag.Trim('\"').Split(ETagSeparator);
+                var splitted = etag.Trim('\"').Split(ETagSeparatorArray);
                 if (splitted.Length == 2)
                 {
                     var typeHash = manager.ResponseCodec.ContentType.GetHashCode().ToString(CultureInfo.InvariantCulture);
@@ -599,7 +601,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             if (etag.IsNotEmptyString())
             {
                 // etag format is version;contenttypehash
-                var splitted = etag.Trim('\"').Split(ETagSeparator);
+                var splitted = etag.Trim('\"').Split(ETagSeparatorArray);
                 if (splitted.Length == 2)
                 {
                     var typeHash = manager.ResponseCodec.ContentType.GetHashCode().ToString(CultureInfo.InvariantCulture);
