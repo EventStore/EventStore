@@ -364,11 +364,11 @@ namespace EventStore.Projections.Core.Services.Http
                         if (mode <= ProjectionMode.OneTime && string.IsNullOrEmpty(name))
                             postMessage = new ProjectionManagementMessage.Post(
                                 envelope, mode, Guid.NewGuid().ToString("D"), runAs, handlerType, s, enabled: enabled,
-                                checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled);
+                                checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled, enableRunAs: true);
                         else
                             postMessage = new ProjectionManagementMessage.Post(
                                 envelope, mode, name, runAs, handlerType, s, enabled: enabled,
-                                checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled);
+                                checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled, enableRunAs: true);
                         Publish(postMessage);
                     }, Console.WriteLine);
         }
