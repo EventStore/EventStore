@@ -78,25 +78,10 @@ namespace EventStore.Transport.Http.EntityManagement
             _requestedUrl = httpEntity.RequestedUrl;
         }
 
-        public ICodec RequestCodec
-        {
-            get { return _requestCodec; }
-        }
-
-        public ICodec ResponseCodec
-        {
-            get { return _responseCodec; }
-        }
-
-        public Uri RequestedUrl
-        {
-            get { return _requestedUrl; }
-        }
-
-        public IPrincipal User
-        {
-            get { return HttpEntity.User; }
-        }
+        public ICodec RequestCodec { get { return _requestCodec; } }
+        public ICodec ResponseCodec { get { return _responseCodec; } }
+        public Uri RequestedUrl { get { return _requestedUrl; } }
+        public IPrincipal User { get { return HttpEntity.User; } }
 
         private void SetResponseCode(int code)
         {
@@ -106,7 +91,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (ObjectDisposedException e)
             {
-                Log.InfoException(e, "Attempt to set http status code on disposed response object, ignoring...");
+                // ignore
             }
             catch (ProtocolViolationException e)
             {
@@ -122,7 +107,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (ObjectDisposedException e)
             {
-                Log.InfoException(e, "Attempt to set http status description on disposed response object, ignoring...");
+                // ignore
             }
             catch (ArgumentException e)
             {
@@ -134,12 +119,11 @@ namespace EventStore.Transport.Http.EntityManagement
         {
             try
             {
-                HttpEntity.Response.ContentType = contentType
-                                                  + (encoding != null ? ("; charset: " + encoding.WebName) : "");
+                HttpEntity.Response.ContentType = contentType + (encoding != null ? ("; charset: " + encoding.WebName) : "");
             }
             catch (ObjectDisposedException e)
             {
-                Log.InfoException(e, "Attempt to set response content type on disposed response object, ignoring...");
+                // ignore
             }
             catch (InvalidOperationException e)
             {
@@ -159,7 +143,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (ObjectDisposedException e)
             {
-                Log.InfoException(e, "Attempt to set content length on disposed response object, ignoring...");
+                // ignore
             }
             catch (InvalidOperationException e)
             {
@@ -178,8 +162,12 @@ namespace EventStore.Transport.Http.EntityManagement
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Methods", string.Join(", ", _allowedMethods));
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-PINGOTHER");
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Origin", "*");
-				if (HttpEntity.Response.StatusCode == HttpStatusCode.Unauthorized) 
-					HttpEntity.Response.AddHeader("WWW-Authenticate", "Basic realm=\"ES\"");
+                if (HttpEntity.Response.StatusCode == HttpStatusCode.Unauthorized)
+                    HttpEntity.Response.AddHeader("WWW-Authenticate", "Basic realm=\"ES\"");
+            }
+            catch (ObjectDisposedException)
+            {
+                // ignore
             }
             catch (Exception e)
             {
@@ -195,6 +183,10 @@ namespace EventStore.Transport.Http.EntityManagement
                 {
                     HttpEntity.Response.AddHeader(kvp.Key, kvp.Value);
                 }
+            }
+            catch (ObjectDisposedException)
+            {
+                // ignore
             }
             catch (Exception e)
             {

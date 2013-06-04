@@ -90,7 +90,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test]
-
         public void messages_order_should_remain_the_same()
         {
             Consumer.SetWaitingCount(6);

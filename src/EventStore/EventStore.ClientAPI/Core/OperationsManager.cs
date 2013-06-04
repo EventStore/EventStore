@@ -126,8 +126,8 @@ namespace EventStore.ClientAPI.Core
                 }
                 else if (operation.Timeout > TimeSpan.Zero && DateTime.UtcNow - operation.LastUpdated > _settings.OperationTimeout)
                 {
-                    var err = string.Format("EventStoreConnection '{0}': operation {1} never got response from server.\n" +
-                                            "Last state update: {2:HH:mm:ss.fff}, UTC now: {3:HH:mm:ss.fff}.",
+                    var err = string.Format("EventStoreConnection '{0}': operation never got response from server.\n"
+                                            + "Operation: {1}\nLast state update: {2:HH:mm:ss.fff}, UTC now: {3:HH:mm:ss.fff}.",
                                             _connectionName, operation, operation.LastUpdated, DateTime.UtcNow);
                     _settings.Log.Error(err);
 
@@ -157,9 +157,10 @@ namespace EventStore.ClientAPI.Core
                 _retryPendingOperations.Sort(SeqNoComparer);
                 foreach (var operation in _retryPendingOperations)
                 {
-                    LogDebug("retrying {0}.", operation);
+                    var oldCorrId = operation.CorrelationId;
                     operation.CorrelationId = Guid.NewGuid();
                     operation.RetryCount += 1;
+                    LogDebug("retrying, old corrId {0}, operation {1}.", oldCorrId, operation);
                     ScheduleOperation(operation, connection);
                 }
                 _retryPendingOperations.Clear();
