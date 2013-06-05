@@ -158,9 +158,16 @@ Task Copy-V8ToLibs -Depends Build-V8 {
     Copy-Item $v8IncludeSource $v8IncludeDestination -Recurse -Force -ErrorAction Stop
 
     Push-Location $v8LibsDestination
+
+    #V8 build changed at some point to include the platform in the
+    # name of the lib file. Where we use V8 we still use the old names
+    # so rename here if necessary.
     foreach ($libFile in Get-ChildItem) {
         $newName = $libFile.Name.Replace(".x64.lib", ".lib")
         if ($newName -ne $libFile.Name) {
+            if (Test-Path $newName) {
+                Remove-Item $newName -Force
+            }
             Rename-Item -Path $libFile -NewName $newName
         }
     }
