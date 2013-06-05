@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Net;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
@@ -58,8 +59,8 @@ namespace EventStore.ClientAPI
 
         private Action<IEventStoreConnection, Exception> _errorOccurred;
         private Action<IEventStoreConnection, string> _closed;
-        private Action<IEventStoreConnection> _connected;
-        private Action<IEventStoreConnection> _disconnected;
+        private Action<IEventStoreConnection, IPEndPoint> _connected;
+        private Action<IEventStoreConnection, IPEndPoint> _disconnected;
         private Action<IEventStoreConnection> _reconnecting;
         private Action<IEventStoreConnection, string> _authenticationFailed;
 
@@ -329,7 +330,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="handler"></param>
         /// <returns></returns>
-        public ConnectionSettingsBuilder OnConnected(Action<IEventStoreConnection> handler)
+        public ConnectionSettingsBuilder OnConnected(Action<IEventStoreConnection, IPEndPoint> handler)
         {
             _connected = handler;
             return this;
@@ -340,7 +341,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="handler"></param>
         /// <returns></returns>
-        public ConnectionSettingsBuilder OnDisconnected(Action<IEventStoreConnection> handler)
+        public ConnectionSettingsBuilder OnDisconnected(Action<IEventStoreConnection, IPEndPoint> handler)
         {
             _disconnected = handler;
             return this;

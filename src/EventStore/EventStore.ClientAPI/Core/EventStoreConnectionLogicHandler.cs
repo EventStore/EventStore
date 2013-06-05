@@ -253,7 +253,7 @@ namespace EventStore.ClientAPI.Core
             _reconnInfo = new ReconnectionInfo(_reconnInfo.ReconnectionAttempt, _stopwatch.Elapsed);
 
             if (_settings.Disconnected != null)
-                _settings.Disconnected(_esConnection);
+                _settings.Disconnected(_esConnection, connection.EffectiveEndPoint);
         }
 
         private void TcpConnectionEstablished(TcpPackageConnection connection)
@@ -295,7 +295,7 @@ namespace EventStore.ClientAPI.Core
             _connectingPhase = ConnectingPhase.Connected;
 
             if (_settings.Connected != null)
-                _settings.Connected(_esConnection);
+                _settings.Connected(_esConnection, _connection.EffectiveEndPoint);
 
             _operations.CheckTimeoutsAndRetry(_connection);
             _subscriptions.CheckTimeoutsAndRetry(_connection);
