@@ -39,8 +39,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<AdminController>();
 
-        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml };
-        private static readonly ICodec DefaultResponseCodec = Codec.Json;
+        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml };
 
         public AdminController(IPublisher publisher) : base(publisher)
         {
@@ -48,11 +47,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
-            service.RegisterControllerAction(new ControllerAction("/admin/halt", HttpMethod.Get, SupportedCodecs, SupportedCodecs),
+            service.RegisterControllerAction(new ControllerAction("/admin/halt", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
                                              OnPostHalt);
-            service.RegisterControllerAction(new ControllerAction("/admin/shutdown", HttpMethod.Get, SupportedCodecs, SupportedCodecs), 
+            service.RegisterControllerAction(new ControllerAction("/admin/shutdown", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), 
                                              OnPostShutdown);
-            service.RegisterControllerAction(new ControllerAction("/admin/scavenge", HttpMethod.Get, SupportedCodecs, SupportedCodecs),
+            service.RegisterControllerAction(new ControllerAction("/admin/scavenge", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
                                              OnPostScavenge);
         }
 
