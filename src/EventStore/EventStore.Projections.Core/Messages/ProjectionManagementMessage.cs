@@ -28,6 +28,7 @@
 using System;
 using System.Security.Principal;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -96,8 +97,16 @@ namespace EventStore.Projections.Core.Messages
                 get { return _runAs; }
             }
 
-            public static bool ValidateRunAs(IPrincipal existingRunAs, ControlMessage message, bool replace = false)
+            public static bool ValidateRunAs(ProjectionMode mode, ReadWrite readWrite, IPrincipal existingRunAs, ControlMessage message, bool replace = false)
             {
+                if (mode > ProjectionMode.Transient && readWrite == ReadWrite.Write
+                    && (message.RunAs == null || message.RunAs.Principal == null
+                        || !message.RunAs.Principal.IsInRole(SystemUserGroups.Admins)))
+                {
+                    message.Envelope.ReplyWith(new NotAuthorized());
+                    return false;
+                }
+
                 if (replace && message.RunAs.Principal == null)
                 {
                     message.Envelope.ReplyWith(new NotAuthorized());

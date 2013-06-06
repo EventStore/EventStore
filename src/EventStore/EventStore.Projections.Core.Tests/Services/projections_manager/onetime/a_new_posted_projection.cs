@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 yield return
                     (new ProjectionManagementMessage.Post(
                         new PublishEnvelope(_bus), _projectionMode, _projectionName,
-                        ProjectionManagementMessage.RunAs.Anonymous,
+                        ProjectionManagementMessage.RunAs.System,
                         "native:" + _fakeProjectionType.AssemblyQualifiedName, _projectionSource, enabled: true,
                         checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
             }

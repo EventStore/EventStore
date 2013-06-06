@@ -197,7 +197,9 @@ namespace EventStore.Projections.Core.Services.Management
             if (!_started)
                 return;
 
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(null, message, replace: message.EnableRunAs)) return;
+            if (
+                !ProjectionManagementMessage.RunAs.ValidateRunAs(
+                    message.Mode, ReadWrite.Write, null, message, replace: message.EnableRunAs)) return;
 
             if (message.Name == null)
             {
