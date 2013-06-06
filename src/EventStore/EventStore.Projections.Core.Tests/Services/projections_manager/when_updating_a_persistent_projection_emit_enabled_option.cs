@@ -63,12 +63,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             yield return
                 (new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
-                    ProjectionManagementMessage.RunAs.Anonymous, "JS", _source, enabled: true, checkpointsEnabled: true,
+                    ProjectionManagementMessage.RunAs.System, "JS", _source, enabled: true, checkpointsEnabled: true,
                     emitEnabled: true));
             // when
             yield return
                 (new ProjectionManagementMessage.UpdateQuery(
-                    new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous, "JS",
+                    new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System, "JS",
                     _source, emitEnabled: false));
         }
 

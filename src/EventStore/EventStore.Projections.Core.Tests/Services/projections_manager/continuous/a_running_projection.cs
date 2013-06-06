@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 
                 yield return
                     (new ProjectionManagementMessage.Disable(
-                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
                 for (var i = 0; i < 50; i++)
                 {
                     yield return
@@ -191,7 +191,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 
                 yield return
                     (new ProjectionManagementMessage.Reset(
-                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
             }
 
             [Test]
@@ -263,10 +263,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 foreach (var m in base.When()) yield return m;
                 yield return
                     (new ProjectionManagementMessage.Reset(
-                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
                 yield return
                     (new ProjectionManagementMessage.Enable(
-                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
                 yield return
                     (ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                         _reader, new TFPos(100, 150), new TFPos(100, 150), "stream", 1 + 1, "stream", 1 + 1, false,
