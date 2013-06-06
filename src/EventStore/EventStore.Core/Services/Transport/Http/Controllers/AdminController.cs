@@ -48,33 +48,33 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
-            service.RegisterControllerAction(new ControllerAction("/halt",
-                                                                  HttpMethod.Get,
-                                                                  SupportedCodecs,
-                                                                  SupportedCodecs),
+            service.RegisterControllerAction(new ControllerAction("/admin/halt", HttpMethod.Get, SupportedCodecs, SupportedCodecs),
                                              OnPostHalt);
-            service.RegisterControllerAction(new ControllerAction("/shutdown",
-                                                                  HttpMethod.Get,
-                                                                  SupportedCodecs,
-                                                                  SupportedCodecs),
+            service.RegisterControllerAction(new ControllerAction("/admin/shutdown", HttpMethod.Get, SupportedCodecs, SupportedCodecs), 
                                              OnPostShutdown);
+            service.RegisterControllerAction(new ControllerAction("/admin/scavenge", HttpMethod.Get, SupportedCodecs, SupportedCodecs),
+                                             OnPostScavenge);
         }
 
         private void OnPostHalt(HttpEntityManager entity, UriTemplateMatch match)
         {
             Log.Info("Request shut down of node because halt command has been received.");
             Publish(new ClientMessage.RequestShutdown(exitProcess: false));
-            entity.ReplyStatus(HttpStatusCode.OK,
-                                 "OK",
-                                 e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
+            entity.ReplyStatus(HttpStatusCode.OK, "OK", e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
         }
+
         private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match)
         {
             Log.Info("Request shut down of node because shutdown command has been received.");
             Publish(new ClientMessage.RequestShutdown(exitProcess: true));
-            entity.ReplyStatus(HttpStatusCode.OK,
-                                 "OK",
-                                 e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
+            entity.ReplyStatus(HttpStatusCode.OK, "OK", e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
+        }
+
+        private void OnPostScavenge(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            Log.Info("Request scavenging because /admin/scavenge request has been received.");
+            Publish(new SystemMessage.ScavengeDatabase());
+            entity.ReplyStatus(HttpStatusCode.OK, "OK", e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
         }
     }
 }
