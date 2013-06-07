@@ -25,16 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
+
 using System.IO;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog
+namespace EventStore.Core.Tests.TransactionLog.Validation
 {
     [TestFixture]
     public class when_validating_tfchunk_db : SpecificationWithDirectory
@@ -72,7 +71,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
                 Assert.That(() => db.Open(verifyHash: false),
                             Throws.Exception.InstanceOf<CorruptDatabaseException>()
                             .With.InnerException.InstanceOf<ChunkNotFoundException>());
@@ -92,7 +91,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
                 Assert.DoesNotThrow(() => db.Open(verifyHash: false));
             }
         }
@@ -110,10 +109,10 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
-                CreateOngoingChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
-                CreateOngoingChunk(config, 3, GetFilePathFor("chunk-000003.000000"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
+                DbUtil.CreateOngoingChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
+                DbUtil.CreateOngoingChunk(config, 3, GetFilePathFor("chunk-000003.000000"));
                 Assert.That(() => db.Open(verifyHash: false),
                             Throws.Exception.InstanceOf<CorruptDatabaseException>()
                             .With.InnerException.InstanceOf<BadChunkInDatabaseException>());
@@ -133,8 +132,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
                 Assert.DoesNotThrow(() => db.Open(verifyHash: false));
             }
         }
@@ -152,8 +151,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
                 Assert.That(() => db.Open(verifyHash: false),
                             Throws.Exception.InstanceOf<CorruptDatabaseException>()
                             .With.InnerException.InstanceOf<BadChunkInDatabaseException>());
@@ -173,7 +172,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateOngoingChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateOngoingChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
                 Assert.DoesNotThrow(() => db.Open(verifyHash: false));
             }
         }
@@ -191,8 +190,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateOngoingChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
+                DbUtil.CreateOngoingChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
                 Assert.That(() => db.Open(verifyHash: false),
                             Throws.Exception.InstanceOf<CorruptDatabaseException>()
                             .With.InnerException.InstanceOf<BadChunkInDatabaseException>());
@@ -212,8 +211,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000000"), actualDataSize: config.ChunkSize - 1000);
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000000"), actualDataSize: config.ChunkSize - 1000);
                 Assert.That(() => db.Open(verifyHash: false),
                             Throws.Exception.InstanceOf<CorruptDatabaseException>()
                             .With.InnerException.InstanceOf<BadChunkInDatabaseException>());
@@ -233,8 +232,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateOngoingChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
+                DbUtil.CreateOngoingChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
                 Assert.That(() => db.Open(verifyHash: false),
                             Throws.Exception.InstanceOf<CorruptDatabaseException>()
                             .With.InnerException.InstanceOf<ExtraneousFileFoundException>());
@@ -255,9 +254,9 @@ namespace EventStore.Core.Tests.TransactionLog
 
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
-                CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
+                DbUtil.CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
                 Assert.That(() => db.Open(verifyHash: false),
                             Throws.Exception.InstanceOf<CorruptDatabaseException>()
                             .With.InnerException.InstanceOf<ExtraneousFileFoundException>());
@@ -277,7 +276,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 4, GetFilePathFor("chunk-000004.000000"));
+                DbUtil.CreateSingleChunk(config, 4, GetFilePathFor("chunk-000004.000000"));
                 Assert.That(() => db.Open(verifyHash: false),
                             Throws.Exception.InstanceOf<CorruptDatabaseException>()
                             .With.InnerException.InstanceOf<ExtraneousFileFoundException>());
@@ -353,7 +352,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateOngoingChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateOngoingChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
                 Assert.DoesNotThrow(() => db.Open(verifyHash: false));
             }
         }
@@ -371,7 +370,75 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                Assert.That(() => db.Open(verifyHash: false),
+                            Throws.Exception.InstanceOf<CorruptDatabaseException>()
+                            .With.InnerException.InstanceOf<BadChunkInDatabaseException>());
+            }
+        }
+
+        [Test]
+        public void allows_checkpoint_to_point_into_the_middle_of_completed_chunk_when_enough_actual_data_in_chunk()
+        {
+            var config = new TFChunkDbConfig(PathName,
+                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
+                                             1000,
+                                             0,
+                                             new InMemoryCheckpoint(1500),
+                                             new InMemoryCheckpoint(),
+                                             new InMemoryCheckpoint(-1),
+                                             new InMemoryCheckpoint(-1));
+            using (var db = new TFChunkDb(config))
+            {
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"), actualDataSize: 500);
+
+                Assert.DoesNotThrow(() => db.Open(verifyHash: false));
+
+                Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
+                Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000001.000001")));
+                Assert.AreEqual(2, Directory.GetFiles(PathName, "*").Length);
+            }
+        }
+
+        [Test]
+        public void does_not_allow_checkpoint_to_point_into_the_middle_of_completed_chunk_when_not_enough_actual_data()
+        {
+            var config = new TFChunkDbConfig(PathName,
+                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
+                                             1000,
+                                             0,
+                                             new InMemoryCheckpoint(1500),
+                                             new InMemoryCheckpoint(),
+                                             new InMemoryCheckpoint(-1),
+                                             new InMemoryCheckpoint(-1));
+            using (var db = new TFChunkDb(config))
+            {
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"), actualDataSize: 499);
+
+                Assert.That(() => db.Open(verifyHash: false),
+                            Throws.Exception.InstanceOf<CorruptDatabaseException>()
+                            .With.InnerException.InstanceOf<BadChunkInDatabaseException>());
+            }
+        }
+
+        [Test]
+        public void does_not_allow_checkpoint_to_point_into_the_middle_of_scavenged_chunk()
+        {
+            var config = new TFChunkDbConfig(PathName,
+                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
+                                             1000,
+                                             0,
+                                             new InMemoryCheckpoint(1500),
+                                             new InMemoryCheckpoint(),
+                                             new InMemoryCheckpoint(-1),
+                                             new InMemoryCheckpoint(-1));
+            using (var db = new TFChunkDb(config))
+            {
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"), isScavenged: true, actualDataSize: 1000);
+
                 Assert.That(() => db.Open(verifyHash: false),
                             Throws.Exception.InstanceOf<CorruptDatabaseException>()
                             .With.InnerException.InstanceOf<BadChunkInDatabaseException>());
@@ -394,14 +461,14 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000002"));
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000005"));
-                CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
-                CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
-                CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
-                CreateSingleChunk(config, 3, GetFilePathFor("chunk-000003.000007"));
-                CreateOngoingChunk(config, 3, GetFilePathFor("chunk-000003.000008"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000002"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000005"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
+                DbUtil.CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
+                DbUtil.CreateSingleChunk(config, 3, GetFilePathFor("chunk-000003.000007"));
+                DbUtil.CreateOngoingChunk(config, 3, GetFilePathFor("chunk-000003.000008"));
 
                 Assert.DoesNotThrow(() => db.Open(verifyHash: false));
 
@@ -428,9 +495,9 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
-                CreateOngoingChunk(config, 2, GetFilePathFor("chunk-000002.000005"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
+                DbUtil.CreateOngoingChunk(config, 2, GetFilePathFor("chunk-000002.000005"));
 
                 Assert.DoesNotThrow(() => db.Open(verifyHash: false));
 
@@ -454,10 +521,10 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
-                CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
-                CreateOngoingChunk(config, 2, GetFilePathFor("chunk-000002.000001"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
+                DbUtil.CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
+                DbUtil.CreateOngoingChunk(config, 2, GetFilePathFor("chunk-000002.000001"));
 
                 Assert.DoesNotThrow(() => db.Open(verifyHash: false));
 
@@ -481,8 +548,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
 
                 Assert.DoesNotThrow(() => db.Open(verifyHash: false));
                 Assert.IsNotNull(db.Manager.GetChunk(2));
@@ -507,9 +574,9 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
-                CreateOngoingChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
+                DbUtil.CreateOngoingChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
 
                 Assert.DoesNotThrow(() => db.Open(verifyHash: false));
                 Assert.IsNotNull(db.Manager.GetChunk(2));
@@ -534,8 +601,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"), actualDataSize: config.ChunkSize - 10);
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"), actualDataSize: config.ChunkSize - 10);
 
                 Assert.DoesNotThrow(() => db.Open(verifyHash: false));
                 Assert.IsNotNull(db.Manager.GetChunk(2));
@@ -560,8 +627,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000001"), actualSize: config.ChunkSize - 10);
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000001"), actualSize: config.ChunkSize - 10);
 
                 Assert.That(() => db.Open(verifyHash: false),
                             Throws.Exception.InstanceOf<CorruptDatabaseException>()
@@ -582,8 +649,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             using (var db = new TFChunkDb(config))
             {
-                CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-                CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+                DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
 
                 File.Create(GetFilePathFor("bla")).Close();
                 File.Create(GetFilePathFor("bla.scavenge.tmp")).Close();
@@ -596,28 +663,6 @@ namespace EventStore.Core.Tests.TransactionLog
                 Assert.IsTrue(File.Exists(GetFilePathFor("bla")));
                 Assert.AreEqual(3, Directory.GetFiles(PathName, "*").Length);
             }
-        }
-
-        private void CreateSingleChunk(TFChunkDbConfig config, int chunkNum, string filename, int? actualDataSize = null)
-        {
-            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, config.ChunkSize, chunkNum, chunkNum, false, Guid.NewGuid());
-            var chunkBytes = chunkHeader.AsByteArray();
-            var dataSize = actualDataSize ?? config.ChunkSize;
-            var buf = new byte[ChunkHeader.Size + dataSize + ChunkFooter.Size];
-            Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
-            var chunkFooter = new ChunkFooter(true, true, dataSize, dataSize, 0, new byte[ChunkFooter.ChecksumSize]);
-            chunkBytes = chunkFooter.AsByteArray();
-            Buffer.BlockCopy(chunkBytes, 0, buf, buf.Length - ChunkFooter.Size, chunkBytes.Length);
-            File.WriteAllBytes(filename, buf);
-        }
-
-        private void CreateOngoingChunk(TFChunkDbConfig config, int chunkNum, string filename, int? actualSize = null)
-        {
-            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, config.ChunkSize, chunkNum, chunkNum, false, Guid.NewGuid());
-            var chunkBytes = chunkHeader.AsByteArray();
-            var buf = new byte[ChunkHeader.Size + (actualSize ?? config.ChunkSize) + ChunkFooter.Size];
-            Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
-            File.WriteAllBytes(filename, buf);
         }
     }
 }

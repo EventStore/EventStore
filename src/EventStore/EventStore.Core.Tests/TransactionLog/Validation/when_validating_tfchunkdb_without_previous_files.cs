@@ -32,7 +32,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog
+namespace EventStore.Core.Tests.TransactionLog.Validation
 {
     [TestFixture]
     public class when_validating_tfchunkdb_without_previous_files : SpecificationWithDirectory

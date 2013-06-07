@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Truncation
 {
     [TestFixture]
-    public class when_truncating_in_a_middle_of_scavenged_chunk_with_index_in_memory : TruncateScenario
+    public class when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_memory : TruncateScenario
     {
         private string chunk0;
         private string chunk1;

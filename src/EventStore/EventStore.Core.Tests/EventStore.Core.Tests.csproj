@@ -336,17 +336,21 @@
     <Compile Include="SpecificationWithFile.cs" />
     <Compile Include="TestsInitFixture.cs" />
     <Compile Include="TransactionLog\Scavenging\scavenged_chunk.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_to_the_very_beginning_of_db.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_multichunk.cs" />
     <Compile Include="TransactionLog\Truncation\TruncateAndReOpenDbScenario.cs" />
     <Compile Include="TransactionLog\Truncation\TruncateScenario.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_few_chunks_with_index_on_disk.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_few_chunks_with_index_on_disk_and_then_reopening_db.cs" />
-    <Compile Include="TransactionLog\Truncation\when_truncating_in_a_middle_of_scavenged_chunk_with_index_in_memory.cs" />
-    <Compile Include="TransactionLog\Truncation\when_truncating_in_a_middle_of_scavenged_chunk_with_index_in_memory_and_then_reopening_db.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_memory.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_memory_and_then_reopening_db.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_right_at_the_end_of_multichunk.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_single_uncompleted_chunk_with_index_in_memory_and_then_reopening_db.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_single_uncompleted_chunk_with_index_on_disk.cs" />
     <Compile Include="TransactionLog\Scavenging\when_metastream_is_scavenged_and_read_index_is_set_to_keep_last_3_metaevents.cs" />
     <Compile Include="TransactionLog\Scavenging\when_deleted_stream_with_metadata_is_scavenged.cs" />
     <Compile Include="TransactionLog\Scavenging\when_metastream_is_scavenged_and_read_index_is_set_to_keep_just_last_metaevent.cs" />
+    <Compile Include="TransactionLog\Validation\TFChunkDbCreationTestBase.cs" />
     <Compile Include="TransactionLog\when_reading_cached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\when_reading_uncached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\FlushTimeMeter.cs" />
@@ -359,10 +363,10 @@
     <Compile Include="TransactionLog\when_destroying_a_tfchunk.cs" />
     <Compile Include="TransactionLog\when_destroying_a_tfchunk_that_is_locked.cs" />
     <Compile Include="TransactionLog\when_marking_for_deletion_a_tfchunk_that_has_been_locked_and_unlocked.cs" />
-    <Compile Include="TransactionLog\when_truncating_database.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_database.cs" />
     <Compile Include="TransactionLog\when_unlocking_a_tfchunk_that_has_been_marked_for_deletion.cs" />
     <Compile Include="TransactionLog\commit_log_record_should.cs" />
-    <Compile Include="TransactionLog\when_validating_tfchunk_db_with_multi_chunks.cs" />
+    <Compile Include="TransactionLog\Validation\when_validating_tfchunk_db_with_multi_chunks.cs" />
     <Compile Include="TransactionLog\prepare_log_record_should.cs" />
     <Compile Include="TransactionLog\when_creating_tfchunk_from_empty_file.cs" />
     <Compile Include="TransactionLog\when_appending_past_end_of_a_tfchunk.cs" />
@@ -395,8 +399,8 @@
     <Compile Include="TransactionLog\when_creating_chunked_transaction_file_writer.cs" />
     <Compile Include="TransactionLog\when_opening_chunked_transaction_file_db_without_previous_files.cs" />
     <Compile Include="TransactionLog\when_reading_an_empty_chunked_transaction_log.cs" />
-    <Compile Include="TransactionLog\when_validating_tfchunk_db.cs" />
-    <Compile Include="TransactionLog\when_validating_tfchunkdb_without_previous_files.cs" />
+    <Compile Include="TransactionLog\Validation\when_validating_tfchunk_db.cs" />
+    <Compile Include="TransactionLog\Validation\when_validating_tfchunkdb_without_previous_files.cs" />
     <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_checksum.cs" />
     <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_checksum_and_data_bigger_than_buffer.cs" />
     <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_not_enough_space_in_chunk.cs" />
@@ -433,7 +437,9 @@
   <ItemGroup>
     <EmbeddedResource Include="server.p12" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="TransactionLog\Manager\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
