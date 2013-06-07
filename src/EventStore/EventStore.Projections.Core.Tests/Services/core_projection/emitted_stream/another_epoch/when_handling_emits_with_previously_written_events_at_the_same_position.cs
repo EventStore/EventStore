@@ -97,6 +97,16 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         }
 
         [Test]
+        public void updates_stream_metadata()
+        {
+            var writes =
+                HandledMessages.OfType<ClientMessage.WriteEvents>()
+                               .OfEventType(SystemEventTypes.StreamMetadata)
+                               .ToArray();
+            Assert.AreEqual(1, writes.Length);
+        }
+
+        [Test]
         public void reports_correct_event_numbers()
         {
             Assert.AreEqual(2, _1);
