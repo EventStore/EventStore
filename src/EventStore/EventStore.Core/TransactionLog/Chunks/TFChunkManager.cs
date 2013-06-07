@@ -225,23 +225,18 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         private void ReplaceChunksWith(int chunkStartNumber, int chunkEndNumber, TFChunk.TFChunk newChunk, string chunkExplanation)
         {
-            for (int i = chunkStartNumber; i <= chunkEndNumber; )
+            TFChunk.TFChunk lastRemovedChunk = null;
+            for (int i = chunkStartNumber; i <= chunkEndNumber; i += 1)
             {
                 var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
-                if (oldChunk == null)
-                    break;
-
-                for (int j = oldChunk.ChunkHeader.ChunkStartNumber + 1; j <= oldChunk.ChunkHeader.ChunkEndNumber; j += 1)
+                if (oldChunk != null && !ReferenceEquals(lastRemovedChunk, oldChunk))
                 {
-                    Interlocked.Exchange(ref _chunks[j], newChunk);
+                    oldChunk.MarkForDeletion();
+
+                    Log.Info("{0} chunk #{1}-{2} ({3}) is marked for deletion.", chunkExplanation,
+                                oldChunk.ChunkHeader.ChunkStartNumber, oldChunk.ChunkHeader.ChunkEndNumber, oldChunk.FileName);
                 }
-
-                oldChunk.MarkForDeletion();
-
-                Log.Info("{0} chunk #{1}-{2} ({3}) is marked for deletion.", chunkExplanation, 
-                         oldChunk.ChunkHeader.ChunkStartNumber, oldChunk.ChunkHeader.ChunkEndNumber, oldChunk.FileName);
-
-                i = oldChunk.ChunkHeader.ChunkEndNumber + 1;
+                lastRemovedChunk = oldChunk;
             }
         }
 
