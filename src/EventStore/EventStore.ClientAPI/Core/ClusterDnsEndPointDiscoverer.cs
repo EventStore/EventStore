@@ -34,6 +34,7 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
+using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Http;
 using System.Linq;
 using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
@@ -200,6 +201,7 @@ namespace EventStore.ClientAPI.Core
             var url = endPoint.ToHttpUrl("/gossip?format=json");
             _client.Get(
                 url,
+                null,
                 response =>
                 {
                     if (response.HttpStatusCode != HttpStatusCode.OK)
@@ -213,7 +215,7 @@ namespace EventStore.ClientAPI.Core
                         result = response.Body.ParseJson<ClusterMessages.ClusterInfoDto>();
                         //_log.Debug("ClusterDnsEndPointDiscoverer: Got gossip from [{0}]:\n{1}.", endPoint, string.Join("\n", result.Members.Select(x => x.ToString())));
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         //_log.Info("Failed to get cluster info from [{0}]: deserialization error: {1}.", endPoint, e.Message);
                     }

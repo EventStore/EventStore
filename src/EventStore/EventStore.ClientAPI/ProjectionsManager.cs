@@ -29,6 +29,7 @@
 using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
@@ -46,162 +47,162 @@ namespace EventStore.ClientAPI
             _httpEndPoint = httpEndPoint;
         }
 
-        public void Enable(string name)
+        public void Enable(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            EnableAsync(name).Wait();
+            EnableAsync(name, userCredentials).Wait();
         }
 
-        public Task EnableAsync(string name)
+        public Task EnableAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.Enable(_httpEndPoint, name);
+            return _client.Enable(_httpEndPoint, name, userCredentials);
         }
 
-        public void Disable(string name)
+        public void Disable(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            DisableAsync(name).Wait();
+            DisableAsync(name, userCredentials).Wait();
         }
 
-        public Task DisableAsync(string name)
+        public Task DisableAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.Disable(_httpEndPoint, name);
+            return _client.Disable(_httpEndPoint, name, userCredentials);
         }
 
-        public void CreateOneTime(string query)
+        public void CreateOneTime(string query, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(query, "query");
-            CreateOneTimeAsync(query).Wait();
+            CreateOneTimeAsync(query, userCredentials).Wait();
         }
 
-        public Task CreateOneTimeAsync(string query)
+        public Task CreateOneTimeAsync(string query, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(query, "query");
-            return _client.CreateOneTime(_httpEndPoint, query);
+            return _client.CreateOneTime(_httpEndPoint, query, userCredentials);
         }
 
-        public void CreateContinuous(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            CreateContinuousAsync(name, query).Wait();
-        }
-
-        public Task CreateContinuousAsync(string name, string query)
+        public void CreateContinuous(string name, string query, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            return _client.CreateContinuous(_httpEndPoint, name, query);
+            CreateContinuousAsync(name, query, userCredentials).Wait();
         }
 
-        public string ListAll()
-        {
-            return ListAllAsync().Result;
-        }
-
-        public Task<string> ListAllAsync()
-        {
-            return _client.ListAll(_httpEndPoint);
-        }
-
-        public string ListOneTime()
-        {
-            return ListOneTimeAsync().Result;
-        }
-
-        public Task<string> ListOneTimeAsync()
-        {
-            return _client.ListOneTime(_httpEndPoint);
-        }
-
-        public string ListContinuous()
-        {
-            return ListContinuousAsync().Result;
-        }
-
-        public Task<string> ListContinuousAsync()
-        {
-            return _client.ListContinuous(_httpEndPoint);
-        }
-
-        public string GetStatus(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return GetStatusAsync(name).Result;
-        }
-
-        public Task<string> GetStatusAsync(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return _client.GetStatus(_httpEndPoint, name);
-        }
-
-        public string GetState(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return GetStateAsync(name).Result;
-        }
-
-        public Task<string> GetStateAsync(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return _client.GetState(_httpEndPoint, name);
-        }
-
-        public string GetStatistics(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return GetStatisticsAsync(name).Result;
-        }
-
-        public Task<string> GetStatisticsAsync(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return _client.GetStatistics(_httpEndPoint, name);
-        }
-
-        public string GetQuery(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return GetQueryAsync(name).Result;
-        }
-
-        public Task<string> GetQueryAsync(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return _client.GetQuery(_httpEndPoint, name);
-        }
-
-        public void UpdateQuery(string name, string query)
+        public Task CreateContinuousAsync(string name, string query, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            UpdateQueryAsync(name, query).Wait();
+            return _client.CreateContinuous(_httpEndPoint, name, query, userCredentials);
         }
 
-        public Task UpdateQueryAsync(string name, string query)
+        public string ListAll(UserCredentials userCredentials = null)
+        {
+            return ListAllAsync(userCredentials).Result;
+        }
+
+        public Task<string> ListAllAsync(UserCredentials userCredentials = null)
+        {
+            return _client.ListAll(_httpEndPoint, userCredentials);
+        }
+
+        public string ListOneTime(UserCredentials userCredentials = null)
+        {
+            return ListOneTimeAsync(userCredentials).Result;
+        }
+
+        public Task<string> ListOneTimeAsync(UserCredentials userCredentials = null)
+        {
+            return _client.ListOneTime(_httpEndPoint, userCredentials);
+        }
+
+        public string ListContinuous(UserCredentials userCredentials = null)
+        {
+            return ListContinuousAsync(userCredentials).Result;
+        }
+
+        public Task<string> ListContinuousAsync(UserCredentials userCredentials = null)
+        {
+            return _client.ListContinuous(_httpEndPoint, userCredentials);
+        }
+
+        public string GetStatus(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return GetStatusAsync(name, userCredentials).Result;
+        }
+
+        public Task<string> GetStatusAsync(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.GetStatus(_httpEndPoint, name, userCredentials);
+        }
+
+        public string GetState(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return GetStateAsync(name, userCredentials).Result;
+        }
+
+        public Task<string> GetStateAsync(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.GetState(_httpEndPoint, name, userCredentials);
+        }
+
+        public string GetStatistics(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return GetStatisticsAsync(name, userCredentials).Result;
+        }
+
+        public Task<string> GetStatisticsAsync(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.GetStatistics(_httpEndPoint, name, userCredentials);
+        }
+
+        public string GetQuery(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return GetQueryAsync(name, userCredentials).Result;
+        }
+
+        public Task<string> GetQueryAsync(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.GetQuery(_httpEndPoint, name, userCredentials);
+        }
+
+        public void UpdateQuery(string name, string query, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            return _client.UpdateQuery(_httpEndPoint, name, query);
+            UpdateQueryAsync(name, query, userCredentials).Wait();
         }
 
-        public void Delete(string name)
+        public Task UpdateQueryAsync(string name, string query, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            DeleteAsync(name).Wait();
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _client.UpdateQuery(_httpEndPoint, name, query, userCredentials);
         }
 
-        public Task DeleteAsync(string name)
+        public void Delete(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.Delete(_httpEndPoint, name);
+            DeleteAsync(name, userCredentials).Wait();
+        }
+
+        public Task DeleteAsync(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.Delete(_httpEndPoint, name, userCredentials);
         }
     }
 }
