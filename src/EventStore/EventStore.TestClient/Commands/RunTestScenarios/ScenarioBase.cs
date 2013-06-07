@@ -36,12 +36,14 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Log;
-using EventStore.Common.Utils;
-using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Helpers;
 using ConsoleLogger = EventStore.ClientAPI.Common.Log.ConsoleLogger;
 using ILogger = EventStore.Common.Log.ILogger;
+using TcpCommand = EventStore.Core.Services.Transport.Tcp.TcpCommand;
+using TcpPackage = EventStore.Core.Services.Transport.Tcp.TcpPackage;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {
@@ -50,6 +52,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         protected static readonly ILogger Log = LogManager.GetLoggerFor<ScenarioBase>();
         protected static readonly ClientAPI.ILogger ApiLogger = new ClientApiLoggerBridge(LogManager.GetLogger("client-api"));
 
+        protected readonly UserCredentials AdminCredentials = new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword);
         protected readonly Action<IPEndPoint, byte[]> DirectSendOverTcp;
         protected readonly int MaxConcurrentRequests;
         protected readonly int Connections;
@@ -169,7 +172,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                         .OnErrorOccurred((c, e) => Log.DebugException(e, "[SCENARIO] {0} error occurred.", c.ConnectionName))
                                         .OnReconnecting(c => Log.Debug("[SCENARIO] {0} reconnecting.", c.ConnectionName)),
                     new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.TcpPort),
-                    connectionName: string.Format("ESConn-{0}", i));
+                    string.Format("ESConn-{0}", i));
                 _connections[i].Connect();
             } 
             RunInternal();   

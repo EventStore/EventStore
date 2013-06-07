@@ -27,6 +27,28 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (excessiveChunks.Length > 0)
                 throw new Exception(string.Format("During truncation of DB excessive TFChunks were found:\n{0}.", string.Join("\n", excessiveChunks)));
 
+            ChunkHeader newLastChunkHeader = null;
+            for (int chunkNum = 0; chunkNum <= newLastChunkNum;)
+            {
+                var chunks = _config.FileNamingStrategy.GetAllVersionsFor(chunkNum);
+                if (chunks.Length == 0)
+                {
+                    if (chunkNum != newLastChunkNum)
+                        throw new Exception(string.Format("Couldn't find any chunk #{0}.", chunkNum));
+                    break;
+                }
+                using (var fs = File.OpenRead(chunks[0]))
+                {
+                    var chunkHeader = ChunkHeader.FromStream(fs);
+                    if (chunkHeader.ChunkEndNumber >= newLastChunkNum)
+                    {
+                        newLastChunkHeader = chunkHeader;
+                        break;
+                    }
+                    chunkNum = chunkHeader.ChunkEndNumber + 1;
+                }
+            }
+
             // we need to remove excessive chunks from largest number to lowest one, so in case of crash
             // mid-process, we don't end up with broken non-sequential chunks sequence.
             for (int i=oldLastChunkNum; i > newLastChunkNum; i -= 1)
@@ -40,25 +62,27 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
 
             // it's not bad if there is no file, it could have been deleted on previous run
-            var truncChunkFiles = _config.FileNamingStrategy.GetAllVersionsFor(newLastChunkNum);
-            if (truncChunkFiles.Length > 0) 
+            if (newLastChunkHeader != null) 
             {
                 // if the chunk we want to truncate into is already scavenged 
                 // we have to truncate (i.e., delete) the whole chunk, not just part of it
-                ChunkHeader chunkHeader;
-                using (var fs = File.OpenRead(truncChunkFiles[0]))
+                if (newLastChunkHeader.IsScavenged)
                 {
-                    chunkHeader = ChunkHeader.FromStream(fs);
-                }
-                if (chunkHeader.IsScavenged)
-                {
-                    truncateChk = chunkHeader.ChunkStartPosition;
-                    Log.Info("Setting TruncateCheckpoint to {0} and deleting WHOLE chunk(s) {1} as truncation position is in the middle of scavenged chunk.",
-                             truncateChk, string.Join(", ", truncChunkFiles));
-                    foreach (var chunkFile in truncChunkFiles)
+                    truncateChk = newLastChunkHeader.ChunkStartPosition;
+
+                    // we need to delete EVERYTHING from ChunkStartNumber up to newLastChunkNum, inclusive
+                    Log.Info("Setting TruncateCheckpoint to {0} and deleting ALL chunks from #{1} inclusively "
+                             + "as truncation position is in the middle of scavenged chunk.",
+                             truncateChk, newLastChunkHeader.ChunkStartNumber);
+                    for (int i = newLastChunkNum; i >= newLastChunkHeader.ChunkStartNumber; --i)
                     {
-                        File.SetAttributes(chunkFile, FileAttributes.Normal);
-                        File.Delete(chunkFile);
+                        var chunksToDelete = _config.FileNamingStrategy.GetAllVersionsFor(i);
+                        foreach (var chunkFile in chunksToDelete)
+                        {
+                            Log.Info("File {0} will be deleted during TruncateDb procedure.", chunkFile); 
+                            File.SetAttributes(chunkFile, FileAttributes.Normal);
+                            File.Delete(chunkFile);
+                        }
                     }
                 }
             }
