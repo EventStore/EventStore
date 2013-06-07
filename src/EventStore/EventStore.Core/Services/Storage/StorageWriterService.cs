@@ -212,7 +212,8 @@ namespace EventStore.Core.Services.Storage
             }
 
             var totalTime = message.TotalTimeWasted + sw.Elapsed;
-            Log.Debug("Still waiting for chaser to catch up already for {0}...", totalTime);
+            if (totalTime < TimeSpan.FromSeconds(5) || (int)totalTime.TotalSeconds % 5 == 0) // too verbose otherwise
+                Log.Debug("Still waiting for chaser to catch up already for {0}...", totalTime);
             Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(message.CorrelationId, totalTime));
         }
 
