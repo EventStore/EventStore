@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Security.Principal;
 using EventStore.Common.Log;
@@ -36,6 +37,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using Newtonsoft.Json.Linq;
@@ -66,19 +68,22 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool _checkpointRequested;
         private bool _awaitingWriteCompleted;
+        private bool _awaitingMetadataWriteCompleted;
         private bool _awaitingReady;
         private bool _awaitingListEventsCompleted;
         private bool _started;
 
         private readonly int _maxWriteBatchLength;
-        private CheckpointTag _lastSubmittedOrCommittedMetadata; // TODO: rename
+        private CheckpointTag _lastCommittedOrSubmittedEventPosition; // TODO: rename
+        private bool _metadataStreamCreated;
+        private CheckpointTag _lastQueuedEventPosition;
         private Event[] _submittedToWriteEvents;
         private EmittedEvent[] _submittedToWriteEmittedEvents;
         private int _lastKnownEventNumber = ExpectedVersion.Invalid;
         private readonly bool _noCheckpoints;
         private bool _disposed;
-        private CheckpointTag _last;
         private bool _recoveryCompleted;
+        private Event _submittedWriteMetastreamEvent;
 
 
         public EmittedStream(
@@ -104,7 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _positionTagger = positionTagger;
             _zeroPosition = zeroPosition;
             _from = @from;
-            _last = null;
+            _lastQueuedEventPosition = null;
             _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
             _readyHandler = readyHandler;
@@ -122,10 +127,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (groupCausedBy == null)
                 {
                     groupCausedBy = @event.CausedByTag;
-                    if (!(_last != null && groupCausedBy > _last) && !(_last == null && groupCausedBy >= _from))
+                    if (!(_lastQueuedEventPosition != null && groupCausedBy > _lastQueuedEventPosition) && !(_lastQueuedEventPosition == null && groupCausedBy >= _from))
                         throw new InvalidOperationException(
-                            string.Format("Invalid event order.  '{0}' goes after '{1}'", @event.CausedByTag, _last));
-                    _last = groupCausedBy;
+                            string.Format("Invalid event order.  '{0}' goes after '{1}'", @event.CausedByTag, _lastQueuedEventPosition));
+                    _lastQueuedEventPosition = groupCausedBy;
                 }
                 else if (@event.CausedByTag != groupCausedBy)
                     throw new ArgumentException("events must share the same CausedByTag");
@@ -163,7 +168,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public int GetWritesInProgress()
         {
-            return _awaitingWriteCompleted ? 1 : 0;
+            return (_awaitingWriteCompleted ? 1 : 0) + (_awaitingMetadataWriteCompleted ? 1 : 0);
         }
 
         public int GetReadsInProgress()
@@ -177,6 +182,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("WriteEvents has not been submitted");
             if (_disposed)
                 return;
+            _awaitingWriteCompleted = false;
             if (message.Result == OperationResult.Success)
             {
                 _lastKnownEventNumber = message.FirstEventNumber + _submittedToWriteEvents.Length - 1;
@@ -229,7 +235,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var newPhysicalStream = message.Events.Length == 0;
 
-            if (_lastSubmittedOrCommittedMetadata == null)
+            if (_lastCommittedOrSubmittedEventPosition == null)
             {
                 var parsed = default(CheckpointTagVersion);
                 if (!newPhysicalStream)
@@ -252,11 +258,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: throw exception when _projectionVersion.ProjectionId != parsed.ProjectionId ?
 
                 if (newLogicalStream)
-                    _lastSubmittedOrCommittedMetadata = _zeroPosition;
+                {
+                    _lastCommittedOrSubmittedEventPosition = _zeroPosition;
+                    _metadataStreamCreated = false;
+                }
                 else
                 {
                     //TODO: verify order - as we are reading backward
-                    _lastSubmittedOrCommittedMetadata = parsed.AdjustBy(_positionTagger, _projectionVersion);
+                    _lastCommittedOrSubmittedEventPosition = parsed.AdjustBy(_positionTagger, _projectionVersion);
+                    _metadataStreamCreated = true; // should exist or no need to create
                 }
             }
 
@@ -299,11 +309,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ProcessWrites()
         {
-            if (_started && !_awaitingWriteCompleted && _pendingWrites.Count > 0)
+            if (_started && !_awaitingListEventsCompleted && !_awaitingWriteCompleted
+                && !_awaitingMetadataWriteCompleted && _pendingWrites.Count > 0)
             {
-                _awaitingWriteCompleted = true;
                 var firstEvent = _pendingWrites.Peek();
-                if (_lastSubmittedOrCommittedMetadata == null)
+                if (_lastCommittedOrSubmittedEventPosition == null)
                     SubmitListEvents(firstEvent.CausedByTag);
                 else
                     SubmitWriteEventsInRecovery();
@@ -312,6 +322,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void SubmitListEvents(CheckpointTag upTo, int fromEventNumber = -1)
         {
+            if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
+                throw new Exception();
             _awaitingListEventsCompleted = true;
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
@@ -321,8 +333,67 @@ namespace EventStore.Projections.Core.Services.Processing
                 completed => ReadStreamEventsBackwardCompleted(completed, upTo));
         }
 
+        private void SubmitWriteMetadata()
+        {
+            if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
+                throw new Exception();
+            _submittedWriteMetastreamEvent = new Event(
+                Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
+                new StreamAcl(null, SystemUserGroups.Admins, null, SystemUserGroups.Admins).ToJsonBytes(), null);
+            _awaitingMetadataWriteCompleted = true;
+            PublishWriteMetaStream();
+        }
+
+        private void PublishWriteMetaStream()
+        {
+            _writeDispatcher.Publish(
+                new ClientMessage.WriteEvents(
+                    Guid.NewGuid(), _writeDispatcher.Envelope, true, SystemStreams.MetastreamOf(_streamId), ExpectedVersion.Any,
+                    _submittedWriteMetastreamEvent, _writeAs), HandleMetadataWriteCompleted);
+        }
+
+        private void HandleMetadataWriteCompleted(ClientMessage.WriteEventsCompleted message)
+        {
+            if (!_awaitingMetadataWriteCompleted)
+                throw new InvalidOperationException("WriteEvents to metadata stream has not been submitted");
+            if (_disposed)
+                return;
+            if (message.Result == OperationResult.Success)
+            {
+                _metadataStreamCreated = true;
+                _awaitingMetadataWriteCompleted = false;
+                PublishWriteEvents();
+                return;
+            }
+            if (_logger != null)
+            {
+                _logger.Info("Failed to write events to stream {0}. Error: {1}",
+                             SystemStreams.MetastreamOf(_streamId),
+                             Enum.GetName(typeof(OperationResult), message.Result));
+            }
+            switch (message.Result)
+            {
+                case OperationResult.WrongExpectedVersion:
+                    RequestRestart(string.Format("The '{0}' stream has be written to from the outside", _streamId));
+                    break;
+                case OperationResult.PrepareTimeout:
+                case OperationResult.ForwardTimeout:
+                case OperationResult.CommitTimeout:
+                    if (_logger != null) _logger.Info("Retrying write to {0}", _streamId);
+                    PublishWriteMetaStream();
+                    break;
+                default:
+                    throw new NotSupportedException("Unsupported error code received");
+            }
+        }
+
         private void SubmitWriteEvents()
         {
+            if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
+                throw new Exception();
+            if (!_metadataStreamCreated)
+                if (_lastCommittedOrSubmittedEventPosition != _zeroPosition)
+                    throw new Exception("Internal error");
             var events = new List<Event>();
             var emittedEvents = new List<EmittedEvent>();
             while (_pendingWrites.Count > 0 && events.Count < _maxWriteBatchLength)
@@ -344,10 +415,10 @@ namespace EventStore.Projections.Core.Services.Processing
                         RequestRestart(
                             string.Format(
                                 "Wrong expected tag while submitting write event request to the '{0}' stream.  The last known stream tag is: '{1}'  the expected tag is: '{2}'",
-                                _streamId, _lastSubmittedOrCommittedMetadata, expectedTag));
+                                _streamId, _lastCommittedOrSubmittedEventPosition, expectedTag));
                         return;
                     }
-                _lastSubmittedOrCommittedMetadata = causedByTag;
+                _lastCommittedOrSubmittedEventPosition = causedByTag;
                 events.Add(
                     new Event(
                         e.EventId, e.EventType, true, e.Data != null ? Helper.UTF8NoBom.GetBytes(e.Data) : null,
@@ -359,8 +430,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (_submittedToWriteEvents.Length > 0)
                 PublishWriteEvents();
-            else
-                _awaitingWriteCompleted = false;
         }
 
         private IEnumerable<KeyValuePair<string, JToken>> MetadataWithCausedByAndCorrelationId(
@@ -398,11 +467,17 @@ namespace EventStore.Projections.Core.Services.Processing
             // the same stream.  However, the expected tag sometimes can be greater than last actually written tag
             // This happens when a projection is restarted from a checkpoint and the checkpoint has been made at 
             // position not updating the projection state 
-            return expectedTag != _lastSubmittedOrCommittedMetadata;
+            return expectedTag != _lastCommittedOrSubmittedEventPosition;
         }
 
         private void PublishWriteEvents()
         {
+            if (!_metadataStreamCreated)
+            {
+                SubmitWriteMetadata();
+                return;
+            }
+            _awaitingWriteCompleted = true;
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, _streamId, _lastKnownEventNumber,
@@ -424,7 +499,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void OnWriteCompleted()
         {
-            _awaitingWriteCompleted = false;
             NotifyWriteCompleted();
             ProcessWrites();
             ProcessRequestedCheckpoint();
@@ -437,7 +511,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ProcessRequestedCheckpoint()
         {
-            if (_checkpointRequested && !_awaitingWriteCompleted && _pendingWrites.Count == 0)
+            if (_checkpointRequested && !_awaitingWriteCompleted && !_awaitingMetadataWriteCompleted
+                && _pendingWrites.Count == 0)
             {
                 EnsureCheckpointsEnabled();
                 _readyHandler.Handle(new CoreProjectionProcessingMessage.ReadyForCheckpoint(this));
@@ -456,7 +531,7 @@ namespace EventStore.Projections.Core.Services.Processing
             while (_pendingWrites.Count > 0)
             {
                 var eventToWrite = _pendingWrites.Peek();
-                if (eventToWrite.CausedByTag > _lastSubmittedOrCommittedMetadata || _alreadyCommittedEvents.Count == 0)
+                if (eventToWrite.CausedByTag > _lastCommittedOrSubmittedEventPosition || _alreadyCommittedEvents.Count == 0)
                     RecoveryCompleted();
                 if (_recoveryCompleted)
                 {

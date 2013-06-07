@@ -45,10 +45,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void Given()
         {
             TicksAreHandledImmediately();
-            NoStream("$projections-projection-result");
-            NoStream("$projections-projection-order");
-            AllWritesToSucceed("$projections-projection-order");
-            NoStream("$projections-projection-checkpoint");
+            AllWritesSucceed();
+            NoOtherStreams();
         }
 
         protected override void When()

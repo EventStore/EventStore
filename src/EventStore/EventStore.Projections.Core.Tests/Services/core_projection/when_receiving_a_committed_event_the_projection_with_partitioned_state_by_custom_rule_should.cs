@@ -53,14 +53,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.SetDefinesStateTransform();
                 };
             TicksAreHandledImmediately();
-            NoStream("$projections-projection-order");
-            AllWritesToSucceed("$projections-projection-order");
-            NoStream("$projections-projection-checkpoint");
-            NoStream("$projections-projection-region-a-checkpoint");
-            NoStream("$projections-projection-region-a-result");
-
+            AllWritesSucceed();
+            NoOtherStreams();
             _stateHandler = new FakeProjectionStateHandler(
-                configureBuilder: _configureBuilderByQuerySource, failOnGetPartition: false);
+                 configureBuilder: _configureBuilderByQuerySource, failOnGetPartition: false);
         }
 
         protected override void When()

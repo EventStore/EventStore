@@ -54,14 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.SetDefinesStateTransform();
                 };
             TicksAreHandledImmediately();
-            NoStream("$projections-projection-order");
-            AllWritesToSucceed("$projections-projection-order");
-            NoStream("$projections-projection-checkpoint");
-            NoStream("$projections-projection-partitions");
-            NoStream("$projections-projection-account-01-checkpoint");
-            NoStream("$projections-projection-account-02-checkpoint");
-            NoStream("$projections-projection-account-01-result");
-            NoStream("$projections-projection-account-02-result");
+            NoOtherStreams();
             AllWritesSucceed();
         }
 

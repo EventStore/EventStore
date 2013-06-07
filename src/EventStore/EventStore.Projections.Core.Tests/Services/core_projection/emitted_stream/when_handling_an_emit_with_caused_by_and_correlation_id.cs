@@ -30,6 +30,7 @@ using System;
 using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -49,6 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         protected override void Given()
         {
             AllWritesQueueUp();
+            AllWritesToSucceed("$$test_stream");
             NoOtherStreams();
         }
 
@@ -77,12 +79,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         [Test]
         public void publishes_write_events()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
-            var writeEvents = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single();
-            Assert.AreEqual(1, writeEvents.Events.Length);
-            var @event = writeEvents.Events[0];
-            Assert.NotNull(@event.Metadata);
-            var metadata = Helper.UTF8NoBom.GetString(@event.Metadata);
+            var writeEvents =
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+                         .ExceptOfEventType(SystemEventTypes.StreamMetadata)
+                         .ToArray();
+            Assert.AreEqual(1, writeEvents.Length);
+            var writeEvent = writeEvents.Single();
+            Assert.NotNull(writeEvent.Metadata);
+            var metadata = Helper.UTF8NoBom.GetString(writeEvent.Metadata);
             HelperExtensions.AssertJson(
                 new {___causedBy = _causedBy, ___correlationId = _correlationId}, metadata.ParseJson<JObject>());
         }

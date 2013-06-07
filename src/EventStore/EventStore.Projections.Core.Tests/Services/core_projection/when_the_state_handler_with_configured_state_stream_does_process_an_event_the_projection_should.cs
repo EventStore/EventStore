@@ -49,10 +49,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.SetResultStreamNameOption("state-stream");
                     source.SetDefinesStateTransform();
                 };
-            NoStream("state-stream");
-            NoStream("$projections-projection-order");
-            AllWritesToSucceed("$projections-projection-order");
-            NoStream("$projections-projection-checkpoint");
+            AllWritesSucceed();
+            NoOtherStreams();
         }
 
         protected override void When()

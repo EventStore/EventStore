@@ -29,6 +29,7 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -46,9 +47,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         protected override void Given()
         {
             AllWritesQueueUp();
+            AllWritesToSucceed("$$test_stream");
             //NOTE: it is possible for a batch of events to be partially written if it contains links 
             ExistingEvent("test_stream", "type1", @"{""v"": 1, ""c"": 100, ""p"": 50}", "data");
             ExistingEvent("test_stream", "type2", @"{""v"": 1, ""c"": 100, ""p"": 50}", "data");
+            NoOtherStreams();
         }
 
         private EmittedEvent[] CreateEventBatch()
@@ -84,7 +87,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void publishes_all_events()
         {
             var writtenEvents =
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().SelectMany(v => v.Events).ToArray();
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+                         .ExceptOfEventType(SystemEventTypes.StreamMetadata)
+                         .ToArray();
             Assert.AreEqual(3, writtenEvents.Length);
             Assert.AreEqual("type1", writtenEvents[0].EventType);
             Assert.AreEqual("type2", writtenEvents[1].EventType);

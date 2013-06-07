@@ -53,6 +53,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             return self.SelectMany(v => v.Events).Where(v => v.EventType == type);
         }
 
+        public static IEnumerable<Event> ExceptOfEventType(
+            this IEnumerable<ClientMessage.WriteEvents> self, string type)
+        {
+            return self.SelectMany(v => v.Events).Where(v => v.EventType != type);
+        }
+
         public static List<Event> OfEventType(
             this List<ClientMessage.WriteEvents> self, string type)
         {

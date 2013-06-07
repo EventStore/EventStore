@@ -29,6 +29,7 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -43,8 +44,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
 
         protected override void Given()
         {
-            NoStream("test_stream");
             AllWritesSucceed();
+            NoOtherStreams();
         }
 
         [SetUp]
@@ -84,7 +85,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _stream.Handle(new CoreProjectionProcessingMessage.EmittedStreamWriteCompleted("other_stream"));
 
             Assert.AreEqual(1, _readyHandler.HandledStreamAwaitingMessage.Count);
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+            Assert.AreEqual(
+                1,
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+                         .OfEventType(SystemEventTypes.LinkTo)
+                         .Count());
         }
 
         [Test]
