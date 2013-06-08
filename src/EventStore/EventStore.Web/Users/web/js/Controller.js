@@ -31,6 +31,18 @@ define(function () {
             });
         }
 
+        function getCurrent(success) {
+            $.ajax("/users/$current", {
+                headers: {
+                    Accept: "application/json",
+                },
+                dataType: "json",
+                type: "GET",
+                success: successGet(success),
+                error: errorGet(),
+            });
+        }
+
         function getAll(success) {
             $.ajax("/users/", {
                 headers: {
@@ -97,6 +109,9 @@ define(function () {
             },
             get: function (loginName, success) {
                 get(loginName, success);
+            },
+            getCurrent: function (success) {
+                getCurrent(success);
             },
             getAll: function (success) {
                 getAll(success);

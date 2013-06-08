@@ -50,6 +50,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             RegisterUrlBased(service, "/users/", HttpMethod.Get, GetUsers);
             RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, GetUser);
+            RegisterUrlBased(service, "/users/$current", HttpMethod.Get, GetCurrentUser);
             RegisterTextBody(service, "/users/", HttpMethod.Post, PostUser);
             RegisterTextBody(service, "/users/{login}", HttpMethod.Put, PutUser);
             RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, DeleteUser);
@@ -76,6 +77,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var envelope = CreateReplyEnvelope<UserManagementMessage.UserDetailsResult>(http);
             var login = match.BoundVariables["login"];
             var message = new UserManagementMessage.Get(envelope, http.User, login);
+            Publish(message);
+        }
+
+        private void GetCurrentUser(HttpEntityManager http, UriTemplateMatch match)
+        {
+            if (_httpService.ForwardRequest(http))
+                return;
+            var envelope = CreateReplyEnvelope<UserManagementMessage.UserDetailsResult>(http);
+            if (http.User == null)
+            {
+                envelope.ReplyWith(
+                    new UserManagementMessage.UserDetailsResult(UserManagementMessage.Error.Unauthorized));
+                return;
+            }
+
+            var message = new UserManagementMessage.Get(envelope, http.User, http.User.Identity.Name);
             Publish(message);
         }
 
