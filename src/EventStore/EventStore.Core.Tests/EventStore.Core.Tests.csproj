@@ -329,6 +329,7 @@
     <Compile Include="Services\Transport\Http\uri_router_should.cs" />
     <Compile Include="Services\Transport\Tcp\ssl_connection.cs" />
     <Compile Include="Services\Transport\Tcp\core_tcp_package.cs" />
+    <Compile Include="Services\UserManagementService\password_change_notification_reader.cs" />
     <Compile Include="Services\UserManagementService\user_management_service.cs" />
     <Compile Include="Services\VNode\vnode_fsm_should.cs" />
     <Compile Include="SpecificationWithDirectoryPerTestFixture.cs" />

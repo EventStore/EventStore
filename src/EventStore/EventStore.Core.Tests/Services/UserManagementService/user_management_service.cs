@@ -26,8 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Principal;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
@@ -46,7 +48,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         public class TestFixtureWithUserManagementService : TestFixtureWithExistingEvents
         {
             protected Core.Services.UserManagement.UserManagementService _users;
-            protected PublishEnvelope _replyTo;
             protected readonly IPrincipal _ordinaryUser = new OpenGenericPrincipal("user1", "role1");
 
             protected override void Given()
@@ -58,24 +59,32 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 NoOtherStreams();
                 AllWritesSucceed();
 
-                _replyTo = new PublishEnvelope(_bus);
                 _users = new Core.Services.UserManagement.UserManagementService(
                     _bus, _ioDispatcher, new StubPasswordHashAlgorithm(), skipInitializeStandardUsersCheck: true);
+
+                _bus.Subscribe<UserManagementMessage.Get>(_users);
+                _bus.Subscribe<UserManagementMessage.GetAll>(_users);
+                _bus.Subscribe<UserManagementMessage.Create>(_users);
+                _bus.Subscribe<UserManagementMessage.Update>(_users);
+                _bus.Subscribe<UserManagementMessage.Enable>(_users);
+                _bus.Subscribe<UserManagementMessage.Disable>(_users);
+                _bus.Subscribe<UserManagementMessage.ResetPassword>(_users);
+                _bus.Subscribe<UserManagementMessage.ChangePassword>(_users);
+                _bus.Subscribe<UserManagementMessage.Delete>(_users);
+                _bus.Subscribe<SystemMessage.BecomeMaster>(_users);
             }
 
             [SetUp]
             public void SetUp()
             {
+                SetUpManualQueue();
                 GivenCommands();
-                _consumer.HandledMessages.Clear();
-                When();
+                _queue.Process();
+                HandledMessages.Clear();
+                WhenLoop();
             }
 
             protected virtual void GivenCommands()
-            {
-            }
-
-            protected virtual void When()
             {
             }
 
@@ -106,18 +115,17 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_creating_a_user : TestFixtureWithUserManagementService
         {
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
             }
 
             [Test]
             public void replies_success()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsTrue(updateResults[0].Success);
             }
@@ -125,7 +133,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void reply_has_the_correct_login_name()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.AreEqual("user1", updateResults[0].LoginName);
             }
@@ -133,8 +141,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void creates_an_enabled_user_account_with_correct_details()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual("John Doe", user.Data.FullName);
                 Assert.AreEqual("user1", user.Data.LoginName);
@@ -147,11 +156,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void creates_an_enabled_user_account_with_the_correct_password()
             {
-                _consumer.HandledMessages.Clear();
+                HandledMessages.Clear();
                 _users.Handle(
                     new UserManagementMessage.ChangePassword(
-                        _replyTo, SystemAccount.Principal, "user1", "Johny123!", "new-password"));
-                var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
+                        Envelope, SystemAccount.Principal, "user1", "Johny123!", "new-password"));
+                _queue.Process();
+                var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
@@ -160,18 +170,17 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_ordinary_user_attempts_to_create_a_user : TestFixtureWithUserManagementService
         {
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        _replyTo, _ordinaryUser, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, _ordinaryUser, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
             }
 
             [Test]
             public void replies_unauthorized()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsFalse(updateResults[0].Success);
                 Assert.AreEqual(UserManagementMessage.Error.Unauthorized, updateResults[0].Error);
@@ -180,8 +189,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_create_a_user_account()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.IsFalse(user.Success);
                 Assert.AreEqual(UserManagementMessage.Error.NotFound, user.Error);
@@ -197,22 +207,21 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "Existing John", new[] {"admin", "other"},
+                        Envelope, SystemAccount.Principal, "user1", "Existing John", new[] {"admin", "other"},
                         "existing!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"bad"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"bad"}, "Johny123!");
             }
 
             [Test]
             public void replies_conflict()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsFalse(updateResults[0].Success);
                 Assert.AreEqual(UserManagementMessage.Error.Conflict, updateResults[0].Error);
@@ -221,8 +230,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_override_user_details()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual("Existing John", user.Data.FullName);
                 Assert.AreEqual("user1", user.Data.LoginName);
@@ -235,11 +245,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_override_user_password()
             {
-                _consumer.HandledMessages.Clear();
+                HandledMessages.Clear();
                 _users.Handle(
                     new UserManagementMessage.ChangePassword(
-                        _replyTo, SystemAccount.Principal, "user1", "existing!", "new-password"));
-                var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
+                        Envelope, SystemAccount.Principal, "user1", "existing!", "new-password"));
+                _queue.Process();
+                var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
@@ -253,21 +264,20 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Update(
-                        _replyTo, SystemAccount.Principal, "user1", "Doe John", new[] {"good"}));
+                        Envelope, SystemAccount.Principal, "user1", "Doe John", new[] {"good"});
             }
 
             [Test]
             public void replies_success()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsTrue(updateResults[0].Success);
             }
@@ -275,7 +285,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void reply_has_the_correct_login_name()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.AreEqual("user1", updateResults[0].LoginName);
             }
@@ -283,8 +293,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void updates_details()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual("Doe John", user.Data.FullName);
                 Assert.AreEqual("user1", user.Data.LoginName);
@@ -298,8 +309,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_update_enabled()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual(false, user.Data.Disabled);
             }
@@ -307,11 +319,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_change_password()
             {
-                _consumer.HandledMessages.Clear();
+                HandledMessages.Clear();
                 _users.Handle(
                     new UserManagementMessage.ChangePassword(
-                        _replyTo, SystemAccount.Principal, "user1", "Johny123!", "new-password"));
-                var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
+                        Envelope, SystemAccount.Principal, "user1", "Johny123!", "new-password"));
+                _queue.Process();
+                var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
@@ -325,20 +338,19 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
-                    new UserManagementMessage.Update(_replyTo, _ordinaryUser, "user1", "Doe John", new[] {"good"}));
+                yield return 
+                    new UserManagementMessage.Update(Envelope, _ordinaryUser, "user1", "Doe John", new[] {"good"});
             }
 
             [Test]
             public void replies_unauthorized()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsFalse(updateResults[0].Success);
                 Assert.AreEqual(UserManagementMessage.Error.Unauthorized, updateResults[0].Error);
@@ -347,8 +359,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void details_are_not_changed()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual("John Doe", user.Data.FullName);
                 Assert.AreEqual("user1", user.Data.LoginName);
@@ -361,8 +374,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_update_enabled()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual(false, user.Data.Disabled);
             }
@@ -370,11 +384,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_change_password()
             {
-                _consumer.HandledMessages.Clear();
+                HandledMessages.Clear();
                 _users.Handle(
                     new UserManagementMessage.ChangePassword(
-                        _replyTo, SystemAccount.Principal, "user1", "Johny123!", "new-password"));
-                var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
+                        Envelope, SystemAccount.Principal, "user1", "Johny123!", "new-password"));
+                _queue.Process();
+                var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
@@ -388,18 +403,17 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Update(
-                        _replyTo, SystemAccount.Principal, "user1", "Doe John", new[] {"admin", "other"}));
+                        Envelope, SystemAccount.Principal, "user1", "Doe John", new[] {"admin", "other"});
             }
 
             [Test]
             public void replies_not_found()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsFalse(updateResults[0].Success);
                 Assert.AreEqual(UserManagementMessage.Error.NotFound, updateResults[0].Error);
@@ -408,7 +422,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void reply_has_the_correct_login_name()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.AreEqual("user1", updateResults[0].LoginName);
             }
@@ -416,8 +430,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_create_a_user_account()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.IsFalse(user.Success);
                 Assert.AreEqual(UserManagementMessage.Error.NotFound, user.Error);
@@ -431,24 +446,24 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
+                var replyTo = Envelope;
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
-                _users.Handle(new UserManagementMessage.Disable(_replyTo, SystemAccount.Principal, "user1"));
+                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                _users.Handle(new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Update(
-                        _replyTo, SystemAccount.Principal, "user1", "Doe John", new[] {"good"}));
+                        Envelope, SystemAccount.Principal, "user1", "Doe John", new[] {"good"});
             }
 
             [Test]
             public void replies_success()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsTrue(updateResults[0].Success);
             }
@@ -456,8 +471,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_update_enabled()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual(true, user.Data.Disabled);
             }
@@ -471,19 +487,18 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(new UserManagementMessage.Disable(_replyTo, SystemAccount.Principal, "user1"));
+                yield return new UserManagementMessage.Disable(Envelope, SystemAccount.Principal, "user1");
             }
 
             [Test]
             public void replies_success_with_correct_login_name_set()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsTrue(updateResults[0].Success);
                 Assert.AreEqual("user1", updateResults[0].LoginName);
@@ -492,8 +507,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void disables_user_account()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual(true, user.Data.Disabled);
             }
@@ -514,19 +530,18 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(new UserManagementMessage.Disable(_replyTo, _ordinaryUser, "user1"));
+                yield return new UserManagementMessage.Disable(Envelope, _ordinaryUser, "user1");
             }
 
             [Test]
             public void replies_unauthorized()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsFalse(updateResults[0].Success);
                 Assert.AreEqual(UserManagementMessage.Error.Unauthorized, updateResults[0].Error);
@@ -535,8 +550,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void user_account_is_not_disabled()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual(false, user.Data.Disabled);
             }
@@ -548,22 +564,22 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
+                var replyTo = Envelope;
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
-                _users.Handle(new UserManagementMessage.Disable(_replyTo, SystemAccount.Principal, "user1"));
+                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                _users.Handle(new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(new UserManagementMessage.Disable(_replyTo, SystemAccount.Principal, "user1"));
+                yield return new UserManagementMessage.Disable(Envelope, SystemAccount.Principal, "user1");
             }
 
             [Test]
             public void replies_success_with_correct_login_name_set()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsTrue(updateResults[0].Success);
                 Assert.AreEqual("user1", updateResults[0].LoginName);
@@ -572,8 +588,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void keeps_disabled()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual(true, user.Data.Disabled);
             }
@@ -585,22 +602,22 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
+                var replyTo = Envelope;
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
-                _users.Handle(new UserManagementMessage.Disable(_replyTo, SystemAccount.Principal, "user1"));
+                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                _users.Handle(new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(new UserManagementMessage.Enable(_replyTo, SystemAccount.Principal, "user1"));
+                yield return new UserManagementMessage.Enable(Envelope, SystemAccount.Principal, "user1");
             }
 
             [Test]
             public void replies_success_with_correct_login_name_set()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsTrue(updateResults[0].Success);
                 Assert.AreEqual("user1", updateResults[0].LoginName);
@@ -609,8 +626,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void enables_user_account()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual(false, user.Data.Disabled);
             }
@@ -622,22 +640,22 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
+                var replyTo = Envelope;
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
-                _users.Handle(new UserManagementMessage.Disable(_replyTo, SystemAccount.Principal, "user1"));
+                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
+                _users.Handle(new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(new UserManagementMessage.Enable(_replyTo, _ordinaryUser, "user1"));
+                yield return new UserManagementMessage.Enable(Envelope, _ordinaryUser, "user1");
             }
 
             [Test]
             public void replies_unauthorized()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsFalse(updateResults[0].Success);
                 Assert.AreEqual(UserManagementMessage.Error.Unauthorized, updateResults[0].Error);
@@ -646,8 +664,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void user_account_is_not_enabled()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual(true, user.Data.Disabled);
             }
@@ -661,19 +680,18 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(new UserManagementMessage.Enable(_replyTo, SystemAccount.Principal, "user1"));
+                yield return new UserManagementMessage.Enable(Envelope, SystemAccount.Principal, "user1");
             }
 
             [Test]
             public void replies_success_with_correct_login_name_set()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsTrue(updateResults[0].Success);
                 Assert.AreEqual("user1", updateResults[0].LoginName);
@@ -682,8 +700,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void keeps_enabled()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual(false, user.Data.Disabled);
             }
@@ -697,20 +716,19 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
-                    new UserManagementMessage.ResetPassword(_replyTo, SystemAccount.Principal, "user1", "new-password"));
+                yield return 
+                    new UserManagementMessage.ResetPassword(Envelope, SystemAccount.Principal, "user1", "new-password");
             }
 
             [Test]
             public void replies_success()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsTrue(updateResults[0].Success);
             }
@@ -718,7 +736,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void reply_has_the_correct_login_name()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.AreEqual("user1", updateResults[0].LoginName);
             }
@@ -726,8 +744,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_update_details()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual("John Doe", user.Data.FullName);
                 Assert.AreEqual("user1", user.Data.LoginName);
@@ -737,11 +756,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void changes_password()
             {
-                _consumer.HandledMessages.Clear();
+                HandledMessages.Clear();
                 _users.Handle(
                     new UserManagementMessage.ChangePassword(
-                        _replyTo, SystemAccount.Principal, "user1", "new-password", "other-password"));
-                var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
+                        Envelope, SystemAccount.Principal, "user1", "new-password", "other-password"));
+                _queue.Process();
+                var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
@@ -763,22 +783,22 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
-                    new UserManagementMessage.ResetPassword(_replyTo, SystemAccount.Principal, "user1", "new-password"));
-                _users.Handle(
-                    new UserManagementMessage.ResetPassword(_replyTo, SystemAccount.Principal, "user1", "new-password"));
+                var replyTo = Envelope;
+                yield return 
+                    new UserManagementMessage.ResetPassword(replyTo, SystemAccount.Principal, "user1", "new-password");
+                yield return 
+                    new UserManagementMessage.ResetPassword(replyTo, SystemAccount.Principal, "user1", "new-password");
             }
 
             [Test]
             public void replies_success()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(2, updateResults.Count);
                 Assert.IsTrue(updateResults[0].Success);
                 Assert.IsTrue(updateResults[1].Success);
@@ -803,20 +823,19 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
-                    new UserManagementMessage.ResetPassword(_replyTo, _ordinaryUser, "user1", "new-password"));
+                yield return 
+                    new UserManagementMessage.ResetPassword(Envelope, _ordinaryUser, "user1", "new-password");
             }
 
             [Test]
             public void replies_unauthorized()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsFalse(updateResults[0].Success);
                 Assert.AreEqual(UserManagementMessage.Error.Unauthorized, updateResults[0].Error);
@@ -825,11 +844,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void password_is_not_changed()
             {
-                _consumer.HandledMessages.Clear();
+                HandledMessages.Clear();
                 _users.Handle(
                     new UserManagementMessage.ChangePassword(
-                        _replyTo, SystemAccount.Principal, "user1", "Johny123!", "other-password"));
-                var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
+                        Envelope, SystemAccount.Principal, "user1", "Johny123!", "other-password"));
+                _queue.Process();
+                var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
@@ -843,21 +863,20 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.ChangePassword(
-                        _replyTo, SystemAccount.Principal, "user1", "Johny123!", "new-password"));
+                        Envelope, SystemAccount.Principal, "user1", "Johny123!", "new-password");
             }
 
             [Test]
             public void replies_success()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsTrue(updateResults[0].Success);
             }
@@ -865,7 +884,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void reply_has_the_correct_login_name()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.AreEqual("user1", updateResults[0].LoginName);
             }
@@ -873,8 +892,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_update_details()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual("John Doe", user.Data.FullName);
                 Assert.AreEqual("user1", user.Data.LoginName);
@@ -884,11 +904,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void changes_password()
             {
-                _consumer.HandledMessages.Clear();
+                HandledMessages.Clear();
                 _users.Handle(
                     new UserManagementMessage.ChangePassword(
-                        _replyTo, SystemAccount.Principal, "user1", "new-password", "other-password"));
-                var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
+                        Envelope, SystemAccount.Principal, "user1", "new-password", "other-password"));
+                _queue.Process();
+                var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
@@ -919,21 +940,20 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.ChangePassword(
-                        _replyTo, SystemAccount.Principal, "user1", "incorrect", "new-password"));
+                        Envelope, SystemAccount.Principal, "user1", "incorrect", "new-password");
             }
 
             [Test]
             public void replies_unauthorized()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsFalse(updateResults[0].Success);
                 Assert.AreEqual(UserManagementMessage.Error.Unauthorized, updateResults[0].Error);
@@ -942,7 +962,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void reply_has_the_correct_login_name()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.AreEqual("user1", updateResults[0].LoginName);
             }
@@ -950,8 +970,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_update_details()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.AreEqual("John Doe", user.Data.FullName);
                 Assert.AreEqual("user1", user.Data.LoginName);
@@ -961,11 +982,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void does_not_change_the_password()
             {
-                _consumer.HandledMessages.Clear();
+                HandledMessages.Clear();
                 _users.Handle(
                     new UserManagementMessage.ChangePassword(
-                        _replyTo, SystemAccount.Principal, "user1", "Johny123!", "other-password"));
-                var updateResult = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
+                        Envelope, SystemAccount.Principal, "user1", "Johny123!", "other-password"));
+                _queue.Process();
+                var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
@@ -979,19 +1001,18 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 base.GivenCommands();
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(new UserManagementMessage.Delete(_replyTo, SystemAccount.Principal, "user1"));
+                yield return new UserManagementMessage.Delete(Envelope, SystemAccount.Principal, "user1");
             }
 
             [Test]
             public void replies_success()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.IsTrue(updateResults[0].Success);
             }
@@ -999,7 +1020,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void reply_has_the_correct_login_name()
             {
-                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                var updateResults = HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
                 Assert.AreEqual(1, updateResults.Count);
                 Assert.AreEqual("user1", updateResults[0].LoginName);
             }
@@ -1007,8 +1028,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void deletes_the_user_account()
             {
-                _users.Handle(new UserManagementMessage.Get(_replyTo, SystemAccount.Principal, "user1"));
-                var user = _consumer.HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
+                _users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+                _queue.Process();
+                var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
                 Assert.NotNull(user);
                 Assert.IsFalse(user.Success);
                 Assert.AreEqual(UserManagementMessage.Error.NotFound, user.Error);
@@ -1040,32 +1062,32 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected override void GivenCommands()
             {
                 base.GivenCommands();
+                var replyTo = Envelope;
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user1", "John Doe 1", new[] {"admin1", "other"}, "Johny123!"));
+                        replyTo, SystemAccount.Principal, "user1", "John Doe 1", new[] {"admin1", "other"}, "Johny123!"));
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user2", "John Doe 2", new[] {"admin2", "other"}, "Johny123!"));
+                        replyTo, SystemAccount.Principal, "user2", "John Doe 2", new[] {"admin2", "other"}, "Johny123!"));
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "user3", "Another Doe 1", new[] {"admin3", "other"},
+                        replyTo, SystemAccount.Principal, "user3", "Another Doe 1", new[] {"admin3", "other"},
                         "Johny123!"));
                 _users.Handle(
                     new UserManagementMessage.Create(
-                        _replyTo, SystemAccount.Principal, "another_user", "Another Doe 2", new[] {"admin4", "other"},
+                        replyTo, SystemAccount.Principal, "another_user", "Another Doe 2", new[] {"admin4", "other"},
                         "Johny123!"));
             }
 
-            protected override void When()
+            protected override IEnumerable<WhenStep> When()
             {
-                base.When();
-                _users.Handle(new UserManagementMessage.GetAll(_replyTo, SystemAccount.Principal));
+                yield return new UserManagementMessage.GetAll(Envelope, SystemAccount.Principal);
             }
 
             [Test]
             public void returns_all_user_accounts()
             {
-                var users = _consumer.HandledMessages.OfType<UserManagementMessage.AllUserDetailsResult>().Single().Data;
+                var users = HandledMessages.OfType<UserManagementMessage.AllUserDetailsResult>().Single().Data;
 
                 Assert.AreEqual(4, users.Length);
             }
@@ -1073,7 +1095,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void returns_in_the_login_name_order()
             {
-                var users = _consumer.HandledMessages.OfType<UserManagementMessage.AllUserDetailsResult>().Single().Data;
+                var users = HandledMessages.OfType<UserManagementMessage.AllUserDetailsResult>().Single().Data;
 
                 Assert.That(
                     new[] {"another_user", "user1", "user2", "user3"}.SequenceEqual(users.Select(v => v.LoginName)));
@@ -1082,7 +1104,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             [Test]
             public void returns_full_names()
             {
-                var users = _consumer.HandledMessages.OfType<UserManagementMessage.AllUserDetailsResult>().Single().Data;
+                var users = HandledMessages.OfType<UserManagementMessage.AllUserDetailsResult>().Single().Data;
 
                 Assert.That(users.Any(v => v.LoginName == "user2" && v.FullName == "John Doe 2"));
             }

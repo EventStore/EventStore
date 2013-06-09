@@ -98,7 +98,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                             case ReadStreamResult.NoStream:
                             case ReadStreamResult.StreamDeleted:
                                 _ioDispatcher.Delay(
-                                    TimeSpan.FromSeconds(1), () => ReadNotificationsFrom(completed.NextEventNumber));
+                                    TimeSpan.FromSeconds(1), () => ReadNotificationsFrom(0));
                                 break;
                             case ReadStreamResult.Success:
                                 foreach (var @event in completed.Events)
