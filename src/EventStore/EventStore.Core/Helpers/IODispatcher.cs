@@ -32,6 +32,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 
 namespace EventStore.Core.Helpers
 {
@@ -103,6 +104,16 @@ namespace EventStore.Core.Helpers
         {
             StreamDeleter.Publish(
                 new ClientMessage.DeleteStream(Guid.NewGuid(), Writer.Envelope, true, streamId, expectedVersion, principal), action);
+        }
+
+        public void UpdateStreamAcl(
+            string streamId, int expectedVersion, IPrincipal principal, StreamMetadata metadata,
+            Action<ClientMessage.WriteEventsCompleted> completed)
+        {
+            WriteEvents(
+                SystemStreams.MetastreamOf(streamId), expectedVersion,
+                new[] {new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata.ToJsonBytes(), null)},
+                principal, completed);
         }
     }
 }

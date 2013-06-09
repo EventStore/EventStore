@@ -74,6 +74,16 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             protected virtual void When()
             {
             }
+
+            protected ClientMessage.WriteEvents[] HandledPasswordChangedNotificationWrites()
+            {
+                return HandledMessages.OfType<ClientMessage.WriteEvents>()
+                                      .Where(
+                                          v =>
+                                          v.EventStreamId
+                                          == Core.Services.UserManagement.UserManagementService
+                                                 .UserPasswordNotificationsStreamId).ToArray();
+            }
         }
 
         [TestFixture]
@@ -470,6 +480,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(user);
                 Assert.AreEqual(true, user.Data.Disabled);
             }
+
+            [Test]
+            public void writes_password_changed_event()
+            {
+                var writePasswordChanged = HandledPasswordChangedNotificationWrites();
+                Assert.AreEqual(1, writePasswordChanged.Length);
+            }
         }
 
         [TestFixture]
@@ -711,6 +728,14 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
+
+            [Test]
+            public void writes_password_changed_event()
+            {
+                var writePasswordChanged = HandledPasswordChangedNotificationWrites();
+                Assert.AreEqual(1, writePasswordChanged.Length);
+            }
+
         }
 
         [TestFixture]
@@ -810,6 +835,14 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.NotNull(updateResult);
                 Assert.IsTrue(updateResult.Success);
             }
+
+            [Test]
+            public void writes_password_changed_event()
+            {
+                var writePasswordChanged = HandledPasswordChangedNotificationWrites();
+                Assert.AreEqual(1, writePasswordChanged.Length);
+            }
+
         }
 
         [TestFixture]
@@ -915,6 +948,14 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 Assert.AreEqual(UserManagementMessage.Error.NotFound, user.Error);
                 Assert.Null(user.Data);
             }
+
+            [Test]
+            public void writes_password_changed_event()
+            {
+                var writePasswordChanged = HandledPasswordChangedNotificationWrites();
+                Assert.AreEqual(1, writePasswordChanged.Length);
+            }
+
         }
 
         [TestFixture]

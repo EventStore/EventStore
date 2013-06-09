@@ -135,7 +135,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             _userPasswordsCache.Put(loginName, Tuple.Create(password, principal));
         }
 
-        private void AuthenticateWithPassword(AuthenticationRequest authenticationRequest, string correctPassword, IPrincipal principal)
+        private void AuthenticateWithPassword(
+            AuthenticationRequest authenticationRequest, string correctPassword, IPrincipal principal)
         {
             if (authenticationRequest.SuppliedPassword != correctPassword)
             {
@@ -144,6 +145,6 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             }
 
             authenticationRequest.Authenticated(principal);
-        }
+        }   
     }
 }
