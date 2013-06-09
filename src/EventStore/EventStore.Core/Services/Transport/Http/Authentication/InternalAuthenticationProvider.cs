@@ -29,6 +29,7 @@
 using System;
 using System.Security.Principal;
 using EventStore.Common.Utils;
+using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Helpers;
@@ -37,7 +38,7 @@ using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    public class InternalAuthenticationProvider
+    public class InternalAuthenticationProvider: IHandle<InternalAuthenticationProviderMessages.ResetPasswordCache>
     {
         public abstract class AuthenticationRequest
         {
@@ -145,6 +146,11 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             }
 
             authenticationRequest.Authenticated(principal);
-        }   
+        }
+
+        public void Handle(InternalAuthenticationProviderMessages.ResetPasswordCache message)
+        {
+            _userPasswordsCache.Remove(message.LoginName);
+        }
     }
 }

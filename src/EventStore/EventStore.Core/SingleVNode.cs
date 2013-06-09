@@ -196,6 +196,7 @@ namespace EventStore.Core
             var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
             var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
             var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
+            _mainBus.Subscribe(internalAuthenticationProvider);
             SubscribeWorkers(bus =>
             {
                 bus.Subscribe(dispatcher.ForwardReader);

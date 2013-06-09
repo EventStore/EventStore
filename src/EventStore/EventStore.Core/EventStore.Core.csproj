@@ -136,6 +136,7 @@
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="ISubsystem.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />
+    <Compile Include="Messages\InternalAuthenticationProviderMessages.cs" />
     <Compile Include="Messages\IQueueAffineMessage.cs" />
     <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
     <Compile Include="Messaging\CallbackEnvelope.cs" />

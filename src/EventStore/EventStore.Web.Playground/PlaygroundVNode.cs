@@ -116,6 +116,7 @@ namespace EventStore.Web.Playground
             var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
             var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
             var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, 1000);
+            _mainBus.Subscribe(internalAuthenticationProvider);
 
             SubscribeWorkers(bus =>
             {
