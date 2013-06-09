@@ -194,8 +194,11 @@ namespace EventStore.Core
 
             // AUTHENTICATION INFRASTRUCTURE
             var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
-            var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
+            var dispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_workersHandler, crossThread: true));
             var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
+            var passwordChangeNotificationReader = new PasswordChangeNotificationReader(_mainQueue, dispatcher);
+            _mainBus.Subscribe<SystemMessage.SystemStart>(passwordChangeNotificationReader);
+            _mainBus.Subscribe<SystemMessage.BecomeShutdown>(passwordChangeNotificationReader);
             _mainBus.Subscribe(internalAuthenticationProvider);
             SubscribeWorkers(bus =>
             {
@@ -203,6 +206,7 @@ namespace EventStore.Core
                 bus.Subscribe(dispatcher.BackwardReader);
                 bus.Subscribe(dispatcher.Writer);
                 bus.Subscribe(dispatcher.StreamDeleter);
+                bus.Subscribe(dispatcher);
             });
 
             // TCP
@@ -304,11 +308,12 @@ namespace EventStore.Core
             _mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommited, Message>());
 
             // USER MANAGEMENT
-            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
+            var ioDispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_mainQueue));
             _mainBus.Subscribe(ioDispatcher.BackwardReader);
             _mainBus.Subscribe(ioDispatcher.ForwardReader);
             _mainBus.Subscribe(ioDispatcher.Writer);
             _mainBus.Subscribe(ioDispatcher.StreamDeleter);
+            _mainBus.Subscribe(ioDispatcher);
 
             var userManagement = new UserManagementService(
                 _mainQueue, ioDispatcher, passwordHashAlgorithm, vNodeSettings.SkipInitializeStandardUsersCheck);

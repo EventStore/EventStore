@@ -33,11 +33,15 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Helpers
 {
-    public sealed class IODispatcher
+    public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>
     {
+        private readonly IPublisher _publisher;
+        private readonly IEnvelope _inputQueueEnvelope;
+
         public readonly
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsForward, ClientMessage.ReadStreamEventsForwardCompleted> ForwardReader;
@@ -52,6 +56,8 @@ namespace EventStore.Core.Helpers
 
         public IODispatcher(IPublisher publisher, IEnvelope envelope)
         {
+            _publisher = publisher;
+            _inputQueueEnvelope = envelope;
             ForwardReader =
                 new RequestResponseDispatcher
                     <ClientMessage.ReadStreamEventsForward, ClientMessage.ReadStreamEventsForwardCompleted>(
@@ -152,6 +158,17 @@ namespace EventStore.Core.Helpers
                 SystemStreams.MetastreamOf(streamId), expectedVersion,
                 new[] {new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata.ToJsonBytes(), null)},
                 principal, completed);
+        }
+
+        public void Delay(TimeSpan delay, Action action)
+        {
+            _publisher.Publish(
+                TimerMessage.Schedule.Create(delay, _inputQueueEnvelope, new IODispatcherDelayedMessage(action)));
+        }
+
+        public void Handle(IODispatcherDelayedMessage message)
+        {
+            message.Action();
         }
     }
 }
