@@ -282,9 +282,10 @@ namespace EventStore.Core.Services.UserManagement
         private void BeginWritePasswordChangedEvent(
             string loginName, Action<ClientMessage.WriteEventsCompleted> completed)
         {
-            _ioDispatcher.WriteEvents(
-                UserPasswordNotificationsStreamId, ExpectedVersion.Any, new[] {CreatePasswordChangedEvent(loginName)},
-                SystemAccount.Principal, completed);
+            _ioDispatcher.ConfigureStreamAndWriteEvents(
+                UserPasswordNotificationsStreamId, ExpectedVersion.Any,
+                new Lazy<StreamMetadata>(() => new StreamMetadata(null, TimeSpan.FromHours(1), null, null)),
+                new[] {CreatePasswordChangedEvent(loginName)}, SystemAccount.Principal, completed);
         }
 
         private void WritePasswordChangedEventCompleted(

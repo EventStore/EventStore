@@ -89,6 +89,44 @@ namespace EventStore.Core.Helpers
                 action);
         }
 
+        public void ConfigureStreamAndWriteEvents(
+            string streamId, int expectedVersion, Lazy<StreamMetadata> streamMetadata, Event[] events,
+            IPrincipal principal, Action<ClientMessage.WriteEventsCompleted> action)
+        {
+            if (expectedVersion != ExpectedVersion.Any && expectedVersion != ExpectedVersion.NoStream)
+                WriteEvents(streamId, expectedVersion, events, principal, action);
+            else
+                ReadBackward(
+                    streamId, -1, 1, false, principal, completed =>
+                        {
+                            switch (completed.Result)
+                            {
+                                case ReadStreamResult.Success:
+                                case ReadStreamResult.NoStream:
+                                    if (completed.Events != null && completed.Events.Length > 0)
+                                        WriteEvents(streamId, expectedVersion, events, principal, action);
+                                    else
+                                        UpdateStreamAcl(
+                                            streamId, ExpectedVersion.Any, principal, streamMetadata.Value,
+                                            metaCompleted =>
+                                            WriteEvents(streamId, expectedVersion, events, principal, action));
+                                    break;
+                                case ReadStreamResult.AccessDenied:
+                                    action(
+                                        new ClientMessage.WriteEventsCompleted(
+                                            Guid.NewGuid(), OperationResult.AccessDenied, ""));
+                                    break;
+                                case ReadStreamResult.StreamDeleted:
+                                    action(
+                                        new ClientMessage.WriteEventsCompleted(
+                                            Guid.NewGuid(), OperationResult.StreamDeleted, ""));
+                                    break;
+                                default:
+                                    throw new NotSupportedException();
+                            }
+                        });
+        }
+
         public void WriteEvents(
             string streamId, int expectedVersion, Event[] events, IPrincipal principal, 
             Action<ClientMessage.WriteEventsCompleted> action)

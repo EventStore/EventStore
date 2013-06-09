@@ -30,11 +30,14 @@ using System.Linq;
 using System.Security.Principal;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Transport.Http.Authentication;
 using NUnit.Framework;
+using EventStore.ClientAPI.Common.Utils;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.Services.UserManagementService
 {
@@ -52,6 +55,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 NoStream("$user-user1");
                 NoStream("$user-user2");
                 NoStream("$user-user3");
+                NoOtherStreams();
                 AllWritesSucceed();
 
                 _replyTo = new PublishEnvelope(_bus);
@@ -83,6 +87,19 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                                           v.EventStreamId
                                           == Core.Services.UserManagement.UserManagementService
                                                  .UserPasswordNotificationsStreamId).ToArray();
+            }
+
+            protected ClientMessage.WriteEvents[] HandledPasswordChangedNotificationMetaStreamWrites()
+            {
+                return
+                    HandledMessages.OfType<ClientMessage.WriteEvents>()
+                                   .Where(
+                                       v =>
+                                       v.EventStreamId
+                                       == SystemStreams.MetastreamOf(
+                                           Core.Services.UserManagement.UserManagementService
+                                               .UserPasswordNotificationsStreamId))
+                                   .ToArray();
             }
         }
 
@@ -739,6 +756,46 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         }
 
         [TestFixture]
+        public class when_resetting_the_password_twice : TestFixtureWithUserManagementService
+        {
+            protected override void GivenCommands()
+            {
+                base.GivenCommands();
+                _users.Handle(
+                    new UserManagementMessage.Create(
+                        _replyTo, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
+            }
+
+            protected override void When()
+            {
+                base.When();
+                _users.Handle(
+                    new UserManagementMessage.ResetPassword(_replyTo, SystemAccount.Principal, "user1", "new-password"));
+                _users.Handle(
+                    new UserManagementMessage.ResetPassword(_replyTo, SystemAccount.Principal, "user1", "new-password"));
+            }
+
+            [Test]
+            public void replies_success()
+            {
+                var updateResults = _consumer.HandledMessages.OfType<UserManagementMessage.UpdateResult>().ToList();
+                Assert.AreEqual(2, updateResults.Count);
+                Assert.IsTrue(updateResults[0].Success);
+                Assert.IsTrue(updateResults[1].Success);
+            }
+
+            [Test]
+            public void configures_password_changed_notification_system_stream_only_once()
+            {
+                var writePasswordChanged = HandledPasswordChangedNotificationMetaStreamWrites();
+                Assert.AreEqual(1, writePasswordChanged.Length);
+                var passwordChangedEvent = writePasswordChanged[0].Events.Single();
+                HelperExtensions.AssertJson(new { ___maxAge = 3600 }, passwordChangedEvent.Data.ParseJson<JObject>());
+            }
+
+        }
+
+        [TestFixture]
         public class when_ordinary_user_attempts_to_reset_its_own_password : TestFixtureWithUserManagementService
         {
             protected override void GivenCommands()
@@ -841,6 +898,15 @@ namespace EventStore.Core.Tests.Services.UserManagementService
             {
                 var writePasswordChanged = HandledPasswordChangedNotificationWrites();
                 Assert.AreEqual(1, writePasswordChanged.Length);
+            }
+
+            [Test]
+            public void configures_password_changed_notification_system_stream()
+            {
+                var writePasswordChanged = HandledPasswordChangedNotificationMetaStreamWrites();
+                Assert.AreEqual(1, writePasswordChanged.Length);
+                var passwordChangedEvent = writePasswordChanged[0].Events.Single();
+                HelperExtensions.AssertJson(new {___maxAge = 3600}, passwordChangedEvent.Data.ParseJson<JObject>());
             }
 
         }
