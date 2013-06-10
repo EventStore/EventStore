@@ -136,6 +136,7 @@ namespace EventStore.Core.Data
 
             string read = null;
             string write = null;
+            string delete = null;
             string metaRead = null;
             string metaWrite = null;
 
@@ -159,7 +160,14 @@ namespace EventStore.Core.Data
                     {
                         Check(reader.Read(), reader);
                         Check(JsonToken.String, reader);
-                        write = (string) reader.Value;
+                        write = (string)reader.Value;
+                        break;
+                    }
+                    case SystemMetadata.AclDelete:
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.String, reader);
+                        delete = (string)reader.Value;
                         break;
                     }
                     case SystemMetadata.AclMetaRead:
@@ -178,7 +186,7 @@ namespace EventStore.Core.Data
                     }
                 }
             }
-            return new StreamAcl(read, write, metaRead, metaWrite);
+            return new StreamAcl(read, write, delete, metaRead, metaWrite);
         }
 
         private static void Check(JsonToken type, JsonTextReader reader)
@@ -249,6 +257,11 @@ namespace EventStore.Core.Data
                     jsonWriter.WritePropertyName(SystemMetadata.AclWrite);
                     jsonWriter.WriteValue(Acl.WriteRole);
                 }
+                if (Acl.DeleteRole != null)
+                {
+                    jsonWriter.WritePropertyName(SystemMetadata.AclDelete);
+                    jsonWriter.WriteValue(Acl.DeleteRole);
+                }
                 if (Acl.MetaReadRole != null)
                 {
                     jsonWriter.WritePropertyName(SystemMetadata.AclMetaRead);
@@ -269,20 +282,23 @@ namespace EventStore.Core.Data
     {
         public readonly string ReadRole;
         public readonly string WriteRole;
+        public readonly string DeleteRole;
         public readonly string MetaReadRole;
         public readonly string MetaWriteRole;
 
-        public StreamAcl(string readRole, string writeRole, string metaReadRole, string metaWriteRole)
+        public StreamAcl(string readRole, string writeRole, string deleteRole, string metaReadRole, string metaWriteRole)
         {
             ReadRole = readRole;
             WriteRole = writeRole;
+            DeleteRole = deleteRole;
             MetaReadRole = metaReadRole;
             MetaWriteRole = metaWriteRole;
         }
 
         public override string ToString()
         {
-            return string.Format("Read: {0}, Write: {1}, MetaRead: {2}, MetaWrite: {3}", ReadRole, WriteRole, MetaReadRole, MetaWriteRole);
+            return string.Format("Read: {0}, Write: {1}, Delete: {2}, MetaRead: {3}, MetaWrite: {4}",
+                                 ReadRole, WriteRole, DeleteRole, MetaReadRole, MetaWriteRole);
         }
     }
 }

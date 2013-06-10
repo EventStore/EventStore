@@ -355,7 +355,7 @@ namespace EventStore.Core.Services.UserManagement
             _ioDispatcher.UpdateStreamAcl(
                 "$user-" + loginName, ExpectedVersion.Any, SystemAccount.Principal,
                 new StreamMetadata(
-                    null, null, null, new StreamAcl(null, SystemUserGroups.Admins, null, SystemUserGroups.Admins)),
+                    null, null, null, new StreamAcl(null, SystemUserGroups.Admins, SystemUserGroups.Admins, null, SystemUserGroups.Admins)),
                 onCompleted);
         }
 

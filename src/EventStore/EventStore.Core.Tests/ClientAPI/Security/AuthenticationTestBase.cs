@@ -219,6 +219,20 @@ namespace EventStore.Core.Tests.ClientAPI.Security
                                       login == null && password == null ? null : new UserCredentials(login, password));
         }
 
+        protected string CreateStreamWithMeta(StreamMetadata metadata, string streamPrefix = null)
+        {
+            var stream = (streamPrefix ?? string.Empty) + TestContext.CurrentContext.Test.Name;
+            Connection.SetStreamMetadata(stream, ExpectedVersion.NoStream, Guid.NewGuid(),
+                                         metadata, new UserCredentials("adm", "admpa$$"));
+            return stream;
+        }
+
+        protected void DeleteStream(string streamId, string login, string password)
+        {
+            Connection.DeleteStream(streamId, ExpectedVersion.Any, 
+                                    login == null && password == null ? null : new UserCredentials(login, password));
+        }
+
         protected void Expect<T>(Action action) where T : Exception
         {
             Assert.That(() => action(), Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<T>());

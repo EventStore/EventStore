@@ -30,10 +30,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.SystemData;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -219,6 +217,11 @@ namespace EventStore.ClientAPI
                     jsonWriter.WritePropertyName(SystemMetadata.AclWrite);
                     jsonWriter.WriteValue(Acl.WriteRole);
                 }
+                if (Acl.DeleteRole != null)
+                {
+                    jsonWriter.WritePropertyName(SystemMetadata.AclDelete);
+                    jsonWriter.WriteValue(Acl.DeleteRole);
+                }
                 if (Acl.MetaReadRole != null)
                 {
                     jsonWriter.WritePropertyName(SystemMetadata.AclMetaRead);
@@ -309,6 +312,7 @@ namespace EventStore.ClientAPI
 
             string read = null;
             string write = null;
+            string delete = null;
             string metaRead = null;
             string metaWrite = null;
 
@@ -335,6 +339,13 @@ namespace EventStore.ClientAPI
                         write = (string) reader.Value;
                         break;
                     }
+                    case SystemMetadata.AclDelete:
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.String, reader);
+                        delete = (string)reader.Value;
+                        break;
+                    }
                     case SystemMetadata.AclMetaRead:
                     {
                         Check(reader.Read(), reader);
@@ -351,7 +362,7 @@ namespace EventStore.ClientAPI
                     }
                 }
             }
-            return new StreamAcl(read, write, metaRead, metaWrite);
+            return new StreamAcl(read, write, delete, metaRead, metaWrite);
         }
 
         private static void Check(JsonToken type, JsonTextReader reader)
@@ -371,15 +382,23 @@ namespace EventStore.ClientAPI
     {
         public readonly string ReadRole;
         public readonly string WriteRole;
+        public readonly string DeleteRole;
         public readonly string MetaReadRole;
         public readonly string MetaWriteRole;
 
-        public StreamAcl(string readRole, string writeRole, string metaReadRole, string metaWriteRole)
+        public StreamAcl(string readRole, string writeRole, string deleteRole, string metaReadRole, string metaWriteRole)
         {
             ReadRole = readRole;
             WriteRole = writeRole;
+            DeleteRole = deleteRole;
             MetaReadRole = metaReadRole;
             MetaWriteRole = metaWriteRole;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Read: {0}, Write: {1}, Delete: {2}, MetaRead: {3}, MetaWrite: {4}",
+                                 ReadRole, WriteRole, DeleteRole, MetaReadRole, MetaWriteRole);
         }
     }
 
@@ -390,6 +409,7 @@ namespace EventStore.ClientAPI
         private TimeSpan? _cacheControl;
         private string _aclRead;
         private string _aclWrite;
+        private string _aclDelete;
         private string _aclMetaRead;
         private string _aclMetaWrite;
 
@@ -401,10 +421,13 @@ namespace EventStore.ClientAPI
 
         public static implicit operator StreamMetadata(StreamMetadataBuilder builder)
         {
-            var acl = builder._aclRead == null && builder._aclWrite == null 
-                      && builder._aclMetaRead == null && builder._aclMetaWrite == null
+            var acl = builder._aclRead == null
+                      && builder._aclWrite == null 
+                      && builder._aclDelete == null 
+                      && builder._aclMetaRead == null
+                      && builder._aclMetaWrite == null
                               ? null
-                              : new StreamAcl(builder._aclRead, builder._aclWrite, builder._aclMetaRead, builder._aclMetaWrite);
+                              : new StreamAcl(builder._aclRead, builder._aclWrite, builder._aclDelete, builder._aclMetaRead, builder._aclMetaWrite);
             return new StreamMetadata(builder._maxCount, builder._maxAge, builder._cacheControl, acl, builder._customMetadata);
         }
 
@@ -440,7 +463,13 @@ namespace EventStore.ClientAPI
             _aclWrite = role;
             return this;
         }
-        
+
+        public StreamMetadataBuilder SetDeleteRole(string role)
+        {
+            _aclDelete = role;
+            return this;
+        }
+
         public StreamMetadataBuilder SetMetadataReadRole(string role)
         {
             _aclMetaRead = role;

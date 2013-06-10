@@ -575,6 +575,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         return CheckStreamAccessInternal(reader, SystemStreams.OriginalStreamOf(streamId), StreamAccessType.MetaRead, user);
                     case StreamAccessType.Write:
                         return CheckStreamAccessInternal(reader, SystemStreams.OriginalStreamOf(streamId), StreamAccessType.MetaWrite, user);
+                    case StreamAccessType.Delete:
                     case StreamAccessType.MetaRead:
                     case StreamAccessType.MetaWrite:
                         return StreamAccessResult.Denied;
@@ -594,6 +595,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.ReadRole, user, isSystemStream && streamId != SystemStreams.AllStream);
                 case StreamAccessType.Write:
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.WriteRole, user, isSystemStream);
+                case StreamAccessType.Delete:
+                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.DeleteRole, user, isSystemStream);
                 case StreamAccessType.MetaRead:
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.MetaReadRole, user, isSystemStream && streamId != SystemStreams.AllStream);
                 case StreamAccessType.MetaWrite:

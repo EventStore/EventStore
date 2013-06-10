@@ -338,7 +338,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new Exception();
             _submittedWriteMetastreamEvent = new Event(
                 Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
-                new StreamAcl(null, null, null, null).ToJsonBytes(), null);
+                new StreamAcl(null, null, null, null, null).ToJsonBytes(), null);
             _awaitingMetadataWriteCompleted = true;
             PublishWriteMetaStream();
         }
