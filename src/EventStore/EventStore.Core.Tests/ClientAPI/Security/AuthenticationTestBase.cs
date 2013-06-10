@@ -129,6 +129,19 @@ namespace EventStore.Core.Tests.ClientAPI.Security
                                                        .SetWriteRole(SystemUserGroups.Admins)
                                                        .SetMetadataReadRole(SystemUserGroups.Admins)
                                                        .SetMetadataWriteRole(SystemUserGroups.Admins), new UserCredentials("adm", "admpa$$"));
+
+            Connection.SetStreamMetadata("normal-all", ExpectedVersion.NoStream, Guid.NewGuid(),
+                                         StreamMetadata.Build()
+                                                       .SetReadRole(SystemUserGroups.All)
+                                                       .SetWriteRole(SystemUserGroups.All)
+                                                       .SetMetadataReadRole(SystemUserGroups.All)
+                                                       .SetMetadataWriteRole(SystemUserGroups.All));
+            Connection.SetStreamMetadata("$system-all", ExpectedVersion.NoStream, Guid.NewGuid(),
+                                         StreamMetadata.Build()
+                                                       .SetReadRole(SystemUserGroups.All)
+                                                       .SetWriteRole(SystemUserGroups.All)
+                                                       .SetMetadataReadRole(SystemUserGroups.All)
+                                                       .SetMetadataWriteRole(SystemUserGroups.All), new UserCredentials("adm", "admpa$$"));
         }
 
         [TestFixtureTearDown]

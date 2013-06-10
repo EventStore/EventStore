@@ -106,6 +106,7 @@
     <Compile Include="ClientAPI\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
+    <Compile Include="ClientAPI\Security\all_stream_with_no_acl_security.cs" />
     <Compile Include="ClientAPI\Security\system_stream_security.cs" />
     <Compile Include="ClientAPI\Security\read_stream_security.cs" />
     <Compile Include="ClientAPI\Security\read_all_security.cs" />

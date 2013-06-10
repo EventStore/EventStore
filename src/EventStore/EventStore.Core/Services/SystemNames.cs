@@ -91,5 +91,6 @@ namespace EventStore.Core.Services
     public static class SystemUserGroups
     {
         public const string Admins = "$admins";
+        public const string All = "$all";
     }
 }

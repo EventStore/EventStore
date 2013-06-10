@@ -183,5 +183,69 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
             ExpectNoException(() => SubscribeToStream("$system-adm", "adm", "admpa$$"));
         }
+
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void operations_on_system_stream_with_acl_set_to_all_succeed_for_not_authenticated_user()
+        {
+            ExpectNoException(() => ReadStreamForward("$system-all", null, null));
+            ExpectNoException(() => ReadStreamBackward("$system-all", null, null));
+
+            ExpectNoException(() => WriteStream("$system-all", null, null));
+            ExpectNoException(() => TransStart("$system-all", null, null));
+            {
+                var transId = TransStart("$system-all", null, null).TransactionId;
+                var trans = Connection.ContinueTransaction(transId, null);
+                ExpectNoException(() => trans.Write());
+                ExpectNoException(() => trans.Commit());
+            };
+
+            ExpectNoException(() => ReadMeta("$system-all", null, null));
+            ExpectNoException(() => WriteMeta("$system-all", null, null, SystemUserGroups.All));
+
+            ExpectNoException(() => SubscribeToStream("$system-all", null, null));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void operations_on_system_stream_with_acl_set_to_all_succeed_for_usual_user()
+        {
+            ExpectNoException(() => ReadStreamForward("$system-all", "user1", "pa$$1"));
+            ExpectNoException(() => ReadStreamBackward("$system-all", "user1", "pa$$1"));
+
+            ExpectNoException(() => WriteStream("$system-all", "user1", "pa$$1"));
+            ExpectNoException(() => TransStart("$system-all", "user1", "pa$$1"));
+            {
+                var transId = TransStart("$system-all", "user1", "pa$$1").TransactionId;
+                var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+                ExpectNoException(() => trans.Write());
+                ExpectNoException(() => trans.Commit());
+            };
+
+            ExpectNoException(() => ReadMeta("$system-all", "user1", "pa$$1"));
+            ExpectNoException(() => WriteMeta("$system-all", "user1", "pa$$1", SystemUserGroups.All));
+
+            ExpectNoException(() => SubscribeToStream("$system-all", "user1", "pa$$1"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void operations_on_system_stream_with_acl_set_to_all_succeed_for_admin()
+        {
+            ExpectNoException(() => ReadStreamForward("$system-all", "adm", "admpa$$"));
+            ExpectNoException(() => ReadStreamBackward("$system-all", "adm", "admpa$$"));
+
+            ExpectNoException(() => WriteStream("$system-all", "adm", "admpa$$"));
+            ExpectNoException(() => TransStart("$system-all", "adm", "admpa$$"));
+            {
+                var transId = TransStart("$system-all", "adm", "admpa$$").TransactionId;
+                var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+                ExpectNoException(() => trans.Write());
+                ExpectNoException(() => trans.Commit());
+            };
+
+            ExpectNoException(() => ReadMeta("$system-all", "adm", "admpa$$"));
+            ExpectNoException(() => WriteMeta("$system-all", "adm", "admpa$$", SystemUserGroups.All));
+
+            ExpectNoException(() => SubscribeToStream("$system-all", "adm", "admpa$$"));
+        }
     }
 }

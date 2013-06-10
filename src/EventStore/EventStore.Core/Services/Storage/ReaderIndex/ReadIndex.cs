@@ -604,6 +604,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private StreamAccessResult CheckRoleAccess(string role, IPrincipal user, bool isSystemStream)
         {
+            if (role == SystemUserGroups.All)
+                return StreamAccessResult.Granted;
             if (role == null)
                 return isSystemStream ? StreamAccessResult.Denied : StreamAccessResult.Granted;
             return (user != null && user.IsInRole(role)) ? StreamAccessResult.Granted : StreamAccessResult.Denied;
