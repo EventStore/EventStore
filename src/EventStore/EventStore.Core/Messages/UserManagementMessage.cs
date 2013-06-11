@@ -36,6 +36,9 @@ namespace EventStore.Core.Messages
     {
         public class RequestMessage : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly IEnvelope Envelope;
             public readonly IPrincipal Principal;
 
@@ -48,6 +51,9 @@ namespace EventStore.Core.Messages
 
         public class ResponseMessage : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly bool Success;
             public readonly Error Error;
 
@@ -60,6 +66,9 @@ namespace EventStore.Core.Messages
 
         public class UserManagementRequestMessage : RequestMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly string LoginName;
 
             protected UserManagementRequestMessage(IEnvelope envelope, IPrincipal principal, string loginName)
@@ -71,6 +80,9 @@ namespace EventStore.Core.Messages
 
         public sealed class Create : UserManagementRequestMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly string FullName;
             public readonly string[] Groups;
             public readonly string Password;
@@ -88,6 +100,9 @@ namespace EventStore.Core.Messages
 
         public sealed class Update : UserManagementRequestMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly string FullName;
             public readonly string[] Groups;
 
@@ -101,6 +116,9 @@ namespace EventStore.Core.Messages
 
         public sealed class Disable : UserManagementRequestMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public Disable(IEnvelope envelope, IPrincipal principal, string loginName)
                 : base(envelope, principal, loginName)
             {
@@ -109,6 +127,9 @@ namespace EventStore.Core.Messages
 
         public sealed class Enable : UserManagementRequestMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public Enable(IEnvelope envelope, IPrincipal principal, string loginName)
                 : base(envelope, principal, loginName)
             {
@@ -117,6 +138,9 @@ namespace EventStore.Core.Messages
 
         public sealed class Delete : UserManagementRequestMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public Delete(IEnvelope envelope, IPrincipal principal, string loginName)
                 : base(envelope, principal, loginName)
             {
@@ -125,6 +149,9 @@ namespace EventStore.Core.Messages
 
         public sealed class ResetPassword : UserManagementRequestMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly string NewPassword;
 
             public ResetPassword(IEnvelope envelope, IPrincipal principal, string loginName, string newPassword)
@@ -136,6 +163,9 @@ namespace EventStore.Core.Messages
 
         public sealed class ChangePassword : UserManagementRequestMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly string CurrentPassword;
             public readonly string NewPassword;
 
@@ -150,6 +180,9 @@ namespace EventStore.Core.Messages
 
         public sealed class GetAll : RequestMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public GetAll(IEnvelope envelope, IPrincipal principal)
                 : base(envelope, principal)
             {
@@ -158,6 +191,9 @@ namespace EventStore.Core.Messages
 
         public sealed class Get : UserManagementRequestMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public Get(IEnvelope envelope, IPrincipal principal, string loginName)
                 : base(envelope, principal, loginName)
             {
@@ -199,6 +235,9 @@ namespace EventStore.Core.Messages
 
         public sealed class UpdateResult : ResponseMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly string LoginName;
 
 
@@ -217,6 +256,9 @@ namespace EventStore.Core.Messages
 
         public sealed class UserDetailsResult : ResponseMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly UserData Data;
 
             public UserDetailsResult(UserData data)
@@ -234,6 +276,9 @@ namespace EventStore.Core.Messages
 
         public sealed class AllUserDetailsResult : ResponseMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly UserData[] Data;
 
             internal AllUserDetailsResult()
@@ -256,6 +301,8 @@ namespace EventStore.Core.Messages
 
         public sealed class UserManagementServiceInitialized : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
         }
     }
 }

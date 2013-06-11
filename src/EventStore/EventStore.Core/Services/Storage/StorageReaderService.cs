@@ -63,7 +63,7 @@ namespace EventStore.Core.Services.Storage
             _threadCount = threadCount;
 
             var readerWorker = new StorageReaderWorker(readIndex, writerCheckpoint);
-            var storageReaderBus = new InMemoryBus("StorageReaderBus");
+            var storageReaderBus = new InMemoryBus("StorageReaderBus", watchSlowMsg: false);
             storageReaderBus.Subscribe<ClientMessage.ReadEvent>(readerWorker);
             storageReaderBus.Subscribe<ClientMessage.ReadStreamEventsBackward>(readerWorker);
             storageReaderBus.Subscribe<ClientMessage.ReadStreamEventsForward>(readerWorker);
@@ -73,7 +73,11 @@ namespace EventStore.Core.Services.Storage
 
             _workersMultiHandler = new MultiQueuedHandler(
                 _threadCount,
-                queueNum => new QueuedHandler(storageReaderBus, string.Format("StorageReaderQueue #{0}", queueNum + 1), groupName: "StorageReaderQueue"));
+                queueNum => new QueuedHandler(storageReaderBus, 
+                                              string.Format("StorageReaderQueue #{0}", queueNum + 1),
+                                              groupName: "StorageReaderQueue",
+                                              watchSlowMsg: true,
+                                              slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
             _workersMultiHandler.Start();
 
             subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadEvent, Message>());

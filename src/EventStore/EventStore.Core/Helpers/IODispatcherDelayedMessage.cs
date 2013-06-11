@@ -32,6 +32,9 @@ namespace EventStore.Core.Helpers
 {
     public sealed class IODispatcherDelayedMessage : Message
     {
+        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+        public override int MsgTypeId { get { return TypeId; } }
+
         private readonly Action _action;
 
         public IODispatcherDelayedMessage(Action action)

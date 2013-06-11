@@ -35,8 +35,14 @@ namespace EventStore.Projections.Core.Messages.EventReaders.Feeds
 {
     public abstract class FeedReaderMessage : Message
     {
+        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+        public override int MsgTypeId { get { return TypeId; } }
+
         public sealed class ReadPage: FeedReaderMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly IPrincipal User;
@@ -60,6 +66,9 @@ namespace EventStore.Projections.Core.Messages.EventReaders.Feeds
 
         public sealed class FeedPage: FeedReaderMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public enum ErrorStatus
             {
                 Success,

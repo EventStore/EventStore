@@ -36,6 +36,9 @@ namespace EventStore.Projections.Core.Messages
     {
         public abstract class ReaderSubscriptionManagementMessage : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly Guid _subscriptionId;
 
             protected ReaderSubscriptionManagementMessage(Guid subscriptionId)
@@ -51,6 +54,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class Subscribe : ReaderSubscriptionManagementMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly CheckpointTag _fromPosition;
             private readonly IReaderStrategy _readerStrategy;
             private readonly ReaderSubscriptionOptions _options;
@@ -84,6 +90,8 @@ namespace EventStore.Projections.Core.Messages
 
         public class Pause : ReaderSubscriptionManagementMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
             public Pause(Guid subscriptionId)
                 : base(subscriptionId)
@@ -94,6 +102,8 @@ namespace EventStore.Projections.Core.Messages
 
         public class Resume : ReaderSubscriptionManagementMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
             public Resume(Guid subscriptionId)
                 : base(subscriptionId)
@@ -104,6 +114,8 @@ namespace EventStore.Projections.Core.Messages
 
         public class Unsubscribe : ReaderSubscriptionManagementMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
             public Unsubscribe(Guid subscriptionId)
                 : base(subscriptionId)
@@ -114,6 +126,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class ReaderAssignedReader : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly Guid _correlationId;
             private readonly Guid _readerId;
 

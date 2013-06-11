@@ -36,6 +36,9 @@ namespace EventStore.Projections.Core.Messages
     {
         public abstract class Message : EventStore.Core.Messaging.Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly Guid _projectionId;
 
             protected Message(Guid projectionId)
@@ -51,6 +54,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class CheckpointLoaded : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly CheckpointTag _checkpointTag;
             private readonly string _checkpointData;
 
@@ -75,6 +81,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class PrerecordedEventsLoaded : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly CheckpointTag _checkpointTag;
 
             public PrerecordedEventsLoaded(Guid projectionId, CheckpointTag checkpointTag)
@@ -91,6 +100,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class CheckpointCompleted : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly CheckpointTag _checkpointTag;
 
             public CheckpointCompleted(Guid projectionId, CheckpointTag checkpointTag)
@@ -107,6 +119,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class RestartRequested : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _reason;
 
             public RestartRequested(Guid projectionId, string reason)
@@ -123,6 +138,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class Failed : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _reason;
 
             public Failed(Guid projectionId, string reason)
@@ -139,6 +157,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class ReadyForCheckpoint : EventStore.Core.Messaging.Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly object _sender;
 
             public ReadyForCheckpoint(object sender)
@@ -154,6 +175,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class EmittedStreamAwaiting : EventStore.Core.Messaging.Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly IEnvelope _envelope;
             private readonly string _streamId;
 
@@ -176,6 +200,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class EmittedStreamWriteCompleted : EventStore.Core.Messaging.Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _streamId;
 
             public EmittedStreamWriteCompleted(string streamId)
