@@ -38,14 +38,13 @@ namespace EventStore.Web.Users
     {
         private readonly MiniWeb _miniWeb;
 
-        public UsersWebController(IPublisher publisher)
-            : base(publisher)
+        public UsersWebController(IPublisher publisher): base(publisher)
         {
             string nodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Web");
             _miniWeb = new MiniWeb("/web/users", Path.Combine(nodeFSRoot, "Users", "Web"));
         }
 
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
+        protected override void SubscribeCore(IHttpService service)
         {
             _miniWeb.RegisterControllerActions(service);
         }

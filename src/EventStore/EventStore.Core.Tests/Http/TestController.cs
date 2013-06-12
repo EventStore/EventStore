@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Http
             _networkSendQueue = networkSendQueue;
         }
 
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
+        protected override void SubscribeCore(IHttpService service)
         {
             Register(service, "/test1", Test1Handler);
             Register(service, "/test-anonymous", TestAnonymousHandler);

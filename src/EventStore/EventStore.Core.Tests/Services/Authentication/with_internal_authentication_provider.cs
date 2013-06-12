@@ -43,12 +43,12 @@ namespace EventStore.Core.Tests.Services.Authentication
 
         protected void SetUpProvider()
         {
-            this._ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
-            _bus.Subscribe(this._ioDispatcher.BackwardReader);
-            _bus.Subscribe(this._ioDispatcher.ForwardReader);
-            _bus.Subscribe(this._ioDispatcher.Writer);
-            _bus.Subscribe(this._ioDispatcher.StreamDeleter);
-            _bus.Subscribe(this._ioDispatcher);
+            _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+            _bus.Subscribe(_ioDispatcher.BackwardReader);
+            _bus.Subscribe(_ioDispatcher.ForwardReader);
+            _bus.Subscribe(_ioDispatcher.Writer);
+            _bus.Subscribe(_ioDispatcher.StreamDeleter);
+            _bus.Subscribe(_ioDispatcher);
 
             PasswordHashAlgorithm passwordHashAlgorithm = new StubPasswordHashAlgorithm();
             _internalAuthenticationProvider = new InternalAuthenticationProvider(this._ioDispatcher, passwordHashAlgorithm, 1000);

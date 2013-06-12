@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using EventStore.Core.Cluster;
+using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.VNode;
 using NUnit.Framework;

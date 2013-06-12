@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
         }
 
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
+        protected override void SubscribeCore(IHttpService service)
         {
             service.RegisterControllerAction(new ControllerAction("/admin/halt", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
                                              OnPostHalt);

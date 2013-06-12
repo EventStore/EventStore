@@ -285,6 +285,7 @@ namespace EventStore.Transport.Http.EntityManagement
                 HttpEntity.Response.ContentType = response.ContentType;
                 HttpEntity.Response.ContentLength64 = response.ContentLength;
 
+
                 foreach (var headerKey in response.Headers.AllKeys)
                 {
                     switch (headerKey)

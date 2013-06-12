@@ -87,16 +87,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   HtmlFeedCodec // initialization order matters
                                                               };
 
-        private readonly IHttpService _httpService;
+        private readonly IHttpForwarder _httpForwarder;
         private readonly IPublisher _networkSendQueue;
 
-        public AtomController(IHttpService httpService, IPublisher publisher, IPublisher networkSendQueue): base(publisher)
+        public AtomController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue): base(publisher)
         {
-            _httpService = httpService;
+            _httpForwarder = httpForwarder;
             _networkSendQueue = networkSendQueue;
         }
 
-        protected override void SubscribeCore(IHttpService http, HttpMessagePipe pipe)
+        protected override void SubscribeCore(IHttpService http)
         {
             // STREAMS
             Register(http, "/streams/{stream}", HttpMethod.Post, PostEvent, AtomCodecs, AtomCodecs);
@@ -155,7 +155,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, "Forwarding header in wrong format.");
                 return;
             }
-            if (allowForwarding && _httpService.ForwardRequest(manager))
+            if (allowForwarding && _httpForwarder.ForwardRequest(manager))
                 return;
             PostEntry(manager, expectedVersion, allowForwarding, stream);
         }
@@ -180,7 +180,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, "Forwarding header in wrong format.");
                 return;
             }
-            if (allowForwarding && _httpService.ForwardRequest(manager))
+            if (allowForwarding && _httpForwarder.ForwardRequest(manager))
                 return;
             var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.Atom.DeleteStreamCompleted, Configure.DeleteStreamCompleted);
             Publish(new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, allowForwarding, stream, expectedVersion, manager.User));
@@ -316,7 +316,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, "Forwarding header in wrong format.");
                 return;
             }
-            if (allowForwarding && _httpService.ForwardRequest(manager))
+            if (allowForwarding && _httpForwarder.ForwardRequest(manager))
                 return;
             PostEntry(manager, expectedVersion, allowForwarding, SystemStreams.MetastreamOf(stream));
         }

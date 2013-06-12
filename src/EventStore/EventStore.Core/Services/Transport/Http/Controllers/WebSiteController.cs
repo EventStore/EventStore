@@ -56,7 +56,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _commonWeb = new MiniWeb("/web/es", Path.Combine(commonFSRoot, @"es-common-web"));
         }
 
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
+        protected override void SubscribeCore(IHttpService service)
         {
             _singleNodeWeb.RegisterControllerActions(service);
             _commonWeb.RegisterControllerActions(service);

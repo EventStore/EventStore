@@ -39,7 +39,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     public class StatController : CommunicationController
     {
         private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml };
-        private static readonly ICodec DefaultResponseCodec = Codec.Json;
         
         private readonly IPublisher _networkSendQueue;
 
@@ -49,21 +48,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _networkSendQueue = networkSendQueue;
         }
 
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
+        protected override void SubscribeCore(IHttpService service)
         {
             Ensure.NotNull(service, "service");
-            Ensure.NotNull(pipe, "pipe");
 
-            service.RegisterControllerAction(new ControllerAction("/stats",
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  SupportedCodecs),
-                                             OnGetFreshStats);
-            service.RegisterControllerAction(new ControllerAction("/stats/{*statPath}",
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  SupportedCodecs),
-                                             OnGetFreshStats);
+            service.RegisterControllerAction(new ControllerAction("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
+            service.RegisterControllerAction(new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
         }
 
         private void OnGetFreshStats(HttpEntityManager entity, UriTemplateMatch match)

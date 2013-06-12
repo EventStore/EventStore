@@ -58,13 +58,13 @@ namespace EventStore.Projections.Core.Services.Http
         private readonly MiniWeb _singleNodeJs;
         private readonly MiniWeb _miniWebPrelude;
         private readonly MiniWeb _miniWebResources;
-        private readonly IHttpService _httpService;
+        private readonly IHttpForwarder _httpForwarder;
         private readonly IPublisher _networkSendQueue;
 
-        public ProjectionsController(IHttpService httpService, IPublisher publisher, IPublisher networkSendQueue)
+        public ProjectionsController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
         {
-            _httpService = httpService;
+            _httpForwarder = httpForwarder;
 
             var singleNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.SingleNode.Web");
             _singleNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(singleNodeFSRoot, Path.Combine("singlenode-web", "js", "projections")));
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Services.Http
             _miniWebResources = new MiniWeb("/web/es/js/projections/resources", Path.Combine(fileSystemWebRoot, Path.Combine("web-resources", "js")));
         }
 
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
+        protected override void SubscribeCore(IHttpService service)
         {
             _singleNodeJs.RegisterControllerActions(service);
 
@@ -128,7 +128,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjections(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             http.ReplyTextContent(
@@ -182,7 +182,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionQueryGet(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             SendToHttpEnvelope<ProjectionManagementMessage.ProjectionQuery> envelope;
@@ -198,7 +198,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionQueryPut(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
@@ -213,7 +213,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionCommandDisable(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
@@ -223,7 +223,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionCommandEnable(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
@@ -233,7 +233,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionCommandReset(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
@@ -243,7 +243,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionStatusGet(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             http.ReplyStatus(
@@ -253,7 +253,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionDelete(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
@@ -267,7 +267,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionStatisticsGet(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             var envelope =
@@ -281,7 +281,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionStateGet(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionState>(
@@ -293,7 +293,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionResultGet(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionResult>(
@@ -312,7 +312,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionsReadEvents(HttpEntityManager http, UriTemplateMatch match, string body)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             var bodyParsed = body.ParseJson<ReadEventsBody>();
@@ -328,7 +328,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void ProjectionsGet(HttpEntityManager http, UriTemplateMatch match, ProjectionMode? mode)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             var envelope =
@@ -341,7 +341,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void ProjectionsPost(HttpEntityManager http, UriTemplateMatch match, ProjectionMode mode, string name)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(

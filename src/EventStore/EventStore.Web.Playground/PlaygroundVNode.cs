@@ -29,7 +29,6 @@
 using System;
 using System.Linq;
 using System.Net;
-using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
@@ -39,7 +38,6 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Settings;
 
@@ -147,26 +145,32 @@ namespace EventStore.Web.Playground
                     new AnonymousAuthenticationProvider()
                 };
 
-                _httpService = new HttpService(
-                        ServiceAccessibility.Private,
-                        _mainQueue,
-                        new TrieUriRouter(),
-                        _workersHandler,
-                        false,
-                        vNodeSettings.HttpPrefixes);
+                var httpPipe = new HttpMessagePipe();
+                var httpSendService = new HttpSendService(httpPipe, forwardRequests: false);
+                _mainBus.Subscribe<SystemMessage.StateChangeMessage>(httpSendService);
+                _mainBus.Subscribe(new WideningHandler<HttpMessage.SendOverHttp, Message>(_workersHandler));
+                SubscribeWorkers(bus =>
+                {
+                    bus.Subscribe<HttpMessage.HttpSend>(httpSendService);
+                    bus.Subscribe<HttpMessage.HttpSendPart>(httpSendService);
+                    bus.Subscribe<HttpMessage.HttpBeginSend>(httpSendService);
+                    bus.Subscribe<HttpMessage.HttpEndSend>(httpSendService);
+                    bus.Subscribe<HttpMessage.SendOverHttp>(httpSendService);
+                });
 
-                SubscribeWorkers(bus => HttpService.CreateAndSubscribePipeline(bus, authenticationProviders));
+                _httpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
+                                               _workersHandler, vNodeSettings.HttpPrefixes);
 
-                _mainBus.Subscribe<SystemMessage.SystemInit>(HttpService);
-                _mainBus.Subscribe<SystemMessage.StateChangeMessage>(HttpService);
-                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
-                _mainBus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
-                _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(HttpService);
+                _mainBus.Subscribe<SystemMessage.SystemInit>(_httpService);
+                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_httpService);
+                _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_httpService);
                 HttpService.SetupController(new AdminController(_mainQueue));
                 HttpService.SetupController(new PingController());
                 HttpService.SetupController(new StatController(monitoringQueue, _workersHandler));
-                HttpService.SetupController(new AtomController(HttpService, _mainQueue, _workersHandler));
-                HttpService.SetupController(new UsersController(HttpService, _mainQueue, _workersHandler));
+                HttpService.SetupController(new AtomController(httpSendService, _mainQueue, _workersHandler));
+                HttpService.SetupController(new UsersController(httpSendService, _mainQueue, _workersHandler));
+
+                SubscribeWorkers(bus => HttpService.CreateAndSubscribePipeline(bus, authenticationProviders));
             }
 
 
