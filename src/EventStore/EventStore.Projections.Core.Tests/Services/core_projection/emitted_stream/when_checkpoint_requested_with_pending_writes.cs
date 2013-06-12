@@ -46,7 +46,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         protected override void Given()
         {
             base.Given();
-            NoStream("test");
+            AllWritesSucceed();
+            NoOtherStreams();
         }
 
         [SetUp]

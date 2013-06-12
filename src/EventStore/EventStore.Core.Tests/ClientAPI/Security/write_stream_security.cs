@@ -88,5 +88,31 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             ExpectNoException(() => WriteStream("noacl-stream", "adm", "admpa$$"));
         }
+
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void writing_to_all_access_normal_stream_succeeds_when_no_credentials_are_passed()
+        {
+            ExpectNoException(() => WriteStream("normal-all", null, null));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void writing_to_all_access_normal_stream_is_not_authenticated_when_not_existing_credentials_are_passed()
+        {
+            Expect<NotAuthenticatedException>(() => WriteStream("normal-all", "badlogin", "badpass"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void writing_to_all_access_normal_stream_succeeds_when_any_existing_user_credentials_are_passed()
+        {
+            ExpectNoException(() => WriteStream("normal-all", "user1", "pa$$1"));
+            ExpectNoException(() => WriteStream("normal-all", "user2", "pa$$2"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void writing_to_all_access_normal_stream_succeeds_when_any_admin_user_credentials_are_passed()
+        {
+            ExpectNoException(() => WriteStream("normal-all", "adm", "admpa$$"));
+        }
     }
 }

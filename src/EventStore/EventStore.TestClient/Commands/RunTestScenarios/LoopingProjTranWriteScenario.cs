@@ -190,7 +190,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 ", runIndex);
 
                 var projectionManager = GetProjectionsManager();
-                projectionManager.CreateContinuous(projectionName, projection);
+                projectionManager.CreateContinuous(projectionName, projection, AdminCredentials);
 
                 WaitAndCheckIfIsFaulted(projectionName);
 

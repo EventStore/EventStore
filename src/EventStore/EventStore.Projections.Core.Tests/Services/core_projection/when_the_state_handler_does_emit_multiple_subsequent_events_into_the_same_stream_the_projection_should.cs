@@ -48,9 +48,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             ExistingEvent(
                 "$projections-projection-checkpoint", "$ProjectionCheckpoint",
                 @"{""c"": 100, ""p"": 50}", "{}");
-            NoStream(FakeProjectionStateHandler._emit2StreamId);
-            NoStream("$projections-projection-order");
-            AllWritesToSucceed("$projections-projection-order");
+            AllWritesSucceed();
+            NoOtherStreams();
         }
 
         protected override void When()

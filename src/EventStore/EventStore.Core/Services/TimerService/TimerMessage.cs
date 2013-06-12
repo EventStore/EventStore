@@ -34,6 +34,9 @@ namespace EventStore.Core.Services.TimerService
     {
         public class Schedule : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly TimeSpan TriggerAfter;
             
             public readonly IEnvelope Envelope;

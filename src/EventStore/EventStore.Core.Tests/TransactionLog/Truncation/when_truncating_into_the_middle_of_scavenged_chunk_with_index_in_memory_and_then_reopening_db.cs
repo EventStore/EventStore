@@ -6,7 +6,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Truncation
 {
     [TestFixture]
-    public class when_truncating_in_a_middle_of_scavenged_chunk_with_index_in_memory_and_then_reopening_db : TruncateAndReOpenDbScenario
+    public class when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_memory_and_then_reopening_db : TruncateAndReOpenDbScenario
     {
         // actually this case is not fully handled by EventStore. When some records have been scavenged, but truncated in a middle of chunk, 
         // we lose the delete record, so we don't consider this stream as deleted, but still we have scavenged a lot of records, that are not scavenged in other replicas.

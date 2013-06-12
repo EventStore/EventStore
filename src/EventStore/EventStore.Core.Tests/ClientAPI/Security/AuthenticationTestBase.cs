@@ -129,6 +129,19 @@ namespace EventStore.Core.Tests.ClientAPI.Security
                                                        .SetWriteRole(SystemUserGroups.Admins)
                                                        .SetMetadataReadRole(SystemUserGroups.Admins)
                                                        .SetMetadataWriteRole(SystemUserGroups.Admins), new UserCredentials("adm", "admpa$$"));
+
+            Connection.SetStreamMetadata("normal-all", ExpectedVersion.NoStream, Guid.NewGuid(),
+                                         StreamMetadata.Build()
+                                                       .SetReadRole(SystemUserGroups.All)
+                                                       .SetWriteRole(SystemUserGroups.All)
+                                                       .SetMetadataReadRole(SystemUserGroups.All)
+                                                       .SetMetadataWriteRole(SystemUserGroups.All));
+            Connection.SetStreamMetadata("$system-all", ExpectedVersion.NoStream, Guid.NewGuid(),
+                                         StreamMetadata.Build()
+                                                       .SetReadRole(SystemUserGroups.All)
+                                                       .SetWriteRole(SystemUserGroups.All)
+                                                       .SetMetadataReadRole(SystemUserGroups.All)
+                                                       .SetMetadataWriteRole(SystemUserGroups.All), new UserCredentials("adm", "admpa$$"));
         }
 
         [TestFixtureTearDown]
@@ -204,6 +217,20 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             Connection.SubscribeToAll(false, (x, y) => { }, (x, y, z) => { },
                                       login == null && password == null ? null : new UserCredentials(login, password));
+        }
+
+        protected string CreateStreamWithMeta(StreamMetadata metadata, string streamPrefix = null)
+        {
+            var stream = (streamPrefix ?? string.Empty) + TestContext.CurrentContext.Test.Name;
+            Connection.SetStreamMetadata(stream, ExpectedVersion.NoStream, Guid.NewGuid(),
+                                         metadata, new UserCredentials("adm", "admpa$$"));
+            return stream;
+        }
+
+        protected void DeleteStream(string streamId, string login, string password)
+        {
+            Connection.DeleteStream(streamId, ExpectedVersion.Any, 
+                                    login == null && password == null ? null : new UserCredentials(login, password));
         }
 
         protected void Expect<T>(Action action) where T : Exception

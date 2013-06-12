@@ -31,7 +31,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Threading;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
@@ -42,9 +41,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
     {
         internal const int MaxSendPacketSize = 64 * 1024;
 
-        private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool", 
-                                                                                   TcpConfiguration.SendReceivePoolSize, 
-                                                                                   () => new SocketAsyncEventArgs());
+        internal static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool", 
+                                                                                    TcpConfiguration.SendReceivePoolSize, 
+                                                                                    () => new SocketAsyncEventArgs());
 
         internal static ITcpConnection CreateConnectingConnection(ILogger log,
                                                                   Guid connectionId, 
@@ -55,7 +54,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                                                   Action<ITcpConnection, SocketError> onConnectionClosed)
         {
             var connection = new TcpConnection(log, connectionId, remoteEndPoint, onConnectionClosed);
-            // ReSharper disable ImplicitlyCapturedClosure
+// ReSharper disable ImplicitlyCapturedClosure
             connector.InitConnect(remoteEndPoint,
                                   (_, socket) =>
                                   {
@@ -68,7 +67,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                       if (onConnectionFailed != null)
                                           onConnectionFailed(connection, socketError);
                                   });
-            // ReSharper restore ImplicitlyCapturedClosure
+// ReSharper restore ImplicitlyCapturedClosure
             return connection;
         }
 
@@ -364,7 +363,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 socketArgs.AcceptSocket = null;
                 if (socketArgs.Buffer != null)
                     socketArgs.SetBuffer(null, 0, 0);
-                //SocketArgsPool.Return(socketArgs);
+                SocketArgsPool.Return(socketArgs);
             }
         }
 
@@ -377,7 +376,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 socketArgs.AcceptSocket = null;
                 if (socketArgs.Buffer != null)
                     socketArgs.SetBuffer(null, 0, 0);
-                //SocketArgsPool.Return(socketArgs);
+                SocketArgsPool.Return(socketArgs);
             }
         }
 

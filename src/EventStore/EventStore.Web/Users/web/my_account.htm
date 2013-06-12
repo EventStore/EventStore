@@ -1,0 +1,269 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Users</title>
+    <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jquery/jquery-ui-1.8.23.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/lib/require-full.js" type="text/javascript"></script>
+    <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>
+    <style type="text/css">
+        .dialog
+        {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <h1>Users</h1>
+        <div id="commands-container">
+            <ul style="display: inline;">
+                <li><a href="#" id="btn-create" class="btn btn-info">New...</a></li>
+                <li></li>
+            </ul>
+        </div>
+        <div id="user-list-container"></div>
+        <script id="r-body">
+            es.tmpl.renderBody();
+        </script>
+    </div>
+    <div id="edit-user-details-dialog" class="dialog">
+        <form id="edit-user-details-form" class="form-horizontal">
+            <div class="control-group">
+                <label class="control-label add-on" for="input-login-name">Login</label>
+                <div class="controls">
+                    <input type="text" id="input-login-name" name="input-login-name"/>
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label add-on" for="input-full-name">Full Name</label>
+                <div class="controls">
+                    <input type="text" id="input-full-name" name="input-full-name"/>
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label add-on" for="input-is-admin">Is Administrator</label>
+                <div class="controls">
+                    <input type="checkbox" id="input-is-admin" name="input-is-admin"/>
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label add-on" for="input-password-current">Current Password</label>
+                <div class="controls">
+                    <input type="password" id="input-password-current" name="input-password-current"/>
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label add-on" for="input-password">Password</label>
+                <div class="controls">
+                    <input type="password" id="input-password" name="input-password"/>
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label add-on" for="input-password">Confirm</label>
+                <div class="controls">
+                    <input type="password" id="input-password-confirm" name="input-password-confirm"/>
+                    <span class="help-inline"></span>
+                </div>
+            </div>
+            <div class="commands-container" style="text-align: right;">
+                <ul style="display: inline">
+                    <li><a href="#" class="btn btn-primary" id="button-ok">Create</a></li>
+                    <li><a href="#" class="btn" id="button-cancel">Cancel</a></li>
+                </ul>
+            </div>
+        </form>
+    </div>
+    <script type="text/javascript">
+        require.config({ baseUrl: "/web/users/js" });
+        require(['Controller'],
+            function (controller) {
+                var users = controller.create();
+                var activeEditDialogOkfunction = null;
+                $(function () {
+
+                    $("form").submit(function(e) {
+                        e.preventDefault();
+                    });
+
+                    $("#button-ok").click(function (e) {
+                        activeEditDialogOkfunction();
+                    });
+
+                    $("#button-details-close").click(function (e) {
+                        $("#user-details-dialog").dialog("close");
+                        getAndDisplayUsers();
+                    });
+
+                    $("#button-cancel").click(function (e) {
+                        $("#edit-user-details-dialog").dialog("close");
+                    });
+
+                    users.getCurrent(function (userData) {
+                        displayChangePassword(userData);
+                    });
+
+                });
+
+                function get(input) {
+                    var jInput = $("#" + input);
+                    var jControlGroup = jInput.closest(".control-group");
+                    return {
+                        val: jInput.attr("type") === "checkbox" ? jInput.attr("checked") === "checked" : jInput.val(),
+                        set: function (v) {
+                            if (jInput.attr("type") === "checkbox") {
+                                if (v)
+                                    jInput.attr("checked", "checked");
+                                else 
+                                    jInput.removeAttr("checked");
+                            } else
+                                jInput.val(v);
+                        },
+                        reset: function () {
+                            var group = jInput.closest(".control-group");
+                            group.removeClass("error");
+                            group.find(".help-inline").text("");
+                        },
+                        invalid: function (message) {
+                            var group = jInput.closest(".control-group");
+                            group.addClass("error");
+                            group.find(".help-inline").text(message);
+                        },
+
+                        enabled: function () {
+                            return jInput.attr("data-mode") == "normal";
+                        },
+
+                        configure: function (mode) {
+                            switch (mode) {
+                                case "normal":
+                                    jControlGroup.show();
+                                    jInput.removeAttr("readonly");
+                                    break;
+                                case "unused":
+                                    jControlGroup.hide();
+                                    jInput.removeAttr("readonly");
+                                    break;
+                                case "readonly":
+                                    jControlGroup.show();
+                                    jInput.attr("readonly", "readonly");
+                                    break;
+                                default:
+                                    throw "Unknown mode:in " + mode;
+                            }
+                            jInput.attr("data-mode", mode);
+                        }
+                    };
+                }
+
+                function getInput() {
+
+                    function required(v) {
+                        if (v.enabled() && !v.val) {
+                            v.invalid("required");
+                            return false;
+                        }
+                        return true;
+                    }
+
+                    function match(v1, v2) {
+                        if (v1.enabled() && v2.enabled() && v1.val != v2.val) {
+                            v1.invalid("does not match");
+                            return false;
+                        }
+                        return true;
+                    }
+
+                    return {
+                        isAdmin: get("input-is-admin"),
+                        loginName: get("input-login-name"),
+                        fullName: get("input-full-name"),
+                        currentPassword: get("input-password-current"),
+                        password: get("input-password"),
+                        confirmPassword: get("input-password-confirm"),
+
+                        validate: function () {
+                            this.loginName.reset();
+                            this.fullName.reset();
+                            this.isAdmin.reset();
+                            this.password.reset();
+                            this.confirmPassword.reset();
+
+                            if (!required(this.loginName))
+                                return false;
+                            if (!required(this.fullName))
+                                return false;
+                            if (!required(this.password))
+                                return false;
+                            if (!required(this.confirmPassword))
+                                return false;
+                            if (!match(this.password, this.confirmPassword))
+                                return false;
+                            return true;
+                        }
+                    };
+                }
+
+                function changePassword() {
+                    var inputData = getInput();
+                    if (inputData.validate()) {
+                        var data = {
+                            loginName: inputData.loginName.val,
+                            oldPassword: inputData.currentPassword.val,
+                            newPassword: inputData.password.val,
+                        };
+                        users.setPassword(data, succeeded, failed);
+                    }
+                }
+
+                function succeeded(login) {
+                    $("#edit-user-details-dialog").dialog("close");
+                    initializeUserDetails(login);
+                }
+
+                function failed(status) {
+                    alert(status);
+                    $("#edit-user-details-dialog").dialog("close");
+                }
+
+
+                function displayChangePassword(userData) {
+                    activeEditDialogOkfunction = changePassword;
+                    $("#edit-user-details-dialog").dialog({
+                        modal: true,
+                        width: 600,
+                        height: 310,
+                        title: "Reset Password",
+                        autoResize: true,
+                        open: function (event, ui) {
+                            var inputs = getInput();
+                            inputs.loginName.configure("readonly");
+                            inputs.fullName.configure("unused");
+                            inputs.isAdmin.configure("unused");
+                            inputs.currentPassword.configure("normal");
+                            inputs.password.configure("normal");
+                            inputs.confirmPassword.configure("normal");
+
+                            inputs.loginName.set(userData.data.loginName);
+                            inputs.fullName.set(userData.data.fullName);
+
+                            $("#button-ok").text("Change Password");
+                        }
+                    });
+                }
+
+
+
+            });
+    </script>
+</body>
+</html>

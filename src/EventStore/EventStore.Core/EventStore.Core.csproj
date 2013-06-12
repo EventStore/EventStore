@@ -117,6 +117,7 @@
     <Compile Include="Exceptions\SystemStreamNotFoundException.cs" />
     <Compile Include="Exceptions\UnableToAcquireLockInReasonableTimeException.cs" />
     <Compile Include="ExclusiveDbLock.cs" />
+    <Compile Include="Helpers\IODispatcherDelayedMessage.cs" />
     <Compile Include="Index\GuidFilenameProvider.cs" />
     <Compile Include="Index\Hashes\IHasher.cs" />
     <Compile Include="Index\Hashes\Murmur2Unsafe.cs" />
@@ -136,6 +137,7 @@
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="ISubsystem.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />
+    <Compile Include="Messages\InternalAuthenticationProviderMessages.cs" />
     <Compile Include="Messages\IQueueAffineMessage.cs" />
     <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
     <Compile Include="Messaging\CallbackEnvelope.cs" />
@@ -177,6 +179,7 @@
     <Compile Include="Services\Transport\Http\Authentication\AnonymousAuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Authentication\InternalAuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Authentication\OpenGenericPrincipal.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\PasswordChangeNotificationReader.cs" />
     <Compile Include="Services\Transport\Http\Authentication\PasswordHashAlgorithm.cs" />
     <Compile Include="Services\Transport\Http\Authentication\Rfc2898PasswordHashAlgorithm.cs" />
     <Compile Include="Data\UserData.cs" />

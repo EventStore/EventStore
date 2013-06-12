@@ -157,7 +157,16 @@ namespace EventStore.Core.Services.Storage
                 return;
             }
 
-            _writerBus.Handle(message);
+            try
+            {
+                _writerBus.Handle(message);
+            }
+            catch (Exception exc)
+            {
+                BlockWriter = true;
+                Log.FatalException(exc, "Unexpected error in StorageWriterService. Terminating the process...");
+                Application.Exit(ExitCode.Error, string.Format("Unexpected error in StorageWriterService: {0}", exc.Message));
+            }
         }
 
         void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message)
@@ -212,7 +221,8 @@ namespace EventStore.Core.Services.Storage
             }
 
             var totalTime = message.TotalTimeWasted + sw.Elapsed;
-            Log.Debug("Still waiting for chaser to catch up already for {0}...", totalTime);
+            if (totalTime < TimeSpan.FromSeconds(5) || (int)totalTime.TotalSeconds % 5 == 0) // too verbose otherwise
+                Log.Debug("Still waiting for chaser to catch up already for {0}...", totalTime);
             Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(message.CorrelationId, totalTime));
         }
 

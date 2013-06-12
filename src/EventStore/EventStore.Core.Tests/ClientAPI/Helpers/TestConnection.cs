@@ -36,6 +36,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
     public static class TestConnection
     {
+        private static bool _running;
+
         public static IEventStoreConnection Create(IPEndPoint endPoint, TcpType tcpType = TcpType.Normal, UserCredentials userCredentials = null)
         {
             return EventStoreConnection.Create(Settings(tcpType, userCredentials), endPoint);

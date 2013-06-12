@@ -33,6 +33,7 @@ using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
@@ -58,9 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _event1 = new ResolvedEvent("pa", 1, "a", 1, true, new TFPos(200, 150), Guid.NewGuid(), "test1", true, "{}", "{}", "{$o:\"oa\"");
             _event2 = new ResolvedEvent("pb", 1, "b", 1, true, new TFPos(300, 250), Guid.NewGuid(), "test1", true, "{}", "{}", "{$o:\"ob\"");
 
-            NoStream("$projections-projection-order");
-
-
+            NoOtherStreams();
             AllWritesSucceed();
         }
 
@@ -78,7 +77,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void writes_correct_link_tos()
         {
-            var writeEvents = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().SelectMany(v => v.Events).ToArray();
+            var writeEvents =
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+                         .SelectMany(v => v.Events)
+                         .Where(v => v.EventType == SystemEventTypes.LinkTo)
+                         .ToArray();
             Assert.AreEqual(2, writeEvents.Length);
             Assert.AreEqual("1@pa", Helper.UTF8NoBom.GetString(writeEvents[0].Data));
             Assert.AreEqual("1@pb", Helper.UTF8NoBom.GetString(writeEvents[1].Data));

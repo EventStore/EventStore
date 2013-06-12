@@ -44,8 +44,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
 
         protected override void Given()
         {
-            NoStream("stream1");
-            NoStream("stream2");
+            AllWritesSucceed();
+            NoOtherStreams();
         }
 
         [SetUp]

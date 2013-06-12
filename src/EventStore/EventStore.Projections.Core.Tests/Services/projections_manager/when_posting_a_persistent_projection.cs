@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             yield return
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
-                    ProjectionManagementMessage.RunAs.Anonymous, "JS", @"fromAll().whenAny(function(s,e){return s;});",
+                    ProjectionManagementMessage.RunAs.System, "JS", @"fromAll().whenAny(function(s,e){return s;});",
                     enabled: true, checkpointsEnabled: true, emitEnabled: true);
             OneWriteCompletes();
             yield return Yield;

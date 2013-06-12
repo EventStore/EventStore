@@ -113,9 +113,14 @@ namespace EventStore.Web.Playground
                                                             slowMsgThreshold: TimeSpan.FromMilliseconds(50)));
 
             // AUTHENTICATION INFRASTRUCTURE
-            var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
+            var dispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_workersHandler, crossThread: true));
             var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
             var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, 1000);
+            var passwordChangeNotificationReader = new PasswordChangeNotificationReader(_mainQueue, dispatcher);
+            _mainBus.Subscribe<SystemMessage.SystemStart>(passwordChangeNotificationReader);
+            _mainBus.Subscribe<SystemMessage.BecomeShutdown>(passwordChangeNotificationReader);
+            _mainBus.Subscribe(internalAuthenticationProvider);
+            _mainBus.Subscribe(dispatcher);
 
             SubscribeWorkers(bus =>
             {

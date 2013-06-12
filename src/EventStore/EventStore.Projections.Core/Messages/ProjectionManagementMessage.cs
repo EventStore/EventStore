@@ -28,6 +28,7 @@
 using System;
 using System.Security.Principal;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -39,6 +40,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class OperationFailed : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _reason;
 
             public OperationFailed(string reason)
@@ -54,6 +58,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class NotFound : OperationFailed
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public NotFound()
                 : base("Not Found")
             {
@@ -63,6 +70,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class NotAuthorized : OperationFailed
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public NotAuthorized()
                 : base("Not authorized")
             {
@@ -96,8 +106,16 @@ namespace EventStore.Projections.Core.Messages
                 get { return _runAs; }
             }
 
-            public static bool ValidateRunAs(IPrincipal existingRunAs, ControlMessage message, bool replace = false)
+            public static bool ValidateRunAs(ProjectionMode mode, ReadWrite readWrite, IPrincipal existingRunAs, ControlMessage message, bool replace = false)
             {
+                if (mode > ProjectionMode.Transient && readWrite == ReadWrite.Write
+                    && (message.RunAs == null || message.RunAs.Principal == null
+                        || !message.RunAs.Principal.IsInRole(SystemUserGroups.Admins)))
+                {
+                    message.Envelope.ReplyWith(new NotAuthorized());
+                    return false;
+                }
+
                 if (replace && message.RunAs.Principal == null)
                 {
                     message.Envelope.ReplyWith(new NotAuthorized());
@@ -125,6 +143,9 @@ namespace EventStore.Projections.Core.Messages
 
         public abstract class ControlMessage: Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly IEnvelope _envelope;
             public readonly RunAs RunAs;
 
@@ -142,6 +163,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class Post : ControlMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly ProjectionMode _mode;
             private readonly string _name;
             private readonly string _handlerType;
@@ -222,6 +246,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class Disable : ControlMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _name;
 
             public Disable(IEnvelope envelope, string name, RunAs runAs)
@@ -238,6 +265,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class Enable : ControlMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _name;
 
             public Enable(IEnvelope envelope, string name, RunAs runAs)
@@ -254,6 +284,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class SetRunAs : ControlMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public enum SetRemove
             {
                 Set,
@@ -283,6 +316,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class UpdateQuery : ControlMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _name;
             private readonly string _handlerType;
             private readonly string _query;
@@ -321,6 +357,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class Reset : ControlMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _name;
 
             public Reset(IEnvelope envelope, string name, RunAs runAs)
@@ -337,6 +376,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class Delete : ControlMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _name;
             private readonly bool _deleteCheckpointStream;
             private readonly bool _deleteStateStream;
@@ -368,6 +410,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class GetQuery : ControlMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _name;
 
             public GetQuery(IEnvelope envelope, string name, RunAs runAs):
@@ -384,6 +429,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class Updated : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _name;
 
             public Updated(string name)
@@ -399,6 +447,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class GetStatistics : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly IEnvelope _envelope;
             private readonly ProjectionMode? _mode;
             private readonly string _name;
@@ -435,6 +486,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class GetState : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly IEnvelope _envelope;
             private readonly string _name;
             private readonly string _partition;
@@ -467,6 +521,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class GetResult : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly IEnvelope _envelope;
             private readonly string _name;
             private readonly string _partition;
@@ -499,6 +556,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class Statistics : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly ProjectionStatistics[] _projections;
 
             public Statistics(ProjectionStatistics[] projections)
@@ -515,6 +575,9 @@ namespace EventStore.Projections.Core.Messages
 
         public abstract class ProjectionDataBase : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _name;
             private readonly string _partition;
             private readonly CheckpointTag _position;
@@ -552,6 +615,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class ProjectionState : ProjectionDataBase
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _state;
 
             public ProjectionState(
@@ -569,6 +635,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class ProjectionResult : ProjectionDataBase
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _result;
 
             public ProjectionResult(
@@ -586,6 +655,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class ProjectionQuery : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly string _name;
             private readonly string _query;
             private readonly bool _emitEnabled;
@@ -624,14 +696,21 @@ namespace EventStore.Projections.Core.Messages
         {
             public class CleanupExpired: Message
             {
+                private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
             }
 
             public class RegularTimeout : Message
             {
+                private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
             }
 
             public class Deleted : Message
             {
+                private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
                 private readonly string _name;
                 private readonly Guid _id;
 
@@ -655,6 +734,9 @@ namespace EventStore.Projections.Core.Messages
 
         public sealed class RequestSystemProjections : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly IEnvelope Envelope;
 
             public RequestSystemProjections(IEnvelope envelope)
@@ -665,6 +747,9 @@ namespace EventStore.Projections.Core.Messages
 
         public sealed class RegisterSystemProjection : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly string Name;
             public readonly string Handler;
             public readonly string Query;

@@ -119,7 +119,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var seqReader = _readers.Get();
             try
             {
-                seqReader.Reposition(Math.Max(0, _persistedCommitCheckpoint));
+                var startPosition = Math.Max(0, _persistedCommitCheckpoint);
+                seqReader.Reposition(startPosition);
 
                 long processed = 0;
                 SeqReadResult result;
@@ -140,8 +141,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                     processed += 1;
                     if (processed % 100000 == 0)
-                        Log.Debug("ReadIndex Rebuilding: processed {0} records.", processed);
+                    {
+                        Log.Debug("ReadIndex Rebuilding: processed {0} records ({1:0.0}%).",
+                                  processed,
+                                  (result.RecordPostPosition - startPosition)*100.0/(buildToPosition - startPosition));
+                    }
                 }
+                Log.Debug("ReadIndex Rebuilding Done: total processed {0} records.", processed);
             }
             finally
             {
@@ -575,6 +581,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         return CheckStreamAccessInternal(reader, SystemStreams.OriginalStreamOf(streamId), StreamAccessType.MetaRead, user);
                     case StreamAccessType.Write:
                         return CheckStreamAccessInternal(reader, SystemStreams.OriginalStreamOf(streamId), StreamAccessType.MetaWrite, user);
+                    case StreamAccessType.Delete:
                     case StreamAccessType.MetaRead:
                     case StreamAccessType.MetaWrite:
                         return StreamAccessResult.Denied;
@@ -594,6 +601,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.ReadRole, user, isSystemStream && streamId != SystemStreams.AllStream);
                 case StreamAccessType.Write:
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.WriteRole, user, isSystemStream);
+                case StreamAccessType.Delete:
+                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.DeleteRole, user, isSystemStream);
                 case StreamAccessType.MetaRead:
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.MetaReadRole, user, isSystemStream && streamId != SystemStreams.AllStream);
                 case StreamAccessType.MetaWrite:
@@ -604,6 +613,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private StreamAccessResult CheckRoleAccess(string role, IPrincipal user, bool isSystemStream)
         {
+            if (role == SystemUserGroups.All)
+                return StreamAccessResult.Granted;
             if (role == null)
                 return isSystemStream ? StreamAccessResult.Denied : StreamAccessResult.Granted;
             return (user != null && user.IsInRole(role)) ? StreamAccessResult.Granted : StreamAccessResult.Denied;

@@ -29,6 +29,7 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -89,6 +90,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             Assert.AreEqual("type2", writtenEvents[0].EventType);
             Assert.AreEqual("type3", writtenEvents[1].EventType);
         }
+
+        [Test]
+        public void updates_stream_metadata()
+        {
+            var writes =
+                HandledMessages.OfType<ClientMessage.WriteEvents>()
+                               .OfEventType(SystemEventTypes.StreamMetadata)
+                               .ToArray();
+            Assert.AreEqual(0, writes.Length);
+        }
+
 
         [Test]
         public void reports_correct_event_numbers()

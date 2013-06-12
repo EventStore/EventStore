@@ -82,6 +82,9 @@ namespace EventStore.Core.Tests.Services.TimeService
 
     public class TestResponseMessage : Message
     {
+        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+        public override int MsgTypeId { get { return TypeId; } }
+
         public int Id { get; set; }
 
         public TestResponseMessage(int id)

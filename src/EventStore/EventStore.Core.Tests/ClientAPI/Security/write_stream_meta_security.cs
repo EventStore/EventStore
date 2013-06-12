@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using EventStore.ClientAPI.Exceptions;
+using EventStore.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security
@@ -87,6 +88,32 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         public void writing_meta_to_no_acl_stream_succeeds_when_admin_user_credentials_are_passed()
         {
             ExpectNoException(() => WriteMeta("noacl-stream", "adm", "admpa$$", null));
+        }
+
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void writing_meta_to_all_access_normal_stream_succeeds_when_no_credentials_are_passed()
+        {
+            ExpectNoException(() => WriteMeta("normal-all", null, null, SystemUserGroups.All));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void writing_meta_to_all_access_normal_stream_is_not_authenticated_when_not_existing_credentials_are_passed()
+        {
+            Expect<NotAuthenticatedException>(() => WriteMeta("normal-all", "badlogin", "badpass", SystemUserGroups.All));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void writing_meta_to_all_access_normal_stream_succeeds_when_any_existing_user_credentials_are_passed()
+        {
+            ExpectNoException(() => WriteMeta("normal-all", "user1", "pa$$1", SystemUserGroups.All));
+            ExpectNoException(() => WriteMeta("normal-all", "user2", "pa$$2", SystemUserGroups.All));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void writing_meta_to_all_access_normal_stream_succeeds_when_admin_user_credentials_are_passed()
+        {
+            ExpectNoException(() => WriteMeta("normal-all", "adm", "admpa$$", SystemUserGroups.All));
         }
     }
 }

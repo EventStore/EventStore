@@ -155,5 +155,51 @@ namespace EventStore.Core.Tests.ClientAPI.Security
                 t.Commit();
             });
         }
+
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void transaction_to_all_access_normal_stream_succeeds_when_no_credentials_are_passed()
+        {
+            ExpectNoException(() =>
+            {
+                var t = TransStart("normal-all", null, null);
+                t.Write(CreateEvents());
+                t.Commit();
+            });
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void transaction_to_all_access_normal_stream_is_not_authenticated_when_not_existing_credentials_are_passed()
+        {
+            Expect<NotAuthenticatedException>(() => TransStart("normal-all", "badlogin", "badpass"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void transaction_to_all_access_normal_stream_succeeds_when_any_existing_user_credentials_are_passed()
+        {
+            ExpectNoException(() =>
+            {
+                var t = TransStart("normal-all", "user1", "pa$$1");
+                t.Write(CreateEvents());
+                t.Commit();
+            });
+            ExpectNoException(() =>
+            {
+                var t = TransStart("normal-all", "user2", "pa$$2");
+                t.Write(CreateEvents());
+                t.Commit();
+            });
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void transaction_to_all_access_normal_stream_succeeds_when_admin_user_credentials_are_passed()
+        {
+            ExpectNoException(() =>
+            {
+                var t = TransStart("normal-all", "adm", "admpa$$");
+                t.Write(CreateEvents());
+                t.Commit();
+            });
+        }
     }
 }

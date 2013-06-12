@@ -27,6 +27,7 @@
 //  
 
 using System;
+using System.Net;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
 
@@ -107,11 +108,11 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Raised whenever the internal connection is connected to the event store
         /// </summary>
-        public Action<IEventStoreConnection> Connected;
+        public Action<IEventStoreConnection, IPEndPoint> Connected;
         /// <summary>
         /// Raised whenever the internal connection is disconnected from the event store
         /// </summary>
-        public Action<IEventStoreConnection> Disconnected;
+        public Action<IEventStoreConnection, IPEndPoint> Disconnected;
         /// <summary>
         /// Raised whenever the internal connection is reconnecting to the event store
         /// </summary>
@@ -141,8 +142,8 @@ namespace EventStore.ClientAPI
                                     bool validateServer,
                                     Action<IEventStoreConnection, Exception> errorOccurred,
                                     Action<IEventStoreConnection, string> closed,
-                                    Action<IEventStoreConnection> connected,
-                                    Action<IEventStoreConnection> disconnected,
+                                    Action<IEventStoreConnection, IPEndPoint> connected,
+                                    Action<IEventStoreConnection, IPEndPoint> disconnected,
                                     Action<IEventStoreConnection> reconnecting,
                                     Action<IEventStoreConnection, string> authenticationFailed,
                                     bool failOnNoServerResponse,

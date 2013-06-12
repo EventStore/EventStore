@@ -90,7 +90,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         protected abstract void OnSecurityAccessGranted();
 
-        protected void Init(IEnvelope responseEnvelope, Guid correlationId, string eventStreamId, IPrincipal user, long? transactionId)
+        protected void Init(IEnvelope responseEnvelope, Guid correlationId, string eventStreamId, IPrincipal user,
+                            long? transactionId, StreamAccessType accessType)
         {
             if (_initialized)
                 throw new InvalidOperationException();
@@ -104,7 +105,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _nextTimeoutTime = DateTime.UtcNow + PrepareTimeout;
 
             Publisher.Publish(new StorageMessage.CheckStreamAccess(
-                PublishEnvelope, correlationId, eventStreamId, transactionId, StreamAccessType.Write, user));
+                PublishEnvelope, correlationId, eventStreamId, transactionId, accessType, user));
         }
 
         public void Handle(StorageMessage.CheckStreamAccessCompleted message)

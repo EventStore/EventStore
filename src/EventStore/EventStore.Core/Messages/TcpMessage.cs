@@ -37,6 +37,9 @@ namespace EventStore.Core.Messages
     {
         public class TcpSend: Message, IQueueAffineMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public int QueueId { get { return ConnectionManager.GetHashCode(); } }
 
             public readonly TcpConnectionManager ConnectionManager;
@@ -51,6 +54,9 @@ namespace EventStore.Core.Messages
 
         public class Heartbeat: Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly IPEndPoint EndPoint;
             public readonly int MessageNumber;
 
@@ -65,6 +71,9 @@ namespace EventStore.Core.Messages
 
         public class HeartbeatTimeout: Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly IPEndPoint EndPoint;
             public readonly int MessageNumber;
 
@@ -79,6 +88,9 @@ namespace EventStore.Core.Messages
 
         public class PongMessage: Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
             public readonly byte[] Payload;
 
@@ -91,6 +103,9 @@ namespace EventStore.Core.Messages
 
         public class ConnectionEstablished: Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly TcpConnectionManager Connection;
 
             public ConnectionEstablished(TcpConnectionManager connection)
@@ -101,6 +116,9 @@ namespace EventStore.Core.Messages
 
         public class ConnectionClosed: Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly TcpConnectionManager Connection;
             public readonly SocketError SocketError;
 
@@ -113,6 +131,9 @@ namespace EventStore.Core.Messages
 
         public class NotAuthenticated : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
             public readonly string Reason;
 
@@ -125,6 +146,9 @@ namespace EventStore.Core.Messages
 
         public class Authenticated : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
 
             public Authenticated(Guid correlationId)

@@ -115,7 +115,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             string rawState;
             try
             {
-                rawState = GetProjectionsManager().GetStatistics(projectionName);
+                rawState = GetProjectionsManager().GetStatistics(projectionName, AdminCredentials);
             }
             catch (Exception ex)
             {
@@ -164,7 +164,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             string rawState;
             try
             {
-                rawState = GetProjectionsManager().GetState(projectionName);
+                rawState = GetProjectionsManager().GetState(projectionName, AdminCredentials);
             }
             catch (Exception ex)
             {
@@ -190,7 +190,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     if (!isRunning)
                     {
                         Log.Debug(string.Format("Enable *{0}* projection", byCategoryProjection));
-                        GetProjectionsManager().Enable(byCategoryProjection);
+                        GetProjectionsManager().Enable(byCategoryProjection, AdminCredentials);
                     }
                     else
                     {

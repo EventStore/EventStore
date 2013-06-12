@@ -29,6 +29,7 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
@@ -49,7 +50,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
         public void Handle(ClientMessage.WriteEvents request)
         {
             _request = request;
-            Init(request.Envelope, request.CorrelationId, request.EventStreamId, request.User, null);
+            Init(request.Envelope, request.CorrelationId, request.EventStreamId, request.User, null, StreamAccessType.Write);
         }
 
         protected override void OnSecurityAccessGranted()
