@@ -336,9 +336,15 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
                 throw new Exception();
-            _submittedWriteMetastreamEvent = new Event(
-                Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
-                new StreamAcl(null, null, null, null, null).ToJsonBytes(), null);
+            _submittedWriteMetastreamEvent = _streamId.StartsWith("$")
+                                                 ? new Event(
+                                                       Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
+                                                       new StreamAcl(
+                                                           SystemUserGroups.All, null, null, SystemUserGroups.All, null)
+                                                           .ToJsonBytes(), null)
+                                                 : new Event(
+                                                       Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
+                                                       new StreamAcl(null, null, null, null, null).ToJsonBytes(), null);
             _awaitingMetadataWriteCompleted = true;
             PublishWriteMetaStream();
         }
