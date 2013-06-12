@@ -43,13 +43,21 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected ProjectionManager _manager;
         private ProjectionCoreService _coreService;
         private EventReaderCoreService _readerService;
-        protected bool _initializeSystemProjections;
+        private bool _initializeSystemProjections;
 
         protected override void Given1()
         {
             base.Given1();
-            ExistingEvent("$projections-$all", "$ProjectionsInitialized", "", "");
-            _initializeSystemProjections = false;
+            _initializeSystemProjections = GivenInitializeSystemProjections();
+            if (!_initializeSystemProjections)
+            {
+                ExistingEvent("$projections-$all", "$ProjectionsInitialized", "", "");
+            }
+        }
+
+        protected virtual bool GivenInitializeSystemProjections()
+        {
+            return false;
         }
 
         [SetUp]
