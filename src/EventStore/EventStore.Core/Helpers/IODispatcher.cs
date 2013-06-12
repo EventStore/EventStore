@@ -39,6 +39,7 @@ namespace EventStore.Core.Helpers
 {
     public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>
     {
+        private readonly Guid _selfId = Guid.NewGuid();
         private readonly IPublisher _publisher;
         private readonly IEnvelope _inputQueueEnvelope;
 
@@ -163,11 +164,13 @@ namespace EventStore.Core.Helpers
         public void Delay(TimeSpan delay, Action action)
         {
             _publisher.Publish(
-                TimerMessage.Schedule.Create(delay, _inputQueueEnvelope, new IODispatcherDelayedMessage(action)));
+                TimerMessage.Schedule.Create(delay, _inputQueueEnvelope, new IODispatcherDelayedMessage(_selfId, action)));
         }
 
         public void Handle(IODispatcherDelayedMessage message)
         {
+            if (_selfId != message.CorrelationId)
+                return;
             message.Action();
         }
     }
