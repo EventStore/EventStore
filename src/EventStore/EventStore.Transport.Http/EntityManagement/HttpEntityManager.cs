@@ -281,30 +281,16 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 HttpEntity.Response.StatusCode = (int)response.StatusCode;
                 HttpEntity.Response.StatusDescription = response.StatusDescription;
-
                 HttpEntity.Response.ContentType = response.ContentType;
                 HttpEntity.Response.ContentLength64 = response.ContentLength;
-
-
                 foreach (var headerKey in response.Headers.AllKeys)
                 {
                     switch (headerKey)
                     {
-                        case "Accept":
-                        case "Connection":
-                        case "Content-Type":
-                        case "Content-Length":
-                        case "Date":
-                        case "Expect":
-                        case "Host":
-                        case "If-Modified-Since":
-                        case "Proxy-Connection":
-                        case "Range":
-                        case "Referer":
-                        case "Transfer-Encoding":
-                        case "User-Agent":
-                            // Restricted
-                            break;
+                        case "Content-Length": break;
+                        case "Keep-Alive": break;
+                        case "Transfer-Encoding": break;
+                        case "WWW-Authenticate": HttpEntity.Response.AddHeader(headerKey, response.Headers[headerKey]); break;
 
                         default:
                             HttpEntity.Response.Headers.Add(headerKey, response.Headers[headerKey]);
