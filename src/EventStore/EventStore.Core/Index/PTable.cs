@@ -50,7 +50,8 @@ namespace EventStore.Core.Index
         public const int IndexEntrySize = sizeof(int) + sizeof(int) + sizeof(long);
         public const int MD5Size = 16;
         public const byte Version = 1;
-        public const int DefaultBufferSize = 8096;
+        public const int DefaultBufferSize = 8192;
+        public const int DefaultSequentialBufferSize = 65536;
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<PTable>();
 
@@ -70,7 +71,7 @@ namespace EventStore.Core.Index
 
         private PTable(string filename, 
                        Guid id, 
-                       int bufferSize = DefaultBufferSize, 
+                       int bufferSize = DefaultSequentialBufferSize, 
                        int initialReaders = ESConsts.PTableInitialReaderCount, 
                        int maxReaders = ESConsts.PTableMaxReaderCount, 
                        int depth = 16)
@@ -93,7 +94,7 @@ namespace EventStore.Core.Index
             _workItems = new ObjectPool<WorkItem>(string.Format("PTable {0} work items", _id),
                                                   initialReaders,
                                                   maxReaders,
-                                                  () => new WorkItem(filename, IndexEntrySize),
+                                                  () => new WorkItem(filename, DefaultBufferSize),
                                                   workItem => workItem.Dispose(),
                                                   pool => OnAllWorkItemsDisposed());
 

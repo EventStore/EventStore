@@ -108,12 +108,21 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public void Init(long writerCheckpoint, long buildToPosition)
         {
+            Log.Info("TableIndex initialization...");
+
             _tableIndex.Initialize(writerCheckpoint);
             _persistedPrepareCheckpoint = _tableIndex.PrepareCheckpoint;
             _persistedCommitCheckpoint = _tableIndex.CommitCheckpoint;
             _lastCommitPosition = _tableIndex.CommitCheckpoint;
 
-            Debug.Assert(_lastCommitPosition < writerCheckpoint);
+            if (_lastCommitPosition >= writerCheckpoint)
+                throw new Exception(string.Format("_lastCommitPosition {0} >= writerCheckpoint {1}", _lastCommitPosition, writerCheckpoint));
+
+            var startTime = DateTime.UtcNow;
+            var lastTime = DateTime.UtcNow;
+            var reportPeriod = TimeSpan.FromSeconds(10);
+
+            Log.Info("ReadIndex building...");
 
             _indexRebuild = true;
             var seqReader = _readers.Get();
@@ -140,14 +149,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     }
 
                     processed += 1;
-                    if (processed % 100000 == 0)
+                    if (DateTime.UtcNow - lastTime > reportPeriod)
                     {
                         Log.Debug("ReadIndex Rebuilding: processed {0} records ({1:0.0}%).",
                                   processed,
                                   (result.RecordPostPosition - startPosition)*100.0/(buildToPosition - startPosition));
+                        lastTime = DateTime.UtcNow;
                     }
                 }
-                Log.Debug("ReadIndex Rebuilding Done: total processed {0} records.", processed);
+                Log.Debug("ReadIndex Rebuilding Done: total processed {0} records, time elapsed: {1}.", processed, DateTime.UtcNow - startTime);
             }
             finally
             {
