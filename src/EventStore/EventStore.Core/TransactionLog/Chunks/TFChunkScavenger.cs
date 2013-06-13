@@ -207,7 +207,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (!alwaysKeepScavenged && oldSize <= newSize)
                 {
                     Log.Trace("Scavenging of chunks:\n{0}\n"
-                              +"completed in {1}.\n"
+                              + "completed in {1}.\n"
                               + "Old chunks' versions are kept as they are smaller.\n"
                               + "Old chunk total size: {2}, scavenged chunk size: {3}.\n"
                               + "Scavenged chunk removed.",
@@ -219,16 +219,29 @@ namespace EventStore.Core.TransactionLog.Chunks
                 else
                 {
                     newChunk.CompleteScavenge(positionMapping);
-                    var chunk = _db.Manager.SwitchChunk(newChunk, verifyHash: false, replaceChunksWithGreaterNumbers: false);
-
-                    Log.Trace("Scavenging of chunks:\n{0}\n"
-                              + "completed in {1}.\n"
-                              + "New chunk: {2} --> #{3}-{4} ({5}).\n"
-                              + "Old chunks total size: {6}, scavenged chunk size: {7}.",
-                              oldChunksLogList, sw.Elapsed,
-                              Path.GetFileName(tmpChunkPath), chunkStartNumber, chunkEndNumber, Path.GetFileName(chunk.FileName),
-                              oldSize, newSize);
-                    return true;
+                    var chunk = _db.Manager.SwitchChunk(newChunk, verifyHash: false, removeChunksWithGreaterNumbers: false);
+                    if (chunk != null)
+                    {
+                        Log.Trace("Scavenging of chunks:\n{0}\n"
+                                  + "completed in {1}.\n"
+                                  + "New chunk: {2} --> #{3}-{4} ({5}).\n"
+                                  + "Old chunks total size: {6}, scavenged chunk size: {7}.",
+                                  oldChunksLogList, sw.Elapsed,
+                                  Path.GetFileName(tmpChunkPath), chunkStartNumber, chunkEndNumber, Path.GetFileName(chunk.FileName),
+                                  oldSize, newSize);
+                        return true;
+                    }
+                    else
+                    {
+                        Log.Trace("Scavenging of chunks:\n{0}\n"
+                                  + "completed in {1}.\n"
+                                  + "But switching was prevented for new chunk: #{2}-{3} ({4}).\n"
+                                  + "Old chunks total size: {5}, scavenged chunk size: {6}.",
+                                  oldChunksLogList, sw.Elapsed,
+                                  chunkStartNumber, chunkEndNumber, Path.GetFileName(tmpChunkPath),
+                                  oldSize, newSize);
+                        return false;
+                    }
                 }
             }
             catch (FileBeingDeletedException exc)
