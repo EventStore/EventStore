@@ -149,7 +149,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     }
 
                     processed += 1;
-                    if (DateTime.UtcNow - lastTime > reportPeriod)
+                    if (DateTime.UtcNow - lastTime > reportPeriod || processed % 100000 == 0)
                     {
                         Log.Debug("ReadIndex Rebuilding: processed {0} records ({1:0.0}%).",
                                   processed,
