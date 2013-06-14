@@ -62,13 +62,14 @@ namespace EventStore.Projections.Core
         }
 
         public static ProjectionManagerNode Create(
-            TFChunkDb db, QueuedHandler inputQueue, HttpService[] httpServices, IPublisher networkSendQueue,
+            TFChunkDb db, QueuedHandler inputQueue, IHttpForwarder httpForwarder, HttpService[] httpServices, IPublisher networkSendQueue,
             IPublisher[] queues, bool runProjections)
         {
             var projectionManagerNode = new ProjectionManagerNode(inputQueue, queues, runProjections);
+            var projectionsController = new ProjectionsController(httpForwarder, inputQueue, networkSendQueue);
             foreach (var httpService in httpServices)
             {
-                httpService.SetupController(new ProjectionsController(httpService, inputQueue, networkSendQueue));    
+                httpService.SetupController(projectionsController);
             }
             return projectionManagerNode;
         }

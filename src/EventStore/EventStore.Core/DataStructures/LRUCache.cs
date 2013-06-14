@@ -96,6 +96,19 @@ namespace EventStore.Core.DataStructures
             }
         }
 
+        public void Remove(TKey key)
+        {
+            lock (_lock)
+            {
+                LinkedListNode<LRUItem> node;
+                if (_items.TryGetValue(key, out node))
+                {
+                    _orderList.Remove(node);
+                    _items.Remove(key);
+                }
+            }
+        }
+
         public void Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory)
         {
             Ensure.NotNull(addFactory, "addFactory");

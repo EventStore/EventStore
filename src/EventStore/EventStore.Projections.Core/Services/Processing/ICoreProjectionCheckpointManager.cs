@@ -61,5 +61,6 @@ namespace EventStore.Projections.Core.Services.Processing
             Action<PartitionState> loadCompleted);
 
         void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action committed);
+        CheckpointTag LastProcessedEventPosition { get; }
     }
 }

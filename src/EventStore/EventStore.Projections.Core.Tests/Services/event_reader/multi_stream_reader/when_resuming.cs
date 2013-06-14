@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type", new byte[0], new byte[0]))
-                        }, "", 2, 4, false, 100));
+                        }, null, "", 2, 4, false, 100));
         }
     }
 }

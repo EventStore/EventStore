@@ -51,6 +51,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public readonly List<EventReaderSubscriptionMessage.ProgressChanged> _progresschangedMessages =
             new List<EventReaderSubscriptionMessage.ProgressChanged>();
 
+        public readonly List<EventReaderSubscriptionMessage.NotAuthorized> _notAuthorizedMessages =
+            new List<EventReaderSubscriptionMessage.NotAuthorized>();
+
         public readonly List<EventReaderSubscriptionMessage.EofReached> _eofReachedMessages =
             new List<EventReaderSubscriptionMessage.EofReached>();
 
@@ -77,6 +80,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
         {
             _progresschangedMessages.Add(message);
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
+        {
+            _notAuthorizedMessages.Add(message);
         }
 
         public void Handle(EventReaderSubscriptionMessage.EofReached message)

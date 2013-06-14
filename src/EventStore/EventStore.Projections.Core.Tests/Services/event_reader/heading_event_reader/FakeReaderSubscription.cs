@@ -45,6 +45,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         private readonly List<ReaderSubscriptionMessage.EventReaderEof> _receivedEofNotifications =
             new List<ReaderSubscriptionMessage.EventReaderEof>();
 
+        private readonly List<ReaderSubscriptionMessage.EventReaderNotAuthorized> _receivedNotAuthorizedNotifications =
+            new List<ReaderSubscriptionMessage.EventReaderNotAuthorized>();
+
         public void Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             _receivedEvents.Add(message);
@@ -65,6 +68,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             get { return _receivedEofNotifications; }
         }
 
+        public List<ReaderSubscriptionMessage.EventReaderNotAuthorized> ReceivedNotAuthorizedNotifications
+        {
+            get { return _receivedNotAuthorizedNotifications; }
+        }
+
         public void Handle(ReaderSubscriptionMessage.EventReaderIdle message)
         {
             _receivedIdleNotifications.Add(message);
@@ -73,6 +81,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         public void Handle(ReaderSubscriptionMessage.EventReaderEof message)
         {
             _receivedEofNotifications.Add(message);
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message)
+        {
+            _receivedNotAuthorizedNotifications.Add(message);
         }
 
         public IEventReader CreatePausedEventReader(IPublisher publisher, Guid forkedEventReaderId)

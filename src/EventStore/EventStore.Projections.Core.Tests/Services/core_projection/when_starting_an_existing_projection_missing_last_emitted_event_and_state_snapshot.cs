@@ -54,9 +54,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             ExistingEvent(
                 FakeProjectionStateHandler._emit1StreamId, FakeProjectionStateHandler._emit1EventType,
                 @"{""c"": 120, ""p"": 110}", FakeProjectionStateHandler._emit1Data);
-            NoStream(FakeProjectionStateHandler._emit2StreamId);
-            NoStream("$projections-projection-order");
-            AllWritesToSucceed("$projections-projection-order");
+            AllWritesSucceed();
+            NoOtherStreams();
         }
 
         protected override void When()
@@ -73,7 +72,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void should_write_second_emitted_event_and_state_snapshot()
         {
-            Assert.AreEqual(2, _writeEventHandler.HandledMessages.Count);
+            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("Result").Count);
+            Assert.AreEqual(
+                1, _writeEventHandler.HandledMessages.OfEventType(FakeProjectionStateHandler._emit2EventType).Count);
 
             Assert.IsTrue(
                 _writeEventHandler.HandledMessages.Any(

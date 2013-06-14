@@ -28,7 +28,6 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Principal;
-using System.Text;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -132,7 +131,7 @@ namespace EventStore.Core.Services.Storage
 
                 return new ClientMessage.ReadStreamEventsForwardCompleted(
                     msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
-                    (ReadStreamResult) result.Result, resolvedPairs, string.Empty,
+                    (ReadStreamResult) result.Result, resolvedPairs, result.Metadata, string.Empty,
                     result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastCommitPosition);
             }
             catch (Exception exc)
@@ -160,7 +159,7 @@ namespace EventStore.Core.Services.Storage
 
                 return new ClientMessage.ReadStreamEventsBackwardCompleted(
                     msg.CorrelationId, msg.EventStreamId, result.FromEventNumber, result.MaxCount,
-                    (ReadStreamResult)result.Result, resolvedPairs, string.Empty,
+                    (ReadStreamResult)result.Result, resolvedPairs, result.Metadata, string.Empty,
                     result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastCommitPosition);
             }
             catch (Exception exc)
@@ -193,7 +192,7 @@ namespace EventStore.Core.Services.Storage
                     return NoData(msg, ReadAllResult.AccessDenied, pos);
 
                 return new ClientMessage.ReadAllEventsForwardCompleted(
-                    msg.CorrelationId, ReadAllResult.Success, null, resolved, msg.MaxCount,
+                    msg.CorrelationId, ReadAllResult.Success, null, resolved, res.Metadata, msg.MaxCount,
                     res.CurrentPos, res.NextPos, res.PrevPos, res.TfEofPosition);
             }
             catch (Exception exc)
@@ -226,7 +225,7 @@ namespace EventStore.Core.Services.Storage
                     return NoData(msg, ReadAllResult.AccessDenied, pos);
 
                 return new ClientMessage.ReadAllEventsBackwardCompleted(
-                    msg.CorrelationId, ReadAllResult.Success, null, resolved, msg.MaxCount,
+                    msg.CorrelationId, ReadAllResult.Success, null, resolved, res.Metadata, msg.MaxCount,
                     res.CurrentPos, res.NextPos, res.PrevPos, res.TfEofPosition);
             }
             catch (Exception exc)
@@ -274,27 +273,27 @@ namespace EventStore.Core.Services.Storage
 
         private static ClientMessage.ReadStreamEventsForwardCompleted NoData(ClientMessage.ReadStreamEventsForward msg, ReadStreamResult result, long lastCommitPosition, string error = null)
         {
-            return ClientMessage.ReadStreamEventsForwardCompleted.NoRecords(
+            return ClientMessage.ReadStreamEventsForwardCompleted.NoData(
                 result, msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, lastCommitPosition, error);
         }
 
         private static ClientMessage.ReadStreamEventsBackwardCompleted NoData(ClientMessage.ReadStreamEventsBackward msg, ReadStreamResult result, long lastCommitPosition, string error = null)
         {
-            return ClientMessage.ReadStreamEventsBackwardCompleted.NoRecords(
+            return ClientMessage.ReadStreamEventsBackwardCompleted.NoData(
                 result, msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, lastCommitPosition, error);
         }
 
         private ClientMessage.ReadAllEventsForwardCompleted NoData(ClientMessage.ReadAllEventsForward msg, ReadAllResult result, TFPos pos, string error = null)
         {
             return new ClientMessage.ReadAllEventsForwardCompleted(
-                msg.CorrelationId, result, error, ResolvedEvent.EmptyArray,
+                msg.CorrelationId, result, error, ResolvedEvent.EmptyArray, null,
                 msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
         }
 
         private ClientMessage.ReadAllEventsBackwardCompleted NoData(ClientMessage.ReadAllEventsBackward msg, ReadAllResult result, TFPos pos, string error = null)
         {
             return new ClientMessage.ReadAllEventsBackwardCompleted(
-                msg.CorrelationId, result, error, ResolvedEvent.EmptyArray,
+                msg.CorrelationId, result, error, ResolvedEvent.EmptyArray, null,
                 msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
         }
 

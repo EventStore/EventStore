@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Services.Processing;
@@ -56,8 +57,8 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 yield return
                     new FeedReaderMessage.ReadPage(
-                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), _querySourcesDefinition, _fromPosition,
-                        _maxEvents);
+                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccount.Principal,
+                        _querySourcesDefinition, _fromPosition, _maxEvents);
             }
 
             [Test]
@@ -119,8 +120,8 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 yield return
                     new FeedReaderMessage.ReadPage(
-                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), _querySourcesDefinition, _fromPosition,
-                        _maxEvents);
+                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccount.Principal,
+                        _querySourcesDefinition, _fromPosition, _maxEvents);
             }
 
             [Test]

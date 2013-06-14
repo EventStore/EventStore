@@ -34,6 +34,9 @@ namespace EventStore.Projections.Core.Messages
 {
     public abstract class EventReaderSubscriptionMessage : Message
     {
+        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+        public override int MsgTypeId { get { return TypeId; } }
+
         private readonly Guid _subscriptionId;
         private readonly long _subscriptionMessageSequenceNumber;
         private readonly object _source;
@@ -57,6 +60,9 @@ namespace EventStore.Projections.Core.Messages
         /// </summary>
         public class CheckpointSuggested : EventReaderSubscriptionMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public CheckpointSuggested(
                 Guid subscriptionId, CheckpointTag checkpointTag, float progress,
                 long subscriptionMessageSequenceNumber, object source = null)
@@ -67,6 +73,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class ProgressChanged : EventReaderSubscriptionMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public ProgressChanged(
                 Guid subscriptionId, CheckpointTag checkpointTag, float progress,
                 long subscriptionMessageSequenceNumber, object source = null)
@@ -75,8 +84,24 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public sealed class NotAuthorized : EventReaderSubscriptionMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public NotAuthorized(
+                Guid subscriptionId, CheckpointTag checkpointTag, float progress, long subscriptionMessageSequenceNumber,
+                object source = null)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber, source)
+            {
+            }
+        }
+
         public class EofReached : EventReaderSubscriptionMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public EofReached(
                 Guid subscriptionId, CheckpointTag checkpointTag,
                 long subscriptionMessageSequenceNumber, object source = null)
@@ -87,6 +112,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class CommittedEventReceived : EventReaderSubscriptionMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public static CommittedEventReceived Sample(
                 ResolvedEvent data, Guid subscriptionId, long subscriptionMessageSequenceNumber)
             {

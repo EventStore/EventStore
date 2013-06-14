@@ -31,6 +31,7 @@ namespace EventStore.Core.Services
     public static class SystemHeader
     {
         public const string ExpectedVersion = "X-ES-ExpectedVersion";
+        public const string Forwarding = "X-ES-Forwarding";
     }
 
     public static class SystemStreams
@@ -69,6 +70,7 @@ namespace EventStore.Core.Services
         public const string Acl = "$acl";
         public const string AclRead = "$r";
         public const string AclWrite = "$w";
+        public const string AclDelete = "$d";
         public const string AclMetaRead = "$mr";
         public const string AclMetaWrite = "$mw";
     }
@@ -90,5 +92,6 @@ namespace EventStore.Core.Services
     public static class SystemUserGroups
     {
         public const string Admins = "$admins";
+        public const string All = "$all";
     }
 }

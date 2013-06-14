@@ -35,6 +35,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     public struct IndexReadAllResult
     {
         public readonly List<CommitEventRecord> Records;
+        public readonly StreamMetadata Metadata;
         public readonly int MaxCount;
         public readonly TFPos CurrentPos;
         public readonly TFPos NextPos;
@@ -42,6 +43,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public readonly long TfEofPosition;
 
         public IndexReadAllResult(List<CommitEventRecord> records, 
+                                  StreamMetadata metadata,
                                   int maxCount, 
                                   TFPos currentPos, 
                                   TFPos nextPos, 
@@ -51,6 +53,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.NotNull(records, "records");
 
             Records = records;
+            Metadata = metadata;
             MaxCount = maxCount;
             CurrentPos = currentPos;
             NextPos = nextPos;
@@ -60,10 +63,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public override string ToString()
         {
-            return string.Format("NextPos: {0}, PrevPos: {1}, Records: {2}",
+            return string.Format("NextPos: {0}, PrevPos: {1}, Records: {2}, Metadata: {3}",
                                  NextPos,
                                  PrevPos,
-                                 string.Join("\n", Records.Select(x => x.ToString())));
+                                 string.Join("\n", Records.Select(x => x.ToString())),
+                                 Metadata);
         }
     }
 }

@@ -72,7 +72,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, ESConsts.CommitedEventsMemCacheLimit, x => 16 + 4 + 2*x.Item1.Length + IntPtr.Size);
 
         private readonly bool _additionalCommitChecks;
-        private readonly int _metastreamMaxCount;
+        private readonly StreamMetadata _metastreamMetadata;
 
         public ReadIndex(IPublisher bus,
                          int initialReaderCount,
@@ -103,23 +103,33 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _readers = new ObjectPool<ITransactionFileReader>("ReadIndex readers pool", initialReaderCount, maxReaderCount, readerFactory);
 
             _additionalCommitChecks = additionalCommitChecks;
-            _metastreamMaxCount = metastreamMaxCount;
+            _metastreamMetadata = new StreamMetadata(metastreamMaxCount, null, null, null);
         }
 
         public void Init(long writerCheckpoint, long buildToPosition)
         {
+            Log.Info("TableIndex initialization...");
+
             _tableIndex.Initialize(writerCheckpoint);
             _persistedPrepareCheckpoint = _tableIndex.PrepareCheckpoint;
             _persistedCommitCheckpoint = _tableIndex.CommitCheckpoint;
             _lastCommitPosition = _tableIndex.CommitCheckpoint;
 
-            Debug.Assert(_lastCommitPosition < writerCheckpoint);
+            if (_lastCommitPosition >= writerCheckpoint)
+                throw new Exception(string.Format("_lastCommitPosition {0} >= writerCheckpoint {1}", _lastCommitPosition, writerCheckpoint));
+
+            var startTime = DateTime.UtcNow;
+            var lastTime = DateTime.UtcNow;
+            var reportPeriod = TimeSpan.FromSeconds(10);
+
+            Log.Info("ReadIndex building...");
 
             _indexRebuild = true;
             var seqReader = _readers.Get();
             try
             {
-                seqReader.Reposition(Math.Max(0, _persistedCommitCheckpoint));
+                var startPosition = Math.Max(0, _persistedCommitCheckpoint);
+                seqReader.Reposition(startPosition);
 
                 long processed = 0;
                 SeqReadResult result;
@@ -139,9 +149,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     }
 
                     processed += 1;
-                    if (processed % 100000 == 0)
-                        Log.Debug("ReadIndex Rebuilding: processed {0} records.", processed);
+                    if (DateTime.UtcNow - lastTime > reportPeriod || processed % 100000 == 0)
+                    {
+                        Log.Debug("ReadIndex Rebuilding: processed {0} records ({1:0.0}%).",
+                                  processed,
+                                  (result.RecordPostPosition - startPosition)*100.0/(buildToPosition - startPosition));
+                        lastTime = DateTime.UtcNow;
+                    }
                 }
+                Log.Debug("ReadIndex Rebuilding Done: total processed {0} records, time elapsed: {1}.", processed, DateTime.UtcNow - startTime);
             }
             finally
             {
@@ -382,7 +398,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 {
                     var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
                     if (endEventNumber < minEventNumber)
-                        return new IndexReadStreamResult(fromEventNumber, maxCount, EmptyRecords, minEventNumber, lastEventNumber, isEndOfStream: false);
+                        return new IndexReadStreamResult(fromEventNumber, maxCount, EmptyRecords, metadata,
+                                                         minEventNumber, lastEventNumber, isEndOfStream: false);
                     startEventNumber = Math.Max(startEventNumber, minEventNumber);
                 }
 
@@ -403,7 +420,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (records.Length > 0)
                     nextEventNumber = records[records.Length - 1].EventNumber + 1;
                 var isEndOfStream = endEventNumber >= lastEventNumber;
-                return new IndexReadStreamResult(endEventNumber, maxCount, records, nextEventNumber, lastEventNumber, isEndOfStream);
+                return new IndexReadStreamResult(endEventNumber, maxCount, records, metadata,
+                                                 nextEventNumber, lastEventNumber, isEndOfStream);
             }
             finally
             {
@@ -435,7 +453,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 {
                     var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
                     if (endEventNumber < minEventNumber)
-                        return new IndexReadStreamResult(fromEventNumber, maxCount, EmptyRecords, -1, lastEventNumber, isEndOfStream: true);
+                        return new IndexReadStreamResult(fromEventNumber, maxCount, EmptyRecords, metadata,
+                                                         -1, lastEventNumber, isEndOfStream: true);
 
                     if (startEventNumber <= minEventNumber)
                     {
@@ -462,7 +481,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                 || startEventNumber <= lastEventNumber 
                                    && (records.Length == 0 || records[records.Length - 1].EventNumber != startEventNumber);
                 int nextEventNumber = isEndOfStream ? -1 : Math.Min(startEventNumber - 1, lastEventNumber);
-                return new IndexReadStreamResult(endEventNumber, maxCount, records, nextEventNumber, lastEventNumber, isEndOfStream);
+                return new IndexReadStreamResult(endEventNumber, maxCount, records, metadata,
+                                                 nextEventNumber, lastEventNumber, isEndOfStream);
             }
             finally
             {
@@ -571,6 +591,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         return CheckStreamAccessInternal(reader, SystemStreams.OriginalStreamOf(streamId), StreamAccessType.MetaRead, user);
                     case StreamAccessType.Write:
                         return CheckStreamAccessInternal(reader, SystemStreams.OriginalStreamOf(streamId), StreamAccessType.MetaWrite, user);
+                    case StreamAccessType.Delete:
                     case StreamAccessType.MetaRead:
                     case StreamAccessType.MetaWrite:
                         return StreamAccessResult.Denied;
@@ -590,6 +611,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.ReadRole, user, isSystemStream && streamId != SystemStreams.AllStream);
                 case StreamAccessType.Write:
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.WriteRole, user, isSystemStream);
+                case StreamAccessType.Delete:
+                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.DeleteRole, user, isSystemStream);
                 case StreamAccessType.MetaRead:
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.MetaReadRole, user, isSystemStream && streamId != SystemStreams.AllStream);
                 case StreamAccessType.MetaWrite:
@@ -600,6 +623,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private StreamAccessResult CheckRoleAccess(string role, IPrincipal user, bool isSystemStream)
         {
+            if (role == SystemUserGroups.All)
+                return StreamAccessResult.Granted;
             if (role == null)
                 return isSystemStream ? StreamAccessResult.Denied : StreamAccessResult.Granted;
             return (user != null && user.IsInRole(role)) ? StreamAccessResult.Granted : StreamAccessResult.Denied;
@@ -685,18 +710,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var prevPos = new TFPos(pos.CommitPosition, long.MaxValue);
             long count = 0;
             bool firstCommit = true;
-            ITransactionFileReader seqReader = _readers.Get();
+            ITransactionFileReader reader = _readers.Get();
             try
             {
                 long nextCommitPos = pos.CommitPosition;
                 while (count < maxCount)
                 {
-                    seqReader.Reposition(nextCommitPos);
+                    reader.Reposition(nextCommitPos);
 
                     SeqReadResult result;
                     do
                     {
-                        result = seqReader.TryReadNext();
+                        result = reader.TryReadNext();
                     }
                     while (result.Success && result.LogRecord.RecordType != LogRecordType.Commit); // skip until commit
 
@@ -714,10 +739,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         prevPos = new TFPos(result.RecordPostPosition, pos.PreparePosition);
                     }
 
-                    seqReader.Reposition(commit.TransactionPosition);
+                    reader.Reposition(commit.TransactionPosition);
                     while (count < maxCount)
                     {
-                        result = seqReader.TryReadNext();
+                        result = reader.TryReadNext();
                         if (!result.Success) // no more records in TF
                             break;
                         // prepare with TransactionEnd could be scavenged already
@@ -750,12 +775,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                             break;
                     }
                 }
+                var metadata = GetStreamMetadataCached(reader, SystemStreams.AllStream);
+                return new IndexReadAllResult(records, metadata, maxCount, pos, nextPos, prevPos, lastCommitPosition);
             }
             finally
             {
-                _readers.Return(seqReader);
+                _readers.Return(reader);
             }
-            return new IndexReadAllResult(records, maxCount, pos, nextPos, prevPos, lastCommitPosition);
         }
 
         /// <summary>
@@ -774,18 +800,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var prevPos = new TFPos(pos.CommitPosition, 0);
             long count = 0;
             bool firstCommit = true;            
-            ITransactionFileReader seqReader = _readers.Get();
+            ITransactionFileReader reader = _readers.Get();
             try
             {
                 long nextCommitPostPos = pos.CommitPosition;
                 while (count < maxCount)
                 {
-                    seqReader.Reposition(nextCommitPostPos);
+                    reader.Reposition(nextCommitPostPos);
                     
                     SeqReadResult result;
                     do
                     {
-                        result = seqReader.TryReadPrev();
+                        result = reader.TryReadPrev();
                     }
                     while (result.Success && result.LogRecord.RecordType != LogRecordType.Commit); // skip until commit
                     
@@ -810,7 +836,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     //seqReader.Reposition(commitLogRecord.TransactionPosition);
                     while (count < maxCount)
                     {
-                        result = seqReader.TryReadPrev();
+                        result = reader.TryReadPrev();
                         if (!result.Success) // no more records in TF
                             break;
                         // prepare with TransactionBegin could be scavenged already
@@ -842,12 +868,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                             break;
                     }
                 }
+                var metadata = GetStreamMetadataCached(reader, SystemStreams.AllStream);
+                return new IndexReadAllResult(records, metadata, maxCount, pos, nextPos, prevPos, lastCommitPosition);
             }
             finally
             {
-                _readers.Return(seqReader);
+                _readers.Return(reader);
             }
-            return new IndexReadAllResult(records, maxCount, pos, nextPos, prevPos, lastCommitPosition);
         }
 
         CommitCheckResult IReadIndex.CheckCommitStartingAt(long transactionPosition, long commitPosition)
@@ -1005,11 +1032,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private StreamMetadata GetStreamMetadataCached(ITransactionFileReader reader, string streamId)
         {
             if (SystemStreams.IsMetastream(streamId))
-                return new StreamMetadata(_metastreamMaxCount, null, null, null);
+                return _metastreamMetadata;
 
             StreamCacheInfo streamCacheInfo;
-            if (_streamInfoCache.TryGet(streamId, out streamCacheInfo) && streamCacheInfo.Metadata.HasValue)
-                return streamCacheInfo.Metadata.Value;
+            if (_streamInfoCache.TryGet(streamId, out streamCacheInfo) && streamCacheInfo.Metadata != null)
+                return streamCacheInfo.Metadata;
 
             var metadata = GetStreamMetadataUncached(reader, streamId);
             _streamInfoCache.Put(streamId,

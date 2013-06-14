@@ -31,6 +31,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     {
         Read,
         Write,
+        Delete,
         MetaRead,
         MetaWrite
     }

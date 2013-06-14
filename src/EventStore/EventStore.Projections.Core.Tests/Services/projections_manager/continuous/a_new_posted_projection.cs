@@ -65,6 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 
                 NoStream("$projections-test-projection-checkpoint");
                 NoStream("$projections-test-projection-order");
+                NoOtherStreams();
                 AllWritesSucceed();
             }
 
@@ -73,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
                 yield return (
                     new ProjectionManagementMessage.Post(
-                        new PublishEnvelope(_bus), _projectionMode, _projectionName, ProjectionManagementMessage.RunAs.Anonymous,
+                        new PublishEnvelope(_bus), _projectionMode, _projectionName, ProjectionManagementMessage.RunAs.System,
                         "native:" + _fakeProjectionType.AssemblyQualifiedName, _projectionSource, enabled: _projectionEnabled,
                         checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
             }
@@ -106,6 +107,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
         [TestFixture]
         public class when_get_state : Base
         {
+            protected override void Given()
+            {
+                base.Given();
+                EnableReadAll();
+            }
+
             protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
@@ -120,8 +127,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 Assert.AreEqual(
                     _projectionName,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().Name);
+                //at least projection initializaed message is here
                 Assert.AreEqual(
-                    "", _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().State);
+                    "{\"data\": 1}", _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().State);
+                Assert.AreEqual(
+                    _all.Last().Key,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().Position.Position);
             }
         }
 

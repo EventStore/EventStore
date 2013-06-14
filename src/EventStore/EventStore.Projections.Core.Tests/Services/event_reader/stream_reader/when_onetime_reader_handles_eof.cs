@@ -85,10 +85,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                             DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, "", 12, 11, true, 200));
+                        }, null, "", 12, 11, true, 200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, new ResolvedEvent[] { }, "", 12, 11, true, 400));
+                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, new ResolvedEvent[] { }, null, "", 12, 11, true, 400));
         }
 
         [Test]

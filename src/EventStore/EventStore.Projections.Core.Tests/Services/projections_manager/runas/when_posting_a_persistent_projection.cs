@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
     namespace when_posting_a_persistent_projection
     {
 
-        [TestFixture]
+        [TestFixture, Ignore("Persistent projections are admin only")]
         public class authenticated : TestFixtureWithProjectionCoreAndManagementServices
         {
             private string _projectionName;
@@ -173,7 +173,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
 
         }
 
-        [TestFixture]
+        [TestFixture, Ignore("Persistent projections are admin only")]
         public class as_another_user : with_runas_projection
         {
             protected override IEnumerable<WhenStep> When()

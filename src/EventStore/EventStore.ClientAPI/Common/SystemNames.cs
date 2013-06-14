@@ -63,6 +63,7 @@ namespace EventStore.ClientAPI.Common
         public const string Acl = "$acl";
         public const string AclRead = "$r";
         public const string AclWrite = "$w";
+        public const string AclDelete = "$d";
         public const string AclMetaRead = "$mr";
         public const string AclMetaWrite = "$mw";
     }

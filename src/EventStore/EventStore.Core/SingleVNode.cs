@@ -174,7 +174,7 @@ namespace EventStore.Core
             var storageScavenger = new StorageScavenger(db,
                                                         readIndex,
                                                         Application.IsDefined(Application.AlwaysKeepScavenged),
-                                                        !Application.IsDefined(Application.DisableMergeChunks));
+                                                        mergeChunks: false /*!Application.IsDefined(Application.DisableMergeChunks)*/);
             // ReSharper disable RedundantTypeArgumentsOfMethod
             _mainBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
             // ReSharper restore RedundantTypeArgumentsOfMethod
@@ -194,14 +194,19 @@ namespace EventStore.Core
 
             // AUTHENTICATION INFRASTRUCTURE
             var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
-            var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
+            var dispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_workersHandler, crossThread: true));
             var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
+            var passwordChangeNotificationReader = new PasswordChangeNotificationReader(_mainQueue, dispatcher);
+            _mainBus.Subscribe<SystemMessage.SystemStart>(passwordChangeNotificationReader);
+            _mainBus.Subscribe<SystemMessage.BecomeShutdown>(passwordChangeNotificationReader);
+            _mainBus.Subscribe(internalAuthenticationProvider);
             SubscribeWorkers(bus =>
             {
                 bus.Subscribe(dispatcher.ForwardReader);
                 bus.Subscribe(dispatcher.BackwardReader);
                 bus.Subscribe(dispatcher.Writer);
                 bus.Subscribe(dispatcher.StreamDeleter);
+                bus.Subscribe(dispatcher);
             });
 
             // TCP
@@ -236,39 +241,42 @@ namespace EventStore.Core
             });
 
             // HTTP
+            var authenticationProviders = new AuthenticationProvider[]
             {
-                var authenticationProviders = new AuthenticationProvider[]
-                {
-                    new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
-                    new TrustedAuthenticationProvider(), 
-                    new AnonymousAuthenticationProvider()
-                };
+                new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
+                new TrustedAuthenticationProvider(), 
+                new AnonymousAuthenticationProvider()
+            };
 
-                _httpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
-                                               _workersHandler, false, vNodeSettings.HttpPrefixes);
-                _httpService.SetupController(new AdminController(_mainQueue));
-                _httpService.SetupController(new PingController());
-                _httpService.SetupController(new StatController(monitoringQueue, _workersHandler));
-                _httpService.SetupController(new AtomController(_httpService, _mainQueue, _workersHandler));
-                _httpService.SetupController(new UsersController(_httpService, _mainQueue, _workersHandler));
+            var httpPipe = new HttpMessagePipe();
+            var httpSendService = new HttpSendService(httpPipe, forwardRequests: false);
+            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(httpSendService);
+            _mainBus.Subscribe(new WideningHandler<HttpMessage.SendOverHttp, Message>(_workersHandler));
+            SubscribeWorkers(bus =>
+            {
+                bus.Subscribe<HttpMessage.HttpSend>(httpSendService);
+                bus.Subscribe<HttpMessage.HttpSendPart>(httpSendService);
+                bus.Subscribe<HttpMessage.HttpBeginSend>(httpSendService);
+                bus.Subscribe<HttpMessage.HttpEndSend>(httpSendService);
+                bus.Subscribe<HttpMessage.SendOverHttp>(httpSendService);
+            });
 
-                _mainBus.Subscribe<SystemMessage.SystemInit>(_httpService);
-                _mainBus.Subscribe<SystemMessage.StateChangeMessage>(_httpService);
-                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_httpService);
-                _mainBus.Subscribe<HttpMessage.SendOverHttp>(_httpService);
-                _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_httpService);
+            _httpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
+                                            _workersHandler, vNodeSettings.HttpPrefixes);
+            _httpService.SetupController(new AdminController(_mainQueue));
+            _httpService.SetupController(new PingController());
+            _httpService.SetupController(new StatController(monitoringQueue, _workersHandler));
+            _httpService.SetupController(new AtomController(httpSendService, _mainQueue, _workersHandler));
+            _httpService.SetupController(new UsersController(httpSendService, _mainQueue, _workersHandler));
 
-                SubscribeWorkers(bus =>
-                {
-                    var httpSendService = new HttpSendService();
-                    bus.Subscribe<HttpMessage.HttpSend>(httpSendService);
-                    bus.Subscribe<HttpMessage.HttpSendPart>(httpSendService);
-                    bus.Subscribe<HttpMessage.HttpBeginSend>(httpSendService);
-                    bus.Subscribe<HttpMessage.HttpEndSend>(httpSendService);
+            _mainBus.Subscribe<SystemMessage.SystemInit>(_httpService);
+            _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_httpService);
+            _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_httpService);
 
-                    HttpService.CreateAndSubscribePipeline(bus, authenticationProviders);
-                });
-            }
+            SubscribeWorkers(bus =>
+            {
+                HttpService.CreateAndSubscribePipeline(bus, authenticationProviders);
+            });
 
             // REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(_mainQueue, 1, 1, vNodeSettings.PrepareTimeout, vNodeSettings.CommitTimeout);
@@ -303,11 +311,12 @@ namespace EventStore.Core
             _mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommited, Message>());
 
             // USER MANAGEMENT
-            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
+            var ioDispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_mainQueue));
             _mainBus.Subscribe(ioDispatcher.BackwardReader);
             _mainBus.Subscribe(ioDispatcher.ForwardReader);
             _mainBus.Subscribe(ioDispatcher.Writer);
             _mainBus.Subscribe(ioDispatcher.StreamDeleter);
+            _mainBus.Subscribe(ioDispatcher);
 
             var userManagement = new UserManagementService(
                 _mainQueue, ioDispatcher, passwordHashAlgorithm, vNodeSettings.SkipInitializeStandardUsersCheck);
@@ -336,7 +345,7 @@ namespace EventStore.Core
 
             if (subsystems != null)
                 foreach (var subsystem in subsystems)
-                    subsystem.Register(db, _mainQueue, _mainBus, _timerService, _timeProvider, new[]{_httpService}, _workersHandler);
+                    subsystem.Register(db, _mainQueue, _mainBus, _timerService, _timeProvider, httpSendService, new[]{_httpService}, _workersHandler);
         }
 
         private void SubscribeWorkers(Action<InMemoryBus> setup)

@@ -25,30 +25,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-namespace EventStore.Core.Cluster
+namespace EventStore.Projections.Core.Services
 {
-    public enum VNodeState
+    public enum ReadWrite
     {
-        Initializing,
-        Unknown,
-        PreReplica,
-        CatchingUp,
-        Clone,
-        Slave,
-        PreMaster,
-        Master,
-        Manager,
-        ShuttingDown,
-        Shutdown
-    }
-
-    public static class VNodeStateExtensions
-    {
-        public static bool IsReplica(this VNodeState state)
-        {
-            return state == VNodeState.CatchingUp 
-                || state == VNodeState.Clone 
-                || state == VNodeState.Slave;
-        }
+        Read,
+        Write
     }
 }

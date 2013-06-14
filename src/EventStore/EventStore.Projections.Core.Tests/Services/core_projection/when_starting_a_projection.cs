@@ -78,6 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
@@ -106,8 +107,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Handle(
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
-                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.NoStream, 
-                    new ResolvedEvent[0], string.Empty, -1, -1, true, 1000));
+                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.NoStream,
+                    new ResolvedEvent[0], null, string.Empty, -1, -1, true, 1000));
         }
 
         [Test]
@@ -117,7 +118,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
                     _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.Success,
-                    new ResolvedEvent[0], string.Empty, -1, -1, false, 1000));
+                    new ResolvedEvent[0], null, string.Empty, -1, -1, false, 1000));
         }
     }
 }

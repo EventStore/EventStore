@@ -25,15 +25,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.IO;
 using EventStore.Common.Utils;
+using EventStore.Core.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace EventStore.Core.Services.Storage.ReaderIndex
+namespace EventStore.Core.Data
 {
-    public struct StreamMetadata
+    public class StreamMetadata
     {
         public static readonly StreamMetadata Empty = new StreamMetadata(null, null, null, null);
 
@@ -62,8 +64,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public override string ToString()
         {
-            return string.Format(
-                "MaxCount: {0}, MaxAge: {1}, CacheControl: {2}, Acl: {3}", MaxCount, MaxAge, CacheControl, Acl);
+            return string.Format("MaxCount: {0}, MaxAge: {1}, CacheControl: {2}, Acl: {3}", MaxCount, MaxAge, CacheControl, Acl);
         }
 
         public static StreamMetadata FromJsonBytes(byte[] json)
@@ -88,38 +89,38 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     switch (name)
                     {
                         case SystemMetadata.MaxCount:
-                            {
-                                Check(reader.Read(), reader);
-                                Check(JsonToken.Integer, reader);
-                                maxCount = (int) (long) reader.Value;
-                                break;
-                            }
+                        {
+                            Check(reader.Read(), reader);
+                            Check(JsonToken.Integer, reader);
+                            maxCount = (int) (long) reader.Value;
+                            break;
+                        }
                         case SystemMetadata.MaxAge:
-                            {
-                                Check(reader.Read(), reader);
-                                Check(JsonToken.Integer, reader);
-                                maxAge = TimeSpan.FromSeconds((long) reader.Value);
-                                break;
-                            }
+                        {
+                            Check(reader.Read(), reader);
+                            Check(JsonToken.Integer, reader);
+                            maxAge = TimeSpan.FromSeconds((long) reader.Value);
+                            break;
+                        }
                         case SystemMetadata.CacheControl:
-                            {
-                                Check(reader.Read(), reader);
-                                Check(JsonToken.Integer, reader);
-                                cacheControl = TimeSpan.FromSeconds((long) reader.Value);
-                                break;
-                            }
+                        {
+                            Check(reader.Read(), reader);
+                            Check(JsonToken.Integer, reader);
+                            cacheControl = TimeSpan.FromSeconds((long) reader.Value);
+                            break;
+                        }
                         case SystemMetadata.Acl:
-                            {
-                                acl = ReadAcl(reader);
-                                break;
-                            }
+                        {
+                            acl = ReadAcl(reader);
+                            break;
+                        }
                         default:
-                            {
-                                Check(reader.Read(), reader);
-                                // skip
-                                JToken.ReadFrom(reader);
-                                break;
-                            }
+                        {
+                            Check(reader.Read(), reader);
+                            // skip
+                            JToken.ReadFrom(reader);
+                            break;
+                        }
                     }
                 }
                 return new StreamMetadata(
@@ -135,6 +136,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             string read = null;
             string write = null;
+            string delete = null;
             string metaRead = null;
             string metaWrite = null;
 
@@ -148,36 +150,43 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 switch (name)
                 {
                     case SystemMetadata.AclRead:
-                        {
-                            Check(reader.Read(), reader);
-                            Check(JsonToken.String, reader);
-                            read = (string) reader.Value;
-                            break;
-                        }
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.String, reader);
+                        read = (string) reader.Value;
+                        break;
+                    }
                     case SystemMetadata.AclWrite:
-                        {
-                            Check(reader.Read(), reader);
-                            Check(JsonToken.String, reader);
-                            write = (string) reader.Value;
-                            break;
-                        }
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.String, reader);
+                        write = (string)reader.Value;
+                        break;
+                    }
+                    case SystemMetadata.AclDelete:
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.String, reader);
+                        delete = (string)reader.Value;
+                        break;
+                    }
                     case SystemMetadata.AclMetaRead:
-                        {
-                            Check(reader.Read(), reader);
-                            Check(JsonToken.String, reader);
-                            metaRead = (string) reader.Value;
-                            break;
-                        }
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.String, reader);
+                        metaRead = (string) reader.Value;
+                        break;
+                    }
                     case SystemMetadata.AclMetaWrite:
-                        {
-                            Check(reader.Read(), reader);
-                            Check(JsonToken.String, reader);
-                            metaWrite = (string) reader.Value;
-                            break;
-                        }
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.String, reader);
+                        metaWrite = (string) reader.Value;
+                        break;
+                    }
                 }
             }
-            return new StreamAcl(read, write, metaRead, metaWrite);
+            return new StreamAcl(read, write, delete, metaRead, metaWrite);
         }
 
         private static void Check(JsonToken type, JsonTextReader reader)
@@ -248,6 +257,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     jsonWriter.WritePropertyName(SystemMetadata.AclWrite);
                     jsonWriter.WriteValue(Acl.WriteRole);
                 }
+                if (Acl.DeleteRole != null)
+                {
+                    jsonWriter.WritePropertyName(SystemMetadata.AclDelete);
+                    jsonWriter.WriteValue(Acl.DeleteRole);
+                }
                 if (Acl.MetaReadRole != null)
                 {
                     jsonWriter.WritePropertyName(SystemMetadata.AclMetaRead);
@@ -262,27 +276,29 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
             jsonWriter.WriteEndObject();
         }
-
     }
 
     public class StreamAcl
     {
         public readonly string ReadRole;
         public readonly string WriteRole;
+        public readonly string DeleteRole;
         public readonly string MetaReadRole;
         public readonly string MetaWriteRole;
 
-        public StreamAcl(string readRole, string writeRole, string metaReadRole, string metaWriteRole)
+        public StreamAcl(string readRole, string writeRole, string deleteRole, string metaReadRole, string metaWriteRole)
         {
             ReadRole = readRole;
             WriteRole = writeRole;
+            DeleteRole = deleteRole;
             MetaReadRole = metaReadRole;
             MetaWriteRole = metaWriteRole;
         }
 
         public override string ToString()
         {
-            return string.Format("Read: {0}, Write: {1}, MetaRead: {2}, MetaWrite: {3}", ReadRole, WriteRole, MetaReadRole, MetaWriteRole);
+            return string.Format("Read: {0}, Write: {1}, Delete: {2}, MetaRead: {3}, MetaWrite: {4}",
+                                 ReadRole, WriteRole, DeleteRole, MetaReadRole, MetaWriteRole);
         }
     }
 }

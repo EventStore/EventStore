@@ -36,6 +36,9 @@ namespace EventStore.Core.Messages
     {
         public class GetFreshStats : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly IEnvelope Envelope;
             public readonly Func<Dictionary<string, object>, Dictionary<string, object>> StatsSelector;
             public readonly bool UseMetadata;
@@ -58,6 +61,9 @@ namespace EventStore.Core.Messages
 
         public class GetFreshStatsCompleted : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly bool Success;
             public readonly Dictionary<string, object> Stats;
 
@@ -70,6 +76,9 @@ namespace EventStore.Core.Messages
 
         public class InternalStatsRequest : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly IEnvelope Envelope;
 
             public InternalStatsRequest(IEnvelope envelope)
@@ -82,6 +91,9 @@ namespace EventStore.Core.Messages
 
         public class InternalStatsRequestResponse : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Dictionary<string, object> Stats;
 
             public InternalStatsRequestResponse(Dictionary<string, object> stats)

@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -202,12 +200,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                         {
                             record = LogRecord.Commit(logPos, Guid.NewGuid(), transInfo.TransactionPosition, transInfo.TransactionEventNumber);
 
-                            if (transInfo.StreamMetadata.HasValue)
+                            if (transInfo.StreamMetadata != null)
                             {
                                 var streamId = SystemStreams.OriginalStreamOf(rec.StreamId);
                                 if (!streams.ContainsKey(streamId))
                                     streams.Add(streamId, new StreamInfo(-1));
-                                streams[streamId].StreamMetadata = transInfo.StreamMetadata.Value;
+                                streams[streamId].StreamMetadata = transInfo.StreamMetadata;
                             }
 
                             if (transInfo.IsDelete)
@@ -240,7 +238,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         {
             if (rec.Metadata == null) return null;
 
-            var meta = rec.Metadata.Value;
+            var meta = rec.Metadata;
             return Helper.UTF8NoBom.GetBytes(
                 string.Format("{{{0}{1}{2}}}",
                               meta.MaxCount == null ? "" : string.Format("$maxCount:{0}", meta.MaxCount),
@@ -258,7 +256,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         public int TransactionOffset = 0;
         public int TransactionEventNumber = -1;
         public bool IsDelete = false;
-        public StreamMetadata? StreamMetadata;
+        public StreamMetadata StreamMetadata;
 
         public TransactionInfo(string streamId, Guid firstPrepareId, Guid lastPrepareId)
         {
@@ -307,9 +305,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         public readonly string StreamId;
         public readonly string EventType;
         public readonly DateTime TimeStamp;
-        public readonly StreamMetadata? Metadata;
+        public readonly StreamMetadata Metadata;
 
-        public Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, StreamMetadata? metadata = null)
+        public Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, StreamMetadata metadata = null)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
             Ensure.Nonnegative(transaction, "transaction");
@@ -333,7 +331,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             return new Rec(RecType.TransStart, transaction, stream, null, timestamp);
         }
 
-        public static Rec Prepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null, StreamMetadata? metadata = null)
+        public static Rec Prepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null, StreamMetadata metadata = null)
         {
             return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, metadata);
         }

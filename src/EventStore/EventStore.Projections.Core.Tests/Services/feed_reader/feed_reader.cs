@@ -32,6 +32,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.EventReaders.Feeds;
 using EventStore.Projections.Core.Messages;
@@ -75,23 +76,31 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             public void it_can_be_created()
             {
                 var feedReader = new FeedReader(
-                    _subscriptionDispatcher, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(),
-                    new NoopEnvelope(), new RealTimeProvider());
+                    _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
+                    CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
 
             [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_subscription_dispatcher_throws_argument_null_exception()
             {
                 var feedReader = new FeedReader(
-                    null, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(),
-                    new NoopEnvelope(), new RealTimeProvider());
+                    null, SystemAccount.Principal, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 10,
+                    Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
 
-            [Test, ExpectedException(typeof (ArgumentNullException))]
+            [Test]
+            public void null_user_account_is_allowed()
+            {
+                var feedReader = new FeedReader(
+                    _subscriptionDispatcher, null, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 10,
+                    Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
+            }
+
+            [Test, ExpectedException(typeof(ArgumentNullException))]
             public void null_query_definition_throws_argument_null_exception()
             {
                 var feedReader = new FeedReader(
-                    _subscriptionDispatcher, null, CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(),
+                    _subscriptionDispatcher, SystemAccount.Principal, null, CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(),
                     new NoopEnvelope(), new RealTimeProvider());
             }
 
@@ -99,32 +108,32 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             public void null_from_position_throws_argument_null_exception()
             {
                 var feedReader = new FeedReader(
-                    _subscriptionDispatcher, _testQueryDefinition, null, 10, Guid.NewGuid(), new NoopEnvelope(),
-                    new RealTimeProvider());
+                    _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition, null, 10, Guid.NewGuid(),
+                    new NoopEnvelope(), new RealTimeProvider());
             }
 
             [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_envelope_throws_argument_null_exception()
             {
                 var feedReader = new FeedReader(
-                    _subscriptionDispatcher, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(),
-                    null, new RealTimeProvider());
+                    _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
+                    CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(), null, new RealTimeProvider());
             }
 
             [Test, ExpectedException(typeof (ArgumentException))]
             public void zero_max_events_throws_argument_exception()
             {
                 var feedReader = new FeedReader(
-                    _subscriptionDispatcher, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 0, Guid.NewGuid(),
-                    new NoopEnvelope(), new RealTimeProvider());
+                    _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
+                    CheckpointTag.FromPosition(0, -1), 0, Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
 
             [Test, ExpectedException(typeof (ArgumentException))]
             public void negative_max_events_throws_argument_exception()
             {
                 var feedReader = new FeedReader(
-                    _subscriptionDispatcher, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), -1, Guid.NewGuid(),
-                    new NoopEnvelope(), new RealTimeProvider());
+                    _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
+                    CheckpointTag.FromPosition(0, -1), -1, Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
 
         }
@@ -156,8 +165,8 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                             EventReaderSubscriptionMessage>(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
                 _testQueryDefinition = GivenQuerySource();
                 _feedReader = new FeedReader(
-                    _subscriptionDispatcher, _testQueryDefinition, GivenFromPosition(), 10, Guid.NewGuid(),
-                    new PublishEnvelope(_bus), new RealTimeProvider());
+                    _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition, GivenFromPosition(), 10,
+                    Guid.NewGuid(), new PublishEnvelope(_bus), new RealTimeProvider());
                 Given();
                 When();
             }
@@ -339,8 +348,8 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 yield return
                     new FeedReaderMessage.ReadPage(
-                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), _querySourcesDefinition, _fromPosition,
-                        _maxEvents);
+                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccount.Principal,
+                        _querySourcesDefinition, _fromPosition, _maxEvents);
             }
 
             [Test]
@@ -381,13 +390,13 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 yield return
                     new FeedReaderMessage.ReadPage(
-                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), _querySourcesDefinition, _fromPosition,
-                        _maxEvents);
+                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccount.Principal,
+                        _querySourcesDefinition, _fromPosition, _maxEvents);
                 var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Single();
                 yield return
                     new FeedReaderMessage.ReadPage(
-                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), _querySourcesDefinition, feedPage.LastReaderPosition,
-                        _maxEvents);
+                        Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccount.Principal,
+                        _querySourcesDefinition, feedPage.LastReaderPosition, _maxEvents);
             }
 
             [Test]

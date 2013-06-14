@@ -111,9 +111,9 @@ namespace EventStore.Core.Tests.ClientAPI
                                              .LimitReconnectionsTo(1)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
                                              .OnClosed((x, r) => closed.Set())
-                                             .OnConnected(x => Console.WriteLine("Connected..."))
+                                             .OnConnected((x, ep) => Console.WriteLine("Connected to [{0}]...", ep))
                                              .OnReconnecting(x => Console.WriteLine("Reconnecting..."))
-                                             .OnDisconnected(x => Console.WriteLine("Disconnected..."))
+                                             .OnDisconnected((x, ep) => Console.WriteLine("Disconnected from [{0}]...", ep))
                                              .OnErrorOccurred((x, exc) => Console.WriteLine("Error: {0}", exc))
                                              .FailOnNoServerResponse();
             if (_tcpType == TcpType.Ssl)

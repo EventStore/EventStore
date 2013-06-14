@@ -176,7 +176,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public TFChunk.TFChunk SwitchChunk(TFChunk.TFChunk chunk, bool verifyHash, bool replaceChunksWithGreaterNumbers)
+        public TFChunk.TFChunk SwitchChunk(TFChunk.TFChunk chunk, bool verifyHash, bool removeChunksWithGreaterNumbers)
         {
             Ensure.NotNull(chunk, "chunk");
             if (!chunk.IsReadOnly)
@@ -207,13 +207,18 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             lock (_chunksLocker)
             {
-                ReplaceChunksWith(chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, newChunk, "Old");
+                if (!ReplaceChunksWith(newChunk, "Old"))
+                {
+                    Log.Info("Chunk #{0}-{1} ({2}) will be not switched, marking for remove...",
+                             chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber,newFileName);
+                    newChunk.MarkForDeletion();
+                }
 
-                if (replaceChunksWithGreaterNumbers)
+                if (removeChunksWithGreaterNumbers)
                 {
                     var oldChunksCount = _chunksCount;
                     _chunksCount = newChunk.ChunkHeader.ChunkEndNumber + 1;
-                    ReplaceChunksWith(chunkHeader.ChunkEndNumber + 1, oldChunksCount-1, null, "Excessive");
+                    RemoveChunks(chunkHeader.ChunkEndNumber + 1, oldChunksCount-1, "Excessive");
                     if (_chunks[_chunksCount] != null)
                         throw new Exception(string.Format("Excessive chunk #{0} found after raw replication switch.", _chunksCount));
                 }
@@ -223,25 +228,47 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private void ReplaceChunksWith(int chunkStartNumber, int chunkEndNumber, TFChunk.TFChunk newChunk, string chunkExplanation)
+        private bool ReplaceChunksWith(TFChunk.TFChunk newChunk, string chunkExplanation)
         {
-            for (int i = chunkStartNumber; i <= chunkEndNumber; )
+            var chunkStartNumber = newChunk.ChunkHeader.ChunkStartNumber;
+            var chunkEndNumber = newChunk.ChunkHeader.ChunkEndNumber;
+            for (int i = chunkStartNumber; i <= chunkEndNumber;)
+            {
+                var chunkHeader = _chunks[i].ChunkHeader;
+                if (chunkHeader.ChunkStartNumber < chunkStartNumber || chunkHeader.ChunkEndNumber > chunkEndNumber)
+                    return false;
+                i = chunkHeader.ChunkEndNumber + 1;
+            }
+
+            TFChunk.TFChunk lastRemovedChunk = null;
+            for (int i = chunkStartNumber; i <= chunkEndNumber; i += 1)
             {
                 var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
-                if (oldChunk == null)
-                    break;
-
-                for (int j = oldChunk.ChunkHeader.ChunkStartNumber + 1; j <= oldChunk.ChunkHeader.ChunkEndNumber; j += 1)
+                if (oldChunk != null && !ReferenceEquals(lastRemovedChunk, oldChunk))
                 {
-                    Interlocked.Exchange(ref _chunks[j], newChunk);
+                    oldChunk.MarkForDeletion();
+
+                    Log.Info("{0} chunk #{1}-{2} ({3}) is marked for deletion.", chunkExplanation,
+                                oldChunk.ChunkHeader.ChunkStartNumber, oldChunk.ChunkHeader.ChunkEndNumber, oldChunk.FileName);
                 }
+                lastRemovedChunk = oldChunk;
+            }
+            return true;
+        }
 
-                oldChunk.MarkForDeletion();
-
-                Log.Info("{0} chunk #{1}-{2} ({3}) is marked for deletion.", chunkExplanation, 
-                         oldChunk.ChunkHeader.ChunkStartNumber, oldChunk.ChunkHeader.ChunkEndNumber, oldChunk.FileName);
-
-                i = oldChunk.ChunkHeader.ChunkEndNumber + 1;
+        private void RemoveChunks(int chunkStartNumber, int chunkEndNumber, string chunkExplanation)
+        {
+            TFChunk.TFChunk lastRemovedChunk = null;
+            for (int i = chunkStartNumber; i <= chunkEndNumber; i += 1)
+            {
+                var oldChunk = Interlocked.Exchange(ref _chunks[i], null);
+                if (oldChunk != null && !ReferenceEquals(lastRemovedChunk, oldChunk))
+                {
+                    oldChunk.MarkForDeletion();
+                    Log.Info("{0} chunk #{1}-{2} ({3}) is marked for deletion.", chunkExplanation,
+                             oldChunk.ChunkHeader.ChunkStartNumber, oldChunk.ChunkHeader.ChunkEndNumber, oldChunk.FileName);
+                }
+                lastRemovedChunk = oldChunk;
             }
         }
 

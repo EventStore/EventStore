@@ -87,7 +87,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             _currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
 
             rawChunk.CompleteRaw();
-            _db.Manager.SwitchChunk(rawChunk, verifyHash: true, replaceChunksWithGreaterNumbers: true);
+            _db.Manager.SwitchChunk(rawChunk, verifyHash: true, removeChunksWithGreaterNumbers: true);
 
             _writerCheckpoint.Write(rawChunk.ChunkHeader.ChunkEndPosition);
             _writerCheckpoint.Flush();

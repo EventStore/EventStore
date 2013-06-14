@@ -35,6 +35,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Tests.Services.Authentication;
 using EventStore.Transport.Http.EntityManagement;
 using NUnit.Framework;
 using System.Linq;
@@ -43,23 +44,15 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
 {
     namespace basic_http_authentication_provider
     {
-        public class TestFixtureWithBasicHttpAuthenticationProvider: TestFixtureWithExistingEvents
+        public class TestFixtureWithBasicHttpAuthenticationProvider: with_internal_authentication_provider
         {
             protected BasicHttpAuthenticationProvider _provider;
-            protected IODispatcher _ioDispatcher;
             protected HttpEntity _entity;
 
-            protected void SetUpProvider()
+            protected new void SetUpProvider()
             {
-                _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
-                _bus.Subscribe(_ioDispatcher.BackwardReader);
-                _bus.Subscribe(_ioDispatcher.ForwardReader);
-                _bus.Subscribe(_ioDispatcher.Writer);
-                _bus.Subscribe(_ioDispatcher.StreamDeleter);
-
-                PasswordHashAlgorithm passwordHashAlgorithm = new StubPasswordHashAlgorithm();
-                var internalAuthenticationProvider = new InternalAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm, 1000);
-                _provider = new BasicHttpAuthenticationProvider(internalAuthenticationProvider);
+                base.SetUpProvider();
+                _provider = new BasicHttpAuthenticationProvider(_internalAuthenticationProvider);
             }
         }
 

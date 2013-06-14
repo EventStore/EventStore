@@ -26,8 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Globalization;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -54,7 +52,6 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
-            feed.SetSelfUrl(self);
 
             feed.AddLink("self", self);
             feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", escapedStreamId, msg.MaxCount));
@@ -85,12 +82,6 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
-            feed.SetSelfUrl(self);
-
-            feed.SetHeadOfStream(headOfStream); //TODO AN: remove this ?
-            //TODO AN: remove this ?
-            if (headOfStream) //NOTE: etag workaround - to be fixed with better http handling model
-                feed.SetETag(msg.LastEventNumber.ToString(CultureInfo.InvariantCulture) + ";" + "application/json".GetHashCode());
 
             feed.AddLink("self", self);
             feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", escapedStreamId, msg.MaxCount));
@@ -118,7 +109,6 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[msg.Events.Length - 1].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
-            feed.SetSelfUrl(self);
 
             feed.AddLink("self", self);
             feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllEscaped, msg.MaxCount));
@@ -141,7 +131,6 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
-            feed.SetSelfUrl(self);
 
             feed.AddLink("self", self);
             feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllEscaped, msg.MaxCount));

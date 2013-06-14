@@ -35,7 +35,7 @@ using System.Linq;
 
 namespace EventStore.Core.Tests.Helpers
 {
-    public class ManualQueue : IPublisher
+    public class ManualQueue : IPublisher, IHandle<TimerMessage.Schedule>
     {
         private readonly Queue<Message> _queue = new Queue<Message>();
         private readonly IBus _bus;
@@ -45,6 +45,7 @@ namespace EventStore.Core.Tests.Helpers
         public ManualQueue(IBus bus)
         {
             _bus = bus;
+            _bus.Subscribe(this);
         }
 
         public void Publish(Message message)
@@ -65,9 +66,6 @@ namespace EventStore.Core.Tests.Helpers
             while (_queue.Count > 0)
             {
                 var message = _queue.Dequeue();
-                var schedule = message as TimerMessage.Schedule;
-                if (schedule != null)
-                    _timerQueue.Add(schedule);
                 _bus.Publish(message);
                 count++;
                 if (count > 1000)
@@ -85,6 +83,11 @@ namespace EventStore.Core.Tests.Helpers
             _timerDisabled = false;
             if (process)
                 Process();
+        }
+
+        public void Handle(TimerMessage.Schedule message)
+        {
+            _timerQueue.Add(message);
         }
     }
 }

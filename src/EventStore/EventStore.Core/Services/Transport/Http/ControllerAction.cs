@@ -51,15 +51,12 @@ namespace EventStore.Core.Services.Transport.Http
             Ensure.NotNull(requestCodecs, "requestCodecs");
             Ensure.NotNull(responseCodecs, "responseCodecs");
 
-            var defaultResponseCodec = responseCodecs[0];
-
-
             UriTemplate = uriTemplate;
             HttpMethod = httpMethod;
 
             SupportedRequestCodecs = requestCodecs;
             SupportedResponseCodecs = responseCodecs;
-            DefaultResponseCodec = defaultResponseCodec;
+            DefaultResponseCodec = responseCodecs.Length > 0 ? responseCodecs[0] : null;
         }
 
         public bool Equals(ControllerAction other)

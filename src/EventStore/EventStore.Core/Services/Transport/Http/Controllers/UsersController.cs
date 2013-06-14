@@ -36,20 +36,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public class UsersController : CommunicationController
     {
-        private readonly IHttpService _httpService;
+        private readonly IHttpForwarder _httpForwarder;
         private readonly IPublisher _networkSendQueue;
 
-        public UsersController(IHttpService httpService, IPublisher publisher, IPublisher networkSendQueue)
+        public UsersController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
         {
-            _httpService = httpService;
+            _httpForwarder = httpForwarder;
             _networkSendQueue = networkSendQueue;
         }
 
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
+        protected override void SubscribeCore(IHttpService service)
         {
             RegisterUrlBased(service, "/users/", HttpMethod.Get, GetUsers);
             RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, GetUser);
+            RegisterUrlBased(service, "/users/$current", HttpMethod.Get, GetCurrentUser);
             RegisterTextBody(service, "/users/", HttpMethod.Post, PostUser);
             RegisterTextBody(service, "/users/{login}", HttpMethod.Put, PutUser);
             RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, DeleteUser);
@@ -61,7 +62,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void GetUsers(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.AllUserDetailsResult>(http);
             var message = new UserManagementMessage.GetAll(envelope, http.User);
@@ -71,7 +72,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void GetUser(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.UserDetailsResult>(http);
             var login = match.BoundVariables["login"];
@@ -79,9 +80,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(message);
         }
 
+        private void GetCurrentUser(HttpEntityManager http, UriTemplateMatch match)
+        {
+            if (_httpForwarder.ForwardRequest(http))
+                return;
+            var envelope = CreateReplyEnvelope<UserManagementMessage.UserDetailsResult>(http);
+            if (http.User == null)
+            {
+                envelope.ReplyWith(
+                    new UserManagementMessage.UserDetailsResult(UserManagementMessage.Error.Unauthorized));
+                return;
+            }
+
+            var message = new UserManagementMessage.Get(envelope, http.User, http.User.Identity.Name);
+            Publish(message);
+        }
+
         private void PostUser(HttpEntityManager http, string s)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(
                 http, configurator: (codec, result) =>
@@ -100,7 +117,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void PutUser(HttpEntityManager http, UriTemplateMatch match, string s)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];
@@ -111,7 +128,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void DeleteUser(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];
@@ -121,7 +138,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void PostCommandEnable(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];
@@ -131,7 +148,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void PostCommandDisable(HttpEntityManager http, UriTemplateMatch match)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];
@@ -141,7 +158,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void PostCommandResetPassword(HttpEntityManager http, UriTemplateMatch match, string s)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];
@@ -152,7 +169,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void PostCommandChangePassword(HttpEntityManager http, UriTemplateMatch match, string s)
         {
-            if (_httpService.ForwardRequest(http))
+            if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
             var login = match.BoundVariables["login"];

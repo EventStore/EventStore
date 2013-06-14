@@ -38,18 +38,14 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public static void Subscribe(IBus bus, HttpService service)
         {
             bus.Subscribe<SystemMessage.SystemInit>(service);
-            bus.Subscribe<SystemMessage.StateChangeMessage>(service);
             bus.Subscribe<SystemMessage.BecomeShuttingDown>(service);
-            bus.Subscribe<HttpMessage.SendOverHttp>(service);
             bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(service);
         }
 
         public static void Unsubscribe(IBus bus, HttpService service)
         {
             bus.Unsubscribe<SystemMessage.SystemInit>(service);
-            bus.Unsubscribe<SystemMessage.StateChangeMessage>(service);
             bus.Unsubscribe<SystemMessage.BecomeShuttingDown>(service);
-            bus.Unsubscribe<HttpMessage.SendOverHttp>(service);
             bus.Unsubscribe<HttpMessage.PurgeTimedOutRequests>(service);
         }
 

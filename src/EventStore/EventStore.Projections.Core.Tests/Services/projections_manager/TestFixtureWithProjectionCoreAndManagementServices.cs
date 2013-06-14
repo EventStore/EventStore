@@ -43,13 +43,21 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected ProjectionManager _manager;
         private ProjectionCoreService _coreService;
         private EventReaderCoreService _readerService;
-        protected bool _initializeSystemProjections;
+        private bool _initializeSystemProjections;
 
         protected override void Given1()
         {
             base.Given1();
-            ExistingEvent("$projections-$all", "$ProjectionsInitialized", "", "");
-            _initializeSystemProjections = false;
+            _initializeSystemProjections = GivenInitializeSystemProjections();
+            if (!_initializeSystemProjections)
+            {
+                ExistingEvent("$projections-$all", "$ProjectionsInitialized", "", "");
+            }
+        }
+
+        protected virtual bool GivenInitializeSystemProjections()
+        {
+            return false;
         }
 
         [SetUp]
@@ -74,6 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
 
             _coreService = new ProjectionCoreService(GetInputQueue(), GetInputQueue(), _subscriptionDispatcher, _timeProvider);
             _bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
@@ -126,6 +135,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_readerService);
+            _bus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Pause>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Resume>(_readerService);

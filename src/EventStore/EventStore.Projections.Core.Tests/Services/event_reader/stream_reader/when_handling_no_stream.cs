@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream", 100, 100,
-                    ReadStreamResult.NoStream, new ResolvedEvent[0], "", -1, ExpectedVersion.NoStream, true, 200));
+                    ReadStreamResult.NoStream, new ResolvedEvent[0], null, "", -1, ExpectedVersion.NoStream, true, 200));
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]

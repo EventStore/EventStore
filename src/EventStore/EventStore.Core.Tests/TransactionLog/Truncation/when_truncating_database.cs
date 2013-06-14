@@ -34,7 +34,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog
+namespace EventStore.Core.Tests.TransactionLog.Truncation
 {
     [TestFixture]
     public class when_truncating_database: SpecificationWithDirectoryPerTestFixture

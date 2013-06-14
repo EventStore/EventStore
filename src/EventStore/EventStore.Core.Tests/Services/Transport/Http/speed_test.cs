@@ -44,7 +44,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http
 {
-    public class FakeController: IController
+    public class FakeController: IHttpController
     {
         private readonly IUriRouter _router;
         public static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             CountdownEvent = new CountdownEvent(reqCount);
         }
 
-        public void Subscribe(IHttpService http, HttpMessagePipe pipe)
+        public void Subscribe(IHttpService http)
         {
             _http = http;
 
@@ -166,7 +166,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[]{queue}, null);
             var providers = new AuthenticationProvider[] {new AnonymousAuthenticationProvider()};
             var httpService = new HttpService(ServiceAccessibility.Public, inputBus, 
-                                              new TrieUriRouter(), multiQueuedHandler, false, "http://localhost:12345/");
+                                              new TrieUriRouter(), multiQueuedHandler, "http://localhost:12345/");
             HttpService.CreateAndSubscribePipeline(bus, providers);
 
             var fakeController = new FakeController(iterations, null);
@@ -217,7 +217,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
             IUriRouter router = new TrieUriRouter();
             var fakeController = new FakeController(iterations, router);
-            fakeController.Subscribe(null, null);
+            fakeController.Subscribe(null);
 
             var rnd = new Random();
             var sw = Stopwatch.StartNew();

@@ -51,7 +51,6 @@ namespace EventStore.Common.Utils
         {
             //TODO: encode???
             var path = string.Format(relativeUri, arg);
-
             return new UriBuilder(requestedUrl.Scheme, requestedUrl.Host, requestedUrl.Port, path).Uri.AbsoluteUri;
         }
     }

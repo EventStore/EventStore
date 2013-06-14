@@ -88,6 +88,7 @@ namespace EventStore.Core.Tests.Helpers
             _bus.Subscribe(_ioDispatcher.ForwardReader);
             _bus.Subscribe(_ioDispatcher.Writer);
             _bus.Subscribe(_ioDispatcher.StreamDeleter);
+            _bus.Subscribe(_ioDispatcher);
 
             _consumer = new TestHandler<Message>();
             _bus.Subscribe(_consumer);

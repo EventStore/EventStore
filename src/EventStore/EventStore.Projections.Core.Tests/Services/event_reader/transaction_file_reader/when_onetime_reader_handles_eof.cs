@@ -83,12 +83,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
                                 _fakeTimeProvider.Now,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                                 "event_type1", new byte[] {1}, new byte[] {2}), null, 200),
-                    }, 100, new EventStore.Core.Data.TFPos(200, 150), new EventStore.Core.Data.TFPos(500, -1), new EventStore.Core.Data.TFPos(100, 50), 500));
+                    }, null, 100, new EventStore.Core.Data.TFPos(200, 150), new EventStore.Core.Data.TFPos(500, -1), new EventStore.Core.Data.TFPos(100, 50), 500));
 
             _edp.Handle(
                 new ClientMessage.ReadAllEventsForwardCompleted(
                     _distibutionPointCorrelationId, ReadAllResult.Success, null,
-                    new EventStore.Core.Data.ResolvedEvent[0], 100, new EventStore.Core.Data.TFPos(), new EventStore.Core.Data.TFPos(), new EventStore.Core.Data.TFPos(), 500));
+                    new EventStore.Core.Data.ResolvedEvent[0], null, 100, new EventStore.Core.Data.TFPos(), new EventStore.Core.Data.TFPos(), new EventStore.Core.Data.TFPos(), 500));
         }
 
         [Test]

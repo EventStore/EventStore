@@ -2,17 +2,33 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using EventStore.Core.Cluster;
+using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.VNode;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.VNode
 {
-    internal abstract class P: Message {}
-    internal class A: P {}
-    internal class B: P {}
-    internal class C: Message {}
+    internal abstract class P : Message
+    {
+        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+        public override int MsgTypeId { get { return TypeId; } }
+    }
+    internal class A : P
+    {
+        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+        public override int MsgTypeId { get { return TypeId; } }
+    }
+    internal class B : P
+    {
+        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+        public override int MsgTypeId { get { return TypeId; } }
+    }
+    internal class C: Message
+    {
+        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+        public override int MsgTypeId { get { return TypeId; } }
+    }
 
     [TestFixture]
     public class vnode_fsm_should

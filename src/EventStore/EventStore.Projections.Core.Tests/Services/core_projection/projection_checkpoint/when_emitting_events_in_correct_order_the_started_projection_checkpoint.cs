@@ -29,8 +29,7 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Projections.Core.Messages;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -44,9 +43,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
 
         protected override void Given()
         {
-            NoStream("stream1");
-            NoStream("stream2");
-            NoStream("stream3");
+            AllWritesQueueUp();
+            AllWritesToSucceed("$$stream1");
+            AllWritesToSucceed("$$stream2");
+            AllWritesToSucceed("$$stream3");
+            NoOtherStreams();
         }
 
         [SetUp]
@@ -62,24 +63,27 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                 new[]
                     {
                         new EmittedDataEvent(
-                    "stream2", Guid.NewGuid(), "type", "data2", null, CheckpointTag.FromPosition(120, 110), null),
+                    "stream2", Guid.NewGuid(), "type1", "data2", null, CheckpointTag.FromPosition(120, 110), null),
                         new EmittedDataEvent(
-                    "stream3", Guid.NewGuid(), "type", "data3", null, CheckpointTag.FromPosition(120, 110), null),
+                    "stream3", Guid.NewGuid(), "type2", "data3", null, CheckpointTag.FromPosition(120, 110), null),
                         new EmittedDataEvent(
-                    "stream2", Guid.NewGuid(), "type", "data4", null, CheckpointTag.FromPosition(120, 110), null),
+                    "stream2", Guid.NewGuid(), "type3", "data4", null, CheckpointTag.FromPosition(120, 110), null),
                     });
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[]
                     {
                         new EmittedDataEvent(
-                    "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(140, 130), null)
+                    "stream1", Guid.NewGuid(), "type4", "data", null, CheckpointTag.FromPosition(140, 130), null)
                     });
         }
 
         [Test]
         public void should_publish_write_events()
         {
-            Assert.AreEqual(3, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+            var writeEvents =
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+                         .ExceptOfEventType(SystemEventTypes.StreamMetadata);
+            Assert.AreEqual(4, writeEvents.Count());
         }
 
         [Test]
@@ -114,7 +118,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                         new EmittedDataEvent(
                     "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(170, 160), null)
                     });
-            var writeRequests = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(v => v.EventStreamId == "stream1");
+            var writeRequests =
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(v => v.EventStreamId == "stream1");
             var writeEvents = writeRequests.Single();
             writeEvents.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writeEvents.CorrelationId, 0));
             Assert.AreEqual(2, writeRequests.Count());

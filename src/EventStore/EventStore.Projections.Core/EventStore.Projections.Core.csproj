@@ -217,6 +217,7 @@
     <Compile Include="Services\Processing\MultiStreamPositionTagger.cs" />
     <Compile Include="Services\Processing\NoopResultEmitter.cs" />
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\NotAuthorizedWorkItem.cs" />
     <Compile Include="Services\Processing\PartitionState.cs" />
     <Compile Include="Services\Processing\PartitionStateCache.cs" />
     <Compile Include="Services\Processing\PartitionStateUpdateManager.cs" />
@@ -270,6 +271,7 @@
     <Compile Include="Services\ProjectionStatistics.cs" />
     <Compile Include="Services\PublishSubscribeDispatcher.cs" />
     <Compile Include="Services\Processing\RequestResponseQueueForwarder.cs" />
+    <Compile Include="Services\ReadWrite.cs" />
     <Compile Include="Services\v8\DefaultV8ProjectionStateHandler.cs" />
     <Compile Include="Services\v8\V8ProjectionStateHandler.cs" />
     <Compile Include="Standard\CategorizeEventsByStreamPath.cs" />

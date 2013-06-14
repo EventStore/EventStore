@@ -33,7 +33,6 @@ using System.Text;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -197,7 +196,9 @@ namespace EventStore.Projections.Core.Services.Management
             if (!_started)
                 return;
 
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(null, message, replace: message.EnableRunAs)) return;
+            if (
+                !ProjectionManagementMessage.RunAs.ValidateRunAs(
+                    message.Mode, ReadWrite.Write, null, message, replace: message.EnableRunAs)) return;
 
             if (message.Name == null)
             {
@@ -565,11 +566,18 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     _logger.Info(
                         "Projection manager is initializing from the empty {0} stream", completed.EventStreamId);
-                    if ((completed.Result == ReadStreamResult.Success
-                         || completed.Result == ReadStreamResult.NoStream) && completed.Events.Length == 0)
-                        CreateFakeProjection(CreateSystemProjections);
-                    else
-                        CreateSystemProjections();
+                    if ((completed.Result == ReadStreamResult.Success || completed.Result == ReadStreamResult.NoStream)
+                        && completed.Events.Length == 0)
+                    {
+                        CreateFakeProjection(
+                            () =>
+                                {
+                                    completedAction();
+                                    CreateSystemProjections();
+                                    RequestSystemProjections();
+                                });
+                        return;
+                    }
                 }
             }
 

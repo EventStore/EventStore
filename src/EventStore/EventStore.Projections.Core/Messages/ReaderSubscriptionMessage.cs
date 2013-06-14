@@ -37,6 +37,9 @@ namespace EventStore.Projections.Core.Messages
     {
         public class SubscriptionMessage : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly Guid _correlationId;
             private readonly object _source;
 
@@ -59,6 +62,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class EventReaderIdle : SubscriptionMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly DateTime _idleTimestampUtc;
 
             public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc, object source = null): base(correlationId, source)
@@ -74,6 +80,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class EventReaderEof : SubscriptionMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly bool _maxEventsReached;
 
             public EventReaderEof(Guid correlationId, bool maxEventsReached = false, object source = null)
@@ -88,8 +97,22 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public sealed class EventReaderNotAuthorized : SubscriptionMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public EventReaderNotAuthorized(Guid correlationId, object source = null)
+                : base(correlationId, source)
+            {
+            }
+        }
+
         public class CommittedEventDistributed : SubscriptionMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public static CommittedEventDistributed Sample(
                 Guid correlationId, TFPos position, TFPos originalPosition, string positionStreamId, int positionSequenceNumber,
                 string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Guid eventId, string eventType,

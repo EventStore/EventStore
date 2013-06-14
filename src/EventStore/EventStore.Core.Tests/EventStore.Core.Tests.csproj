@@ -101,10 +101,13 @@
     <Compile Include="ClientAPI\Helpers\TestConnection.cs" />
     <Compile Include="ClientAPI\Helpers\TestEvent.cs" />
     <Compile Include="ClientAPI\Helpers\Writer.cs" />
+    <Compile Include="ClientAPI\isjson_flag_on_event.cs" />
     <Compile Include="ClientAPI\read_all_events_backward_should.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
+    <Compile Include="ClientAPI\Security\all_stream_with_no_acl_security.cs" />
+    <Compile Include="ClientAPI\Security\delete_stream_security.cs" />
     <Compile Include="ClientAPI\Security\system_stream_security.cs" />
     <Compile Include="ClientAPI\Security\read_stream_security.cs" />
     <Compile Include="ClientAPI\Security\read_all_security.cs" />
@@ -209,6 +212,8 @@
     <Compile Include="Infrastructure\IRandTestFinishCondition.cs" />
     <Compile Include="Infrastructure\IRandTestItemProcessor.cs" />
     <Compile Include="Infrastructure\RandomTestRunner.cs" />
+    <Compile Include="Services\Authentication\when_handling_multiple_requests_with_reset_password_cache_in_between.cs" />
+    <Compile Include="Services\Authentication\when_handling_multiple_requests_with_the_same_correct_user_name_and_password.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_create_stream_gets_prepare_timeout_after_prepares.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_completes_successfully.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_creating_delete_stream_request_manager.cs" />
@@ -313,6 +318,7 @@
     <Compile Include="Services\Storage\HashCollisions\with_three_collisioned_streams_one_event_each_read_index_should.cs" />
     <Compile Include="Services\Transport\Http\Authentication\basic_http_authentication_provider.cs" />
     <Compile Include="Services\Transport\Http\Authentication\rfc_2898_password_hash_algorithm.cs" />
+    <Compile Include="Services\Authentication\with_internal_authentication_provider.cs" />
     <Compile Include="Services\Transport\Http\media_type.cs" />
     <Compile Include="Services\Transport\Http\atom_specs.cs" />
     <Compile Include="Services\Transport\Http\auto_convertion.cs" />
@@ -325,6 +331,7 @@
     <Compile Include="Services\Transport\Http\uri_router_should.cs" />
     <Compile Include="Services\Transport\Tcp\ssl_connection.cs" />
     <Compile Include="Services\Transport\Tcp\core_tcp_package.cs" />
+    <Compile Include="Services\UserManagementService\password_change_notification_reader.cs" />
     <Compile Include="Services\UserManagementService\user_management_service.cs" />
     <Compile Include="Services\VNode\vnode_fsm_should.cs" />
     <Compile Include="SpecificationWithDirectoryPerTestFixture.cs" />
@@ -335,17 +342,21 @@
     <Compile Include="SpecificationWithFile.cs" />
     <Compile Include="TestsInitFixture.cs" />
     <Compile Include="TransactionLog\Scavenging\scavenged_chunk.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_to_the_very_beginning_of_db.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_multichunk.cs" />
     <Compile Include="TransactionLog\Truncation\TruncateAndReOpenDbScenario.cs" />
     <Compile Include="TransactionLog\Truncation\TruncateScenario.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_few_chunks_with_index_on_disk.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_few_chunks_with_index_on_disk_and_then_reopening_db.cs" />
-    <Compile Include="TransactionLog\Truncation\when_truncating_in_a_middle_of_scavenged_chunk_with_index_in_memory.cs" />
-    <Compile Include="TransactionLog\Truncation\when_truncating_in_a_middle_of_scavenged_chunk_with_index_in_memory_and_then_reopening_db.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_memory.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_memory_and_then_reopening_db.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_right_at_the_end_of_multichunk.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_single_uncompleted_chunk_with_index_in_memory_and_then_reopening_db.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_single_uncompleted_chunk_with_index_on_disk.cs" />
     <Compile Include="TransactionLog\Scavenging\when_metastream_is_scavenged_and_read_index_is_set_to_keep_last_3_metaevents.cs" />
     <Compile Include="TransactionLog\Scavenging\when_deleted_stream_with_metadata_is_scavenged.cs" />
     <Compile Include="TransactionLog\Scavenging\when_metastream_is_scavenged_and_read_index_is_set_to_keep_just_last_metaevent.cs" />
+    <Compile Include="TransactionLog\Validation\TFChunkDbCreationTestBase.cs" />
     <Compile Include="TransactionLog\when_reading_cached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\when_reading_uncached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\FlushTimeMeter.cs" />
@@ -358,10 +369,10 @@
     <Compile Include="TransactionLog\when_destroying_a_tfchunk.cs" />
     <Compile Include="TransactionLog\when_destroying_a_tfchunk_that_is_locked.cs" />
     <Compile Include="TransactionLog\when_marking_for_deletion_a_tfchunk_that_has_been_locked_and_unlocked.cs" />
-    <Compile Include="TransactionLog\when_truncating_database.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_database.cs" />
     <Compile Include="TransactionLog\when_unlocking_a_tfchunk_that_has_been_marked_for_deletion.cs" />
     <Compile Include="TransactionLog\commit_log_record_should.cs" />
-    <Compile Include="TransactionLog\when_validating_tfchunk_db_with_multi_chunks.cs" />
+    <Compile Include="TransactionLog\Validation\when_validating_tfchunk_db_with_multi_chunks.cs" />
     <Compile Include="TransactionLog\prepare_log_record_should.cs" />
     <Compile Include="TransactionLog\when_creating_tfchunk_from_empty_file.cs" />
     <Compile Include="TransactionLog\when_appending_past_end_of_a_tfchunk.cs" />
@@ -394,8 +405,8 @@
     <Compile Include="TransactionLog\when_creating_chunked_transaction_file_writer.cs" />
     <Compile Include="TransactionLog\when_opening_chunked_transaction_file_db_without_previous_files.cs" />
     <Compile Include="TransactionLog\when_reading_an_empty_chunked_transaction_log.cs" />
-    <Compile Include="TransactionLog\when_validating_tfchunk_db.cs" />
-    <Compile Include="TransactionLog\when_validating_tfchunkdb_without_previous_files.cs" />
+    <Compile Include="TransactionLog\Validation\when_validating_tfchunk_db.cs" />
+    <Compile Include="TransactionLog\Validation\when_validating_tfchunkdb_without_previous_files.cs" />
     <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_checksum.cs" />
     <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_checksum_and_data_bigger_than_buffer.cs" />
     <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_not_enough_space_in_chunk.cs" />
@@ -432,7 +443,9 @@
   <ItemGroup>
     <EmbeddedResource Include="server.p12" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="TransactionLog\Manager\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

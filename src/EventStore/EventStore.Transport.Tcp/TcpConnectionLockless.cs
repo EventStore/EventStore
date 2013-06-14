@@ -43,7 +43,7 @@ namespace EventStore.Transport.Tcp
         internal const int MaxSendPacketSize = 64 * 1024;
         internal static readonly BufferManager BufferManager = new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
 
-        private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnection>();
+        private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionLockless>();
         private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool", 
                                                                                    TcpConfiguration.SendReceivePoolSize, 
                                                                                    () => new SocketAsyncEventArgs());

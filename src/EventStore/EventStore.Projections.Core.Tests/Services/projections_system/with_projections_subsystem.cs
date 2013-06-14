@@ -40,10 +40,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
     {
         protected bool _startSystemProjections;
 
+        protected override bool GivenInitializeSystemProjections()
+        {
+            return true;
+        }
+
         protected override void Given1()
         {
             base.Given1();
-            _initializeSystemProjections = true;
             _startSystemProjections = GivenStartSystemProjections();
             AllWritesSucceed();
             NoOtherStreams();
@@ -58,6 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
         protected override IEnumerable<WhenStep> PreWhen()
         {
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
+            yield return Yield;
             if (_startSystemProjections)
             {
                 yield return

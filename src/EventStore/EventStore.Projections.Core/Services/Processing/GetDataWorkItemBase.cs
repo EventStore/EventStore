@@ -38,6 +38,8 @@ namespace EventStore.Projections.Core.Services.Processing
         protected Guid _correlationId;
         protected Guid _projectionId;
         private PartitionStateCache _partitionStateCache;
+        private PartitionState _state;
+        private CheckpointTag _lastProcessedCheckpointTag;
 
         protected GetDataWorkItemBase(
             IEnvelope envelope, Guid correlationId, Guid projectionId, CoreProjection projection,
@@ -61,12 +63,20 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void Load(CheckpointTag checkpointTag)
         {
-            Projection.BeginGetPartitionStateAt(_partition, checkpointTag, state => LoadCompleted(state, checkpointTag), lockLoaded: false);
+            _lastProcessedCheckpointTag = Projection.LastProcessedEventPosition;
+            Projection.BeginGetPartitionStateAt(
+                _partition, _lastProcessedCheckpointTag, LoadCompleted, lockLoaded: false);
         }
 
-        private void LoadCompleted(PartitionState state, CheckpointTag checkpointTag)
+        private void LoadCompleted(PartitionState state)
         {
-            Reply(state, checkpointTag);
+            _state = state;
+            NextStage();
+        }
+
+        protected override void WriteOutput()
+        {
+            Reply(_state, _lastProcessedCheckpointTag);
             NextStage();
         }
 

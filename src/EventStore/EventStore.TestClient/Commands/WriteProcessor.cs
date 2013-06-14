@@ -37,7 +37,7 @@ namespace EventStore.TestClient.Commands
 {
     internal class WriteProcessor : ICmdProcessor
     {
-        public string Usage { get { return "WR [<stream-id> <expected-version> <data> [<metadata>]]"; } }
+        public string Usage { get { return "WR [<stream-id> <expected-version> <data> [<metadata> [<is-json> [<login> <pass>]]]"; } }
         public string Keyword { get { return "WR"; } }
         
         public bool Execute(CommandProcessorContext context, string[] args)
@@ -46,16 +46,26 @@ namespace EventStore.TestClient.Commands
             var expectedVersion = ExpectedVersion.Any;
             var data = "test-data";
             string metadata = null;
+            bool isJson = false;
+            string login = null;
+            string pass = null;
 
             if (args.Length > 0)
             {
-                if (args.Length < 3 || args.Length > 4)
+                if (args.Length < 3 || args.Length > 7 || args.Length == 6)
                     return false;
                 eventStreamId = args[0];
                 expectedVersion = args[1].ToUpper() == "ANY" ? ExpectedVersion.Any : int.Parse(args[1]);
                 data = args[2];
-                if (args.Length == 4)
+                if (args.Length >= 4)
                     metadata = args[3];
+                if (args.Length >= 5)
+                    isJson = bool.Parse(args[4]);
+                if (args.Length >= 7)
+                {
+                    login = args[5];
+                    pass = args[6];
+                }
             }
 
             context.IsAsync();
@@ -72,12 +82,17 @@ namespace EventStore.TestClient.Commands
                         {
                             new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
                                                              "TakeSomeSpaceEvent",
-                                                             false,
+                                                             isJson,
                                                              Helper.UTF8NoBom.GetBytes(data),
                                                              Helper.UTF8NoBom.GetBytes(metadata ?? string.Empty))
                         },
                         true);
-                    var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize()).AsByteArray();
+                    var package = new TcpPackage(TcpCommand.WriteEvents, 
+                                                 login == null ? TcpFlags.None : TcpFlags.Authenticated,
+                                                 Guid.NewGuid(), 
+                                                 login,
+                                                 pass,
+                                                 writeDto.Serialize()).AsByteArray();
                     sw.Start();
                     conn.EnqueueSend(package);
                 },

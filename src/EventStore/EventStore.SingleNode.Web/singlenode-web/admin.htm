@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+    <title>Index</title>
+    <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>
+    
+    <script>
+        $(function () {
+            var webUrl = location.protocol + '//' + location.host;
+
+            $.ajax(webUrl + "/sys/subsystems", {
+                headers: {
+                    Accept: "application/json"
+                },
+
+                type: "GET",
+                data: $("#source").val(),
+                success: subsytemsListReceived,
+                error: onErrorListSubsystems
+            });
+        });
+        
+        function subsytemsListReceived(data, status, xhr) {
+            
+            var subsystemsList,
+                linkToChat,
+                msg,
+                item,
+                i;
+            
+            if (!data) {
+                return;
+            }
+            else {
+                subsystemsList = data;
+                linkToChat = document.getElementById("link-to-chat");
+                if (linkToChat) {
+                    for (i = 0; i < subsystemsList.length; i++) {
+                        item = subsystemsList[i];
+                        switch (item) {
+                            case "Projections":
+                                linkToChat.style.display = "inline";
+                                break;
+                            default:
+                                msg = "Not expected subsystem " + item + " has been found in list.";
+                                console.log(msg);
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        function onErrorListSubsystems(xhr) {
+            var msg = es.util.formatError("Couldn't load node subsystems list", xhr);
+            console.log(msg);
+        }
+    </script>
+</head>
+<body>
+    <div id="content">
+        <h1>EventStore Admin Page</h1>
+        
+        <form action="/admin/halt" method="POST">
+            <input type="submit" value="Halt server" />    
+        </form>
+
+        <form action="/admin/shutdown" method="POST">
+            <input type="submit" value="Shutdown server" />    
+        </form>
+
+        <form action="/admin/scavenge" method="POST">
+            <input type="submit" value="Scavenge" />    
+        </form>
+        
+        <script id="r-body">
+            es.tmpl.renderBody();
+        </script>
+    </div>
+</body>
+</html>

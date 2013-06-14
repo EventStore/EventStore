@@ -15,6 +15,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public readonly bool IsEndOfStream;
 
         public readonly EventRecord[] Records;
+        public readonly StreamMetadata Metadata;
 
         public IndexReadStreamResult(int fromEventNumber, int maxCount, ReadStreamResult result)
         {
@@ -29,11 +30,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             LastEventNumber = -1;
             IsEndOfStream = true;
             Records = ReadIndex.EmptyRecords;
+            Metadata = null;
         }
 
         public IndexReadStreamResult(int fromEventNumber, 
                                      int maxCount, 
                                      EventRecord[] records, 
+                                     StreamMetadata metadata,
                                      int nextEventNumber, 
                                      int lastEventNumber, 
                                      bool isEndOfStream)
@@ -45,6 +48,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             Result = ReadStreamResult.Success;
             Records = records;
+            Metadata = metadata;
             NextEventNumber = nextEventNumber;
             LastEventNumber = lastEventNumber;
             IsEndOfStream = isEndOfStream;
@@ -52,12 +56,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public override string ToString()
         {
-            return string.Format("FromEventNumber: {0}, Maxcount: {1}, Result: {2}, Record count: {3}, " 
-                                 + "NextEventNumber: {4}, LastEventNumber: {5}, IsEndOfStream: {6}",
+            return string.Format("FromEventNumber: {0}, Maxcount: {1}, Result: {2}, Record count: {3}, Metadata: {4}, " 
+                                 + "NextEventNumber: {5}, LastEventNumber: {6}, IsEndOfStream: {7}",
                                  FromEventNumber,
                                  MaxCount,
                                  Result,
                                  Records.Length,
+                                 Metadata,
                                  NextEventNumber,
                                  LastEventNumber,
                                  IsEndOfStream);

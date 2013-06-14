@@ -226,7 +226,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.GetQuery message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(_runAs, message)) return;
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Read, _runAs, message)) return;
 
             var emitEnabled = _persistedState.EmitEnabled ?? false;
             message.Envelope.ReplyWith(
@@ -236,7 +236,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.UpdateQuery message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(_runAs, message)) return;
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
 
             Stop(() => DoUpdateQuery(message));
         }
@@ -264,14 +264,14 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Disable message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(_runAs, message)) return;
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             Stop(() => DoDisable(message));
         }
 
         public void Handle(ProjectionManagementMessage.Enable message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(_runAs, message)) return;
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             if (Enabled && _state == ManagedProjectionState.Running)
             {
                 message.Envelope.ReplyWith(
@@ -297,7 +297,8 @@ namespace EventStore.Projections.Core.Services.Management
             _lastAccessed = _timeProvider.Now;
             if (
                 !ProjectionManagementMessage.RunAs.ValidateRunAs(
-                    _runAs, message, message.Action == ProjectionManagementMessage.SetRunAs.SetRemove.Set)) return;
+                    Mode, ReadWrite.Write, _runAs, message,
+                    message.Action == ProjectionManagementMessage.SetRunAs.SetRemove.Set)) return;
 
 
             Stop(
@@ -323,7 +324,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Reset message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(_runAs, message)) return;
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             Stop(
                 () =>
                     {
@@ -342,7 +343,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Delete message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(_runAs, message)) return;
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             Stop(() => DoDelete(message));
         }
 
@@ -488,6 +489,7 @@ namespace EventStore.Projections.Core.Services.Management
                 _lastWrittenVersion = completed.Events[0].Event.EventNumber;
                 FixUpOldFormat(completed, persistedState);
                 FixupOldProjectionModes(persistedState);
+                FixUpOldProjectionRunAs(persistedState);
 
                 LoadPersistedState(persistedState);
                 //TODO: encapsulate this into managed projection
@@ -507,6 +509,15 @@ namespace EventStore.Projections.Core.Services.Management
             _logger.Trace(
                 "Projection manager did not find any projection configuration records in the {0} stream.  Projection stays in CREATING state",
                 completed.EventStreamId);
+        }
+
+        private void FixUpOldProjectionRunAs(PersistedState persistedState)
+        {
+            if (persistedState.RunAs == null || string.IsNullOrEmpty(persistedState.RunAs.Name))
+            {
+                _runAs = SystemAccount.Principal;
+                persistedState.RunAs = SerializePrincipal(ProjectionManagementMessage.RunAs.System);
+            }
         }
 
         private void FixUpOldFormat(ClientMessage.ReadStreamEventsBackwardCompleted completed, PersistedState persistedState)

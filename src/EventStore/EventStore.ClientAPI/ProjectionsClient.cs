@@ -28,6 +28,7 @@
 using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Http;
 using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
@@ -42,77 +43,77 @@ namespace EventStore.ClientAPI
             _client = new HttpAsyncClient(log);
         }
 
-        public Task Enable(IPEndPoint endPoint, string name)
+        public Task Enable(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
         {
-            return SendPost(endPoint.ToHttpUrl("/projection/{0}/command/enable", name), string.Empty, HttpStatusCode.OK);
+            return SendPost(endPoint.ToHttpUrl("/projection/{0}/command/enable", name), string.Empty, userCredentials, HttpStatusCode.OK);
         }
 
-        public Task Disable(IPEndPoint endPoint, string name)
+        public Task Disable(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
         {
-            return SendPost(endPoint.ToHttpUrl("/projection/{0}/command/disable", name), string.Empty, HttpStatusCode.OK);
+            return SendPost(endPoint.ToHttpUrl("/projection/{0}/command/disable", name), string.Empty, userCredentials, HttpStatusCode.OK);
         }
 
-        public Task CreateOneTime(IPEndPoint endPoint, string query)
+        public Task CreateOneTime(IPEndPoint endPoint, string query, UserCredentials userCredentials = null)
         {
-            return SendPost(endPoint.ToHttpUrl("/projections/onetime?type=JS"), query, HttpStatusCode.Created);
+            return SendPost(endPoint.ToHttpUrl("/projections/onetime?type=JS"), query, userCredentials, HttpStatusCode.Created);
         }
 
-        public Task CreateContinuous(IPEndPoint endPoint, string name, string query)
+        public Task CreateContinuous(IPEndPoint endPoint, string name, string query, UserCredentials userCredentials = null)
         {
             return SendPost(endPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS&emit=1", name), 
-                            query, 
-                            HttpStatusCode.Created);
+                            query, userCredentials, HttpStatusCode.Created);
         }
 
-        public Task<string> ListAll(IPEndPoint endPoint)
+        public Task<string> ListAll(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/any"), HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/projections/any"), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> ListOneTime(IPEndPoint endPoint)
+        public Task<string> ListOneTime(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/onetime"), HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/projections/onetime"), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> ListContinuous(IPEndPoint endPoint)
+        public Task<string> ListContinuous(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/continuous"), HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/projections/continuous"), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> GetStatus(IPEndPoint endPoint, string name)
+        public Task<string> GetStatus(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/projection/{0}", name), HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/projection/{0}", name), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> GetState(IPEndPoint endPoint, string name)
+        public Task<string> GetState(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/projection/{0}/state", name), HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/projection/{0}/state", name), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> GetStatistics(IPEndPoint endPoint, string name)
+        public Task<string> GetStatistics(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/projection/{0}/statistics", name), HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/projection/{0}/statistics", name), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> GetQuery(IPEndPoint endPoint, string name)
+        public Task<string> GetQuery(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/projection/{0}/query", name), HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/projection/{0}/query", name), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task UpdateQuery(IPEndPoint endPoint, string name, string query)
+        public Task UpdateQuery(IPEndPoint endPoint, string name, string query, UserCredentials userCredentials = null)
         {
-            return SendPut(endPoint.ToHttpUrl("/projection/{0}/query?type=JS", name), query, HttpStatusCode.OK);
+            return SendPut(endPoint.ToHttpUrl("/projection/{0}/query?type=JS", name), query, userCredentials, HttpStatusCode.OK);
         }
 
-        public Task Delete(IPEndPoint endPoint, string name)
+        public Task Delete(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
         {
-            return SendDelete(endPoint.ToHttpUrl("/projection/{0}", name), HttpStatusCode.OK);
+            return SendDelete(endPoint.ToHttpUrl("/projection/{0}", name), userCredentials, HttpStatusCode.OK);
         }
 
-        private Task<string> SendGet(string url, int expectedCode)
+        private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode)
         {
             var source = new TaskCompletionSource<string>();
             _client.Get(url,
+                        userCredentials,
                         response =>
                         {
                             if (response.HttpStatusCode == expectedCode)
@@ -129,10 +130,11 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        private Task<string> SendDelete(string url, int expectedCode)
+        private Task<string> SendDelete(string url, UserCredentials userCredentials, int expectedCode)
         {
             var source = new TaskCompletionSource<string>();
             _client.Delete(url,
+                           userCredentials,
                            response =>
                            {
                                if (response.HttpStatusCode == expectedCode)
@@ -149,12 +151,13 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        private Task SendPut(string url, string content, int expectedCode)
+        private Task SendPut(string url, string content, UserCredentials userCredentials, int expectedCode)
         {
             var source = new TaskCompletionSource<object>();
             _client.Put(url,
                         content,
                         "application/json",
+                        userCredentials,
                         response =>
                         {
                             if (response.HttpStatusCode == expectedCode)
@@ -171,12 +174,13 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        private Task SendPost(string url, string content, int expectedCode)
+        private Task SendPost(string url, string content, UserCredentials userCredentials, int expectedCode)
         {
             var source = new TaskCompletionSource<object>();
             _client.Post(url,
                          content,
                          "application/json",
+                         userCredentials,
                          response =>
                          {
                              if (response.HttpStatusCode == expectedCode)

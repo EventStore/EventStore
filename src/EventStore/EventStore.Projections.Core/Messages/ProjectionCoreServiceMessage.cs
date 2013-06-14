@@ -36,14 +36,21 @@ namespace EventStore.Projections.Core.Messages
     {
         public class StartCore : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
         }
 
         public class StopCore : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
         }
 
         public class Connected : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly TcpConnectionManager _connection;
 
             public Connected(TcpConnectionManager connection)
@@ -59,6 +66,9 @@ namespace EventStore.Projections.Core.Messages
 
         public class CoreTick : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly Action _action;
 
             public CoreTick(Action action)

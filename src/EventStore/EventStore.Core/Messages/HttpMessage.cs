@@ -43,6 +43,9 @@ namespace EventStore.Core.Messages
     {
         public abstract class HttpSendMessage : Message, IQueueAffineMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public int QueueId { get { return HttpEntityManager.GetHashCode(); } }
 
             public readonly IEnvelope Envelope;
@@ -60,6 +63,9 @@ namespace EventStore.Core.Messages
 
         public class HttpSend : HttpSendMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly string Data;
             public readonly ResponseConfiguration Configuration;
             public readonly Message Message;
@@ -76,6 +82,9 @@ namespace EventStore.Core.Messages
 
         public class HttpBeginSend : HttpSendMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly ResponseConfiguration Configuration;
 
             public HttpBeginSend(Guid correlationId, IEnvelope envelope, 
@@ -88,6 +97,9 @@ namespace EventStore.Core.Messages
 
         public class HttpSendPart : HttpSendMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly string Data;
 
             public HttpSendPart(Guid correlationId, IEnvelope envelope, HttpEntityManager httpEntityManager, string data)
@@ -99,6 +111,9 @@ namespace EventStore.Core.Messages
 
         public class HttpEndSend : HttpSendMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public HttpEndSend(Guid correlationId, IEnvelope envelope, HttpEntityManager httpEntityManager)
                 : base(correlationId, envelope, httpEntityManager)
             {
@@ -107,6 +122,9 @@ namespace EventStore.Core.Messages
 
         public class HttpCompleted : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
             public readonly HttpEntityManager HttpEntityManager;
 
@@ -119,6 +137,9 @@ namespace EventStore.Core.Messages
 
         public class DeniedToHandle : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly DenialReason Reason;
             public readonly string Details;
 
@@ -131,6 +152,9 @@ namespace EventStore.Core.Messages
 
         public class SendOverHttp : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly IPEndPoint EndPoint;
             public readonly Message Message;
 
@@ -143,6 +167,9 @@ namespace EventStore.Core.Messages
 
         public class GossipSendFailed : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Exception Exception;
             public string Reason;
             public IPEndPoint Recipient;
@@ -162,6 +189,9 @@ namespace EventStore.Core.Messages
 
         public class PurgeTimedOutRequests : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly ServiceAccessibility Accessibility;
 
             public PurgeTimedOutRequests(ServiceAccessibility accessibility)
@@ -170,34 +200,11 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class HttpForwardRequestedMessage : Message
-        {
-            public readonly HttpEntityManager Manager;
-
-            public HttpForwardRequestedMessage(HttpEntityManager manager)
-            {
-                Ensure.NotNull(manager, "manager");
-                Manager = manager;
-            }
-        }
-
-        public class HttpForwardMessage : Message
-        {
-            public readonly HttpEntityManager Manager;
-            public readonly Uri BaseUri;
-
-            public HttpForwardMessage(HttpEntityManager manager, Uri baseUri)
-            {
-                Ensure.NotNull(manager, "manager");
-                Ensure.NotNull(baseUri, "baseUri");
-
-                Manager = manager;
-                BaseUri = baseUri;
-            }
-        }
-
         public class TextMessage : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public string Text { get; set; }
 
             public TextMessage()
