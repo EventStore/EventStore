@@ -47,7 +47,6 @@ Properties {
     $baseDirectory = Resolve-Path .
     $srcDirectory = Join-Path $baseDirectory (Join-Path "src" "EventStore")
     $libsDirectory = Join-Path $srcDirectory "libs"
-    $patchesDirectory = Join-Path $baseDirectory "patches"
 }
 
 # Dependencies
