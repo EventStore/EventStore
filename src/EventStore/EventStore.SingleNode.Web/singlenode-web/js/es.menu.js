@@ -13,10 +13,9 @@
         { "name": "Health Charts", "link": "/web/health-charts.htm", "className": "" },
         { "name": "Queues", "link": "/web/queues.htm", "className": "" },
         { "name": "Users", "link": "/web/users/users.htm", "className": "" },
-        { "name": "MyAccount", "link": "/web/users/my_account.htm", "className": "" },
-        { "name": "Gossip", "link": "/web/gossip.htm", "className": "" }
+        { "name": "MyAccount", "link": "/web/users/my_account.htm", "className": "" }
     ];
-
+    
     var buildMenuMaxTryCount = 60;
 
     function buildMenu() {
