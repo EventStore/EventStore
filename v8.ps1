@@ -19,6 +19,10 @@ Task ? -description "Writes script documentation to the host" {
     Write-Host "line (although that is possible) - instead it is anticipated that these tasks will"
     Write-Host "be used by other parts of the Event Store build."
     Write-Host ""
+    Write-Host "IMPORTANT: We guess about which platform toolset to use based on observation of"
+    Write-Host "where various directories are when VS2012, VS2010 or the Windows SDK 7.1 are installed."
+    Write-Host "If you don't like our guess, pass in the platformToolset parameter."
+    Write-Host ""
     Write-Host "Tasks of note:"
     Write-Host ""
     Write-Host "    - Build-V8Libraries     - cleans V8 repositories, builds V8 and copies the"
@@ -33,6 +37,7 @@ Task ? -description "Writes script documentation to the host" {
     Write-Host "                              - Parameters:"
     Write-Host "                                   - platform      - either x86 or x64"
     Write-Host "                                   - configuration - either Debug or Release"
+    Write-Host "                                   - platformtoolset - v110, v100, or Windows7.1SDK"
     Write-Host ""
 }
 
@@ -102,7 +107,7 @@ Task Build-V8 {
     if ($platform -eq "x64") {
         $v8VisualStudioPlatform = "x64"
         $v8Platform = "x64"
-	$v8PlatformParameter = "-Dtarget_arch=x64"
+	    $v8PlatformParameter = "-Dtarget_arch=x64"
     } elseif ($platform -eq "x86") {
         $v8VisualStudioPlatform = "Win32"
         $v8Platform = ""
@@ -122,8 +127,10 @@ Task Build-V8 {
     $commonGypiPath = Join-Path $v8Directory (Join-Path "build" "common.gypi")
     $includeParameter = "-I$commonGypiPath"
 
+    $platformToolset = Get-BestGuessOfPlatformToolsetOrDie
+
     Exec { & $pythonExecutable $gypFile $includeParameter $v8PlatformParameter }
-    Exec { msbuild .\build\all.sln /m /p:Configuration=$v8VisualStudioConfiguration /p:Platform=$v8VisualStudioPlatform }
+    Exec { msbuild .\build\all.sln /m /p:Configuration=$v8VisualStudioConfiguration /p:Platform=$v8VisualStudioPlatform /p:PlatformToolset=$platformToolset }
     Pop-Location
 }
 
@@ -140,11 +147,11 @@ Task Copy-V8ToLibs -Depends Build-V8 {
     }
 
     if ($platform -eq "x64") {
-	$v8LibsDestination = Join-Path $libsDirectory "x64"
+	    $v8LibsDestination = Join-Path $libsDirectory "x64"
     } elseif ($platform -eq "x86") {
-	$v8LibsDestination = Join-Path $libsDirectory "Win32"
+	    $v8LibsDestination = Join-Path $libsDirectory "Win32"
     } else {
-	throw "Configuration $configuration is not supported."
+	    throw "Configuration $configuration is not supported."
     }
 
     $v8IncludeDestination = Join-Path $libsDirectory "include"
@@ -270,6 +277,44 @@ Function Get-SvnRepoAtRevision
             Write-Verbose "$localPathSvnDirectory not found"
             Write-Verbose $checkingOutString
             Exec { svn checkout --quiet $revisionString $repositoryAddress $localPath }
+        }
+    }
+}
+
+Function Get-BestGuessOfPlatformToolsetOrDie {
+    [CmdletBinding()]
+    Param(
+        [Parameter()][string]$platform = "x64"
+    )
+    Process {
+        if (Test-Path 'Env:\ProgramFiles(x86)') {
+            $programFiles = ${env:ProgramFiles(x86)}
+        } else {
+            $programFiles = ${env:ProgramFiles}
+        }
+
+        $mscppDir = Join-Path $programFiles (Join-Path "MSBuild" (Join-Path "Microsoft.Cpp" "v4.0"))
+
+        Assert (Test-Path $mscppDir) "$mscppDir does not exist. It appears this machine either does not have MSBuild and C++ installed, or it's in a weird place. Specify the platform toolset manually as a parameter."
+
+        #We'll prefer to use the V110 toolset if it's available
+        $potentialV110Dir = Join-Path $mscppDir "V110"
+        if (Test-Path $potentialV110Dir) {
+            return "V110"
+        }
+
+        #Failing that, we'll have to look inside a platform to figure out which ones are there
+        $platformToolsetsDir = Join-Path $mscppDir (Join-Path "Platforms" (Join-Path $platform "PlatformToolsets"))
+
+        Assert (Test-Path $platformToolsetsDir) "Neither a V110 directory not a Platforms directory exists. Specify the platform toolset manually as a parameter."
+
+        #If we have Windows7.1SDK we'll take that, otherwise we'll assume V100
+        if (Test-Path (Join-Path $platformToolsetsDir "Windows7.1SDK")) {
+            return "Windows7.1SDK"
+        } elseif (Test-Path (Join-Path $platformToolsetsDir "V100")) { 
+            return "V100"
+        } else {
+            Assert ($false) "Can't find any supported platform toolset (V100, V110, Windows7.1SDK). It's possible that this detection is wrong, in which case you should specify the platform toolset manually as a parameter."
         }
     }
 }
