@@ -29,15 +29,16 @@ Task ? -description "Writes script documentation to the host" {
     Write-Host "                              headers and libraries to the libs directory"
     Write-Host "                              **NOTE: This can take considerable time!**"
     Write-Host ""
+    Write-Host "                              - Parameters:"
+    Write-Host "                                - (required) platform      - either x86 or x64"
+    Write-Host "                                - (required) configuration - either Debug or Release"
+    Write-Host "                                - (optional) platformToolset - v110, v100, or Windows7.1SDK"
+    Write-Host ""
     Write-Host "    - Get-V8AndDependencies - this will clone the V8 repository and dependendencies"
     Write-Host "                              (some of which come from Subversion). This script"
     Write-Host "                              is only intended for Windows and consequently gets"
     Write-Host "                              python and cygwin as well as V8 and Gyp."
     Write-Host "                              **NOTE: This requires network access!**"
-    Write-Host "                              - Parameters:"
-    Write-Host "                                   - platform      - either x86 or x64"
-    Write-Host "                                   - configuration - either Debug or Release"
-    Write-Host "                                   - platformtoolset - v110, v100, or Windows7.1SDK"
     Write-Host ""
 }
 
@@ -127,7 +128,9 @@ Task Build-V8 {
     $commonGypiPath = Join-Path $v8Directory (Join-Path "build" "common.gypi")
     $includeParameter = "-I$commonGypiPath"
 
-    $platformToolset = Get-BestGuessOfPlatformToolsetOrDie
+    if ($platformToolset -eq $null) {
+        $platformToolset = Get-BestGuessOfPlatformToolsetOrDie($v8VisualStudioPlatform)
+    }
 
     Exec { & $pythonExecutable $gypFile $includeParameter $v8PlatformParameter }
     Exec { msbuild .\build\all.sln /m /p:Configuration=$v8VisualStudioConfiguration /p:Platform=$v8VisualStudioPlatform /p:PlatformToolset=$platformToolset }
