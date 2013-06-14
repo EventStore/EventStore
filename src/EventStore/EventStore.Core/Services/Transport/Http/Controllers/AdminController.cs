@@ -47,11 +47,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service)
         {
-            service.RegisterControllerAction(new ControllerAction("/admin/halt", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+            service.RegisterControllerAction(new ControllerAction("/admin/halt", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs),
                                              OnPostHalt);
-            service.RegisterControllerAction(new ControllerAction("/admin/shutdown", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), 
+            service.RegisterControllerAction(new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), 
                                              OnPostShutdown);
-            service.RegisterControllerAction(new ControllerAction("/admin/scavenge", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+            service.RegisterControllerAction(new ControllerAction("/admin/scavenge", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs),
                                              OnPostScavenge);
         }
 
