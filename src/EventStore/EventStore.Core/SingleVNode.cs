@@ -174,7 +174,7 @@ namespace EventStore.Core
             var storageScavenger = new StorageScavenger(db,
                                                         readIndex,
                                                         Application.IsDefined(Application.AlwaysKeepScavenged),
-                                                        !Application.IsDefined(Application.DisableMergeChunks));
+                                                        mergeChunks: false /*!Application.IsDefined(Application.DisableMergeChunks)*/);
             // ReSharper disable RedundantTypeArgumentsOfMethod
             _mainBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
             // ReSharper restore RedundantTypeArgumentsOfMethod
