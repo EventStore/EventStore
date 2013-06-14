@@ -95,7 +95,7 @@ Task Build-js1 {
 }
 
 Task Build-EventStore {
-    Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform="Any CPU" }
+    Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform="Any CPU" /p:OutDir=$outputDirectory }
 }
 
 
