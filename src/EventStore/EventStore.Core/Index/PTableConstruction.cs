@@ -52,14 +52,15 @@ namespace EventStore.Core.Index
 
             //Log.Trace("Started dumping MemTable [{0}] into PTable...", table.Id);
             var sw = Stopwatch.StartNew();
-            using (var fs = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 8096, FileOptions.SequentialScan))
+            using (var fs = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite, FileShare.None,
+                                           DefaultSequentialBufferSize, FileOptions.SequentialScan))
             {
                 fs.SetLength(PTableHeader.Size + IndexEntrySize * (long)table.Count + MD5Size); // EXACT SIZE
                 fs.Seek(0, SeekOrigin.Begin);
 
                 using (var md5 = MD5.Create())
                 using (var cs = new CryptoStream(fs, md5, CryptoStreamMode.Write))
-                using (var bs = new BufferedStream(cs, 65536))
+                using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize))
                 {
                     // WRITE HEADER
                     var headerBytes = new PTableHeader(Version).AsByteArray();
@@ -112,14 +113,15 @@ namespace EventStore.Core.Index
                 }
             }
 
-            using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 1024 * 1024, FileOptions.SequentialScan))
+            using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
+                                          DefaultSequentialBufferSize, FileOptions.SequentialScan))
             {
                 f.SetLength(fileSize);
                 f.Seek(0, SeekOrigin.Begin);
 
                 using (var md5 = MD5.Create())
                 using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
-                using (var bs = new BufferedStream(cs, 65536))
+                using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize))
                 {
                     // WRITE HEADER
                     var headerBytes = new PTableHeader(Version).AsByteArray();
@@ -171,14 +173,15 @@ namespace EventStore.Core.Index
             Log.Trace("PTables merge started (specialized for <= 2 tables).");
             var watch = Stopwatch.StartNew();
 
-            using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 1024 * 1024, FileOptions.SequentialScan))
+            using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
+                                          DefaultSequentialBufferSize, FileOptions.SequentialScan))
             {
                 f.SetLength(fileSize);
                 f.Seek(0, SeekOrigin.Begin);
 
                 using (var md5 = MD5.Create())
                 using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
-                using (var bs = new BufferedStream(cs, 65536))
+                using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize))
                 {
                     // WRITE HEADER
                     var headerBytes = new PTableHeader(Version).AsByteArray();

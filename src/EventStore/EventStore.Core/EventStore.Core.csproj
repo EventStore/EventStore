@@ -88,7 +88,8 @@
     <Compile Include="Bus\IPublisher.cs" />
     <Compile Include="Bus\IHandle.cs" />
     <Compile Include="Bus\QueueMonitor.cs" />
-    <Compile Include="Cluster\VNodeState.cs" />
+    <Compile Include="Data\VNodeInfo.cs" />
+    <Compile Include="Data\VNodeState.cs" />
     <Compile Include="DataStructures\ILRUCache.cs" />
     <Compile Include="DataStructures\LRUCache.cs" />
     <Compile Include="DataStructures\NoLRUCache.cs" />
@@ -273,7 +274,6 @@
     <Compile Include="Services\Transport\Http\Controllers\AtomController.cs" />
     <Compile Include="Services\Transport\Http\Convert.cs" />
     <Compile Include="Services\Transport\Http\HttpMessagePipe.cs" />
-    <Compile Include="Services\Transport\Http\IController.cs" />
     <Compile Include="Services\Transport\Http\ResponseConfiguration.cs" />
     <Compile Include="Data\Event.cs" />
     <Compile Include="Data\ExpectedVersion.cs" />

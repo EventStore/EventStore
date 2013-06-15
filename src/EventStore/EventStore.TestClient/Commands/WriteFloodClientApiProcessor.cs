@@ -94,7 +94,7 @@ namespace EventStore.TestClient.Commands
                     .UseConsoleLogger()
                     .EnableOperationsForwarding()
                     .LimitReconnectionsTo(10)
-                    .LimitRetriesForOperationTo(0)
+                    .LimitRetriesForOperationTo(10)
                     .LimitOperationsQueueTo(10000)
                     .LimitConcurrentOperationsTo(context.Client.Options.WriteWindow/clientsCnt)
                     .OnClosed((conn, reason) => { })

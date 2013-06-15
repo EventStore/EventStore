@@ -47,8 +47,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
     public unsafe partial class TFChunk : IDisposable
     {
         public const byte CurrentChunkVersion = 2;
-        public const int WriteBufferSize = 4096;
-        public const int ReadBufferSize = 512;
+        public const int WriteBufferSize = 8192;
+        public const int ReadBufferSize = 8192;
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunk>();
 
@@ -181,6 +181,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 throw new CorruptDatabaseException(new ChunkNotFoundException(_filename));
 
             _isReadOnly = true;
+            SetAttributes();
             CreateReaderStreams();
 
             var reader = GetReaderWorkItem();
@@ -218,7 +219,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             _readSide = _chunkHeader.IsScavenged ? (IChunkReadSide) new TFChunkReadSideScavenged(this) : new TFChunkReadSideUnscavenged(this);
             _readSide.Cache();
 
-            SetAttributes();
             if (verifyHash)
                 VerifyFileHash();
         }
@@ -233,12 +233,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             _physicalDataSize = 0;
             _logicalDataSize = 0;
 
+            SetAttributes();
             CreateWriterWorkItemForNewChunk(chunkHeader, fileSize);
             CreateReaderStreams();
 
             _readSide = chunkHeader.IsScavenged ? (IChunkReadSide) new TFChunkReadSideScavenged(this) : new TFChunkReadSideUnscavenged(this);
 
-            SetAttributes();
         }
 
         private void InitOngoing(int writePosition, bool checkSize)
@@ -251,6 +251,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             _physicalDataSize = writePosition;
             _logicalDataSize = writePosition;
 
+            SetAttributes();
             CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
             if (_chunkHeader.Version != CurrentChunkVersion)
                 throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
@@ -269,7 +270,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 }
             }
             _readSide = new TFChunkReadSideUnscavenged(this);
-            SetAttributes();
         }
 
         private void CreateReaderStreams()
@@ -332,12 +332,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private void SetAttributes()
         {
+            // in mono SetAttributes on non-existing file throws exception, in windows it just works silently.
             Helper.EatException(() =>
             {
-                // in mono SetAttributes on non-existing file throws exception, in windows it just works silently.
-                File.SetAttributes(_filename, FileAttributes.ReadOnly);
-                File.SetAttributes(_filename, FileAttributes.Temporary); // helps to tell to OS to cache in memory
-                File.SetAttributes(_filename, FileAttributes.NotContentIndexed);
+                if (_isReadOnly)
+                    File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
+                else
+                    File.SetAttributes(_filename, FileAttributes.NotContentIndexed);
             });
         }
 
@@ -476,7 +477,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     using (var unmanagedStream = new UnmanagedMemoryStream((byte*)cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite))
                     {
                         workItem.Stream.Seek(0, SeekOrigin.Begin);
-                        var buffer = new byte[4096];
+                        var buffer = new byte[65536];
                         // in ongoing chunk there is no need to read everything, it's enough to read just actual data written
                         int toRead = _isReadOnly ? _cachedLength : ChunkHeader.Size + _physicalDataSize; 
                         while (toRead > 0)
@@ -672,6 +673,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             CleanUpWriterWorkItem(_writerWorkItem);
             _writerWorkItem = null;
+            SetAttributes();
         }
 
         public void CompleteRaw()
@@ -686,6 +688,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             CleanUpWriterWorkItem(_writerWorkItem);
             _writerWorkItem = null;
+            SetAttributes();
         }
 
         private ChunkFooter WriteFooter(ICollection<PosMap> mapping)

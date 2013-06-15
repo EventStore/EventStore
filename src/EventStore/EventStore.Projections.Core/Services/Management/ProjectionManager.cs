@@ -33,7 +33,6 @@ using System.Text;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;

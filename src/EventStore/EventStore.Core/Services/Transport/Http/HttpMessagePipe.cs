@@ -26,7 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
@@ -35,12 +35,12 @@ namespace EventStore.Core.Services.Transport.Http
 {
     public class HttpMessagePipe
     {
-        private readonly Dictionary<Type, IMessageSender> _senders = new Dictionary<Type, IMessageSender>();
+        private readonly ConcurrentDictionary<Type, IMessageSender> _senders = new ConcurrentDictionary<Type, IMessageSender>();
 
         public void RegisterSender<T>(ISender<T> sender) where T : Message
         {
             Ensure.NotNull(sender, "sender");
-            _senders.Add(typeof (T), new MessageSender<T>(sender));
+            _senders.TryAdd(typeof (T), new MessageSender<T>(sender));
         }
 
         public void Push(Message message, IPEndPoint endPoint)

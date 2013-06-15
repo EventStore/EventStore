@@ -38,7 +38,7 @@ using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
-    public abstract class CommunicationController : IController
+    public abstract class CommunicationController : IHttpController
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<CommunicationController>();
 
@@ -60,15 +60,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _publisher.Publish(message);
         }
 
-        public void Subscribe(IHttpService service, HttpMessagePipe pipe)
+        public void Subscribe(IHttpService service)
         {
             Ensure.NotNull(service, "service");
-            Ensure.NotNull(pipe, "pipe");
-
-            SubscribeCore(service, pipe);
+            SubscribeCore(service);
         }
 
-        protected abstract void SubscribeCore(IHttpService service, HttpMessagePipe pipe);
+        protected abstract void SubscribeCore(IHttpService service);
 
         protected void SendBadRequest(HttpEntityManager httpEntityManager, string reason)
         {

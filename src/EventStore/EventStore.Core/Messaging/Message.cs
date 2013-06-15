@@ -32,6 +32,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using EventStore.Common.Log;
 
 namespace EventStore.Core.Messaging
 {
@@ -44,6 +45,8 @@ namespace EventStore.Core.Messaging
 
     public static class MessageHierarchy
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor(typeof(MessageHierarchy));
+
         public static readonly Dictionary<Type, List<Type>> Descendants;
         public static readonly int[][] ParentsByTypeId;
         public static readonly int[][] DescendantsByTypeId;
@@ -74,7 +77,7 @@ namespace EventStore.Core.Messaging
                     parents.Add(msgTypeId, new List<int>());
 
                     MaxMsgTypeId = Math.Max(msgTypeId, MaxMsgTypeId);
-                    //Console.WriteLine("Found {0} with MsgTypeId {1}", msgType.Name, msgTypeId);
+                    //Log.WriteLine("Found {0} with MsgTypeId {1}", msgType.Name, msgTypeId);
 
                     var type = msgType;
                     while (true)
@@ -117,9 +120,9 @@ namespace EventStore.Core.Messaging
 
                 foreach (var wrongType in wrongTypes)
                 {
-                    Console.WriteLine("MsgTypeId {0} is assigned to type: {1}",
-                                      wrongType.TypeId,
-                                      string.Join(", ", wrongType.MsgTypes.Select(x => x.Name)));
+                    Log.Fatal("MsgTypeId {0} is assigned to type: {1}",
+                              wrongType.TypeId,
+                              string.Join(", ", wrongType.MsgTypes.Select(x => x.Name)));
                 }
 
                 throw new Exception("Incorrect Message Type IDs setup.");
@@ -149,7 +152,7 @@ namespace EventStore.Core.Messaging
                 DescendantsByType.Add(typeIdMap.Key, DescendantsByTypeId[typeIdMap.Value]);
             }
 
-            Console.WriteLine("MessageHierarchy initialization took {0}.", sw.Elapsed);
+            Log.Trace("MessageHierarchy initialization took {0}.", sw.Elapsed);
         }
 
         private static int GetMsgTypeId(Type msgType)

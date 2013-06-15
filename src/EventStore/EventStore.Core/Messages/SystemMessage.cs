@@ -28,7 +28,7 @@
 using System;
 using System.Net;
 using EventStore.Common.Utils;
-using EventStore.Core.Cluster;
+using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages
@@ -115,6 +115,72 @@ namespace EventStore.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             public BecomeShutdown(Guid correlationId): base(correlationId, VNodeState.Shutdown)
+            {
+            }
+        }
+
+        public class BecomeUnknown : StateChangeMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public BecomeUnknown(Guid correlationId)
+                : base(correlationId, VNodeState.Unknown)
+            {
+            }
+        }
+
+        public abstract class ReplicaStateMessage : StateChangeMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly VNodeInfo Master;
+
+            protected ReplicaStateMessage(Guid correlationId, VNodeState state, VNodeInfo master)
+                : base(correlationId, state)
+            {
+                Ensure.NotNull(master, "master");
+                Master = master;
+            }
+        }
+
+        public class BecomePreReplica : ReplicaStateMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public BecomePreReplica(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.PreReplica, master)
+            {
+            }
+        }
+
+        public class BecomeCatchingUp : ReplicaStateMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public BecomeCatchingUp(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.CatchingUp, master)
+            {
+            }
+        }
+
+        public class BecomeClone : ReplicaStateMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public BecomeClone(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.Clone, master)
+            {
+            }
+        }
+
+        public class BecomeSlave : ReplicaStateMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public BecomeSlave(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.Slave, master)
             {
             }
         }

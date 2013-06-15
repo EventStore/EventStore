@@ -200,38 +200,6 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class HttpForwardRequestedMessage : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            public readonly HttpEntityManager Manager;
-
-            public HttpForwardRequestedMessage(HttpEntityManager manager)
-            {
-                Ensure.NotNull(manager, "manager");
-                Manager = manager;
-            }
-        }
-
-        public class HttpForwardMessage : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            public readonly HttpEntityManager Manager;
-            public readonly Uri BaseUri;
-
-            public HttpForwardMessage(HttpEntityManager manager, Uri baseUri)
-            {
-                Ensure.NotNull(manager, "manager");
-                Ensure.NotNull(baseUri, "baseUri");
-
-                Manager = manager;
-                BaseUri = baseUri;
-            }
-        }
-
         public class TextMessage : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

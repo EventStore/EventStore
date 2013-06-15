@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,10 +25,30 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-namespace EventStore.Core.Services.Transport.Http
+namespace EventStore.Core.Data
 {
-    public interface IController
+    public enum VNodeState
     {
-        void Subscribe(IHttpService service, HttpMessagePipe pipe);
+        Initializing,
+        Unknown,
+        PreReplica,
+        CatchingUp,
+        Clone,
+        Slave,
+        PreMaster,
+        Master,
+        Manager,
+        ShuttingDown,
+        Shutdown
+    }
+
+    public static class VNodeStateExtensions
+    {
+        public static bool IsReplica(this VNodeState state)
+        {
+            return state == VNodeState.CatchingUp 
+                || state == VNodeState.Clone 
+                || state == VNodeState.Slave;
+        }
     }
 }
