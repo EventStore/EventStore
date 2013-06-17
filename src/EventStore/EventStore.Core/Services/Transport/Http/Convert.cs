@@ -49,6 +49,7 @@ namespace EventStore.Core.Services.Transport.Http
             var self = HostName.Combine(requestedUrl, "/streams/{0}", escapedStreamId);
             var feed = new FeedElement();
             feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
+            feed.StreamId = msg.EventStreamId;
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
@@ -79,6 +80,7 @@ namespace EventStore.Core.Services.Transport.Http
             var self = HostName.Combine(requestedUrl, "/streams/{0}", escapedStreamId);
             var feed = new FeedElement();
             feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
+            feed.StreamId = msg.EventStreamId;
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);

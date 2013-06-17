@@ -41,7 +41,6 @@
 <script>
     $(function() {
         var eTag = '{{:eTag}}';
-
         function schedule() {
             setTimeout(function() {
                 var dataUrl = data.selfUrl + "?embed=tryharder";
@@ -71,7 +70,7 @@
 </script>
 {{/if}}
 
-<div id="edit-acl-dialog" class="dialog" style="display: none;">
+<div id="edit-acl-dialog" class="dialog" style="display: none;" >
     <form id="edit-acl-form" class="form-horizontal">
         <div class="control-group">
             <label class="control-label add-on" for="r-group">Reader</label>
@@ -127,6 +126,13 @@
                 title: "Edit ACL",
                 autoResize: true,
                 open: function (event, ui) {
+                    $.getJSON("/streams/$$" + data.streamId + "/head", null, function (d) {
+                        $('#r-group').val(d.readRole);
+                        $('#w-group').val(d.writeRole);
+                        $('#d-group').val(d.deleteRole);
+                        $('#mr-group').val(d.metaReadRole);
+                        $('mw-group').val(d.$metaWriteRole);
+                    });
                 }
             });
 
