@@ -339,12 +339,16 @@ namespace EventStore.Projections.Core.Services.Processing
             _submittedWriteMetastreamEvent = _streamId.StartsWith("$")
                                                  ? new Event(
                                                        Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
-                                                       new StreamAcl(
-                                                           SystemUserGroups.All, null, null, SystemUserGroups.All, null)
-                                                           .ToJsonBytes(), null)
+                                                       new StreamMetadata(
+                                                           null, null, null,
+                                                           new StreamAcl(
+                                                               SystemUserGroups.All, null, null, SystemUserGroups.All,
+                                                               null)).ToJsonBytes(), null)
                                                  : new Event(
                                                        Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
-                                                       new StreamAcl(null, null, null, null, null).ToJsonBytes(), null);
+                                                       new StreamMetadata(
+                                                           null, null, null, new StreamAcl(null, null, null, null, null))
+                                                           .ToJsonBytes(), null);
             _awaitingMetadataWriteCompleted = true;
             PublishWriteMetaStream();
         }
