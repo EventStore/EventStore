@@ -57,8 +57,8 @@ namespace EventStore.Core.Settings
 
         public const int CachedPrincipalCount = 1000;
 
-        public static readonly TimeSpan InternalHeartbeatInterval = TimeSpan.FromMilliseconds(200);
-        public static readonly TimeSpan InternalHeartbeatTimeout = TimeSpan.FromMilliseconds(300);
+        public static readonly TimeSpan InternalHeartbeatInterval = TimeSpan.FromMilliseconds(700);
+        public static readonly TimeSpan InternalHeartbeatTimeout = TimeSpan.FromMilliseconds(1000);
         public static readonly TimeSpan ExternalHeartbeatInterval = TimeSpan.FromMilliseconds(3000);
         public static readonly TimeSpan ExternalHeartbeatTimeout = TimeSpan.FromMilliseconds(5000);
     }
