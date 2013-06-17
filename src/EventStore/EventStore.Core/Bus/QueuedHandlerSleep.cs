@@ -107,7 +107,9 @@ namespace EventStore.Core.Bus
         {
             _queueStats.Start();
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
-            
+
+            const int spinmax = 5000;
+            var iterationsCount = 0;
             while (!_stop)
             {
                 Message msg = null;
@@ -116,7 +118,16 @@ namespace EventStore.Core.Bus
                     if (!_queue.TryDequeue(out msg))
                     {
                         _queueStats.EnterIdle();
-                        Thread.Sleep(1);
+
+                        iterationsCount += 1;
+                        if (iterationsCount < spinmax)
+                        {
+                            //do nothing... spin
+                        }
+                        else
+                        {
+                            Thread.Sleep(1);
+                        }
                     }
                     else
                     {
