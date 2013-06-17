@@ -40,6 +40,7 @@ namespace EventStore.Transport.Http.Atom
         public string Title { get; set; }
         public string Id { get; set; }
         public string Updated { get; set; }
+        public string StreamId { get; set; }
         public PersonElement Author { get; set; }
 
         public List<LinkElement> Links { get; set; }

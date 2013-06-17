@@ -1,4 +1,15 @@
 ﻿<h1>{{:title}}</h1>
+<div class="row">
+    <div class="span12">
+        <div id="commands-container">
+            <ul style="display: inline;">
+                <li><a id="edit-stream-acl" href="#" class='btn'>
+                    Edit ACL</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
 <div>
     {{for links}}
     <div style="display: inline-block"><a href="{{:uri}}">[{{:relation}}] </a></div>
@@ -30,7 +41,6 @@
 <script>
     $(function() {
         var eTag = '{{:eTag}}';
-
         function schedule() {
             setTimeout(function() {
                 var dataUrl = data.selfUrl + "?embed=tryharder";
@@ -59,3 +69,79 @@
     });
 </script>
 {{/if}}
+
+<div id="edit-acl-dialog" class="dialog" style="display: none;" >
+    <form id="edit-acl-form" class="form-horizontal">
+        <div class="control-group">
+            <label class="control-label add-on" for="r-group">Reader</label>
+            <div class="controls">
+                <input type="text" id="r-group" name="r-group"/>
+                <span class="help-inline"></span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label add-on" for="w-group">Writer</label>
+            <div class="controls">
+                <input type="text" id="w-group" name="w-group"/>
+                <span class="help-inline"></span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label add-on" for="d-group">Deleter</label>
+            <div class="controls">
+                <input type="text" id="d-group" name="d-group"/>
+                <span class="help-inline"></span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label add-on" for="mr-group">Meta Reader</label>
+            <div class="controls">
+                <input type="text" id="mr-group" name="mr-group"/>
+                <span class="help-inline"></span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label class="control-label add-on" for="mw-group">Meta Writer</label>
+            <div class="controls">
+                <input type="text" id="mw-group" name="mw-group"/>
+                <span class="help-inline"></span>
+            </div>
+        </div>
+        <div class="commands-container" style="text-align: right;">
+            <ul style="display: inline">
+                <li><a href="#" class="btn btn-primary" id="button-ok">Create</a></li>
+                <li><a href="#" class="btn" id="button-cancel">Cancel</a></li>
+            </ul>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(function () {
+        $('#edit-stream-acl').click(function () {
+            $("#edit-acl-dialog").dialog({
+                modal: true,
+                width: 600,
+                height: 360,
+                title: "Edit ACL",
+                autoResize: true,
+                open: function (event, ui) {
+                    $.getJSON("/streams/$$" + data.streamId + "/head", null, function (d) {
+                        if (d && d.$acl) {
+                            $('#r-group').val(d.$acl.$r);
+                            $('#w-group').val(d.$acl.$w);
+                            $('#d-group').val(d.$acl.$d);
+                            $('#mr-group').val(d.$acl.$mr);
+                            $('mw-group').val(d.$acl.$mw);
+                        }
+                    });
+                }
+            });
+
+        });
+
+        $('#button-ok').click(function() {
+            $("#edit-acl-dialog").dialog("close");
+        });
+    });
+</script>
