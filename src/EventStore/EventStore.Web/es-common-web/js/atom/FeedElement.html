@@ -127,11 +127,13 @@
                 autoResize: true,
                 open: function (event, ui) {
                     $.getJSON("/streams/$$" + data.streamId + "/head", null, function (d) {
-                        $('#r-group').val(d.readRole);
-                        $('#w-group').val(d.writeRole);
-                        $('#d-group').val(d.deleteRole);
-                        $('#mr-group').val(d.metaReadRole);
-                        $('mw-group').val(d.$metaWriteRole);
+                        if (d && d.$acl) {
+                            $('#r-group').val(d.$acl.$r);
+                            $('#w-group').val(d.$acl.$w);
+                            $('#d-group').val(d.$acl.$d);
+                            $('#mr-group').val(d.$acl.$mr);
+                            $('mw-group').val(d.$acl.$mw);
+                        }
                     });
                 }
             });
