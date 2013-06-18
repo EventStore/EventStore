@@ -36,7 +36,7 @@ namespace EventStore.Core.Bus
 #if __MonoCS__
         QueuedHandlerAutoReset,
 #else
-        QueuedHandlerMRES,
+        QueuedHandlerSleep,
 #endif
         IQueuedHandler
     {
