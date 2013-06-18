@@ -267,6 +267,7 @@ namespace EventStore.Core
             _httpService.SetupController(new PingController());
             _httpService.SetupController(new StatController(monitoringQueue, _workersHandler));
             _httpService.SetupController(new AtomController(httpSendService, _mainQueue, _workersHandler));
+            _httpService.SetupController(new GuidController(_mainQueue));
             _httpService.SetupController(new UsersController(httpSendService, _mainQueue, _workersHandler));
 
             _mainBus.Subscribe<SystemMessage.SystemInit>(_httpService);

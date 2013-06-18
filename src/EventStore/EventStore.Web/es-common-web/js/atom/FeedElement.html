@@ -109,7 +109,7 @@
         </div>
         <div class="commands-container" style="text-align: right;">
             <ul style="display: inline">
-                <li><a href="#" class="btn btn-primary" id="button-ok">Create</a></li>
+                <li><a href="#" class="btn btn-primary" id="button-ok">Save</a></li>
                 <li><a href="#" class="btn" id="button-cancel">Cancel</a></li>
             </ul>
         </div>
@@ -118,6 +118,7 @@
 
 <script>
     $(function () {
+        var loadedMetaData = null;
         $('#edit-stream-acl').click(function () {
             $("#edit-acl-dialog").dialog({
                 modal: true,
@@ -128,6 +129,7 @@
                 open: function (event, ui) {
                     $.getJSON("/streams/$$" + data.streamId + "/head", null, function (d) {
                         if (d && d.$acl) {
+                            loadedMetaData = d;
                             $('#r-group').val(d.$acl.$r);
                             $('#w-group').val(d.$acl.$w);
                             $('#d-group').val(d.$acl.$d);
@@ -141,7 +143,26 @@
         });
 
         $('#button-ok').click(function() {
-            $("#edit-acl-dialog").dialog("close");
+            var postData = loadedMetaData;
+            postData.$acl = {
+                $r: $('#r-group').val(),
+                $w: $('#w-group').val(),
+                $d: $('#d-group').val(),
+                $mr: $('#mr-group').val(),
+                $mw: $('#mw-group').val(),
+            };
+            $.get("/new-guid", function(guid) {
+                $.ajax({
+                    type: "POST",
+                    url: "/streams/$$" + data.streamId,
+                    data: JSON.stringify([ { eventId: guid, eventType: "$metadata", isJson: true, data: postData} ]),
+                    success: function() {
+                        $("#edit-acl-dialog").dialog("close");
+                    },
+                    contentType: "application/vnd.eventstore.events+json",
+                    dataType: "json"
+                });
+            });
         });
     });
 </script>
