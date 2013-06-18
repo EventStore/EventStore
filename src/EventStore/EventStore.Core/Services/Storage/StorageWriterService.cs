@@ -600,12 +600,12 @@ namespace EventStore.Core.Services.Storage
         public void Handle(MonitoringMessage.InternalStatsRequest message)
         {
             var lastFlushSize = Interlocked.Read(ref _lastFlushSize);
-            var lastFlushDelayMs = Interlocked.Read(ref _lastFlushDelay) / TicksPerMs;
+            var lastFlushDelayMs = Interlocked.Read(ref _lastFlushDelay) / (double)TicksPerMs;
             var statCount = _statCount;
-            var meanFlushSize = Interlocked.Read(ref _sumFlushSize) / statCount;
-            var meanFlushDelayMs = Interlocked.Read(ref _sumFlushDelay) / TicksPerMs / statCount;
+            var meanFlushSize = statCount == 0 ? 0 : Interlocked.Read(ref _sumFlushSize) / statCount;
+            var meanFlushDelayMs = statCount == 0 ? 0 : Interlocked.Read(ref _sumFlushDelay) / (double)TicksPerMs / statCount;
             var maxFlushSize = Interlocked.Read(ref _maxFlushSize);
-            var maxFlushDelayMs = Interlocked.Read(ref _maxFlushDelay) / TicksPerMs;
+            var maxFlushDelayMs = Interlocked.Read(ref _maxFlushDelay) / (double)TicksPerMs;
             var queuedFlushMessages = FlushMessagesInQueue;
 
             var stats = new Dictionary<string, object>
