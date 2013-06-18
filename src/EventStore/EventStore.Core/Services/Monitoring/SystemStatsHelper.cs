@@ -87,14 +87,14 @@ namespace EventStore.Core.Services.Monitoring
             stats["proc-mem"] = new StatMetadata(workingSetMemory, "Process", "Process Virtual Memory");
             stats["proc-cpu"] = new StatMetadata(procCpu, "Process", "Process Cpu Usage");
             stats["proc-threadsCount"] = threadsCount;
-            stats["proc-contentionsRate"] = new StatMetadata(contentionsRate, "Process", "Contentions/s");
-            stats["proc-thrownExceptionsRate"] = new StatMetadata(thrownExceptionsRate, "Process", "Thrown Exceptions/s");
+            stats["proc-contentionsRate"] = contentionsRate;
+            stats["proc-thrownExceptionsRate"] = thrownExceptionsRate;
 
-            stats["sys-cpu"] = new StatMetadata(totalCpu, "Machine", "Machine CPU Usage");
+            stats["sys-cpu"] = totalCpu;
             stats["sys-freeMem"] = freeMem;
 
-            stats["proc-diskIo-readBytes"] = new StatMetadata(diskIo.ReadBytes, "Disk IO", "Disk Read Bytes");
-            stats["proc-diskIo-writtenBytes"] = new StatMetadata(diskIo.WrittenBytes, "Disk IO", "Disk Written Bytes");
+            stats["proc-diskIo-readBytes"] = diskIo.ReadBytes;
+            stats["proc-diskIo-writtenBytes"] = diskIo.WrittenBytes;
             stats["proc-diskIo-readOps"] = diskIo.ReadOps;
             stats["proc-diskIo-writeOps"] = diskIo.WriteOps;
             stats["proc-diskIo-readBytesFriendly"] = diskIo.ReadBytesFriendly;
@@ -102,13 +102,13 @@ namespace EventStore.Core.Services.Monitoring
             stats["proc-diskIo-writeOpsFriendly"] = diskIo.WriteOpsFriendly;
             stats["proc-diskIo-writtenBytesFriendly"] = diskIo.WrittenBytesFriendly;
 
-            stats["proc-tcp-connections"] = new StatMetadata(tcp.Connections, "Tcp", "Tcp Connections");
-            stats["proc-tcp-receivingSpeed"] = new StatMetadata(tcp.ReceivingSpeed, "Tcp", "Tcp Receiving Speed");
-            stats["proc-tcp-sendingSpeed"] = new StatMetadata(tcp.SendingSpeed, "Tcp", "Tcp Sending Speed");
-            stats["proc-tcp-inSend"] = new StatMetadata(tcp.InSend, "Tcp", "Tcp In Send");
+            stats["proc-tcp-connections"] = tcp.Connections;
+            stats["proc-tcp-receivingSpeed"] = tcp.ReceivingSpeed;
+            stats["proc-tcp-sendingSpeed"] = tcp.SendingSpeed;
+            stats["proc-tcp-inSend"] = tcp.InSend;
             stats["proc-tcp-measureTime"] = tcp.MeasureTime;
-            stats["proc-tcp-pendingReceived"] = new StatMetadata(tcp.PendingReceived, "Tcp", "Tcp Pending Received");
-            stats["proc-tcp-pendingSend"] = new StatMetadata(tcp.PendingSend, "Tcp", "Tcp Pending Send");
+            stats["proc-tcp-pendingReceived"] = tcp.PendingReceived;
+            stats["proc-tcp-pendingSend"] = tcp.PendingSend;
             stats["proc-tcp-receivedBytesSinceLastRun"] = tcp.ReceivedBytesSinceLastRun;
             stats["proc-tcp-receivedBytesTotal"] = tcp.ReceivedBytesTotal;
             stats["proc-tcp-sentBytesSinceLastRun"] = tcp.SentBytesSinceLastRun;
@@ -151,7 +151,7 @@ namespace EventStore.Core.Services.Monitoring
                 stats[queueStat(queue.Name, "queueName")] = queue.Name;
                 stats[queueStat(queue.Name, "groupName")] = queue.GroupName ?? string.Empty;
                 stats[queueStat(queue.Name, "avgItemsPerSecond")] = queue.AvgItemsPerSecond;
-                stats[queueStat(queue.Name, "avgProcessingTime")] = new StatMetadata(queue.AvgProcessingTime, "Queue Stats", queue.Name +  " Avg Proc Time");
+                stats[queueStat(queue.Name, "avgProcessingTime")] = queue.AvgProcessingTime;
                 stats[queueStat(queue.Name, "currentIdleTime")] = queue.CurrentIdleTime.HasValue ? queue.CurrentIdleTime.Value.ToString("G", CultureInfo.InvariantCulture) : null;
                 stats[queueStat(queue.Name, "currentItemProcessingTime")] = queue.CurrentItemProcessingTime.HasValue ? queue.CurrentItemProcessingTime.Value.ToString("G", CultureInfo.InvariantCulture) : null;
                 stats[queueStat(queue.Name, "idleTimePercent")] = queue.IdleTimePercent;

@@ -35,6 +35,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         public bool DrawChart { get; set; }
 
         public StatMetadata() {}
+
         private StatMetadata(object value, string category, string title, bool drawChart)
         {
             Value = value;

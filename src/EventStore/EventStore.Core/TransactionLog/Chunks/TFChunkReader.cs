@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -34,6 +35,9 @@ namespace EventStore.Core.TransactionLog.Chunks
 {
     public class TFChunkReader : ITransactionFileReader
     {
+        internal static long CachedReads;
+        internal static long NotCachedReads;
+
         public const int MaxRetries = 20;
 
         public long CurrentPosition { get { return _curPos; } }
@@ -77,6 +81,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 try
                 {
                     result = chunk.TryReadClosestForward(chunk.ChunkHeader.GetLocalLogPosition(pos));
+                    CountRead(chunk.IsCached);
                 }
                 catch (FileBeingDeletedException)
                 {
@@ -110,7 +115,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var writerChk = _writerCheckpoint.Read();
                 // we allow == writerChk, that means read the very last record
                 if (pos > writerChk)
-                    throw new ArgumentOutOfRangeException("position", string.Format("Requested position {0} is greater than writer checkpoint {1} when requesting to read previous record from TF.", pos, writerChk));
+                    throw new Exception(string.Format("Requested position {0} is greater than writer checkpoint {1} when requesting to read previous record from TF.", pos, writerChk));
                 if (pos <= 0) 
                     return SeqReadResult.Failure;
 
@@ -128,6 +133,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 try
                 {
                     result = readLast ? chunk.TryReadLast() : chunk.TryReadClosestBackward(chunk.ChunkHeader.GetLocalLogPosition(pos));
+                    CountRead(chunk.IsCached);
                 }
                 catch (FileBeingDeletedException)
                 {
@@ -164,6 +170,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var chunk = _db.Manager.GetChunkFor(position);
             try
             {
+                CountRead(chunk.IsCached);
                 return chunk.TryReadAt(chunk.ChunkHeader.GetLocalLogPosition(position));
             }
             catch (FileBeingDeletedException)
@@ -172,6 +179,14 @@ namespace EventStore.Core.TransactionLog.Chunks
                     throw new InvalidOperationException("Been told the file was deleted > MaxRetries times. Probably a problem in db.");
                 return TryReadAtInternal(position, retries + 1);
             }
+        }
+
+        private static void CountRead(bool isCached)
+        {
+            if (isCached)
+                Interlocked.Increment(ref CachedReads);
+            else
+                Interlocked.Increment(ref NotCachedReads);
         }
     }
 }

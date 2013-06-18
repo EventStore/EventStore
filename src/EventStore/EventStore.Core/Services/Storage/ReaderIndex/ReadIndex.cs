@@ -41,6 +41,7 @@ using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
@@ -52,8 +53,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public long LastCommitPosition { get { return Interlocked.Read(ref _lastCommitPosition); } }
 
-        private long _succReadCount;
-        private long _failedReadCount;
+        private long _hashCollisions;
+        private long _cachedStreamInfo;
+        private long _notCachedStreamInfo;
+        private long _cachedTransInfo;
+        private long _notCachedTransInfo;
 
         private readonly ObjectPool<ITransactionFileReader> _readers;
 
@@ -504,25 +508,21 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var res = GetEventRecord(reader, new IndexEntry(streamHash, version, position));
                 if (res.Success && res.Record.EventStreamId == streamId)
                 {
-                    _succReadCount += 1;
                     record = res.Record;
                     return true;
                 }
-                _failedReadCount += 1;
 
                 foreach (var indexEntry in _tableIndex.GetRange(streamHash, version, version))
                 {
+                    Interlocked.Increment(ref _hashCollisions);
                     if (indexEntry.Position == position) // already checked that
                         continue;
-
                     res = GetEventRecord(reader, indexEntry);
                     if (res.Success && res.Record.EventStreamId == streamId)
                     {
-                        _succReadCount += 1;
                         record = res.Record;
                         return true;
                     }
-                    _failedReadCount += 1;
                 }
             }
             record = null;
@@ -641,7 +641,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             StreamCacheInfo streamCacheInfo;
             if (_streamInfoCache.TryGet(streamId, out streamCacheInfo) && streamCacheInfo.LastEventNumber.HasValue)
+            {
+                Interlocked.Increment(ref _cachedStreamInfo);
                 return streamCacheInfo.LastEventNumber.Value;
+            }
 
             var lastEventNumber = GetLastStreamEventNumberUncached(reader, streamId);
             if (lastEventNumber != ExpectedVersion.NoStream)
@@ -658,6 +661,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private int GetLastStreamEventNumberUncached(ITransactionFileReader reader, string streamId)
         {
+            Interlocked.Increment(ref _notCachedStreamInfo);
+
             var streamHash = _hasher.Hash(streamId);
             IndexEntry latestEntry;
             if (!_tableIndex.TryGetLatestEntry(streamHash, out latestEntry))
@@ -675,6 +680,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var r = ReadPrepareInternal(reader, indexEntry.Position);
                 if (r.Success && r.Record.EventStreamId == streamId)
                     return indexEntry.Version; // AT LAST!!!
+                Interlocked.Increment(ref _hashCollisions);
             }
             return ExpectedVersion.NoStream; // no such event stream
         }
@@ -991,6 +997,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     _transactionInfoCache.Put(transactionId, transactionInfo);
                 else
                     transactionInfo = new TransactionInfo(int.MinValue, null);
+                Interlocked.Increment(ref _notCachedTransInfo);
+            }
+            else
+            {
+                Interlocked.Increment(ref _cachedTransInfo);
             }
             return transactionInfo;
         }
@@ -1026,7 +1037,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         ReadIndexStats IReadIndex.GetStatistics()
         {
-            return new ReadIndexStats(Interlocked.Read(ref _succReadCount), Interlocked.Read(ref _failedReadCount));
+            return new ReadIndexStats(Interlocked.Read(ref TFChunkReader.CachedReads),
+                                      Interlocked.Read(ref TFChunkReader.NotCachedReads),
+                                      Interlocked.Read(ref _cachedStreamInfo),
+                                      Interlocked.Read(ref _notCachedStreamInfo),
+                                      Interlocked.Read(ref _cachedTransInfo),
+                                      Interlocked.Read(ref _notCachedTransInfo));
         }
 
         private StreamMetadata GetStreamMetadataCached(ITransactionFileReader reader, string streamId)
@@ -1036,7 +1052,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             StreamCacheInfo streamCacheInfo;
             if (_streamInfoCache.TryGet(streamId, out streamCacheInfo) && streamCacheInfo.Metadata != null)
+            {
+                Interlocked.Increment(ref _cachedStreamInfo);
                 return streamCacheInfo.Metadata;
+            }
 
             var metadata = GetStreamMetadataUncached(reader, streamId);
             _streamInfoCache.Put(streamId,
@@ -1048,6 +1067,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private StreamMetadata GetStreamMetadataUncached(ITransactionFileReader reader, string streamId)
         {
+            Interlocked.Increment(ref _notCachedStreamInfo);
+
             var metastreamId = SystemStreams.MetastreamOf(streamId);
             var metaEventNumber = GetLastStreamEventNumberCached(reader, metastreamId);
             if (metaEventNumber == ExpectedVersion.NoStream || metaEventNumber == EventNumber.DeletedStream)
