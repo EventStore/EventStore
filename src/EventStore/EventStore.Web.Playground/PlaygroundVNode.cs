@@ -168,6 +168,7 @@ namespace EventStore.Web.Playground
                 HttpService.SetupController(new PingController());
                 HttpService.SetupController(new StatController(monitoringQueue, _workersHandler));
                 HttpService.SetupController(new AtomController(httpSendService, _mainQueue, _workersHandler));
+                HttpService.SetupController(new GuidController(_mainQueue));
                 HttpService.SetupController(new UsersController(httpSendService, _mainQueue, _workersHandler));
 
                 SubscribeWorkers(bus => HttpService.CreateAndSubscribePipeline(bus, authenticationProviders));
