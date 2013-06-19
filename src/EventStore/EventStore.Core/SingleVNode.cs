@@ -225,9 +225,9 @@ namespace EventStore.Core
             if (vNodeSettings.ExternalSecureTcpEndPoint != null)
             {
                 var secureTcpService = new TcpService(_mainQueue, _settings.ExternalSecureTcpEndPoint, _workersHandler,
-                                                        TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(),
-                                                        ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout,
-                                                        internalAuthenticationProvider, _settings.Certificate);
+                                                      TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(),
+                                                      ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout,
+                                                      internalAuthenticationProvider, _settings.Certificate);
                 _mainBus.Subscribe<SystemMessage.SystemInit>(secureTcpService);
                 _mainBus.Subscribe<SystemMessage.SystemStart>(secureTcpService);
                 _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(secureTcpService);

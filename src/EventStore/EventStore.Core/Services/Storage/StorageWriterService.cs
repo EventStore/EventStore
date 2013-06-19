@@ -339,7 +339,8 @@ namespace EventStore.Core.Services.Storage
             {
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
                 var transactionInfo = ReadIndex.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
-                CheckTransactionInfo(message.TransactionId, transactionInfo);
+                if (!CheckTransactionInfo(message.TransactionId, transactionInfo))
+                    return;
 
                 if (message.Events.Length > 0)
                 {
@@ -384,7 +385,8 @@ namespace EventStore.Core.Services.Storage
                     return;
 
                 var transactionInfo = ReadIndex.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
-                CheckTransactionInfo(message.TransactionId, transactionInfo);
+                if (!CheckTransactionInfo(message.TransactionId, transactionInfo))
+                    return;
 
                 var record = LogRecord.TransactionEnd(Writer.Checkpoint.ReadNonFlushed(),
                                                       message.CorrelationId,
@@ -404,17 +406,18 @@ namespace EventStore.Core.Services.Storage
             }
         }
 
-        private void CheckTransactionInfo(long transactionId, TransactionInfo transactionInfo)
+        private bool CheckTransactionInfo(long transactionId, TransactionInfo transactionInfo)
         {
             if (transactionInfo.TransactionOffset < -1 || transactionInfo.EventStreamId.IsEmptyString())
             {
-                throw new Exception(
-                        string.Format("Invalid transaction info found for transaction ID {0}. " 
-                                      + "Possibly wrong transactionId provided. TransactionOffset: {1}, EventStreamId: {2}",
-                                      transactionId,
-                                      transactionInfo.TransactionOffset,
-                                      transactionInfo.EventStreamId.IsEmptyString() ? "<null>" : transactionInfo.EventStreamId));
+                Log.Error(string.Format("Invalid transaction info found for transaction ID {0}. " 
+                                        + "Possibly wrong transactionId provided. TransactionOffset: {1}, EventStreamId: {2}",
+                                        transactionId,
+                                        transactionInfo.TransactionOffset,
+                                        transactionInfo.EventStreamId.IsEmptyString() ? "<null>" : transactionInfo.EventStreamId));
+                return false;
             }
+            return true;
         }
 
         void IHandle<StorageMessage.WriteCommit>.Handle(StorageMessage.WriteCommit message)
