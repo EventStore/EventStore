@@ -37,6 +37,8 @@ namespace EventStore.Core.Services.Monitoring.Stats
 {
     public class DiskIo
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<DiskIo>();
+
         public readonly ulong ReadBytes;
         public readonly ulong WrittenBytes;
         public readonly ulong ReadOps;
@@ -62,21 +64,21 @@ namespace EventStore.Core.Services.Monitoring.Stats
 
         public static DiskIo GetDiskIo(int procId, ILogger logger)
         {
-            DiskIo io;
-
-            if (OS.IsLinux)
+            try
             {
-                var procIo = File.ReadAllText(string.Format("/proc/{0}/io", procId));
-                io = ParseOnLinux(procIo, logger);
+                if (OS.IsLinux)
+                {
+                    var procIo = File.ReadAllText(string.Format("/proc/{0}/io", procId));
+                    return ParseOnLinux(procIo, logger);
+                }
+                return GetOnWindows(logger);
             }
-            else
+            catch (Exception exc)
             {
-                io = GetOnWindows(logger);
+                Log.Debug("Getting disk IO error: {0}.", exc.Message);
+                return null;
             }
-
-            return io;
         }
-
 
         // http://stackoverflow.com/questions/3633286/understanding-the-counters-in-proc-pid-io
         public static DiskIo ParseOnLinux(string procIoStr, ILogger log)
