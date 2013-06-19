@@ -8,8 +8,8 @@ function err() {
 }
 
 MSBuildProjectDirectory=$1
-_es_tmpfile=`mktemp`
-_esca_tmpfile=`mktemp`
+_es_tmpfile=`mktemp -d /tmp/esversion.XXXX`
+_esca_tmpfile=`mktemp -d /tmp/escaversion.XXXX`
 
 if [ ! -e "$MSBuildProjectDirectory/../EventStore.Common/Properties/ESVersion.txt" ] ; then err "No ESVersion.txt file found with current version!"; fi
 if [ ! -e "$MSBuildProjectDirectory/../EventStore.ClientAPI/Properties/ESCAVersion.txt" ] ; then err "No ESCAVersion.txt file found with current version!"; fi
