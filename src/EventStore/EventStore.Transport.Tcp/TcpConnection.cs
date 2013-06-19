@@ -213,14 +213,17 @@ namespace EventStore.Transport.Tcp
             else
             {
                 NotifySendCompleted(socketArgs.Count);
-                using (_sendingLock.Acquire())
-                {
-                    _isSending = false;
-                }
+
                 if (_closed != 0)
                     ReturnSendingSocketArgs();
                 else
+                {
+                    using (_sendingLock.Acquire())
+                    {
+                        _isSending = false;
+                    }
                     TrySend();
+                }
             }
         }
 
