@@ -143,6 +143,9 @@ namespace EventStore.Transport.Http.Server
             {
                 // that's ok, ignore
             }
+            catch (ApplicationException)
+            {
+            }
             catch (Exception e)
             {
                 Logger.ErrorException(e, "BeginGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
