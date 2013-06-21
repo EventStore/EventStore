@@ -71,6 +71,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly Action<TcpConnectionManager, SocketError> _connectionClosed;
         private readonly Action<TcpConnectionManager> _connectionEstablished;
 
+        private readonly SendToWeakThisEnvelope _weakThisEnvelope;
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _heartbeatTimeout;
 
@@ -104,6 +105,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             _framer = new LengthPrefixMessageFramer();
             _framer.RegisterMessageArrivedCallback(OnMessageArrived);
 
+            _weakThisEnvelope = new SendToWeakThisEnvelope(this);
             _heartbeatInterval = heartbeatInterval;
             _heartbeatTimeout = heartbeatTimeout;
 
@@ -155,6 +157,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             _framer = new LengthPrefixMessageFramer();
             _framer.RegisterMessageArrivedCallback(OnMessageArrived);
 
+            _weakThisEnvelope = new SendToWeakThisEnvelope(this);
             _heartbeatInterval = heartbeatInterval;
             _heartbeatTimeout = heartbeatTimeout;
 
@@ -374,10 +377,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             {
                 SendPackage(new TcpPackage(TcpCommand.HeartbeatRequestCommand, Guid.NewGuid(), null));
 
-                _publisher.Publish(TimerMessage.Schedule.Create(
-                    _heartbeatTimeout,
-                    new SendToWeakThisEnvelope(this), 
-                    new TcpMessage.HeartbeatTimeout(RemoteEndPoint, msgNum)));
+                _publisher.Publish(TimerMessage.Schedule.Create(_heartbeatTimeout, _weakThisEnvelope, new TcpMessage.HeartbeatTimeout(msgNum)));
             }
         }
 
@@ -394,9 +394,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void ScheduleHeartbeat(int msgNum)
         {
-            _publisher.Publish(TimerMessage.Schedule.Create(_heartbeatInterval,
-                                                            new SendToWeakThisEnvelope(this),
-                                                            new TcpMessage.Heartbeat(RemoteEndPoint, msgNum)));
+            _publisher.Publish(TimerMessage.Schedule.Create(_heartbeatInterval, _weakThisEnvelope, new TcpMessage.Heartbeat(msgNum)));
         }
 
         private class SendToWeakThisEnvelope : IEnvelope
