@@ -140,7 +140,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var conn = _securityType == TcpSecurityType.Secure 
                 ? TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, _certificate, verbose: true)
-                : TcpConnectionLockless.CreateAcceptedTcpConnection(Guid.NewGuid(), endPoint, socket, verbose: true);
+                : TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(), endPoint, socket, verbose: true);
             Log.Info("{0} TCP connection accepted: [{1}, {2}, L{3}, {4:B}].", 
                      _serviceType, _securityType, conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId);
 
