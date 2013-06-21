@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         public readonly Guid ConnectionId;
         public readonly string ConnectionName;
-        public IPEndPoint RemoteEndPoint { get { return _connection.RemoteEndPoint; } }
+        public readonly IPEndPoint RemoteEndPoint;
         public IPEndPoint LocalEndPoint { get { return _connection.LocalEndPoint; } }
         public bool IsClosed { get { return _isClosed != 0; } }
         public int SendQueueSize { get { return _connection.SendQueueSize; } }
@@ -111,6 +111,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             _connectionClosed = onConnectionClosed;
 
+            RemoteEndPoint = openedConnection.RemoteEndPoint;
             _connection = openedConnection;
             _connection.ConnectionClosed += OnConnectionClosed;
             if (_connection.IsClosed)
@@ -164,6 +165,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             _connectionEstablished = onConnectionEstablished;
             _connectionClosed = onConnectionClosed;
 
+            RemoteEndPoint = remoteEndPoint;
             _connection = useSsl 
                 ? connector.ConnectSslTo(ConnectionId, remoteEndPoint, sslTargetHost, sslValidateServer, OnConnectionEstablished, OnConnectionFailed)
                 : connector.ConnectTo(ConnectionId, remoteEndPoint, OnConnectionEstablished, OnConnectionFailed);
