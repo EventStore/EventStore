@@ -78,8 +78,8 @@ namespace EventStore.ClientAPI.Messages
             public override string ToString()
             {
                 if (State == VNodeState.Manager)
-                    return string.Format("MAN {0:B} <{1}> [{2}:{3}, {4}:{5}] | {6}",
-                                         InstanceId, IsAlive ? "LIVE" : "DEAD",
+                    return string.Format("MAN {0:B} <{1}> [{2}, {3}:{4}, {5}:{6}] | {7}",
+                                         InstanceId, IsAlive ? "LIVE" : "DEAD", State,
                                          InternalHttpIp, InternalHttpPort,
                                          ExternalHttpIp, ExternalHttpPort,
                                          TimeStamp);

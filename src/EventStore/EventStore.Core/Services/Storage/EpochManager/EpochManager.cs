@@ -286,7 +286,6 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 _minCachedEpochNumber = Math.Max(_minCachedEpochNumber, epoch.EpochNumber - CachedEpochCount + 1);
                 _epochs.Remove(_minCachedEpochNumber - 1);
 
-
                 if (flushWriter)
                     _writer.Flush();
                 // Now update epoch checkpoint, so on restart we don't scan sequentially TF.
