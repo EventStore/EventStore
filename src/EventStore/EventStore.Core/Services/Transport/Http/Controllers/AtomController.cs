@@ -538,7 +538,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, allowForwarding, stream, expectedVersion, events, manager.User);
                     Publish(msg);
                 },
-                e => Log.ErrorException(e, "Error while reading request (POST entry)."));
+                e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
         }
 
         private void GetStreamEvent(HttpEntityManager manager, string stream, int eventNumber, EmbedLevel embed)

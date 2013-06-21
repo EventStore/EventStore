@@ -165,28 +165,6 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class GossipSendFailed : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            public readonly Exception Exception;
-            public string Reason;
-            public IPEndPoint Recipient;
-
-            public GossipSendFailed(Exception exception, string reason, IPEndPoint recipient)
-            {
-                Exception = exception;
-                Reason = reason;
-                Recipient = recipient;
-            }
-
-            public override string ToString()
-            {
-                return string.Format("Reason: {0}, Recipient: {1}", Reason, Recipient);
-            }
-        }
-
         public class PurgeTimedOutRequests : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
