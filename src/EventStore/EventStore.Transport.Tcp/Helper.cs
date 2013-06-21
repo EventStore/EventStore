@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Tcp
 {
@@ -39,6 +40,19 @@ namespace EventStore.Transport.Tcp
             }
             catch (Exception)
             {
+            }
+        }
+
+        public static T EatException<T>(Func<T> func, T defaultValue = default(T))
+        {
+            Ensure.NotNull(func, "func");
+            try
+            {
+                return func();
+            }
+            catch (Exception)
+            {
+                return defaultValue;
             }
         }
     }

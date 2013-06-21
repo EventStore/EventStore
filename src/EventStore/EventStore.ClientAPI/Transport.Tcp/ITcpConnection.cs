@@ -35,7 +35,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
     internal interface ITcpConnection
     {
         Guid ConnectionId { get; }
-        IPEndPoint EffectiveEndPoint { get; }
+        IPEndPoint RemoteEndPoint { get; }
+        IPEndPoint LocalEndPoint { get; }
         int SendQueueSize { get; }
         bool IsClosed { get; }
 

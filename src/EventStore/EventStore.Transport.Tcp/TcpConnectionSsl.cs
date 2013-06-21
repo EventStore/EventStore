@@ -74,36 +74,34 @@ namespace EventStore.Transport.Tcp
         }
 
         public static ITcpConnection CreateClientFromSocket(Guid connectionId, 
-                                                            IPEndPoint effectiveEndPoint, 
+                                                            IPEndPoint remoteEndPoint, 
                                                             Socket socket, 
                                                             string targetHost,
                                                             bool validateServer,
                                                             bool verbose)
         {
-            var connection = new TcpConnectionSsl(connectionId, effectiveEndPoint, verbose);
+            var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
             connection.InitClientSocket(socket, targetHost, validateServer, verbose);
             return connection;
         }
 
         public static ITcpConnection CreateServerFromSocket(Guid connectionId,
-                                                            IPEndPoint effectiveEndPoint,
+                                                            IPEndPoint remoteEndPoint,
                                                             Socket socket,
                                                             X509Certificate certificate,
                                                             bool verbose)
         {
             Ensure.NotNull(certificate, "certificate");
-            var connection = new TcpConnectionSsl(connectionId, effectiveEndPoint, verbose);
+            var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
             connection.InitServerSocket(socket, certificate, verbose);
             return connection;
         }
 
         public event Action<ITcpConnection, SocketError> ConnectionClosed;
         public Guid ConnectionId { get { return _connectionId; } }
-        public IPEndPoint EffectiveEndPoint { get { return _effectiveEndPoint; } }
         public int SendQueueSize { get { return _sendQueue.Count; } }
 
         private readonly Guid _connectionId;
-        private readonly IPEndPoint _effectiveEndPoint;
         private readonly bool _verbose;
 
         private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
@@ -123,13 +121,11 @@ namespace EventStore.Transport.Tcp
         private bool _validateServer;
         private readonly byte[] _receiveBuffer = new byte[TcpConnection.BufferManager.ChunkSize];
 
-        private TcpConnectionSsl(Guid connectionId, IPEndPoint effectiveEndPoint, bool verbose)
+        private TcpConnectionSsl(Guid connectionId, IPEndPoint remoteEndPoint, bool verbose): base(remoteEndPoint)
         {
             Ensure.NotEmptyGuid(connectionId, "connectionId");
-            Ensure.NotNull(effectiveEndPoint, "effectiveEndPoint");
 
             _connectionId = connectionId;
-            _effectiveEndPoint = effectiveEndPoint;
             _verbose = verbose;
         }
 
@@ -137,8 +133,8 @@ namespace EventStore.Transport.Tcp
         {
             Ensure.NotNull(certificate, "certificate");
 
-            if (verbose) Console.WriteLine("TcpConnectionSsl::InitServerSocket({0})", socket.RemoteEndPoint);
-            InitSocket(socket, EffectiveEndPoint);
+            InitConnectionBase(socket);
+            if (verbose) Console.WriteLine("TcpConnectionSsl::InitClientSocket({0}, L{1})", RemoteEndPoint, LocalEndPoint);
 
             using (_streamLock.Acquire())
             {
@@ -159,7 +155,7 @@ namespace EventStore.Transport.Tcp
                 }
                 catch (AuthenticationException exc)
                 {
-                    Log.InfoException(exc, "[S{0}]: Authentication exception on BeginAuthenticateAsServer.", EffectiveEndPoint);
+                    Log.InfoException(exc, "[S{0}, L{1}]: Authentication exception on BeginAuthenticateAsServer.", RemoteEndPoint, LocalEndPoint);
                     CloseInternal(SocketError.SocketError, exc.Message);
                 }
                 catch (ObjectDisposedException)
@@ -168,7 +164,7 @@ namespace EventStore.Transport.Tcp
                 }
                 catch (Exception exc)
                 {
-                    Log.InfoException(exc, "[S{0}]: Exception on BeginAuthenticateAsServer.", EffectiveEndPoint);
+                    Log.InfoException(exc, "[S{0}, L{1}]: Exception on BeginAuthenticateAsServer.", RemoteEndPoint, LocalEndPoint);
                     CloseInternal(SocketError.SocketError, exc.Message);
                 }
             }
@@ -191,7 +187,7 @@ namespace EventStore.Transport.Tcp
             }
             catch (AuthenticationException exc)
             {
-                Log.InfoException(exc, "[S{0}]: Authentication exception on EndAuthenticateAsServer.", EffectiveEndPoint);
+                Log.InfoException(exc, "[S{0}, L{1}]: Authentication exception on EndAuthenticateAsServer.", RemoteEndPoint, LocalEndPoint);
                 CloseInternal(SocketError.SocketError, exc.Message);
             }
             catch (ObjectDisposedException)
@@ -200,7 +196,7 @@ namespace EventStore.Transport.Tcp
             }
             catch (Exception exc)
             {
-                Log.InfoException(exc, "[S{0}]: Exception on EndAuthenticateAsServer.", EffectiveEndPoint);
+                Log.InfoException(exc, "[S{0}, L{1}]: Exception on EndAuthenticateAsServer.", RemoteEndPoint, LocalEndPoint);
                 CloseInternal(SocketError.SocketError, exc.Message);
             }
         }
@@ -209,8 +205,8 @@ namespace EventStore.Transport.Tcp
         {
             Ensure.NotNull(targetHost, "targetHost");
 
-            if (verbose) Console.WriteLine("TcpConnectionSsl::InitClientSocket({0})", socket.RemoteEndPoint);
-            InitSocket(socket, EffectiveEndPoint);
+            InitConnectionBase(socket);
+            if (verbose) Console.WriteLine("TcpConnectionSsl::InitClientSocket({0}, L{1})", RemoteEndPoint, LocalEndPoint);
 
             _validateServer = validateServer;
 
@@ -233,7 +229,7 @@ namespace EventStore.Transport.Tcp
                 }
                 catch (AuthenticationException exc)
                 {
-                    Log.InfoException(exc, "[S{0}]: Authentication exception on BeginAuthenticateAsClient.", EffectiveEndPoint);
+                    Log.InfoException(exc, "[S{0}, L{1}]: Authentication exception on BeginAuthenticateAsClient.", RemoteEndPoint, LocalEndPoint);
                     CloseInternal(SocketError.SocketError, exc.Message);
                 }
                 catch (ObjectDisposedException)
@@ -242,7 +238,7 @@ namespace EventStore.Transport.Tcp
                 }
                 catch (Exception exc)
                 {
-                    Log.InfoException(exc, "[S{0}]: Exception on BeginAuthenticateAsClient.", EffectiveEndPoint);
+                    Log.InfoException(exc, "[S{0}, {1}]: Exception on BeginAuthenticateAsClient.", RemoteEndPoint, LocalEndPoint);
                     CloseInternal(SocketError.SocketError, exc.Message);
                 }
             }
@@ -265,7 +261,7 @@ namespace EventStore.Transport.Tcp
             }
             catch (AuthenticationException exc)
             {
-                Log.InfoException(exc, "[S{0}]: Authentication exception on EndAuthenticateAsClient.", EffectiveEndPoint);
+                Log.InfoException(exc, "[S{0}, L{1}]: Authentication exception on EndAuthenticateAsClient.", RemoteEndPoint, LocalEndPoint);
                 CloseInternal(SocketError.SocketError, exc.Message);
             }
             catch (ObjectDisposedException)
@@ -274,7 +270,7 @@ namespace EventStore.Transport.Tcp
             }
             catch (Exception exc)
             {
-                Log.InfoException(exc, "[S{0}]: Exception on EndAuthenticateAsClient.", EffectiveEndPoint);
+                Log.InfoException(exc, "[S{0}, L{1}]: Exception on EndAuthenticateAsClient.", RemoteEndPoint, LocalEndPoint);
                 CloseInternal(SocketError.SocketError, exc.Message);
             }
         }
@@ -287,7 +283,7 @@ namespace EventStore.Transport.Tcp
 
             if (sslPolicyErrors == SslPolicyErrors.None)
                 return true;
-            Log.Error("[S{0}]: Certificate error: {1}", EffectiveEndPoint, sslPolicyErrors);
+            Log.Error("[S{0}, L{1}]: Certificate error: {2}", RemoteEndPoint, LocalEndPoint, sslPolicyErrors);
             // Do not allow this client to communicate with unauthenticated servers. 
             return false;
         }
@@ -295,7 +291,7 @@ namespace EventStore.Transport.Tcp
         private void DisplaySslStreamInfo(SslStream stream)
         {
             var sb = new StringBuilder();
-            sb.AppendFormat("[S{0}]:\n", EffectiveEndPoint);
+            sb.AppendFormat("[S{0}, L{1}]:\n", RemoteEndPoint, LocalEndPoint);
             sb.AppendFormat("Cipher: {0} strength {1}\n", stream.CipherAlgorithm, stream.CipherStrength);
             sb.AppendFormat("Hash: {0} strength {1}\n", stream.HashAlgorithm, stream.HashStrength);
             sb.AppendFormat("Key exchange: {0} strength {1}\n", stream.KeyExchangeAlgorithm, stream.KeyExchangeStrength);
@@ -547,9 +543,9 @@ namespace EventStore.Transport.Tcp
 
             if (_verbose)
             {
-                Log.Info("[{0:HH:mm:ss.fff}: S{1}]:\nConnection ID: {2:B}\nReceived bytes: {3}, Sent bytes: {4}\n"
-                         + "Send calls: {5}, callbacks: {6}\nReceive calls: {7}, callbacks: {8}\nClose reason: [{9}] {10}",
-                         DateTime.UtcNow, EffectiveEndPoint, _connectionId,
+                Log.Info("[{0:HH:mm:ss.fff}: S{1}, L{2}, {3:B}]:\nReceived bytes: {4}, Sent bytes: {5}\n"
+                         + "Send calls: {6}, callbacks: {7}\nReceive calls: {8}, callbacks: {9}\nClose reason: [{10}] {11}\n",
+                         DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
                          TotalBytesReceived, TotalBytesSent,
                          SendCalls, SendCallbacks,
                          ReceiveCalls, ReceiveCallbacks,
@@ -566,7 +562,7 @@ namespace EventStore.Transport.Tcp
 
         public override string ToString()
         {
-            return "S" + EffectiveEndPoint;
+            return "S" + RemoteEndPoint;
         }
     }
 }

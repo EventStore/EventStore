@@ -37,7 +37,8 @@ namespace EventStore.Transport.Tcp
         event Action<ITcpConnection, SocketError> ConnectionClosed;
 
         Guid ConnectionId { get; }
-        IPEndPoint EffectiveEndPoint { get; }
+        IPEndPoint RemoteEndPoint { get; }
+        IPEndPoint LocalEndPoint { get; }
         int SendQueueSize { get; }
         bool IsClosed { get; }
 

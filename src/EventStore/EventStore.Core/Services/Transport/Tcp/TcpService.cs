@@ -141,8 +141,8 @@ namespace EventStore.Core.Services.Transport.Tcp
             var conn = _securityType == TcpSecurityType.Secure 
                 ? TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, _certificate, verbose: true)
                 : TcpConnectionLockless.CreateAcceptedTcpConnection(Guid.NewGuid(), endPoint, socket, verbose: true);
-            Log.Info("{0} TCP connection accepted: [{1}, {2}], connection ID: {3}.", 
-                     _serviceType, _securityType, conn.EffectiveEndPoint, conn.ConnectionId);
+            Log.Info("{0} TCP connection accepted: [{1}, {2}, L{3}, {4:B}].", 
+                     _serviceType, _securityType, conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId);
 
             var dispatcher = _dispatcherFactory(conn.ConnectionId, _serverEndPoint);
             var manager = new TcpConnectionManager(
@@ -154,7 +154,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                     _authProvider,
                     _heartbeatInterval,
                     _heartbeatTimeout,
-                    onConnectionClosed: (m, e) => _publisher.Publish(new TcpMessage.ConnectionClosed(m, e))); // TODO AN: race condition
+                    (m, e) => _publisher.Publish(new TcpMessage.ConnectionClosed(m, e))); // TODO AN: race condition
             _publisher.Publish(new TcpMessage.ConnectionEstablished(manager));
             manager.StartReceiving();
         }

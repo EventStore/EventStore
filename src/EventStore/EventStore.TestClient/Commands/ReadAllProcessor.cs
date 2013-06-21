@@ -82,7 +82,7 @@ namespace EventStore.TestClient.Commands
                 context,
                 connectionEstablished: conn =>
                 {
-                    context.Log.Info("[{0}]: Reading all {0}...", conn.EffectiveEndPoint, forward ? "FORWARD" : "BACKWARD");
+                    context.Log.Info("[{0}, L{1}]: Reading all {2}...", conn.RemoteEndPoint, conn.LocalEndPoint, forward ? "FORWARD" : "BACKWARD");
 
                     var readDto = new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, false);
                     var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();

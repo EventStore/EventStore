@@ -70,11 +70,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
         }
 
         public Guid ConnectionId { get { return _connectionId; } }
-        public IPEndPoint EffectiveEndPoint { get { return _effectiveEndPoint; } }
         public int SendQueueSize { get { return _sendQueue.Count; } }
 
         private readonly Guid _connectionId;
-        private readonly IPEndPoint _effectiveEndPoint;
         private readonly ILogger _log;
 
         private Socket _socket;
@@ -92,22 +90,20 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
         private readonly Action<ITcpConnection, SocketError> _onConnectionClosed;
 
-        private TcpConnectionLockless(ILogger log, Guid connectionId, IPEndPoint effectiveEndPoint, Action<ITcpConnection, SocketError> onConnectionClosed)
+        private TcpConnectionLockless(ILogger log, Guid connectionId, IPEndPoint remoteEndPoint,
+                                      Action<ITcpConnection, SocketError> onConnectionClosed): base(remoteEndPoint)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotEmptyGuid(connectionId, "connectionId");
-            Ensure.NotNull(effectiveEndPoint, "effectiveEndPoint");
 
             _connectionId = connectionId;
-            _effectiveEndPoint = effectiveEndPoint;
             _log = log;
             _onConnectionClosed = onConnectionClosed;
         }
 
         private bool InitSocket(Socket socket)
         {
-            InitSocket(socket, _effectiveEndPoint);
-
+            InitConnectionBase(socket);
             try
             {
                 socket.NoDelay = true;
@@ -161,9 +157,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void TrySend()
         {
-            if (Interlocked.CompareExchange(ref _sending, 1, 0) != 0)
-                return;
-            do
+            while (_sendQueue.Count > 0 && Interlocked.CompareExchange(ref _sending, 1, 0) == 0)
             {
                 if (_sendQueue.Count > 0 && _sendSocketArgs != null)
                 {
@@ -201,7 +195,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                         ReturnSendingSocketArgs();
                     return;
                 }
-            } while (_sendQueue.Count > 0 && _sendSocketArgs != null && Interlocked.CompareExchange(ref _sending, 1, 0) == 0);
+            }
         }
 
         private void OnSendAsyncCompleted(object sender, SocketAsyncEventArgs e)
@@ -289,9 +283,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void TryDequeueReceivedData()
         {
-            if (Interlocked.CompareExchange(ref _receiving, 1, 0) != 0)
-                return;
-            do
+            while (_receiveQueue.Count > 0 && Interlocked.CompareExchange(ref _receiving, 1, 0) == 0)
             {
                 if (_receiveQueue.Count > 0 && _receiveCallback != null)
                 {
@@ -320,9 +312,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     NotifyReceiveDispatched(bytes);
                 }
                 Interlocked.Exchange(ref _receiving, 0);
-            } while (_receiveQueue.Count > 0
-                     && _receiveCallback != null
-                     && Interlocked.CompareExchange(ref _receiving, 1, 0) == 0);
+            }
         }
 
         public void Close(string reason)
@@ -335,13 +325,13 @@ namespace EventStore.ClientAPI.Transport.Tcp
             if (Interlocked.CompareExchange(ref _closed, 1, 0) != 0)
                 return;
             NotifyClosed();
-            _log.Info("[{0:HH:mm:ss.fff}: {1}]:\nConnection ID: {2:B}\nReceived bytes: {3}, Sent bytes: {4}\n"
-                        + "Send calls: {5}, callbacks: {6}\nReceive calls: {7}, callbacks: {8}\nClose reason: [{9}] {10}\n",
-                        DateTime.UtcNow, EffectiveEndPoint, _connectionId,
-                        TotalBytesReceived, TotalBytesSent,
-                        SendCalls, SendCallbacks,
-                        ReceiveCalls, ReceiveCallbacks,
-                        socketError, reason);
+            _log.Info("[{0:HH:mm:ss.fff}: N{1}, L{2}, {3:B}]:\nReceived bytes: {4}, Sent bytes: {5}\n"
+                      + "Send calls: {6}, callbacks: {7}\nReceive calls: {8}, callbacks: {9}\nClose reason: [{10}] {11}\n",
+                      DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
+                      TotalBytesReceived, TotalBytesSent,
+                      SendCalls, SendCallbacks,
+                      ReceiveCalls, ReceiveCallbacks,
+                      socketError, reason);
             CloseSocket();
             if (Interlocked.CompareExchange(ref _sending, 1, 0) == 0)
                 ReturnSendingSocketArgs();
@@ -387,7 +377,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         
         public override string ToString()
         {
-            return EffectiveEndPoint.ToString();
+            return RemoteEndPoint.ToString();
         }
     }
 }

@@ -73,11 +73,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
         }
 
         public Guid ConnectionId { get { return _connectionId; } }
-        public IPEndPoint EffectiveEndPoint { get { return _effectiveEndPoint; } }
         public int SendQueueSize { get { return _sendQueue.Count; } }
 
         private readonly Guid _connectionId;
-        private readonly IPEndPoint _effectiveEndPoint;
         private readonly ILogger _log;
 
         private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
@@ -98,16 +96,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private bool _validateServer;
         private readonly byte[] _receiveBuffer = new byte[TcpConfiguration.SocketBufferSize];
 
-        private TcpConnectionSsl(ILogger log, Guid connectionId, IPEndPoint effectiveEndPoint,
-                                 Action<ITcpConnection, SocketError> onConnectionClosed)
+        private TcpConnectionSsl(ILogger log, Guid connectionId, IPEndPoint remoteEndPoint,
+                                 Action<ITcpConnection, SocketError> onConnectionClosed): base(remoteEndPoint)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotEmptyGuid(connectionId, "connectionId");
-            Ensure.NotNull(effectiveEndPoint, "effectiveEndPoint");
 
             _log = log;
             _connectionId = connectionId;
-            _effectiveEndPoint = effectiveEndPoint;
             _onConnectionClosed = onConnectionClosed;
         }
 
@@ -115,8 +111,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
         {
             Ensure.NotNull(targetHost, "targetHost");
 
-            //_log.Info("TcpConnectionSsl::InitClientSocket({0})", socket.RemoteEndPoint);
-            InitSocket(socket, EffectiveEndPoint);
+            InitConnectionBase(socket);
+            //_log.Info("TcpConnectionSsl::InitClientSocket({0}, L{1})", RemoteEndPoint, LocalEndPoint);
 
             _validateServer = validateServer;
 
@@ -139,7 +135,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 }
                 catch (AuthenticationException exc)
                 {
-                    _log.Info(exc, "[S{0}]: Authentication exception on BeginAuthenticateAsClient.", EffectiveEndPoint);
+                    _log.Info(exc, "[S{0}, L{1}]: Authentication exception on BeginAuthenticateAsClient.", RemoteEndPoint, LocalEndPoint);
                     CloseInternal(SocketError.SocketError, exc.Message);
                 }
                 catch (ObjectDisposedException)
@@ -148,7 +144,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 }
                 catch (Exception exc)
                 {
-                    _log.Info(exc, "[S{0}]: Exception on BeginAuthenticateAsClient.", EffectiveEndPoint);
+                    _log.Info(exc, "[S{0}, L{1}]: Exception on BeginAuthenticateAsClient.", RemoteEndPoint, LocalEndPoint);
                     CloseInternal(SocketError.SocketError, exc.Message);
                 }
             }
@@ -170,7 +166,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
             catch (AuthenticationException exc)
             {
-                _log.Info(exc, "[S{0}]: Authentication exception on EndAuthenticateAsClient.", EffectiveEndPoint);
+                _log.Info(exc, "[S{0}, L{1}]: Authentication exception on EndAuthenticateAsClient.", RemoteEndPoint, LocalEndPoint);
                 CloseInternal(SocketError.SocketError, exc.Message);
             }
             catch (ObjectDisposedException)
@@ -179,7 +175,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
             catch (Exception exc)
             {
-                _log.Info(exc, "[S{0}]: Exception on EndAuthenticateAsClient.", EffectiveEndPoint);
+                _log.Info(exc, "[S{0}, L{1}]: Exception on EndAuthenticateAsClient.", RemoteEndPoint, LocalEndPoint);
                 CloseInternal(SocketError.SocketError, exc.Message);
             }
         }
@@ -192,7 +188,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             if (sslPolicyErrors == SslPolicyErrors.None)
                 return true;
-            _log.Error("[S{0}]: Certificate error: {1}", EffectiveEndPoint, sslPolicyErrors);
+            _log.Error("[S{0}, L{1}]: Certificate error: {1}", RemoteEndPoint, LocalEndPoint, sslPolicyErrors);
             // Do not allow this client to communicate with unauthenticated servers. 
             return false;
         }
@@ -200,7 +196,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private void DisplaySslStreamInfo(SslStream stream)
         {
             var sb = new StringBuilder();
-            sb.AppendFormat("[S{0}]:\n", EffectiveEndPoint);
+            sb.AppendFormat("[S{0}, L{1}]:\n", RemoteEndPoint, LocalEndPoint);
             sb.AppendFormat("Cipher: {0} strength {1}\n", stream.CipherAlgorithm, stream.CipherStrength);
             sb.AppendFormat("Hash: {0} strength {1}\n", stream.HashAlgorithm, stream.HashStrength);
             sb.AppendFormat("Key exchange: {0} strength {1}\n", stream.KeyExchangeAlgorithm, stream.KeyExchangeStrength);
@@ -446,13 +442,13 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             NotifyClosed();
 
-            _log.Info("[{0:HH:mm:ss.fff}: S{1}]:\nConnection ID: {2:B}\nReceived bytes: {3}, Sent bytes: {4}\n"
-                        + "Send calls: {5}, callbacks: {6}\nReceive calls: {7}, callbacks: {8}\nClose reason: [{9}] {10}",
-                        DateTime.UtcNow, EffectiveEndPoint, _connectionId,
-                        TotalBytesReceived, TotalBytesSent,
-                        SendCalls, SendCallbacks,
-                        ReceiveCalls, ReceiveCallbacks,
-                        socketError, reason);
+            _log.Info("[{0:HH:mm:ss.fff}: S{1}, L{2}, {3:B}]:\nReceived bytes: {4}, Sent bytes: {5}\n"
+                      + "Send calls: {6}, callbacks: {7}\nReceive calls: {8}, callbacks: {9}\nClose reason: [{10}] {11}\n",
+                      DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
+                      TotalBytesReceived, TotalBytesSent,
+                      SendCalls, SendCallbacks,
+                      ReceiveCalls, ReceiveCallbacks,
+                      socketError, reason);
 
             if (_sslStream != null)
                 Helper.EatException(() => _sslStream.Close());
@@ -463,7 +459,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         public override string ToString()
         {
-            return "S" + EffectiveEndPoint;
+            return "S" + RemoteEndPoint;
         }
     }
 }
