@@ -297,9 +297,12 @@ namespace EventStore.ClientAPI.Core
             if (_settings.Connected != null)
                 _settings.Connected(_esConnection, _connection.RemoteEndPoint);
 
-            _operations.CheckTimeoutsAndRetry(_connection);
-            _subscriptions.CheckTimeoutsAndRetry(_connection);
-            _lastTimeoutsTimeStamp = _stopwatch.Elapsed;
+            if (_stopwatch.Elapsed - _lastTimeoutsTimeStamp >= _settings.OperationTimeoutCheckPeriod)
+            {
+                _operations.CheckTimeoutsAndRetry(_connection);
+                _subscriptions.CheckTimeoutsAndRetry(_connection);
+                _lastTimeoutsTimeStamp = _stopwatch.Elapsed;
+            }
         }
 
         private void TimerTick()
