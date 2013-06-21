@@ -41,6 +41,7 @@ namespace EventStore.Core.Bus
         IQueuedHandler
     {
         public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
+        public static readonly TimeSpan VerySlowMsgThreshold = TimeSpan.FromSeconds(7);
 
         public QueuedHandler(IHandle<Message> consumer,
                              string name,
