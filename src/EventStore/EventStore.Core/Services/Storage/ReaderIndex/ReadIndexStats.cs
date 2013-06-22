@@ -29,13 +29,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 {
     public class ReadIndexStats
     {
-        public readonly long SuccReadCount;
-        public readonly long FailedReadCount;
+        public readonly long CachedRecordReads;
+        public readonly long NotCachedRecordReads;
+        public readonly long CachedStreamInfoReads;
+        public readonly long NotCachedStreamInfoReads;
+        public readonly long CachedTransInfoReads;
+        public readonly long NotCachedTransInfoReads;
 
-        public ReadIndexStats(long succReadCount, long failedReadCount)
+        public ReadIndexStats(long cachedRecordReads, long notCachedRecordReads,
+                              long cachedStreamInfoReads, long notCachedStreamInfoReads,
+                              long cachedTransInfoReads, long notCachedTransInfoReads)
         {
-            SuccReadCount = succReadCount;
-            FailedReadCount = failedReadCount;
+            CachedRecordReads = cachedRecordReads;
+            NotCachedRecordReads = notCachedRecordReads;
+            CachedStreamInfoReads = cachedStreamInfoReads;
+            NotCachedStreamInfoReads = notCachedStreamInfoReads;
+            CachedTransInfoReads = cachedTransInfoReads;
+            NotCachedTransInfoReads = notCachedTransInfoReads;
         }
     }
 }

@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.Transport.Http
                     {
                         request.ReplyStatus(
                             HttpStatusCode.RequestTimeout, "Server was unable to handle request in time",
-                            e => Log.ErrorException(e, "Error occurred while closing timed out connection (http service core)."));
+                            e => Log.Debug("Error occurred while closing timed out connection (http service core): {0}.", e.Message));
                     }
                 }
             }

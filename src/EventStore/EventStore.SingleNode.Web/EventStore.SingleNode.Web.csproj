@@ -403,9 +403,6 @@
     <Content Include="singlenode-web\external-host.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="singlenode-web\health-charts.htm">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="singlenode-web\home.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

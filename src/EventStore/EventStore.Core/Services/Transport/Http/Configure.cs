@@ -126,7 +126,7 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.Unauthorized, description ?? "Unauthorized", "text/plain", Helper.UTF8NoBom);
         }
 
-        public static ResponseConfiguration EventEntry(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration EventEntry(HttpResponseConfiguratorArgs entity, Message message, bool headEvent)
         {
             var msg = message as ClientMessage.ReadEventCompleted;
             if (msg == null)
@@ -135,6 +135,10 @@ namespace EventStore.Core.Services.Transport.Http
             switch (msg.Result)
             {
                 case ReadEventResult.Success:
+                    if (headEvent)
+                        return Ok(
+                            entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding,
+                            GetPositionETag(msg.Record.OriginalEventNumber, entity.ResponseCodec.ContentType), null);
                     return Ok(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, null, MaxPossibleAge);
                 case ReadEventResult.NotFound:
                 case ReadEventResult.NoStream:

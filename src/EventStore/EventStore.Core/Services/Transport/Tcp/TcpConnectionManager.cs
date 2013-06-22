@@ -55,7 +55,8 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         public readonly Guid ConnectionId;
         public readonly string ConnectionName;
-        public readonly IPEndPoint EndPoint;
+        public readonly IPEndPoint RemoteEndPoint;
+        public IPEndPoint LocalEndPoint { get { return _connection.LocalEndPoint; } }
         public bool IsClosed { get { return _isClosed != 0; } }
         public int SendQueueSize { get { return _connection.SendQueueSize; } }
 
@@ -70,6 +71,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly Action<TcpConnectionManager, SocketError> _connectionClosed;
         private readonly Action<TcpConnectionManager> _connectionEstablished;
 
+        private readonly SendToWeakThisEnvelope _weakThisEnvelope;
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _heartbeatTimeout;
 
@@ -100,16 +102,16 @@ namespace EventStore.Core.Services.Transport.Tcp
             _dispatcher = dispatcher;
             _authProvider = authProvider;
 
-            EndPoint = openedConnection.EffectiveEndPoint;
-
             _framer = new LengthPrefixMessageFramer();
             _framer.RegisterMessageArrivedCallback(OnMessageArrived);
 
+            _weakThisEnvelope = new SendToWeakThisEnvelope(this);
             _heartbeatInterval = heartbeatInterval;
             _heartbeatTimeout = heartbeatTimeout;
 
             _connectionClosed = onConnectionClosed;
 
+            RemoteEndPoint = openedConnection.RemoteEndPoint;
             _connection = openedConnection;
             _connection.ConnectionClosed += OnConnectionClosed;
             if (_connection.IsClosed)
@@ -153,17 +155,17 @@ namespace EventStore.Core.Services.Transport.Tcp
             _dispatcher = dispatcher;
             _authProvider = authProvider;
 
-            EndPoint = remoteEndPoint;
-
             _framer = new LengthPrefixMessageFramer();
             _framer.RegisterMessageArrivedCallback(OnMessageArrived);
 
+            _weakThisEnvelope = new SendToWeakThisEnvelope(this);
             _heartbeatInterval = heartbeatInterval;
             _heartbeatTimeout = heartbeatTimeout;
 
             _connectionEstablished = onConnectionEstablished;
             _connectionClosed = onConnectionClosed;
 
+            RemoteEndPoint = remoteEndPoint;
             _connection = useSsl 
                 ? connector.ConnectSslTo(ConnectionId, remoteEndPoint, sslTargetHost, sslValidateServer, OnConnectionEstablished, OnConnectionFailed)
                 : connector.ConnectTo(ConnectionId, remoteEndPoint, OnConnectionEstablished, OnConnectionFailed);
@@ -174,7 +176,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnConnectionEstablished(ITcpConnection connection)
         {
-            Log.Info("Connection '{0}' ({1:B}) to [{2}] established.", ConnectionName, ConnectionId, connection.EffectiveEndPoint);
+            Log.Info("Connection '{0}' ({1:B}) to [{2}] established.", ConnectionName, ConnectionId, connection.RemoteEndPoint);
 
             ScheduleHeartbeat(0);
 
@@ -187,7 +189,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             if (Interlocked.CompareExchange(ref _isClosed, 1, 0) == 0)
             {
-                Log.Info("Connection '{0}' ({1:B}) to [{2}] failed: {3}.", ConnectionName, ConnectionId, connection.EffectiveEndPoint, socketError);
+                Log.Info("Connection '{0}' ({1:B}) to [{2}] failed: {3}.", ConnectionName, ConnectionId, connection.RemoteEndPoint, socketError);
                 if (_connectionClosed != null)
                     _connectionClosed(this, socketError);
             }
@@ -197,7 +199,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             if (Interlocked.CompareExchange(ref _isClosed, 1, 0) == 0)
             {
-                Log.Info("Connection '{0}' [{1}, {2:B}] closed: {3}.", ConnectionName, connection.EffectiveEndPoint, ConnectionId, socketError);
+                Log.Info("Connection '{0}' [{1}, {2:B}] closed: {3}.", ConnectionName, connection.RemoteEndPoint, ConnectionId, socketError);
                 if (_connectionClosed != null)
                     _connectionClosed(this, socketError);
             }
@@ -266,8 +268,9 @@ namespace EventStore.Core.Services.Transport.Tcp
                     string reason = string.Empty;
                     Helper.EatException(() => reason = Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
                     var exitMessage = 
-                        string.Format("Bad request received from '{0}' [{1}, {2:B}], will stop server. CorrelationId: {3:B}, Error: {4}.",
-                                      ConnectionName, EndPoint, ConnectionId, package.CorrelationId, reason.IsEmptyString() ? "<reason missing>" : reason);
+                        string.Format("Bad request received from '{0}' [{1}, L{2}, {3:B}], will stop server. CorrelationId: {4:B}, Error: {5}.",
+                                      ConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId, package.CorrelationId,
+                                      reason.IsEmptyString() ? "<reason missing>" : reason);
                     Log.Error(exitMessage);
                     Application.Exit(ExitCode.Error, exitMessage);
                     break;
@@ -334,14 +337,15 @@ namespace EventStore.Core.Services.Transport.Tcp
             Ensure.NotNull(message, "message");
 
             SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Helper.UTF8NoBom.GetBytes(message)), checkQueueSize: false);
-            Log.Error("Closing connection '{0}' [{1}, {2:B}] due to error. Reason: {3}", ConnectionName, EndPoint, ConnectionId, message);
+            Log.Error("Closing connection '{0}' [{1}, L{2}, {3:B}] due to error. Reason: {4}",
+                      ConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId, message);
             _connection.Close(message);
         }
 
         public void Stop(string reason = null)
         {
-            Log.Trace("Closing connection '{0}' [{1}, {2:B}] cleanly.{3}",
-                      ConnectionName, EndPoint, ConnectionId,
+            Log.Trace("Closing connection '{0}' [{1}, L{2}, {3:B}] cleanly.{4}",
+                      ConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId,
                       reason.IsEmpty() ? string.Empty : " Reason: " + reason);
             _connection.Close(reason);
         }
@@ -375,10 +379,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             {
                 SendPackage(new TcpPackage(TcpCommand.HeartbeatRequestCommand, Guid.NewGuid(), null));
 
-                _publisher.Publish(TimerMessage.Schedule.Create(
-                    _heartbeatTimeout,
-                    new SendToWeakThisEnvelope(this), 
-                    new TcpMessage.HeartbeatTimeout(EndPoint, msgNum)));
+                _publisher.Publish(TimerMessage.Schedule.Create(_heartbeatTimeout, _weakThisEnvelope, new TcpMessage.HeartbeatTimeout(msgNum)));
             }
         }
 
@@ -395,9 +396,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void ScheduleHeartbeat(int msgNum)
         {
-            _publisher.Publish(TimerMessage.Schedule.Create(_heartbeatInterval,
-                                                            new SendToWeakThisEnvelope(this),
-                                                            new TcpMessage.Heartbeat(EndPoint, msgNum)));
+            _publisher.Publish(TimerMessage.Schedule.Create(_heartbeatInterval, _weakThisEnvelope, new TcpMessage.Heartbeat(msgNum)));
         }
 
         private class SendToWeakThisEnvelope : IEnvelope

@@ -67,7 +67,7 @@ namespace EventStore.TestClient.Commands
                     context,
                     connectionEstablished: conn =>
                     {
-                        context.Log.Info("[{0}]: Starting transaction...", conn.EffectiveEndPoint);
+                        context.Log.Info("[{0}, L{1}]: Starting transaction...", conn.RemoteEndPoint, conn.LocalEndPoint);
                         sw.Start();
                         
                         var tranStart = new TcpClientMessageDto.TransactionStart(eventStreamId, expectedVersion, true);

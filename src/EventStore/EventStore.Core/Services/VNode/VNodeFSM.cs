@@ -107,7 +107,7 @@ namespace EventStore.Core.Services.VNode
             _handlers = new Action<VNodeState, Message>[handlers.Length][];
             for (int i = 0; i < _handlers.Length; ++i)
             {
-                _handlers[i] = new Action<VNodeState, Message>[MessageHierarchy.MaxMsgTypeId];
+                _handlers[i] = new Action<VNodeState, Message>[MessageHierarchy.MaxMsgTypeId + 1];
                 if (handlers[i] != null)
                 {
                     foreach (var handler in handlers[i])

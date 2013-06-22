@@ -351,6 +351,9 @@ namespace EventStore.Core.Bus
                     {
                         Log.Trace("SLOW BUS MSG [{0}]: {1} - {2}ms. Handler: {3}.",
                                   Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
+                        if (elapsed > QueuedHandler.VerySlowMsgThreshold)
+                            Log.Error("---!!! VERY SLOW BUS MSG [{0}]: {1} - {2}ms. Handler: {3}.",
+                                      Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
                     }
                 }
                 else

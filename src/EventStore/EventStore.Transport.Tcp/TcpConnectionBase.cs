@@ -35,7 +35,9 @@ namespace EventStore.Transport.Tcp
 {
     public class TcpConnectionBase : IMonitoredTcpConnection
     {
-        public IPEndPoint EndPoint { get { return _endPoint; } }
+        public IPEndPoint RemoteEndPoint { get { return _remoteEndPoint; } }
+        public IPEndPoint LocalEndPoint { get { return _localEndPoint; } }
+
         public bool IsInitialized { get { return _socket != null; } }
         public bool IsClosed { get { return _isClosed; } }
         public bool InSend { get { return Interlocked.Read(ref _lastSendStarted) >= 0; } }
@@ -117,7 +119,8 @@ namespace EventStore.Transport.Tcp
         }
 
         private Socket _socket;
-        private IPEndPoint _endPoint;
+        private readonly IPEndPoint _remoteEndPoint;
+        private IPEndPoint _localEndPoint;
 
         private long _lastSendStarted = -1;
         private long _lastReceiveStarted = -1;
@@ -134,18 +137,20 @@ namespace EventStore.Transport.Tcp
         private int _recvAsyncs;
         private int _recvAsyncCallbacks;
 
-        public TcpConnectionBase()
+        public TcpConnectionBase(IPEndPoint remoteEndPoint)
         {
+            Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
+            _remoteEndPoint = remoteEndPoint;
+
             TcpConnectionMonitor.Default.Register(this);
         }
 
-        protected void InitSocket(Socket socket, IPEndPoint endPoint)
+        protected void InitConnectionBase(Socket socket)
         {
             Ensure.NotNull(socket, "socket");
-            Ensure.NotNull(endPoint, "endPoint");
 
             _socket = socket;
-            _endPoint = endPoint;
+            _localEndPoint = Helper.EatException(() => (IPEndPoint)socket.LocalEndPoint);
         }
 
         protected void NotifySendScheduled(int bytes)

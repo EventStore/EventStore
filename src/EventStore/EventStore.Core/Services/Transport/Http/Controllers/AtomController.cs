@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using EventStore.Common.Log;
@@ -537,7 +538,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, allowForwarding, stream, expectedVersion, events, manager.User);
                     Publish(msg);
                 },
-                e => Log.ErrorException(e, "Error while reading request (POST entry)."));
+                e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
         }
 
         private void GetStreamEvent(HttpEntityManager manager, string stream, int eventNumber, EmbedLevel embed)
@@ -545,7 +546,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
                                                   (args, message) => Format.Atom.EventEntry(args, message, embed),
-                                                  Configure.EventEntry);
+                                                  (args, message) => Configure.EventEntry(args, message, headEvent: eventNumber == -1));
             Publish(new ClientMessage.ReadEvent(Guid.NewGuid(), envelope, stream, eventNumber, true, manager.User));
         }
 

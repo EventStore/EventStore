@@ -65,7 +65,7 @@ namespace EventStore.TestClient.Commands
                 context,
                 connectionEstablished: conn =>
                 {
-                    context.Log.Info("[{0}]: Writing...", conn.EffectiveEndPoint);
+                    context.Log.Info("[{0}, L{1}]: Writing...", conn.RemoteEndPoint, conn.LocalEndPoint);
                     var writeDto = new TcpClientMessageDto.WriteEvents(
                         eventStreamId,
                         expectedVersion,

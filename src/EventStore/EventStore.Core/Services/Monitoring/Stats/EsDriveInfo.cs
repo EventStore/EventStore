@@ -69,7 +69,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
             }
             catch (Exception ex)
             {
-                log.DebugException(ex, "Error while reading drive info for path {0}", path);
+                log.Debug("Error while reading drive info for path {0}. Message: {1}.", path, ex.Message);
                 return null;
             }
         }

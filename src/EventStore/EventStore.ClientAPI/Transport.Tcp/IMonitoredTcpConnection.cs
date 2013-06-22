@@ -27,14 +27,11 @@
 //  
 
 using System;
-using System.Net;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
     internal interface IMonitoredTcpConnection
     {
-        IPEndPoint EndPoint { get; }
-
         bool IsReadyForSend { get; }
         bool IsReadyForReceive { get; }
         bool IsInitialized { get; }

@@ -62,7 +62,7 @@ namespace EventStore.TestClient.Commands
                 context,
                 connectionEstablished: conn =>
                 {
-                    context.Log.Info("[{0}]: Reading...", conn.EffectiveEndPoint);
+                    context.Log.Info("[{0}, L{1}]: Reading...", conn.RemoteEndPoint, conn.LocalEndPoint);
                     var readDto = new TcpClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos: false);
                     var package = new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
                     sw.Start();

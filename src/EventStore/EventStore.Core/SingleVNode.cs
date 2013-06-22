@@ -157,7 +157,8 @@ namespace EventStore.Core
                                                 readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint));
             epochManager.Init();
 
-            new StorageWriterService(_mainQueue, _mainBus, db, writer, readIndex, epochManager); // subscribes internally
+            var storageWriter = new StorageWriterService(_mainQueue, _mainBus, db, writer, readIndex, epochManager); // subscribes internally
+            monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
             var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderThreadCount, db.Config.WriterCheckpoint);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
@@ -224,9 +225,9 @@ namespace EventStore.Core
             if (vNodeSettings.ExternalSecureTcpEndPoint != null)
             {
                 var secureTcpService = new TcpService(_mainQueue, _settings.ExternalSecureTcpEndPoint, _workersHandler,
-                                                        TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(),
-                                                        ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout,
-                                                        internalAuthenticationProvider, _settings.Certificate);
+                                                      TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(),
+                                                      ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout,
+                                                      internalAuthenticationProvider, _settings.Certificate);
                 _mainBus.Subscribe<SystemMessage.SystemInit>(secureTcpService);
                 _mainBus.Subscribe<SystemMessage.SystemStart>(secureTcpService);
                 _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(secureTcpService);
@@ -267,6 +268,7 @@ namespace EventStore.Core
             _httpService.SetupController(new PingController());
             _httpService.SetupController(new StatController(monitoringQueue, _workersHandler));
             _httpService.SetupController(new AtomController(httpSendService, _mainQueue, _workersHandler));
+            _httpService.SetupController(new GuidController(_mainQueue));
             _httpService.SetupController(new UsersController(httpSendService, _mainQueue, _workersHandler));
 
             _mainBus.Subscribe<SystemMessage.SystemInit>(_httpService);

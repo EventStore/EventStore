@@ -25,32 +25,25 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-
 using System;
-using EventStore.Core.Messaging;
+using EventStore.Core.Bus;
+using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
 
-namespace EventStore.Core.Bus
+namespace EventStore.Core.Services.Transport.Http.Controllers
 {
-    // on Windows AutoReset version is much slower, but on Linux ManualResetEventSlim version is much slower
-    public class QueuedHandler: 
-#if __MonoCS__
-        QueuedHandlerAutoReset,
-#else
-        QueuedHandlerSleep,
-#endif
-        IQueuedHandler
+    public class GuidController : CommunicationController
     {
-        public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
-        public static readonly TimeSpan VerySlowMsgThreshold = TimeSpan.FromSeconds(7);
-
-        public QueuedHandler(IHandle<Message> consumer,
-                             string name,
-                             bool watchSlowMsg = true,
-                             TimeSpan? slowMsgThreshold = null,
-                             TimeSpan? threadStopWaitTimeout = null,
-                             string groupName = null)
-                : base(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout, groupName)
+        public GuidController(IPublisher publisher)
+            : base(publisher)
         {
+        }
+
+        protected override void SubscribeCore(IHttpService service)
+        {
+            service.RegisterControllerAction(
+                new ControllerAction("/new-guid", "GET", Codec.NoCodecs, new ICodec[] {Codec.Text}),
+                (manager, match) => manager.Reply(Guid.NewGuid().ToString("D"), 200, "OK", "text/plain"));
         }
     }
 }

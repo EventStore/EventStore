@@ -49,6 +49,7 @@ namespace EventStore.Core.Services.Transport.Http
             var self = HostName.Combine(requestedUrl, "/streams/{0}", escapedStreamId);
             var feed = new FeedElement();
             feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
+            feed.StreamId = msg.EventStreamId;
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
@@ -57,12 +58,13 @@ namespace EventStore.Core.Services.Transport.Http
             feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", escapedStreamId, msg.MaxCount));
             feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, 0, msg.MaxCount));
 
+
             var prevEventNumber = Math.Min(msg.FromEventNumber + msg.MaxCount - 1, msg.LastEventNumber) + 1;
             var nextEventNumber = msg.FromEventNumber - 1;
             feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
             if (nextEventNumber >= 0)
                 feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber, msg.MaxCount));
-
+            feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", escapedStreamId));
             for (int i = msg.Events.Length - 1; i >= 0; --i)
             {
                 feed.AddEntry(ToEntry(msg.Events[i], requestedUrl, embedContent));
@@ -79,6 +81,7 @@ namespace EventStore.Core.Services.Transport.Http
             var self = HostName.Combine(requestedUrl, "/streams/{0}", escapedStreamId);
             var feed = new FeedElement();
             feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
+            feed.StreamId = msg.EventStreamId;
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
@@ -92,7 +95,7 @@ namespace EventStore.Core.Services.Transport.Http
             feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
             if (nextEventNumber >= 0)
                 feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber, msg.MaxCount));
-
+            feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", escapedStreamId));
             for (int i = 0; i < msg.Events.Length; ++i)
             {
                 feed.AddEntry(ToEntry(msg.Events[i], requestedUrl, embedContent));
@@ -115,7 +118,7 @@ namespace EventStore.Core.Services.Transport.Http
             feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, new TFPos(0, 0).AsString(), msg.MaxCount));
             feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, msg.NextPos.AsString(), msg.MaxCount));
             feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllEscaped, msg.PrevPos.AsString(), msg.MaxCount));
-
+            feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", AllEscaped));
             for (int i = msg.Events.Length - 1; i >= 0; --i)
             {
                 feed.AddEntry(ToEntry(new ResolvedEvent(msg.Events[i].Event, msg.Events[i].Link), requestedUrl, embedContent));
@@ -137,7 +140,7 @@ namespace EventStore.Core.Services.Transport.Http
             feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, new TFPos(0, 0).AsString(), msg.MaxCount));
             feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, msg.PrevPos.AsString(), msg.MaxCount));
             feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllEscaped, msg.NextPos.AsString(), msg.MaxCount));
-
+            feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", AllEscaped));
             for (int i = 0; i < msg.Events.Length; ++i)
             {
                 feed.AddEntry(ToEntry(new ResolvedEvent(msg.Events[i].Event, msg.Events[i].Link), requestedUrl, embedContent));

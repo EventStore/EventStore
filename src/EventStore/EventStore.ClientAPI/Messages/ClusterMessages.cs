@@ -67,6 +67,7 @@ namespace EventStore.ClientAPI.Messages
             public string ExternalHttpIp { get; set; }
             public int ExternalHttpPort { get; set; }
         
+            public long LastCommitPosition { get; set; }
             public long WriterCheckpoint { get; set; }
             public long ChaserCheckpoint { get; set; }
         
@@ -77,19 +78,19 @@ namespace EventStore.ClientAPI.Messages
             public override string ToString()
             {
                 if (State == VNodeState.Manager)
-                    return string.Format("MAN {0:B} <{1}> [{2}:{3}, {4}:{5}] | {6}",
-                                         InstanceId, IsAlive ? "LIVE" : "DEAD",
+                    return string.Format("MAN {0:B} <{1}> [{2}, {3}:{4}, {5}:{6}] | {7}",
+                                         InstanceId, IsAlive ? "LIVE" : "DEAD", State,
                                          InternalHttpIp, InternalHttpPort,
                                          ExternalHttpIp, ExternalHttpPort,
                                          TimeStamp);
-                return string.Format("VND {0:B} <{1}> [{2}, {3}:{4}, {5}, {6}:{7}, {8}, {9}:{10}, {11}:{12}] {13}/{14}/E{15}@{16}:{17:B} | {18}",
+                return string.Format("VND {0:B} <{1}> [{2}, {3}:{4}, {5}, {6}:{7}, {8}, {9}:{10}, {11}:{12}] {13}/{14}/{15}/E{16}@{17}:{18:B} | {19}",
                                      InstanceId, IsAlive ? "LIVE" : "DEAD", State,
                                      InternalTcpIp, InternalTcpPort,
                                      InternalSecureTcpPort > 0 ? string.Format("{0}:{1}", InternalTcpIp, InternalSecureTcpPort) : "n/a",
                                      ExternalTcpIp, ExternalTcpPort,
                                      ExternalSecureTcpPort > 0 ? string.Format("{0}:{1}", ExternalTcpIp, ExternalSecureTcpPort) : "n/a",
                                      InternalHttpIp, InternalHttpPort, ExternalHttpIp, ExternalHttpPort,
-                                     WriterCheckpoint, ChaserCheckpoint,
+                                     LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
                                      EpochNumber, EpochPosition, EpochId,
                                      TimeStamp);
             }

@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Net;
 using System.Net.Sockets;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
@@ -57,14 +56,10 @@ namespace EventStore.Core.Messages
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public readonly IPEndPoint EndPoint;
             public readonly int MessageNumber;
 
-            public Heartbeat(IPEndPoint endPoint, int messageNumber)
+            public Heartbeat(int messageNumber)
             {
-                if (endPoint == null) 
-                    throw new ArgumentNullException("endPoint");
-                EndPoint = endPoint;
                 MessageNumber = messageNumber;
             }
         }
@@ -74,14 +69,10 @@ namespace EventStore.Core.Messages
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public readonly IPEndPoint EndPoint;
             public readonly int MessageNumber;
 
-            public HeartbeatTimeout(IPEndPoint endPoint, int messageNumber)
+            public HeartbeatTimeout(int messageNumber)
             {
-                if (endPoint == null) 
-                    throw new ArgumentNullException("endPoint");
-                EndPoint = endPoint;
                 MessageNumber = messageNumber;
             }
         }

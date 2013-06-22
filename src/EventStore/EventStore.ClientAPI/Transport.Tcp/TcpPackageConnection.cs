@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -43,19 +42,19 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         public bool IsClosed { get { return _connection.IsClosed; } }
         public int SendQueueSize { get { return _connection.SendQueueSize; } }
-        public readonly IPEndPoint EffectiveEndPoint;
+        public IPEndPoint RemoteEndPoint { get { return _connection.RemoteEndPoint; } }
+        public IPEndPoint LocalEndPoint { get { return _connection.LocalEndPoint; } }
         public readonly Guid ConnectionId;
 
         private readonly ILogger _log;
         private readonly Action<TcpPackageConnection, TcpPackage> _handlePackage;
         private readonly Action<TcpPackageConnection, Exception> _onError;
-        private readonly Action<TcpPackageConnection, IPEndPoint, SocketError> _connectionClosed;
 
         private readonly LengthPrefixMessageFramer _framer;
         private readonly ITcpConnection _connection;
 
         public TcpPackageConnection(ILogger log,
-                                    IPEndPoint tcpEndPoint,
+                                    IPEndPoint remoteEndPoint,
                                     Guid connectionId,
                                     bool ssl,
                                     string targetHost,
@@ -63,21 +62,19 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                     Action<TcpPackageConnection, TcpPackage> handlePackage,
                                     Action<TcpPackageConnection, Exception> onError,
                                     Action<TcpPackageConnection> connectionEstablished,
-                                    Action<TcpPackageConnection, IPEndPoint, SocketError> connectionClosed)
+                                    Action<TcpPackageConnection, SocketError> connectionClosed)
         {
             Ensure.NotNull(log, "log");
-            Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+            Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
             Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(handlePackage, "handlePackage");
             if (ssl)
                 Ensure.NotNullOrEmpty(targetHost, "targetHost");
 
-            EffectiveEndPoint = tcpEndPoint;
             ConnectionId = connectionId;
             _log = log;
             _handlePackage = handlePackage;
             _onError = onError;
-            _connectionClosed = connectionClosed;
 
             //Setup callback for incoming messages
             _framer = new LengthPrefixMessageFramer();
@@ -88,32 +85,32 @@ namespace EventStore.ClientAPI.Transport.Tcp
             _connection = Connector.ConnectTo(
                 log,
                 connectionId,
-                tcpEndPoint,
+                remoteEndPoint,
                 ssl,
                 targetHost,
                 validateServer,
                 tcpConnection =>
                 {
                     connectionCreated.Wait();
-                    log.Debug("Connected to [{0}, {1:B}].", tcpConnection.EffectiveEndPoint, connectionId);
+                    log.Debug("Connected to [{0}, L{1}, {2:B}].", tcpConnection.RemoteEndPoint, tcpConnection.LocalEndPoint, connectionId);
                     if (connectionEstablished != null)
                         connectionEstablished(this);
                 },
                 (conn, error) =>
                 {
                     connectionCreated.Wait();
-                    log.Debug("Connection to [{0}, {1:B}] failed. Error: {2}.", conn.EffectiveEndPoint, connectionId, error);
+                    log.Debug("Connection to [{0}, L{1}, {2:B}] failed. Error: {3}.", conn.RemoteEndPoint, conn.LocalEndPoint, connectionId, error);
                     if (connectionClosed != null)
-                        connectionClosed(this, conn.EffectiveEndPoint, error);
+                        connectionClosed(this, error);
                 },
                 (conn, error) =>
                 {
                     connectionCreated.Wait();
-                    log.Debug("Connection [{0}, {1:B}] was closed {2}",
-                              conn.EffectiveEndPoint, ConnectionId, error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
+                    log.Debug("Connection [{0}, L{1}, {2:B}] was closed {3}", conn.RemoteEndPoint, conn.LocalEndPoint,
+                              ConnectionId, error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
 
                     if (connectionClosed != null)
-                        connectionClosed(this, EffectiveEndPoint, error);
+                        connectionClosed(this, error);
                 });
 // ReSharper restore ImplicitlyCapturedClosure
 
@@ -152,8 +149,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 _connection.Close(string.Format("Error when processing TcpPackage {0}: {1}", 
                                                 valid ? package.Command.ToString() : "<invalid package>", e.Message));
 
-                var message = string.Format("[{0}] ERROR for {1}. Connection will be closed.",
-                                            EffectiveEndPoint, valid ? package.Command.ToString() : "<invalid package>");
+                var message = string.Format("[{0}, L{1}] ERROR for {2}. Connection will be closed.",
+                                            RemoteEndPoint, LocalEndPoint, valid ? package.Command.ToString() : "<invalid package>");
                 if (_onError != null)
                     _onError(this, e);
                 _log.Debug(e, message);

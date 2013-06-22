@@ -47,7 +47,8 @@ namespace EventStore.Transport.Tcp
 
         private Action<TcpTypedConnection<T>, T> _receiveCallback;
 
-        public IPEndPoint EffectiveEndPoint { get; private set; }
+        public IPEndPoint RemoteEndPoint { get { return _connection.RemoteEndPoint; } }
+        public IPEndPoint LocalEndPoint { get { return _connection.LocalEndPoint; } }
 
         public int SendQueueSize
         {
@@ -66,7 +67,6 @@ namespace EventStore.Transport.Tcp
             _connection = connection;
             _formatter = formatter;
             _framer = framer;
-            EffectiveEndPoint = connection.EffectiveEndPoint;
 
             connection.ConnectionClosed += OnConnectionClosed;
 

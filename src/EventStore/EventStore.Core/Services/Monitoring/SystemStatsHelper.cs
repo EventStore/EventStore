@@ -42,6 +42,8 @@ namespace EventStore.Core.Services.Monitoring
 {
     public class SystemStatsHelper : IDisposable
     {
+        private static readonly Regex SpacesRegex = new Regex(@"[\s\t]+", RegexOptions.Compiled);
+
         private readonly ILogger _log;
         private readonly ICheckpoint _writerCheckpoint;
         private readonly string _dbPath;
@@ -61,54 +63,40 @@ namespace EventStore.Core.Services.Monitoring
         public IDictionary<string, object> GetSystemStats()
         {
             var stats = new Dictionary<string, object>();
-
             var process = Process.GetCurrentProcess();
-            var drive = EsDriveInfo.FromDirectory(_dbPath, _log);
+
+            stats["proc-startTime"] = process.StartTime.ToUniversalTime().ToString("O");
+            stats["proc-id"] = process.Id;
+            stats["proc-mem"] = new StatMetadata(process.WorkingSet64, "Process", "Process Virtual Memory");
+            stats["proc-cpu"] = new StatMetadata(_perfCounter.GetProcCpuUsage(), "Process", "Process Cpu Usage");
+            stats["proc-threadsCount"] = _perfCounter.GetProcThreadsCount();
+            stats["proc-contentionsRate"] = _perfCounter.GetContentionsRateCount();
+            stats["proc-thrownExceptionsRate"] = _perfCounter.GetThrownExceptionsRate();
+
+            stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
+            stats["sys-freeMem"] = OS.IsLinux ? GetFreeMemOnLinux() : _perfCounter.GetFreeMemory();
+
             var diskIo = DiskIo.GetDiskIo(process.Id, _log);
+            if (diskIo != null)
+            {
+                stats["proc-diskIo-readBytes"] = diskIo.ReadBytes;
+                stats["proc-diskIo-writtenBytes"] = diskIo.WrittenBytes;
+                stats["proc-diskIo-readOps"] = diskIo.ReadOps;
+                stats["proc-diskIo-writeOps"] = diskIo.WriteOps;
+                stats["proc-diskIo-readBytesFriendly"] = diskIo.ReadBytesFriendly;
+                stats["proc-diskIo-readOpsFriendly"] = diskIo.ReadOpsFriendly;
+                stats["proc-diskIo-writeOpsFriendly"] = diskIo.WriteOpsFriendly;
+                stats["proc-diskIo-writtenBytesFriendly"] = diskIo.WrittenBytesFriendly;
+            }
+
             var tcp = TcpConnectionMonitor.Default.GetTcpStats();
-            var queues = QueueMonitor.Default.GetStats();
-
-            var checksum = _writerCheckpoint.Read();
-            var checksumNonFlushed = _writerCheckpoint.ReadNonFlushed();
-            var workingSetMemory = process.WorkingSet64;
-            var startTime = process.StartTime.ToUniversalTime().ToString("O");
-            var procId = process.Id;
-
-            var totalCpu = _perfCounter.GetTotalCpuUsage();
-            var procCpu = _perfCounter.GetProcCpuUsage();
-            var threadsCount = _perfCounter.GetProcThreadsCount();
-            var freeMem = OS.IsLinux ? GetFreeMemOnLinux() : _perfCounter.GetFreeMemory();
-            var gcStats = _perfCounter.GetGcStats();
-            var thrownExceptionsRate = _perfCounter.GetThrownExceptionsRate();
-            var contentionsRate = _perfCounter.GetContentionsRateCount();
-
-            stats["proc-startTime"] = startTime;
-            stats["proc-id"] = procId;
-            stats["proc-mem"] = new StatMetadata(workingSetMemory, "Process", "Process Virtual Memory");
-            stats["proc-cpu"] = new StatMetadata(procCpu, "Process", "Process Cpu Usage");
-            stats["proc-threadsCount"] = threadsCount;
-            stats["proc-contentionsRate"] = new StatMetadata(contentionsRate, "Process", "Contentions/s");
-            stats["proc-thrownExceptionsRate"] = new StatMetadata(thrownExceptionsRate, "Process", "Thrown Exceptions/s");
-
-            stats["sys-cpu"] = new StatMetadata(totalCpu, "Machine", "Machine CPU Usage");
-            stats["sys-freeMem"] = freeMem;
-
-            stats["proc-diskIo-readBytes"] = new StatMetadata(diskIo.ReadBytes, "Disk IO", "Disk Read Bytes");
-            stats["proc-diskIo-writtenBytes"] = new StatMetadata(diskIo.WrittenBytes, "Disk IO", "Disk Written Bytes");
-            stats["proc-diskIo-readOps"] = diskIo.ReadOps;
-            stats["proc-diskIo-writeOps"] = diskIo.WriteOps;
-            stats["proc-diskIo-readBytesFriendly"] = diskIo.ReadBytesFriendly;
-            stats["proc-diskIo-readOpsFriendly"] = diskIo.ReadOpsFriendly;
-            stats["proc-diskIo-writeOpsFriendly"] = diskIo.WriteOpsFriendly;
-            stats["proc-diskIo-writtenBytesFriendly"] = diskIo.WrittenBytesFriendly;
-
-            stats["proc-tcp-connections"] = new StatMetadata(tcp.Connections, "Tcp", "Tcp Connections");
-            stats["proc-tcp-receivingSpeed"] = new StatMetadata(tcp.ReceivingSpeed, "Tcp", "Tcp Receiving Speed");
-            stats["proc-tcp-sendingSpeed"] = new StatMetadata(tcp.SendingSpeed, "Tcp", "Tcp Sending Speed");
-            stats["proc-tcp-inSend"] = new StatMetadata(tcp.InSend, "Tcp", "Tcp In Send");
+            stats["proc-tcp-connections"] = tcp.Connections;
+            stats["proc-tcp-receivingSpeed"] = tcp.ReceivingSpeed;
+            stats["proc-tcp-sendingSpeed"] = tcp.SendingSpeed;
+            stats["proc-tcp-inSend"] = tcp.InSend;
             stats["proc-tcp-measureTime"] = tcp.MeasureTime;
-            stats["proc-tcp-pendingReceived"] = new StatMetadata(tcp.PendingReceived, "Tcp", "Tcp Pending Received");
-            stats["proc-tcp-pendingSend"] = new StatMetadata(tcp.PendingSend, "Tcp", "Tcp Pending Send");
+            stats["proc-tcp-pendingReceived"] = tcp.PendingReceived;
+            stats["proc-tcp-pendingSend"] = tcp.PendingSend;
             stats["proc-tcp-receivedBytesSinceLastRun"] = tcp.ReceivedBytesSinceLastRun;
             stats["proc-tcp-receivedBytesTotal"] = tcp.ReceivedBytesTotal;
             stats["proc-tcp-sentBytesSinceLastRun"] = tcp.SentBytesSinceLastRun;
@@ -119,6 +107,7 @@ namespace EventStore.Core.Services.Monitoring
             stats["proc-tcp-sendingSpeedFriendly"] = tcp.SendingSpeedFriendly;
             stats["proc-tcp-sentBytesTotalFriendly"] = tcp.SentBytesTotalFriendly;
 
+            var gcStats = _perfCounter.GetGcStats();
             stats["proc-gc-allocationSpeed"] = gcStats.AllocationSpeed;
             stats["proc-gc-gen0ItemsCount"] = gcStats.Gen0ItemsCount;
             stats["proc-gc-gen0Size"] = gcStats.Gen0Size;
@@ -130,9 +119,10 @@ namespace EventStore.Core.Services.Monitoring
             stats["proc-gc-timeInGc"] = gcStats.TimeInGc;
             stats["proc-gc-totalBytesInHeaps"] = gcStats.TotalBytesInHeaps;
 
-            stats["es-checksum"] = checksum;
-            stats["es-checksumNonFlushed"] = checksumNonFlushed;
+            stats["es-checksum"] = _writerCheckpoint.Read();
+            stats["es-checksumNonFlushed"] = _writerCheckpoint.ReadNonFlushed();
 
+            var drive = EsDriveInfo.FromDirectory(_dbPath, _log);
             if (drive != null)
             {
                 Func<string, string, string> driveStat = (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName, stat);
@@ -146,12 +136,13 @@ namespace EventStore.Core.Services.Monitoring
             }
 
             Func<string, string, string> queueStat = (queueName, stat) => string.Format("es-queue-{0}-{1}", queueName, stat);
+            var queues = QueueMonitor.Default.GetStats();
             foreach (var queue in queues)
             {
                 stats[queueStat(queue.Name, "queueName")] = queue.Name;
                 stats[queueStat(queue.Name, "groupName")] = queue.GroupName ?? string.Empty;
                 stats[queueStat(queue.Name, "avgItemsPerSecond")] = queue.AvgItemsPerSecond;
-                stats[queueStat(queue.Name, "avgProcessingTime")] = new StatMetadata(queue.AvgProcessingTime, "Queue Stats", queue.Name +  " Avg Proc Time");
+                stats[queueStat(queue.Name, "avgProcessingTime")] = queue.AvgProcessingTime;
                 stats[queueStat(queue.Name, "currentIdleTime")] = queue.CurrentIdleTime.HasValue ? queue.CurrentIdleTime.Value.ToString("G", CultureInfo.InvariantCulture) : null;
                 stats[queueStat(queue.Name, "currentItemProcessingTime")] = queue.CurrentItemProcessingTime.HasValue ? queue.CurrentItemProcessingTime.Value.ToString("G", CultureInfo.InvariantCulture) : null;
                 stats[queueStat(queue.Name, "idleTimePercent")] = queue.IdleTimePercent;
@@ -175,8 +166,7 @@ namespace EventStore.Core.Services.Monitoring
                 meminfo = ShellExecutor.GetOutput("free", "-b");
                 var meminfolines = meminfo.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
                 var ourline = meminfolines[1];
-                var spaces = new Regex(@"[\s\t]+", RegexOptions.Compiled);
-                var trimmedLine = spaces.Replace(ourline, " ");
+                var trimmedLine = SpacesRegex.Replace(ourline, " ");
                 var freeRamStr = trimmedLine.Split(' ')[3];
                 return long.Parse(freeRamStr);
             }

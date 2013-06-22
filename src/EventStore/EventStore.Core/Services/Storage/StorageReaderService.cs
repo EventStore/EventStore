@@ -115,13 +115,16 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<MonitoringMessage.InternalStatsRequest>.Handle(MonitoringMessage.InternalStatsRequest message)
         {
-            var indexStats = _readIndex.GetStatistics();
-
+            var s = _readIndex.GetStatistics();
             var stats = new Dictionary<string, object>
-                        {
-                                {"es-readIndex-failedReadCount", indexStats.FailedReadCount},
-                                {"es-readIndex-succReadCount", indexStats.SuccReadCount}
-                        };
+            {
+                {"es-readIndex-cachedRecord", s.CachedRecordReads},
+                {"es-readIndex-notCachedRecord", s.NotCachedRecordReads},
+                {"es-readIndex-cachedStreamInfo", s.CachedStreamInfoReads},
+                {"es-readIndex-notCachedStreamInfo", s.NotCachedStreamInfoReads},
+                {"es-readIndex-cachedTransInfo", s.CachedTransInfoReads},
+                {"es-readIndex-notCachedTransInfo", s.NotCachedTransInfoReads},
+            };
 
             message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));
         }

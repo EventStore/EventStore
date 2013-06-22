@@ -138,7 +138,7 @@ namespace EventStore.ClientAPI.Core
 
             _connectingPhase = ConnectingPhase.EndPointDiscovery;
 
-            _endPointDiscoverer.DiscoverAsync(_connection != null ? _connection.EffectiveEndPoint : null).ContinueWith(t =>
+            _endPointDiscoverer.DiscoverAsync(_connection != null ? _connection.RemoteEndPoint : null).ContinueWith(t =>
             {
                 if (t.IsFaulted)
                 {
@@ -180,7 +180,7 @@ namespace EventStore.ClientAPI.Core
                     (connection, package) => EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
                     (connection, exc) => EnqueueMessage(new TcpConnectionErrorMessage(connection, exc)),
                     connection => EnqueueMessage(new TcpConnectionEstablishedMessage(connection)),
-                    (connection, endpoint, error) => EnqueueMessage(new TcpConnectionClosedMessage(connection, error)));
+                    (connection, error) => EnqueueMessage(new TcpConnectionClosedMessage(connection, error)));
             _connection.StartReceiving();
         }
 
@@ -189,7 +189,7 @@ namespace EventStore.ClientAPI.Core
             if (_connection != connection) return;
             if (_state == ConnectionState.Closed) return;
 
-            LogDebug("TcpConnectionError connId {0}, exc {1}.", connection.ConnectionId, exception);
+            LogDebug("TcpConnectionError connId {0:B}, exc {1}.", connection.ConnectionId, exception);
             CloseConnection("TCP connection error occurred.", exception);
         }
 
@@ -238,35 +238,35 @@ namespace EventStore.ClientAPI.Core
             if (_state == ConnectionState.Init) throw new Exception();
             if (_state == ConnectionState.Closed || _connection != connection)
             {
-                LogDebug("IGNORED (_state: {0}, _conn.ID: {1}, conn.ID: {2}): TCP connection to [{3}] closed.", 
+                LogDebug("IGNORED (_state: {0}, _conn.ID: {1:B}, conn.ID: {2:B}): TCP connection to [{3}, L{4}] closed.", 
                          _state, _connection == null ? Guid.Empty : _connection.ConnectionId,  connection.ConnectionId, 
-                         connection.EffectiveEndPoint);
+                         connection.RemoteEndPoint, connection.LocalEndPoint);
                 return;
             }
 
             _state = ConnectionState.Connecting;
             _connectingPhase = ConnectingPhase.Reconnecting;
 
-            LogDebug("TCP connection to [{0}, {1}] closed.", connection.EffectiveEndPoint, connection.ConnectionId);
+            LogDebug("TCP connection to [{0}, L{1}, {2:B}] closed.", connection.RemoteEndPoint, connection.LocalEndPoint, connection.ConnectionId);
 
             _subscriptions.PurgeSubscribedAndDroppedSubscriptions(_connection.ConnectionId);
             _reconnInfo = new ReconnectionInfo(_reconnInfo.ReconnectionAttempt, _stopwatch.Elapsed);
 
             if (_settings.Disconnected != null)
-                _settings.Disconnected(_esConnection, connection.EffectiveEndPoint);
+                _settings.Disconnected(_esConnection, connection.RemoteEndPoint);
         }
 
         private void TcpConnectionEstablished(TcpPackageConnection connection)
         {
             if (_state != ConnectionState.Connecting || _connection != connection || connection.IsClosed)
             {
-                LogDebug("IGNORED (_state {0}, _conn.Id {1}, conn.Id {2}, conn.closed {3}): TCP connection to [{4}] established.", 
+                LogDebug("IGNORED (_state {0}, _conn.Id {1:B}, conn.Id {2:B}, conn.closed {3}): TCP connection to [{4}, L{5}] established.", 
                          _state, _connection == null ? Guid.Empty : _connection.ConnectionId, connection.ConnectionId, 
-                         connection.IsClosed, connection.EffectiveEndPoint);
+                         connection.IsClosed, connection.RemoteEndPoint, connection.LocalEndPoint);
                 return;
             }
 
-            LogDebug("TCP connection to [{0}, {1:B}] established.", connection.EffectiveEndPoint, connection.ConnectionId);
+            LogDebug("TCP connection to [{0}, L{1}, {2:B}] established.", connection.RemoteEndPoint, connection.LocalEndPoint, connection.ConnectionId);
             _heartbeatInfo = new HeartbeatInfo(_packageNumber, true, _stopwatch.Elapsed);
 
             if (_settings.DefaultUserCredentials != null)
@@ -295,11 +295,14 @@ namespace EventStore.ClientAPI.Core
             _connectingPhase = ConnectingPhase.Connected;
 
             if (_settings.Connected != null)
-                _settings.Connected(_esConnection, _connection.EffectiveEndPoint);
+                _settings.Connected(_esConnection, _connection.RemoteEndPoint);
 
-            _operations.CheckTimeoutsAndRetry(_connection);
-            _subscriptions.CheckTimeoutsAndRetry(_connection);
-            _lastTimeoutsTimeStamp = _stopwatch.Elapsed;
+            if (_stopwatch.Elapsed - _lastTimeoutsTimeStamp >= _settings.OperationTimeoutCheckPeriod)
+            {
+                _operations.CheckTimeoutsAndRetry(_connection);
+                _subscriptions.CheckTimeoutsAndRetry(_connection);
+                _lastTimeoutsTimeStamp = _stopwatch.Elapsed;
+            }
         }
 
         private void TimerTick()
@@ -378,8 +381,9 @@ namespace EventStore.ClientAPI.Core
             else 
             {
                 // TcpMessage.HeartbeatTimeout analog
-                var msg = string.Format("EventStoreConnection '{0}': closing TCP connection [{1}, {2:B}] due to HEARTBEAT TIMEOUT at pkgNum {3}.",
-                                        _esConnection.ConnectionName, _connection.EffectiveEndPoint, _connection.ConnectionId, packageNumber);
+                var msg = string.Format("EventStoreConnection '{0}': closing TCP connection [{1}, L{2}, {3:B}] due to HEARTBEAT TIMEOUT at pkgNum {4}.",
+                                        _esConnection.ConnectionName, _connection.RemoteEndPoint, _connection.LocalEndPoint,
+                                        _connection.ConnectionId, packageNumber);
                 _settings.Log.Info(msg);
                 CloseTcpConnection(msg);
             }
@@ -538,11 +542,11 @@ namespace EventStore.ClientAPI.Core
                 return;
             }
 
-            if (_state != ConnectionState.Connected || _connection.EffectiveEndPoint.Equals(endPoint))
+            if (_state != ConnectionState.Connected || _connection.RemoteEndPoint.Equals(endPoint))
                 return;
 
-            var msg = string.Format("EventStoreConnection '{0}': going to reconnect to [{1}]. Current endpoint: {2}.",
-                                    _esConnection.ConnectionName, endPoint, _connection.EffectiveEndPoint);
+            var msg = string.Format("EventStoreConnection '{0}': going to reconnect to [{1}]. Current endpoint: [{2}, L{3}].",
+                                    _esConnection.ConnectionName, endPoint, _connection.RemoteEndPoint, _connection.LocalEndPoint);
             if (_settings.VerboseLogging) _settings.Log.Info(msg);
             CloseTcpConnection(msg);
 
