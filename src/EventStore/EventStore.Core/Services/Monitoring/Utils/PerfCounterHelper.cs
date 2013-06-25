@@ -57,54 +57,46 @@ namespace EventStore.Core.Services.Monitoring.Utils
         private readonly PerformanceCounter _gcTimeInGcCounter;
         private readonly PerformanceCounter _gcTotalBytesInHeapsCounter;
 
-        private bool _allCountersEnabled;
-
         public PerfCounterHelper(ILogger log)
         {
             _log = log;
-            _allCountersEnabled = true;
 
-            SafeAssignPerfCounter(out _totalCpuCounter, "Processor", "% Processor Time", "_Total");
-            SafeAssignPerfCounter(out _totalMemCounter, "Memory", "Available Bytes");
-            SafeAssignPerfCounterForProcess(out _procCpuCounter, "Process", "% Processor Time");
-            SafeAssignPerfCounterForProcess(out _procThreadsCounter, "Process", "Thread Count");
-            SafeAssignPerfCounterForProcess(out _thrownExceptionsRateCounter, ".NET CLR Exceptions", "# of Exceps Thrown / sec");
-            SafeAssignPerfCounterForProcess(out _contentionsRateCounter, ".NET CLR LocksAndThreads", "Contention Rate / sec");
-            SafeAssignPerfCounterForProcess(out _gcGen0ItemsCounter, ".NET CLR Memory", "# Gen 0 Collections");
-            SafeAssignPerfCounterForProcess(out _gcGen1ItemsCounter, ".NET CLR Memory", "# Gen 1 Collections");
-            SafeAssignPerfCounterForProcess(out _gcGen2ItemsCounter, ".NET CLR Memory", "# Gen 2 Collections");
-            SafeAssignPerfCounterForProcess(out _gcGen0SizeCounter, ".NET CLR Memory", "Gen 0 heap size");
-            SafeAssignPerfCounterForProcess(out _gcGen1SizeCounter, ".NET CLR Memory", "Gen 1 heap size");
-            SafeAssignPerfCounterForProcess(out _gcGen2SizeCounter, ".NET CLR Memory", "Gen 2 heap size");
-            SafeAssignPerfCounterForProcess(out _gcLargeHeapSizeCounter, ".NET CLR Memory", "Large Object Heap size");
-            SafeAssignPerfCounterForProcess(out _gcAllocationSpeedCounter, ".NET CLR Memory", "Allocated Bytes/sec");
-            SafeAssignPerfCounterForProcess(out _gcTimeInGcCounter, ".NET CLR Memory", "% Time in GC");
-            SafeAssignPerfCounterForProcess(out _gcTotalBytesInHeapsCounter, ".NET CLR Memory", "# Bytes in all Heaps");
-
-            if (!_allCountersEnabled)
-                _log.Error("Couldn't create some performance counters. Try running application with administrators rights.");
+            _totalCpuCounter = CreatePerfCounter("Processor", "% Processor Time", "_Total");
+            _totalMemCounter = CreatePerfCounter("Memory", "Available Bytes");
+            _procCpuCounter = CreatePerfCounterForProcess("Process", "% Processor Time");
+            _procThreadsCounter = CreatePerfCounterForProcess("Process", "Thread Count");
+            _thrownExceptionsRateCounter = CreatePerfCounterForProcess(".NET CLR Exceptions", "# of Exceps Thrown / sec");
+            _contentionsRateCounter = CreatePerfCounterForProcess(".NET CLR LocksAndThreads", "Contention Rate / sec");
+            _gcGen0ItemsCounter = CreatePerfCounterForProcess(".NET CLR Memory", "# Gen 0 Collections");
+            _gcGen1ItemsCounter = CreatePerfCounterForProcess(".NET CLR Memory", "# Gen 1 Collections");
+            _gcGen2ItemsCounter = CreatePerfCounterForProcess(".NET CLR Memory", "# Gen 2 Collections");
+            _gcGen0SizeCounter = CreatePerfCounterForProcess(".NET CLR Memory", "Gen 0 heap size");
+            _gcGen1SizeCounter = CreatePerfCounterForProcess(".NET CLR Memory", "Gen 1 heap size");
+            _gcGen2SizeCounter = CreatePerfCounterForProcess(".NET CLR Memory", "Gen 2 heap size");
+            _gcLargeHeapSizeCounter = CreatePerfCounterForProcess(".NET CLR Memory", "Large Object Heap size");
+            _gcAllocationSpeedCounter = CreatePerfCounterForProcess(".NET CLR Memory", "Allocated Bytes/sec");
+            _gcTimeInGcCounter = CreatePerfCounterForProcess(".NET CLR Memory", "% Time in GC");
+            _gcTotalBytesInHeapsCounter = CreatePerfCounterForProcess(".NET CLR Memory", "# Bytes in all Heaps");
         }
 
-        private void SafeAssignPerfCounterForProcess(out PerformanceCounter field, string category, string counter)
+        private PerformanceCounter CreatePerfCounterForProcess(string category, string counter)
         {
-            SafeAssignPerfCounter(out field, category, counter, Process.GetCurrentProcess().ProcessName);
+            return CreatePerfCounter(category, counter, Process.GetCurrentProcess().ProcessName);
         }
 
-        private void SafeAssignPerfCounter(out PerformanceCounter field, string category, string counter, string instance = null)
+        private PerformanceCounter CreatePerfCounter(string category, string counter, string instance = null)
         {
             try
             {
-                field = string.IsNullOrEmpty(instance)
-                        ? new PerformanceCounter(category, counter)
-                        : new PerformanceCounter(category, counter, instance);
+                return string.IsNullOrEmpty(instance)
+                               ? new PerformanceCounter(category, counter)
+                               : new PerformanceCounter(category, counter, instance);
             }
             catch (Exception ex)
             {
-                field = null;
-                _allCountersEnabled = false;
-                _log.TraceException(ex, "Couldn't create performance counter: " +
-                                        "category='{0}', counter='{1}', instance='{2}'. Error: {3}",
-                                        category, counter, instance ?? string.Empty, ex.Message);
+                _log.Trace("Couldn't create performance counter: category='{0}', counter='{1}', instance='{2}'. Error: {3}",
+                           category, counter, instance ?? string.Empty, ex.Message);
+                return null;
             }
         }
 
