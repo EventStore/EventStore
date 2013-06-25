@@ -96,11 +96,12 @@ namespace EventStore.Core
             }
             catch (ApplicationInitializationException ex)
             {
+                Log.FatalException(ex, "Application initialization error: {0}.", FormatExceptionMessage(ex));
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
             catch (Exception ex)
             {
-                Log.ErrorException(ex, "Unhandled exception while starting application:\n{0}", FormatExceptionMessage(ex));
+                Log.FatalException(ex, "Unhandled exception while starting application:\n{0}", FormatExceptionMessage(ex));
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
             finally
