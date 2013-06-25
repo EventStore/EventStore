@@ -34,7 +34,8 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
 {
     public static class DbUtil
     {
-        public static void CreateSingleChunk(TFChunkDbConfig config, int chunkNum, string filename, int? actualDataSize = null, bool isScavenged = false)
+        public static void CreateSingleChunk(TFChunkDbConfig config, int chunkNum, string filename,
+                                             int? actualDataSize = null, bool isScavenged = false, byte[] contents = null)
         {
             var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, config.ChunkSize, chunkNum, chunkNum, isScavenged, Guid.NewGuid());
             var chunkBytes = chunkHeader.AsByteArray();
@@ -44,6 +45,14 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
             var chunkFooter = new ChunkFooter(true, true, dataSize, dataSize, 0, new byte[ChunkFooter.ChecksumSize]);
             chunkBytes = chunkFooter.AsByteArray();
             Buffer.BlockCopy(chunkBytes, 0, buf, buf.Length - ChunkFooter.Size, chunkBytes.Length);
+
+            if (contents != null)
+            {
+                if (contents.Length != dataSize)
+                    throw new Exception("Wrong contents size.");
+                Buffer.BlockCopy(contents, 0, buf, ChunkHeader.Size, contents.Length);
+            }
+
             File.WriteAllBytes(filename, buf);
         }
 
@@ -64,12 +73,21 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
             File.WriteAllBytes(filename, buf);
         }
 
-        public static void CreateOngoingChunk(TFChunkDbConfig config, int chunkNum, string filename, int? actualSize = null)
+        public static void CreateOngoingChunk(TFChunkDbConfig config, int chunkNum, string filename, int? actualSize = null, byte[] contents = null)
         {
             var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, config.ChunkSize, chunkNum, chunkNum, false, Guid.NewGuid());
             var chunkBytes = chunkHeader.AsByteArray();
-            var buf = new byte[ChunkHeader.Size + (actualSize ?? config.ChunkSize) + ChunkFooter.Size];
+            var dataSize = actualSize ?? config.ChunkSize;
+            var buf = new byte[ChunkHeader.Size + dataSize + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
+
+            if (contents != null)
+            {
+                if (contents.Length != dataSize)
+                    throw new Exception("Wrong contents size.");
+                Buffer.BlockCopy(contents, 0, buf, ChunkHeader.Size, contents.Length);
+            }
+
             File.WriteAllBytes(filename, buf);
         }        
     }
