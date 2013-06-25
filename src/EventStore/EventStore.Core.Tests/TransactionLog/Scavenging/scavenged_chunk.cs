@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging
             
             var last = chunk.TryReadLast();
             Assert.IsTrue(last.Success);
-            Assert.AreEqual(map[map.Count-1].ActualPos, last.LogRecord.Position);
+            Assert.AreEqual(map[map.Count-1].ActualPos, last.LogRecord.LogPosition);
 
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(1000);

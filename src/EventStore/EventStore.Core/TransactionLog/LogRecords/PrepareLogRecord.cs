@@ -55,7 +55,6 @@ namespace EventStore.Core.TransactionLog.LogRecords
     {
         public const byte PrepareRecordVersion = 0;
 
-        public readonly long LogPosition;
         public readonly PrepareFlags Flags;
         public readonly long TransactionPosition;
         public readonly int TransactionOffset;
@@ -68,11 +67,6 @@ namespace EventStore.Core.TransactionLog.LogRecords
         public readonly string EventType;
         public readonly byte[] Data;
         public readonly byte[] Metadata;
-
-        public override long Position
-        {
-            get { return LogPosition; }
-        }
 
         public long InMemorySize
         {
@@ -108,9 +102,8 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                 string eventType, 
                                 byte[] data,
                                 byte[] metadata)
-            : base(LogRecordType.Prepare, PrepareRecordVersion)
+            : base(LogRecordType.Prepare, PrepareRecordVersion, logPosition)
         {
-            Ensure.Nonnegative(logPosition, "logPosition");
             Ensure.NotEmptyGuid(correlationId, "correlationId");
             Ensure.NotEmptyGuid(eventId, "eventId");
             Ensure.Nonnegative(transactionPosition, "transactionPosition");
@@ -121,7 +114,6 @@ namespace EventStore.Core.TransactionLog.LogRecords
                 throw new ArgumentOutOfRangeException("expectedVersion");
             Ensure.NotNull(data, "data");
 
-            LogPosition = logPosition;
             Flags = flags;
             TransactionPosition = transactionPosition;
             TransactionOffset = transactionOffset;
@@ -136,9 +128,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
             Metadata = metadata ?? NoData;
         }
 
-        internal PrepareLogRecord(BinaryReader reader, byte version): base(LogRecordType.Prepare, version)
+        internal PrepareLogRecord(BinaryReader reader, byte version, long logPosition): base(LogRecordType.Prepare, version, logPosition)
         {
-            LogPosition = reader.ReadInt64();
+            if (version != PrepareRecordVersion)
+                throw new ArgumentException(string.Format(
+                    "PrepareRecord version {0} is incorrect. Supported version: {1}.", version, PrepareRecordVersion));
+
             Flags = (PrepareFlags) reader.ReadUInt16();
             TransactionPosition = reader.ReadInt64();
             TransactionOffset = reader.ReadInt32();
@@ -160,7 +155,6 @@ namespace EventStore.Core.TransactionLog.LogRecords
         {
             base.WriteTo(writer);
 
-            writer.Write(LogPosition);
             writer.Write((ushort) Flags);
             writer.Write(TransactionPosition);
             writer.Write(TransactionOffset);

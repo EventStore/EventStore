@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Bus
@@ -351,7 +352,7 @@ namespace EventStore.Core.Bus
                     {
                         Log.Trace("SLOW BUS MSG [{0}]: {1} - {2}ms. Handler: {3}.",
                                   Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
-                        if (elapsed > QueuedHandler.VerySlowMsgThreshold)
+                        if (elapsed > QueuedHandler.VerySlowMsgThreshold && !(message is SystemMessage.SystemInit))
                             Log.Error("---!!! VERY SLOW BUS MSG [{0}]: {1} - {2}ms. Handler: {3}.",
                                       Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
                     }

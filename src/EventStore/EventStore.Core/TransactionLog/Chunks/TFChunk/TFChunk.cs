@@ -587,7 +587,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             var oldPosition = WriteRawData(workItem, buffer);
             _physicalDataSize = (int)GetDataPosition(workItem); // should fit 32 bits
-            _logicalDataSize = ChunkHeader.GetLocalLogPosition(record.Position + length + 2*sizeof(int));
+            _logicalDataSize = ChunkHeader.GetLocalLogPosition(record.LogPosition + length + 2*sizeof(int));
             
             // for non-scavenged chunk _physicalDataSize should be the same as _logicalDataSize
             // for scavenged chunk _logicalDataSize should be at least the same as _physicalDataSize

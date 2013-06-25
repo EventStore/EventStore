@@ -28,7 +28,6 @@
 using System;
 using System.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.Util;
 
 namespace EventStore.Core.TransactionLog.LogRecords
 {
@@ -50,9 +49,6 @@ namespace EventStore.Core.TransactionLog.LogRecords
     {
         public const byte SystemRecordVersion = 0;
 
-        public override long Position { get { return LogPosition; } }
-
-        public readonly long LogPosition;
         public readonly DateTime TimeStamp;
         public readonly SystemRecordType SystemRecordType;
         public readonly SystemRecordSerialization SystemRecordSerialization;
@@ -64,11 +60,8 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                SystemRecordType systemRecordType,
                                SystemRecordSerialization systemRecordSerialization,
                                byte[] data)
-            : base(LogRecordType.System, SystemRecordVersion)
+            : base(LogRecordType.System, SystemRecordVersion, logPosition)
         {
-            Ensure.Nonnegative(logPosition, "logPosition");
-
-            LogPosition = logPosition;
             TimeStamp = timeStamp;
             SystemRecordType = systemRecordType;
             SystemRecordSerialization = systemRecordSerialization;
@@ -76,9 +69,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
             Data = data ?? NoData;
         }
 
-        internal SystemLogRecord(BinaryReader reader, byte version): base(LogRecordType.System, version)
+        internal SystemLogRecord(BinaryReader reader, byte version, long logPosition): base(LogRecordType.System, version, logPosition)
         {
-            LogPosition = reader.ReadInt64();
+            if (version != SystemRecordVersion)
+                throw new ArgumentException(string.Format(
+                    "SystemRecord version {0} is incorrect. Supported version: {1}.", version, SystemRecordVersion));
+
             TimeStamp = new DateTime(reader.ReadInt64());
             SystemRecordType = (SystemRecordType) reader.ReadByte();
             if (SystemRecordType == SystemRecordType.Invalid)
@@ -95,12 +91,8 @@ namespace EventStore.Core.TransactionLog.LogRecords
         public EpochRecord GetEpochRecord()
         {
             if (SystemRecordType != SystemRecordType.Epoch)
-            {
-                throw new ArgumentException(string.Format("Unexpected type of system record. Requested: {0}, actual: {1}.",
-                                                          SystemRecordType.Epoch,
-                                                          SystemRecordType), 
-                                            "SystemRecordType");
-            }
+                throw new ArgumentException(
+                    string.Format("Unexpected type of system record. Requested: {0}, actual: {1}.", SystemRecordType.Epoch, SystemRecordType));
 
             switch (SystemRecordSerialization)
             {
@@ -120,7 +112,6 @@ namespace EventStore.Core.TransactionLog.LogRecords
         {
             base.WriteTo(writer);
 
-            writer.Write(LogPosition);
             writer.Write(TimeStamp.Ticks);
             writer.Write((byte)SystemRecordType);
             writer.Write((byte)SystemRecordSerialization);

@@ -46,22 +46,24 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
         public readonly LogRecordType RecordType;
         public readonly byte Version;
-
-        public abstract long Position { get; }
+        public readonly long LogPosition;
 
         public static LogRecord ReadFrom(BinaryReader reader)
         {
             var recordType = (LogRecordType)reader.ReadByte();
             var version = reader.ReadByte();
+            var logPosition = reader.ReadInt64();
+
+            Ensure.Nonnegative(logPosition, "logPosition");
 
             switch (recordType)
             {
                 case LogRecordType.Prepare:
-                    return new PrepareLogRecord(reader, version);
+                    return new PrepareLogRecord(reader, version, logPosition);
                 case LogRecordType.Commit:
-                    return new CommitLogRecord(reader, version);
+                    return new CommitLogRecord(reader, version, logPosition);
                 case LogRecordType.System:
-                    return new SystemLogRecord(reader, version);
+                    return new SystemLogRecord(reader, version, logPosition);
                 default:
                     throw new ArgumentOutOfRangeException("recordType");
             }
@@ -118,16 +120,19 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                         SystemEventTypes.StreamDeleted, NoData, NoData);
         }
 
-        protected LogRecord(LogRecordType recordType, byte version)
+        protected LogRecord(LogRecordType recordType, byte version, long logPosition)
         {
+            Ensure.Nonnegative(logPosition, "logPosition");
             RecordType = recordType;
             Version = version;
+            LogPosition = logPosition;
         }
 
         public virtual void WriteTo(BinaryWriter writer)
         {
             writer.Write((byte) RecordType);
             writer.Write(Version);
+            writer.Write(LogPosition);
         }
 
         public int GetSizeWithLengthPrefixAndSuffix()

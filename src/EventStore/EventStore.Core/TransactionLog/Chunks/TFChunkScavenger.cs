@@ -437,7 +437,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                         writeResult.OldPosition,
                         record));
             }
-            long logPos = newChunk.ChunkHeader.GetLocalLogPosition(record.Position);
+            long logPos = newChunk.ChunkHeader.GetLocalLogPosition(record.LogPosition);
             int actualPos = (int) writeResult.OldPosition;
             return new PosMap(logPos, actualPos);
         }
