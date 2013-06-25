@@ -93,7 +93,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
                             var rec = result.LogRecord;
                             if (rec.RecordType != LogRecordType.System || ((SystemLogRecord)rec).SystemRecordType != SystemRecordType.Epoch)
                                 continue;
-                            epochPos = rec.Position;
+                            epochPos = rec.LogPosition;
                             break;
                         }
                     }

@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var res = _uncachedChunk.TryReadAt(0);
             Assert.IsTrue(res.Success);
             Assert.AreEqual(_record, res.LogRecord);
-            Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
+            Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);
             //Assert.AreEqual(_result.NewPosition, res.NewPosition);
         }
     }

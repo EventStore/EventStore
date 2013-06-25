@@ -123,6 +123,9 @@ namespace EventStore.Transport.Http.Server
 			{
 				// that's ok, just continue
 			}
+            catch (InvalidOperationException)
+            {
+            }
             catch (Exception e)
             {
                 Logger.DebugException(e, "EndGetContext exception. Status : {0}.", IsListening ? "listening" : "stopped");
@@ -135,13 +138,14 @@ namespace EventStore.Transport.Http.Server
             {
                 _listener.BeginGetContext(ContextAcquired, null);
             }
-            catch (HttpListenerException e)
+            catch (HttpListenerException)
             {
-                // that's ok, ignore
             }
             catch (ObjectDisposedException)
             {
-                // that's ok, ignore
+            }
+            catch (InvalidOperationException)
+            {
             }
             catch (ApplicationException)
             {
