@@ -10,7 +10,7 @@ Properties {
     #Python
     $pythonRepository = "http://src.chromium.org/svn/trunk/tools/third_party/python_26"
     $pythonRevision = "89111"
-    $pythonDirectory = Join-Path $v8Directory (Join-Path "third_party" "python_26")
+    $pythonDirectory = Join-Path (Join-Path $baseDirectory "v8") (Join-Path "third_party" "python_26")
     
     #GYP
     $gypRepository = "http://gyp.googlecode.com/svn/trunk"

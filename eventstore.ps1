@@ -1,4 +1,4 @@
-﻿# Event Store Build (.NET/Windows) - default.ps1
+﻿# Event Store Build (.NET/Windows) - eventstore.ps1
 # Use Invoke-psake ? to see further description
 
 Task default -depends ?
@@ -36,7 +36,6 @@ Properties {
 
 # Project Files
 Properties {
-    $js1Project = Join-Path $srcDirectory (Join-Path "EventStore.Projections.v8Integration" "EventStore.Projections.v8Integration.vcxproj")
     $eventStoreSolution = Join-Path $srcDirectory "EventStore.sln"
 }
 
@@ -65,33 +64,6 @@ Task Clean-Libs {
     Push-Location $libsDirectory
     Exec { git clean --quiet -xdf }
     Pop-Location
-}
-
-Task Build-js1 {    
-    if ($platform -eq "x64") {
-        $js1VisualStudioPlatform = "x64"
-    } elseif ($platform -eq "x86") {
-        $js1VisualStudioPlatform = "Win32"
-    } else {
-        throw "Platform $platform is not supported." 
-    }
-
-    if ($configuration -eq "release") { 
-        $js1VisualStudioConfiguration = "Release"
-    } elseif ($configuration -eq "debug") {
-        $js1VisualStudioConfiguration = "Debug"
-    } else {
-        throw "Configuration $configuration is not supported."
-    }
-
-    if ($platformToolset -eq $null) {
-        $platformToolset = Get-BestGuessOfPlatformToolsetOrDie($js1VisualStudioPlatform)
-        Write-Verbose "PlatformToolset: Determined to be $platformToolset"
-    } else {
-        Write-Verbose "PlatformToolset: Set to $platformToolset"
-    }
-
-    Exec { msbuild $js1Project /p:Configuration=$js1VisualStudioConfiguration /p:Platform=$js1VisualStudioPlatform /p:PlatformToolset=$platformToolset }
 }
 
 Task Build-EventStore {
