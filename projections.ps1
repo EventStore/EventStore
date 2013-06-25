@@ -12,6 +12,9 @@ Properties {
     $baseDirectory = Resolve-Path .
     $srcDirectory = Join-Path $baseDirectory (Join-Path "src" "EventStore")
     $libsDirectory = Join-Path $srcDirectory "libs"
+    $v8Directory = Join-Path $baseDirectory "v8"
+    $pythonExecutable = Join-Path $v8Directory (Join-Path "third_party" (Join-Path "python_26" "python.exe"))
+    $js1Project = Join-Path $srcDirectory (Join-Path "EventStore.Projections.v8Integration" "EventStore.Projections.v8Integration.vcxproj")
 }
 
 # Configuration
@@ -77,25 +80,14 @@ Properties {
     }
 }
 
-# Project Files
-Properties {
-    $js1Project = Join-Path $srcDirectory (Join-Path "EventStore.Projections.v8Integration" "EventStore.Projections.v8Integration.vcxproj")
-}
+Task Full-DependenciesBuild -Depends Clean-V8, Build-V8, Copy-V8ToLibs, Build-JS1
 
-# Executables
-Properties {
-    # This is one of the dependencies in dependencies.ps1
-    $pythonExecutable = Join-Path $baseDirectory (Join-Path "v8" (Join-Path "third_party" (Join-Path "python_26" "python.exe")))
-}
-
-Task Full-DependendenciesBuild -Depends Clean-V8, Build-V8, Copy-V8ToLibs, Build-JS1
-
-Task Incremental-DependendenciesBuild -Depends Build-V8, Copy-V8ToLibs, Build-JS1
+Task Incremental-DependenciesBuild -Depends Build-V8, Copy-V8ToLibs, Build-JS1
 
 
 Task Clean-V8 {
     Push-Location $v8Directory
-    Exec { git clean --quiet -fx -- build }
+    Exec { git clean --quiet -e gyp -fdx -- build }
     Exec { git clean --quiet -dfx -- src }
     Exec { git clean --quiet -dfx -- test } 
     Exec { git clean --quiet -dfx -- tools }

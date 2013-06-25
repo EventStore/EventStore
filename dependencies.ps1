@@ -178,7 +178,7 @@ Function Get-SvnRepoAtRevision
             Write-Verbose "$localPathSvnDirectory not found"
             Write-Verbose "Checking out svn repository from $repositoryAddress (revision $revision) to $localPath"
 
-            if (((Test-SvnRepoIsAtRevision) -eq $false) -and ((Test-ShouldTryNetworkAccess) -eq $true)) {
+            if ((Test-ShouldTryNetworkAccess) -eq $true) {
                 Exec { svn checkout --quiet $revisionString $repositoryAddress $localPath }
             } else {
                 Assert ($false) "SVN Repository can't be checked out, as there is no network access. To try anyway, pass value '$true' as parameter 'forceNetwork'"
