@@ -292,10 +292,20 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private void CreateWriterWorkItemForNewChunk(ChunkHeader chunkHeader, int fileSize)
         {
             var md5 = MD5.Create();
-            var stream = new FileStream(_filename, FileMode.Create, FileAccess.ReadWrite, FileShare.Read,
+
+            // create temp file first and set desired length
+            // if there is not enough disk space or something else prevents file to be resized as desired
+            // we'll end up with empty temp file, which won't trigger false error on next DB verification
+            var tempFilename = _filename + ".tmp";
+            var tempFile = new FileStream(tempFilename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read,
+                                          WriteBufferSize, FileOptions.SequentialScan);
+            tempFile.SetLength(fileSize);
+            tempFile.Close();
+            File.Move(tempFilename, _filename);
+
+            var stream = new FileStream(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read,
                                         WriteBufferSize, FileOptions.SequentialScan);
             var writer = new BinaryWriter(stream);
-            stream.SetLength(fileSize);
             WriteHeader(md5, stream, chunkHeader);
             _writerWorkItem = new WriterWorkItem(stream, writer, md5);
             Flush();
@@ -720,6 +730,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             //FILE
             var footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5.Hash);
             workItem.Stream.Write(footerWithHash.AsByteArray(), 0, ChunkFooter.Size);
+
+            Flush(); // trying to prevent bug with resized file, but no data in it
 
             var fileSize = ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size;
             if (workItem.Stream.Length != fileSize)

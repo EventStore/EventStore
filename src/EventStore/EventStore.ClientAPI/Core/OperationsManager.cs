@@ -44,6 +44,7 @@ namespace EventStore.ClientAPI.Core
         public readonly IClientOperation Operation;
         public readonly int MaxRetries;
         public readonly TimeSpan Timeout;
+        public readonly DateTime CreatedTime;
 
         public Guid ConnectionId;
         public Guid CorrelationId;
@@ -57,6 +58,7 @@ namespace EventStore.ClientAPI.Core
             Operation = operation;
             MaxRetries = maxRetries;
             Timeout = timeout;
+            CreatedTime = DateTime.UtcNow;
 
             CorrelationId = Guid.NewGuid();
             RetryCount = 0;
@@ -65,8 +67,8 @@ namespace EventStore.ClientAPI.Core
 
         public override string ToString()
         {
-            return string.Format("Operation {0} ({1:B}): {2}, retry count: {3}, last updated: {4:HH:mm:ss.fff}",
-                                 Operation.GetType().Name, CorrelationId, Operation, RetryCount, LastUpdated);
+            return string.Format("Operation {0} ({1:B}): {2}, retry count: {3}, created: {4:HH:mm:ss.fff}, last updated: {5:HH:mm:ss.fff}",
+                                 Operation.GetType().Name, CorrelationId, Operation, RetryCount, CreatedTime, LastUpdated);
         }
     }
 
@@ -127,8 +129,8 @@ namespace EventStore.ClientAPI.Core
                 else if (operation.Timeout > TimeSpan.Zero && DateTime.UtcNow - operation.LastUpdated > _settings.OperationTimeout)
                 {
                     var err = string.Format("EventStoreConnection '{0}': operation never got response from server.\n"
-                                            + "Operation: {1}\nLast state update: {2:HH:mm:ss.fff}, UTC now: {3:HH:mm:ss.fff}.",
-                                            _connectionName, operation, operation.LastUpdated, DateTime.UtcNow);
+                                            + "UTC now: {1:HH:mm:ss.fff}, operation: {2}.",
+                                            _connectionName, DateTime.UtcNow, operation);
                     _settings.Log.Error(err);
 
                     if (_settings.FailOnNoServerResponse)
