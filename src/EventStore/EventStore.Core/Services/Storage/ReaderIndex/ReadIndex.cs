@@ -351,19 +351,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
             if (lastEventNumber == EventNumber.DeletedStream)
-                return new IndexReadEventResult(ReadEventResult.StreamDeleted);
+                return new IndexReadEventResult(ReadEventResult.StreamDeleted, null);
             if (lastEventNumber == ExpectedVersion.NoStream)
-                return new IndexReadEventResult(ReadEventResult.NoStream);
+                return new IndexReadEventResult(ReadEventResult.NoStream, null);
 
             if (eventNumber == -1) 
                 eventNumber = lastEventNumber;
-
+            
             var metadata = GetStreamMetadataCached(reader, streamId);
             if (metadata.MaxCount.HasValue)
             {
                 var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
                 if (eventNumber < minEventNumber || eventNumber > lastEventNumber)
-                    return new IndexReadEventResult(ReadEventResult.NotFound);
+                    return new IndexReadEventResult(ReadEventResult.NotFound, metadata);
             }
 
             EventRecord record;
@@ -371,11 +371,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (success)
             {
                 if (metadata.MaxAge.HasValue && record.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)
-                    return new IndexReadEventResult(ReadEventResult.NotFound);
-                return new IndexReadEventResult(ReadEventResult.Success, record);
+                    return new IndexReadEventResult(ReadEventResult.NotFound, metadata);
+                return new IndexReadEventResult(ReadEventResult.Success, record, metadata);
             }
 
-            return new IndexReadEventResult(ReadEventResult.NotFound);
+            return new IndexReadEventResult(ReadEventResult.NotFound, metadata);
         }
 
         IndexReadStreamResult IReadIndex.ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)

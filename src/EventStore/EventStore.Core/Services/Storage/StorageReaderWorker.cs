@@ -104,7 +104,8 @@ namespace EventStore.Core.Services.Storage
                 if (record == null)
                     return NoData(msg, ReadEventResult.AccessDenied);
 
-                return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result.Result, record.Value, null);
+                return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId,
+                                                            result.Result, record.Value, result.Metadata, null);
             }
             catch (Exception exc)
             {
@@ -268,7 +269,7 @@ namespace EventStore.Core.Services.Storage
 
         private static ClientMessage.ReadEventCompleted NoData(ClientMessage.ReadEvent msg, ReadEventResult result, string error = null)
         {
-            return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result, new ResolvedEvent(null), error);
+            return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result, new ResolvedEvent(null), null, error);
         }
 
         private static ClientMessage.ReadStreamEventsForwardCompleted NoData(ClientMessage.ReadStreamEventsForward msg, ReadStreamResult result, long lastCommitPosition, string error = null)

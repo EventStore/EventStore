@@ -134,13 +134,13 @@ namespace EventStore.Core.Util
                 null; // no caching
 #endif
 // ReSharper disable ExpressionIsAlwaysNull
-            return Configure.Ok(contentType, encoding, null, cacheSeconds);
+            return Configure.Ok(contentType, encoding, null, cacheSeconds, isCachePublic: true);
 // ReSharper restore ExpressionIsAlwaysNull
         }
 
         public static string GetWebRootFileSystemDirectory(string debugPath = null)
         {
-            string fileSystemWebRoot = null;
+            string fileSystemWebRoot;
             try
             {
                 if (!string.IsNullOrEmpty(debugPath))

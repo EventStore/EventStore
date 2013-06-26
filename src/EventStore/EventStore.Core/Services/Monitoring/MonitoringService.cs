@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.Monitoring
         private static readonly ILogger Log = LogManager.GetLoggerFor<MonitoringService>();
 
         private static readonly string StreamMetadata = string.Format("{{\"$maxAge\":{0}}}", (int)TimeSpan.FromDays(10).TotalSeconds);
-        private static readonly TimeSpan MemoizePeriod = TimeSpan.FromSeconds(1);
+        public static readonly TimeSpan MemoizePeriod = TimeSpan.FromSeconds(1);
         private static readonly IEnvelope NoopEnvelope = new NoopEnvelope();
 
         private readonly IPublisher _monitoringBus;

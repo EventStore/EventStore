@@ -183,7 +183,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             if (allowForwarding && _httpForwarder.ForwardRequest(manager))
                 return;
-            var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.Atom.DeleteStreamCompleted, Configure.DeleteStreamCompleted);
+            var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.DeleteStreamCompleted, Configure.DeleteStreamCompleted);
             Publish(new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, allowForwarding, stream, expectedVersion, manager.User));
         }
 
@@ -455,7 +455,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
-                                                  (args, msg) => Format.Atom.ReadAllEventsBackwardCompleted(args, msg, embed),
+                                                  (args, msg) => Format.ReadAllEventsBackwardCompleted(args, msg, embed),
                                                   (args, msg) => Configure.ReadAllEventsBackwardCompleted(args, msg, position == TFPos.HeadOfTf));
             Publish(new ClientMessage.ReadAllEventsBackward(Guid.NewGuid(), envelope,
                                                             position.CommitPosition, position.PreparePosition, count,
@@ -484,7 +484,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
-                                                  (args, msg) => Format.Atom.ReadAllEventsForwardCompleted(args, msg, embed),
+                                                  (args, msg) => Format.ReadAllEventsForwardCompleted(args, msg, embed),
                                                   (args, msg) => Configure.ReadAllEventsForwardCompleted(args, msg, headOfTf: false));
             Publish(new ClientMessage.ReadAllEventsForward(Guid.NewGuid(), envelope,
                                                            position.CommitPosition, position.PreparePosition, count,
@@ -545,7 +545,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
-                                                  (args, message) => Format.Atom.EventEntry(args, message, embed),
+                                                  (args, message) => Format.EventEntry(args, message, embed),
                                                   (args, message) => Configure.EventEntry(args, message, headEvent: eventNumber == -1));
             Publish(new ClientMessage.ReadEvent(Guid.NewGuid(), envelope, stream, eventNumber, true, manager.User));
         }
@@ -563,7 +563,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
                                                   (ent, msg) =>
-                                                  Format.Atom.GetStreamEventsBackward(ent, msg, embed, headOfStream),
+                                                  Format.GetStreamEventsBackward(ent, msg, embed, headOfStream),
                                                   (args, msg) => Configure.GetStreamEventsBackward(args, msg, headOfStream));
             Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), envelope, stream, eventNumber, count,
                                                                true, GetETagStreamVersion(manager), manager.User));
@@ -573,7 +573,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
-                                                  (ent, msg) => Format.Atom.GetStreamEventsForward(ent, msg, embed),
+                                                  (ent, msg) => Format.GetStreamEventsForward(ent, msg, embed),
                                                   Configure.GetStreamEventsForward);
             Publish(new ClientMessage.ReadStreamEventsForward(Guid.NewGuid(), envelope, stream, eventNumber, count,
                                                               true, GetETagStreamVersion(manager), manager.User));
