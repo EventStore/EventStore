@@ -359,13 +359,19 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void SendPackage(TcpPackage package, bool checkQueueSize = true)
         {
-            var data = package.AsArraySegment();
-            var framed = _framer.FrameData(data);
-            _connection.EnqueueSend(framed);
+            if (IsClosed)
+                return;
 
             int queueSize;
             if (checkQueueSize && (queueSize = _connection.SendQueueSize) > ConnectionQueueSizeThreshold)
+            {
                 SendBadRequestAndClose(Guid.Empty, string.Format("Connection queue size is too large: {0}.", queueSize));
+                return;
+            }
+
+            var data = package.AsArraySegment();
+            var framed = _framer.FrameData(data);
+            _connection.EnqueueSend(framed);
         }
 
         public void Handle(TcpMessage.Heartbeat message)

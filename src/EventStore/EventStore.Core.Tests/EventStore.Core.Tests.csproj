@@ -342,6 +342,8 @@
     <Compile Include="SpecificationWithFile.cs" />
     <Compile Include="TestsInitFixture.cs" />
     <Compile Include="TransactionLog\Scavenging\scavenged_chunk.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_completed_chunk.cs" />
+    <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_ongoing_chunk.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_to_the_very_beginning_of_db.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_multichunk.cs" />
     <Compile Include="TransactionLog\Truncation\TruncateAndReOpenDbScenario.cs" />

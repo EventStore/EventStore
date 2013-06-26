@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var res = _cachedChunk.TryReadAt(0);
             Assert.IsTrue(res.Success);
             Assert.AreEqual(_record, res.LogRecord);
-            Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
+            Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);
         }
 
         [Test]
@@ -96,7 +96,7 @@ namespace EventStore.Core.Tests.TransactionLog
             Assert.IsTrue(res.Success);
             Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
             Assert.AreEqual(_record, res.LogRecord);
-            Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
+            Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);
         }
 
         [Test]
@@ -106,7 +106,7 @@ namespace EventStore.Core.Tests.TransactionLog
             Assert.IsTrue(res.Success);
             Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
             Assert.AreEqual(_record, res.LogRecord);
-            Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
+            Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);
         }
 
         [Test]

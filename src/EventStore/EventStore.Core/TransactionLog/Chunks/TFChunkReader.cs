@@ -93,8 +93,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (result.Success)
                 {
                     _curPos = chunk.ChunkHeader.ChunkStartPosition + result.NextPosition;
-                    var postPos = result.LogRecord.Position + result.RecordLength + 2 * sizeof(int);
-                    return new SeqReadResult(true, result.LogRecord, result.RecordLength, result.LogRecord.Position, postPos);
+                    var postPos = result.LogRecord.LogPosition + result.RecordLength + 2 * sizeof(int);
+                    return new SeqReadResult(true, result.LogRecord, result.RecordLength, result.LogRecord.LogPosition, postPos);
                 }
 
                 // we are the end of chunk
@@ -145,8 +145,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (result.Success)
                 {
                     _curPos = chunk.ChunkHeader.ChunkStartPosition + result.NextPosition;
-                    var postPos = result.LogRecord.Position + result.RecordLength + 2 * sizeof(int);
-                    return new SeqReadResult(true, result.LogRecord, result.RecordLength, result.LogRecord.Position, postPos);
+                    var postPos = result.LogRecord.LogPosition + result.RecordLength + 2 * sizeof(int);
+                    return new SeqReadResult(true, result.LogRecord, result.RecordLength, result.LogRecord.LogPosition, postPos);
                 }
 
                 // we are the beginning of chunk, so need to switch to previous one

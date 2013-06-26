@@ -35,31 +35,23 @@ namespace EventStore.Core.TransactionLog.LogRecords
     {
         public const byte CommitRecordVersion = 0;
 
-        public readonly long LogPosition;
         public readonly long TransactionPosition;
         public readonly int FirstEventNumber;
         public readonly long SortKey;
         public readonly Guid CorrelationId;
         public readonly DateTime TimeStamp;
 
-        public override long Position
-        {
-            get { return LogPosition; }
-        }
-
         public CommitLogRecord(long logPosition,
                                Guid correlationId,
                                long transactionPosition,
                                DateTime timeStamp,
                                int firstEventNumber)
-            : base(LogRecordType.Commit, CommitRecordVersion)
+            : base(LogRecordType.Commit, CommitRecordVersion, logPosition)
         {
-            Ensure.Nonnegative(logPosition, "logPosition");
             Ensure.NotEmptyGuid(correlationId, "correlationId");
             Ensure.Nonnegative(transactionPosition, "TransactionPosition");
             Ensure.Nonnegative(firstEventNumber, "eventNumber");
 
-            LogPosition = logPosition;
             TransactionPosition = transactionPosition;
             FirstEventNumber = firstEventNumber;
             SortKey = logPosition;
@@ -67,9 +59,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
             TimeStamp = timeStamp;
         }
 
-        internal CommitLogRecord(BinaryReader reader, byte version): base(LogRecordType.Commit, version)
+        internal CommitLogRecord(BinaryReader reader, byte version, long logPosition): base(LogRecordType.Commit, version, logPosition)
         {
-            LogPosition = reader.ReadInt64();
+            if (version != CommitRecordVersion)
+                throw new ArgumentException(
+                    string.Format("CommitRecord version {0} is incorrect. Supported version: {1}.", version, CommitRecordVersion));
+
             TransactionPosition = reader.ReadInt64();
             FirstEventNumber = reader.ReadInt32();
             SortKey = reader.ReadInt64();
@@ -81,7 +76,6 @@ namespace EventStore.Core.TransactionLog.LogRecords
         {
             base.WriteTo(writer);
 
-            writer.Write(LogPosition);
             writer.Write(TransactionPosition);
             writer.Write(FirstEventNumber);
             writer.Write(SortKey);

@@ -28,6 +28,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 throw new Exception(string.Format("During truncation of DB excessive TFChunks were found:\n{0}.", string.Join("\n", excessiveChunks)));
 
             ChunkHeader newLastChunkHeader = null;
+            string newLastChunkFilename = null;
             for (int chunkNum = 0; chunkNum <= newLastChunkNum;)
             {
                 var chunks = _config.FileNamingStrategy.GetAllVersionsFor(chunkNum);
@@ -43,6 +44,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (chunkHeader.ChunkEndNumber >= newLastChunkNum)
                     {
                         newLastChunkHeader = chunkHeader;
+                        newLastChunkFilename = chunks[0];
                         break;
                     }
                     chunkNum = chunkHeader.ChunkEndNumber + 1;
@@ -79,11 +81,15 @@ namespace EventStore.Core.TransactionLog.Chunks
                         var chunksToDelete = _config.FileNamingStrategy.GetAllVersionsFor(i);
                         foreach (var chunkFile in chunksToDelete)
                         {
-                            Log.Info("File {0} will be deleted during TruncateDb procedure.", chunkFile); 
+                            Log.Info("File {0} will be deleted during TruncateDb procedure.", chunkFile);
                             File.SetAttributes(chunkFile, FileAttributes.Normal);
                             File.Delete(chunkFile);
                         }
                     }
+                }
+                else
+                {
+                    TruncateChunkAndFillWithZeros(newLastChunkHeader, newLastChunkFilename, truncateChk);
                 }
             }
 
@@ -111,6 +117,34 @@ namespace EventStore.Core.TransactionLog.Chunks
             Log.Info("Resetting TruncateCheckpoint to {0} (0x{0:X}).", -1);
             _config.TruncateCheckpoint.Write(-1);
             _config.TruncateCheckpoint.Flush();
+        }
+
+        private void TruncateChunkAndFillWithZeros(ChunkHeader chunkHeader, string chunkFilename, long truncateChk)
+        {
+            if (chunkHeader.IsScavenged
+                || chunkHeader.ChunkStartNumber != chunkHeader.ChunkEndNumber
+                || truncateChk < chunkHeader.ChunkStartPosition
+                || truncateChk >= chunkHeader.ChunkEndPosition)
+            {
+                throw new Exception(
+                    string.Format("Chunk #{0}-{1} ({2}) is not correct unscavenged chunk! TruncatePosition: {3}, ChunkHeader: {4}.",
+                                  chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, chunkFilename, truncateChk, chunkHeader));
+            }
+
+            using (var fs = new FileStream(chunkFilename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
+            {
+                fs.SetLength(ChunkHeader.Size + chunkHeader.ChunkSize + ChunkFooter.Size);
+                fs.Position = ChunkHeader.Size + chunkHeader.GetLocalLogPosition(truncateChk);
+                var zeros = new byte[65536];
+                var leftToWrite = fs.Length - fs.Position;
+                while (leftToWrite > 0)
+                {
+                    var toWrite = (int)Math.Min(leftToWrite, zeros.Length);
+                    fs.Write(zeros, 0, toWrite);
+                    leftToWrite -= toWrite;
+                }
+                fs.Flush(flushToDisk: true);
+            }
         }
     }
 }

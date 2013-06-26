@@ -111,7 +111,7 @@ namespace EventStore.Core.Services
                 message.HttpEntityManager.ReplyStatus(
                     code,
                     deniedToHandle.Details,
-                    exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
+                    exc => Log.Debug("Error occurred while replying to HTTP with message {0}: {1}.", message.Message, exc.Message));
             }
             else
             {
@@ -123,7 +123,7 @@ namespace EventStore.Core.Services
                     config.Description,
                     config.ContentType,
                     config.Headers,
-                    exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
+                    exc => Log.Debug("Error occurred while replying to HTTP with message {0}: {1}.", message.Message, exc.Message));
             }
         }
 
@@ -141,7 +141,7 @@ namespace EventStore.Core.Services
             var response = message.Data;
             message.HttpEntityManager.ContinueReplyTextContent(
                 response,
-                exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message),
+                exc => Log.Debug("Error occurred while replying to HTTP with message {0}: {1}.", message, exc.Message),
                 () =>
                 {
                     if (message.Envelope != null)
@@ -213,8 +213,8 @@ namespace EventStore.Core.Services
                     {
                         if (t.Exception != null)
                         {
-                            Log.ErrorException(t.Exception.InnerException,
-                                               "Error on GetRequestStream for forwarded request for '{0}'.", manager.RequestedUrl);
+                            Log.Debug("Error on GetRequestStream for forwarded request for '{0}': {1}.",
+                                      manager.RequestedUrl, t.Exception.InnerException.Message);
                             ForwardReplyFailed(manager);
                             return;
                         }
@@ -228,8 +228,8 @@ namespace EventStore.Core.Services
                                 var fwReqStream = (Stream)copier.AsyncState;
                                 if (copier.Error != null)
                                 {
-                                    Log.ErrorException(copier.Error, "Error while forwarding request body from '{0}' to '{1}' ({2}).",
-                                                       srcReq.Url, forwardUri, srcReq.HttpMethod);
+                                    Log.Debug("Error while forwarding request body from '{0}' to '{1}' ({2}): {3}.",
+                                              srcReq.Url, forwardUri, srcReq.HttpMethod, copier.Error.Message);
                                     ForwardReplyFailed(manager);
                                 }
                                 else
@@ -266,8 +266,8 @@ namespace EventStore.Core.Services
                         }
                         else
                         {
-                            Log.ErrorException(t.Exception.InnerException,
-                                               "Error on EndGetResponse for forwarded request for '{0}'.", manager.RequestedUrl);
+                            Log.Debug("Error on EndGetResponse for forwarded request for '{0}': {1}.",
+                                      manager.RequestedUrl, t.Exception.InnerException.Message);
                             ForwardReplyFailed(manager);
                             return;
                         }
@@ -277,7 +277,7 @@ namespace EventStore.Core.Services
                         response = (HttpWebResponse) t.Result;
                     }
 
-                    manager.ForwardReply(response, exc => Log.ErrorException(exc, "Error forwarding response for '{0}'.", manager.RequestedUrl));
+                    manager.ForwardReply(response, exc => Log.Debug("Error forwarding response for '{0}': {1}.", manager.RequestedUrl, exc.Message));
                 });
         }
     }

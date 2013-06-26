@@ -124,7 +124,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             var startTime = DateTime.UtcNow;
             var lastTime = DateTime.UtcNow;
-            var reportPeriod = TimeSpan.FromSeconds(10);
+            var reportPeriod = TimeSpan.FromSeconds(5);
 
             Log.Info("ReadIndex building...");
 
@@ -137,7 +137,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                 long processed = 0;
                 SeqReadResult result;
-                while ((result = seqReader.TryReadNext()).Success && result.LogRecord.Position < buildToPosition)
+                while ((result = seqReader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition)
                 {
                     switch (result.LogRecord.RecordType)
                     {
@@ -753,7 +753,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                             break;
                         // prepare with TransactionEnd could be scavenged already
                         // so we could reach the same commit record. In that case have to stop
-                        if (result.LogRecord.Position >= commit.Position) 
+                        if (result.LogRecord.LogPosition >= commit.LogPosition) 
                             break;
                         if (result.LogRecord.RecordType != LogRecordType.Prepare) 
                             continue;
@@ -765,10 +765,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         // prepare with useful data or delete tombstone
                         if ((prepare.Flags & (PrepareFlags.Data | PrepareFlags.StreamDelete)) != 0) 
                         {
-                            if (new TFPos(commit.Position, prepare.LogPosition) >= pos)
+                            if (new TFPos(commit.LogPosition, prepare.LogPosition) >= pos)
                             {
                                 var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
-                                records.Add(new CommitEventRecord(eventRecord, commit.Position));
+                                records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
                                 count++;
 
                                 // for forward pass position is inclusive, 
@@ -847,7 +847,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                             break;
                         // prepare with TransactionBegin could be scavenged already
                         // so we could reach beyond the start of transaction. In that case we have to stop.
-                        if (result.LogRecord.Position < commit.TransactionPosition)
+                        if (result.LogRecord.LogPosition < commit.TransactionPosition)
                             break;
                         if (result.LogRecord.RecordType != LogRecordType.Prepare)
                             continue;
@@ -862,7 +862,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                             if (new TFPos(commitPostPos, result.RecordPostPosition) <= pos)
                             {
                                 var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
-                                records.Add(new CommitEventRecord(eventRecord, commit.Position));
+                                records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
                                 count++;
 
                                 // for backward pass we allow read the same commit, but force to skip last read prepare
@@ -1015,7 +1015,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 SeqReadResult result;
                 while ((result = seqReader.TryReadPrev()).Success)
                 {
-                    if (result.LogRecord.Position < transactionId)
+                    if (result.LogRecord.LogPosition < transactionId)
                         break;
                     if (result.LogRecord.RecordType != LogRecordType.Prepare)
                         continue;

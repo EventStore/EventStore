@@ -67,9 +67,13 @@ namespace EventStore.Common.Utils
         public static void Exit(int exitCode, string reason)
         {
             Ensure.NotNullOrEmpty(reason, "reason");
-            
-            Console.WriteLine("Exiting with exitcode {0}\nExit reason : {1}", exitCode, reason);
-            Log.Info("Exiting with exitcode {0}\nExit reason : {1}", exitCode, reason);
+
+            var message = string.Format("Exiting with exit code {0}.\nExit reason: {1}.", exitCode, reason);
+            Console.WriteLine(message);
+            if (exitCode != 0)
+                Log.Error(message);
+            else
+                Log.Info(message);
 
             LogManager.Finish();
 
