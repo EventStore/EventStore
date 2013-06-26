@@ -731,6 +731,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             var footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5.Hash);
             workItem.Stream.Write(footerWithHash.AsByteArray(), 0, ChunkFooter.Size);
 
+            Flush(); // trying to prevent bug with resized file, but no data in it
+
             var fileSize = ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size;
             if (workItem.Stream.Length != fileSize)
                 workItem.Stream.SetLength(fileSize);
