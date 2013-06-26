@@ -141,9 +141,10 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private static TcpPackage CreateWriteRequestPackage(TcpCommand command, ClientMessage.WriteRequestMessage msg, object dto)
         {
+            // we forwarding with InternalCorrId, not client's CorrelationId!!!
             return msg.Login != null && msg.Password != null
-                ? new TcpPackage(command, TcpFlags.Authenticated, msg.CorrelationId, msg.Login, msg.Password, dto.Serialize())
-                : new TcpPackage(command, TcpFlags.None, msg.CorrelationId, null, null, dto.Serialize());
+                ? new TcpPackage(command, TcpFlags.Authenticated, msg.InternalCorrId, msg.Login, msg.Password, dto.Serialize())
+                : new TcpPackage(command, TcpFlags.None, msg.InternalCorrId, null, null, dto.Serialize());
         }
 
         private static ClientMessage.WriteEventsCompleted UnwrapWriteEventsCompleted(TcpPackage package, IEnvelope envelope)

@@ -231,6 +231,19 @@ namespace EventStore.Core.Messages
                 FirstEventNumber = EventNumber.Invalid;
             }
 
+            private WriteEventsCompleted(Guid correlationId, OperationResult result, string message, int firstEventNumber)
+            {
+                CorrelationId = correlationId;
+                Result = result;
+                Message = message;
+                FirstEventNumber = firstEventNumber;
+            }
+
+            public WriteEventsCompleted WithCorrelationId(Guid newCorrId)
+            {
+                return new WriteEventsCompleted(newCorrId, Result, Message, FirstEventNumber);
+            }
+
             public override string ToString()
             {
                 return string.Format("WRITE COMPLETED: CorrelationId: {0}, Result: {1}, Message: {2}, FirstEventNumber: {3}",
@@ -276,6 +289,11 @@ namespace EventStore.Core.Messages
                 Result = result;
                 Message = message;
             }
+
+            public TransactionStartCompleted WithCorrelationId(Guid newCorrId)
+            {
+                return new TransactionStartCompleted(newCorrId, TransactionId, Result, Message);
+            }
         }
 
         public class TransactionWrite : WriteRequestMessage
@@ -316,6 +334,11 @@ namespace EventStore.Core.Messages
                 Result = result;
                 Message = message;
             }
+
+            public TransactionWriteCompleted WithCorrelationId(Guid newCorrId)
+            {
+                return new TransactionWriteCompleted(newCorrId, TransactionId, Result, Message);
+            }
         }
 
         public class TransactionCommit : WriteRequestMessage
@@ -350,6 +373,11 @@ namespace EventStore.Core.Messages
                 TransactionId = transactionId;
                 Result = result;
                 Message = message;
+            }
+
+            public TransactionCommitCompleted WithCorrelationId(Guid newCorrId)
+            {
+                return new TransactionCommitCompleted(newCorrId, TransactionId, Result, Message);
             }
         }
 
@@ -388,6 +416,11 @@ namespace EventStore.Core.Messages
                 CorrelationId = correlationId;
                 Result = result;
                 Message = message;
+            }
+
+            public DeleteStreamCompleted WithCorrelationId(Guid newCorrId)
+            {
+                return new DeleteStreamCompleted(newCorrId, Result, Message);
             }
         }
 
