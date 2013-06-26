@@ -40,6 +40,7 @@ namespace EventStore.ClientAPI.Core
         public readonly SubscriptionOperation Operation;
         public readonly int MaxRetries;
         public readonly TimeSpan Timeout;
+        public readonly DateTime CreatedTime;
 
         public Guid ConnectionId;
         public Guid CorrelationId;
@@ -54,6 +55,7 @@ namespace EventStore.ClientAPI.Core
             Operation = operation;
             MaxRetries = maxRetries;
             Timeout = timeout;
+            CreatedTime = DateTime.UtcNow;
 
             CorrelationId = Guid.NewGuid();
             RetryCount = 0;
@@ -62,13 +64,9 @@ namespace EventStore.ClientAPI.Core
 
         public override string ToString()
         {
-            return string.Format("Subscription {0} ({1:B}): {2}, is subscribed: {3}, retry count: {4}, last updated: {5:HH:mm:ss.fff}",
-                                 Operation.GetType().Name,
-                                 CorrelationId,
-                                 Operation,
-                                 IsSubscribed,
-                                 RetryCount,
-                                 LastUpdated);
+            return string.Format("Subscription {0} ({1:B}): {2}, is subscribed: {3}, retry count: {4}, "
+                                 + "created: {5:HH:mm:ss.fff}, last updated: {6:HH:mm:ss.fff}",
+                                 Operation.GetType().Name, CorrelationId, Operation, IsSubscribed, RetryCount, CreatedTime, LastUpdated);
         }
     }
 
@@ -136,9 +134,9 @@ namespace EventStore.ClientAPI.Core
                 }
                 else if (subscription.Timeout > TimeSpan.Zero && DateTime.UtcNow - subscription.LastUpdated > _settings.OperationTimeout)
                 {
-                    var err = String.Format("EventStoreConnection '{0}': subscription {1} never got confirmation from server.\n" +
-                                            "Last state update: {2:HH:mm:ss.fff}, UTC now: {3:HH:mm:ss.fff}.",
-                                            _connectionName, subscription, subscription.LastUpdated, DateTime.UtcNow);
+                    var err = String.Format("EventStoreConnection '{0}': subscription never got confirmation from server.\n" +
+                                            "UTC now: {1:HH:mm:ss.fff}, operation: {2}.",
+                                            _connectionName, DateTime.UtcNow, subscription);
                     _settings.Log.Error(err);
 
                     if (_settings.FailOnNoServerResponse)
