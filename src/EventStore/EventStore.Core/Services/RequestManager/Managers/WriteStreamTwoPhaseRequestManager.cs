@@ -50,28 +50,28 @@ namespace EventStore.Core.Services.RequestManager.Managers
         public void Handle(ClientMessage.WriteEvents request)
         {
             _request = request;
-            Init(request.Envelope, request.CorrelationId, request.EventStreamId, request.User, null, StreamAccessType.Write);
+            Init(request.Envelope, request.InternalCorrId, request.CorrelationId, request.EventStreamId, request.User, null, StreamAccessType.Write);
         }
 
-        protected override void OnSecurityAccessGranted()
+        protected override void OnSecurityAccessGranted(Guid internalCorrId)
         {
             Publisher.Publish(
                 new StorageMessage.WritePrepares(
-                    CorrelationId, PublishEnvelope, _request.EventStreamId, _request.ExpectedVersion, _request.Events,
+                    internalCorrId, PublishEnvelope, _request.EventStreamId, _request.ExpectedVersion, _request.Events,
                     liveUntil: NextTimeoutTime - TimeoutOffset));
             _request = null;
         }
 
-        protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
+        protected override void CompleteSuccessRequest(int firstEventNumber)
         {
-            base.CompleteSuccessRequest(correlationId, firstEventNumber);
-            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(correlationId, firstEventNumber));
+            base.CompleteSuccessRequest(firstEventNumber);
+            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, firstEventNumber));
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, OperationResult result, string error)
+        protected override void CompleteFailedRequest(OperationResult result, string error)
         {
-            base.CompleteFailedRequest(correlationId, result, error);
-            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(correlationId, result, error));
+            base.CompleteFailedRequest(result, error);
+            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, result, error));
         }
 
     }

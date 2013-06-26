@@ -31,29 +31,32 @@ using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.WriteEvents
+namespace EventStore.Core.Tests.Services.Replication.WriteStream
 {
     [TestFixture]
     public class when_creating_write_stream_request_manager
     {
+        protected static readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
+        protected static readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
+
         [Test]
         public void null_publisher_throws_argument_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => new WriteStreamTwoPhaseRequestManager(null, 3, 3, TimeSpan.Zero, TimeSpan.Zero));
+            Assert.Throws<ArgumentNullException>(() => new WriteStreamTwoPhaseRequestManager(null, 3, 3, PrepareTimeout, CommitTimeout));
         }
 
         [Test]
         public void zero_prepare_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 0, 3, TimeSpan.Zero, TimeSpan.Zero));
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 0, 3, PrepareTimeout, CommitTimeout));
         }
 
         [Test]
         public void zero_commit_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 3, 0, TimeSpan.Zero, TimeSpan.Zero));
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 3, 0, PrepareTimeout, CommitTimeout));
         }
 
 
@@ -61,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Replication.WriteEvents
         public void negative_commit_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 3, -1, TimeSpan.Zero, TimeSpan.Zero));
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 3, -1, PrepareTimeout, CommitTimeout));
         }
 
 
@@ -69,7 +72,7 @@ namespace EventStore.Core.Tests.Services.Replication.WriteEvents
         public void negative_prepare_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), -1, 3, TimeSpan.Zero, TimeSpan.Zero));
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), -1, 3, PrepareTimeout, CommitTimeout));
         }
     }
 }

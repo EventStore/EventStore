@@ -24,51 +24,55 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 
 
-using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.DeleteStream
+namespace EventStore.Core.Tests.Services.Replication.WriteStream
 {
-    [Ignore("Due to changed timeout mechanism and adding dependency on time, it is not easy to test this anymore.")]
-    public class when_create_stream_gets_prepare_timeout_after_prepares : RequestManagerSpecification
+    public class when_write_stream_completes_successfully : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new DeleteStreamTwoPhaseRequestManager(publisher, 3, 3, TimeSpan.Zero, TimeSpan.Zero);
+            return new WriteStreamTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ClientMessage.DeleteStream(CorrelationId, Envelope, false, "test123", ExpectedVersion.Any, null);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, false, "test123", ExpectedVersion.Any, new[] { DummyEvent() }, null);
+            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
+            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
+            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
+            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3);
+            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3);
+
         }
 
         protected override Message When()
         {
-            throw new InvalidOperationException();
-            //return new StorageMessage.PreparePhaseTimeout(CorrelationId);
+            return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3);
         }
 
         [Test]
-        public void no_messages_are_published()
+        public void successful_request_message_is_publised()
         {
-            Assert.That(produced.Count == 0);
+            Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
+                x => x.CorrelationId == InternalCorrId && x.Success));
         }
 
         [Test]
-        public void the_envelope_is_not_replied_to()
+        public void the_envelope_is_replied_to_with_success()
         {
-            Assert.AreEqual(0, Envelope.Replies.Count);
+            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.WriteEventsCompleted>(
+                x => x.CorrelationId == ClientCorrId && x.Result == OperationResult.Success));
         }
     }
 }

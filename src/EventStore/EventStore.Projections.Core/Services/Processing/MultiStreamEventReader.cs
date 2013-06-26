@@ -255,7 +255,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested.Add(stream);
 
             var readEventsForward = new ClientMessage.ReadStreamEventsForward(
-                EventReaderCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
+                Guid.NewGuid(), EventReaderCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
                 _maxReadCount, _resolveLinkTos, null, ReadAs);
             if (delay)
                 _publisher.Publish(

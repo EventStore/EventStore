@@ -525,9 +525,10 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void BeginLoadProjectionList(Action completedAction, int from = -1)
         {
+            var corrId = Guid.NewGuid();
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), _readDispatcher.Envelope, "$projections-$all", from, _readEventsBatchSize,
+                    corrId, corrId, _readDispatcher.Envelope, "$projections-$all", from, _readEventsBatchSize,
                     resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 m => LoadProjectionListCompleted(m, from, completedAction));
         }
@@ -597,9 +598,10 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void CreateFakeProjection(Action action)
         {
+            var corrId = Guid.NewGuid();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, true, "$projections-$all", ExpectedVersion.NoStream,
+                    corrId, corrId, _writeDispatcher.Envelope, true, "$projections-$all", ExpectedVersion.NoStream,
                     new Event(Guid.NewGuid(), "$ProjectionsInitialized", false, Empty.ByteArray, Empty.ByteArray),
                     SystemAccount.Principal), 
                 completed => WriteFakeProjectionCompleted(completed, action));
@@ -684,9 +686,10 @@ namespace EventStore.Projections.Core.Services.Management
         private void BeginWriteProjectionRegistration(string name, Action<int> completed)
         {
             const string eventStreamId = "$projections-$all";
+            var corrId = Guid.NewGuid();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
+                    corrId, corrId, _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "$ProjectionCreated", false, Helper.UTF8NoBom.GetBytes(name), Empty.ByteArray),
                     SystemAccount.Principal),
                 m => WriteProjectionRegistrationCompleted(m, completed, name, eventStreamId));

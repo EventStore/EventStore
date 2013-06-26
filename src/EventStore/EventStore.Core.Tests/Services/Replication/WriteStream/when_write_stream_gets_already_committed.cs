@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -36,40 +35,37 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.WriteEvents
+namespace EventStore.Core.Tests.Services.Replication.WriteStream
 {
-    [Ignore("Due to changed timeout mechanism and adding dependency on time, it is not easy to test this anymore.")]
-    public class when_write_stream_gets_prepare_timeout_before_prepares : RequestManagerSpecification
+    public class when_write_stream_gets_already_committed : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new WriteStreamTwoPhaseRequestManager(publisher, 3, 3, TimeSpan.Zero, TimeSpan.Zero);
+            return new WriteStreamTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ClientMessage.WriteEvents(CorrelationId, Envelope, false, "test123", ExpectedVersion.Any, new[] { DummyEvent() }, null);
+            yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, false, "test123", ExpectedVersion.Any, new[] { DummyEvent() }, null);
         }
 
         protected override Message When()
         {
-            throw new InvalidOperationException();
-            //return new StorageMessage.PreparePhaseTimeout(CorrelationId);
+            return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1);
         }
 
         [Test]
-        public void failed_request_message_is_published()
+        public void successful_request_message_is_publised()
         {
-            Assert.That(produced.ContainsSingle<StorageMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId && x.Success == false));
+            Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
+                x => x.CorrelationId == InternalCorrId && x.Success));
         }
 
         [Test]
-        public void the_envelope_is_replied_to_with_failure()
+        public void the_envelope_is_replied_to_with_success()
         {
-            Assert.AreEqual(1, Envelope.Replies.Count);
-            var reply = (ClientMessage.WriteEventsCompleted)Envelope.Replies[0];
-            Assert.AreEqual(CorrelationId, reply.CorrelationId);
-            Assert.AreEqual(OperationResult.PrepareTimeout, reply.Result);
+            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.WriteEventsCompleted>(
+                x => x.CorrelationId == ClientCorrId && x.Result == OperationResult.Success));
         }
     }
 }

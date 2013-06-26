@@ -91,35 +91,35 @@ namespace EventStore.Core.Services.RequestManager
         public void Handle(ClientMessage.WriteEvents message)
         {
             var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
-            _currentRequests.Add(message.CorrelationId, manager);
+            _currentRequests.Add(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 
         public void Handle(ClientMessage.DeleteStream message)
         {
             var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
-            _currentRequests.Add(message.CorrelationId, manager);
+            _currentRequests.Add(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 
         public void Handle(ClientMessage.TransactionStart message)
         {
             var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
-            _currentRequests.Add(message.CorrelationId, manager);
+            _currentRequests.Add(message.InternalCorrId, manager);
             manager.Handle(message);
         }
         
         public void Handle(ClientMessage.TransactionWrite message)
         {
             var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
-            _currentRequests.Add(message.CorrelationId, manager);
+            _currentRequests.Add(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 
         public void Handle(ClientMessage.TransactionCommit message)
         {
             var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
-            _currentRequests.Add(message.CorrelationId, manager);
+            _currentRequests.Add(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 

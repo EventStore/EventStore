@@ -324,10 +324,11 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
                 throw new Exception();
             _awaitingListEventsCompleted = true;
+            var corrId = Guid.NewGuid();
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     //TODO: reading events history in batches of 1 event (slow?)
-                    Guid.NewGuid(), _readDispatcher.Envelope, _streamId, fromEventNumber, 1, 
+                    corrId, corrId, _readDispatcher.Envelope, _streamId, fromEventNumber, 1, 
                     resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 completed => ReadStreamEventsBackwardCompleted(completed, upTo));
         }
@@ -355,9 +356,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void PublishWriteMetaStream()
         {
+            var corrId = Guid.NewGuid();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, true, SystemStreams.MetastreamOf(_streamId), ExpectedVersion.Any,
+                    corrId, corrId, _writeDispatcher.Envelope, true, SystemStreams.MetastreamOf(_streamId), ExpectedVersion.Any,
                     _submittedWriteMetastreamEvent, _writeAs), HandleMetadataWriteCompleted);
         }
 
@@ -487,9 +489,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             _awaitingWriteCompleted = true;
+            var corrId = Guid.NewGuid();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, true, _streamId, _lastKnownEventNumber,
+                    corrId, corrId, _writeDispatcher.Envelope, true, _streamId, _lastKnownEventNumber,
                     _submittedToWriteEvents, _writeAs), Handle);
 
         }

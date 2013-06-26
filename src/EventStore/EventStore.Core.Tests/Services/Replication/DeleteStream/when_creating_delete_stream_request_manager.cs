@@ -35,24 +35,27 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
     [TestFixture]
     public class when_creating_delete_stream_request_manager
     {
+        protected static readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
+        protected static readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
+
         [Test]
         public void null_publisher_throws_argument_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => new DeleteStreamTwoPhaseRequestManager(null, 3, 3, TimeSpan.Zero, TimeSpan.Zero));
+            Assert.Throws<ArgumentNullException>(() => new DeleteStreamTwoPhaseRequestManager(null, 3, 3, PrepareTimeout, CommitTimeout));
         }
 
         [Test]
         public void zero_prepare_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 0, 3, TimeSpan.Zero, TimeSpan.Zero));
+                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 0, 3, PrepareTimeout, CommitTimeout));
         }
 
         [Test]
         public void zero_commit_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 3, 0, TimeSpan.Zero, TimeSpan.Zero));
+                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 3, 0, PrepareTimeout, CommitTimeout));
         }
 
 
@@ -60,7 +63,7 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
         public void negative_commit_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 3, -1, TimeSpan.Zero, TimeSpan.Zero));
+                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 3, -1, PrepareTimeout, CommitTimeout));
         }
 
 
@@ -68,7 +71,7 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
         public void negative_prepare_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), -1, 3, TimeSpan.Zero, TimeSpan.Zero));
+                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), -1, 3, PrepareTimeout, CommitTimeout));
         }
     }
 }

@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using EventStore.Common.Log;
@@ -110,9 +109,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Register(http, "/streams/{stream}/{event}/backward/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/{stream}/{event}/forward/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
 
-//            Register(http, "/streams/{stream}/{event}/data", HttpMethod.Get, GetStreamEventData, Codec.NoCodecs, EventDataSupportedCodecs);
-//            Register(http, "/streams/{stream}/{event}/metadata", HttpMethod.Get, GetStreamEventMetadata, Codec.NoCodecs, EventDataSupportedCodecs);
-
             // METASTREAMS
             Register(http, "/streams/{stream}/metadata", HttpMethod.Post, PostMetastreamEvent, AtomCodecs, AtomCodecs);
 
@@ -122,11 +118,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Register(http, "/streams/{stream}/metadata/{event}/{count}?embed={embed}", HttpMethod.Get, GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/{stream}/metadata/{event}/backward/{count}?embed={embed}", HttpMethod.Get, GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/{stream}/metadata/{event}/forward/{count}?embed={embed}", HttpMethod.Get, GetMetastreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
-
-//            Register(http, "/streams/{stream}/metadata/data", HttpMethod.Get, GetMetastreamEventData, Codec.NoCodecs, EventDataSupportedCodecs);
-//            Register(http, "/streams/{stream}/metadata/metadata", HttpMethod.Get, GetMetastreamEventMetadata, Codec.NoCodecs, EventDataSupportedCodecs);
-//            Register(http, "/streams/{stream}/metadata/{event}/data", HttpMethod.Get, GetMetastreamEventData, Codec.NoCodecs, EventDataSupportedCodecs);
-//            Register(http, "/streams/{stream}/metadata/{event}/metadata", HttpMethod.Get, GetMetastreamEventMetadata, Codec.NoCodecs, EventDataSupportedCodecs);
 
             // $ALL
             Register(http, "/streams/$all?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
@@ -184,7 +175,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             if (allowForwarding && _httpForwarder.ForwardRequest(manager))
                 return;
             var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.DeleteStreamCompleted, Configure.DeleteStreamCompleted);
-            Publish(new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, allowForwarding, stream, expectedVersion, manager.User));
+            var corrId = Guid.NewGuid();
+            Publish(new ClientMessage.DeleteStream(corrId, corrId, envelope, allowForwarding, stream, expectedVersion, manager.User));
         }
 
         private void GetStreamEvent(HttpEntityManager manager, UriTemplateMatch match)
@@ -207,34 +199,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
 
             GetStreamEvent(manager, stream, eventNumber, embed);
-        }
-
-        private void GetStreamEventData(HttpEntityManager manager, UriTemplateMatch match)
-        {
-            var stream = match.BoundVariables["stream"];
-            var evNum = match.BoundVariables["event"];
-            var resolve = match.BoundVariables["resolve"] ?? "yes";  //TODO: reply invalid ??? if neither NO nor YES
-            
-            int eventNumber = -1;
-            bool shouldResolve = resolve.Equals("yes", StringComparison.OrdinalIgnoreCase);
-
-            if (stream.IsEmptyString())
-            {
-                SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
-                return;
-            }
-            if (evNum != "head" && (!int.TryParse(evNum, out eventNumber) || eventNumber < 0))
-            {
-                SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
-                return;
-            }
-
-            GetStreamEventData(manager, stream, eventNumber, shouldResolve);
-        }
-
-        private void GetStreamEventMetadata(HttpEntityManager manager, UriTemplateMatch match)
-        {
-            GetStreamEventData(manager, match);
         }
 
         private void GetStreamEventsBackward(HttpEntityManager manager, UriTemplateMatch match)
@@ -344,34 +308,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             GetStreamEvent(manager, SystemStreams.MetastreamOf(stream), eventNumber, embed);
         }
 
-        private void GetMetastreamEventData(HttpEntityManager manager, UriTemplateMatch match)
-        {
-            var stream = match.BoundVariables["stream"];
-            var evNum = match.BoundVariables["event"];
-            var resolve = match.BoundVariables["resolve"] ?? "yes";  //TODO: reply invalid ??? if neither NO nor YES
-
-            int eventNumber = -1;
-            bool shouldResolve = resolve.Equals("yes", StringComparison.OrdinalIgnoreCase);
-
-            if (stream.IsEmptyString() || SystemStreams.IsMetastream(stream))
-            {
-                SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
-                return;
-            }
-            if (evNum != null && evNum != "head" && (!int.TryParse(evNum, out eventNumber) || eventNumber < 0))
-            {
-                SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
-                return;
-            }
-
-            GetStreamEventData(manager, SystemStreams.MetastreamOf(stream), eventNumber, shouldResolve);
-        }
-
-        private void GetMetastreamEventMetadata(HttpEntityManager manager, UriTemplateMatch match)
-        {
-            GetMetastreamEventData(manager, match);
-        }
-
         private void GetMetastreamEventsBackward(HttpEntityManager manager, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
@@ -457,7 +393,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   manager,
                                                   (args, msg) => Format.ReadAllEventsBackwardCompleted(args, msg, embed),
                                                   (args, msg) => Configure.ReadAllEventsBackwardCompleted(args, msg, position == TFPos.HeadOfTf));
-            Publish(new ClientMessage.ReadAllEventsBackward(Guid.NewGuid(), envelope,
+            var corrId = Guid.NewGuid();
+            Publish(new ClientMessage.ReadAllEventsBackward(corrId, corrId, envelope,
                                                             position.CommitPosition, position.PreparePosition, count,
                                                             true, GetETagTFPosition(manager), manager.User));
         }
@@ -486,7 +423,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   manager,
                                                   (args, msg) => Format.ReadAllEventsForwardCompleted(args, msg, embed),
                                                   (args, msg) => Configure.ReadAllEventsForwardCompleted(args, msg, headOfTf: false));
-            Publish(new ClientMessage.ReadAllEventsForward(Guid.NewGuid(), envelope,
+            var corrId = Guid.NewGuid();
+            Publish(new ClientMessage.ReadAllEventsForward(corrId, corrId, envelope,
                                                            position.CommitPosition, position.PreparePosition, count,
                                                            true, GetETagTFPosition(manager), manager.User));
         }
@@ -535,7 +473,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           manager,
                                                           Format.WriteEventsCompleted,
                                                           (a, m) => Configure.WriteEventsCompleted(a, m, stream));
-                    var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, allowForwarding, stream, expectedVersion, events, manager.User);
+                    var corrId = Guid.NewGuid();
+                    var msg = new ClientMessage.WriteEvents(corrId, corrId, envelope, allowForwarding,
+                                                            stream, expectedVersion, events, manager.User);
                     Publish(msg);
                 },
                 e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
@@ -547,15 +487,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   manager,
                                                   (args, message) => Format.EventEntry(args, message, embed),
                                                   (args, message) => Configure.EventEntry(args, message, headEvent: eventNumber == -1));
-            Publish(new ClientMessage.ReadEvent(Guid.NewGuid(), envelope, stream, eventNumber, true, manager.User));
-        }
-
-        private void GetStreamEventData(HttpEntityManager manager, string stream, int eventNumber, bool shouldResolve)
-        {
-            _networkSendQueue.Publish(new HttpMessage.HttpSend(manager, Configure.EventMetadata(manager), string.Empty, null));
-
-            //var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.EventData, Configure.EventEntry);
-            //Publish(new ClientMessage.ReadEvent(Guid.NewGuid(), envelope, stream, eventNumber, shouldResolve));
+            var corrId = Guid.NewGuid();
+            Publish(new ClientMessage.ReadEvent(corrId, corrId, envelope, stream, eventNumber, true, manager.User));
         }
 
         private void GetStreamEventsBackward(HttpEntityManager manager, string stream, int eventNumber, int count, bool headOfStream, EmbedLevel embed)
@@ -565,7 +498,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   (ent, msg) =>
                                                   Format.GetStreamEventsBackward(ent, msg, embed, headOfStream),
                                                   (args, msg) => Configure.GetStreamEventsBackward(args, msg, headOfStream));
-            Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), envelope, stream, eventNumber, count,
+            var corrId = Guid.NewGuid();
+            Publish(new ClientMessage.ReadStreamEventsBackward(corrId, corrId, envelope, stream, eventNumber, count,
                                                                true, GetETagStreamVersion(manager), manager.User));
         }
 
@@ -575,7 +509,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   manager,
                                                   (ent, msg) => Format.GetStreamEventsForward(ent, msg, embed),
                                                   Configure.GetStreamEventsForward);
-            Publish(new ClientMessage.ReadStreamEventsForward(Guid.NewGuid(), envelope, stream, eventNumber, count,
+            var corrId = Guid.NewGuid();
+            Publish(new ClientMessage.ReadStreamEventsForward(corrId, corrId, envelope, stream, eventNumber, count,
                                                               true, GetETagStreamVersion(manager), manager.User));
         }
 

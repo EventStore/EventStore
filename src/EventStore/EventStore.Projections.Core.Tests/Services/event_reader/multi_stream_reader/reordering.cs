@@ -126,7 +126,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                 var correlationId = Guid.NewGuid();
                 yield return
                     new ClientMessage.TransactionStart(
-                        correlationId, new PublishEnvelope(GetInputQueue()), false, "stream-a", 0, null);
+                        Guid.NewGuid(), correlationId, new PublishEnvelope(GetInputQueue()), false, "stream-a", 0, null);
 
                 var transactionId =
                     _consumer.HandledMessages.OfType<ClientMessage.TransactionStartCompleted>()
@@ -136,25 +136,25 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                 correlationId = Guid.NewGuid();
                 yield return
                     new ClientMessage.TransactionWrite(
-                        correlationId, new PublishEnvelope(GetInputQueue()), false, transactionId,
+                        Guid.NewGuid(), correlationId, new PublishEnvelope(GetInputQueue()), false, transactionId,
                         new[] {new Event(Guid.NewGuid(), "type1", true, "{Data: 3, Transacted=true}", "{}")}, null);
 
                 correlationId = Guid.NewGuid();
                 yield return
                     new ClientMessage.WriteEvents(
-                        correlationId, new PublishEnvelope(GetInputQueue()), false, "stream-b", 0,
+                        Guid.NewGuid(), correlationId, new PublishEnvelope(GetInputQueue()), false, "stream-b", 0,
                         new[] {new Event(Guid.NewGuid(), "type1", true, "{Data: 4}", "{}")}, null);
 
                 correlationId = Guid.NewGuid();
                 yield return
                     new ClientMessage.TransactionWrite(
-                        correlationId, new PublishEnvelope(GetInputQueue()), false, transactionId,
+                        Guid.NewGuid(), correlationId, new PublishEnvelope(GetInputQueue()), false, transactionId,
                         new[] {new Event(Guid.NewGuid(), "type1", true, "{Data: 5, Transacted=true}", "{}")}, null);
 
                 correlationId = Guid.NewGuid();
                 yield return
                     new ClientMessage.TransactionCommit(
-                        correlationId, new PublishEnvelope(GetInputQueue()), false, transactionId, null);
+                        Guid.NewGuid(), correlationId, new PublishEnvelope(GetInputQueue()), false, transactionId, null);
 
                 yield return Yield;
 

@@ -176,8 +176,9 @@ namespace EventStore.Core.Services.Monitoring
         {
             var data = rawStats.ToJsonBytes();
             var evnt = new Event(Guid.NewGuid(), SystemEventTypes.StatsCollection, true, data, null);
-            var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), NoopEnvelope,  true, _nodeStatsStream, 
-                                                    ExpectedVersion.Any, evnt, SystemAccount.Principal);
+            var corrId = Guid.NewGuid();
+            var msg = new ClientMessage.WriteEvents(corrId, corrId, NoopEnvelope,  true, _nodeStatsStream, 
+                                                    ExpectedVersion.Any, new[]{evnt}, SystemAccount.Principal);
             _mainBus.Publish(msg);
         }
 
@@ -206,13 +207,12 @@ namespace EventStore.Core.Services.Monitoring
         {
             var metadata = Helper.UTF8NoBom.GetBytes(StreamMetadata);
             _streamMetadataWriteCorrId = Guid.NewGuid();
-            _mainBus.Publish(new ClientMessage.WriteEvents(_streamMetadataWriteCorrId,
-                                                           new PublishEnvelope(_monitoringBus),
-                                                           true,
-                                                           SystemStreams.MetastreamOf(_nodeStatsStream),
-                                                           -1,
-                                                           new Event(Guid.NewGuid(), "$stats-metadata", true, metadata, null),
-                                                           SystemAccount.Principal));
+            _mainBus.Publish(
+                new ClientMessage.WriteEvents(
+                    _streamMetadataWriteCorrId, _streamMetadataWriteCorrId, new PublishEnvelope(_monitoringBus),
+                    true, SystemStreams.MetastreamOf(_nodeStatsStream), ExpectedVersion.NoStream,
+                    new[]{new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata, null)},
+                    SystemAccount.Principal));
         }
 
         public void Handle(ClientMessage.WriteEventsCompleted message)

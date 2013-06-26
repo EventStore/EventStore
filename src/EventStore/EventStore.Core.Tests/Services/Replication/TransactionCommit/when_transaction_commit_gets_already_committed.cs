@@ -41,30 +41,31 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new TransactionCommitTwoPhaseRequestManager(publisher, 3, 3, TimeSpan.Zero, TimeSpan.Zero);
+            return new TransactionCommitTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ClientMessage.TransactionCommit(CorrelationId, Envelope, false, 4, null);
+            yield return new ClientMessage.TransactionCommit(InternalCorrId, ClientCorrId, Envelope, false, 4, null);
         }
 
         protected override Message When()
         {
-            return new StorageMessage.AlreadyCommitted(CorrelationId, "test123", 0, 1);
+            return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1);
         }
 
         [Test]
         public void successful_request_message_is_publised()
         {
-            Assert.That(produced.ContainsSingle<StorageMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId && x.Success));
+            Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
+                x => x.CorrelationId == InternalCorrId && x.Success));
         }
 
         [Test]
         public void the_envelope_is_replied_to_with_success()
         {
-            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.TransactionCommitCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                                       x.Result == OperationResult.Success));
+            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.TransactionCommitCompleted>(
+                x => x.CorrelationId == ClientCorrId && x.Result == OperationResult.Success));
         }
     }
 }

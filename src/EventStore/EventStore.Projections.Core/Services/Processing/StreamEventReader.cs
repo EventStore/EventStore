@@ -170,7 +170,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private Message CreateReadEventsMessage()
         {
             return new ClientMessage.ReadStreamEventsForward(
-                EventReaderCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
+                Guid.NewGuid(), EventReaderCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
                 _maxReadCount, _resolveLinkTos, null, ReadAs);
         }
 

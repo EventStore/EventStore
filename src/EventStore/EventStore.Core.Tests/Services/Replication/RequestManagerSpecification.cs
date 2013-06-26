@@ -40,15 +40,20 @@ namespace EventStore.Core.Tests.Services.Replication
 {
     public abstract class RequestManagerSpecification
     {
-        protected TwoPhaseRequestManagerBase manager;
-        protected abstract TwoPhaseRequestManagerBase OnManager(FakePublisher publisher);
-        protected List<Message> produced;
-        protected abstract IEnumerable<Message> WithInitialMessages();
-        protected FakePublisher _publisher;
-        protected Guid CorrelationId = Guid.NewGuid();
+        protected static readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
+        protected static readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
+
+        protected TwoPhaseRequestManagerBase Manager;
+        protected List<Message> Produced;
+        protected FakePublisher Publisher;
+        protected Guid InternalCorrId = Guid.NewGuid();
+        protected Guid ClientCorrId = Guid.NewGuid();
         protected byte[] Metadata = new byte[255];
         protected byte[] EventData = new byte[255];
         protected FakeEnvelope Envelope;
+
+        protected abstract TwoPhaseRequestManagerBase OnManager(FakePublisher publisher);
+        protected abstract IEnumerable<Message> WithInitialMessages();
         protected abstract Message When();
 
         protected Event DummyEvent()
@@ -59,16 +64,16 @@ namespace EventStore.Core.Tests.Services.Replication
         [SetUp]
         public void Setup()
         {
-            _publisher = new FakePublisher();
+            Publisher = new FakePublisher();
             Envelope = new FakeEnvelope();
-            manager = OnManager(_publisher);
+            Manager = OnManager(Publisher);
             foreach(var m in WithInitialMessages())
             {
-                manager.AsDynamic().Handle(m);
+                Manager.AsDynamic().Handle(m);
             }
-            _publisher.Messages.Clear();
-            manager.AsDynamic().Handle(When());
-            produced = new List<Message>(_publisher.Messages);
+            Publisher.Messages.Clear();
+            Manager.AsDynamic().Handle(When());
+            Produced = new List<Message>(Publisher.Messages);
         }
     }
 }
