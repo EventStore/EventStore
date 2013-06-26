@@ -124,7 +124,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             var startTime = DateTime.UtcNow;
             var lastTime = DateTime.UtcNow;
-            var reportPeriod = TimeSpan.FromSeconds(10);
+            var reportPeriod = TimeSpan.FromSeconds(5);
 
             Log.Info("ReadIndex building...");
 

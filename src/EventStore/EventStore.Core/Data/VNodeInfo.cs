@@ -32,7 +32,7 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Core.Data
 {
-    public partial class VNodeInfo
+    public class VNodeInfo
     {
         public readonly Guid InstanceId;
         public readonly IPEndPoint InternalTcp;
