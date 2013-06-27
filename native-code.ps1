@@ -1,6 +1,8 @@
 ﻿# Event Store Build (.NET/Windows) - v8.ps1
 # Use Invoke-psake ? to see further description
 
+Framework "4.0x64"
+
 Task default -depends ?
 
 Task ? -description "Writes script documentation to the host" {
