@@ -83,7 +83,7 @@ namespace EventStore.Core.Helpers
             var corrId = Guid.NewGuid();
             BackwardReader.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    corrId, corrId, BackwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, null, principal),
+                    corrId, corrId, BackwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, false, null, principal),
                 action);
         }
 
@@ -94,7 +94,7 @@ namespace EventStore.Core.Helpers
             var corrId = Guid.NewGuid();
             ForwardReader.Publish(
                 new ClientMessage.ReadStreamEventsForward(
-                    corrId, corrId, ForwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, null, principal),
+                    corrId, corrId, ForwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, false, null, principal),
                 action);
         }
 
@@ -142,7 +142,7 @@ namespace EventStore.Core.Helpers
         {
             var corrId = Guid.NewGuid();
             Writer.Publish(
-                new ClientMessage.WriteEvents(corrId, corrId, Writer.Envelope, true, streamId, expectedVersion, events, principal),
+                new ClientMessage.WriteEvents(corrId, corrId, Writer.Envelope, false, streamId, expectedVersion, events, principal),
                 action);
         }
 
@@ -152,7 +152,7 @@ namespace EventStore.Core.Helpers
         {
             var corrId = Guid.NewGuid();
             StreamDeleter.Publish(
-                new ClientMessage.DeleteStream(corrId, corrId, Writer.Envelope, true, streamId, expectedVersion, principal), action);
+                new ClientMessage.DeleteStream(corrId, corrId, Writer.Envelope, false, streamId, expectedVersion, principal), action);
         }
 
         public void UpdateStreamAcl(

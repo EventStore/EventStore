@@ -39,20 +39,23 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly Position _position;
         private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
+        private readonly bool _requireMaster;
 
         public ReadAllEventsForwardOperation(ILogger log, TaskCompletionSource<AllEventsSlice> source,
-                                             Position position, int maxCount, bool resolveLinkTos, 
+                                             Position position, int maxCount, bool resolveLinkTos, bool requireMaster,
                                              UserCredentials userCredentials)
             : base(log, source, TcpCommand.ReadAllEventsForward, TcpCommand.ReadAllEventsForwardCompleted, userCredentials)
         {
             _position = position;
             _maxCount = maxCount;
             _resolveLinkTos = resolveLinkTos;
+            _requireMaster = requireMaster;
         }
 
         protected override object CreateRequestDto()
         {
-            return new ClientMessage.ReadAllEvents(_position.CommitPosition, _position.PreparePosition, _maxCount, _resolveLinkTos);
+            return new ClientMessage.ReadAllEvents(_position.CommitPosition, _position.PreparePosition, _maxCount,
+                                                   _resolveLinkTos, _requireMaster);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.ReadAllEventsCompleted response)
@@ -83,7 +86,8 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("Position: {0}, MaxCount: {1}, ResolveLinkTos: {2}", _position, _maxCount, _resolveLinkTos);
+            return string.Format("Position: {0}, MaxCount: {1}, ResolveLinkTos: {2}, RequireMaster: {3}",
+                                 _position, _maxCount, _resolveLinkTos, _requireMaster);
         }
     }
 }

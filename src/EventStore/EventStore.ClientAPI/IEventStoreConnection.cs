@@ -247,6 +247,18 @@ namespace EventStore.ClientAPI
         /// <returns><see cref="EventStoreTransaction"/> object.</returns>
         EventStoreTransaction ContinueTransaction(long transactionId, UserCredentials userCredentials = null);
 
+        /*
+        /// <summary>
+        /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start
+        /// </summary>
+        /// <param name="stream">The stream to read from</param>
+        /// <param name="eventNumber">The event number to read, -1 (<see cref="StreamPosition">StreamPosition.End</see>) for reading latest event in the stream</param>
+        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+        /// <returns>A <see cref="StreamEventsSlice"/> containing the results of the read operation</returns>
+        StreamEventsSlice ReadEvent(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null);
+        */
+
         /// <summary>
         /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start
         /// </summary>

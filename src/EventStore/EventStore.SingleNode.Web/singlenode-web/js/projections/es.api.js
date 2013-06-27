@@ -35,7 +35,7 @@ es.postEvent = function (settings) {
         data: bodyStr,
         headers: {
             "Accept": "application/json",
-            "X-ES-ExpectedVersion": expectedVersion
+            "ES-ExpectedVersion": expectedVersion
         },
         contentType: "application/vnd.eventstore.events+json",
         success: function () {

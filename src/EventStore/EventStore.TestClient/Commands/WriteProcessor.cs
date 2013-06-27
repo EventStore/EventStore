@@ -86,7 +86,7 @@ namespace EventStore.TestClient.Commands
                                                              Helper.UTF8NoBom.GetBytes(data),
                                                              Helper.UTF8NoBom.GetBytes(metadata ?? string.Empty))
                         },
-                        true);
+                        false);
                     var package = new TcpPackage(TcpCommand.WriteEvents, 
                                                  login == null ? TcpFlags.None : TcpFlags.Authenticated,
                                                  Guid.NewGuid(), 

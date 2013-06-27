@@ -130,7 +130,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     corrId, corrId, _readDispatcher.Envelope, _namingBuilder.GetOrderStreamName(), fromEventNumber, 100,
-                    resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
+                    resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                     completed =>
                         {
                             switch (completed.Result)
@@ -198,7 +198,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var corrId = Guid.NewGuid();
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    corrId, corrId, _readDispatcher.Envelope, streamId, eventNumber, 1, true, null, SystemAccount.Principal),
+                    corrId, corrId, _readDispatcher.Envelope, streamId, eventNumber, 1, true, false, null, SystemAccount.Principal),
                     completed =>
                         {
                             switch (completed.Result)

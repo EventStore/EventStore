@@ -155,7 +155,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return new ClientMessage.ReadAllEventsForward(
                 Guid.NewGuid(), EventReaderCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
                 _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, 
-                _resolveLinkTos, null, ReadAs);
+                _resolveLinkTos, false, null, ReadAs);
         }
 
         private void DeliverLastCommitPosition(TFPos lastPosition)

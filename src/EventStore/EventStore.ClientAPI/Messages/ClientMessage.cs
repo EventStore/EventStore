@@ -125,54 +125,6 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"CreateStream")]
-  public partial class CreateStream
-  {
-    [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
-    public readonly string EventStreamId;
-  
-    [ProtoMember(2, IsRequired = true, Name=@"request_id", DataFormat = DataFormat.Default)]
-    public readonly byte[] RequestId;
-  
-    [ProtoMember(3, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
-    public readonly byte[] Metadata;
-  
-    [ProtoMember(4, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
-    public readonly bool AllowForwarding;
-  
-    [ProtoMember(5, IsRequired = true, Name=@"is_json", DataFormat = DataFormat.Default)]
-    public readonly bool IsJson;
-  
-    private CreateStream() {}
-  
-    public CreateStream(string eventStreamId, byte[] requestId, byte[] metadata, bool allowForwarding, bool isJson)
-    {
-        EventStreamId = eventStreamId;
-        RequestId = requestId;
-        Metadata = metadata;
-        AllowForwarding = allowForwarding;
-        IsJson = isJson;
-    }
-  }
-  
-  [Serializable, ProtoContract(Name=@"CreateStreamCompleted")]
-  public partial class CreateStreamCompleted
-  {
-    [ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
-    public readonly OperationResult Result;
-  
-    [ProtoMember(2, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
-    public readonly string Message;
-  
-    private CreateStreamCompleted() {}
-  
-    public CreateStreamCompleted(OperationResult result, string message)
-    {
-        Result = result;
-        Message = message;
-    }
-  }
-  
   [Serializable, ProtoContract(Name=@"WriteEvents")]
   public partial class WriteEvents
   {
@@ -185,17 +137,17 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, Name=@"events", DataFormat = DataFormat.Default)]
     public readonly NewEvent[] Events;
   
-    [ProtoMember(4, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
-    public readonly bool AllowForwarding;
+    [ProtoMember(4, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
+    public readonly bool RequireMaster;
   
     private WriteEvents() {}
   
-    public WriteEvents(string eventStreamId, int expectedVersion, NewEvent[] events, bool allowForwarding)
+    public WriteEvents(string eventStreamId, int expectedVersion, NewEvent[] events, bool requireMaster)
     {
         EventStreamId = eventStreamId;
         ExpectedVersion = expectedVersion;
         Events = events;
-        AllowForwarding = allowForwarding;
+        RequireMaster = requireMaster;
     }
   }
   
@@ -230,16 +182,16 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(2, IsRequired = true, Name=@"expected_version", DataFormat = DataFormat.TwosComplement)]
     public readonly int ExpectedVersion;
   
-    [ProtoMember(3, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
-    public readonly bool AllowForwarding;
+    [ProtoMember(3, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
+    public readonly bool RequireMaster;
   
     private DeleteStream() {}
   
-    public DeleteStream(string eventStreamId, int expectedVersion, bool allowForwarding)
+    public DeleteStream(string eventStreamId, int expectedVersion, bool requireMaster)
     {
         EventStreamId = eventStreamId;
         ExpectedVersion = expectedVersion;
-        AllowForwarding = allowForwarding;
+        RequireMaster = requireMaster;
     }
   }
   
@@ -261,6 +213,134 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"TransactionStart")]
+  public partial class TransactionStart
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
+    public readonly string EventStreamId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"expected_version", DataFormat = DataFormat.TwosComplement)]
+    public readonly int ExpectedVersion;
+  
+    [ProtoMember(3, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
+    public readonly bool RequireMaster;
+  
+    private TransactionStart() {}
+  
+    public TransactionStart(string eventStreamId, int expectedVersion, bool requireMaster)
+    {
+        EventStreamId = eventStreamId;
+        ExpectedVersion = expectedVersion;
+        RequireMaster = requireMaster;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"TransactionStartCompleted")]
+  public partial class TransactionStartCompleted
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"transaction_id", DataFormat = DataFormat.TwosComplement)]
+    public readonly long TransactionId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
+    public readonly OperationResult Result;
+  
+    [ProtoMember(3, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
+    public readonly string Message;
+  
+    private TransactionStartCompleted() {}
+  
+    public TransactionStartCompleted(long transactionId, OperationResult result, string message)
+    {
+        TransactionId = transactionId;
+        Result = result;
+        Message = message;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"TransactionWrite")]
+  public partial class TransactionWrite
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"transaction_id", DataFormat = DataFormat.TwosComplement)]
+    public readonly long TransactionId;
+  
+    [ProtoMember(2, Name=@"events", DataFormat = DataFormat.Default)]
+    public readonly NewEvent[] Events;
+  
+    [ProtoMember(3, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
+    public readonly bool RequireMaster;
+  
+    private TransactionWrite() {}
+  
+    public TransactionWrite(long transactionId, NewEvent[] events, bool requireMaster)
+    {
+        TransactionId = transactionId;
+        Events = events;
+        RequireMaster = requireMaster;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"TransactionWriteCompleted")]
+  public partial class TransactionWriteCompleted
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"transaction_id", DataFormat = DataFormat.TwosComplement)]
+    public readonly long TransactionId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
+    public readonly OperationResult Result;
+  
+    [ProtoMember(3, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
+    public readonly string Message;
+  
+    private TransactionWriteCompleted() {}
+  
+    public TransactionWriteCompleted(long transactionId, OperationResult result, string message)
+    {
+        TransactionId = transactionId;
+        Result = result;
+        Message = message;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"TransactionCommit")]
+  public partial class TransactionCommit
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"transaction_id", DataFormat = DataFormat.TwosComplement)]
+    public readonly long TransactionId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
+    public readonly bool RequireMaster;
+  
+    private TransactionCommit() {}
+  
+    public TransactionCommit(long transactionId, bool requireMaster)
+    {
+        TransactionId = transactionId;
+        RequireMaster = requireMaster;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"TransactionCommitCompleted")]
+  public partial class TransactionCommitCompleted
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"transaction_id", DataFormat = DataFormat.TwosComplement)]
+    public readonly long TransactionId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
+    public readonly OperationResult Result;
+  
+    [ProtoMember(3, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
+    public readonly string Message;
+  
+    private TransactionCommitCompleted() {}
+  
+    public TransactionCommitCompleted(long transactionId, OperationResult result, string message)
+    {
+        TransactionId = transactionId;
+        Result = result;
+        Message = message;
+    }
+  }
+  
   [Serializable, ProtoContract(Name=@"ReadEvent")]
   public partial class ReadEvent
   {
@@ -273,13 +353,17 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
     public readonly bool ResolveLinkTos;
   
+    [ProtoMember(4, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
+    public readonly bool RequireMaster;
+  
     private ReadEvent() {}
   
-    public ReadEvent(string eventStreamId, int eventNumber, bool resolveLinkTos)
+    public ReadEvent(string eventStreamId, int eventNumber, bool resolveLinkTos, bool requireMaster)
     {
         EventStreamId = eventStreamId;
         EventNumber = eventNumber;
         ResolveLinkTos = resolveLinkTos;
+        RequireMaster = requireMaster;
     }
   }
   
@@ -343,14 +427,18 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
     public readonly bool ResolveLinkTos;
   
+    [ProtoMember(5, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
+    public readonly bool RequireMaster;
+  
     private ReadStreamEvents() {}
   
-    public ReadStreamEvents(string eventStreamId, int fromEventNumber, int maxCount, bool resolveLinkTos)
+    public ReadStreamEvents(string eventStreamId, int fromEventNumber, int maxCount, bool resolveLinkTos, bool requireMaster)
     {
         EventStreamId = eventStreamId;
         FromEventNumber = fromEventNumber;
         MaxCount = maxCount;
         ResolveLinkTos = resolveLinkTos;
+        RequireMaster = requireMaster;
     }
   }
   
@@ -430,14 +518,18 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
     public readonly bool ResolveLinkTos;
   
+    [ProtoMember(5, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
+    public readonly bool RequireMaster;
+  
     private ReadAllEvents() {}
   
-    public ReadAllEvents(long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos)
+    public ReadAllEvents(long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireMaster)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
         MaxCount = maxCount;
         ResolveLinkTos = resolveLinkTos;
+        RequireMaster = requireMaster;
     }
   }
   
@@ -493,134 +585,6 @@ namespace EventStore.ClientAPI.Messages
         NextPreparePosition = nextPreparePosition;
         Result = result;
         Error = error;
-    }
-  }
-  
-  [Serializable, ProtoContract(Name=@"TransactionStart")]
-  public partial class TransactionStart
-  {
-    [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
-    public readonly string EventStreamId;
-  
-    [ProtoMember(2, IsRequired = true, Name=@"expected_version", DataFormat = DataFormat.TwosComplement)]
-    public readonly int ExpectedVersion;
-  
-    [ProtoMember(3, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
-    public readonly bool AllowForwarding;
-  
-    private TransactionStart() {}
-  
-    public TransactionStart(string eventStreamId, int expectedVersion, bool allowForwarding)
-    {
-        EventStreamId = eventStreamId;
-        ExpectedVersion = expectedVersion;
-        AllowForwarding = allowForwarding;
-    }
-  }
-  
-  [Serializable, ProtoContract(Name=@"TransactionStartCompleted")]
-  public partial class TransactionStartCompleted
-  {
-    [ProtoMember(1, IsRequired = true, Name=@"transaction_id", DataFormat = DataFormat.TwosComplement)]
-    public readonly long TransactionId;
-  
-    [ProtoMember(2, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
-    public readonly OperationResult Result;
-  
-    [ProtoMember(3, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
-    public readonly string Message;
-  
-    private TransactionStartCompleted() {}
-  
-    public TransactionStartCompleted(long transactionId, OperationResult result, string message)
-    {
-        TransactionId = transactionId;
-        Result = result;
-        Message = message;
-    }
-  }
-  
-  [Serializable, ProtoContract(Name=@"TransactionWrite")]
-  public partial class TransactionWrite
-  {
-    [ProtoMember(1, IsRequired = true, Name=@"transaction_id", DataFormat = DataFormat.TwosComplement)]
-    public readonly long TransactionId;
-  
-    [ProtoMember(2, Name=@"events", DataFormat = DataFormat.Default)]
-    public readonly NewEvent[] Events;
-  
-    [ProtoMember(3, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
-    public readonly bool AllowForwarding;
-  
-    private TransactionWrite() {}
-  
-    public TransactionWrite(long transactionId, NewEvent[] events, bool allowForwarding)
-    {
-        TransactionId = transactionId;
-        Events = events;
-        AllowForwarding = allowForwarding;
-    }
-  }
-  
-  [Serializable, ProtoContract(Name=@"TransactionWriteCompleted")]
-  public partial class TransactionWriteCompleted
-  {
-    [ProtoMember(1, IsRequired = true, Name=@"transaction_id", DataFormat = DataFormat.TwosComplement)]
-    public readonly long TransactionId;
-  
-    [ProtoMember(2, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
-    public readonly OperationResult Result;
-  
-    [ProtoMember(3, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
-    public readonly string Message;
-  
-    private TransactionWriteCompleted() {}
-  
-    public TransactionWriteCompleted(long transactionId, OperationResult result, string message)
-    {
-        TransactionId = transactionId;
-        Result = result;
-        Message = message;
-    }
-  }
-  
-  [Serializable, ProtoContract(Name=@"TransactionCommit")]
-  public partial class TransactionCommit
-  {
-    [ProtoMember(1, IsRequired = true, Name=@"transaction_id", DataFormat = DataFormat.TwosComplement)]
-    public readonly long TransactionId;
-  
-    [ProtoMember(2, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
-    public readonly bool AllowForwarding;
-  
-    private TransactionCommit() {}
-  
-    public TransactionCommit(long transactionId, bool allowForwarding)
-    {
-        TransactionId = transactionId;
-        AllowForwarding = allowForwarding;
-    }
-  }
-  
-  [Serializable, ProtoContract(Name=@"TransactionCommitCompleted")]
-  public partial class TransactionCommitCompleted
-  {
-    [ProtoMember(1, IsRequired = true, Name=@"transaction_id", DataFormat = DataFormat.TwosComplement)]
-    public readonly long TransactionId;
-  
-    [ProtoMember(2, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
-    public readonly OperationResult Result;
-  
-    [ProtoMember(3, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
-    public readonly string Message;
-  
-    private TransactionCommitCompleted() {}
-  
-    public TransactionCommitCompleted(long transactionId, OperationResult result, string message)
-    {
-        TransactionId = transactionId;
-        Result = result;
-        Message = message;
     }
   }
   

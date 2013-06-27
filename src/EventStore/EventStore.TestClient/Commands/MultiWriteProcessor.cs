@@ -74,7 +74,7 @@ namespace EventStore.TestClient.Commands
                                                                                                      false,
                                                                                                      Helper.UTF8NoBom.GetBytes(data),
                                                                                                      new byte[0])).ToArray(),
-                        true);
+                        false);
                     var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize()).AsByteArray();
                     sw.Start();
                     conn.EnqueueSend(package);

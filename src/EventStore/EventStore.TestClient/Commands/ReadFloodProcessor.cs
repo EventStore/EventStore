@@ -45,17 +45,21 @@ namespace EventStore.TestClient.Commands
             int clientsCnt = 1;
             long requestsCnt = 5000;
             var eventStreamId = "test-stream";
+            bool resolveLinkTos = false;
+            bool requireMaster = false;
             if (args.Length > 0)
             {
-                if (args.Length != 2 && args.Length != 3)
+                if (args.Length != 2 && args.Length != 3 && args.Length != 4)
                     return false;
 
                 try
                 {
                     clientsCnt = int.Parse(args[0]);
                     requestsCnt = long.Parse(args[1]);
-                    if (args.Length == 3)
+                    if (args.Length >= 3)
                         eventStreamId = args[2];
+                    if (args.Length >= 4)
+                        requireMaster = bool.Parse(args[3]);
                 }
                 catch
                 {
@@ -63,11 +67,12 @@ namespace EventStore.TestClient.Commands
                 }
             }
 
-            ReadFlood(context, eventStreamId, clientsCnt, requestsCnt);
+            ReadFlood(context, eventStreamId, clientsCnt, requestsCnt, resolveLinkTos, requireMaster);
             return true;
         }
 
-        private void ReadFlood(CommandProcessorContext context, string eventStreamId, int clientsCnt, long requestsCnt)
+        private void ReadFlood(CommandProcessorContext context, string eventStreamId, int clientsCnt, long requestsCnt,
+                               bool resolveLinkTos, bool requireMaster)
         {
             context.IsAsync();
 
@@ -124,7 +129,7 @@ namespace EventStore.TestClient.Commands
                 {
                     for (int j = 0; j < count; ++j)
                     {
-                        var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos: false);
+                        var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos, requireMaster);
                         var package = new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), read.Serialize());
                         client.EnqueueSend(package.AsByteArray());
                         

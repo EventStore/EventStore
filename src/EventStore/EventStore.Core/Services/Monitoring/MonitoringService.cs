@@ -177,7 +177,7 @@ namespace EventStore.Core.Services.Monitoring
             var data = rawStats.ToJsonBytes();
             var evnt = new Event(Guid.NewGuid(), SystemEventTypes.StatsCollection, true, data, null);
             var corrId = Guid.NewGuid();
-            var msg = new ClientMessage.WriteEvents(corrId, corrId, NoopEnvelope,  true, _nodeStatsStream, 
+            var msg = new ClientMessage.WriteEvents(corrId, corrId, NoopEnvelope, false, _nodeStatsStream, 
                                                     ExpectedVersion.Any, new[]{evnt}, SystemAccount.Principal);
             _mainBus.Publish(msg);
         }
@@ -210,7 +210,7 @@ namespace EventStore.Core.Services.Monitoring
             _mainBus.Publish(
                 new ClientMessage.WriteEvents(
                     _streamMetadataWriteCorrId, _streamMetadataWriteCorrId, new PublishEnvelope(_monitoringBus),
-                    true, SystemStreams.MetastreamOf(_nodeStatsStream), ExpectedVersion.NoStream,
+                    false, SystemStreams.MetastreamOf(_nodeStatsStream), ExpectedVersion.NoStream,
                     new[]{new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata, null)},
                     SystemAccount.Principal));
         }

@@ -329,7 +329,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ClientMessage.ReadStreamEventsBackward(
                     //TODO: reading events history in batches of 1 event (slow?)
                     corrId, corrId, _readDispatcher.Envelope, _streamId, fromEventNumber, 1, 
-                    resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
+                    resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 completed => ReadStreamEventsBackwardCompleted(completed, upTo));
         }
 
@@ -492,7 +492,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var corrId = Guid.NewGuid();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    corrId, corrId, _writeDispatcher.Envelope, true, _streamId, _lastKnownEventNumber,
+                    corrId, corrId, _writeDispatcher.Envelope, false, _streamId, _lastKnownEventNumber,
                     _submittedToWriteEvents, _writeAs), Handle);
 
         }

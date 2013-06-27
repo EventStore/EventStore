@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, false, "test123", ExpectedVersion.Any, new[] { DummyEvent() }, null);
+            yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, true, "test123", ExpectedVersion.Any, new[] { DummyEvent() }, null);
         }
 
         protected override Message When()

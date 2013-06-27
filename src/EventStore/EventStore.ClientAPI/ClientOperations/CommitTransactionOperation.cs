@@ -36,20 +36,20 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class CommitTransactionOperation : OperationBase<object, ClientMessage.TransactionCommitCompleted>
     {
-        private readonly bool _forward;
+        private readonly bool _requireMaster;
         private readonly long _transactionId;
 
         public CommitTransactionOperation(ILogger log, TaskCompletionSource<object> source,
-                                          bool forward, long transactionId, UserCredentials userCredentials)
+                                          bool requireMaster, long transactionId, UserCredentials userCredentials)
             : base(log, source, TcpCommand.TransactionCommit, TcpCommand.TransactionCommitCompleted, userCredentials)
         {
-            _forward = forward;
+            _requireMaster = requireMaster;
             _transactionId = transactionId;
         }
 
         protected override object CreateRequestDto()
         {
-            return new ClientMessage.TransactionCommit(_transactionId, _forward);
+            return new ClientMessage.TransactionCommit(_transactionId, _requireMaster);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.TransactionCommitCompleted response)

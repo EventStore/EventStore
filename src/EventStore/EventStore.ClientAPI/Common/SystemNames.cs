@@ -28,11 +28,6 @@
 
 namespace EventStore.ClientAPI.Common
 {
-    public static class SystemHeader
-    {
-        public const string ExpectedVersion = "X-ES-ExpectedVersion";
-    }
-
     public static class SystemStreams
     {
         public const string StreamsStream = "$streams";

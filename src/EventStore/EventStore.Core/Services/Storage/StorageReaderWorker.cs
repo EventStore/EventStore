@@ -126,7 +126,7 @@ namespace EventStore.Core.Services.Storage
 
                 var result = _readIndex.ReadStreamEventsForward(msg.EventStreamId, msg.FromEventNumber, msg.MaxCount);
                 CheckEventsOrder(msg, result);
-                var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinks, msg.User);
+                var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User);
                 if (resolvedPairs == null)
                     return NoData(msg, ReadStreamResult.AccessDenied, lastCommitPosition);
 
@@ -154,7 +154,7 @@ namespace EventStore.Core.Services.Storage
 
                 var result = _readIndex.ReadStreamEventsBackward(msg.EventStreamId, msg.FromEventNumber, msg.MaxCount);
                 CheckEventsOrder(msg, result);
-                var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinks, msg.User);
+                var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User);
                 if (resolvedPairs == null)
                     return NoData(msg, ReadStreamResult.AccessDenied, lastCommitPosition);
 
@@ -188,7 +188,7 @@ namespace EventStore.Core.Services.Storage
                     return NoData(msg, ReadAllResult.AccessDenied, pos);
 
                 var res = _readIndex.ReadAllEventsForward(pos, msg.MaxCount);
-                var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinks, msg.User);
+                var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
                 if (resolved == null)
                     return NoData(msg, ReadAllResult.AccessDenied, pos);
 
@@ -221,7 +221,7 @@ namespace EventStore.Core.Services.Storage
                     return NoData(msg, ReadAllResult.AccessDenied, pos);
 
                 var res = _readIndex.ReadAllEventsBackward(pos, msg.MaxCount);
-                var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinks, msg.User);
+                var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
                 if (resolved == null)
                     return NoData(msg, ReadAllResult.AccessDenied, pos);
 

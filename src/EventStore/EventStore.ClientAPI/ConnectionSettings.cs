@@ -76,9 +76,9 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly int MaxReconnections;
         /// <summary>
-        /// Whether or not to allow the event store to forward a message if it is unable to process it (cluster version only)
+        /// Whether or not to require EventStore to refuse serving read or write request if it is not master
         /// </summary>
-        public readonly bool AllowForwarding;
+        public readonly bool RequireMaster;
         /// <summary>
         /// The amount of time to delay before attempting to reconnect
         /// </summary>
@@ -132,7 +132,7 @@ namespace EventStore.ClientAPI
                                     int maxConcurrentItems,
                                     int maxRetries,
                                     int maxReconnections,
-                                    bool allowForwarding,
+                                    bool requireMaster,
                                     TimeSpan reconnectionDelay,
                                     TimeSpan operationTimeout,
                                     TimeSpan operationTimeoutCheckPeriod,
@@ -166,7 +166,7 @@ namespace EventStore.ClientAPI
             MaxConcurrentItems = maxConcurrentItems;
             MaxRetries = maxRetries;
             MaxReconnections = maxReconnections;
-            AllowForwarding = allowForwarding;
+            RequireMaster = requireMaster;
             ReconnectionDelay = reconnectionDelay;
             OperationTimeout = operationTimeout;
             OperationTimeoutCheckPeriod = operationTimeoutCheckPeriod;

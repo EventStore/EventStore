@@ -39,21 +39,23 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly int _fromEventNumber;
         private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
+        private readonly bool _requireMaster;
 
         public ReadStreamEventsBackwardOperation(ILogger log, TaskCompletionSource<StreamEventsSlice> source,
                                                  string stream, int fromEventNumber, int maxCount, bool resolveLinkTos,
-                                                 UserCredentials userCredentials)
+                                                 bool requireMaster, UserCredentials userCredentials)
             : base(log, source, TcpCommand.ReadStreamEventsBackward, TcpCommand.ReadStreamEventsBackwardCompleted, userCredentials)
         {
             _stream = stream;
             _fromEventNumber = fromEventNumber;
             _maxCount = maxCount;
             _resolveLinkTos = resolveLinkTos;
+            _requireMaster = requireMaster;
         }
 
         protected override object CreateRequestDto()
         {
-            return new ClientMessage.ReadStreamEvents(_stream, _fromEventNumber, _maxCount, _resolveLinkTos); 
+            return new ClientMessage.ReadStreamEvents(_stream, _fromEventNumber, _maxCount, _resolveLinkTos, _requireMaster); 
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.ReadStreamEventsCompleted response)
@@ -90,11 +92,8 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("Stream: {0}, FromEventNumber: {1}, MaxCount: {2}, ResolveLinkTos: {3}", 
-                                 _stream,
-                                 _fromEventNumber, 
-                                 _maxCount, 
-                                 _resolveLinkTos);
+            return string.Format("Stream: {0}, FromEventNumber: {1}, MaxCount: {2}, ResolveLinkTos: {3}, RequireMaster: {4}", 
+                                 _stream, _fromEventNumber, _maxCount, _resolveLinkTos, _requireMaster);
         }
     }
 }

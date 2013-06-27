@@ -204,7 +204,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readRequestId = _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     corrId, corrId, _readDispatcher.Envelope, _projectionCheckpointStreamId, _nextStateIndexToRequest,
-                    recordsToRequest, resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
+                    recordsToRequest, resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 OnLoadStateReadRequestCompleted);
         }
 
@@ -260,7 +260,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _readDispatcher.Publish(
                     new ClientMessage.ReadStreamEventsBackward(
                         corrId, corrId, _readDispatcher.Envelope, partitionCheckpointStreamName, -1, 1, 
-                        resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal),
+                        resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal),
                     m =>
                     OnLoadPartitionStateReadStreamEventsBackwardCompleted(
                         m, requestedStateCheckpointTag, loadCompleted,
@@ -317,7 +317,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _readDispatcher.Publish(
                     new ClientMessage.ReadStreamEventsBackward(
                         corrId, corrId, _readDispatcher.Envelope, partitionStreamName, message.NextEventNumber, 1,
-                        resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal),
+                        resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal),
                     m =>
                     OnLoadPartitionStateReadStreamEventsBackwardCompleted(m, requestedStateCheckpointTag, loadCompleted, partitionStreamName, stateEventType));
             if (requestId != Guid.Empty)
