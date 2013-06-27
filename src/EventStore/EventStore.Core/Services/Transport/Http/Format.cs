@@ -47,7 +47,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             var msg = message as ClientMessage.ReadEventCompleted;
             if (msg == null || msg.Result != ReadEventResult.Success)
-                return String.Empty;
+                return string.Empty;
 
             switch (entity.ResponseCodec.ContentType)
             {

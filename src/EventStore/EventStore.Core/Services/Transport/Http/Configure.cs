@@ -72,7 +72,7 @@ namespace EventStore.Core.Services.Transport.Http
             var srcBase = new Uri(string.Format("{0}://{1}:{2}/", originalUrl.Scheme, originalUrl.Host, originalUrl.Port), UriKind.Absolute);
             var targetBase = new Uri(string.Format("{0}://{1}:{2}/", originalUrl.Scheme, targetHost, targetPort), UriKind.Absolute);
             var forwardUri = new Uri(targetBase, srcBase.MakeRelativeUri(originalUrl));
-            return new ResponseConfiguration(308/*Permanent Redirect*/, "Permanent Redirect", "text/plain", Helper.UTF8NoBom,
+            return new ResponseConfiguration(HttpStatusCode.TemporaryRedirect, "Temporary Redirect", "text/plain", Helper.UTF8NoBom,
                                              new KeyValuePair<string, string>("Location", forwardUri.ToString()));
         }
 
