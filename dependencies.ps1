@@ -30,12 +30,49 @@ Task Get-Dependencies {
     Get-SvnRepoAtRevision -Verbose "CygWin" $cygwinRepository $cygwinDirectory $cygwinRevision
 }
 
+#This uses an exception for flow control in another script. I know it's bad,
+# but can't think of a way to do this otherwise that doesn't involve repeating
+# a load of variables or separating them into another file.
+Task Test-Dependencies {
+    if (Test-Dependencies -eq $false) {
+        throw "Test-Dependencies Failure"
+    }
+}
+
+Function Test-Dependencies {
+    return (
+        (Test-GitRepositoryAtRef $v8Directory $v8Tag) -and
+        (Test-SvnRepoIsAtRevision $pythonDirectory $pythonRevision) -and
+        (Test-SvnRepoIsAtRevision $gypDirectory $gypRevision) -and
+        (Test-SvnRepoIsAtRevision $cygwinDirectory $cygwinRevision)
+    )
+}
+
 # Helper Functions - some of these rely on psake-provided constructs such as Exec { }.
 
 Function Test-ShouldTryNetworkAccess {
     #Opaque GUID from - http://blogs.microsoft.co.il/blogs/scriptfanatic/archive/2010/03/09/quicktip-how-do-you-check-internet-connectivity.aspx
     $hasNetwork = [Activator]::CreateInstance([Type]::GetTypeFromCLSID([Guid]'{DCB00C01-570F-4A9B-8D69-199FDBA5723B}')).IsConnectedToInternet
     return ($hasNetwork -eq $true) -or ($forceNetwork -eq $true)
+}
+
+Function Test-GitRepositoryAtRef {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true)][string]$localRepositoryDirectory,
+        [Parameter(Mandatory=$true)][string]$ref
+    )
+    Process {
+        try {
+            Push-Location $localRepositoryDirectory
+            $description = & { git describe --contains HEAD }
+            return ($description -eq $ref)
+        } catch {
+            return $false
+        } finally {
+            Pop-Location
+        }
+    }
 }
 
 Function Test-GitRefOrCommitExists {
@@ -71,8 +108,8 @@ Function Get-GitRepoAtCommitOrRef
         if ((Test-Path $localPathGitDirectory -PathType Container) -eq $true)
         {
             Write-Verbose "$localPathGitDirectory already exists"
+            
             Push-Location -ErrorAction Stop -Path $localPath
-
             try {
                 if ((Test-GitRefOrCommitExists $commitOrRef) -eq $true) {
                     Write-Verbose "$commitOrRef exists in repository - checking out"
@@ -126,15 +163,19 @@ Function Get-GitRepoAtCommitOrRef
 Function Test-SvnRepoIsAtRevision {
     [CmdletBinding()]
     Param(
+        [Parameter(Mandatory=$true)][string]$workingCopy,
         [Parameter(Mandatory=$true)][string]$revision
     )
     Process {
         try {
+            Push-Location $workingCopy
             [xml]$svnInfo = Exec { svn info --xml }
             $actualRevision = $svnInfo.info.entry.commit.GetAttribute("revision")
             return ($actualRevision -eq $revision)
         } catch {
             return $false
+        } finally {
+            Pop-Location
         }
     }
 }
@@ -161,7 +202,7 @@ Function Get-SvnRepoAtRevision
             
             Push-Location -ErrorAction Stop -Path $localPath
             try {
-                if ((Test-SvnRepoIsAtRevision $revision) -eq $false) {
+                if ((Test-SvnRepoIsAtRevision $localPath $revision) -eq $false) {
                     Write-Verbose "Updating to revision $revision"
                     if ((Test-ShouldTryNetworkAccess) -eq $true) {
                         Exec { svn update --quiet $revisionString }
