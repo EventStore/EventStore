@@ -173,11 +173,11 @@ Function Get-BestGuessOfPlatformToolsetOrDie {
 
         Assert (Test-Path $mscppDir) "$mscppDir does not exist. It appears this machine either does not have MSBuild and C++ installed, or it's in a weird place. Specify the platform toolset manually as a parameter."
 
-        #We'll prefer the V120 toolset if it's available (VS2013)
-        $potentialV120Dir = Join-Path $mscppDir "V120"
-        if (Test-Path $potentialV120Dir) {
-            return "V120"
-        }
+        #We'll prefer the V120 toolset if it's available (VS2013) - EDIT apparently not.
+        #$potentialV120Dir = Join-Path $mscppDir "V120"
+        #if (Test-Path $potentialV120Dir) {
+        #    return "V120"
+        #}
 
         #Failing that V110 toolset (VS2012)
         $potentialV110Dir = Join-Path $mscppDir "V110"
@@ -188,7 +188,7 @@ Function Get-BestGuessOfPlatformToolsetOrDie {
         #Failing that, we'll have to look inside a platform to figure out which ones are there
         $platformToolsetsDir = Join-Path $mscppDir (Join-Path "Platforms" (Join-Path $platform "PlatformToolsets"))
 
-        Assert (Test-Path $platformToolsetsDir) "None of these directories exist: [V120, V110, Platforms]. Specify the platform toolset manually as a parameter."
+        Assert (Test-Path $platformToolsetsDir) "None of these directories exist: [V110, Platforms]. Specify the platform toolset manually as a parameter."
 
         #If we have Windows7.1SDK we'll take that, otherwise we'll assume V100
         if (Test-Path (Join-Path $platformToolsetsDir "Windows7.1SDK")) {
@@ -196,7 +196,7 @@ Function Get-BestGuessOfPlatformToolsetOrDie {
         } elseif (Test-Path (Join-Path $platformToolsetsDir "V100")) { 
             return "V100"
         } else {
-            Assert ($false) "Can't find any supported platform toolset (V100, V110, V120, Windows7.1SDK). It's possible that this detection is wrong, in which case you should specify the platform toolset manually as a parameter."
+            Assert ($false) "Can't find any supported platform toolset (V100, V110, Windows7.1SDK). It's possible that this detection is wrong, in which case you should specify the platform toolset manually as a parameter."
         }
     }
 }
