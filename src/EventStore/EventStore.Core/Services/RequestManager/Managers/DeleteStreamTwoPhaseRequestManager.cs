@@ -50,29 +50,30 @@ namespace EventStore.Core.Services.RequestManager.Managers
         public void Handle(ClientMessage.DeleteStream request)
         {
             _request = request;
-            Init(request.Envelope, request.CorrelationId, request.EventStreamId, request.User, null, StreamAccessType.Delete);
+            Init(request.Envelope, request.InternalCorrId, request.CorrelationId, request.EventStreamId,
+                 request.User, null, StreamAccessType.Delete);
         }
 
-        protected override void OnSecurityAccessGranted()
+        protected override void OnSecurityAccessGranted(Guid internalCorrId)
         {
             Publisher.Publish(
                 new StorageMessage.WriteDelete(
-                    _request.CorrelationId, PublishEnvelope, _request.EventStreamId, _request.ExpectedVersion,
+                    internalCorrId, PublishEnvelope, _request.EventStreamId, _request.ExpectedVersion,
                     liveUntil: NextTimeoutTime - TimeoutOffset));
             _request = null;
         }
 
-        protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
+        protected override void CompleteSuccessRequest(int firstEventNumber)
         {
-            base.CompleteSuccessRequest(correlationId, firstEventNumber);
-            var responseMsg = new ClientMessage.DeleteStreamCompleted(correlationId, OperationResult.Success, null);
+            base.CompleteSuccessRequest(firstEventNumber);
+            var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, OperationResult.Success, null);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, OperationResult result, string error)
+        protected override void CompleteFailedRequest(OperationResult result, string error)
         {
-            base.CompleteFailedRequest(correlationId, result, error);
-            var responseMsg = new ClientMessage.DeleteStreamCompleted(correlationId, result, error);
+            base.CompleteFailedRequest(result, error);
+            var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, result, error);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
     }

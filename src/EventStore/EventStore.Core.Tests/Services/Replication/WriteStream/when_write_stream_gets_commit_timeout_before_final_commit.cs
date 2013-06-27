@@ -34,39 +34,44 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.DeleteStream
+namespace EventStore.Core.Tests.Services.Replication.WriteStream
 {
-    public class when_delete_stream_gets_already_committed : RequestManagerSpecification
+    public class when_write_stream_gets_commit_timeout_before_final_commit : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new DeleteStreamTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout);
+            return new WriteStreamTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ClientMessage.DeleteStream(InternalCorrId, ClientCorrId, Envelope, false, "test123", ExpectedVersion.Any, null);
+            yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, false, "test123", ExpectedVersion.Any, new[] { DummyEvent() }, null);
+            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3);
         }
 
         protected override Message When()
         {
-            return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1);
+            return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow + CommitTimeout + TimeSpan.FromMinutes(5));
         }
 
         [Test]
-        public void successful_request_message_is_publised()
+        public void failed_request_message_is_publised()
         {
             Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
-                x => x.CorrelationId == InternalCorrId && x.Success));
+                x => x.CorrelationId == InternalCorrId && x.Success == false));
         }
 
         [Test]
-        public void the_envelope_is_replied_to_with_success()
+        public void the_envelope_is_replied_to_with_failure()
         {
-            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.DeleteStreamCompleted>(
-                x => x.CorrelationId == ClientCorrId && x.Result == OperationResult.Success));
+            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.WriteEventsCompleted>(
+                x => x.CorrelationId == ClientCorrId && x.Result == OperationResult.CommitTimeout));
         }
     }
 }

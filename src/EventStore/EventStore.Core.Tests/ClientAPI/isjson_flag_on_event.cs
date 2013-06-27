@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 var done = new ManualResetEventSlim();
                 _node.Node.MainQueue.Publish(new ClientMessage.ReadStreamEventsForward(
-                    Guid.NewGuid(), new CallbackEnvelope(message =>
+                    Guid.NewGuid(), Guid.NewGuid(), new CallbackEnvelope(message =>
                     {
                         Assert.IsInstanceOf<ClientMessage.ReadStreamEventsForwardCompleted>(message);
                         var msg = (ClientMessage.ReadStreamEventsForwardCompleted) message;

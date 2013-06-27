@@ -472,9 +472,10 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void BeginLoad(string name)
         {
+            var corrId = Guid.NewGuid();
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), _readDispatcher.Envelope, "$projections-" + name, -1, 1, 
+                    corrId, corrId, _readDispatcher.Envelope, "$projections-" + name, -1, 1, 
                     resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 LoadCompleted);
         }
@@ -591,9 +592,10 @@ namespace EventStore.Projections.Core.Services.Management
             }
             var managedProjectionSerializedState = _persistedState.ToJsonBytes();
             var eventStreamId = "$projections-" + _name;
+            var corrId = Guid.NewGuid();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
+                    corrId, corrId, _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "$ProjectionUpdated", true, managedProjectionSerializedState, Empty.ByteArray),
                     SystemAccount.Principal),
                 m => WriteCompleted(m, completed, eventStreamId));

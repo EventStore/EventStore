@@ -144,7 +144,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
             for (int i = 0; i < cnt; ++i)
             {
                 miniNode.Node.MainQueue.Publish(
-                    new ClientMessage.WriteEvents(Guid.NewGuid(),
+                    new ClientMessage.WriteEvents(Guid.NewGuid(), Guid.NewGuid(),
                                                   new CallbackEnvelope(m =>
                                                   {
                                                       Assert.IsInstanceOf<ClientMessage.WriteEventsCompleted>(m);

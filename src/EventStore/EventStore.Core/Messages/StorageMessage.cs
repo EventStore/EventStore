@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Net;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -342,6 +341,18 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
+
+            public DateTime UtcNow { get { return _now ?? DateTime.UtcNow; } }
+            private readonly DateTime? _now;
+
+            public RequestManagerTimerTick()
+            {
+            }
+
+            public RequestManagerTimerTick(DateTime now)
+            {
+                _now = now;
+            }
         }
 
         public class CheckStreamAccess: Message

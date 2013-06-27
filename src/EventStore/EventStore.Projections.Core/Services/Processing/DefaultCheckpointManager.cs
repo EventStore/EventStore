@@ -147,9 +147,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 _logger.Trace(
                     "Writing checkpoint for {0} at {1} with expected version number {2}", _name,
                     _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
+            var corrId = Guid.NewGuid();
             _writeRequestId = _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, true, _projectionCheckpointStreamId,
+                    corrId, corrId, _writeDispatcher.Envelope, true, _projectionCheckpointStreamId,
                     _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished, SystemAccount.Principal), 
                     msg => WriteCheckpointEventCompleted(msg, _projectionCheckpointStreamId));
         }
@@ -199,9 +200,10 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override void RequestLoadState()
         {
             const int recordsToRequest = 10;
+            var corrId = Guid.NewGuid();
             _readRequestId = _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), _readDispatcher.Envelope, _projectionCheckpointStreamId, _nextStateIndexToRequest,
+                    corrId, corrId, _readDispatcher.Envelope, _projectionCheckpointStreamId, _nextStateIndexToRequest,
                     recordsToRequest, resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 OnLoadStateReadRequestCompleted);
         }
@@ -253,10 +255,11 @@ namespace EventStore.Projections.Core.Services.Processing
             var stateEventType = "$Checkpoint";
             var partitionCheckpointStreamName = _namingBuilder.MakePartitionCheckpointStreamName(statePartition);
             _readRequestsInProgress++;
+            var corrId = Guid.NewGuid();
             var requestId =
                 _readDispatcher.Publish(
                     new ClientMessage.ReadStreamEventsBackward(
-                        Guid.NewGuid(), _readDispatcher.Envelope, partitionCheckpointStreamName, -1, 1, 
+                        corrId, corrId, _readDispatcher.Envelope, partitionCheckpointStreamName, -1, 1, 
                         resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal),
                     m =>
                     OnLoadPartitionStateReadStreamEventsBackwardCompleted(
@@ -309,10 +312,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             _readRequestsInProgress++;
+            var corrId = Guid.NewGuid();
             var requestId =
                 _readDispatcher.Publish(
                     new ClientMessage.ReadStreamEventsBackward(
-                        Guid.NewGuid(), _readDispatcher.Envelope, partitionStreamName, message.NextEventNumber, 1,
+                        corrId, corrId, _readDispatcher.Envelope, partitionStreamName, message.NextEventNumber, 1,
                         resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal),
                     m =>
                     OnLoadPartitionStateReadStreamEventsBackwardCompleted(m, requestedStateCheckpointTag, loadCompleted, partitionStreamName, stateEventType));

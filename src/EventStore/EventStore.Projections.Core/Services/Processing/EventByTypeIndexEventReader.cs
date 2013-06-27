@@ -441,13 +441,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_lastKnownIndexCheckpointEventNumber == -1)
                 {
                     readRequest = new ClientMessage.ReadStreamEventsBackward(
-                        _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et", -1, 1, false, null,
+                        Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et", -1, 1, false, null,
                         _readAs);
                 }
                 else
                 {
                     readRequest = new ClientMessage.ReadStreamEventsForward(
-                        _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et",
+                        Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et",
                         _lastKnownIndexCheckpointEventNumber + 1, 100, false, null, _readAs);
                 }
                 _reader.PublishIORequest(delay, readRequest);
@@ -468,7 +468,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _eventsRequested.Add(stream);
 
                 var readEventsForward = new ClientMessage.ReadStreamEventsForward(
-                    _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), stream,
+                    Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), stream,
                     _reader._fromPositions[stream], _maxReadCount, _reader._resolveLinkTos, null,
                     _readAs);
                 _reader.PublishIORequest(delay, readEventsForward);
@@ -625,7 +625,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _tfEventsRequested = true;
                 //TODO: we do not need resolve links, but lets check first with
                 var readRequest = new ClientMessage.ReadAllEventsForward(
-                    _reader.EventReaderCorrelationId, new SendToThisEnvelope(this),
+                    Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this),
                     _fromTfPosition.CommitPosition,
                     _fromTfPosition.PreparePosition == -1 ? 0 : _fromTfPosition.PreparePosition, 111,
                     true, null, _readAs);

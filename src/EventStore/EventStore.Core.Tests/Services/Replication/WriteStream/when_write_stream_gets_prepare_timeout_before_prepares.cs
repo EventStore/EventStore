@@ -33,42 +33,40 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.WriteEvents
+namespace EventStore.Core.Tests.Services.Replication.WriteStream
 {
-    [Ignore("Due to changed timeout mechanism and addind dependency on time, it is not easy to test this anymore.")]
-    public class when_write_stream_gets_commit_timeout_before_commit_stage : RequestManagerSpecification
+    public class when_write_stream_gets_prepare_timeout_before_prepares : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new WriteStreamTwoPhaseRequestManager(publisher, 3, 3, TimeSpan.Zero, TimeSpan.Zero);
+            return new WriteStreamTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ClientMessage.WriteEvents(CorrelationId, Envelope, false, "test123", ExpectedVersion.Any, new[] { DummyEvent() }, null);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, false, "test123", ExpectedVersion.Any, new[] { DummyEvent() }, null);
         }
 
         protected override Message When()
         {
-            throw new InvalidOperationException();
-            //return new StorageMessage.CommitPhaseTimeout(CorrelationId);
+            return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow + PrepareTimeout + TimeSpan.FromMinutes(1));
         }
 
         [Test]
-        public void no_messages_are_published()
+        public void failed_request_message_is_published()
         {
-            Assert.AreEqual(0, produced.Count);
+            Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
+                x => x.CorrelationId == InternalCorrId && x.Success == false));
         }
 
         [Test]
-        public void the_envelope_is_not_replied_to()
+        public void the_envelope_is_replied_to_with_failure()
         {
-            Assert.AreEqual(0, Envelope.Replies.Count);
+            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.WriteEventsCompleted>(
+                x => x.CorrelationId == ClientCorrId && x.Result == OperationResult.PrepareTimeout));
         }
     }
 }

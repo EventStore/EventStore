@@ -153,7 +153,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private Message CreateReadEventsMessage()
         {
             return new ClientMessage.ReadAllEventsForward(
-                EventReaderCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
+                Guid.NewGuid(), EventReaderCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
                 _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, 
                 _resolveLinkTos, null, ReadAs);
         }

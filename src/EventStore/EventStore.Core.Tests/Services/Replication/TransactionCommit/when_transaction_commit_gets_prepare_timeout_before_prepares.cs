@@ -37,38 +37,35 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
 {
-    [Ignore("Due to changed timeout mechanism and adding dependency on time, it is not easy to test this anymore.")]
     public class when_transaction_commit_gets_prepare_timeout_before_prepares : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new TransactionCommitTwoPhaseRequestManager(publisher, 3, 3, TimeSpan.Zero, TimeSpan.Zero);
+            return new TransactionCommitTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ClientMessage.TransactionCommit(CorrelationId, Envelope, false, 4, null);
+            yield return new ClientMessage.TransactionCommit(InternalCorrId, ClientCorrId, Envelope, false, 4, null);
         }
 
         protected override Message When()
         {
-            throw new InvalidOperationException();
-            //return new StorageMessage.PreparePhaseTimeout(CorrelationId);
+            return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow + PrepareTimeout + TimeSpan.FromMinutes(5));
         }
 
         [Test]
         public void failed_request_message_is_published()
         {
-            Assert.That(produced.ContainsSingle<StorageMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId && x.Success == false));
+            Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
+                x => x.CorrelationId == InternalCorrId && x.Success == false));
         }
 
         [Test]
         public void the_envelope_is_replied_to_with_failure()
         {
-            Assert.AreEqual(1, Envelope.Replies.Count);
-            var reply = (ClientMessage.TransactionCommitCompleted)Envelope.Replies[0];
-            Assert.AreEqual(CorrelationId, reply.CorrelationId);
-            Assert.AreEqual(OperationResult.PrepareTimeout, reply.Result);
+            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.TransactionCommitCompleted>(
+                x => x.CorrelationId == ClientCorrId && x.Result == OperationResult.PrepareTimeout));
         }
     }
 }
