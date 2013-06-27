@@ -45,6 +45,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => ReadAllForward(null, null));
             ExpectNoException(() => ReadAllBackward(null, null));
             
+            ExpectNoException(() => ReadEvent("read-stream", null, null));
             ExpectNoException(() => ReadStreamForward("read-stream", null, null));
             ExpectNoException(() => ReadStreamBackward("read-stream", null, null));
             
@@ -69,6 +70,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<NotAuthenticatedException>(() => ReadAllForward("badlogin", "badpass"));
             Expect<NotAuthenticatedException>(() => ReadAllBackward("badlogin", "badpass"));
 
+            Expect<NotAuthenticatedException>(() => ReadEvent("read-stream", "badlogin", "badpass"));
             Expect<NotAuthenticatedException>(() => ReadStreamForward("read-stream", "badlogin", "badpass"));
             Expect<NotAuthenticatedException>(() => ReadStreamBackward("read-stream", "badlogin", "badpass"));
 
@@ -94,6 +96,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<AccessDeniedException>(() => ReadAllForward("user2", "pa$$2"));
             Expect<AccessDeniedException>(() => ReadAllBackward("user2", "pa$$2"));
 
+            Expect<AccessDeniedException>(() => ReadEvent("read-stream", "user2", "pa$$2"));
             Expect<AccessDeniedException>(() => ReadStreamForward("read-stream", "user2", "pa$$2"));
             Expect<AccessDeniedException>(() => ReadStreamBackward("read-stream", "user2", "pa$$2"));
 

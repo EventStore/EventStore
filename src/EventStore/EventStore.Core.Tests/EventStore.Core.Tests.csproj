@@ -90,6 +90,7 @@
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
     <Compile Include="ClientAPI\append_to_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />
+    <Compile Include="ClientAPI\read_event_should.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
     <Compile Include="ClientAPI\event_store_connection_should.cs" />
     <Compile Include="ClientAPI\Helpers\TcpType.cs" />

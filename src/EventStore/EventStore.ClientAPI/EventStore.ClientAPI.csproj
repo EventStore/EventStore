@@ -103,6 +103,7 @@
     <Compile Include="ConnectionSettingsBuilder.cs" />
     <Compile Include="ClusterSettings.cs" />
     <Compile Include="ClusterSettingsBuilder.cs" />
+    <Compile Include="EventReadResult.cs" />
     <Compile Include="Core\EventStoreConnectionLogicHandler.cs" />
     <Compile Include="Core\IEndPointDiscoverer.cs" />
     <Compile Include="Core\OperationsManager.cs" />

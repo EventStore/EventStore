@@ -49,6 +49,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void reading_and_subscribing_is_allowed_when_no_credentials_are_passed()
         {
+            ExpectNoException(() => ReadEvent("$all", null, null));
             ExpectNoException(() => ReadStreamForward("$all", null, null));
             ExpectNoException(() => ReadStreamBackward("$all", null, null));
             ExpectNoException(() => ReadMeta("$all", null, null));
@@ -58,6 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void reading_and_subscribing_is_allowed_for_usual_user()
         {
+            ExpectNoException(() => ReadEvent("$all", "user1", "pa$$1"));
             ExpectNoException(() => ReadStreamForward("$all", "user1", "pa$$1"));
             ExpectNoException(() => ReadStreamBackward("$all", "user1", "pa$$1"));
             ExpectNoException(() => ReadMeta("$all", "user1", "pa$$1"));
@@ -67,6 +69,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void reading_and_subscribing_is_allowed_for_admin_user()
         {
+            ExpectNoException(() => ReadEvent("$all", "adm", "admpa$$"));
             ExpectNoException(() => ReadStreamForward("$all", "adm", "admpa$$"));
             ExpectNoException(() => ReadStreamBackward("$all", "adm", "admpa$$"));
             ExpectNoException(() => ReadMeta("$all", "adm", "admpa$$"));

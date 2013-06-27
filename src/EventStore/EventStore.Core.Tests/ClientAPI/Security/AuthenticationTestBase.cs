@@ -152,6 +152,12 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             base.TestFixtureTearDown();
         }
 
+        protected void ReadEvent(string streamId, string login, string password)
+        {
+            Connection.ReadEvent(streamId, -1, false,
+                                 login == null && password == null ? null : new UserCredentials(login, password));
+        }
+
         protected void ReadStreamForward(string streamId, string login, string password)
         {
             Connection.ReadStreamEventsForward(streamId, 0, 1, false,

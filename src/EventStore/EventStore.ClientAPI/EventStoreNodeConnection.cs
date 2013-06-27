@@ -35,7 +35,6 @@ using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Core;
-using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
@@ -212,6 +211,21 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        public EventReadResult ReadEvent(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
+        {
+            return ReadEventAsync(stream, eventNumber, resolveLinkTos, userCredentials).Result;
+        }
+
+        public Task<EventReadResult> ReadEventAsync(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
+            var source = new TaskCompletionSource<EventReadResult>();
+            var operation = new ReadEventOperation(_settings.Log, source, stream, eventNumber, resolveLinkTos,
+                                                   _settings.RequireMaster, userCredentials);
+            EnqueueOperation(operation);
+            return source.Task;
+        }
 
         public StreamEventsSlice ReadStreamEventsForward(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
@@ -436,29 +450,25 @@ namespace EventStore.ClientAPI
 
         public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null)
         {
-            Ensure.NotNullOrEmpty(stream, "stream");
-
-            var source = new TaskCompletionSource<ClientMessage.ReadEventCompleted>();
-            var operation = new ReadEventOperation(_settings.Log, source, SystemStreams.MetastreamOf(stream), -1,
-                                                   false, _settings.RequireMaster, userCredentials);
-            EnqueueOperation(operation);
-            return source.Task.ContinueWith(t =>
+            return ReadEventAsync(SystemStreams.MetastreamOf(stream), -1, false, userCredentials).ContinueWith(t =>
             {
                 if (t.Exception != null) 
                     throw t.Exception.InnerException;
 
                 var res = t.Result;
-                switch (res.Result)
+                switch (res.Status)
                 {
-                    case ClientMessage.ReadEventCompleted.ReadEventResult.Success:
-                        return new RawStreamMetadataResult(stream, false, res.Event.Event.EventNumber, res.Event.Event.Data);
-                    case ClientMessage.ReadEventCompleted.ReadEventResult.NotFound:
-                    case ClientMessage.ReadEventCompleted.ReadEventResult.NoStream:
+                    case EventReadStatus.Success:
+                        if (res.Event == null) throw new Exception("Event is null while operation result is Success.");
+                        var evnt = res.Event.Value.OriginalEvent;
+                        return new RawStreamMetadataResult(stream, false, evnt.EventNumber, evnt.Data);
+                    case EventReadStatus.NotFound:
+                    case EventReadStatus.NoStream:
                         return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
-                    case ClientMessage.ReadEventCompleted.ReadEventResult.StreamDeleted:
+                    case EventReadStatus.StreamDeleted:
                         return new RawStreamMetadataResult(stream, true, int.MaxValue, Empty.ByteArray);
                     default:
-                        throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadEventResult: {0}.", res.Result));
+                        throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadEventResult: {0}.", res.Status));
                 }
             });
         }
