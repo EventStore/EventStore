@@ -23,6 +23,14 @@ Task ? -description "Writes script documentation to the host" {
     Write-Host "where various directories are when VS2012, VS2010 or the Windows SDK 7.1 are installed."
     Write-Host "If you don't like our guess, pass in the platformToolset parameter with the same value"
     Write-Host "as you'd pass to the C++ compiler (e.g. v110, v100 etc)."
+    Write-Host ""
+    Write-Host "Tasks:"
+    Write-Host "------"
+    Write-Host ""
+    Write-Host "        Build-Incremental"
+    Write-Host ""
+    Write-Host "        Build-Full"
+    Write-Host ""
 }
 
 # Configuration
@@ -53,7 +61,7 @@ Task Build-Incremental {
     Invoke-psake .\eventstore.ps1 Build-EventStore -parameters @{ 'platform' = "$platform" ; 'configuration' = "$configuration" }
 }
 
-Task Clean-Build {
+Task Build-Full {
 
     if (Test-Dependencies -eq $false)
     {

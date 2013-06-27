@@ -27,13 +27,14 @@ Properties {
     $baseDirectory = Resolve-Path .
     $srcDirectory = Join-Path $baseDirectory (Join-Path "src" "EventStore")
     $libsDirectory = Join-Path $srcDirectory "libs"
-    $outputDirectory = Join-Path $baseDirectory "bin"
+    $outputDirectory = Join-Path $baseDirectory "bin\"
 }
 
 # Project Files
 Properties {
     $eventStoreSolution = Join-Path $srcDirectory "EventStore.sln"
 }
+
 
 Task Clean-EventStore {
     Remove-Item -Recurse -Force $outputDirectory -ErrorAction SilentlyContinue
