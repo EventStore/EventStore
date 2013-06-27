@@ -89,7 +89,7 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 HttpEntity.Response.StatusCode = code;
             }
-            catch (ObjectDisposedException e)
+            catch (ObjectDisposedException)
             {
                 // ignore
             }
@@ -105,7 +105,7 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 HttpEntity.Response.StatusDescription = desc;
             }
-            catch (ObjectDisposedException e)
+            catch (ObjectDisposedException)
             {
                 // ignore
             }
@@ -121,7 +121,7 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 HttpEntity.Response.ContentType = contentType + (encoding != null ? ("; charset: " + encoding.WebName) : "");
             }
-            catch (ObjectDisposedException e)
+            catch (ObjectDisposedException)
             {
                 // ignore
             }
@@ -141,7 +141,7 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 HttpEntity.Response.ContentLength64 = length;
             }
-            catch (ObjectDisposedException e)
+            catch (ObjectDisposedException)
             {
                 // ignore
             }
