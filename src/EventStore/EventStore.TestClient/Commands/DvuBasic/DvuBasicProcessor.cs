@@ -312,7 +312,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                     { 
                         new TcpClientMessageDto.NewEvent(evnt.EventId.ToByteArray(), evnt.EventType, evnt.IsJson, evnt.Data, evnt.Metadata) 
                     },
-                    true);
+                    false);
 
                 var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                 connection.EnqueueSend(package.AsByteArray());
@@ -392,7 +392,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                     eventidx = NextRandomEventVersion(rnd, head);
                     var stream = _streams[streamIdx];
                     var corrid = Guid.NewGuid();
-                    var read = new TcpClientMessageDto.ReadEvent(stream, eventidx, resolveLinkTos: false);
+                    var read = new TcpClientMessageDto.ReadEvent(stream, eventidx, resolveLinkTos: false, requireMaster: false);
                     var package = new TcpPackage(TcpCommand.ReadEvent, corrid, read.Serialize());
 
                     connection.EnqueueSend(package.AsByteArray());

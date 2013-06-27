@@ -476,7 +476,7 @@ namespace EventStore.Projections.Core.Services.Management
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     corrId, corrId, _readDispatcher.Envelope, "$projections-" + name, -1, 1, 
-                    resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
+                    resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 LoadCompleted);
         }
 

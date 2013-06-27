@@ -74,7 +74,7 @@ namespace EventStore.TestClient.Commands
                                                      Helper.UTF8NoBom.GetBytes(data),
                                                      Helper.UTF8NoBom.GetBytes(metadata ?? string.Empty))
                 },
-                true);
+                false);
             var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
 
             var sw = new Stopwatch();

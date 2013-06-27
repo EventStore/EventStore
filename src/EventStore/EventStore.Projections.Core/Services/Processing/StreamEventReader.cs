@@ -171,7 +171,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new ClientMessage.ReadStreamEventsForward(
                 Guid.NewGuid(), EventReaderCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
-                _maxReadCount, _resolveLinkTos, null, ReadAs);
+                _maxReadCount, _resolveLinkTos, false, null, ReadAs);
         }
 
         private void DeliverSafeJoinPosition(long? safeJoinPosition)

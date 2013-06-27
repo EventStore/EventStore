@@ -36,22 +36,22 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class DeleteStreamOperation : OperationBase<object, ClientMessage.DeleteStreamCompleted>
     {
-        private readonly bool _forward;
+        private readonly bool _requireMaster;
         private readonly string _stream;
         private readonly int _expectedVersion;
 
         public DeleteStreamOperation(ILogger log, TaskCompletionSource<object> source,
-                                     bool forward, string stream, int expectedVersion, UserCredentials userCredentials)
+                                     bool requireMaster, string stream, int expectedVersion, UserCredentials userCredentials)
             :base(log, source, TcpCommand.DeleteStream, TcpCommand.DeleteStreamCompleted, userCredentials)
         {
-            _forward = forward;
+            _requireMaster = requireMaster;
             _stream = stream;
             _expectedVersion = expectedVersion;
         }
 
         protected override object CreateRequestDto()
         {
-            return new ClientMessage.DeleteStream(_stream, _expectedVersion, _forward);
+            return new ClientMessage.DeleteStream(_stream, _expectedVersion, _requireMaster);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.DeleteStreamCompleted response)

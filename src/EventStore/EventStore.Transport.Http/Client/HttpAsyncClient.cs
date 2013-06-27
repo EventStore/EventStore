@@ -29,7 +29,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Text;
 using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http.Client
@@ -48,9 +47,17 @@ namespace EventStore.Transport.Http.Client
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Receive(HttpMethod.Get, url, onSuccess, onException);
+            Receive(HttpMethod.Get, url, null, onSuccess, onException);
         }
 
+        public void Get(string url, IEnumerable<KeyValuePair<string,string>> headers, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        {
+            Ensure.NotNull(url, "url");
+            Ensure.NotNull(onSuccess, "onSuccess");
+            Ensure.NotNull(onException, "onException");
+
+            Receive(HttpMethod.Get, url, headers, onSuccess, onException);
+        }
         public void Post(string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Post(url, body, contentType, null, onSuccess, onException);
@@ -74,7 +81,7 @@ namespace EventStore.Transport.Http.Client
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Receive(HttpMethod.Delete, url, onSuccess, onException);
+            Receive(HttpMethod.Delete, url, null, onSuccess, onException);
         }
 
         public void Put(string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
@@ -88,7 +95,8 @@ namespace EventStore.Transport.Http.Client
             Send(HttpMethod.Put, url, body, contentType, null, onSuccess, onException);
         }
 
-        private void Receive(string method, string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        private void Receive(string method, string url, IEnumerable<KeyValuePair<string, string>> headers,
+                             Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
 
@@ -100,6 +108,13 @@ namespace EventStore.Transport.Http.Client
             request.KeepAlive = true;
             request.Pipelined = true;
 #endif
+            if (headers != null)
+            {
+                foreach (var header in headers)
+                {
+                    request.Headers.Add(header.Key, header.Value);
+                }
+            }
 
             request.BeginGetResponse(ResponseAcquired, new ClientOperationState(request, onSuccess, onException));
         }

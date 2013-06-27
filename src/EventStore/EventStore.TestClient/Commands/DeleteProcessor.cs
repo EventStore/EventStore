@@ -60,7 +60,7 @@ namespace EventStore.TestClient.Commands
                 {
                     context.Log.Info("[{0}, L{1}]: Trying to delete event stream '{2}'...", conn.RemoteEndPoint, conn.LocalEndPoint, eventStreamId);
                     var corrid = Guid.NewGuid();
-                    var deleteDto = new TcpClientMessageDto.DeleteStream(eventStreamId, expectedVersion, true);
+                    var deleteDto = new TcpClientMessageDto.DeleteStream(eventStreamId, expectedVersion, false);
                     var package = new TcpPackage(TcpCommand.DeleteStream, corrid, deleteDto.Serialize()).AsByteArray();
                     sw.Start();
                     conn.EnqueueSend(package);

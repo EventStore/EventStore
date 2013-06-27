@@ -237,7 +237,7 @@ namespace EventStore.Core.Tests.Helpers
                             .Reverse()
                             .SkipWhile(v => message.FromEventNumber != -1 && v.EventNumber > message.FromEventNumber)
                             .Take(message.MaxCount)
-                            .Select(v => BuildEvent(v, message.ResolveLinks))
+                            .Select(v => BuildEvent(v, message.ResolveLinkTos))
                             .ToArray();
                     message.Envelope.ReplyWith(
                         new ClientMessage.ReadStreamEventsBackwardCompleted(
@@ -300,7 +300,7 @@ namespace EventStore.Core.Tests.Helpers
                         list.Safe()
                             .SkipWhile(v => v.EventNumber < message.FromEventNumber)
                             .Take(message.MaxCount)
-                            .Select(v => BuildEvent(v, message.ResolveLinks))
+                            .Select(v => BuildEvent(v, message.ResolveLinkTos))
                             .ToArray();
                     var lastEventNumber = list.Safe().Any() ? list.Safe().Last().EventNumber : -1;
                     message.Envelope.ReplyWith(
@@ -469,7 +469,7 @@ namespace EventStore.Core.Tests.Helpers
             {
                 pos = record.Key;
                 next = new TFPos(pos.CommitPosition, pos.PreparePosition + 1);
-                list.Add(BuildEvent(record.Value, message.ResolveLinks, record.Key.CommitPosition));
+                list.Add(BuildEvent(record.Value, message.ResolveLinkTos, record.Key.CommitPosition));
             }
             var events = list.ToArray();
             message.Envelope.ReplyWith(

@@ -99,7 +99,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         protected override void SubscribeCore(IHttpService http)
         {
             // STREAMS
-            Register(http, "/streams/{stream}", HttpMethod.Post, PostEvent, AtomCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}", HttpMethod.Post, PostEvents, AtomCodecs, AtomCodecs);
             Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, AtomCodecs, AtomCodecs);
 
             Register(http, "/streams/{stream}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
@@ -127,7 +127,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         }
 
         // STREAMS
-        private void PostEvent(HttpEntityManager manager, UriTemplateMatch match)
+        private void PostEvents(HttpEntityManager manager, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
             if (stream.IsEmptyString())
@@ -138,18 +138,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
-                SendBadRequest(manager, "Expected version in wrong format.");
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ExpectedVersion));
                 return;
             }
-            bool allowForwarding;
-            if (!GetForwarding(manager, out allowForwarding))
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
             {
-                SendBadRequest(manager, "Forwarding header in wrong format.");
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
                 return;
             }
-            if (allowForwarding && _httpForwarder.ForwardRequest(manager))
+            if (!requireMaster && _httpForwarder.ForwardRequest(manager))
                 return;
-            PostEntry(manager, expectedVersion, allowForwarding, stream);
+            PostEntry(manager, expectedVersion, requireMaster, stream);
         }
 
         private void DeleteStream(HttpEntityManager manager, UriTemplateMatch match)
@@ -163,20 +163,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
-                SendBadRequest(manager, "Expected version in wrong format.");
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ExpectedVersion));
                 return;
             }
-            bool allowForwarding;
-            if (!GetForwarding(manager, out allowForwarding))
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
             {
-                SendBadRequest(manager, "Forwarding header in wrong format.");
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
                 return;
             }
-            if (allowForwarding && _httpForwarder.ForwardRequest(manager))
+            if (!requireMaster && _httpForwarder.ForwardRequest(manager))
                 return;
             var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.DeleteStreamCompleted, Configure.DeleteStreamCompleted);
             var corrId = Guid.NewGuid();
-            Publish(new ClientMessage.DeleteStream(corrId, corrId, envelope, allowForwarding, stream, expectedVersion, manager.User));
+            Publish(new ClientMessage.DeleteStream(corrId, corrId, envelope, requireMaster, stream, expectedVersion, manager.User));
         }
 
         private void GetStreamEvent(HttpEntityManager manager, UriTemplateMatch match)
@@ -197,8 +197,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
                 return;
             }
+            bool resolveLinkTos;
+            if (!GetResolveLinkTos(manager, out resolveLinkTos))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
+                return;
+            }
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+                return;
+            }
 
-            GetStreamEvent(manager, stream, eventNumber, embed);
+            GetStreamEvent(manager, stream, eventNumber, resolveLinkTos, requireMaster, embed);
         }
 
         private void GetStreamEventsBackward(HttpEntityManager manager, UriTemplateMatch match)
@@ -226,9 +238,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
                 return;
             }
-            
+            bool resolveLinkTos;
+            if (!GetResolveLinkTos(manager, out resolveLinkTos))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
+                return;
+            }
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+                return;
+            }
+
             bool headOfStream = eventNumber == -1;
-            GetStreamEventsBackward(manager, stream, eventNumber, count, headOfStream, embed);
+            GetStreamEventsBackward(manager, stream, eventNumber, count, resolveLinkTos, requireMaster, headOfStream, embed);
         }
 
         private void GetStreamEventsForward(HttpEntityManager manager, UriTemplateMatch match)
@@ -256,8 +280,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
                 return;
             }
+            bool resolveLinkTos;
+            if (!GetResolveLinkTos(manager, out resolveLinkTos))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
+                return;
+            }
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+                return;
+            }
 
-            GetStreamEventsForward(manager, stream, eventNumber, count, embed);
+            GetStreamEventsForward(manager, stream, eventNumber, count, resolveLinkTos, requireMaster, embed);
         }
 
         // METASTREAMS
@@ -272,18 +308,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
-                SendBadRequest(manager, "Expected version in wrong format.");
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ExpectedVersion));
                 return;
             }
-            bool allowForwarding;
-            if (!GetForwarding(manager, out allowForwarding))
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
             {
-                SendBadRequest(manager, "Forwarding header in wrong format.");
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
                 return;
             }
-            if (allowForwarding && _httpForwarder.ForwardRequest(manager))
+            if (!requireMaster && _httpForwarder.ForwardRequest(manager))
                 return;
-            PostEntry(manager, expectedVersion, allowForwarding, SystemStreams.MetastreamOf(stream));
+            PostEntry(manager, expectedVersion, requireMaster, SystemStreams.MetastreamOf(stream));
         }
 
         private void GetMetastreamEvent(HttpEntityManager manager, UriTemplateMatch match)
@@ -304,8 +340,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
                 return;
             }
+            bool resolveLinkTos;
+            if (!GetResolveLinkTos(manager, out resolveLinkTos))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
+                return;
+            }
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+                return;
+            }
 
-            GetStreamEvent(manager, SystemStreams.MetastreamOf(stream), eventNumber, embed);
+            GetStreamEvent(manager, SystemStreams.MetastreamOf(stream), eventNumber, resolveLinkTos, requireMaster, embed);
         }
 
         private void GetMetastreamEventsBackward(HttpEntityManager manager, UriTemplateMatch match)
@@ -333,9 +381,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
                 return;
             }
+            bool resolveLinkTos;
+            if (!GetResolveLinkTos(manager, out resolveLinkTos))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
+                return;
+            }
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+                return;
+            }
 
             bool headOfStream = eventNumber == -1;
-            GetStreamEventsBackward(manager, SystemStreams.MetastreamOf(stream), eventNumber, count, headOfStream, embed);
+            GetStreamEventsBackward(manager, SystemStreams.MetastreamOf(stream), eventNumber, count,
+                                    resolveLinkTos, requireMaster, headOfStream, embed);
         }
 
         private void GetMetastreamEventsForward(HttpEntityManager manager, UriTemplateMatch match)
@@ -363,8 +424,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
                 return;
             }
+            bool resolveLinkTos;
+            if (!GetResolveLinkTos(manager, out resolveLinkTos))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
+                return;
+            }
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+                return;
+            }
 
-            GetStreamEventsForward(manager, SystemStreams.MetastreamOf(stream), eventNumber, count, embed);
+            GetStreamEventsForward(manager, SystemStreams.MetastreamOf(stream), eventNumber, count, resolveLinkTos, requireMaster, embed);
         }
 
         // $ALL
@@ -388,6 +461,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("Invalid count argument: {0}", cnt));
                 return;
             }
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+                return;
+            }
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
@@ -396,7 +475,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var corrId = Guid.NewGuid();
             Publish(new ClientMessage.ReadAllEventsBackward(corrId, corrId, envelope,
                                                             position.CommitPosition, position.PreparePosition, count,
-                                                            true, GetETagTFPosition(manager), manager.User));
+                                                            requireMaster, true, GetETagTFPosition(manager), manager.User));
         }
 
         private void GetAllEventsForward(HttpEntityManager manager, UriTemplateMatch match)
@@ -418,6 +497,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("Invalid count argument: {0}", cnt));
                 return;
             }
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+                return;
+            }
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
@@ -426,13 +511,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var corrId = Guid.NewGuid();
             Publish(new ClientMessage.ReadAllEventsForward(corrId, corrId, envelope,
                                                            position.CommitPosition, position.PreparePosition, count,
-                                                           true, GetETagTFPosition(manager), manager.User));
+                                                           requireMaster, true, GetETagTFPosition(manager), manager.User));
         }
 
         // HELPERS
         private bool GetExpectedVersion(HttpEntityManager manager, out int expectedVersion)
         {
-            var expVer = manager.HttpEntity.Request.Headers[SystemHeader.ExpectedVersion];
+            var expVer = manager.HttpEntity.Request.Headers[SystemHeaders.ExpectedVersion];
             if (expVer == null)
             {
                 expectedVersion = ExpectedVersion.Any;
@@ -441,23 +526,39 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             return int.TryParse(expVer, out expectedVersion) && expectedVersion >= ExpectedVersion.Any;
         }
 
-        private bool GetForwarding(HttpEntityManager manager, out bool allowForwarding)
+        private bool GetRequireMaster(HttpEntityManager manager, out bool requireMaster)
         {
-            allowForwarding = true;
-            var forwarding = manager.HttpEntity.Request.Headers[SystemHeader.Forwarding];
-            if (forwarding == null) 
+            requireMaster = false;
+            var onlyMaster = manager.HttpEntity.Request.Headers[SystemHeaders.RequireMaster];
+            if (onlyMaster == null)
                 return true;
-            if (string.Equals(forwarding, "Disable", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase))
             {
-                allowForwarding = false;
+                requireMaster = true;
                 return true;
             }
-            if (string.Equals(forwarding, "Enable", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(onlyMaster, "False", StringComparison.OrdinalIgnoreCase))
                 return true;
             return false;
         }
 
-        public void PostEntry(HttpEntityManager manager, int expectedVersion, bool allowForwarding, string stream)
+        private bool GetResolveLinkTos(HttpEntityManager manager, out bool resolveLinkTos)
+        {
+            resolveLinkTos = true;
+            var onlyMaster = manager.HttpEntity.Request.Headers[SystemHeaders.ResolveLinkTos];
+            if (onlyMaster == null)
+                return true;
+            if (string.Equals(onlyMaster, "False", StringComparison.OrdinalIgnoreCase))
+            {
+                resolveLinkTos = false;
+                return true;
+            }
+            if (string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase))
+                return true;
+            return false;
+        }
+
+        public void PostEntry(HttpEntityManager manager, int expectedVersion, bool requireMaster, string stream)
         {
             manager.ReadTextRequestAsync(
                 (man, body) =>
@@ -474,24 +575,26 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Format.WriteEventsCompleted,
                                                           (a, m) => Configure.WriteEventsCompleted(a, m, stream));
                     var corrId = Guid.NewGuid();
-                    var msg = new ClientMessage.WriteEvents(corrId, corrId, envelope, allowForwarding,
+                    var msg = new ClientMessage.WriteEvents(corrId, corrId, envelope, requireMaster,
                                                             stream, expectedVersion, events, manager.User);
                     Publish(msg);
                 },
                 e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
         }
 
-        private void GetStreamEvent(HttpEntityManager manager, string stream, int eventNumber, EmbedLevel embed)
+        private void GetStreamEvent(HttpEntityManager manager, string stream, int eventNumber,
+                                    bool resolveLinkTos, bool requireMaster, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
                                                   (args, message) => Format.EventEntry(args, message, embed),
                                                   (args, message) => Configure.EventEntry(args, message, headEvent: eventNumber == -1));
             var corrId = Guid.NewGuid();
-            Publish(new ClientMessage.ReadEvent(corrId, corrId, envelope, stream, eventNumber, true, manager.User));
+            Publish(new ClientMessage.ReadEvent(corrId, corrId, envelope, stream, eventNumber, resolveLinkTos, requireMaster, manager.User));
         }
 
-        private void GetStreamEventsBackward(HttpEntityManager manager, string stream, int eventNumber, int count, bool headOfStream, EmbedLevel embed)
+        private void GetStreamEventsBackward(HttpEntityManager manager, string stream, int eventNumber, int count,
+                                             bool resolveLinkTos, bool requireMaster, bool headOfStream, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
@@ -500,10 +603,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   (args, msg) => Configure.GetStreamEventsBackward(args, msg, headOfStream));
             var corrId = Guid.NewGuid();
             Publish(new ClientMessage.ReadStreamEventsBackward(corrId, corrId, envelope, stream, eventNumber, count,
-                                                               true, GetETagStreamVersion(manager), manager.User));
+                                                               resolveLinkTos, requireMaster, GetETagStreamVersion(manager), manager.User));
         }
 
-        private void GetStreamEventsForward(HttpEntityManager manager, string stream, int eventNumber, int count, EmbedLevel embed)
+        private void GetStreamEventsForward(HttpEntityManager manager, string stream, int eventNumber, int count,
+                                            bool resolveLinkTos, bool requireMaster, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
@@ -511,7 +615,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   Configure.GetStreamEventsForward);
             var corrId = Guid.NewGuid();
             Publish(new ClientMessage.ReadStreamEventsForward(corrId, corrId, envelope, stream, eventNumber, count,
-                                                              true, GetETagStreamVersion(manager), manager.User));
+                                                              resolveLinkTos, requireMaster, GetETagStreamVersion(manager), manager.User));
         }
 
         private int? GetETagStreamVersion(HttpEntityManager manager)

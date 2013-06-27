@@ -27,32 +27,34 @@
 // 
 using System;
 using System.Diagnostics;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.TestClient.Commands
 {
     internal class ReadProcessor : ICmdProcessor
     {
-        public string Usage { get { return "RD [<stream-id> [<from-number>]]"; } }
+        public string Usage { get { return "RD [<stream-id> [<from-number> [<only-if-master>]]]"; } }
         public string Keyword { get { return "RD"; } }
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
             var eventStreamId = "test-stream";
             var fromNumber = 0;
+            const bool resolveLinkTos = false;
+            var requireMaster = false;
 
             if (args.Length > 0)
             {
-                if (args.Length > 2)
+                if (args.Length > 3)
                     return false;
                 eventStreamId = args[0];
-                if (args.Length == 2)
+                if (args.Length >= 2)
                     fromNumber = int.Parse(args[1]);
+                if (args.Length >= 3)
+                    requireMaster = bool.Parse(args[2]);
             }
 
             context.IsAsync();
@@ -63,7 +65,7 @@ namespace EventStore.TestClient.Commands
                 connectionEstablished: conn =>
                 {
                     context.Log.Info("[{0}, L{1}]: Reading...", conn.RemoteEndPoint, conn.LocalEndPoint);
-                    var readDto = new TcpClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos: false);
+                    var readDto = new TcpClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos, requireMaster);
                     var package = new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
                     sw.Start();
                     conn.EnqueueSend(package);
@@ -108,7 +110,6 @@ namespace EventStore.TestClient.Commands
                 },
                 connectionClosed: (connection, error) => context.Fail(reason: "Connection was closed prematurely."));
 
-            context.WaitForCompletion();
             return true;
         }
     }

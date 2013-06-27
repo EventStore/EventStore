@@ -152,7 +152,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
                                                       Assert.AreEqual(OperationResult.Success, msg.Result);
                                                       countdown.Signal();
                                                   }),
-                                                  false,
+                                                  true,
                                                   "test-stream",
                                                   ExpectedVersion.Any,
                                                   new[]

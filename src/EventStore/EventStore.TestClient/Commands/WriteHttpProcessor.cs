@@ -43,7 +43,7 @@ namespace EventStore.TestClient.Commands
 {
     internal class WriteHttpProcessor : ICmdProcessor
     {
-        public string Usage { get { return "WRH [<stream-id> <expected-version> <data> <metadata> <allow-forwarding>]"; } }
+        public string Usage { get { return "WRH [<stream-id> <expected-version> <data> <metadata> <only-if-master>]"; } }
         public string Keyword { get { return "WRH"; } }
 
         public bool Execute(CommandProcessorContext context, string[] args)
@@ -52,7 +52,7 @@ namespace EventStore.TestClient.Commands
             var expectedVersion = ExpectedVersion.Any;
             var data = "test-data";
             string metadata = null;
-            var allowForwarding = true;
+            var requireMaster = false;
 
             if (args.Length > 0)
             {
@@ -62,7 +62,7 @@ namespace EventStore.TestClient.Commands
                 expectedVersion = args[1].ToUpper() == "ANY" ? ExpectedVersion.Any : int.Parse(args[1]);
                 data = args[2];
                 metadata = args[3];
-                allowForwarding = bool.Parse(args[4]);
+                requireMaster = bool.Parse(args[4]);
             }
 
             context.IsAsync();
@@ -80,8 +80,8 @@ namespace EventStore.TestClient.Commands
                 Codec.Xml.ContentType,
                 new Dictionary<string, string>
                 {
-                        {SystemHeader.ExpectedVersion, expectedVersion.ToString()},
-                        {SystemHeader.Forwarding, allowForwarding ? "Enable" : "Disable"}
+                        {SystemHeaders.ExpectedVersion, expectedVersion.ToString()},
+                        {SystemHeaders.RequireMaster, requireMaster ? "True" : "False"}
                 }, 
                 response =>
                 {

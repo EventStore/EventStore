@@ -38,16 +38,16 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class TransactionalWriteOperation : OperationBase<object, ClientMessage.TransactionWriteCompleted>
     {
-        private readonly bool _forward;
+        private readonly bool _requireMaster;
         private readonly long _transactionId;
         private readonly IEnumerable<EventData> _events;
 
         public TransactionalWriteOperation(ILogger log, TaskCompletionSource<object> source,
-                                           bool forward, long transactionId, IEnumerable<EventData> events,
+                                           bool requireMaster, long transactionId, IEnumerable<EventData> events,
                                            UserCredentials userCredentials)
                 : base(log, source, TcpCommand.TransactionWrite, TcpCommand.TransactionWriteCompleted, userCredentials)
         {
-            _forward = forward;
+            _requireMaster = requireMaster;
             _transactionId = transactionId;
             _events = events;
         }
@@ -55,7 +55,7 @@ namespace EventStore.ClientAPI.ClientOperations
         protected override object CreateRequestDto()
         {
             var dtos = _events.Select(x => new ClientMessage.NewEvent(x.EventId.ToByteArray(), x.Type, x.IsJson, x.Data, x.Metadata)).ToArray();
-            return new ClientMessage.TransactionWrite(_transactionId, dtos, _forward);
+            return new ClientMessage.TransactionWrite(_transactionId, dtos, _requireMaster);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.TransactionWriteCompleted response)

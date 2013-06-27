@@ -28,10 +28,11 @@
 
 namespace EventStore.Core.Services
 {
-    public static class SystemHeader
+    public static class SystemHeaders
     {
-        public const string ExpectedVersion = "X-ES-ExpectedVersion";
-        public const string Forwarding = "X-ES-Forwarding";
+        public const string ExpectedVersion = "ES-ExpectedVersion";
+        public const string RequireMaster = "ES-RequireMaster";
+        public const string ResolveLinkTos = "ES-ResolveLinkTos";
     }
 
     public static class SystemStreams

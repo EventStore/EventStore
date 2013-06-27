@@ -38,21 +38,21 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class AppendToStreamOperation : OperationBase<object, ClientMessage.WriteEventsCompleted>
     {
-        private readonly bool _forward;
+        private readonly bool _requireMaster;
         private readonly string _stream;
         private readonly int _expectedVersion;
         private readonly IEnumerable<EventData> _events;
 
         public AppendToStreamOperation(ILogger log, 
                                        TaskCompletionSource<object> source,
-                                       bool forward,
+                                       bool requireMaster,
                                        string stream,
                                        int expectedVersion,
                                        IEnumerable<EventData> events,
                                        UserCredentials userCredentials)
             : base(log, source, TcpCommand.WriteEvents, TcpCommand.WriteEventsCompleted, userCredentials)
         {
-            _forward = forward;
+            _requireMaster = requireMaster;
             _stream = stream;
             _expectedVersion = expectedVersion;
             _events = events;
@@ -61,7 +61,7 @@ namespace EventStore.ClientAPI.ClientOperations
         protected override object CreateRequestDto()
         {
             var dtos = _events.Select(x => new ClientMessage.NewEvent(x.EventId.ToByteArray(), x.Type, x.IsJson, x.Data, x.Metadata)).ToArray();
-            return new ClientMessage.WriteEvents(_stream, _expectedVersion, dtos, _forward);
+            return new ClientMessage.WriteEvents(_stream, _expectedVersion, dtos, _requireMaster);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.WriteEventsCompleted response)

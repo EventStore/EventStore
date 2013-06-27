@@ -134,7 +134,7 @@ namespace EventStore.TestClient.Commands
                                                                  Common.Utils.Helper.UTF8NoBom.GetBytes("DATA" + new string('*', dataSize)),
                                                                  Common.Utils.Helper.UTF8NoBom.GetBytes("METADATA" + new string('$', metadataSize)))
                             },
-                            true);
+                            false);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                         client.EnqueueSend(package.AsByteArray());
                         autoEvent.WaitOne();

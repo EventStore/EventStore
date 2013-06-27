@@ -92,7 +92,7 @@ namespace EventStore.TestClient.Commands
                 var settings = ConnectionSettings.Create()
                     .DisableVerboseLogging()
                     .UseConsoleLogger()
-                    .EnableOperationsForwarding()
+                    .PerformOnAnyNode()
                     .LimitReconnectionsTo(10)
                     .LimitRetriesForOperationTo(10)
                     .LimitOperationsQueueTo(10000)

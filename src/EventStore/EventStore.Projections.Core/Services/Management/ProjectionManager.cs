@@ -529,7 +529,7 @@ namespace EventStore.Projections.Core.Services.Management
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     corrId, corrId, _readDispatcher.Envelope, "$projections-$all", from, _readEventsBatchSize,
-                    resolveLinks: false, validationStreamVersion: null, user: SystemAccount.Principal), 
+                    resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal), 
                 m => LoadProjectionListCompleted(m, from, completedAction));
         }
 

@@ -133,7 +133,7 @@ namespace EventStore.TestClient.Commands
                                                                  false,
                                                                  Common.Utils.Helper.UTF8NoBom.GetBytes(data),
                                                                  new byte[0])).ToArray(),
-                            true);
+                            false);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
                         client.EnqueueSend(package.AsByteArray());
                         localDoneEvent.WaitOne();

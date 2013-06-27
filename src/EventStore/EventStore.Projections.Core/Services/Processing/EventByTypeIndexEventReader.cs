@@ -441,14 +441,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_lastKnownIndexCheckpointEventNumber == -1)
                 {
                     readRequest = new ClientMessage.ReadStreamEventsBackward(
-                        Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et", -1, 1, false, null,
+                        Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et", -1, 1, false, false, null,
                         _readAs);
                 }
                 else
                 {
                     readRequest = new ClientMessage.ReadStreamEventsForward(
                         Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et",
-                        _lastKnownIndexCheckpointEventNumber + 1, 100, false, null, _readAs);
+                        _lastKnownIndexCheckpointEventNumber + 1, 100, false, false, null, _readAs);
                 }
                 _reader.PublishIORequest(delay, readRequest);
             }
@@ -469,7 +469,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                     Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), stream,
-                    _reader._fromPositions[stream], _maxReadCount, _reader._resolveLinkTos, null,
+                    _reader._fromPositions[stream], _maxReadCount, _reader._resolveLinkTos, false, null,
                     _readAs);
                 _reader.PublishIORequest(delay, readEventsForward);
             }
@@ -628,7 +628,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this),
                     _fromTfPosition.CommitPosition,
                     _fromTfPosition.PreparePosition == -1 ? 0 : _fromTfPosition.PreparePosition, 111,
-                    true, null, _readAs);
+                    true, false, null, _readAs);
                 _reader.PublishIORequest(delay, readRequest);
             }
 

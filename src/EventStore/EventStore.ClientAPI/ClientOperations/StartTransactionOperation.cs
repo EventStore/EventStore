@@ -37,17 +37,17 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class StartTransactionOperation : OperationBase<EventStoreTransaction, ClientMessage.TransactionStartCompleted>
     {
-        private readonly bool _forward;
+        private readonly bool _requireMaster;
         private readonly string _stream;
         private readonly int _expectedVersion;
         private readonly IEventStoreTransactionConnection _parentConnection;
 
         public StartTransactionOperation(ILogger log, TaskCompletionSource<EventStoreTransaction> source,
-                                         bool forward, string stream, int expectedVersion, IEventStoreTransactionConnection parentConnection,
+                                         bool requireMaster, string stream, int expectedVersion, IEventStoreTransactionConnection parentConnection,
                                          UserCredentials userCredentials)
             : base(log, source, TcpCommand.TransactionStart, TcpCommand.TransactionStartCompleted, userCredentials)
         {
-            _forward = forward;
+            _requireMaster = requireMaster;
             _stream = stream;
             _expectedVersion = expectedVersion;
             _parentConnection = parentConnection;
@@ -55,7 +55,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override object CreateRequestDto()
         {
-            return new ClientMessage.TransactionStart(_stream, _expectedVersion, _forward);
+            return new ClientMessage.TransactionStart(_stream, _expectedVersion, _requireMaster);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.TransactionStartCompleted response)
