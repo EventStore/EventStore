@@ -38,6 +38,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void operations_on_system_stream_with_no_acl_set_fail_for_non_admin()
         {
+            Expect<AccessDeniedException>(() => ReadEvent("$system-no-acl", "user1", "pa$$1"));
             Expect<AccessDeniedException>(() => ReadStreamForward("$system-no-acl", "user1", "pa$$1"));
             Expect<AccessDeniedException>(() => ReadStreamBackward("$system-no-acl", "user1", "pa$$1"));
 
@@ -59,6 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void operations_on_system_stream_with_no_acl_set_succeed_for_admin()
         {
+            ExpectNoException(() => ReadEvent("$system-no-acl", "adm", "admpa$$"));
             ExpectNoException(() => ReadStreamForward("$system-no-acl", "adm", "admpa$$"));
             ExpectNoException(() => ReadStreamBackward("$system-no-acl", "adm", "admpa$$"));
 
@@ -81,6 +83,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void operations_on_system_stream_with_acl_set_to_usual_user_fail_for_not_authorized_user()
         {
+            Expect<AccessDeniedException>(() => ReadEvent("$system-acl", "user2", "pa$$2"));
             Expect<AccessDeniedException>(() => ReadStreamForward("$system-acl", "user2", "pa$$2"));
             Expect<AccessDeniedException>(() => ReadStreamBackward("$system-acl", "user2", "pa$$2"));
 
@@ -102,6 +105,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void operations_on_system_stream_with_acl_set_to_usual_user_succeed_for_that_user()
         {
+            ExpectNoException(() => ReadEvent("$system-acl", "user1", "pa$$1"));
             ExpectNoException(() => ReadStreamForward("$system-acl", "user1", "pa$$1"));
             ExpectNoException(() => ReadStreamBackward("$system-acl", "user1", "pa$$1"));
 
@@ -123,6 +127,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void operations_on_system_stream_with_acl_set_to_usual_user_succeed_for_admin()
         {
+            ExpectNoException(() => ReadEvent("$system-acl", "adm", "admpa$$"));
             ExpectNoException(() => ReadStreamForward("$system-acl", "adm", "admpa$$"));
             ExpectNoException(() => ReadStreamBackward("$system-acl", "adm", "admpa$$"));
 
@@ -145,6 +150,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void operations_on_system_stream_with_acl_set_to_admins_fail_for_usual_user()
         {
+            Expect<AccessDeniedException>(() => ReadEvent("$system-adm", "user1", "pa$$1"));
             Expect<AccessDeniedException>(() => ReadStreamForward("$system-adm", "user1", "pa$$1"));
             Expect<AccessDeniedException>(() => ReadStreamBackward("$system-adm", "user1", "pa$$1"));
 
@@ -166,6 +172,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void operations_on_system_stream_with_acl_set_to_admins_succeed_for_admin()
         {
+            ExpectNoException(() => ReadEvent("$system-adm", "adm", "admpa$$"));
             ExpectNoException(() => ReadStreamForward("$system-adm", "adm", "admpa$$"));
             ExpectNoException(() => ReadStreamBackward("$system-adm", "adm", "admpa$$"));
 
@@ -188,6 +195,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void operations_on_system_stream_with_acl_set_to_all_succeed_for_not_authenticated_user()
         {
+            ExpectNoException(() => ReadEvent("$system-all", null, null));
             ExpectNoException(() => ReadStreamForward("$system-all", null, null));
             ExpectNoException(() => ReadStreamBackward("$system-all", null, null));
 
@@ -209,6 +217,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void operations_on_system_stream_with_acl_set_to_all_succeed_for_usual_user()
         {
+            ExpectNoException(() => ReadEvent("$system-all", "user1", "pa$$1"));
             ExpectNoException(() => ReadStreamForward("$system-all", "user1", "pa$$1"));
             ExpectNoException(() => ReadStreamBackward("$system-all", "user1", "pa$$1"));
 
@@ -230,6 +239,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void operations_on_system_stream_with_acl_set_to_all_succeed_for_admin()
         {
+            ExpectNoException(() => ReadEvent("$system-all", "adm", "admpa$$"));
             ExpectNoException(() => ReadStreamForward("$system-all", "adm", "admpa$$"));
             ExpectNoException(() => ReadStreamBackward("$system-all", "adm", "admpa$$"));
 

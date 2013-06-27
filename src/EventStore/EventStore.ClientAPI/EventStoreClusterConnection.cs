@@ -131,6 +131,16 @@ namespace EventStore.ClientAPI
             return _conn.ContinueTransaction(transactionId, userCredentials);
         }
 
+        public EventReadResult ReadEvent(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
+        {
+            return _conn.ReadEvent(stream, eventNumber, resolveLinkTos, userCredentials);
+        }
+
+        public Task<EventReadResult> ReadEventAsync(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
+        {
+            return _conn.ReadEventAsync(stream, eventNumber, resolveLinkTos, userCredentials);
+        }
+
         public Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events, UserCredentials userCredentials = null)
         {
             return ((IEventStoreTransactionConnection)_conn).TransactionalWriteAsync(transaction, events, userCredentials);
