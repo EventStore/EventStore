@@ -46,7 +46,7 @@ Task Clean-Libs {
     Pop-Location
 }
 
-Task Build-EventStore {
+Task Build-EventStore -depends Clean-EventStore {
     Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform="Any CPU" /p:OutDir=$outputDirectory }
 }
 
