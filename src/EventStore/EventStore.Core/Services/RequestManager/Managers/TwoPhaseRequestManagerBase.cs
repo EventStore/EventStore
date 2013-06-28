@@ -28,6 +28,7 @@
 using System;
 using System.Diagnostics;
 using System.Security.Principal;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -151,8 +152,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 CompleteFailedRequest(OperationResult.CommitTimeout, "Commit phase timeout.");
         }
 
+        private static readonly ILogger Log = LogManager.GetLoggerFor<TwoPhaseRequestManagerBase>();
         public void Handle(StorageMessage.AlreadyCommitted message)
         {
+            Log.Debug("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {0}, {1}.", _clientCorrId, message);
             CompleteSuccessRequest(message.FirstEventNumber);
         }
 

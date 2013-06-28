@@ -78,12 +78,12 @@ namespace EventStore.ClientAPI.Messages
             public override string ToString()
             {
                 if (State == VNodeState.Manager)
-                    return string.Format("MAN {0:B} <{1}> [{2}, {3}:{4}, {5}:{6}] | {7}",
+                    return string.Format("MAN {0:B} <{1}> [{2}, {3}:{4}, {5}:{6}] | {7:yyyy-MM-dd HH:mm:ss.fff}",
                                          InstanceId, IsAlive ? "LIVE" : "DEAD", State,
                                          InternalHttpIp, InternalHttpPort,
                                          ExternalHttpIp, ExternalHttpPort,
                                          TimeStamp);
-                return string.Format("VND {0:B} <{1}> [{2}, {3}:{4}, {5}, {6}:{7}, {8}, {9}:{10}, {11}:{12}] {13}/{14}/{15}/E{16}@{17}:{18:B} | {19}",
+                return string.Format("VND {0:B} <{1}> [{2}, {3}:{4}, {5}, {6}:{7}, {8}, {9}:{10}, {11}:{12}] {13}/{14}/{15}/E{16}@{17}:{18:B} | {19:yyyy-MM-dd HH:mm:ss.fff}",
                                      InstanceId, IsAlive ? "LIVE" : "DEAD", State,
                                      InternalTcpIp, InternalTcpPort,
                                      InternalSecureTcpPort > 0 ? string.Format("{0}:{1}", InternalTcpIp, InternalSecureTcpPort) : "n/a",
