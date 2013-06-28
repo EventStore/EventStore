@@ -273,6 +273,7 @@ namespace EventStore.Core.Index
                     }
                     fileWriter.WriteLine();
                     fileWriter.Flush();
+                    f.Flush(flushToDisk: true);
                 }
             }
 
