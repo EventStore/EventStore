@@ -203,7 +203,7 @@ namespace EventStore.Core.Tests.Http.Streams
         [TestFixture, Category("LongRunning")]
         class when_requesting_a_single_event_in_the_stream_as_atom_xml: HttpBehaviorSpecificationWithSingleEvent
         {
-            private JObject _json;
+            //private JObject _json;
 
             protected override void When()
             {
@@ -221,7 +221,7 @@ namespace EventStore.Core.Tests.Http.Streams
         [TestFixture, Category("LongRunning")]
         class when_requesting_a_single_event_in_the_stream_as_event_xml: HttpBehaviorSpecificationWithSingleEvent
         {
-            private JObject _json;
+            //private JObject _json;
 
             protected override void When()
             {
@@ -239,7 +239,7 @@ namespace EventStore.Core.Tests.Http.Streams
         [TestFixture, Category("LongRunning")]
         class when_requesting_a_single_event_in_the_stream_as_xml: HttpBehaviorSpecificationWithSingleEvent
         {
-            private JObject _json;
+            //private JObject _json;
 
             protected override void When()
             {

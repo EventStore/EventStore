@@ -115,11 +115,11 @@ namespace EventStore.Transport.Http.Server
                 context = _listener.EndGetContext(ar);
                 success = true;
             }
-            catch (HttpListenerException e)
+            catch (HttpListenerException)
             {
                 // that's not application-level error, ignore and continue
             }
-			catch (ObjectDisposedException e)
+			catch (ObjectDisposedException)
 			{
 				// that's ok, just continue
 			}

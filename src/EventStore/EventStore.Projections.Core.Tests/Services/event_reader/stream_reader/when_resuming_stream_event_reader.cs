@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         private Guid _distibutionPointCorrelationId;
 
         [SetUp]
-        public void When()
+        public new void When()
         {
             _distibutionPointCorrelationId = Guid.NewGuid();
             _edp = new StreamEventReader(

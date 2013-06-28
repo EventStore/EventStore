@@ -126,17 +126,17 @@ namespace EventStore.Projections.Core.Messages
 
                 return true;
 
-                if (existingRunAs == null)
-                    return true;
-                if (message.RunAs.Principal == null
-                    || !string.Equals(
-                        existingRunAs.Identity.Name, message.RunAs.Principal.Identity.Name,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    message.Envelope.ReplyWith(new NotAuthorized());
-                    return false;
-                }
-                return true;
+                //if (existingRunAs == null)
+                //    return true;
+                //if (message.RunAs.Principal == null
+                //    || !string.Equals(
+                //        existingRunAs.Identity.Name, message.RunAs.Principal.Identity.Name,
+                //        StringComparison.OrdinalIgnoreCase))
+                //{
+                //    message.Envelope.ReplyWith(new NotAuthorized());
+                //    return false;
+                //}
+                //return true;
             }
 
         }

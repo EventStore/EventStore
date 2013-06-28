@@ -93,10 +93,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             When();
         }
 
-        protected virtual void PreWhen()
+        protected new virtual void PreWhen()
         {
         }
 
-        protected abstract void When();
+        protected new abstract void When();
     }
 }
