@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.Helpers
         public MiniNode(string pathname, 
                         int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null, 
                         ISubsystem[] subsystems = null,
-                        int? chunkSize = null, int? cachedChunkSize = null, bool skipInitializeStandardUsersCheck = true)
+                        int? chunkSize = null, int? cachedChunkSize = null, bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true)
         {
             if (_running) throw new Exception("Previous MiniNode is still running!!!");
             _running = true;
@@ -100,6 +100,7 @@ namespace EventStore.Core.Tests.Helpers
                                                               HttpEndPoint,
                                                               new[] { HttpEndPoint.ToHttpUrl() },
                                                               ssl_connections.GetCertificate(),
+                                                              enableTrustedAuth,
                                                               1,
                                                               TimeSpan.FromSeconds(2),
                                                               TimeSpan.FromSeconds(2),

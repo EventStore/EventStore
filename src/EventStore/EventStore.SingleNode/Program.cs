@@ -135,6 +135,7 @@ namespace EventStore.SingleNode
                                                         httpEndPoint, 
                                                         prefixes.Select(p => p.Trim()).ToArray(),
                                                         certificate,
+                                                        options.EnableTrustedAuth,
                                                         options.WorkerThreads,
                                                         TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
                                                         TimeSpan.FromMilliseconds(options.CommitTimeoutMs),

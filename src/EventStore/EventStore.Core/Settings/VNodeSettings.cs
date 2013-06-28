@@ -42,6 +42,7 @@ namespace EventStore.Core.Settings
         public readonly string[] HttpPrefixes;
         public readonly X509Certificate2 Certificate;
         public readonly int WorkerThreads;
+        public readonly bool EnableTrustedAuth;
 
         public readonly TimeSpan PrepareTimeout;
         public readonly TimeSpan CommitTimeout;
@@ -56,6 +57,7 @@ namespace EventStore.Core.Settings
                                    IPEndPoint externalHttpEndPoint, 
                                    string[] httpPrefixes,
                                    X509Certificate2 certificate,
+                                   bool enableTrustedAuth,
                                    int workerThreads, 
                                    TimeSpan prepareTimeout,
                                    TimeSpan commitTimeout,
@@ -75,6 +77,7 @@ namespace EventStore.Core.Settings
             ExternalHttpEndPoint = externalHttpEndPoint;
             HttpPrefixes = httpPrefixes;
             Certificate = certificate;
+            EnableTrustedAuth = enableTrustedAuth;
             WorkerThreads = workerThreads;
 
             PrepareTimeout = prepareTimeout;

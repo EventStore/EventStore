@@ -380,7 +380,7 @@ namespace EventStore.Projections.Core.Services.Http
             else
                 return state.Position != null
                            ? Configure.Ok("application/json", Helper.UTF8NoBom, null, null, false,
-                                          new KeyValuePair<string, string>("X-ES-Position", state.Position.ToJsonString()))
+                                          new KeyValuePair<string, string>("ES-Position", state.Position.ToJsonString()))
                            : Configure.Ok("application/json", Helper.UTF8NoBom, null, null, false);
         }
 
@@ -391,7 +391,7 @@ namespace EventStore.Projections.Core.Services.Http
             else
                 return state.Position != null
                            ? Configure.Ok("application/json", Helper.UTF8NoBom, null, null, false,
-                                          new KeyValuePair<string, string>("X-ES-Position", state.Position.ToJsonString()))
+                                          new KeyValuePair<string, string>("ES-Position", state.Position.ToJsonString()))
                            : Configure.Ok("application/json", Helper.UTF8NoBom, null, null, false);
         }
 

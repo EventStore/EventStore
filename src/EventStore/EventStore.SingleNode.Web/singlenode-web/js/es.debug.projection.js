@@ -35,7 +35,7 @@ require(['projections/Observer', 'projections/Controller'],
                     checkLoaded();
                 },
                 stateChanged: function (state, xhr) {
-                    var positionJson = xhr.getResponseHeader("X-ES-Position");
+                    var positionJson = xhr.getResponseHeader("ES-Position");
                     var position = JSON.parse(positionJson);
                     projectionPosition = position;
                     partLoaded();

@@ -44,6 +44,8 @@ namespace EventStore.SingleNode
         public int SecureTcpPort { get { return _helper.Get(() => SecureTcpPort); } }
         public int HttpPort { get { return _helper.Get(() => HttpPort); } }
 
+        public bool EnableTrustedAuth { get { return _helper.Get(() => EnableTrustedAuth);} }
+
         public int StatsPeriodSec { get { return _helper.Get(() => StatsPeriodSec); } }
         
         public int CachedChunks { get { return _helper.Get(() => CachedChunks); } }
@@ -80,6 +82,7 @@ namespace EventStore.SingleNode
             _helper.Register(() => TcpPort, "t|tcp-port=", "TCP_PORT", "tcpPort", 1113, "The port to run the TCP server on.");
             _helper.Register(() => SecureTcpPort, "st|sec-tcp-port|secure-tcp-port=", "SEC_TCP_PORT", "secureTcpPort", 0, "The port to run the secure TCP server on.");
             _helper.Register(() => HttpPort, "h|http-port=", "HTTP_PORT", "httpPort", 2113, "The port to run the HTTP server on.");
+            _helper.Register(() => EnableTrustedAuth, Opts.EnableTrustedAuthCmd, Opts.EnableTrustedAuthEnv, Opts.EnableTrustedAuthJson, Opts.EnableTrustedAuthDefault, Opts.EnableTrustedAuthDescr);
 
             _helper.Register(() => StatsPeriodSec, Opts.StatsPeriodCmd, Opts.StatsPeriodEnv, Opts.StatsPeriodJson, Opts.StatsPeriodDefault, Opts.StatsPeriodDescr);
             
