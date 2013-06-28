@@ -52,6 +52,7 @@ Properties {
 
 # Paths
 Properties {
+    $baseDirectory = Resolve-Path .
     $outputDirectory = Join-Path $baseDirectory "bin\"
 }
 
