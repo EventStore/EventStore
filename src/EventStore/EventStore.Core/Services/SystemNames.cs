@@ -33,6 +33,8 @@ namespace EventStore.Core.Services
         public const string ExpectedVersion = "ES-ExpectedVersion";
         public const string RequireMaster = "ES-RequireMaster";
         public const string ResolveLinkTos = "ES-ResolveLinkTos";
+        public const string TrsutedAuth = "ES-TrustedAuth";
+        public const string ProjectionPosition = "ES-Position";
     }
 
     public static class SystemStreams
