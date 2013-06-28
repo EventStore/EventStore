@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
                 return null;
             }
-            catch (JsonReaderException ex)
+            catch (JsonReaderException)
             {
                 return null;
             }

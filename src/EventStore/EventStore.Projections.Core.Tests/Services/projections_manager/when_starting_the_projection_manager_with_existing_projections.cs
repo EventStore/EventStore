@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         TestFixtureWithExistingEvents
     {
         private ProjectionManager _manager;
-        private ITimeProvider _timeProvider;
+        private new ITimeProvider _timeProvider;
 
         protected override void Given()
         {

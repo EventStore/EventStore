@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             var prelude = new PreludeScript(preludeSource.Item1, preludeSource.Item2, getModuleSource, _cancelCallbackFactory, logger);
             try
             {
-                var cancelToken = 123;
+                //var cancelToken = 123;
                 prelude.ScheduleTerminateExecution();
                 Thread.Sleep(500);
                 _commandHandlerRegisteredCallback = (name, handle) => { };
