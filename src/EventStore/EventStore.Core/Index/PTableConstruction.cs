@@ -153,13 +153,14 @@ namespace EventStore.Core.Index
                     bs.Flush();
                     cs.FlushFinalBlock();
 
+                    f.Flush(flushToDisk: true);
                     f.SetLength(f.Position + MD5Size);
 
                     // WRITE MD5
                     var hash = md5.Hash;
                     f.Write(hash, 0, hash.Length);
+                    f.Flush(flushToDisk: true);
                 }
-                f.Flush(flushToDisk: true);
             }
             Log.Trace("PTables merge finished in " + watch.Elapsed);
             return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);
@@ -223,13 +224,14 @@ namespace EventStore.Core.Index
                     bs.Flush();
                     cs.FlushFinalBlock();
 
+                    f.Flush(flushToDisk: true);
                     f.SetLength(f.Position + MD5Size);
 
                     // WRITE MD5
                     var hash = md5.Hash;
                     f.Write(hash, 0, hash.Length);
+                    f.Flush(flushToDisk: true);
                 }
-                f.Flush(flushToDisk: true);
             }
             Log.Trace("PTables merge finished in {0}.", watch.Elapsed);
             return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);
