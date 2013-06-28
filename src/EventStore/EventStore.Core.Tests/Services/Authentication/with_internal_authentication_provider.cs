@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Authentication
 {
     public class with_internal_authentication_provider : TestFixtureWithExistingEvents
     {
-        protected IODispatcher _ioDispatcher;
+        protected new IODispatcher _ioDispatcher;
         protected InternalAuthenticationProvider _internalAuthenticationProvider;
 
         protected void SetUpProvider()

@@ -118,7 +118,9 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
 
         private class Notification
         {
+#pragma warning disable 649
             public string LoginName;
+#pragma warning restore 649
         }
 
         private void PublishPasswordChangeNotificationFrom(ResolvedEvent @event)

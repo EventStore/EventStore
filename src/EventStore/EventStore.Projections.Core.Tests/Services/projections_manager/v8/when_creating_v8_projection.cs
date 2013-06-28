@@ -120,7 +120,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "Terminated", MatchType = MessageMatch.Contains)]
         public void long_execution_times_out()
         {
-            string m = null;
+            //string m = null;
             using (var h = _stateHandlerFactory.Create("JS",
                 @"
                     fromAll().when({
@@ -149,7 +149,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "Terminated", MatchType = MessageMatch.Contains)]
         public void long_post_processing_times_out()
         {
-            string m = null;
+            //string m = null;
             using (var h = _stateHandlerFactory.Create("JS",
                 @"
                     fromAll().when({
@@ -182,7 +182,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         [Test, Explicit, Category("v8"), Category("Manual")]
         public void long_execution_times_out_many()
         {
-            string m = null;
+            //string m = null;
             for (var i = 0; i < 10; i++)
             {
                 Console.WriteLine(i);
@@ -214,7 +214,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                             "", "{}", out newState, out emittedevents);
                     }
                 }
-                catch (Js1Exception ex)
+                catch (Js1Exception)
                 {
                 }
             }

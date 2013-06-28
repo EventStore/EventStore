@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
     {
         private string[] _abStreams;
         private Dictionary<string, int> _ab12Tag;
-        private RealTimeProvider _timeProvider;
+        private new RealTimeProvider _timeProvider;
 
         [SetUp]
         public void setup()

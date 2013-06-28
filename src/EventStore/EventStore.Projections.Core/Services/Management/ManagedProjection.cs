@@ -105,11 +105,11 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly string _name;
         private ManagedProjectionState _state;
         private PersistedState _persistedState = new PersistedState();
-        private int _version;
+        //private int _version;
 
         private string _faultedReason;
         private Action _onStopped;
-        private List<IEnvelope> _debugStateRequests;
+        //private List<IEnvelope> _debugStateRequests;
         private ProjectionStatistics _lastReceivedStatistics;
         private Action _onPrepared;
         private Action _onStarted;

@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     [TestFixture]
     public class when_starting_the_projection_manager_with_existing_projection : TestFixtureWithExistingEvents
     {
-        private ITimeProvider _timeProvider;
+        private new ITimeProvider _timeProvider;
         private ProjectionManager _manager;
 
         protected override void Given()

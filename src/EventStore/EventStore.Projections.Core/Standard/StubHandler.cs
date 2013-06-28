@@ -34,8 +34,8 @@ namespace EventStore.Projections.Core.Standard
 {
     public class StubHandler : IProjectionStateHandler
     {
-        private readonly char _separator;
-        private readonly string _categoryStreamPrefix;
+        //private readonly char _separator;
+        //private readonly string _categoryStreamPrefix;
 
         public StubHandler(string source, Action<string> logger)
         {

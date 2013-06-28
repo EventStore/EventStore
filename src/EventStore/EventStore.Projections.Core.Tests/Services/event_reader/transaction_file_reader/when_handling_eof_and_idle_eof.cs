@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
         private FakeTimeProvider _fakeTimeProvider;
 
         [SetUp]
-        public void When()
+        public new void When()
         {
 
             _distibutionPointCorrelationId = Guid.NewGuid();
