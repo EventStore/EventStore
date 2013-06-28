@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Http
             _counter = 0;
             _directory = new SpecificationWithDirectoryPerTestFixture();
             _directory.TestFixtureSetUp();
-            _node = new MiniNode(_directory.PathName, skipInitializeStandardUsersCheck: false);
+            _node = new MiniNode(_directory.PathName, skipInitializeStandardUsersCheck: false, enableTrustedAuth: true);
             _node.Start();
 
             _connection = TestConnection.Create(_node.TcpEndPoint);

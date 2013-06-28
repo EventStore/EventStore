@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         private Dictionary<string, int> _ab12Tag;
 
         [SetUp]
-        public void When()
+        public new void When()
         {
             _ab12Tag = new Dictionary<string, int> {{"a", 1}, {"b", 0}};
             _abStreams = new[] {"a", "b"};

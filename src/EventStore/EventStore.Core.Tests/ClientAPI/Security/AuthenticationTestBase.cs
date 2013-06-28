@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _node = new MiniNode(PathName);
+            _node = new MiniNode(PathName, enableTrustedAuth: true);
             _node.Start();
 
             var userCreateEvent1 = new ManualResetEventSlim();

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using EventStore.Common.Log;
@@ -242,12 +243,16 @@ namespace EventStore.Core
             });
 
             // HTTP
-            var authenticationProviders = new AuthenticationProvider[]
-            {
-                new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
-                new TrustedAuthenticationProvider(), 
-                new AnonymousAuthenticationProvider()
-            };
+            var authenticationProviders = new List<AuthenticationProvider>()
+                {
+                    new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
+                };
+
+
+            if (_settings.EnableTrustedAuth)
+                authenticationProviders.Add(new TrustedAuthenticationProvider());
+
+            authenticationProviders.Add(new AnonymousAuthenticationProvider());
 
             var httpPipe = new HttpMessagePipe();
             var httpSendService = new HttpSendService(httpPipe, forwardRequests: false);
@@ -277,7 +282,7 @@ namespace EventStore.Core
 
             SubscribeWorkers(bus =>
             {
-                HttpService.CreateAndSubscribePipeline(bus, authenticationProviders);
+                HttpService.CreateAndSubscribePipeline(bus, authenticationProviders.ToArray());
             });
 
             // REQUEST MANAGEMENT

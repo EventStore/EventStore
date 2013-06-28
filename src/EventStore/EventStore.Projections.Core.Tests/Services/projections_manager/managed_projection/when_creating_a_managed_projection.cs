@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
     [TestFixture]
     public class when_creating_a_managed_projection : TestFixtureWithReadWriteDispatchers
     {
-        private ITimeProvider _timeProvider;
+        private new ITimeProvider _timeProvider;
 
         [SetUp]
         public void setup()

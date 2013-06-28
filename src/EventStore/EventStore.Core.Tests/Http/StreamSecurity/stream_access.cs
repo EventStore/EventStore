@@ -96,7 +96,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
                 httpWebRequest.Method = "POST";
                 httpWebRequest.ContentType = "application/json";
                 httpWebRequest.UseDefaultCredentials = false;
-                httpWebRequest.Headers.Add("X-ES-TrustedAuth", "root; admin, other");
+                httpWebRequest.Headers.Add("ES-TrustedAuth", "root; admin, other");
                 httpWebRequest.GetRequestStream()
                               .WriteJson(
                                   new[]

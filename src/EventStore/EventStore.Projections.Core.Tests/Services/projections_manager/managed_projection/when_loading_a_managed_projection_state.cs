@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
     [TestFixture]
     public class when_loading_a_managed_projection_state : TestFixtureWithExistingEvents
     {
-        private ITimeProvider _timeProvider;
+        private new ITimeProvider _timeProvider;
 
         private ManagedProjection _mp;
 

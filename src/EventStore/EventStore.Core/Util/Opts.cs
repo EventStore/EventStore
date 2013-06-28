@@ -93,11 +93,17 @@ namespace EventStore.Core.Util
         public const string DbPathDescr = "The path the db should be loaded/saved to.";
         public static readonly string DbPathDefault = string.Empty;
 
+        public const string EnableTrustedAuthCmd = "enable-trusted-auth";
+        public const string EnableTrustedAuthEnv = "ENABLE_TRUSTED_AUTH";
+        public const string EnableTrustedAuthJson = "enableTrustedAuth";
+        public const string EnableTrustedAuthDescr = "Enables trusted authentication by an intermediary in the Http";
+        public const bool EnableTrustedAuthDefault = false;
+
         public const string SkipDbVerifyCmd = "do-not-verify-db-hashes-on-startup|skip-db-verify";
         public const string SkipDbVerifyEnv = "SKIP_DB_VERIFY";
         public const string SkipDbVerifyJson = "skipDbVerify";
         public const string SkipDbVerifyDescr = "Bypasses the checking of file hashes of database during startup (allows for faster startup).";
-        public const bool   SkipDbVerifyDefault = false;
+        public const bool SkipDbVerifyDefault = false;
 
         public const string RunProjectionsCmd = "run-projections";
         public const string RunProjectionsEnv = "RUN_PROJECTIONS";

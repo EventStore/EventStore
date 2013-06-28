@@ -81,7 +81,7 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", "text/plain", Helper.UTF8NoBom);
         }
 
-        public static ResponseConfiguration NotFound(string etag, int? cacheSeconds, bool isCachePublic)
+        public static ResponseConfiguration NotFound(string etag, int? cacheSeconds, bool isCachePublic, string contentType)
         {
             var headrs = new List<KeyValuePair<string, string>>();
             headrs.Add(new KeyValuePair<string, string>(
@@ -92,7 +92,7 @@ namespace EventStore.Core.Services.Transport.Http
             headrs.Add(new KeyValuePair<string, string>("Vary", "Accept"));
             if (etag.IsNotEmptyString())
                 headrs.Add(new KeyValuePair<string, string>("ETag", string.Format("\"{0}\"", etag)));
-            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", "text/plain", Helper.UTF8NoBom, headrs);
+            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", contentType, Helper.UTF8NoBom, headrs);
         }
 
         public static ResponseConfiguration Gone(string description = null)
@@ -219,7 +219,7 @@ namespace EventStore.Core.Services.Transport.Http
                         var etag = GetPositionETag(msg.LastEventNumber, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
                         if (msg.IsEndOfStream && msg.Events.Length == 0)
-                            return NotFound(etag, cacheSeconds, isPublic);
+                            return NotFound(etag, cacheSeconds, isPublic, "text/html");
                         if (msg.LastEventNumber >= msg.FromEventNumber + msg.MaxCount)
                             return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, isPublic);
                         return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, isPublic);
@@ -289,7 +289,7 @@ namespace EventStore.Core.Services.Transport.Http
                         var etag = GetPositionETag(msg.TfEofPosition, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
                         if (!headOfTf && msg.Events.Length == 0)
-                            return NotFound(etag, cacheSeconds, isPublic);
+                            return NotFound(etag, cacheSeconds, isPublic, "text/plain");
                         return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, isPublic);
                     case ReadAllResult.NotModified:
                         return NotModified();

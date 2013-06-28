@@ -36,7 +36,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
     {
         public override bool Authenticate(IncomingHttpRequestMessage message)
         {
-            var header = message.Entity.Request.Headers["X-ES-TrustedAuth"];
+            var header = message.Entity.Request.Headers[SystemHeaders.TrsutedAuth];
             if (!string.IsNullOrEmpty(header))
             {
                 var principal = CreatePrincipal(header);
