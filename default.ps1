@@ -57,7 +57,7 @@ Properties {
 }
 
 Task Clean-Output {
-    Remove-Item -Recurse -Force $outputDirectory
+    Remove-Item -Recurse -Force $outputDirectory -ErrorAction SilentlyContinue
 }
 
 Task Build-Incremental -Depends Clean-Output {
