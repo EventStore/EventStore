@@ -159,6 +159,7 @@ namespace EventStore.Core.Index
                     var hash = md5.Hash;
                     f.Write(hash, 0, hash.Length);
                 }
+                f.Flush(flushToDisk: true);
             }
             Log.Trace("PTables merge finished in " + watch.Elapsed);
             return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);
@@ -228,6 +229,7 @@ namespace EventStore.Core.Index
                     var hash = md5.Hash;
                     f.Write(hash, 0, hash.Length);
                 }
+                f.Flush(flushToDisk: true);
             }
             Log.Trace("PTables merge finished in {0}.", watch.Elapsed);
             return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);

@@ -278,6 +278,12 @@ namespace EventStore.Core.Messages
                 FirstEventNumber = firstEventNumber;
                 LastEventNumber = lastEventNumber;
             }
+
+            public override string ToString()
+            {
+                return string.Format("EventStreamId: {0}, CorrelationId: {1}, FirstEventNumber: {2}, LastEventNumber: {3}",
+                                     EventStreamId, CorrelationId, FirstEventNumber, LastEventNumber);
+            }
         }
 
         public class InvalidTransaction : Message

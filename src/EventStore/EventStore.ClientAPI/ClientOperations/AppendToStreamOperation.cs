@@ -43,6 +43,8 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly int _expectedVersion;
         private readonly IEnumerable<EventData> _events;
 
+        private bool _wasCommitTimeout;
+
         public AppendToStreamOperation(ILogger log, 
                                        TaskCompletionSource<object> source,
                                        bool requireMaster,
@@ -69,11 +71,15 @@ namespace EventStore.ClientAPI.ClientOperations
             switch (response.Result)
             {
                 case ClientMessage.OperationResult.Success:
+                    if (_wasCommitTimeout)
+                        Log.Error("IDEMPOTENT WRITE SUCCEEDED FOR {0}.", this);
                     Succeed();
                     return new InspectionResult(InspectionDecision.EndOperation);
                 case ClientMessage.OperationResult.PrepareTimeout:
-                case ClientMessage.OperationResult.CommitTimeout:
                 case ClientMessage.OperationResult.ForwardTimeout:
+                    return new InspectionResult(InspectionDecision.Retry);
+                case ClientMessage.OperationResult.CommitTimeout:
+                    _wasCommitTimeout = true;
                     return new InspectionResult(InspectionDecision.Retry);
                 case ClientMessage.OperationResult.WrongExpectedVersion:
                     var err = string.Format("Append failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}", _stream, _expectedVersion);
