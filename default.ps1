@@ -50,7 +50,16 @@ Properties {
     }
 }
 
-Task Build-Incremental {
+# Paths
+Properties {
+    $outputDirectory = Join-Path $baseDirectory "bin\"
+}
+
+Task Clean-Output {
+    Remove-Item -Recurse -Force $outputDirectory
+}
+
+Task Build-Incremental -Depends Clean-Output {
 
     if (Test-Dependencies -eq $false)
     {
@@ -58,7 +67,7 @@ Task Build-Incremental {
     }
 
     Invoke-psake .\native-code.ps1 Build-NativeIncremental -parameters @{ 'platform' = "$platform" ; 'configuration' = "$configuration" }
-    Invoke-psake .\eventstore.ps1 Build-EventStore -parameters @{ 'platform' = "$platform" ; 'configuration' = "$configuration" }
+    Invoke-psake .\eventstore.ps1 Build-EventStore -parameters @{ 'platform' = "$platform" ; 'configuration' = "$configuration" ; 'outputDirectory' = "$outputDirectory" }
 }
 
 Task Build-Full {

@@ -35,26 +35,9 @@ Properties {
     $eventStoreSolution = Join-Path $srcDirectory "EventStore.sln"
 }
 
-
-Task Clean-EventStore {
-    Remove-Item -Recurse -Force $outputDirectory -ErrorAction SilentlyContinue
-}
-
-Task Clean-Libs {
-    Push-Location $libsDirectory
-    Exec { git clean --quiet -xdf }
-    Pop-Location
-}
-
-Task Build-EventStore -depends Clean-EventStore {
+Task Build-EventStore {
     Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform="Any CPU" /p:OutDir=$outputDirectory }
 }
-
-#Task Update-AssemblyInfos {
-#    Get-ChildItem -Recurse -Filter AssemblyInfo.cs | % {
-#        & { stext $_.FullName }
-#    }
-#}
 
 #Helper functions
 
