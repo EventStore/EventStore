@@ -155,7 +155,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
         private static readonly ILogger Log = LogManager.GetLoggerFor<TwoPhaseRequestManagerBase>();
         public void Handle(StorageMessage.AlreadyCommitted message)
         {
-            Log.Fatal("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {0}, {1}.", _clientCorrId, message);
+            Log.Debug("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {0}, {1}.", _clientCorrId, message);
             CompleteSuccessRequest(message.FirstEventNumber);
         }
 
