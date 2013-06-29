@@ -160,9 +160,56 @@ namespace EventStore.Core.Tests.Http.Streams
             }
 
             [Test]
-            public void returns_not_found_status_code()
+            public void returns_200_response()
             {
-                Assert.AreEqual(HttpStatusCode.NotFound, _lastResponse.StatusCode);
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+            [Test]
+            public void there_is_no_prev_link()
+            {
+                var rel = GetLink(_feed, "prev");
+                Assert.IsNull(rel);
+            }
+
+            [Test]
+            public void there_is_a_next_link()
+            {
+                var rel = GetLink(_feed, "next");
+                Assert.IsNotEmpty(rel);                
+            }
+
+            [Test]
+            public void there_is_a_self_link()
+            {
+                var rel = GetLink(_feed, "self");
+                Assert.IsNotEmpty(rel);
+            }
+
+            [Test]
+            public void there_is_a_first_link()
+            {
+                var rel = GetLink(_feed, "first");
+                Assert.IsNotEmpty(rel);
+            }
+
+            [Test]
+            public void there_is_a_last_link()
+            {
+                var rel = GetLink(_feed, "last");
+                Assert.IsNotEmpty(rel);
+            }
+
+            [Test]
+            public void the_feed_is_empty()
+            {
+                Assert.AreEqual(0, _feed["entries"].Count());
+            }
+
+            [Test]
+            public void the_response_is_not_cachable()
+            {
+                Assert.AreEqual("max-age=0, no-cache, must-revalidate", _lastResponse.Headers["Cache-Control"]);
             }
         }
 
