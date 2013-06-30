@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var prevEventNumber = Math.Min(msg.FromEventNumber + msg.MaxCount - 1, msg.LastEventNumber) + 1;
             var nextEventNumber = msg.FromEventNumber - 1;
-            if(!msg.IsEndOfStream || msg.Events.Length > 0)
+            if(!msg.IsEndOfStream || msg.Events.Length > 0 )
                 feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
             if (nextEventNumber >= 0)
                 feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber, msg.MaxCount));
