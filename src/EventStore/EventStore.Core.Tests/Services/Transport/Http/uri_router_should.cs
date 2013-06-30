@@ -77,6 +77,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _router.RegisterControllerAction(new ControllerAction("/s/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
             _router.RegisterControllerAction(new ControllerAction("/streams/$all/", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
             _router.RegisterControllerAction(new ControllerAction("/streams/$$all", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
+            _router.RegisterControllerAction(new ControllerAction("/streams/$mono?param={param}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
 
             _router.RegisterControllerAction(new ControllerAction("/streams/test", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
             _router.RegisterControllerAction(new ControllerAction("/streams/test", HttpMethod.Post, Codec.NoCodecs, FakeController.SupportedCodecs), (x, y) => { });
@@ -169,6 +170,20 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
             match = _router.GetAllUriMatches(Uri("/streams/$$all/"));
             Assert.AreEqual(0, match.Count);
+        }
+
+        [Test]
+        public void match_route_with_dollar_sign()
+        {
+            var match = _router.GetAllUriMatches(Uri("/streams/$mono"));
+            Assert.AreEqual(1, match.Count);
+            Assert.AreEqual("/streams/$mono?param={param}", match[0].ControllerAction.UriTemplate);
+            Assert.AreEqual(HttpMethod.Get, match[0].ControllerAction.HttpMethod);
+
+            match = _router.GetAllUriMatches(Uri("/streams/$mono?param=bla"));
+            Assert.AreEqual(1, match.Count);
+            Assert.AreEqual("/streams/$mono?param={param}", match[0].ControllerAction.UriTemplate);
+            Assert.AreEqual(HttpMethod.Get, match[0].ControllerAction.HttpMethod);
         }
 
         [Test]

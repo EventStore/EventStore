@@ -218,8 +218,8 @@ namespace EventStore.Core.Services.Transport.Http
                         var isPublic = IsCachePublic(msg.EventStreamId, msg.StreamMetadata);
                         var etag = GetPositionETag(msg.LastEventNumber, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
-                        if (msg.IsEndOfStream && msg.Events.Length == 0)
-                            return NotFound(etag, cacheSeconds, isPublic, "text/html");
+                        //if (msg.IsEndOfStream && msg.Events.Length == 0)
+                        //    return NotFound(etag, cacheSeconds, isPublic, "text/html");
                         if (msg.LastEventNumber >= msg.FromEventNumber + msg.MaxCount)
                             return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, isPublic);
                         return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, isPublic);
@@ -288,8 +288,8 @@ namespace EventStore.Core.Services.Transport.Http
                             return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, isPublic);
                         var etag = GetPositionETag(msg.TfEofPosition, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
-                        if (!headOfTf && msg.Events.Length == 0)
-                            return NotFound(etag, cacheSeconds, isPublic, "text/plain");
+                        //if (!headOfTf && msg.Events.Length == 0)
+                        //    return NotFound(etag, cacheSeconds, isPublic, "text/plain");
                         return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, isPublic);
                     case ReadAllResult.NotModified:
                         return NotModified();
