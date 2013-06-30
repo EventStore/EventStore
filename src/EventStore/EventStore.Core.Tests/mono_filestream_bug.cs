@@ -26,12 +26,25 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using System.IO;
+using NUnit.Framework;
 namespace EventStore.Core.Tests
 {
-    using System;
-    using System.IO;
-    using NUnit.Framework;
-
+    [TestFixture]
+    public class mono_uritemplate_bug
+    {
+        [Test]
+        public void when_validating_a_uri_template_with_url_encoded_chars()
+        {
+            var template = new UriTemplate("/streams/$all?embed={embed}");
+            var uri = new Uri("http://127.0.0.1/streams/$all");
+            var baseaddress = new Uri("http://127.0.0.1");
+            Assert.IsTrue(template.Match(baseaddress, uri) != null);
+        }        
+    }
+    
+    
     [TestFixture, Ignore("Known bug in Mono, waiting for fix.")]
     public class mono_filestream_bug
     {
