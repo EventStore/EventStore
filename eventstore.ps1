@@ -15,7 +15,7 @@ Properties {
     $productName = "Event Store Open Source"
     $companyName = "Event Store LLP"
     $copyright = "Copyright 2012 Event Store LLP. All rights reserved."
-    $commitHash = Get-GitCommitHash
+    $commitHashAndTimestamp = Get-GitCommitHashAndTimestamp
     $branchName = Get-GitBranchOrTag
 }
 
@@ -32,10 +32,16 @@ Properties {
     $eventStoreSolution = Join-Path $srcDirectory "EventStore.sln"
 }
 
+# Fallback platform/configuration (should be overriden by invoke-psake)
+Properties {
+    $platform = "Any CPU"
+    $configuration = "Release"
+}
+
 Task Build-EventStore {
     try {
         Invoke-Task Patch-AssemblyInfos
-        Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform="Any CPU" /p:OutDir=$outputDirectory }
+        Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform=$platform /p:OutDir=$outputDirectory }
     } finally {
         Invoke-Task Revert-AssemblyInfos
     }
@@ -47,7 +53,7 @@ Task Patch-AssemblyInfos {
     foreach ($assemblyInfo in $assemblyInfos) {
         $path = Resolve-Path $assemblyInfo.FullName -Relative
         Write-Verbose "Patching $path with product information."
-        Patch-AssemblyInfo $path $versionString $versionString $branchName $commitHash $productName $companyName $copyright
+        Patch-AssemblyInfo $path $versionString $versionString $branchName $commitHashAndTimestamp $productName $companyName $copyright
     }
     Pop-Location
 }
@@ -64,10 +70,10 @@ Task Revert-AssemblyInfos {
 }
 
 #Helper functions
-Function Get-GitCommitHash
+Function Get-GitCommitHashAndTimestamp
 {
-    $lastCommitLog = Exec { git log --max-count=1 --pretty=oneline } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
-    return $lastCommitLog.Split(' ')[0]
+    $lastCommitLog = Exec { git log --max-count=1 --pretty=format:%H@%aD HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
+    return $lastCommitLog
 }
 
 Function Get-GitBranchOrTag
@@ -87,7 +93,7 @@ Function Patch-AssemblyInfo {
         [Parameter(Mandatory=$true)][string]$version,
         [Parameter(Mandatory=$true)][string]$fileVersion,
         [Parameter(Mandatory=$true)][string]$branch,
-        [Parameter(Mandatory=$true)][string]$commitHash,
+        [Parameter(Mandatory=$true)][string]$commitHashAndTimestamp,
         [Parameter(Mandatory=$true)][string]$productName,
         [Parameter(Mandatory=$true)][string]$companyName,
         [Parameter()][string]$copyright
@@ -95,7 +101,7 @@ Function Patch-AssemblyInfo {
     Process {
         $newAssemblyVersion = 'AssemblyVersion("' + $version + '")'
         $newAssemblyFileVersion = 'AssemblyFileVersion("' + $fileVersion + '")'
-        $newAssemblyVersionInformational = 'AssemblyInformationalVersion("' + $version + ' - ' + $branch + ' - ' + $commitHash + '")'
+        $newAssemblyVersionInformational = 'AssemblyInformationalVersion("' + $version + '.' + $branch + '@' + $commitHashAndTimestamp + '")'
         $newAssemblyProductName = 'AssemblyProduct("' + $productName + '")'
         $newAssemblyCopyright = 'AssemblyCopyright("'+ $copyright + '")'
         $newAssemblyCompany = 'AssemblyCompany("' + $companyName + '")'
