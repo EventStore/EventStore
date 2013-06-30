@@ -9,17 +9,14 @@ Task ? -description "Writes script documentation to the host" {
     Write-Host "Builds the managed part of the Event Store"
 }
 
-# Version
+# Version and other metadata
 Properties {
-    $versionString = "2.0.0-rc1"
+    $versionString = "0.0.0.0"
     $productName = "Event Store Open Source"
-}
-
-# Static Product Info
-Properties {
-    $description = "Event Store"
-    $copyright = "Copyright © 2012-2013 Event Store LLP. All rights reserved."
-    $company = "Event Store LLP"
+    $companyName = "Event Store LLP"
+    $copyright = "Copyright 2012 Event Store LLP. All rights reserved."
+    $commitHash = Get-GitCommitHash
+    $branchName = Get-GitBranchOrTag
 }
 
 # Directories
@@ -36,44 +33,97 @@ Properties {
 }
 
 Task Build-EventStore {
-    Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform="Any CPU" /p:OutDir=$outputDirectory }
+    try {
+        Invoke-Task Patch-AssemblyInfos
+        Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform="Any CPU" /p:OutDir=$outputDirectory }
+    } finally {
+        Invoke-Task Revert-AssemblyInfos
+    }
+}
+
+Task Patch-AssemblyInfos {
+    Push-Location $baseDirectory
+    $assemblyInfos = Get-ChildItem -Recurse -Filter AssemblyInfo.cs
+    foreach ($assemblyInfo in $assemblyInfos) {
+        $path = Resolve-Path $assemblyInfo.FullName -Relative
+        Write-Verbose "Patching $path with product information."
+        Patch-AssemblyInfo $path $versionString $versionString $branchName $commitHash $productName $companyName $copyright
+    }
+    Pop-Location
+}
+
+Task Revert-AssemblyInfos {
+    Push-Location $baseDirectory
+    $assemblyInfos = Get-ChildItem -Recurse -Filter AssemblyInfo.cs
+    foreach ($assemblyInfo in $assemblyInfos) {
+        $path = Resolve-Path $assemblyInfo.FullName -Relative
+        Write-Verbose "Reverting $path to original state."
+        & { git checkout --quiet $path }
+    }
+    Pop-Location
 }
 
 #Helper functions
-
-Function Generate-AssemblyInfoCSharp
+Function Get-GitCommitHash
 {
-    [CmdletBinding()]
+    $lastCommitLog = Exec { git log --max-count=1 --pretty=oneline } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
+    return $lastCommitLog.Split(' ')[0]
+}
+
+Function Get-GitBranchOrTag
+{
+    $revParse = Exec { git rev-parse --abbrev-ref HEAD } "Cannot execute git rev-parse. Ensure that the current directory is a git repository and that git is available on PATH."
+    if ($revParse -ne "HEAD") {
+        return $revParse
+    }
+
+    $describeTags = Exec { git describe --tags } "Cannot execute git describe. Ensure that the current directory is a git repository and that git is available on PATH."
+    return $describeTags
+}
+
+Function Patch-AssemblyInfo {
     Param(
-        [string]$title, 
-        [string]$description, 
-        [string]$company, 
-        [string]$product, 
-        [string]$copyright, 
-        [string]$version,
-        [string]$sourceControlReference,
-        [string]$commit,
-        [string]$clsCompliant = "true",
-        [Parameter(Mandatory=$true)][string]$file
+        [Parameter(Mandatory=$true)][string]$assemblyInfoFilePath,
+        [Parameter(Mandatory=$true)][string]$version,
+        [Parameter(Mandatory=$true)][string]$fileVersion,
+        [Parameter(Mandatory=$true)][string]$branch,
+        [Parameter(Mandatory=$true)][string]$commitHash,
+        [Parameter(Mandatory=$true)][string]$productName,
+        [Parameter(Mandatory=$true)][string]$companyName,
+        [Parameter()][string]$copyright
     )
     Process {
-        $assemblyInfo = "using System;
-using System.Reflection;
-using System.Runtime.InteropServices;
+        $newAssemblyVersion = 'AssemblyVersion("' + $version + '")'
+        $newAssemblyFileVersion = 'AssemblyFileVersion("' + $fileVersion + '")'
+        $newAssemblyVersionInformational = 'AssemblyInformationalVersion("' + $version + ' - ' + $branch + ' - ' + $commitHash + '")'
+        $newAssemblyProductName = 'AssemblyProduct("' + $productName + '")'
+        $newAssemblyCopyright = 'AssemblyCopyright("'+ $copyright + '")'
+        $newAssemblyCompany = 'AssemblyCompany("' + $companyName + '")'
+        
+        $assemblyVersionPattern = 'AssemblyVersion\(".*"\)'
+        $assemblyFileVersionPattern = 'AssemblyFileVersion\(".*"\)'
+        $assemblyVersionInformationalPattern = 'AssemblyInformationalVersion\(".*"\)'
+        $assemblyProductNamePattern = 'AssemblyProduct\(".*"\)'
+        $assemblyCopyrightPattern = 'AssemblyCopyright\(".*"\)'
+        $assemblyCompanyPattern = 'AssemblyCompany\(".*"\)'
 
-[assembly: AssemblyTitleAttribute(""$title"")]
-[assembly: AssemblyDescriptionAttribute(""$description"")]
-[assembly: AssemblyCompanyAttribute(""$company"")]
-[assembly: AssemblyProductAttribute(""$product"")]
-[assembly: AssemblyCopyrightAttribute(""$copyright"")]
-[assembly: AssemblyVersionAttribute(""$version"")]
-[assembly: AssemblyInformationalVersionAttribute(""$version - $sourceControlReference@$commit"")]
-[assembly: AssemblyDelaySignAttribute(false)]
-[assembly: CLSCompliantAttribute($clsCompliant )]
-[assembly: ComVisibleAttribute(false)]
-"
+        $edited = (Get-Content $assemblyInfoFilePath) | ForEach-Object {
+            % {$_ -replace "\/\*+.*\*+\/", "" } |
+            % {$_ -replace "\/\/+.*$", "" } |
+            % {$_ -replace "\/\*+.*$", "" } |
+            % {$_ -replace "^.*\*+\/\b*$", "" } |
+            % {$_ -replace $assemblyVersionPattern, $newAssemblyVersion } |
+            % {$_ -replace $assemblyFileVersionPattern, $newAssemblyFileVersion } |
+            % {$_ -replace $assemblyVersionInformationalPattern, $newAssemblyVersionInformational } |
+            % {$_ -replace $assemblyProductNamePattern, $newAssemblyProductName } |
+            % {$_ -replace $assemblyCopyrightPattern, $newAssemblyCopyright } |
+            % {$_ -replace $assemblyCompanyPattern, $newAssemblyCompany }
+        }
 
-        Write-Verbose "Generating AssemblyInfo file: $file"
-        New-Item -Force -ItemType File -Path $file -Value $assemblyInfo
+        if (!(($edited -match $assemblyVersionInformationalPattern) -ne "")) {
+            $edited += "[assembly: $newAssemblyVersionInformational]"
+        }
+
+        Set-Content -Path $assemblyInfoFilePath -Value $edited
     }
 }

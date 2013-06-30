@@ -84,6 +84,8 @@ Task Build-Full {
 
 #--------------------------------------------------------------------------
 
+# Helper Functions
+
 Function Test-Dependencies
 {
     # This is a derp, using exceptions for flow control. If you can think
