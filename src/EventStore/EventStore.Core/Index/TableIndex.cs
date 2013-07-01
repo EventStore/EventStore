@@ -29,10 +29,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Index
 {
@@ -120,6 +122,8 @@ namespace EventStore.Core.Index
             catch (CorruptIndexException exc)
             {
                 Log.ErrorException(exc, "ReadIndex is corrupted...");
+                LogIndexMapContent(indexmapFile);
+                DumpAndCopyIndex();
                 File.Delete(indexmapFile);
 
                 bool createEmptyIndexMap = true;
@@ -140,6 +144,7 @@ namespace EventStore.Core.Index
                     catch (CorruptIndexException ex)
                     {
                         Log.ErrorException(ex, "Backup IndexMap is also corrupted...");
+                        LogIndexMapContent(backupFile);
                         File.Delete(indexmapFile);
                         File.Delete(backupFile);
                     }
@@ -163,6 +168,38 @@ namespace EventStore.Core.Index
                 var file = Path.Combine(_directory, filePath);
                 File.SetAttributes(file, FileAttributes.Normal);
                 File.Delete(file);
+            }
+        }
+
+        private void LogIndexMapContent(string indexmapFile)
+        {
+            try
+            {
+                var sb = new StringBuilder();
+                sb.AppendFormat("IndexMap '{0}' content:\n", indexmapFile);
+                sb.AppendLine(Helper.FormatBinaryDump(File.ReadAllBytes(indexmapFile)));
+
+                Log.Error(sb.ToString());
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Unexpected error while dumping IndexMap '{0}'.", indexmapFile);
+            }
+        }
+
+        private void DumpAndCopyIndex()
+        {
+            string dumpPath = null;
+            try
+            {
+                dumpPath = Path.Combine(Path.GetDirectoryName(_directory),
+                                        string.Format("index-backup-{0:yyyy-MM-dd_hh-mm-ss.fff}", DateTime.UtcNow));
+                Log.Error("Making backup of index folder for inspection to {0}...", dumpPath);
+                FileUtils.DirectoryCopy(_directory, dumpPath, copySubDirs: true);
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Unexpected error while copying index to backup dir '{0}'", dumpPath);
             }
         }
 

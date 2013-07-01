@@ -72,14 +72,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             httpEntityManager.ReplyStatus(HttpStatusCode.BadRequest,
                                           reason,
-                                          e => Log.ErrorException(e, "Error while closing http connection (bad request)"));
+                                          e => Log.Debug("Error while closing http connection (bad request): {0}.", e.Message));
         }
 
         protected void SendOk(HttpEntityManager httpEntityManager)
         {
             httpEntityManager.ReplyStatus(HttpStatusCode.OK,
-                                       "OK",
-                                       e => Log.ErrorException(e, "Error while closing http connection (ok)"));
+                                          "OK",
+                                          e => Log.Debug("Error while closing http connection (ok): {0}.", e.Message));
         }
 
         protected void Register(IHttpService service, string uriTemplate, string httpMethod, 
@@ -109,7 +109,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected void LogError(Exception exc)
         {
-            Log.ErrorException(exc, "Error occurred.");
+            Log.Debug("Error occurred: {0}.", exc.Message);
         }
 
         protected void RegisterUrlBased(

@@ -243,15 +243,12 @@ namespace EventStore.Core
             });
 
             // HTTP
-            var authenticationProviders = new List<AuthenticationProvider>()
-                {
-                    new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
-                };
-
-
+            var authenticationProviders = new List<AuthenticationProvider>
+            {
+                new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
+            };
             if (_settings.EnableTrustedAuth)
                 authenticationProviders.Add(new TrustedAuthenticationProvider());
-
             authenticationProviders.Add(new AnonymousAuthenticationProvider());
 
             var httpPipe = new HttpMessagePipe();

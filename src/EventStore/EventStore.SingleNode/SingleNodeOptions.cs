@@ -44,8 +44,6 @@ namespace EventStore.SingleNode
         public int SecureTcpPort { get { return _helper.Get(() => SecureTcpPort); } }
         public int HttpPort { get { return _helper.Get(() => HttpPort); } }
 
-        public bool EnableTrustedAuth { get { return _helper.Get(() => EnableTrustedAuth);} }
-
         public int StatsPeriodSec { get { return _helper.Get(() => StatsPeriodSec); } }
         
         public int CachedChunks { get { return _helper.Get(() => CachedChunks); } }
@@ -56,7 +54,9 @@ namespace EventStore.SingleNode
         public bool RunProjections { get { return _helper.Get(() => RunProjections); } }
         public int ProjectionThreads { get { return _helper.Get(() => ProjectionThreads); } }
         public int WorkerThreads { get { return _helper.Get(() => WorkerThreads); } }
+
         public string[] HttpPrefixes { get { return _helper.Get(() => HttpPrefixes); } }
+        public bool EnableTrustedAuth { get { return _helper.Get(() => EnableTrustedAuth); } }
 
         public string CertificateStore { get { return _helper.Get(() => CertificateStore); } }
         public string CertificateName { get { return _helper.Get(() => CertificateName); } }
@@ -83,8 +83,6 @@ namespace EventStore.SingleNode
             _helper.Register(() => SecureTcpPort, Opts.SecureTcpPortCmd, Opts.SecureTcpPortEnv, Opts.SecureTcpPortJson, Opts.SecureTcpPortDefault, Opts.SecureTcpPortDescr);
             _helper.Register(() => HttpPort, Opts.HttpPortCmd, Opts.HttpPortEnv, Opts.HttpPortJson, Opts.HttpPortDefault, Opts.HttpPortDescr);
             
-            _helper.Register(() => EnableTrustedAuth, Opts.EnableTrustedAuthCmd, Opts.EnableTrustedAuthEnv, Opts.EnableTrustedAuthJson, Opts.EnableTrustedAuthDefault, Opts.EnableTrustedAuthDescr);
-
             _helper.Register(() => StatsPeriodSec, Opts.StatsPeriodCmd, Opts.StatsPeriodEnv, Opts.StatsPeriodJson, Opts.StatsPeriodDefault, Opts.StatsPeriodDescr);
             
             _helper.Register(() => CachedChunks, Opts.CachedChunksCmd, Opts.CachedChunksEnv, Opts.CachedChunksJson, Opts.CachedChunksDefault, Opts.CachedChunksDescr, hidden: true);
@@ -95,7 +93,9 @@ namespace EventStore.SingleNode
             _helper.Register(() => RunProjections, Opts.RunProjectionsCmd, Opts.RunProjectionsEnv, Opts.RunProjectionsJson, Opts.RunProjectionsDefault, Opts.RunProjectionsDescr);
             _helper.Register(() => ProjectionThreads, Opts.ProjectionThreadsCmd, Opts.ProjectionThreadsEnv, Opts.ProjectionThreadsJson, Opts.ProjectionThreadsDefault, Opts.ProjectionThreadsDescr);
             _helper.Register(() => WorkerThreads, Opts.WorkerThreadsCmd, Opts.WorkerThreadsEnv, Opts.WorkerThreadsJson, Opts.WorkerThreadsDefault, Opts.WorkerThreadsDescr);
+
             _helper.RegisterArray(() => HttpPrefixes, Opts.HttpPrefixesCmd, Opts.HttpPrefixesEnv, ",", Opts.HttpPrefixesJson, Opts.HttpPrefixesDefault, Opts.HttpPrefixesDescr);
+            _helper.Register(() => EnableTrustedAuth, Opts.EnableTrustedAuthCmd, Opts.EnableTrustedAuthEnv, Opts.EnableTrustedAuthJson, Opts.EnableTrustedAuthDefault, Opts.EnableTrustedAuthDescr);
 
             _helper.RegisterRef(() => CertificateStore, Opts.CertificateStoreCmd, Opts.CertificateStoreEnv, Opts.CertificateStoreJson, Opts.CertificateStoreDefault, Opts.CertificateStoreDescr);
             _helper.RegisterRef(() => CertificateName, Opts.CertificateNameCmd, Opts.CertificateNameEnv, Opts.CertificateNameJson, Opts.CertificateNameDefault, Opts.CertificateNameDescr);
