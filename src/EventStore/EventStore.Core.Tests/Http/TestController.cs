@@ -25,6 +25,9 @@ namespace EventStore.Core.Tests.Http
             Register(service, "/test1", Test1Handler);
             Register(service, "/test-anonymous", TestAnonymousHandler);
             Register(service, "/test-encoding/{a}?b={b}", TestEncodingHandler);
+            Register(service, "/test-encoding-reserved-%20?b={b}", (manager, match) => TestEncodingHandler(manager, match, "%20"));
+            Register(service, "/test-encoding-reserved-%24?b={b}", (manager, match) => TestEncodingHandler(manager, match, "%24"));
+            Register(service, "/test-encoding-reserved-%25?b={b}", (manager, match) => TestEncodingHandler(manager, match, "%25"));
             Register(service, "/test-encoding-reserved- ?b={b}", (manager, match) => TestEncodingHandler(manager, match, " "));
             Register(service, "/test-encoding-reserved-$?b={b}", (manager, match) => TestEncodingHandler(manager, match, "$"));
             Register(service, "/test-encoding-reserved-%?b={b}", (manager, match) => TestEncodingHandler(manager, match, "%"));
@@ -65,7 +68,15 @@ namespace EventStore.Core.Tests.Http
         {
             var b = match.BoundVariables["b"];
 
-            http.Reply(new { a = a, b = b, rawSegment = http.RequestedUrl.Segments[1] }.ToJson(), 200, "OK", "application/json");
+            http.Reply(
+                new
+                    {
+                        a = a,
+                        b = b,
+                        rawSegment = http.RequestedUrl.Segments[1],
+                        requestUri = match.RequestUri,
+                        rawUrl = http.HttpEntity.Request.RawUrl
+                    }.ToJson(), 200, "OK", "application/json");
         }
     }
 }
