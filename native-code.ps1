@@ -91,7 +91,7 @@ Properties {
     }
 }
 
-Task Build-NativeFull -Depends Clean-V8, Build-V8, Copy-V8ToLibs, Patch-VersionResource, Build-JS1, Revert-VersionResource
+Task Build-NativeFull -Depends Clean-V8, Build-V8, Copy-V8ToLibs, Patch-JS1VersionResource, Build-JS1, Revert-JS1VersionResource
 
 Task Build-NativeIncremental -Depends Build-V8, Copy-V8ToLibs, Build-JS1
 
