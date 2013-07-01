@@ -110,4 +110,19 @@ namespace EventStore.Projections.Core.Tests.Other
             Assert.AreEqual(null, _match.BoundVariables["C"]);
         }
     }
+
+    [TestFixture]
+    class url_segments
+    {
+        [Test]
+        public void are_not_untumatically_unescaped()
+        {
+            var uri = new Uri("http://fake/a%24a%20/123$");
+            Assert.AreEqual(3, uri.Segments.Length);
+            Assert.AreEqual("/", uri.Segments[0]);
+            Assert.AreEqual("a%24a%20/", uri.Segments[1]);
+            Assert.AreEqual("123$", uri.Segments[2]);
+        }
+
+    }
 }
