@@ -40,9 +40,9 @@ namespace EventStore.Core.Settings
         public readonly IPEndPoint ExternalSecureTcpEndPoint;
         public readonly IPEndPoint ExternalHttpEndPoint;
         public readonly string[] HttpPrefixes;
+        public readonly bool EnableTrustedAuth;
         public readonly X509Certificate2 Certificate;
         public readonly int WorkerThreads;
-        public readonly bool EnableTrustedAuth;
 
         public readonly TimeSpan PrepareTimeout;
         public readonly TimeSpan CommitTimeout;
@@ -56,8 +56,8 @@ namespace EventStore.Core.Settings
                                    IPEndPoint externalSecureTcpEndPoint,
                                    IPEndPoint externalHttpEndPoint, 
                                    string[] httpPrefixes,
-                                   X509Certificate2 certificate,
                                    bool enableTrustedAuth,
+                                   X509Certificate2 certificate,
                                    int workerThreads, 
                                    TimeSpan prepareTimeout,
                                    TimeSpan commitTimeout,
@@ -76,8 +76,8 @@ namespace EventStore.Core.Settings
             ExternalSecureTcpEndPoint = externalSecureTcpEndPoint;
             ExternalHttpEndPoint = externalHttpEndPoint;
             HttpPrefixes = httpPrefixes;
-            Certificate = certificate;
             EnableTrustedAuth = enableTrustedAuth;
+            Certificate = certificate;
             WorkerThreads = workerThreads;
 
             PrepareTimeout = prepareTimeout;
@@ -95,16 +95,18 @@ namespace EventStore.Core.Settings
                                  + "ExternalSecureTcpEndPoint: {1},\n"
                                  + "ExternalHttpEndPoint: {2},\n"
                                  + "HttpPrefixes: {3},\n"
-                                 + "Certificate: {4},\n"
-                                 + "WorkerThreads: {5}\n" 
-                                 + "PrepareTimeout: {6}\n"
-                                 + "CommitTimeout: {7}\n"
-                                 + "StatsPeriod: {8}\n"
-                                 + "StatsStorage: {9}",
+                                 + "EnableTrustedAuth: {4},\n"
+                                 + "Certificate: {5},\n"
+                                 + "WorkerThreads: {6}\n" 
+                                 + "PrepareTimeout: {7}\n"
+                                 + "CommitTimeout: {8}\n"
+                                 + "StatsPeriod: {9}\n"
+                                 + "StatsStorage: {10}",
                                  ExternalTcpEndPoint,
                                  ExternalSecureTcpEndPoint == null ? "n/a" : ExternalSecureTcpEndPoint.ToString(),
                                  ExternalHttpEndPoint,
                                  string.Join(", ", HttpPrefixes),
+                                 EnableTrustedAuth,
                                  Certificate == null ? "n/a" : Certificate.ToString(verbose: true),
                                  WorkerThreads,
                                  PrepareTimeout,
