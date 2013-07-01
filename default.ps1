@@ -41,6 +41,7 @@ Properties {
 
     if ($platform -eq $null) {
         Write-Verbose "Platform: defaulting to x64 and Any CPU for managed"
+        $platform = "x64"
         $managedBuildParameters.Add("platform", "Any CPU")
         $nativeBuildParameters.Add("platform", "x64")
     } else {
@@ -81,10 +82,10 @@ Task Build-Quick -Depends Clean-Output {
     $hasDependencies = (Test-Path (Join-Path $libsDirectory (Join-Path $platform "js1.dll")))
 
     if ($hasDependencies) {
-        Write-Host "Re-using JS1.dll from a previous build - it is likely to have the wrong commit hash!"
+        Write-Host "Re-using JS1.dll from a previous build - it is likely to have the wrong commit hash!" -ForegroundColor Yellow
         Invoke-psake .\eventstore.ps1 Build-EventStore -parameters $managedBuildParameters -Verbose
     } else {
-        Write-Host "Build-Quick can only be used if a full or incremental build has build JS1.dll and it is in the libs directory"
+        throw "Build-Quick can only be used if a full or incremental build has build JS1.dll and it is in the libs directory"
     }
 }
 
