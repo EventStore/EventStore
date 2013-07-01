@@ -264,7 +264,7 @@ namespace EventStore.Core
                 bus.Subscribe<HttpMessage.SendOverHttp>(httpSendService);
             });
 
-            _httpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
+            _httpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(), 
                                             _workersHandler, vNodeSettings.HttpPrefixes);
             _httpService.SetupController(new AdminController(_mainQueue));
             _httpService.SetupController(new PingController());

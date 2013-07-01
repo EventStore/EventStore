@@ -156,6 +156,7 @@
     <Compile Include="Helpers\PortsHelper.cs" />
     <Compile Include="Helpers\TestFixtureWithExistingEvents.cs" />
     <Compile Include="Helpers\TestFixtureWithReadWriteDispatchers.cs" />
+    <Compile Include="Http\ArgumentPassing\matching.cs" />
     <Compile Include="Http\BasicAuthentication\basic_authentication.cs" />
     <Compile Include="Http\HttpBehaviorSpecification.cs" />
     <Compile Include="Http\StreamSecurity\SetUpFixture.cs" />

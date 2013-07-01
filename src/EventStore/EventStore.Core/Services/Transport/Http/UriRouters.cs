@@ -77,7 +77,12 @@ namespace EventStore.Core.Services.Transport.Http
             var matches = new List<UriToActionMatch>();
             var baseAddress = new UriBuilder(uri.Scheme, uri.Host, uri.Port).Uri;
 
-            var segments = uri.Segments;
+
+            var segments = new string[uri.Segments.Length];
+            for (int i = 0; i < uri.Segments.Length; i++)
+            {
+                segments[i] = Uri.UnescapeDataString(uri.Segments[i]);
+            }
             GetAllUriMatches(_root, baseAddress, uri, segments, 0, matches);
 
             return matches;
