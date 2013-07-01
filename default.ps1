@@ -27,33 +27,48 @@ Task ? -description "Writes script documentation to the host" {
     Write-Host "Tasks:"
     Write-Host "------"
     Write-Host ""
-    Write-Host "        Build-Incremental"
+    Write-Host "        Build-Incremental - will only build dependencies (V8, JS1) if necessary (only"
+    Write-Host "                            cleans the Event Store itself)"
     Write-Host ""
-    Write-Host "        Build-Full"
+    Write-Host "        Build-Full - will always build dependencies (cleans before building)"
     Write-Host ""
 }
 
 # Configuration
 Properties {
+    $nativeBuildParameters = @{}
+    $managedBuildParameters = @{}
+
     if ($platform -eq $null) {
-        Write-Verbose "Platform: defaulting to X64"
-        $platform = "x64"
+        Write-Verbose "Platform: defaulting to x64 and Any CPU for managed"
+        $managedBuildParameters.Add("platform", "Any CPU")
+        $nativeBuildParameters.Add("platform", "x64")
     } else {
         Write-Verbose "Platform: set to $platform"
+        $managedBuildParameters.Add("platform", $platform)
+        $nativeBuildParameters.Add("platform", $platform)
     }
 
     if ($configuration -eq $null) {
         Write-Verbose "Configuration: defaulting to Release"
-        $configuration = "release"
+        $managedBuildParameters.Add("configuration", "release")
+        $nativeBuildParameters.Add("configuration", "release")
     } else {
         Write-Verbose "Configuration: set to $configuration"
+        $managedBuildParameters.Add("configuration", $configuration)
+        $nativeBuildParameters.Add("configuration", $configuration)
     }
-}
 
-# Paths
-Properties {
+    if ($platformToolset -ne $null) {
+        Write-Verbose "Platform Toolset: set to $platformToolset for native code"
+        $nativeBuildParameters.Add("platformToolset", $platformToolset)
+    } else {
+        Write-Verbose "Platform Toolset will be guessed by a horrible, probably brittle mechanism recommended by MSFT support"
+    }
+
     $baseDirectory = Resolve-Path .
     $outputDirectory = Join-Path $baseDirectory "bin\"
+    $managedBuildParameters.Add("outputDirectory", $outputDirectory)
 }
 
 Task Clean-Output {
@@ -64,22 +79,22 @@ Task Build-Incremental -Depends Clean-Output {
 
     if (Test-Dependencies -eq $false)
     {
-        Invoke-psake .\dependencies.ps1 Get-Dependencies
+        Invoke-psake .\dependencies.ps1 Get-Dependencies -Verbose
     }
 
-    Invoke-psake .\native-code.ps1 Build-NativeIncremental -parameters @{ 'platform' = "$platform" ; 'configuration' = "$configuration" }
-    Invoke-psake .\eventstore.ps1 Build-EventStore -parameters @{ 'platform' = "$platform" ; 'configuration' = "$configuration" ; 'outputDirectory' = "$outputDirectory" }
+    Invoke-psake .\native-code.ps1 Build-NativeIncremental -parameters $nativeBuildParameters -Verbose
+    Invoke-psake .\eventstore.ps1 Build-EventStore -parameters $managedBuildParameters -Verbose
 }
 
 Task Build-Full {
 
     if (Test-Dependencies -eq $false)
     {
-        Invoke-psake .\dependencies.ps1 Get-Dependencies
+        Invoke-psake .\dependencies.ps1 Get-Dependencies -Verbose
     }
 
-    Invoke-psake .\native-code.ps1 Build-Full -parameters @{ 'platform' = "$platform" ; 'configuration' = "$configuration" }
-    Invoke-psake .\eventstore.ps1 Build-EventStore -parameters @{ 'platform' = "$platform" ; 'configuration' = "$configuration" }
+    Invoke-psake .\native-code.ps1 Build-Full -parameters $nativeBuildParameters -Verbose
+    Invoke-psake .\eventstore.ps1 Build-EventStore -parameters $managedBuildParameters -Verbose
 }
 
 #--------------------------------------------------------------------------
@@ -91,7 +106,7 @@ Function Test-Dependencies
     # This is a derp, using exceptions for flow control. If you can think
     # of a better way for this, pull request plz.
     try {
-        Invoke-psake .\dependencies.ps1 Test-Dependencies
+        Invoke-psake .\dependencies.ps1 Test-Dependencies -Verbose
         return $true
     } catch {
         return $false
