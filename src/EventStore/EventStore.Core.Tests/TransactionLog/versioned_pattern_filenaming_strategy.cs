@@ -100,10 +100,12 @@ namespace EventStore.Core.Tests.TransactionLog
         }
 
         [Test]
-        public void returns_all_existing_files_with_correct_pattern()
+        public void returns_all_existing_not_temporary_files_with_correct_pattern()
         {
             File.Create(GetFilePathFor("foo")).Close();
             File.Create(GetFilePathFor("bla")).Close();
+            File.Create(GetFilePathFor("chunk-000001.000000.tmp")).Close();
+            File.Create(GetFilePathFor("chunk-001.000")).Close();
 
             File.Create(GetFilePathFor("chunk-000001.000000")).Close();
             File.Create(GetFilePathFor("chunk-000002.000000")).Close();
@@ -134,14 +136,28 @@ namespace EventStore.Core.Tests.TransactionLog
             File.Create(GetFilePathFor("bla.tmp")).Close();
             File.Create(GetFilePathFor("bla.temp")).Close();
 
+            File.Create(GetFilePathFor("chunk-000005.000007.tmp")).Close();
+
             File.Create(GetFilePathFor("foo.tmp")).Close();
 
             var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
             var tempFiles = strategy.GetAllTempFiles();
 
-            Assert.AreEqual(2, tempFiles.Length);
+            Assert.AreEqual(3, tempFiles.Length);
             Assert.AreEqual(GetFilePathFor("bla.tmp"), tempFiles[0]);
-            Assert.AreEqual(GetFilePathFor("foo.tmp"), tempFiles[1]);
+            Assert.AreEqual(GetFilePathFor("chunk-000005.000007.tmp"), tempFiles[1]);
+            Assert.AreEqual(GetFilePathFor("foo.tmp"), tempFiles[2]);
+        }
+
+        [Test]
+        public void does_not_return_temp_file_that_is_named_as_chunk()
+        {
+            File.Create(GetFilePathFor("chunk-000000.000000.tmp")).Close();
+
+            var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
+            var tempFiles = strategy.GetAllVersionsFor(0);
+
+            Assert.AreEqual(0, tempFiles.Length);
         }
 
         [Test]

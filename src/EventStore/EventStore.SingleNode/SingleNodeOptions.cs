@@ -78,10 +78,11 @@ namespace EventStore.SingleNode
             _helper.RegisterArray(() => Configs, Opts.ConfigsCmd, Opts.ConfigsEnv, ",", Opts.ConfigsJson, Opts.ConfigsDefault, Opts.ConfigsDescr);
             _helper.RegisterArray(() => Defines, Opts.DefinesCmd, Opts.DefinesEnv, ",", Opts.DefinesJson, Opts.DefinesDefault, Opts.DefinesDescr, hidden: true);
 
-            _helper.RegisterRef(() => Ip, "i|ip=", "IP", "ip", IPAddress.Loopback, "The IP address to bind to.");
-            _helper.Register(() => TcpPort, "t|tcp-port=", "TCP_PORT", "tcpPort", 1113, "The port to run the TCP server on.");
-            _helper.Register(() => SecureTcpPort, "st|sec-tcp-port|secure-tcp-port=", "SEC_TCP_PORT", "secureTcpPort", 0, "The port to run the secure TCP server on.");
-            _helper.Register(() => HttpPort, "h|http-port=", "HTTP_PORT", "httpPort", 2113, "The port to run the HTTP server on.");
+            _helper.RegisterRef(() => Ip, Opts.IpCmd, Opts.IpEnv, Opts.IpJson, Opts.IpDefault, Opts.IpDescr);
+            _helper.Register(() => TcpPort, Opts.TcpPortCmd, Opts.TcpPortEnv, Opts.TcpPortJson, Opts.TcpPortDefault, Opts.TcpPortDescr);
+            _helper.Register(() => SecureTcpPort, Opts.SecureTcpPortCmd, Opts.SecureTcpPortEnv, Opts.SecureTcpPortJson, Opts.SecureTcpPortDefault, Opts.SecureTcpPortDescr);
+            _helper.Register(() => HttpPort, Opts.HttpPortCmd, Opts.HttpPortEnv, Opts.HttpPortJson, Opts.HttpPortDefault, Opts.HttpPortDescr);
+            
             _helper.Register(() => EnableTrustedAuth, Opts.EnableTrustedAuthCmd, Opts.EnableTrustedAuthEnv, Opts.EnableTrustedAuthJson, Opts.EnableTrustedAuthDefault, Opts.EnableTrustedAuthDescr);
 
             _helper.Register(() => StatsPeriodSec, Opts.StatsPeriodCmd, Opts.StatsPeriodEnv, Opts.StatsPeriodJson, Opts.StatsPeriodDefault, Opts.StatsPeriodDescr);

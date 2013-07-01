@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Text;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.Http
 {
@@ -22,6 +24,10 @@ namespace EventStore.Core.Tests.Http
         {
             Register(service, "/test1", Test1Handler);
             Register(service, "/test-anonymous", TestAnonymousHandler);
+            Register(service, "/test-encoding/{a}?b={b}", TestEncodingHandler);
+            Register(service, "/test-encoding-reserved- ?b={b}", (manager, match) => TestEncodingHandler(manager, match, " "));
+            Register(service, "/test-encoding-reserved-$?b={b}", (manager, match) => TestEncodingHandler(manager, match, "$"));
+            Register(service, "/test-encoding-reserved-%?b={b}", (manager, match) => TestEncodingHandler(manager, match, "%"));
         }
 
         private void Register(
@@ -45,6 +51,21 @@ namespace EventStore.Core.Tests.Http
                 http.Reply("ERROR", 500, "ERROR", "text/plain");
             else 
                 http.Reply("OK", 200, "OK", "text/plain");
+        }
+
+        private void TestEncodingHandler(HttpEntityManager http, UriTemplateMatch match)
+        {
+            var a = match.BoundVariables["a"];
+            var b = match.BoundVariables["b"];
+
+            http.Reply(new { a = a, b = b, rawSegment = http.RequestedUrl.Segments[2] }.ToJson(), 200, "OK", "application/json");
+        }
+
+        private void TestEncodingHandler(HttpEntityManager http, UriTemplateMatch match, string a)
+        {
+            var b = match.BoundVariables["b"];
+
+            http.Reply(new { a = a, b = b, rawSegment = http.RequestedUrl.Segments[1] }.ToJson(), 200, "OK", "application/json");
         }
     }
 }

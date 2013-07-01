@@ -300,6 +300,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             var tempFile = new FileStream(tempFilename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read,
                                           WriteBufferSize, FileOptions.SequentialScan);
             tempFile.SetLength(fileSize);
+            tempFile.Flush(flushToDisk: true);
             tempFile.Close();
             File.Move(tempFilename, _filename);
 

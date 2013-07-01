@@ -166,6 +166,33 @@ namespace EventStore.Core.Util
         public static readonly string CertificatePasswordDefault = string.Empty;
 
         /*
+         *  SINGLE NODE OPTIONS
+         */
+        public const string IpCmd = "i|ip=";
+        public const string IpEnv = "IP";
+        public const string IpJson = "ip";
+        public const string IpDescr = "The IP address to bind to.";
+        public static readonly IPAddress IpDefault = IPAddress.Loopback;
+
+        public const string TcpPortCmd = "t|tcp-port=";
+        public const string TcpPortEnv = "TCP_PORT";
+        public const string TcpPortJson = "tcpPort";
+        public const string TcpPortDescr = "The port to run the TCP server on.";
+        public const int    TcpPortDefault = 1113;
+
+        public const string SecureTcpPortCmd = "st|sec-tcp-port|secure-tcp-port=";
+        public const string SecureTcpPortEnv = "SEC_TCP_PORT";
+        public const string SecureTcpPortJson = "secureTcpPort";
+        public const string SecureTcpPortDescr = "The port to run the secure TCP server on.";
+        public const int    SecureTcpPortDefault = 0;
+
+        public const string HttpPortCmd = "h|http-port=";
+        public const string HttpPortEnv = "HTTP_PORT";
+        public const string HttpPortJson = "httpPort";
+        public const string HttpPortDescr = "The port to run the HTTP server on.";
+        public const int    HttpPortDefault = 2113;
+
+        /*
          *  CLUSTER OPTIONS
          */
         public const string InternalIpCmd = "int-ip|internal-ip=";
@@ -293,5 +320,26 @@ namespace EventStore.Core.Util
         public const string SslValidateServerJson = "sslValidateServer";
         public const string SslValidateServerDescr = "Whether to validate that server's certificate is trusted.";
         public const bool   SslValidateServerDefault = true;
+
+        /*
+         *  MANAGER OPTIONS 
+         */
+        public const string EnableWatchdogCmd = "w|watchdog";
+        public const string EnableWatchdogEnv = "WATCHDOG";
+        public const string EnableWatchdogJson = "watchdog";
+        public const string EnableWatchdogDescr = null;
+        public const bool   EnableWatchdogDefault = true;
+
+        public const string WatchdogConfigCmd = "watchdog-config=";
+        public const string WatchdogConfigEnv = "WATCHDOG_CONFIG";
+        public const string WatchdogConfigJson = "watchdogConfig";
+        public const string WatchdogConfigDescr = null;
+        public static readonly string WatchdogConfigDefault = string.Empty;
+
+        public const string WatchdogStateCmd = "watchdog-state=";
+        public const string WatchdogStateEnv = "WATCHDOG_STATE";
+        public const string WatchdogStateJson = "watchdogState";
+        public const string WatchdogStateDescr = null;
+        public static readonly string WatchdogStateDefault = string.Empty;
     }
 }
