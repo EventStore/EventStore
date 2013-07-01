@@ -174,13 +174,20 @@ namespace EventStore.Core.Index
                 var fileHash = new byte[MD5Size];
                 workItem.Stream.Read(fileHash, 0, MD5Size);
                 
-                if (hash == null || fileHash.Length != hash.Length) 
-                    throw new CorruptIndexException(new HashValidationException());
+                if (hash == null)
+                    throw new CorruptIndexException(new HashValidationException("Calculated MD5 hash is null!"));
+                if (fileHash.Length != hash.Length)
+                    throw new CorruptIndexException(new HashValidationException(
+                        string.Format("Hash sizes differ! FileHash({0}): {1}, hash({2}): {3}.",
+                                      fileHash.Length, BitConverter.ToString(fileHash),
+                                      hash.Length, BitConverter.ToString(hash))));
 
                 for (int i = 0; i < fileHash.Length; i++)
                 {
                     if (fileHash[i] != hash[i])
-                        throw new CorruptIndexException(new HashValidationException());
+                        throw new CorruptIndexException(new HashValidationException(
+                            string.Format("Hashes are different! FileHash: {0}, hash: {1}.",
+                                          BitConverter.ToString(fileHash), BitConverter.ToString(hash))));
                 }
             }
             finally
