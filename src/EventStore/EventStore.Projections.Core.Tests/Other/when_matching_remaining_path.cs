@@ -124,5 +124,18 @@ namespace EventStore.Projections.Core.Tests.Other
             Assert.AreEqual("123$", uri.Segments[2]);
         }
 
+        [Test]
+        public void are_not_automatically_unescaped2()
+        {
+            var ub = new UriBuilder();
+            ub.Scheme = "http";
+            ub.Host = "fake";
+            ub.Path = "/a%24a%20/123$";
+            var uri = ub.Uri;
+            Assert.AreEqual(3, uri.Segments.Length);
+            Assert.AreEqual("/", uri.Segments[0]);
+            Assert.AreEqual("a%24a%20/", uri.Segments[1]);
+            Assert.AreEqual("123$", uri.Segments[2]);
+        }
     }
 }

@@ -133,9 +133,9 @@ namespace EventStore.Core.Tests.Http
         }
 
         protected HttpWebRequest CreateRequest(
-            string path, string method, string contentType, ICredentials credentials = null)
+            string path, string extra, string method, string contentType, ICredentials credentials = null)
         {
-			var uri = MakeUrl (path);
+			var uri = MakeUrl (path, extra);
 			var request = WebRequest.Create (uri);
             var httpWebRequest = (HttpWebRequest)request;
             httpWebRequest.ConnectionGroupName = TestStream;
@@ -161,14 +161,14 @@ namespace EventStore.Core.Tests.Http
             return httpWebRequest;
         }
 
-        protected Uri MakeUrl(string path)
+        protected Uri MakeUrl(string path, string extra = "")
         {
             var supplied = new Uri(path, UriKind.RelativeOrAbsolute);
             if (supplied.IsAbsoluteUri && !supplied.IsFile) // NOTE: is file imporant for mono
                 return supplied;
 
             var httpEndPoint = _node.HttpEndPoint;
-            return new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path).Uri;
+            return new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path, extra).Uri;
         }
 
         protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null)
@@ -220,7 +220,7 @@ namespace EventStore.Core.Tests.Http
 
         protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null)
         {
-            Get(path, accept, credentials);
+            Get(path, "", accept, credentials);
             try
             {
                 return _lastResponseBody.ParseJson<T>();
@@ -232,9 +232,23 @@ namespace EventStore.Core.Tests.Http
             }
         }
 
-        protected void Get(string path, string accept = null, ICredentials credentials = null)
+        protected T GetJson2<T>(string path, string extra, string accept = null, ICredentials credentials = null)
         {
-            var request = CreateRequest(path, "GET", null, credentials);
+            Get(path, extra, accept, credentials);
+            try
+            {
+                return _lastResponseBody.ParseJson<T>();
+            }
+            catch (JsonException ex)
+            {
+                _lastJsonException = ex;
+                return default(T);
+            }
+        }
+
+        protected void Get(string path, string extra, string accept = null, ICredentials credentials = null)
+        {
+            var request = CreateRequest(path, extra, "GET", null, credentials);
             request.Accept = accept ?? "application/json";
             _lastResponse = GetRequestResponse(request);
             var memoryStream = new MemoryStream();
@@ -286,7 +300,7 @@ namespace EventStore.Core.Tests.Http
         protected HttpWebRequest CreateJsonPostRequest<T>(
             string path, string method, T body, ICredentials credentials = null)
         {
-            var request = CreateRequest(path, method, "application/json", credentials);
+            var request = CreateRequest(path, "", method, "application/json", credentials);
             request.GetRequestStream().WriteJson(body);
             return request;
         }
