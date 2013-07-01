@@ -67,24 +67,21 @@ namespace EventStore.Core
                 {
                     Console.WriteLine("Options:");
                     Console.WriteLine(options.GetUsage());
-                    return 0;
                 }
-
-                if (options.ShowVersion)
+                else if (options.ShowVersion)
                 {
                     Console.WriteLine("EventStore version {0} ({1}/{2}, {3})",
-                                      VersionInfo.Version,
-                                      VersionInfo.Branch,
-                                      VersionInfo.Hashtag,
-                                      VersionInfo.Timestamp);
-                    return 0;
+                                      VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
+                    Application.ExitSilent(0, "Normal exit.");
                 }
+                else
+                {
+                    Init(options);
+                    Create(options);
+                    Start();
 
-                Init(options);
-                Create(options);
-                Start();
-
-                _exitEvent.Wait();
+                    _exitEvent.Wait();
+                }
             }
             catch (OptionException exc)
             {
@@ -109,6 +106,7 @@ namespace EventStore.Core
                 Log.Flush();
             }
 
+            Application.ExitSilent(_exitCode, "Normal exit.");
             return _exitCode;
         }
 

@@ -7,7 +7,6 @@ es.projection = function (settings) {
     var hideError = settings.hideError || function () { };
 
     var currentTimeout = null;
-    var currentAjaxes = null;
     var category = null;
 
     return {
@@ -38,34 +37,29 @@ es.projection = function (settings) {
         }
 
         function processEvent(event) {
-            var parsedEvent = event;
-
-            var stateStr = processor.process_event(parsedEvent.data,
-                            "1", // isJson
-                            parsedEvent.eventStreamId,
-                            parsedEvent.eventType,
-                            category,
-                            parsedEvent.eventNumber,
-                            parsedEvent.metadata);
+            var stateStr = processor.process_event(event.data,
+                                                   "1", // isJson
+                                                   event.eventStreamId,
+                                                   event.eventType,
+                                                   category,
+                                                   event.eventNumber,
+                                                   event.metadata);
             var stateObj = JSON.parse(stateStr);
-
             onStateUpdate(stateObj, stateStr);
         }
-    };
+    }
 
     function stopProjection() {
         if (currentTimeout !== null)
             clearTimeout(currentTimeout);
-        if (currentAjaxes !== null) {
-            for (var i = 0, l = currentAjaxes.length; i < l; i++) {
-                currentAjaxes[i].abort();
-            }
-        }
-
-        currentAjaxes = null;
         currentTimeout = null;
     };
     
+    function getFeedLink(links, linkRel) {
+        var res = $.grep(links, function (link) { return link.relation === linkRel; });
+        return res.length ? res[0].uri : null;
+    }
+
     function startPolling(streamId, callback) {
         var nextPageUrl = '/streams/' + encodeURIComponent(streamId);
         var readNextPage = readFirstPage;
@@ -73,28 +67,35 @@ es.projection = function (settings) {
         readFirstPage();
 
         function readFirstPage() {
+            currentTimeout = null;
             $.ajax(
-                nextPageUrl,
+                nextPageUrl + "?embed=content",
                 {
                     headers: {
                         Accept: 'application/json'
                     },
                     success: function(page) {
-                        if (!page.entries || page.entries.length === 0) {
-                            setTimeout(readNextPage, 1000);
-                            return;
+                        var lastLink = getFeedLink(page.links, 'last');
+                        if (!lastLink) {
+                            // head is the last page already
+                            for (var i = 0, n = page.entries.length; i < n; i += 1) {
+                                callback(page.entries[n - i - 1].content);
+                            }
+                            nextPageUrl = getFeedLink(page.links, 'previous');
+                        } else {
+                            nextPageUrl = lastLink;
                         }
-                        nextPageUrl = $.grep(page.links, function(link) { return link.relation === 'last'; })[0].uri;
                         readNextPage = readForwardPage;
-                        setTimeout(readNextPage, 0);
+                        currentTimeout = setTimeout(readNextPage, 0);
                     },
                     error: function(jqXhr, status, error) {
-                        setTimeout(readNextPage, 1000);
+                        currentTimeout = setTimeout(readNextPage, 1000);
                     }
                 });
         }
 
         function readForwardPage() {
+            currentTimeout = null;
             $.ajax(
                 nextPageUrl + "?embed=content",
                 {
@@ -102,20 +103,15 @@ es.projection = function (settings) {
                         Accept: 'application/json'
                     },
                     success: function (page) {
-                        if (!page.entries || page.entries.length === 0) {
-                            setTimeout(readNextPage, 1000);
-                            return;
-                        }
-
-                        var nextPage = $.grep(page.links, function(link) { return link.relation === 'previous'; })[0].uri;
                         for (var i = 0, n = page.entries.length; i < n; i += 1) {
-                            callback(page.entries[i].content);
+                            callback(page.entries[n - i - 1].content);
                         }
-                        nextPageUrl = nextPage;
-                        setTimeout(readNextPage, 0);
+                        var prevLink = getFeedLink(page.links, 'previous');
+                        nextPageUrl = prevLink || nextPageUrl;
+                        currentTimeout = setTimeout(readNextPage, prevLink ? 0 : 1000);
                     },
                     error: function() {
-                        setTimeout(readNextPage, 1000);
+                        currentTimeout = setTimeout(readNextPage, 1000);
                     }
                 });
         }
