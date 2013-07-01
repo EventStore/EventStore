@@ -91,7 +91,7 @@ Properties {
     }
 }
 
-Task Build-NativeFull -Depends Clean-V8, Build-V8, Copy-V8ToLibs, Build-JS1
+Task Build-NativeFull -Depends Clean-V8, Build-V8, Copy-V8ToLibs, Patch-VersionResource, Build-JS1, Revert-VersionResource
 
 Task Build-NativeIncremental -Depends Build-V8, Copy-V8ToLibs, Build-JS1
 
@@ -126,10 +126,6 @@ Task Build-V8 {
 }
 
 Task Patch-JS1VersionResource {
-
-    Write-Host "HERE"
-    Write-Host "$js1VersionResource"
-
     $commitHashAndTimestamp = Get-GitCommitHashAndTimestamp
     $branchName = Get-GitBranchOrTag
 
