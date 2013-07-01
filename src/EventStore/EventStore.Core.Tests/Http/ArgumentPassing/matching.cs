@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing
             [Test]
             [TestCase("%24", "$", "2", "2")]
             [TestCase("$", "$", "2", "2")]
-            //            [TestCase("%3F", "?", "2", "2")] // ?
+            // [TestCase("%3F", "?", "2", "2")] // ?
             //            [TestCase("%2F", "/", "2", "2")] // /
             [TestCase("%20", " ", "2", "2")] // space
             [TestCase("%25", "%", "2", "2")] // %
@@ -72,7 +72,8 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing
             {
                 _response = GetJson2<JObject>("/test-encoding-reserved-" + _a, "?b=" + _b);
                 Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-                HelperExtensions.AssertJson(new { a = _ra, b = _rb }, _response);
+                Console.WriteLine(_response.ToString());
+                HelperExtensions.AssertJson(new {a = _ra, b = _rb}, _response);
             }
 
 
