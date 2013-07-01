@@ -719,6 +719,8 @@ namespace EventStore.Core.Messages
             public readonly TFPos PrevPos;
             public readonly long TfEofPosition;
 
+            public bool IsEndOfStream { get { return Events == null || Events.Length < MaxCount; } }
+
             public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events,
                                                  StreamMetadata streamMetadata, int maxCount,
                                                  TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
@@ -782,6 +784,8 @@ namespace EventStore.Core.Messages
             public readonly TFPos NextPos;
             public readonly TFPos PrevPos;
             public readonly long TfEofPosition;
+
+            public bool IsEndOfStream { get { return Events == null || Events.Length < MaxCount; } }
 
             public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events, 
                                                   StreamMetadata streamMetadata, int maxCount,
