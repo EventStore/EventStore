@@ -67,12 +67,25 @@ Properties {
     }
 
     $baseDirectory = Resolve-Path .
+    $srcDirectory = Join-Path $baseDirectory (Join-Path "src" "EventStore")
+    $libsDirectory = Join-Path $srcDirectory "libs"
     $outputDirectory = Join-Path $baseDirectory "bin\"
     $managedBuildParameters.Add("outputDirectory", $outputDirectory)
 }
 
 Task Clean-Output {
     Remove-Item -Recurse -Force $outputDirectory -ErrorAction SilentlyContinue
+}
+
+Task Build-Quick -Depends Clean-Output {
+    $hasDependencies = (Test-Path (Join-Path $libsDirectory (Join-Path $platform "js1.dll")))
+
+    if ($hasDependencies) {
+        Write-Host "Re-using JS1.dll from a previous build - it is likely to have the wrong commit hash!"
+        Invoke-psake .\eventstore.ps1 Build-EventStore -parameters $managedBuildParameters -Verbose
+    } else {
+        Write-Host "Build-Quick can only be used if a full or incremental build has build JS1.dll and it is in the libs directory"
+    }
 }
 
 Task Build-Incremental -Depends Clean-Output {
