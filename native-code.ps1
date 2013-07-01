@@ -9,6 +9,14 @@ Task ? -description "Writes script documentation to the host" {
     Write-Host "Builds the Event Store native portions. See default.ps1 for more info."
 }
 
+# Overridable version and other metadata
+Properties {
+    $versionString = "0.0.0.0"
+    $productName = "Event Store Open Source"
+    $companyName = "Event Store LLP"
+    $copyright = "Copyright 2012 Event Store LLP. All rights reserved."
+}
+
 # Directories and solutions
 Properties {
     $baseDirectory = Resolve-Path .
@@ -17,6 +25,7 @@ Properties {
     $v8Directory = Join-Path $baseDirectory "v8"
     $pythonExecutable = Join-Path $v8Directory (Join-Path "third_party" (Join-Path "python_26" "python.exe"))
     $js1Project = Join-Path $srcDirectory (Join-Path "EventStore.Projections.v8Integration" "EventStore.Projections.v8Integration.vcxproj")
+    $js1VersionResource = Join-Path $srcDirectory (Join-Path "EventStore.Projections.v8Integration" "EventStore.Projections.v8Integration.rc")
 }
 
 # Configuration
@@ -86,7 +95,6 @@ Task Build-NativeFull -Depends Clean-V8, Build-V8, Copy-V8ToLibs, Build-JS1
 
 Task Build-NativeIncremental -Depends Build-V8, Copy-V8ToLibs, Build-JS1
 
-
 Task Clean-V8 {
     Push-Location $v8Directory
     Exec { git clean --quiet -e gyp -fdx -- build }
@@ -115,6 +123,23 @@ Task Build-V8 {
     } finally {
         Pop-Location
     }
+}
+
+Task Patch-JS1VersionResource {
+
+    Write-Host "HERE"
+    Write-Host "$js1VersionResource"
+
+    $commitHashAndTimestamp = Get-GitCommitHashAndTimestamp
+    $branchName = Get-GitBranchOrTag
+
+    Write-Verbose "Patching $js1VersionResource with product information."
+    Patch-VersionResource $js1VersionResource $versionString $versionString $branchName $commitHashAndTimestamp $productName $companyName $copyright
+}
+
+Task Revert-JS1VersionResource {
+    Write-Verbose "Reverting $js1VersionResource to original state."
+    & { git checkout --quiet $js1VersionResource }
 }
 
 Task Copy-V8ToLibs -Depends Build-V8 {
@@ -198,5 +223,72 @@ Function Get-BestGuessOfPlatformToolsetOrDie {
         } else {
             Assert ($false) "Can't find any supported platform toolset (V100, V110, Windows7.1SDK). It's possible that this detection is wrong, in which case you should specify the platform toolset manually as a parameter."
         }
+    }
+}
+
+Function Get-GitCommitHashAndTimestamp
+{
+    $lastCommitLog = Exec { git log --max-count=1 --pretty=format:%H@%aD HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
+    return $lastCommitLog
+}
+
+Function Get-GitBranchOrTag
+{
+    $revParse = Exec { git rev-parse --abbrev-ref HEAD } "Cannot execute git rev-parse. Ensure that the current directory is a git repository and that git is available on PATH."
+    if ($revParse -ne "HEAD") {
+        return $revParse
+    }
+
+    $describeTags = Exec { git describe --tags } "Cannot execute git describe. Ensure that the current directory is a git repository and that git is available on PATH."
+    return $describeTags
+}
+
+Function Patch-VersionResource {
+    Param(
+        [Parameter(Mandatory=$true)][string]$versionResourcePath,
+        [Parameter(Mandatory=$true)][string]$version,
+        [Parameter(Mandatory=$true)][string]$fileVersion,
+        [Parameter(Mandatory=$true)][string]$branch,
+        [Parameter(Mandatory=$true)][string]$commitHashAndTimestamp,
+        [Parameter(Mandatory=$true)][string]$productName,
+        [Parameter(Mandatory=$true)][string]$companyName,
+        [Parameter()][string]$copyright
+    )
+    Process {
+        $separatedVersion = $version -replace "\.", ","
+        $separatedFileVersion = $fileVersion -replace "\.", ","
+
+        $newProductNameStr = '#define EVENTSTORE_PRODUCTNAME_STR "' + $productName + '"'
+        $newProductVersionStr = '#define EVENTSTORE_PRODUCTVERSION_STR "' + $version + '"'
+        $newProductVersion = '#define EVENTSTORE_PRODUCTVERSION ' + $separatedVersion
+        $newFileVersionStr = '#define EVENTSTORE_FILEVERSION_STR "' + $fileVersion + '"'
+        $newFileVersion = '#define EVENTSTORE_FILEVERSION ' + $separatedFileVersion
+        $newCommitNumberStr = '#define EVENTSTORE_COMMITNUMBER_STR "' + $version + '.' + $branch + '@' + $commitHashAndTimestamp + '"'
+        $newCopyrightStr = '#define EVENTSTORE_COPYRIGHT_STR "' + $copyright + '"'
+        
+        $newProductNameStrPattern = '#define EVENTSTORE_PRODUCTNAME_STR.*$'
+        $newProductVersionStrPattern = '#define EVENTSTORE_PRODUCTVERSION_STR.*$'
+        $newProductVersionPattern = '#define EVENTSTORE_PRODUCTVERSION.*$'
+        $newFileVersionStrPattern = '#define EVENTSTORE_FILEVERSION_STR.*$'
+        $newFileVersionPattern = '#define EVENTSTORE_FILEVERSION.*$'
+        $newCommitNumberStrPattern = '#define EVENTSTORE_COMMITNUMBER_STR.*$'
+        $newCopyrightStrPattern = '#define EVENTSTORE_COPYRIGHT_STR.*$'
+
+        
+        $edited = (Get-Content $versionResourcePath) | ForEach-Object {
+            % {$_ -replace "\/\*+.*\*+\/", "" } |
+            % {$_ -replace "\/\/+.*$", "" } |
+            % {$_ -replace "\/\*+.*$", "" } |
+            % {$_ -replace "^.*\*+\/\b*$", "" } |
+            % {$_ -replace $newProductNameStrPattern, $newProductNameStr } |
+            % {$_ -replace $newProductVersionStrPattern, $newProductVersionStr } |
+            % {$_ -replace $newProductVersionPattern, $newProductVersion } |
+            % {$_ -replace $newFileVersionStrPattern, $newFileVersionStr } |
+            % {$_ -replace $newFileVersionPattern, $newFileVersion } |
+            % {$_ -replace $newCommitNumberStrPattern, $newCommitNumberStr } |
+            % {$_ -replace $newCopyrightStrPattern, $newCopyrightStr }
+        }
+
+        Set-Content -Path $versionResourcePath -Value $edited
     }
 }

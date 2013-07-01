@@ -15,8 +15,6 @@ Properties {
     $productName = "Event Store Open Source"
     $companyName = "Event Store LLP"
     $copyright = "Copyright 2012 Event Store LLP. All rights reserved."
-    $commitHashAndTimestamp = Get-GitCommitHashAndTimestamp
-    $branchName = Get-GitBranchOrTag
 }
 
 # Directories
@@ -49,6 +47,10 @@ Task Build-EventStore {
 
 Task Patch-AssemblyInfos {
     Push-Location $baseDirectory
+    
+    $commitHashAndTimestamp = Get-GitCommitHashAndTimestamp
+    $branchName = Get-GitBranchOrTag
+
     $assemblyInfos = Get-ChildItem -Recurse -Filter AssemblyInfo.cs
     foreach ($assemblyInfo in $assemblyInfos) {
         $path = Resolve-Path $assemblyInfo.FullName -Relative
