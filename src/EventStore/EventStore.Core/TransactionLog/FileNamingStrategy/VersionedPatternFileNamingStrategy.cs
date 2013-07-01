@@ -28,7 +28,9 @@
 
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using EventStore.Common.Utils;
+using System.Linq;
 
 namespace EventStore.Core.TransactionLog.FileNamingStrategy
 {
@@ -36,6 +38,7 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy
     {
         private readonly string _path;
         private readonly string _prefix;
+        private readonly Regex _chunkNamePattern;
 
         public VersionedPatternFileNamingStrategy(string path, string prefix)
         {
@@ -43,6 +46,8 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy
             Ensure.NotNull(prefix, "prefix");
             _path = path;
             _prefix = prefix;
+
+            _chunkNamePattern = new Regex("^" + _prefix + @"\d{6}\.\w{6}$");
         }
 
         public string GetFilenameFor(int index, int version)
@@ -66,15 +71,19 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy
 
         public string[] GetAllVersionsFor(int index)
         {
-            var versions = Directory.GetFiles(_path, string.Format("{0}{1:000000}.*", _prefix, index));
-            Array.Sort(versions, StringComparer.CurrentCultureIgnoreCase);
-            Array.Reverse(versions);
+            var versions = Directory.EnumerateFiles(_path, string.Format("{0}{1:000000}.*", _prefix, index))
+                                    .Where(x => _chunkNamePattern.IsMatch(Path.GetFileName(x)))
+                                    .OrderByDescending(x => x, StringComparer.CurrentCultureIgnoreCase)
+                                    .ToArray();
             return versions;
         }
 
         public string[] GetAllPresentFiles()
         {
-            return Directory.GetFiles(_path, string.Format("{0}*.*", _prefix));
+            var versions = Directory.EnumerateFiles(_path, string.Format("{0}*.*", _prefix))
+                                    .Where(x => _chunkNamePattern.IsMatch(Path.GetFileName(x)))
+                                    .ToArray();
+            return versions;
         }
 
         public string GetTempFilename()
