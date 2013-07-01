@@ -86,14 +86,14 @@ Task Build-Incremental -Depends Clean-Output {
     Invoke-psake .\eventstore.ps1 Build-EventStore -parameters $managedBuildParameters -Verbose
 }
 
-Task Build-Full {
+Task Build-Full -Depends Clean-Output {
 
     if (Test-Dependencies -eq $false)
     {
         Invoke-psake .\dependencies.ps1 Get-Dependencies -Verbose
     }
 
-    Invoke-psake .\native-code.ps1 Build-Full -parameters $nativeBuildParameters -Verbose
+    Invoke-psake .\native-code.ps1 Build-NativeFull -parameters $nativeBuildParameters -Verbose
     Invoke-psake .\eventstore.ps1 Build-EventStore -parameters $managedBuildParameters -Verbose
 }
 
