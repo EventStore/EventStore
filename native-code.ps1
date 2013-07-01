@@ -264,9 +264,9 @@ Function Patch-VersionResource {
         
         $newProductNameStrPattern = '#define EVENTSTORE_PRODUCTNAME_STR.*$'
         $newProductVersionStrPattern = '#define EVENTSTORE_PRODUCTVERSION_STR.*$'
-        $newProductVersionPattern = '#define EVENTSTORE_PRODUCTVERSION.*$'
+        $newProductVersionPattern = '#define EVENTSTORE_PRODUCTVERSION .*$'
         $newFileVersionStrPattern = '#define EVENTSTORE_FILEVERSION_STR.*$'
-        $newFileVersionPattern = '#define EVENTSTORE_FILEVERSION.*$'
+        $newFileVersionPattern = '#define EVENTSTORE_FILEVERSION .*$'
         $newCommitNumberStrPattern = '#define EVENTSTORE_COMMITNUMBER_STR.*$'
         $newCopyrightStrPattern = '#define EVENTSTORE_COPYRIGHT_STR.*$'
 
