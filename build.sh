@@ -20,8 +20,8 @@ function usage() {
     echo "         always builds libv8.so and libjs1.so."
     echo ""
     echo "Valid platforms are:"
-    echo "  ia32"
     echo "  x86"
+    echo "  x64"
     echo ""
     echo "Valid configurations are:"
     echo "  debug"
@@ -58,7 +58,7 @@ function checkParams() {
         PLATFORM="x64"
         echo "Platform defaulted to: $PLATFORM"
     else
-        if [[ "$platform" == "x64" || "$platform" == "ia32" ]]; then
+        if [[ "$platform" == "x64" || "$platform" == "x86" ]]; then
             PLATFORM=$platform
             echo "Platform set to: $PLATFORM"
         else
@@ -130,8 +130,15 @@ function get-dependencies() {
 
 function build-v8() {
     pushd v8 > /dev/null || err
-    
-    makecall="$PLATFORM.$CONFIGURATION"
+   
+    if [[ "$PLATFORM" -eq "x64" ]] ; then
+        makecall="x64.$CONFIGURATION"
+    elif [[ "$PLATFORM" -eq "x86" ]] ; then
+        makecall="ia32.$CONFIGURATION"
+    else
+        echo "Unsupported platform $PLATFORM."
+        exit 1
+    fi
     make $makecall library=shared || err
 
     pushd out/$makecall/lib.target > /dev/null
@@ -147,6 +154,30 @@ function build-v8() {
     popd > /dev/null || err
 }
 
+function build-js1() {
+    currentDir=$(pwd -P)
+    includeString="-I $currentDir/src/EventStore/libs/include"
+    libsString="-L $currentDir/src/EventStore/libs"
+    outputDir="$currentDir/src/EventStore/libs"
+
+    pushd $currentDir/src/EventStore/EventStore.Projections.v8Integration/ > /dev/null || err
+
+    if [[ "$ARCHITECTURE" == "x86" ]] ; then
+        gccArch="-arch i386"
+    elif [[ "$ARCHITECTURE" == "x64" ]] ; then
+        gccArch="-arch amd64"
+    fi
+
+    g++ $includeString $libsString *.cpp -o $outputDir/libjs1.so $gccArch -lv8 -O2 -fPIC --shared --save-temps || err
+    popd > /dev/null || err
+}
+
+function build-eventstore {
+    #TODO Versioning
+    rm -rf bin/
+    xbuild src/EventStore/EventStore.sln /p:Platform="Any CPU" /p:Configuration="$CONFIGURATION" || err
+    #TODO Undo versioning
+}
 
 checkParams $1 $2 $3
 
@@ -157,6 +188,11 @@ if [[ "$ACTION" != "quick" ]] ; then
     get-dependencies
 
     build-v8
+    build-js1
+    build-eventstore
 else
-    echo "in quick"
+    [[ -f src/EventStore/libs/libv8.so ]] || echo "Cannot find libv8.so - cannot do a quick build!"
+    [[ -f src/EventStore/libs/libjs1.so ]] || echo "Cannot find libjs1.so - cannot do a quick build!"
+
+    build-eventstore
 fi
