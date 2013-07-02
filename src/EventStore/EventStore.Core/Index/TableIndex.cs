@@ -107,12 +107,9 @@ namespace EventStore.Core.Index
             // this can happen (very unlikely, though) on master crash
             try
             {
-                _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
-                if (_indexMap.IsCorrupt(_directory))
-                {
-                    _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
+                if (IsCorrupt(_directory))
                     throw new CorruptIndexException("IndexMap is in unsafe state.");
-                }
+                _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
                 if (_indexMap.CommitCheckpoint >= writerCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -152,8 +149,8 @@ namespace EventStore.Core.Index
 
                 if (createEmptyIndexMap)
                     _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
-                if (_indexMap.IsCorrupt(_directory))
-                    _indexMap.LeaveUnsafeState(_directory);
+                if (IsCorrupt(_directory))
+                    LeaveUnsafeState(_directory);
             }
             _prepareCheckpoint = _indexMap.PrepareCheckpoint;
             _commitCheckpoint = _indexMap.CommitCheckpoint;
@@ -171,7 +168,7 @@ namespace EventStore.Core.Index
             }
         }
 
-        private void LogIndexMapContent(string indexmapFile)
+        private static void LogIndexMapContent(string indexmapFile)
         {
             try
             {
@@ -310,13 +307,13 @@ namespace EventStore.Core.Index
                             File.Copy(indexmapFile, backupFile);
                     });
 
-                    _indexMap.EnterUnsafeState(_directory);
+                    EnterUnsafeState(_directory);
 
                     var mergeResult = _indexMap.AddFile(ptable, tableItem.PrepareCheckpoint, tableItem.CommitCheckpoint, _fileNameProvider);
                     _indexMap = mergeResult.MergedMap;
                     _indexMap.SaveToFile(indexmapFile);
 
-                    _indexMap.LeaveUnsafeState(_directory);
+                    LeaveUnsafeState(_directory);
 
                     lock (_awaitingTablesLock)
                     {
@@ -561,6 +558,27 @@ namespace EventStore.Core.Index
                     _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
                 }
             }
+        }
+
+        public static bool IsCorrupt(string directory)
+        {
+            return File.Exists(Path.Combine(directory, "merging.m"));
+        }
+
+        public static void EnterUnsafeState(string directory)
+        {
+            if (!IsCorrupt(directory))
+            {
+                using (var f = File.Create(Path.Combine(directory, "merging.m")))
+                {
+                    f.Flush(flushToDisk: true);
+                }
+            }
+        }
+
+        public static void LeaveUnsafeState(string directory)
+        {
+            File.Delete(Path.Combine(directory, "merging.m"));
         }
 
         private class TableItem
