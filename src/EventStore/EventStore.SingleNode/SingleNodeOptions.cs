@@ -48,6 +48,7 @@ namespace EventStore.SingleNode
         
         public int CachedChunks { get { return _helper.Get(() => CachedChunks); } }
         public long ChunksCacheSize { get { return _helper.Get(() => ChunksCacheSize); } }
+        public int MinFlushDelayMs { get { return _helper.Get(() => MinFlushDelayMs); } }
 
         public string DbPath { get { return _helper.Get(() => DbPath); } }
         public bool SkipDbVerify { get { return _helper.Get(() => SkipDbVerify); } }
@@ -87,6 +88,7 @@ namespace EventStore.SingleNode
             
             _helper.Register(() => CachedChunks, Opts.CachedChunksCmd, Opts.CachedChunksEnv, Opts.CachedChunksJson, Opts.CachedChunksDefault, Opts.CachedChunksDescr, hidden: true);
             _helper.Register(() => ChunksCacheSize, Opts.ChunksCacheSizeCmd, Opts.ChunksCacheSizeEnv, Opts.ChunksCacheSizeJson, Opts.ChunksCacheSizeDefault, Opts.ChunksCacheSizeDescr);
+            _helper.Register(() => MinFlushDelayMs, Opts.MinFlushDelayMsCmd, Opts.MinFlushDelayMsEnv, Opts.MinFlushDelayMsJson, Opts.MinFlushDelayMsDefault, Opts.MinFlushDelayMsDescr);
             
             _helper.RegisterRef(() => DbPath, Opts.DbPathCmd, Opts.DbPathEnv, Opts.DbPathJson, Opts.DbPathDefault, Opts.DbPathDescr);
             _helper.Register(() => SkipDbVerify, Opts.SkipDbVerifyCmd, Opts.SkipDbVerifyEnv, Opts.SkipDbVerifyJson, Opts.SkipDbVerifyDefault, Opts.SkipDbVerifyDescr);
