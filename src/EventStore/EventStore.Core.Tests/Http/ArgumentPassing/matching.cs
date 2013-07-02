@@ -26,6 +26,7 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing
 
             [Test]
             [TestCase("1", "1", "2", "2")]
+            [TestCase("1", "1", "%41", "A")]
             [TestCase("1", "1", "$", "$")]
             [TestCase("1", "1", "%24", "$")]
             [TestCase("%24", "$", "2", "2")]

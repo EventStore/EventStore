@@ -102,6 +102,7 @@ namespace EventStore.Core.Tests.Helpers
                                                               enableTrustedAuth,
                                                               ssl_connections.GetCertificate(),
                                                               1,
+                                                              TFConsts.MinFlushDelayMs,
                                                               TimeSpan.FromSeconds(2),
                                                               TimeSpan.FromSeconds(2),
                                                               TimeSpan.FromHours(1),

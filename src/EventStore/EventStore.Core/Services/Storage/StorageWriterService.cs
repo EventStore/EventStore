@@ -57,7 +57,6 @@ namespace EventStore.Core.Services.Storage
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageWriterService>();
 
         protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
-        private static readonly int MinFlushDelay = 2*TicksPerMs;
         private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(100);
 
         protected readonly TFChunkDb Db;
@@ -71,6 +70,7 @@ namespace EventStore.Core.Services.Storage
         private readonly InMemoryBus _writerBus;
 
         private readonly Stopwatch _watch = Stopwatch.StartNew();
+        private readonly int _minFlushDelay;
         private long _lastFlushDelay;
         private long _lastFlushTimestamp;
 
@@ -91,6 +91,7 @@ namespace EventStore.Core.Services.Storage
 
         public StorageWriterService(IPublisher bus, 
                                     ISubscriber subscribeToBus,
+                                    int minFlushDelayMs,
                                     TFChunkDb db,
                                     TFChunkWriter writer, 
                                     IReadIndex readIndex,
@@ -98,6 +99,7 @@ namespace EventStore.Core.Services.Storage
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(subscribeToBus, "subscribeToBus");
+            Ensure.Nonnegative(minFlushDelayMs, "minFlushDelayMs");
             Ensure.NotNull(db, "db");
             Ensure.NotNull(writer, "writer");
             Ensure.NotNull(readIndex, "readIndex");
@@ -109,6 +111,7 @@ namespace EventStore.Core.Services.Storage
             ReadIndex = readIndex;
             EpochManager = epochManager;
 
+            _minFlushDelay = minFlushDelayMs * TicksPerMs;
             _lastFlushDelay = 0;
             _lastFlushTimestamp = _watch.ElapsedTicks;
 
@@ -554,7 +557,7 @@ namespace EventStore.Core.Services.Storage
         protected bool Flush(bool force = false)
         {
             var start = _watch.ElapsedTicks;
-            if (force || FlushMessagesInQueue == 0 || start - _lastFlushTimestamp >= _lastFlushDelay + MinFlushDelay)
+            if (force || FlushMessagesInQueue == 0 || start - _lastFlushTimestamp >= _lastFlushDelay + _minFlushDelay)
             {
                 var flushSize = Writer.Checkpoint.ReadNonFlushed() - Writer.Checkpoint.Read();
 

@@ -32,16 +32,13 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class when_marking_an_index_map_as_corrupt: SpecificationWithDirectoryPerTestFixture
+    public class when_marking_an_index_as_corrupt: SpecificationWithDirectoryPerTestFixture
     {
-        private IndexMap _map;
-
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _map = IndexMap.FromFile(GetTempFilePath(), x => false);
-            _map.EnterUnsafeState(PathName);
+            TableIndex.EnterUnsafeState(PathName);
         }
 
         [Test]
@@ -53,7 +50,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void the_map_says_its_in_corrupted_state()
         {
-            Assert.IsTrue(_map.IsCorrupt(PathName));
+            Assert.IsTrue(TableIndex.IsCorrupt(PathName));
         }
     }
 }

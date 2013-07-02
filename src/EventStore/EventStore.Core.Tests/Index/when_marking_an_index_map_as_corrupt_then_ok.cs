@@ -25,7 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
 using System.IO;
 using EventStore.Core.Index;
 using NUnit.Framework;
@@ -35,15 +34,12 @@ namespace EventStore.Core.Tests.Index
     [TestFixture]
     public class when_marking_an_index_map_as_corrupt_then_ok: SpecificationWithDirectoryPerTestFixture
     {
-        private IndexMap _map;
-
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _map = IndexMap.FromFile(GetTempFilePath(), x => false);
-            _map.EnterUnsafeState(PathName);
-            _map.LeaveUnsafeState(PathName);
+            TableIndex.EnterUnsafeState(PathName);
+            TableIndex.LeaveUnsafeState(PathName);
         }
 
         [Test]
@@ -55,7 +51,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void the_map_says_its_not_in_corrupted_state()
         {
-            Assert.IsFalse(_map.IsCorrupt(PathName));
+            Assert.IsFalse(TableIndex.IsCorrupt(PathName));
         }
     }
 }

@@ -335,27 +335,6 @@ namespace EventStore.Core.Index
             }
         }
 
-        public bool IsCorrupt(string directory)
-        {
-            return File.Exists(Path.Combine(directory, "merging.m"));
-        }
-
-        public void EnterUnsafeState(string directory)
-        {
-            if (!IsCorrupt(directory))
-            {
-                using (var f = File.Create(Path.Combine(directory, "merging.m")))
-                {
-                    f.Flush(flushToDisk: true);
-                }
-            }
-        }
-
-        public void LeaveUnsafeState(string directory)
-        {
-            File.Delete(Path.Combine(directory, "merging.m"));
-        }
-
         public MergeResult AddFile(PTable tableToAdd, 
                                    long prepareCheckpoint, 
                                    long commitCheckpoint, 

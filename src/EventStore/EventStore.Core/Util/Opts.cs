@@ -87,6 +87,12 @@ namespace EventStore.Core.Util
         public const string ChunksCacheSizeDescr = "The amount of unmanaged memory to use for caching chunks.";
         public const int    ChunksCacheSizeDefault = TFConsts.ChunksCacheSize;
 
+        public const string MinFlushDelayMsCmd = "min-flush-delay=";
+        public const string MinFlushDelayMsEnv = "MIN_FLUSH_DELAY";
+        public const string MinFlushDelayMsJson = "minFlushDelay";
+        public const string MinFlushDelayMsDescr = "The minimum flush delay in milliseconds.";
+        public const int    MinFlushDelayMsDefault = TFConsts.MinFlushDelayMs;
+
         public const string DbPathCmd = "d|db=";
         public const string DbPathEnv = "DB";
         public const string DbPathJson = "db";

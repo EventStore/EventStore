@@ -44,6 +44,7 @@ namespace EventStore.Core.Settings
         public readonly X509Certificate2 Certificate;
         public readonly int WorkerThreads;
 
+        public readonly int MinFlushDelayMs;
         public readonly TimeSpan PrepareTimeout;
         public readonly TimeSpan CommitTimeout;
 
@@ -59,6 +60,7 @@ namespace EventStore.Core.Settings
                                    bool enableTrustedAuth,
                                    X509Certificate2 certificate,
                                    int workerThreads, 
+                                   int minFlushDelayMs,
                                    TimeSpan prepareTimeout,
                                    TimeSpan commitTimeout,
                                    TimeSpan statsPeriod, 
@@ -71,6 +73,7 @@ namespace EventStore.Core.Settings
             if (externalSecureTcpEndPoint != null)
                 Ensure.NotNull(certificate, "certificate");
             Ensure.Positive(workerThreads, "workerThreads");
+            Ensure.Nonnegative(minFlushDelayMs, "minFlushDelayMs");
 
             ExternalTcpEndPoint = externalTcpEndPoint;
             ExternalSecureTcpEndPoint = externalSecureTcpEndPoint;
@@ -80,6 +83,7 @@ namespace EventStore.Core.Settings
             Certificate = certificate;
             WorkerThreads = workerThreads;
 
+            MinFlushDelayMs = minFlushDelayMs;
             PrepareTimeout = prepareTimeout;
             CommitTimeout = commitTimeout;
 
@@ -98,10 +102,11 @@ namespace EventStore.Core.Settings
                                  + "EnableTrustedAuth: {4},\n"
                                  + "Certificate: {5},\n"
                                  + "WorkerThreads: {6}\n" 
-                                 + "PrepareTimeout: {7}\n"
-                                 + "CommitTimeout: {8}\n"
-                                 + "StatsPeriod: {9}\n"
-                                 + "StatsStorage: {10}",
+                                 + "MinFlushDelayMs: {7}\n"
+                                 + "PrepareTimeout: {8}\n"
+                                 + "CommitTimeout: {9}\n"
+                                 + "StatsPeriod: {10}\n"
+                                 + "StatsStorage: {11}",
                                  ExternalTcpEndPoint,
                                  ExternalSecureTcpEndPoint == null ? "n/a" : ExternalSecureTcpEndPoint.ToString(),
                                  ExternalHttpEndPoint,
@@ -109,6 +114,7 @@ namespace EventStore.Core.Settings
                                  EnableTrustedAuth,
                                  Certificate == null ? "n/a" : Certificate.ToString(verbose: true),
                                  WorkerThreads,
+                                 MinFlushDelayMs,
                                  PrepareTimeout,
                                  CommitTimeout,
                                  StatsPeriod,

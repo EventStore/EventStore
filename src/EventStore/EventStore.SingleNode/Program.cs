@@ -136,7 +136,7 @@ namespace EventStore.SingleNode
                                                         prefixes.Select(p => p.Trim()).ToArray(),
                                                         options.EnableTrustedAuth,
                                                         certificate,
-                                                        options.WorkerThreads,
+                                                        options.WorkerThreads, options.MinFlushDelayMs,
                                                         TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
                                                         TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
                                                         TimeSpan.FromSeconds(options.StatsPeriodSec),
