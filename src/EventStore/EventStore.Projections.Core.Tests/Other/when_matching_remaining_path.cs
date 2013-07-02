@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 
@@ -138,4 +139,73 @@ namespace EventStore.Projections.Core.Tests.Other
             Assert.AreEqual("123$", uri.Segments[2]);
         }
     }
+
+    [TestFixture]
+    class when_matching_escaped_urls
+    {
+        [Test]
+        public void Dump()
+        {
+            var result = new List<Tuple<char, string>>();
+            for (char i = (char) 1; i <= 127; i++)
+            {
+                try
+                {
+                    var unescaped = "/z" + i + "z/";
+                    var escaped = "/z" + Uri.HexEscape(i) + "z/";
+
+                    var unescapedTemplate = new UriTemplate(unescaped);
+                    var escapedTemplate = new UriTemplate(escaped);
+
+                    Func<string, UriTemplate, bool> m =
+                        (s, template) =>
+                        template.Match(new Uri("http://localhost"), new Uri("http://localhost" + s)) != null;
+
+                    result.Add(Tuple.Create(i, string.Format(
+                        "e=>e {1}  e=>u {2}  u=>e {3} u=>u {4}", new String(i, 1), m(escaped, escapedTemplate),
+                        m(unescaped, escapedTemplate), m(escaped, unescapedTemplate), m(unescaped, unescapedTemplate))));
+                }
+                catch (Exception ex)
+                {
+                    result.Add(
+                        Tuple.Create(i, string.Format("EXCEPTION")));
+                }
+            }
+            foreach (var tuple in 
+                from i in result
+                    group i by i.Item2
+                    into g
+                    orderby g.Key
+                    select g
+                )
+            {
+                Console.WriteLine(tuple.Key);
+                Console.Write("   ");
+                foreach (var i in tuple)
+                {
+                    if (char.IsWhiteSpace(i.Item1))
+                        Console.Write(Uri.HexEscape(i.Item1));
+                    else 
+                        Console.Write(i.Item1);
+                }
+                Console.WriteLine();
+            }
+            Assert.Inconclusive();
+        }
+
+        private static void Matches(string template, string candidate)
+        {
+            var urlTemplate = new UriTemplate(template);
+            var match = urlTemplate.Match(new Uri("http://localhost"), new Uri("http://localhost" + candidate));
+            Assert.IsNotNull(match);
+        }
+
+        private static void DoesNotMatch(string template, string candidate)
+        {
+            var urlTemplate = new UriTemplate(template);
+            var match = urlTemplate.Match(new Uri("http://localhost"), new Uri("http://localhost" + candidate));
+            Assert.IsNull(match);
+        }
+    }
+
 }
