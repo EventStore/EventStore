@@ -96,7 +96,15 @@ function get-v8() {
 
 function get-dependencies() {
     pushd v8 || err
-    make dependencies || err
+
+    pushd build/gyp || err
+    svnrevision=`svn info | sed -ne 's/^Revision: //p'`
+    popd || err
+
+    if [[ $svnrevision -eq 1501 ]] ; then
+        make dependencies || err
+    fi
+
     popd || err
 }
 
