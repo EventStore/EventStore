@@ -131,7 +131,9 @@ function get-dependencies() {
 function build-v8() {
     pushd v8 > /dev/null || err
     
-    
+    makecall="$PLATFORM.$CONFIGURATION"
+
+    echo $makecall
 
     popd > /dev/null || err
 }
