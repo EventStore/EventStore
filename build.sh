@@ -1,8 +1,6 @@
-#!/bin/bash
 #------------ Start of configuration -------------
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 V8_TAG="3.19.7"
 
 #------------ End of configuration -------------
@@ -32,7 +30,7 @@ function usage() {
     exit 1
 }
 
-ACTION=""
+ACTION="quick"
 PLATFORM="x64"
 CONFIGURATION="Release"
 
@@ -40,13 +38,20 @@ function checkParams() {
     action=$1
     platform=$2
     configuration=$3
+    
+    [[ $# -gt 3 ]] && usage
 
-    if [[ "$action" == "quick" || "$action" == "incremental" || "$action" == "full" ]]; then
-        ACTION=$action
-        echo "Action set to: $ACTION"
+    if [[ "$action" = "" ]]; then
+        ACTION="quick"
+        echo "Action defaulted to: $ACTION"
     else
-        echo "Invalid action: $action"
-        usage
+        if [[ "$action" == "quick" || "$action" == "incremental" || "$action" == "full" ]]; then
+            ACTION=$action
+            echo "Action set to: $ACTION"
+        else
+            echo "Invalid action: $action"
+            usage
+        fi
     fi
 
     if [[ "$platform" == "" ]]; then
@@ -85,36 +90,52 @@ function get-v8() {
     tag=$1
 
     if [[ -d v8 ]] ; then
-        git pull || err
+        pushd v8 > /dev/null || err
+        gittag=`git describe --contains HEAD`
+
+        if [[ "$gittag" != "$tag" ]] ; then
+            echo "Pulling V8 repository..."
+            git pull || err
+            echo "Checking out $tag..."
+            git checkout $tag || err
+        else
+            echo "V8 repository already at $gittag"
+        fi
+        popd > /dev/null || err
     else
+        echo "Cloning V8 repository..."
         git clone git://github.com/v8/v8.git v8 || err
+        pushd v8 > /dev/null || err
+        echo "Checking out $tag..."
+        git checkout $tag
+        popd v8 > /dev/null || err
     fi
-    pushd v8 || err
-    git checkout $tag || err
-    popd || err
 }
 
 function get-dependencies() {
-    pushd v8 || err
+    pushd v8 > /dev/null || err
 
-    pushd build/gyp || err
+    pushd build/gyp > /dev/null || err
     svnrevision=`svn info | sed -ne 's/^Revision: //p'`
-    popd || err
+    popd > /dev/null || err
 
-    if [[ $svnrevision -eq 1501 ]] ; then
+    if [[ "$svnrevision" -ne "1501" ]] ; then
         make dependencies || err
+    else
+        echo "GYP already up to date (r $svnrevision)"
     fi
 
-    popd || err
+    popd > /dev/null || err
 }
 
 
-[[ $# -eq 0 || $# -gt 3 ]] && usage
+checkParams $1 $2 $3
 
 echo "Running from base directory: $BASE_DIR"
 
-checkParams $1 $2 $3
-
-get-v8 $V8_TAG
-get-dependencies
-
+if [[ "$ACTION" != "quick" ]] ; then
+    get-v8 $V8_TAG
+    get-dependencies
+else
+    echo "in quick"
+fi
