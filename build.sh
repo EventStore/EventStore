@@ -108,22 +108,30 @@ function get-v8() {
         pushd v8 > /dev/null || err
         echo "Checking out $tag..."
         git checkout $tag
-        popd v8 > /dev/null || err
+        popd > /dev/null || err
     fi
 }
 
 function get-dependencies() {
+    if [[ -d v8/build/gyp ]] ; then
+        pushd v8/build/gyp > /dev/null || err
+        svnrevision=`svn info | sed -ne 's/^Revision: //p'`
+        popd > /dev/null || err
+    fi
+
     pushd v8 > /dev/null || err
-
-    pushd build/gyp > /dev/null || err
-    svnrevision=`svn info | sed -ne 's/^Revision: //p'`
-    popd > /dev/null || err
-
     if [[ "$svnrevision" -ne "1501" ]] ; then
         make dependencies || err
     else
         echo "GYP already up to date (r $svnrevision)"
     fi
+    popd > /dev/null || err
+}
+
+function build-v8() {
+    pushd v8 > /dev/null || err
+    
+    
 
     popd > /dev/null || err
 }
