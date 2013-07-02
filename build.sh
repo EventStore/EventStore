@@ -20,7 +20,7 @@ function usage() {
     echo "         always builds libv8.so and libjs1.so."
     echo ""
     echo "Valid platforms are:"
-    echo "  x64"
+    echo "  ia32"
     echo "  x86"
     echo ""
     echo "Valid configurations are:"
@@ -58,7 +58,7 @@ function checkParams() {
         PLATFORM="x64"
         echo "Platform defaulted to: $PLATFORM"
     else
-        if [[ "$platform" == "x64" || "$platform" == "x86" ]]; then
+        if [[ "$platform" == "x64" || "$platform" == "ia32" ]]; then
             PLATFORM=$platform
             echo "Platform set to: $PLATFORM"
         else
@@ -132,8 +132,17 @@ function build-v8() {
     pushd v8 > /dev/null || err
     
     makecall="$PLATFORM.$CONFIGURATION"
+    make $makecall library=shared || err
 
-    echo $makecall
+    pushd out/$makecall/lib.target > /dev/null
+    cp libv8.so ../../../../src/EventStore/libs || err
+    popd > /dev/null
+
+    [[ -d ../src/EventStore/libs/include ]] || mkdir ../src/EventStore/libs/include
+
+    pushd include > /dev/null || err
+    cp *.h ../../src/EventStore/libs/include || err
+    popd > /dev/null || err
 
     popd > /dev/null || err
 }
@@ -146,6 +155,8 @@ echo "Running from base directory: $BASE_DIR"
 if [[ "$ACTION" != "quick" ]] ; then
     get-v8 $V8_TAG
     get-dependencies
+
+    build-v8
 else
     echo "in quick"
 fi
