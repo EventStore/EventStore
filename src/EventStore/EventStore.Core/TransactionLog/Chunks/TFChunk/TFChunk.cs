@@ -41,6 +41,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
+using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 {
@@ -647,12 +648,26 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             return curPos;
         }
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool FlushFileBuffers(SafeFileHandle hFile);
+
         public void Flush()
         {
             if (_isReadOnly) 
                 throw new InvalidOperationException("Cannot write to a read-only TFChunk.");
-            
-            _writerWorkItem.Stream.Flush(flushToDisk: true);
+
+            if (Runtime.IsMono)
+            {
+                _writerWorkItem.Stream.Flush(flushToDisk: true);
+            }
+            else
+            {
+                _writerWorkItem.Stream.Flush(flushToDisk: false);
+                if (!FlushFileBuffers(_writerWorkItem.Stream.SafeFileHandle))
+                    throw new Exception(string.Format("FlushFileBuffers failed with err: {0}", Marshal.GetLastWin32Error()));
+            }
+
 #if LESS_THAN_NET_4_0
             Win32.FlushFileBuffers(_fileStream.SafeFileHandle);
 #endif
