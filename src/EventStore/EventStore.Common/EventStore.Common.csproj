@@ -97,9 +97,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
-    <PreBuildEvent>
-$(MSBuildProjectDirectory)\..\Scripts\version\update-version.cmd $(MSBuildProjectDirectory)
-    </PreBuildEvent>
+    <PreBuildEvent>powershell.exe $(MSBuildProjectDirectory)\..\Scripts\version\updateCommitHash.ps1 $(MSBuildProjectDirectory)\Properties\AssemblyInfo.cs</PreBuildEvent>
+    <PostBuildEvent>powershell.exe $(MSBuildProjectDirectory)\..\Scripts\version\revertCommitHash.ps1 $(MSBuildProjectDirectory)\Properties\AssemblyInfo.cs</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
       <PreBuildEvent>$(MSBuildProjectDirectory)/../Scripts/version/updateCommitHash.sh $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs</PreBuildEvent>
