@@ -2,12 +2,15 @@
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 V8_TAG="3.19.7"
-
+VERSIONSTRING="0.0.0.0"
+PRODUCTNAME="Event Store Open Source"
+COMPANYNAME="Event Store LLP"
+COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
 #------------ End of configuration -------------
 
 function usage() {
     echo ""
-    echo "Usage: $0 action <platform=x64> <configuration=release>"
+    echo "Usage: $0 action <version=0.0.0.0> <platform=x64> <configuration=release>"
     echo ""
     echo "Valid actions are:"
     echo "  quick - assumes libjs1.so and libv8.so are available and"
@@ -36,10 +39,11 @@ CONFIGURATION="Release"
 
 function checkParams() {
     action=$1
-    platform=$2
-    configuration=$3
+    version=$2
+    platform=$3
+    configuration=$4
     
-    [[ $# -gt 3 ]] && usage
+    [[ $# -gt 4 ]] && usage
 
     if [[ "$action" = "" ]]; then
         ACTION="quick"
@@ -78,6 +82,14 @@ function checkParams() {
             echo "Invalid configuration: $configuration"
             usage
         fi
+    fi
+
+    if [[ "$version" == "" ]] ; then
+        VERSION="0.0.0.0"
+        echo "Version defaulted to: 0.0.0.0"
+    else
+        VERSION=$version
+        echo "Version set to: $VERSION"
     fi
 }
 
@@ -172,11 +184,58 @@ function build-js1() {
     popd > /dev/null || err
 }
 
+function patch-versionfiles {
+    branchname=`git rev-parse --abbrev-ref HEAD`
+    commitHashAndTime=`git log -n1 --pretty=format:"%H@%aD" HEAD`
+
+    newAssemblyVersion="[assembly: AssemblyVersion(\"$VERSIONSTRING\")]"
+    newAssemblyFileVersion="[assembly: AssemblyFileVersion(\"$VERSIONSTRING\")]"
+    newAssemblyVersionInformational="[assembly: AssemblyInformationalVersion(\"$VERSIONSTRING.$branchName@$commitHashAndTime\")]"
+    newAssemblyProductName="[assembly: AssemblyProduct(\"$PRODUCTNAME\")]"
+    newAssemblyCopyright="[assembly: AssemblyCopyright(\"$COPYRIGHT\")]"
+    newAssemblyCompany="[assembly: AssemblyCompany(\"$COMPANYNAME\")]"
+
+    assemblyVersionPattern='AssemblyVersion(.*'
+    assemblyFileVersionPattern='AssemblyFileVersion(.*'
+    assemblyVersionInformationalPattern='AssemblyInformationalVersion(.*'
+    assemblyProductNamePattern='AssemblyProduct(.*'
+    assemblyCopyrightPattern='AssemblyCopyright(.*'
+    assemblyCompanyPattern='AssemblyCompany(.*'
+    
+    files=$( find . -name "AssemblyInfo.cs" )
+
+    for file in $files
+    do
+        sed -i "/$assemblyVersionPattern/c$newAssemblyVersion" $file
+        sed -i "/$assemblyFileVersionPattern/c$newAssemblyFileVersion" $file
+        sed -i "/$assemblyVersionInformationalPattern/c$newAssemblyVersionInformational" $file
+        sed -i "/$assemblyProductNamePattern/c$newAssemblyProductName" $file
+        sed -i "/$assemblyCopyrightPattern/c$newAssemblyCopyright" $file
+        sed -i "/$assemblyCompanyPattern/c$newAssemblyCompany" $file
+
+        if grep "AssemblyInformationalVersion" $file > /dev/null ; then
+            echo "Patched $file with version information"
+        else
+            echo $newAssemblyVersionInformational >> $file
+            echo "Patched $file with version information (added AssemblyInformationalVersion)"
+        fi
+    done
+}
+
+function revert-versionfiles {
+    files=$( find . -name "AssemblyInfo.cs" )
+
+    for file in $files
+    do
+        git checkout $file
+    done
+}
+
 function build-eventstore {
-    #TODO Versioning
+    patch-versionfiles
     rm -rf bin/
     xbuild src/EventStore/EventStore.sln /p:Platform="Any CPU" /p:Configuration="$CONFIGURATION" || err
-    #TODO Undo versioning
+    revert-versionfiles
 }
 
 checkParams $1 $2 $3
