@@ -11,6 +11,8 @@ function usage() {
 
 [[ $# -eq 1 ]] || usage
 
+file=$1
+
 branchName=`git rev-parse --abbrev-ref HEAD`
 commitHashAndTime=`git log -n1 --pretty=format:"%H@%aD" HEAD`
 
@@ -22,8 +24,12 @@ commitHashAndTime=`git log -n1 --pretty=format:"%H@%aD" HEAD`
 assemblyVersionInformationalPattern='assembly: AssemblyInformationalVersion("\0\.0\.0\.0\..*'
 newAssemblyVersionInformational="[assembly: AssemblyInformationalVersion(\"0.0.0.0.$branchName@$commitHashAndTime\")]"
 
-sed -i '' "/$assemblyVersionInformationalPattern/c\\
-    $newAssemblyVersionInformational" $1
+tempfile="$file.tmp"
+
+sed "/$assemblyVersionInformationalPattern/c\
+    $newAssemblyVersionInformational" $1 > $tempfile
+
+mv $tempfile $file
 
 if grep "AssemblyInformationalVersion" $file > /dev/null ; then
     echo "Patched $file with commit hash information"

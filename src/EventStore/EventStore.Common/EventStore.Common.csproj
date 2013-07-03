@@ -103,8 +103,11 @@ $(MSBuildProjectDirectory)\..\Scripts\version\update-version.cmd $(MSBuildProjec
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
     <PreBuildEvent>
-$(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProjectDirectory)
+$(MSBuildProjectDirectory)\..\Scripts\version\updateCommitHash.sh .\Properties\AssemblyInfo.cs
     </PreBuildEvent>
+    <PostBuildEvent>
+$(MSBuildProjectDirectory)\..\Scripts\version\resetCommitHash.sh .\Properties\AssemblyInfo.cs
+    </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent />
