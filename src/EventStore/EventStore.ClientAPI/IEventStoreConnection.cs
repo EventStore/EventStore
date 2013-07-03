@@ -394,13 +394,13 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);
 
-        void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null);
+        void SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
         
-        Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null);
+        Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
         
-        void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null);
+        void SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
         
-        Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null);
+        Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
         
         StreamMetadataResult GetStreamMetadata(string stream, UserCredentials userCredentials = null);
         

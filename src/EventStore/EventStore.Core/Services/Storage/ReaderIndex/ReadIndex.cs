@@ -612,13 +612,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             switch (streamAccessType)
             {
                 case StreamAccessType.Read: 
-                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.ReadRole, user, isSystemStream && streamId != SystemStreams.AllStream);
+                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.ReadRole, user, isSystemStream);
                 case StreamAccessType.Write:
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.WriteRole, user, isSystemStream);
                 case StreamAccessType.Delete:
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.DeleteRole, user, isSystemStream);
                 case StreamAccessType.MetaRead:
-                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.MetaReadRole, user, isSystemStream && streamId != SystemStreams.AllStream);
+                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.MetaReadRole, user, isSystemStream);
                 case StreamAccessType.MetaWrite:
                     return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.MetaWriteRole, user, isSystemStream);
                 default: throw new ArgumentOutOfRangeException("streamAccessType");

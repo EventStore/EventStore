@@ -54,10 +54,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _connection = TestConnection.Create(_node.TcpEndPoint);
             _connection.Connect();
 
-            _connection.SetStreamMetadata(Stream,
-                                          ExpectedVersion.EmptyStream,
-                                          Guid.NewGuid(),
-                                          StreamMetadata.Build().SetMaxCount(3));
+            _connection.SetStreamMetadata(Stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetMaxCount(3));
 
             _testEvents = Enumerable.Range(0, 5).Select(x => TestEvent.NewTestEvent(data: x.ToString())).ToArray();
             _connection.AppendToStream(Stream, ExpectedVersion.EmptyStream, _testEvents);
@@ -92,24 +89,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        public void read_all_forward_does_not_care()
-        {
-            var res = _connection.ReadAllEventsForward(Position.Start, 100, false);
-            Assert.AreEqual(5 + 1, res.Events.Length); // metaevent as well
-            Assert.AreEqual(_testEvents.Select(x => x.EventId).ToArray(),
-                            res.Events.Skip(1).Select(x => x.Event.EventId).ToArray()); // skip metaevent
-        }
-
-        [Test]
-        public void read_all_backward_does_not_care()
-        {
-            var res = _connection.ReadAllEventsBackward(Position.End, 100, false);
-            Assert.AreEqual(5 + 1, res.Events.Length); // metaevent as well
-            Assert.AreEqual(_testEvents.Select(x => x.EventId).ToArray(),
-                            res.Events.Reverse().Skip(1).Select(x => x.Event.EventId).ToArray()); // skip metaevent
-        }
-
-        [Test]
         public void after_setting_less_strict_max_count_read_stream_forward_reads_more_events()
         {
             var res = _connection.ReadStreamEventsForward(Stream, 0, 100, false);
@@ -118,7 +97,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(Stream, 0, Guid.NewGuid(), StreamMetadata.Build().SetMaxCount(4));
+            _connection.SetStreamMetadata(Stream, 0, StreamMetadata.Build().SetMaxCount(4));
 
             res = _connection.ReadStreamEventsForward(Stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -136,7 +115,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(Stream, 0, Guid.NewGuid(), StreamMetadata.Build().SetMaxCount(2));
+            _connection.SetStreamMetadata(Stream, 0, StreamMetadata.Build().SetMaxCount(2));
 
             res = _connection.ReadStreamEventsForward(Stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -154,7 +133,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(Stream, 0, Guid.NewGuid(), StreamMetadata.Build().SetMaxCount(4));
+            _connection.SetStreamMetadata(Stream, 0, StreamMetadata.Build().SetMaxCount(4));
 
             res = _connection.ReadStreamEventsBackward(Stream, -1, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -172,7 +151,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(Stream, 0, Guid.NewGuid(), StreamMetadata.Build().SetMaxCount(2));
+            _connection.SetStreamMetadata(Stream, 0, StreamMetadata.Build().SetMaxCount(2));
 
             res = _connection.ReadStreamEventsBackward(Stream, -1, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);

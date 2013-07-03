@@ -324,7 +324,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (SystemStreams.IsMetastream(streamId))
                 return false; // we don't have enough info here for metastreams
 
-            var isSystem = SystemStreams.IsSystemStream(streamId) && streamId != SystemStreams.AllStream;
+            var isSystem = SystemStreams.IsSystemStream(streamId);
             var role = (metadata == null || metadata.Acl == null) ? null : metadata.Acl.ReadRole;
             return isSystem ? (role == SystemUserGroups.All) : (role == null || role == SystemUserGroups.All);
         }

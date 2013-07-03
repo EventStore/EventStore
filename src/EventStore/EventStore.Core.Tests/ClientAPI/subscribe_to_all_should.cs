@@ -26,8 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
+using System;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -40,18 +43,26 @@ namespace EventStore.Core.Tests.ClientAPI
         private const int Timeout = 10000;
         
         private MiniNode _node;
+        private IEventStoreConnection _conn;
 
         [SetUp]
         public override void SetUp()
         {
             base.SetUp();
-            _node = new MiniNode(PathName);
+            _node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
             _node.Start();
+
+            _conn = TestConnection.Create(_node.TcpEndPoint);
+            _conn.Connect();
+            _conn.SetStreamMetadata("$all", -1,
+                                    StreamMetadata.Build().SetReadRole(SystemUserGroups.All),
+                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
         }
 
         [TearDown]
         public override void TearDown()
         {
+            _conn.Close();
             _node.Shutdown();
             base.TearDown();
         }
