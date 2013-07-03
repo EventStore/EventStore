@@ -2,7 +2,6 @@
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 V8_TAG="3.19.7"
-VERSIONSTRING="0.0.0.0"
 PRODUCTNAME="Event Store Open Source"
 COMPANYNAME="Event Store LLP"
 COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
@@ -85,11 +84,11 @@ function checkParams() {
     fi
 
     if [[ "$version" == "" ]] ; then
-        VERSION="0.0.0.0"
+        VERSIONSTRING="0.0.0.0"
         echo "Version defaulted to: 0.0.0.0"
     else
-        VERSION=$version
-        echo "Version set to: $VERSION"
+        VERSIONSTRING=$version
+        echo "Version set to: $VERSIONSTRING"
     fi
 }
 
@@ -227,6 +226,7 @@ function patch-versionfiles {
         if grep "AssemblyInformationalVersion" $file > /dev/null ; then
             echo "Patched $file with version information"
         else
+            echo "\n" >> $file
             echo $newAssemblyVersionInformational >> $file
             echo "Patched $file with version information"
         fi
@@ -245,6 +245,7 @@ function revert-versionfiles {
 
 function build-eventstore {
     patch-versionfiles
+    exit 1
     rm -rf bin/
     xbuild src/EventStore/EventStore.sln /p:Platform="Any CPU" /p:Configuration="$CONFIGURATION" || err
     revert-versionfiles
@@ -276,7 +277,7 @@ if [[ "$ACTION" == "full" ]] ; then
     clean-all
 fi
 
-if [[ "$ACTION" == "incremental" ]] ; then
+if [[ "$ACTION" == "incremental" || "$ACTION" == "full" ]] ; then
     get-v8 $V8_TAG
     get-dependencies
 
