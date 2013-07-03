@@ -34,6 +34,14 @@ namespace EventStore.Core.Tests.ClientAPI.Security
     public class write_stream_security : AuthenticationTestBase
     {
         [Test, Category("LongRunning"), Category("Network")]
+        public void writing_to_all_is_never_allowed()
+        {
+            Expect<AccessDeniedException>(() => WriteStream("$all", null, null));
+            Expect<AccessDeniedException>(() => WriteStream("$all", "user1", "pa$$1"));
+            Expect<AccessDeniedException>(() => WriteStream("$all", "adm", "admpa$$"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
         public void writing_with_not_existing_credentials_is_not_authenticated()
         {
             Expect<NotAuthenticatedException>(() => WriteStream("write-stream", "badlogin", "badpass"));

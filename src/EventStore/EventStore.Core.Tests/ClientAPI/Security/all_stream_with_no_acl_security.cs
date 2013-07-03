@@ -47,6 +47,23 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         }
 
         [Test, Category("LongRunning"), Category("Network")]
+        public void write_to_all_is_never_allowed()
+        {
+            Expect<AccessDeniedException>(() => WriteStream("$all", null, null));
+            Expect<AccessDeniedException>(() => WriteStream("$all", "user1", "pa$$1"));
+            Expect<AccessDeniedException>(() => WriteStream("$all", "adm", "admpa$$"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void delete_of_all_is_never_allowed()
+        {
+            Expect<AccessDeniedException>(() => DeleteStream("$all", null, null));
+            Expect<AccessDeniedException>(() => DeleteStream("$all", "user1", "pa$$1"));
+            Expect<AccessDeniedException>(() => DeleteStream("$all", "adm", "admpa$$"));
+        }
+
+
+        [Test, Category("LongRunning"), Category("Network")]
         public void reading_and_subscribing_is_allowed_when_no_credentials_are_passed()
         {
             ExpectNoException(() => ReadEvent("$all", null, null));

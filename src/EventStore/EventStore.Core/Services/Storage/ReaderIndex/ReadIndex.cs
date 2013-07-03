@@ -600,6 +600,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 }
             }
 
+            if ((streamAccessType == StreamAccessType.Write || streamAccessType == StreamAccessType.Delete)
+                && streamId == SystemStreams.AllStream)
+                return StreamAccessResult.Denied;
+
             if (user != null && user.IsInRole(SystemUserGroups.Admins))
                 return StreamAccessResult.Granted;
 
