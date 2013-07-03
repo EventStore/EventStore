@@ -216,18 +216,21 @@ function patch-versionfiles {
 
     for file in $files
     do
-        sed -i "" "/$assemblyVersionPattern/c\
-            $newAssemblyVersion" $file
-        sed -i "" "/$assemblyFileVersionPattern/c\
-            $newAssemblyFileVersion" $file
-        sed -i "" "/$assemblyVersionInformationalPattern/c\
-            $newAssemblyVersionInformational" $file
-        sed -i "" "/$assemblyProductNamePattern/c\
-            $newAssemblyProductName" $file
-        sed -i "" "/$assemblyCopyrightPattern/c\
-            $newAssemblyCopyright" $file
-        sed -i "" "/$assemblyCompanyPattern/c\
-            $newAssemblyCompany" $file
+        tempfile="$file.tmp"
+        sed "/$assemblyVersionPattern/c\
+            $newAssemblyVersion" $file > $tempfile
+        sed "/$assemblyFileVersionPattern/c\
+            $newAssemblyFileVersion" $file > $tempfile
+        sed "/$assemblyVersionInformationalPattern/c\
+            $newAssemblyVersionInformational" $file > $tempfile
+        sed "/$assemblyProductNamePattern/c\
+            $newAssemblyProductName" $file > $tempfile
+        sed "/$assemblyCopyrightPattern/c\
+            $newAssemblyCopyright" $file > $tempfile
+        sed "/$assemblyCompanyPattern/c\
+            $newAssemblyCompany" $file > $tempfile
+
+        mv $tempfile $file
 
         if grep "AssemblyInformationalVersion" $file > /dev/null ; then
             echo "Patched $file with version information"
