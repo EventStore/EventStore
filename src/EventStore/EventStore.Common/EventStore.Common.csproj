@@ -102,15 +102,8 @@ $(MSBuildProjectDirectory)\..\Scripts\version\update-version.cmd $(MSBuildProjec
     </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
-    <PreBuildEvent>
-$(MSBuildProjectDirectory)\..\Scripts\version\updateCommitHash.sh .\Properties\AssemblyInfo.cs
-    </PreBuildEvent>
-    <PostBuildEvent>
-$(MSBuildProjectDirectory)\..\Scripts\version\resetCommitHash.sh .\Properties\AssemblyInfo.cs
-    </PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PreBuildEvent />
+      <PreBuildEvent>$(MSBuildProjectDirectory)/../Scripts/version/updateCommitHash.sh $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs</PreBuildEvent>
+      <PostBuildEvent>$(MSBuildProjectDirectory)/../Scripts/version/resetCommitHash.sh $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs</PostBuildEvent> 
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
