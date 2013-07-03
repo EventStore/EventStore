@@ -217,7 +217,7 @@ function patch-versionfiles {
             echo "Patched $file with version information"
         else
             echo $newAssemblyVersionInformational >> $file
-            echo "Patched $file with version information (added AssemblyInformationalVersion)"
+            echo "Patched $file with version information"
         fi
     done
 }
@@ -228,6 +228,7 @@ function revert-versionfiles {
     for file in $files
     do
         git checkout $file
+        echo "Reverted $file"
     done
 }
 
@@ -238,11 +239,33 @@ function build-eventstore {
     revert-versionfiles
 }
 
+function clean-all {
+    rm -rf bin/
+    rm -f src/EventStore/libs/libv8.so
+    rm -f src/EventStore/libs/libjs1.so
+    pushd v8 > /dev/null
+    git clean --quiet -e gyp -fdx -- build
+    git clean --quiet -dfx -- src
+    git clean --quiet -dfx -- test
+    git clean --quiet -dfx -- tools
+    git clean --quiet -dfx -- preparser
+    git clean --quiet -dfx -- samples
+    git reset --quiet --hard
+    popd > /dev/null
+    pushd src/EventStore/EventStore.Projections.v8Integration > /dev/null
+    git clean --quiet -dfx -- .
+    popd > /dev/null
+}
+
 checkParams $1 $2 $3
 
 echo "Running from base directory: $BASE_DIR"
 
-if [[ "$ACTION" != "quick" ]] ; then
+if [[ "$ACTION" == "full" ]] ; then
+    clean-all
+fi
+
+if [[ "$ACTION" == "incremental" ]] ; then
     get-v8 $V8_TAG
     get-dependencies
 
