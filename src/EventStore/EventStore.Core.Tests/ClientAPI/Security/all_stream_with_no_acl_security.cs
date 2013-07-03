@@ -41,29 +41,45 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             base.TestFixtureSetUp();
 
-            Connection.SetStreamMetadata("$all", ExpectedVersion.Any, Guid.NewGuid(),
-                                         StreamMetadata.Build(), new UserCredentials("adm", "admpa$$"));
+            Connection.SetStreamMetadata("$all", ExpectedVersion.Any, StreamMetadata.Build(), new UserCredentials("adm", "admpa$$"));
 
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void reading_and_subscribing_is_allowed_when_no_credentials_are_passed()
+        public void write_to_all_is_never_allowed()
         {
-            ExpectNoException(() => ReadEvent("$all", null, null));
-            ExpectNoException(() => ReadStreamForward("$all", null, null));
-            ExpectNoException(() => ReadStreamBackward("$all", null, null));
-            ExpectNoException(() => ReadMeta("$all", null, null));
-            ExpectNoException(() => SubscribeToStream("$all", null, null));
+            Expect<AccessDeniedException>(() => WriteStream("$all", null, null));
+            Expect<AccessDeniedException>(() => WriteStream("$all", "user1", "pa$$1"));
+            Expect<AccessDeniedException>(() => WriteStream("$all", "adm", "admpa$$"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void reading_and_subscribing_is_allowed_for_usual_user()
+        public void delete_of_all_is_never_allowed()
         {
-            ExpectNoException(() => ReadEvent("$all", "user1", "pa$$1"));
-            ExpectNoException(() => ReadStreamForward("$all", "user1", "pa$$1"));
-            ExpectNoException(() => ReadStreamBackward("$all", "user1", "pa$$1"));
-            ExpectNoException(() => ReadMeta("$all", "user1", "pa$$1"));
-            ExpectNoException(() => SubscribeToStream("$all", "user1", "pa$$1"));
+            Expect<AccessDeniedException>(() => DeleteStream("$all", null, null));
+            Expect<AccessDeniedException>(() => DeleteStream("$all", "user1", "pa$$1"));
+            Expect<AccessDeniedException>(() => DeleteStream("$all", "adm", "admpa$$"));
+        }
+
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void reading_and_subscribing_is_not_allowed_when_no_credentials_are_passed()
+        {
+            Expect<AccessDeniedException>(() => ReadEvent("$all", null, null));
+            Expect<AccessDeniedException>(() => ReadStreamForward("$all", null, null));
+            Expect<AccessDeniedException>(() => ReadStreamBackward("$all", null, null));
+            Expect<AccessDeniedException>(() => ReadMeta("$all", null, null));
+            Expect<AccessDeniedException>(() => SubscribeToStream("$all", null, null));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void reading_and_subscribing_is_not_allowed_for_usual_user()
+        {
+            Expect<AccessDeniedException>(() => ReadEvent("$all", "user1", "pa$$1"));
+            Expect<AccessDeniedException>(() => ReadStreamForward("$all", "user1", "pa$$1"));
+            Expect<AccessDeniedException>(() => ReadStreamBackward("$all", "user1", "pa$$1"));
+            Expect<AccessDeniedException>(() => ReadMeta("$all", "user1", "pa$$1"));
+            Expect<AccessDeniedException>(() => SubscribeToStream("$all", "user1", "pa$$1"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]

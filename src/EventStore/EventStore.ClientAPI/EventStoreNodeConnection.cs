@@ -390,22 +390,22 @@ namespace EventStore.ClientAPI
         }
 
 
-        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null)
+        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
-            SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials).Wait();
+            SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata, userCredentials).Wait();
         }
 
-        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null)
+        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
-            return SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata.AsJsonBytes(), userCredentials);
+            return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata.AsJsonBytes(), userCredentials);
         }
 
-        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null)
+        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
         {
-            SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials).Wait();
+            SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata, userCredentials).Wait();
         }
 
-        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null)
+        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             if (SystemStreams.IsMetastream(stream)) 
@@ -413,7 +413,7 @@ namespace EventStore.ClientAPI
 
             var source = new TaskCompletionSource<object>();
 
-            var metaevent = new EventData(idempotencyId, SystemEventTypes.StreamMetadata, true, metadata ?? Empty.ByteArray, null);
+            var metaevent = new EventData(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata ?? Empty.ByteArray, null);
             EnqueueOperation(new AppendToStreamOperation(_settings.Log,
                                                          source,
                                                          _settings.RequireMaster,
