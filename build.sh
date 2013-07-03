@@ -245,7 +245,6 @@ function revert-versionfiles {
 
 function build-eventstore {
     patch-versionfiles
-    exit 1
     rm -rf bin/
     xbuild src/EventStore/EventStore.sln /p:Platform="Any CPU" /p:Configuration="$CONFIGURATION" || err
     revert-versionfiles
