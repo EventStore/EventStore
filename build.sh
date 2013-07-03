@@ -226,7 +226,7 @@ function patch-versionfiles {
         if grep "AssemblyInformationalVersion" $file > /dev/null ; then
             echo "Patched $file with version information"
         else
-            echo "\n" >> $file
+            echo " " >> $file
             echo $newAssemblyVersionInformational >> $file
             echo "Patched $file with version information"
         fi
