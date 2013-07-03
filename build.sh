@@ -93,7 +93,18 @@ function checkParams() {
     fi
 }
 
+function revert-versionfiles() {
+    files=$( find . -name "AssemblyInfo.cs" )
+
+    for file in $files
+    do
+        git checkout $file
+        echo "Reverted $file"
+    done
+}
+
 function err() {
+    revert-versionfiles
     echo "FAILED. See earlier messages"
     exit 1
 }
@@ -185,7 +196,7 @@ function build-js1() {
 }
 
 function patch-versionfiles {
-    branchname=`git rev-parse --abbrev-ref HEAD`
+    branchName=`git rev-parse --abbrev-ref HEAD`
     commitHashAndTime=`git log -n1 --pretty=format:"%H@%aD" HEAD`
 
     newAssemblyVersion="[assembly: AssemblyVersion(\"$VERSIONSTRING\")]"
