@@ -347,5 +347,17 @@ namespace EventStore.Core.Util
         public const string WatchdogStateJson = "watchdogState";
         public const string WatchdogStateDescr = null;
         public static readonly string WatchdogStateDefault = string.Empty;
+
+        public const string WatchdogFailureTimeWindowCmd = "watchdog-failure-time-window=";
+        public const string WatchdogFailureTimeWindowEnv = "WATCHDOG_FAILURE_TIME_WINDOW";
+        public const string WatchdogFailureTimeWindowJson = "watchdogFailureTimeWindow";
+        public const string WatchdogFailureTimeWindowDescr = "The time window for which to track supervised node failures.";
+        public static readonly int WatchdogFailureTimeWindowDefault = -1;
+
+        public const string WatchdogFailureCountCmd = "watchdog-failure-count=";
+        public const string WatchdogFailureCountEnv = "WATCHDOG_FAILURE_COUNT";
+        public const string WatchdogFailureCountJson = "watchdogFailureCount";
+        public const string WatchdogFailureCountDescr = "The maximum allowed supervised node failures within specified time window.";
+        public static readonly int WatchdogFailureCountDefault = -1;
     }
 }
