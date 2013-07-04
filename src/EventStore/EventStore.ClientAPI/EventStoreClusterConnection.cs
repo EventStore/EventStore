@@ -254,24 +254,24 @@ namespace EventStore.ClientAPI
                                             eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);
         }
 
-        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null)
+        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
-            _conn.SetStreamMetadata(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials);
+            _conn.SetStreamMetadata(stream, expectedMetastreamVersion, metadata, userCredentials);
         }
 
-        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, StreamMetadata metadata, UserCredentials userCredentials = null)
+        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
-            return _conn.SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials);
+            return _conn.SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata, userCredentials);
         }
 
-        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null)
+        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
         {
-            _conn.SetStreamMetadata(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials);
+            _conn.SetStreamMetadata(stream, expectedMetastreamVersion, metadata, userCredentials);
         }
 
-        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, Guid idempotencyId, byte[] metadata, UserCredentials userCredentials = null)
+        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
         {
-            return _conn.SetStreamMetadataAsync(stream, expectedMetastreamVersion, idempotencyId, metadata, userCredentials);
+            return _conn.SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata, userCredentials);
         }
 
         public StreamMetadataResult GetStreamMetadata(string stream, UserCredentials userCredentials = null)

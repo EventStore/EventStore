@@ -31,7 +31,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Log;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -46,18 +48,26 @@ namespace EventStore.Core.Tests.ClientAPI
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
 
         private MiniNode _node;
+        private IEventStoreConnection _conn;
 
         [SetUp]
         public override void SetUp()
         {
             base.SetUp();
-            _node = new MiniNode(PathName);
+            _node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
             _node.Start();
+
+            _conn = TestConnection.Create(_node.TcpEndPoint);
+            _conn.Connect();
+            _conn.SetStreamMetadata("$all", -1,
+                                    StreamMetadata.Build().SetReadRole(SystemUserGroups.All),
+                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
         }
 
         [TearDown]
         public override void TearDown()
         {
+            _conn.Close();
             _node.Shutdown();
             base.TearDown();
         }
@@ -82,7 +92,6 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
-
         [Test, Category("LongRunning")]
         public void be_able_to_subscribe_to_empty_db()
         {
@@ -94,7 +103,11 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 var subscription = store.SubscribeToAllFrom(null,
                                                             false,
-                                                            (_, x) => appeared.Set(),
+                                                            (_, x) =>
+                                                            {
+                                                                if (!SystemStreams.IsSystemStream(x.OriginalEvent.EventStreamId))
+                                                                    appeared.Set();
+                                                            },
                                                             _ => Log.Info("Live processing started."),
                                                             (_, __, ___) => dropped.Signal());
 
@@ -129,8 +142,11 @@ namespace EventStore.Core.Tests.ClientAPI
                                                             false,
                                                             (x, y) =>
                                                             {
-                                                                events.Add(y);
-                                                                appeared.Signal();
+                                                                if (!SystemStreams.IsSystemStream(y.OriginalEvent.EventStreamId))
+                                                                {
+                                                                    events.Add(y);
+                                                                    appeared.Signal();
+                                                                }
                                                             },
                                                             _ => Log.Info("Live processing started."),
                                                             (x, y, z) => dropped.Signal());

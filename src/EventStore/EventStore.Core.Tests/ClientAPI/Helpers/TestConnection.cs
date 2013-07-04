@@ -56,6 +56,10 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                                              .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .EnableVerboseLogging()
                                              //.DisableVerboseLogging()
+                                             .LimitReconnectionsTo(10)
+                                             .LimitRetriesForOperationTo(100)
+                                             .SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))
+                                             .SetReconnectionDelayTo(TimeSpan.Zero)
                                              .FailOnNoServerResponse()
                                              .SetOperationTimeoutTo(TimeSpan.FromDays(1));
             if (tcpType == TcpType.Ssl)

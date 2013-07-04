@@ -103,40 +103,34 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Connection = TestConnection.Create(_node.TcpEndPoint, TcpType.Normal, _userCredentials);
             Connection.Connect();
 
-            Connection.SetStreamMetadata("noacl-stream", ExpectedVersion.NoStream, Guid.NewGuid(),
-                                         StreamMetadata.Build());
-            Connection.SetStreamMetadata("read-stream", ExpectedVersion.NoStream, Guid.NewGuid(), 
-                                         StreamMetadata.Build().SetReadRole("user1"));
-            Connection.SetStreamMetadata("write-stream", ExpectedVersion.NoStream, Guid.NewGuid(),
-                                         StreamMetadata.Build().SetWriteRole("user1"));
-            Connection.SetStreamMetadata("metaread-stream", ExpectedVersion.NoStream, Guid.NewGuid(),
-                                         StreamMetadata.Build().SetMetadataReadRole("user1"));
-            Connection.SetStreamMetadata("metawrite-stream", ExpectedVersion.NoStream, Guid.NewGuid(),
-                                         StreamMetadata.Build().SetMetadataWriteRole("user1"));
+            Connection.SetStreamMetadata("noacl-stream", ExpectedVersion.NoStream, StreamMetadata.Build());
+            Connection.SetStreamMetadata("read-stream", ExpectedVersion.NoStream, StreamMetadata.Build().SetReadRole("user1"));
+            Connection.SetStreamMetadata("write-stream", ExpectedVersion.NoStream, StreamMetadata.Build().SetWriteRole("user1"));
+            Connection.SetStreamMetadata("metaread-stream", ExpectedVersion.NoStream, StreamMetadata.Build().SetMetadataReadRole("user1"));
+            Connection.SetStreamMetadata("metawrite-stream", ExpectedVersion.NoStream, StreamMetadata.Build().SetMetadataWriteRole("user1"));
 
-            Connection.SetStreamMetadata("$all", ExpectedVersion.Any, Guid.NewGuid(), 
-                                         StreamMetadata.Build().SetReadRole("user1"), new UserCredentials("adm", "admpa$$"));
+            Connection.SetStreamMetadata("$all", ExpectedVersion.Any, StreamMetadata.Build().SetReadRole("user1"), new UserCredentials("adm", "admpa$$"));
 
-            Connection.SetStreamMetadata("$system-acl", ExpectedVersion.NoStream, Guid.NewGuid(),
+            Connection.SetStreamMetadata("$system-acl", ExpectedVersion.NoStream,
                                          StreamMetadata.Build()
                                                        .SetReadRole("user1")
                                                        .SetWriteRole("user1")
                                                        .SetMetadataReadRole("user1")
                                                        .SetMetadataWriteRole("user1"), new UserCredentials("adm", "admpa$$"));
-            Connection.SetStreamMetadata("$system-adm", ExpectedVersion.NoStream, Guid.NewGuid(),
+            Connection.SetStreamMetadata("$system-adm", ExpectedVersion.NoStream,
                                          StreamMetadata.Build()
                                                        .SetReadRole(SystemUserGroups.Admins)
                                                        .SetWriteRole(SystemUserGroups.Admins)
                                                        .SetMetadataReadRole(SystemUserGroups.Admins)
                                                        .SetMetadataWriteRole(SystemUserGroups.Admins), new UserCredentials("adm", "admpa$$"));
 
-            Connection.SetStreamMetadata("normal-all", ExpectedVersion.NoStream, Guid.NewGuid(),
+            Connection.SetStreamMetadata("normal-all", ExpectedVersion.NoStream,
                                          StreamMetadata.Build()
                                                        .SetReadRole(SystemUserGroups.All)
                                                        .SetWriteRole(SystemUserGroups.All)
                                                        .SetMetadataReadRole(SystemUserGroups.All)
                                                        .SetMetadataWriteRole(SystemUserGroups.All));
-            Connection.SetStreamMetadata("$system-all", ExpectedVersion.NoStream, Guid.NewGuid(),
+            Connection.SetStreamMetadata("$system-all", ExpectedVersion.NoStream,
                                          StreamMetadata.Build()
                                                        .SetReadRole(SystemUserGroups.All)
                                                        .SetWriteRole(SystemUserGroups.All)
@@ -201,9 +195,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
         protected void WriteMeta(string streamId, string login, string password, string metawriteRole)
         {
-            Connection.SetStreamMetadata(streamId,
-                                         ExpectedVersion.Any,
-                                         Guid.NewGuid(),
+            Connection.SetStreamMetadata(streamId, ExpectedVersion.Any,
                                          metawriteRole == null
                                             ? StreamMetadata.Build()
                                             : StreamMetadata.Build().SetReadRole(metawriteRole)
@@ -228,7 +220,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         protected string CreateStreamWithMeta(StreamMetadata metadata, string streamPrefix = null)
         {
             var stream = (streamPrefix ?? string.Empty) + TestContext.CurrentContext.Test.Name;
-            Connection.SetStreamMetadata(stream, ExpectedVersion.NoStream, Guid.NewGuid(),
+            Connection.SetStreamMetadata(stream, ExpectedVersion.NoStream,
                                          metadata, new UserCredentials("adm", "admpa$$"));
             return stream;
         }

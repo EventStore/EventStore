@@ -37,6 +37,14 @@ namespace EventStore.Core.Tests.ClientAPI.Security
     public class delete_stream_security : AuthenticationTestBase
     {
         [Test, Category("LongRunning"), Category("Network")]
+        public void delete_of_all_is_never_allowed()
+        {
+            Expect<AccessDeniedException>(() => DeleteStream("$all", null, null));
+            Expect<AccessDeniedException>(() => DeleteStream("$all", "user1", "pa$$1"));
+            Expect<AccessDeniedException>(() => DeleteStream("$all", "adm", "admpa$$"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
         public void deleting_normal_no_acl_stream_with_no_user_is_allowed()
         {
             var streamId = CreateStreamWithMeta(StreamMetadata.Build());

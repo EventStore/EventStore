@@ -190,7 +190,7 @@ namespace EventStore.Core.Index
             try
             {
                 dumpPath = Path.Combine(Path.GetDirectoryName(_directory),
-                                        string.Format("index-backup-{0:yyyy-MM-dd_hh-mm-ss.fff}", DateTime.UtcNow));
+                                        string.Format("index-backup-{0:yyyy-MM-dd_HH-mm-ss.fff}", DateTime.UtcNow));
                 Log.Error("Making backup of index folder for inspection to {0}...", dumpPath);
                 FileUtils.DirectoryCopy(_directory, dumpPath, copySubDirs: true);
             }
