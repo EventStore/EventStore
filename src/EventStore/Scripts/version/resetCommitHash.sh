@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 function usage() {
     echo "Usage: $0 <versionfilename>"
