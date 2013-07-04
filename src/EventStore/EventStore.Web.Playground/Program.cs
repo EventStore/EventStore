@@ -68,7 +68,7 @@ namespace EventStore.Web.Playground
 
         protected override void Create(PlaygroundNodeOptions options)
         {
-            var dbPath = Path.GetFullPath(ResolveDbPath(options.DbPath, options.HttpPort));
+            //var dbPath = Path.GetFullPath(ResolveDbPath(options.DbPath, options.HttpPort));
             var vnodeSettings = GetVNodeSettings(options);
 
 

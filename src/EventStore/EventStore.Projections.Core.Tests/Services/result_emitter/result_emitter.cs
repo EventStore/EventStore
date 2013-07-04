@@ -50,13 +50,13 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
             [Test]
             public void it_can_be_created()
             {
-                var re = new ResultEmitter(_namesBuilder);
+                new ResultEmitter(_namesBuilder);
             }
 
             [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_names_builder_throws_argument_null_exception()
             {
-                var re = new ResultEmitter(null);
+                new ResultEmitter(null);
             }
         }
 

@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         [Test]
         public void it_can_be_created()
         {
-            var ps = new EventReorderingReaderSubscription(new FakePublisher(),
+            new EventReorderingReaderSubscription(new FakePublisher(),
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 CreateReaderStrategy(),
                 1000, 2000, 500);
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            var ps = new EventReorderingReaderSubscription(null,
+            new EventReorderingReaderSubscription(null,
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), 
                 CreateReaderStrategy(),
                 1000, 2000, 500);
@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         [Test, ExpectedException(typeof(ArgumentNullException))]
         public void null_describe_source_throws_argument_null_exception()
         {
-            var ps = new EventReorderingReaderSubscription(new FakePublisher(),
+            new EventReorderingReaderSubscription(new FakePublisher(),
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 null, 1000, 2000, 500);
         }

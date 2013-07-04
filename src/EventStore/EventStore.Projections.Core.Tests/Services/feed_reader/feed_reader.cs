@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             [Test]
             public void it_can_be_created()
             {
-                var feedReader = new FeedReader(
+                new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
                     CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_subscription_dispatcher_throws_argument_null_exception()
             {
-                var feedReader = new FeedReader(
+                new FeedReader(
                     null, SystemAccount.Principal, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 10,
                     Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             [Test]
             public void null_user_account_is_allowed()
             {
-                var feedReader = new FeedReader(
+                new FeedReader(
                     _subscriptionDispatcher, null, _testQueryDefinition, CheckpointTag.FromPosition(0, -1), 10,
                     Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             [Test, ExpectedException(typeof(ArgumentNullException))]
             public void null_query_definition_throws_argument_null_exception()
             {
-                var feedReader = new FeedReader(
+                new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, null, CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(),
                     new NoopEnvelope(), new RealTimeProvider());
             }
@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_from_position_throws_argument_null_exception()
             {
-                var feedReader = new FeedReader(
+                new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition, null, 10, Guid.NewGuid(),
                     new NoopEnvelope(), new RealTimeProvider());
             }
@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_envelope_throws_argument_null_exception()
             {
-                var feedReader = new FeedReader(
+                new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
                     CheckpointTag.FromPosition(0, -1), 10, Guid.NewGuid(), null, new RealTimeProvider());
             }
@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             [Test, ExpectedException(typeof (ArgumentException))]
             public void zero_max_events_throws_argument_exception()
             {
-                var feedReader = new FeedReader(
+                new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
                     CheckpointTag.FromPosition(0, -1), 0, Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
@@ -131,11 +131,10 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             [Test, ExpectedException(typeof (ArgumentException))]
             public void negative_max_events_throws_argument_exception()
             {
-                var feedReader = new FeedReader(
+                new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
                     CheckpointTag.FromPosition(0, -1), -1, Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
-
         }
 
         public abstract class FeedReaderSpecification

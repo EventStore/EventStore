@@ -68,7 +68,7 @@ namespace EventStore.BufferManagement.Tests
         public void the_requested_buffers_should_be_removed_from_the_buffer_manager()
         {
             int initialBuffers = BufferManager.AvailableBuffers;
-            new BufferPool(10, BufferManager);
+            BufferPool pool = new BufferPool(10, BufferManager);
             Assert.AreEqual(initialBuffers - 10, BufferManager.AvailableBuffers);
         }
     }

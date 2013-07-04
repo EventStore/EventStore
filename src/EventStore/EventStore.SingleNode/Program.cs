@@ -148,7 +148,7 @@ namespace EventStore.SingleNode
         {
             _node.Start();
             
-            _node.HttpService.SetupController(new TestController(_node.MainQueue, _node.NetworkSendService));
+            _node.HttpService.SetupController(new TestController(_node.MainQueue/*, _node.NetworkSendService*/));
         }
 
         public override void Stop()

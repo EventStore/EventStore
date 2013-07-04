@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         {
             string state;
             EmittedEvent[] emittedEvents;
-            var handled = _stateHandler.ProcessEvent(
+            _stateHandler.ProcessEvent(
                 "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{}", out state, out emittedEvents);
             var result = _stateHandler.TransformStateToResult();
