@@ -100,7 +100,7 @@ es.projection = function (settings) {
                 nextPageUrl + "?embed=content",
                 {
                     headers: {
-                        Accept: 'application/json'
+                        Accept: 'vnd.eventstore.atom+json'
                     },
                     success: function (page) {
                         for (var i = 0, n = page.entries.length; i < n; i += 1) {
