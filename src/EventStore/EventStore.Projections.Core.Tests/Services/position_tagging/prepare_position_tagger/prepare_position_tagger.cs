@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_po
         [Test]
         public void can_be_created()
         {
-            var t = new PreparePositionTagger();
+            new PreparePositionTagger();
         }
 
         [Test]

@@ -395,8 +395,8 @@ namespace EventStore.Projections.Core.Tests.Services
             public void first_task_completed_unblocks_both_tasks()
             {
                 _t1.Complete();
-                var processed4 = _q.Process();
-                var processed5 = _q.Process();
+                _q.Process();
+                _q.Process();
 
                 Assert.That(_t1.StartedOn(1));
                 Assert.That(_t2.StartedOn(1));

@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.multistrea
         public void can_be_created()
         {
             var t = new MultiStreamPositionTagger(new[] {"stream1", "stream2"});
-            var tr = new PositionTracker(t);
+            new PositionTracker(t);
         }
 
         [Test]
@@ -117,13 +117,13 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.multistrea
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_streams_throws_argument_null_exception()
         {
-            var t = new MultiStreamPositionTagger(null);
+            new MultiStreamPositionTagger(null);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_streams_throws_argument_exception()
         {
-            var t = new MultiStreamPositionTagger(new string[] {});
+            new MultiStreamPositionTagger(new string[] {});
         }
 
         [Test]

@@ -38,12 +38,12 @@ namespace EventStore.Web.Playground
 {
     public class TestController : CommunicationController
     {
-        private readonly IPublisher _networkSendQueue;
+        //private readonly IPublisher _networkSendQueue;
 
-        public TestController(IPublisher publisher, IPublisher networkSendQueue)
+        public TestController(IPublisher publisher/*, IPublisher networkSendQueue*/)
             : base(publisher)
         {
-            _networkSendQueue = networkSendQueue;
+            //_networkSendQueue = networkSendQueue;
         }
 
         protected override void SubscribeCore(IHttpService service)

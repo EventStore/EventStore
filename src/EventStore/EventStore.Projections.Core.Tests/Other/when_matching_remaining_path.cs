@@ -165,7 +165,7 @@ namespace EventStore.Projections.Core.Tests.Other
                         "e=>e {1}  e=>u {2}  u=>e {3} u=>u {4}", new String(i, 1), m(escaped, escapedTemplate),
                         m(unescaped, escapedTemplate), m(escaped, unescapedTemplate), m(unescaped, unescapedTemplate))));
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     result.Add(
                         Tuple.Create(i, string.Format("EXCEPTION")));
