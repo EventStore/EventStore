@@ -109,7 +109,6 @@ namespace EventStore.Core.Tests.ClientAPI
 
             const string s = "stream";
             var events = new[] { TestEvent.NewTestEvent() };
-            var bytes = new byte[0];
 
             Assert.That(() => connection.DeleteStream(s, 0),
                         Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());

@@ -62,7 +62,7 @@ namespace EventStore.TestClient.Commands
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < subscriptionCount; ++i)
             {
-                var subscr = conn.SubscribeToStream(
+                conn.SubscribeToStream(
                     string.Format("stream-{0}", i),
                     false,
                     (s, e) =>

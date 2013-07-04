@@ -139,7 +139,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_allStreams && _events != null && _events.Count >= 1)
             {
-                IEnumerable<string> streams = GetEventIndexStreams();
+                //IEnumerable<string> streams = GetEventIndexStreams();
                 return CreatePausedEventIndexEventReader(
                     eventReaderId, publisher, checkpointTag, stopOnEof, stopAfterNEvents, true, _events);
             }
