@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 
             protected override void When()
             {
-                var json = GetJson<JObject>("/test-anonymous");
+                GetJson<JObject>("/test-anonymous");
             }
 
             [Test]
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 
             protected override void When()
             {
-                var json = GetJson<JObject>("/test1");
+                GetJson<JObject>("/test1");
             }
 
             [Test]

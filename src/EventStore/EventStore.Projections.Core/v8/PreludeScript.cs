@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.v8
             ScheduleTerminateExecution();
             IntPtr prelude = Js1.CompilePrelude(
                 script, fileName, _loadModuleDelegate, _enterCancellableRegion, _exitCancellableRegion, _logDelegate);
-            var terminated = CancelTerminateExecution();
+            CancelTerminateExecution();
             CompiledScript.CheckResult(prelude, false, disposeScriptOnException: true);
             return new CompiledScript(prelude, fileName);
         }

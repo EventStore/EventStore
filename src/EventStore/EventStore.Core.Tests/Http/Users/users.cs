@@ -309,7 +309,7 @@ namespace EventStore.Core.Tests.Http.Users
             [Test]
             public void get_returns_not_found()
             {
-                var jsonResponse = GetJson<JObject>("/users/test1");
+                GetJson<JObject>("/users/test1");
                 Assert.AreEqual(HttpStatusCode.NotFound, _lastResponse.StatusCode);
             }
         }

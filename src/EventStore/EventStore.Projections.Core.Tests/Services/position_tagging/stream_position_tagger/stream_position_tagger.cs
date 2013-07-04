@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_pos
         public void can_be_created()
         {
             var t = new StreamPositionTagger("stream1");
-            var tr = new PositionTracker(t);
+            new PositionTracker(t);
         }
 
         [Test]
@@ -102,13 +102,13 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_pos
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_stream_throws_argument_null_exception()
         {
-            var t = new StreamPositionTagger(null);
+            new StreamPositionTagger(null);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_stream_throws_argument_exception()
         {
-            var t = new StreamPositionTagger("");
+            new StreamPositionTagger("");
         }
 
         [Test]

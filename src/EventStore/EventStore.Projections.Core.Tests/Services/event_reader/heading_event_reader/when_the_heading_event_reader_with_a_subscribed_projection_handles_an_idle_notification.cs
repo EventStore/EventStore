@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         TestFixtureWithReadWriteDispatchers
     {
         private HeadingEventReader _point;
-        private Exception _exception;
+        //private Exception _exception;
         private Guid _distibutionPointCorrelationId;
         private FakeReaderSubscription _subscription;
         private Guid _projectionSubscriptionId;
@@ -51,14 +51,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         [SetUp]
         public void setup()
         {
-            _exception = null;
+            //_exception = null;
             try
             {
                 _point = new HeadingEventReader(10);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _exception = ex;
+                //_exception = ex;
             }
 
             _distibutionPointCorrelationId = Guid.NewGuid();
@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
                     "type", false, new byte[0], new byte[0], timestamp.AddMilliseconds(1)));
             _subscription = new FakeReaderSubscription();
             _projectionSubscriptionId = Guid.NewGuid();
-            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
+            _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
             _point.Handle(
                 new ReaderSubscriptionMessage.EventReaderIdle(
                     _distibutionPointCorrelationId, timestamp.AddMilliseconds(1100)));

@@ -175,7 +175,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 string newState;
                 EmittedEvent[] emittedevents;
                 h.ProcessEvent("partition", CheckpointTag.FromPosition(100, 50), "stream", "event", "", Guid.NewGuid(), 1, "", "{}", out newState, out emittedevents);
-                var result = h.TransformStateToResult();
+                h.TransformStateToResult();
             }
         }
 

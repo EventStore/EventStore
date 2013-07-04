@@ -40,21 +40,20 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state
             [Test, ExpectedException(typeof(ArgumentNullException))]
             public void throws_argument_null_exception_if_state_is_null()
             {
-                var s = new PartitionState(null, "result", CheckpointTag.FromPosition(100, 50));
+                new PartitionState(null, "result", CheckpointTag.FromPosition(100, 50));
             }
 
             [Test, ExpectedException(typeof(ArgumentNullException))]
             public void throws_argument_null_exception_if_caused_by_is_null()
             {
-                var s = new PartitionState("state", "result", null);
+                new PartitionState("state", "result", null);
             }
 
             [Test]
             public void can_be_created()
             {
-                var s = new PartitionState("state", "result", CheckpointTag.FromPosition(100, 50));
+                new PartitionState("state", "result", CheckpointTag.FromPosition(100, 50));
             }
-
         }
 
         [TestFixture]

@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         public void can_be_created()
         {
             var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
-            var tr = new PositionTracker(t);
+            new PositionTracker(t);
         }
 
         [Test]
@@ -160,13 +160,13 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_streams_throws_argument_null_exception()
         {
-            var t = new EventByTypeIndexPositionTagger(null);
+            new EventByTypeIndexPositionTagger(null);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_streams_throws_argument_exception()
         {
-            var t = new EventByTypeIndexPositionTagger(new string[] {});
+            new EventByTypeIndexPositionTagger(new string[] {});
         }
 
         [Test]
@@ -260,7 +260,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
                 Helper.UTF8NoBom.GetBytes("0@stream2"), new byte[0]);
             var tag = CheckpointTag.FromEventTypeIndexPositions(
                 new TFPos(270, 260), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
-            var updated = t.MakeCheckpointTag(tag, linkEvent);
+            t.MakeCheckpointTag(tag, linkEvent);
         }
 
         [Test]

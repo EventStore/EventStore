@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         [Test]
         public void it_can_be_created()
         {
-            var ps = new ReaderSubscription(
+            new ReaderSubscription(
                 new FakePublisher(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 CreateReaderStrategy(),
                 1000, 2000);
@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         [Test, ExpectedException(typeof(ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            var ps = new ReaderSubscription(null,
+            new ReaderSubscription(null,
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 CreateReaderStrategy(), 1000, 2000);
         }
@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         [Test, ExpectedException(typeof(ArgumentNullException))]
         public void null_checkpoint_strategy_throws_argument_null_exception()
         {
-            var ps = new ReaderSubscription(new FakePublisher(),
+            new ReaderSubscription(new FakePublisher(),
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), 
                 null, 1000, 2000);
         }
