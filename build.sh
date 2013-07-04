@@ -92,7 +92,7 @@ function checkParams() {
     fi
 }
 
-function revert-versionfiles() {
+function revertVersionFiles() {
     files=$( find . -name "AssemblyInfo.cs" )
 
     for file in $files
@@ -103,12 +103,12 @@ function revert-versionfiles() {
 }
 
 function err() {
-    revert-versionfiles
+    revertversionfiles
     echo "FAILED. See earlier messages"
     exit 1
 }
 
-function get-v8() {
+function getV8() {
     tag=$1
 
     if [[ -d v8 ]] ; then
@@ -134,7 +134,7 @@ function get-v8() {
     fi
 }
 
-function get-dependencies() {
+function getDependencies() {
     if [[ -d v8/build/gyp ]] ; then
         pushd v8/build/gyp > /dev/null || err
         svnrevision=`svn info | sed -ne 's/^Revision: //p'`
@@ -150,7 +150,7 @@ function get-dependencies() {
     popd > /dev/null || err
 }
 
-function build-v8() {
+function buildV8() {
     pushd v8 > /dev/null || err
    
     if [[ "$PLATFORM" -eq "x64" ]] ; then
@@ -176,7 +176,7 @@ function build-v8() {
     popd > /dev/null || err
 }
 
-function build-js1() {
+function buildJS1() {
     currentDir=$(pwd -P)
     includeString="-I $currentDir/src/EventStore/libs/include"
     libsString="-L $currentDir/src/EventStore/libs"
@@ -194,7 +194,7 @@ function build-js1() {
     popd > /dev/null || err
 }
 
-function patch-versionfiles {
+function patchVersionFiles {
     branchName=`git rev-parse --abbrev-ref HEAD`
     commitHashAndTime=`git log -n1 --pretty=format:"%H@%aD" HEAD`
 
@@ -242,24 +242,14 @@ function patch-versionfiles {
     done
 }
 
-function revert-versionfiles {
-    files=$( find . -name "AssemblyInfo.cs" )
-
-    for file in $files
-    do
-        git checkout $file
-        echo "Reverted $file"
-    done
-}
-
-function build-eventstore {
-    patch-versionfiles
+function buildEventStore {
+    patchVersionFiles
     rm -rf bin/
     xbuild src/EventStore/EventStore.sln /p:Platform="Any CPU" /p:Configuration="$CONFIGURATION" || err
-    revert-versionfiles
+    revertVersionFiles
 }
 
-function clean-all {
+function cleanAll {
     rm -rf bin/
     rm -f src/EventStore/libs/libv8.so
     rm -f src/EventStore/libs/libjs1.so
@@ -282,19 +272,19 @@ checkParams $1 $2 $3 $4
 echo "Running from base directory: $BASE_DIR"
 
 if [[ "$ACTION" == "full" ]] ; then
-    clean-all
+    cleanall
 fi
 
 if [[ "$ACTION" == "incremental" || "$ACTION" == "full" ]] ; then
-    get-v8 $V8_TAG
-    get-dependencies
+    getV8 $V8_TAG
+    getDependencies
 
-    build-v8
-    build-js1
-    build-eventstore
+    buildV8
+    buildJS1
+    buildEventStore
 else
     [[ -f src/EventStore/libs/libv8.so ]] || echo "Cannot find libv8.so - cannot do a quick build!"
     [[ -f src/EventStore/libs/libjs1.so ]] || echo "Cannot find libjs1.so - cannot do a quick build!"
 
-    build-eventstore
+    buildEventStore
 fi
