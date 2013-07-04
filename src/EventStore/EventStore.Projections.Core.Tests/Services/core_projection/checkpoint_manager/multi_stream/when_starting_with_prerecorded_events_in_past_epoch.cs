@@ -42,8 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         private readonly CheckpointTag _tag2 =
             CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 0}, {"c", 1}});
 
-        private readonly CheckpointTag _tag3 =
-            CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 1}, {"c", 1}});
+        //private readonly CheckpointTag _tag3 =CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 1}, {"c", 1}});
 
         protected override void Given()
         {

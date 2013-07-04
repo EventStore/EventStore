@@ -39,14 +39,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_service
         private TestCoreProjection _committedeventHandler;
         private Guid _projectionCorrelationId;
 
-        private TestCoreProjection _committedeventHandler2;
+        //private TestCoreProjection _committedeventHandler2;
         private Guid _projectionCorrelationId2;
 
         [SetUp]
         public new void Setup()
         {
             _committedeventHandler = new TestCoreProjection();
-            _committedeventHandler2 = new TestCoreProjection();
+            //_committedeventHandler2 = new TestCoreProjection();
             _projectionCorrelationId = Guid.NewGuid();
             _projectionCorrelationId2 = Guid.NewGuid();
             _readerService.Handle(

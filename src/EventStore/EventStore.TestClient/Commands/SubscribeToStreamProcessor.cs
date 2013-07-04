@@ -79,7 +79,7 @@ namespace EventStore.TestClient.Commands
                             }
                             case TcpCommand.SubscriptionDropped:
                             {
-                                var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
+                                pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
                                 context.Log.Error("Subscription to <{0}> WAS DROPPED!", streamByCorrId[pkg.CorrelationId]);
                                 break;
                             }

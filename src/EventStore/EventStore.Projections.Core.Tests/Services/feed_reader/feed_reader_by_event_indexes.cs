@@ -21,15 +21,15 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             private CheckpointTag _fromPosition;
             private int _maxEvents;
             private TFPos _tfPos1;
-            private TFPos _tfPos2;
-            private TFPos _tfPos3;
+            //private TFPos _tfPos2;
+            //private TFPos _tfPos3;
 
             protected override void Given()
             {
                 base.Given();
                 _tfPos1 = ExistingEvent("test-stream", "type1", "{}", "{Data: 1}");
-                _tfPos2 = ExistingEvent("test-stream", "type1", "{}", "{Data: 2}");
-                _tfPos3 = ExistingEvent("test-stream", "type2", "{}", "{Data: 3}");
+                //_tfPos2 = ExistingEvent("test-stream", "type1", "{}", "{Data: 2}");
+                //_tfPos3 = ExistingEvent("test-stream", "type2", "{}", "{Data: 3}");
 
                 ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos1), "0@test-stream");
                 NoStream("$et-type2");

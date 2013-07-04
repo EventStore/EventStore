@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 _logged = new List<string>();
                 var preludeSource = DefaultV8ProjectionStateHandler.GetModuleSource("1Prelude");
                 using (
-                    var prelude = new PreludeScript(
+                    new PreludeScript(
                         preludeSource.Item1, preludeSource.Item2, DefaultV8ProjectionStateHandler.GetModuleSource,
                         (i1, action) => { },
                         _logger))

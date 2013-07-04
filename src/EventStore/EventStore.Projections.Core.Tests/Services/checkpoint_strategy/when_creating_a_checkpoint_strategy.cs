@@ -12,10 +12,9 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_strategy
         [Test]
         public void it_can_be_created()
         {
-            var builder = CheckpointStrategy.Create(
+            CheckpointStrategy.Create(
                 new QuerySourcesDefinition {AllStreams = true, AllEvents = true}, ProjectionConfig.GetTest(),
                 new RealTimeProvider());
         }
-
     }
 }

@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
     public class when_a_default_checkpoint_manager_has_been_reinitialized :
         TestFixtureWithCoreProjectionCheckpointManager
     {
-        private Exception _exception;
+        //private Exception _exception;
 
         protected override void Given()
         {
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         protected override void When()
         {
             base.When();
-            _exception = null;
+            //_exception = null;
             try
             {
                 _manager.BeginLoadState();
@@ -60,9 +60,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
                 _manager.EventProcessed(CheckpointTag.FromStreamPosition("stream", 12), 77.7f);
                 _manager.Initialize();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _exception = ex;
+                //_exception = ex;
             }
         }
 

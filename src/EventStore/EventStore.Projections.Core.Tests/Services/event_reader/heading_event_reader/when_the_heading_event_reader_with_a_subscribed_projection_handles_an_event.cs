@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
                     "type", false, new byte[0], new byte[0]));
             _subscription = new FakeReaderSubscription();
             _projectionSubscriptionId = Guid.NewGuid();
-            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
+            _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
             _point.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     _distibutionPointCorrelationId, new TFPos(60, 50), "stream", 12, false, Guid.NewGuid(),
@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void no_other_projection_can_subscribe_with_the_same_projection_id()
         {
-            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
+            _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
         }
     }
 }

@@ -41,13 +41,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
     public class when_stream_event_reader_has_been_created : TestFixtureWithExistingEvents
     {
         private StreamEventReader _edp;
-        private Guid _publishWithCorrelationId;
+        //private Guid _publishWithCorrelationId;
         private Guid _distibutionPointCorrelationId;
 
         [SetUp]
         public new void When()
         {
-            _publishWithCorrelationId = Guid.NewGuid();
+            //_publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
             _edp = new StreamEventReader(
                 _bus, _distibutionPointCorrelationId, null, "stream", 0, new RealTimeProvider(), false);

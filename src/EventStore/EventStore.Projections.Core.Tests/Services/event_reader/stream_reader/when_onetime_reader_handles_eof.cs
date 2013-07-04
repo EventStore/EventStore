@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
     public class when_onetime_reader_handles_eof : TestFixtureWithExistingEvents
     {
         private StreamEventReader _edp;
-        private Guid _publishWithCorrelationId;
+        //private Guid _publishWithCorrelationId;
         private Guid _distibutionPointCorrelationId;
         private Guid _firstEventId;
         private Guid _secondEventId;
@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         [SetUp]
         public new void When()
         {
-            _publishWithCorrelationId = Guid.NewGuid();
+            //_publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
             _fakeTimeProvider = new FakeTimeProvider();
             _edp = new StreamEventReader(

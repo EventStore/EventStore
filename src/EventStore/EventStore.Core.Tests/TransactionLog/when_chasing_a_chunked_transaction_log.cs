@@ -154,8 +154,7 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             var writerchk = new InMemoryCheckpoint(0);
             var chaserchk = new InMemoryCheckpoint(Checkpoint.Chaser, 0);
-            ICheckpoint[] namedCheckpoints = new[] {chaserchk};
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
+            
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                        new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
@@ -205,8 +204,6 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             var writerchk = new InMemoryCheckpoint(0);
             var chaserchk = new InMemoryCheckpoint(Checkpoint.Chaser, 0);
-            ICheckpoint[] namedCheckpoints = new[] {chaserchk};
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                        new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
