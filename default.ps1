@@ -67,6 +67,14 @@ Properties {
         Write-Verbose "Platform Toolset will be guessed by a horrible, probably brittle mechanism recommended by MSFT support"
     }
 
+    if ($version -ne $null) {
+	Write-Verbose "Version: Set to $version"
+	$nativeBuildParameters.Add("versionString", $version)
+	$managedBuildParameters.Add("versionString", $version)
+    } else {
+	Write-Verbose "Version: None specified, defaulting to 0.0.0.0"
+    }
+
     $baseDirectory = Resolve-Path .
     $srcDirectory = Join-Path $baseDirectory (Join-Path "src" "EventStore")
     $libsDirectory = Join-Path $srcDirectory "libs"
