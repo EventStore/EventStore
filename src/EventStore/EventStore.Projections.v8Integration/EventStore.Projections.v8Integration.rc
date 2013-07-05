@@ -1,0 +1,113 @@
+﻿// This file will be automatically updated as part of the build process.
+// Note "Comments" does not appear in the properties in Windows (inexplicably)
+// but can be obtained by using:
+//
+//			(Get-Item .\js1.dll).VersionInfo.Comments
+//
+// in Powershell (from a pwd where js1.dll is located)
+
+#include "resource.h"
+#include <windows.h>
+
+#define EVENTSTORE_PRODUCTNAME_STR "Event Store Open Source"
+#define EVENTSTORE_PRODUCTVERSION_STR "0.0.0.0"
+#define EVENTSTORE_PRODUCTVERSION 0,0,0,0
+#define EVENTSTORE_FILEVERSION_STR "0.0.0.0"
+#define EVENTSTORE_FILEVERSION 0,0,0,0
+#define EVENTSTORE_COMMITNUMBER_STR "Commit Hash: not set"
+#define EVENTSTORE_COPYRIGHT_STR "Copyright © 2012-2013 Event Store LLP. All rights reserved."
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION EVENTSTORE_FILEVERSION
+ PRODUCTVERSION EVENTSTORE_PRODUCTVERSION
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x0L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+			VALUE "Comments", EVENTSTORE_COMMITNUMBER_STR
+			VALUE "CompanyName", "Event Store LLP"
+            VALUE "FileDescription", "Event Store Projections - V8 Integration"
+            VALUE "FileVersion", EVENTSTORE_FILEVERSION_STR
+            VALUE "InternalName", "EventStore.Projections.V8Integration"
+            VALUE "LegalCopyright", EVENTSTORE_COPYRIGHT_STR
+            VALUE "OriginalFilename", "js1.dll"
+            VALUE "ProductName", EVENTSTORE_PRODUCTNAME_STR
+            VALUE "ProductVersion", EVENTSTORE_PRODUCTVERSION_STR
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United Kingdom) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (United Kingdom) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

@@ -52,9 +52,6 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
-      <Link>Properties\AssemblyVersion.cs</Link>
-    </Compile>
     <Compile Include="BufferManagerTests.cs" />
     <Compile Include="BufferPoolStreamTests.cs" />
     <Compile Include="BufferPoolTests.cs" />

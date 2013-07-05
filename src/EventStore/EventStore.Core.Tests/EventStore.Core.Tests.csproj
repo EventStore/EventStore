@@ -68,9 +68,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
-      <Link>Properties\AssemblyVersion.cs</Link>
-    </Compile>
     <Compile Include="Bus\FSMSpeedTest.cs" />
     <Compile Include="Bus\Helpers\BusTestMessages.cs" />
     <Compile Include="Bus\Helpers\NoopConsumer.cs" />

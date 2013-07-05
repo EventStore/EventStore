@@ -78,7 +78,6 @@
     <Compile Include="Options\OptionValueContainer.cs" />
     <Compile Include="Options\OptsHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\AssemblyVersion.cs" />
     <Compile Include="Utils\Application.cs" />
     <Compile Include="Utils\Empty.cs" />
     <Compile Include="Utils\Json.cs" />
@@ -94,21 +93,16 @@
     <Compile Include="Utils\Version.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Properties\ESVersion.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Log\NLog.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
-    <PreBuildEvent>
-$(MSBuildProjectDirectory)\..\Scripts\version\update-version.cmd $(MSBuildProjectDirectory)
-    </PreBuildEvent>
+    <PreBuildEvent>powershell.exe $(MSBuildProjectDirectory)\..\Scripts\version\updateCommitHash.ps1 $(MSBuildProjectDirectory)\Properties\AssemblyInfo.cs</PreBuildEvent>
+    <PostBuildEvent>powershell.exe $(MSBuildProjectDirectory)\..\Scripts\version\resetCommitHash.ps1 $(MSBuildProjectDirectory)\Properties\AssemblyInfo.cs</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
-    <PreBuildEvent>
-$(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProjectDirectory)
-    </PreBuildEvent>
+      <PreBuildEvent>$(MSBuildProjectDirectory)/../Scripts/version/updateCommitHash.sh $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs</PreBuildEvent>
+      <PostBuildEvent>$(MSBuildProjectDirectory)/../Scripts/version/resetCommitHash.sh $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs</PostBuildEvent> 
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
