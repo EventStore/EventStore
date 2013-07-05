@@ -53,9 +53,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
-      <Link>Properties\AssemblyVersion.cs</Link>
-    </Compile>
     <Compile Include="Codecs\Codec.cs" />
     <Compile Include="Codecs\CustomCodec.cs" />
     <Compile Include="Codecs\JsonCodec.cs" />

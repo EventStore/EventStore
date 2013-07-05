@@ -51,9 +51,6 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
-      <Link>Properties\AssemblyVersion.cs</Link>
-    </Compile>
     <Compile Include="Client.cs" />
     <Compile Include="ClientOptions.cs" />
     <Compile Include="CommandProcessorContext.cs" />

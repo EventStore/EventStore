@@ -1,1 +1,0 @@
-git log HEAD -n1 --pretty="%%aD" > %TEMP%\es-timestamp.tmp
