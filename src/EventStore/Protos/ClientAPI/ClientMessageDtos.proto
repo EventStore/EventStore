@@ -13,7 +13,7 @@ enum OperationResult
 
 message NewEvent {
 	required bytes event_id = 1;
-	optional string event_type = 2;
+	required string event_type = 2;
 	required bool is_json = 3;
 	required bytes data = 4;
 	optional bytes metadata = 5;
@@ -23,7 +23,7 @@ message EventRecord {
 	required string event_stream_id = 1;
 	required int32 event_number = 2;
 	required bytes event_id = 3;
-	optional string event_type = 4;
+	required string event_type = 4;
 	required bytes data = 5;
 	optional bytes metadata = 6;
 }
@@ -50,7 +50,7 @@ message DeniedToRoute {
 message CreateStream {
 	required string event_stream_id = 1;
 	required bytes request_id = 2;
-	optional bytes metadata = 3;
+	required bytes metadata = 3;
 	required bool allow_forwarding = 4;
 	required bool is_json = 5;
 }
