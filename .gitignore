@@ -82,3 +82,6 @@ NDependOut
 _dotCover.*
 
 */es-logs
+
+# Mac OS
+.DS_Store
