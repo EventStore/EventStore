@@ -23,7 +23,7 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(1, IsRequired = true, Name=@"event_id", DataFormat = DataFormat.Default)]
     public readonly byte[] EventId;
   
-    [ProtoMember(2, IsRequired = false, Name=@"event_type", DataFormat = DataFormat.Default)]
+    [ProtoMember(2, IsRequired = true, Name=@"event_type", DataFormat = DataFormat.Default)]
     public readonly string EventType;
   
     [ProtoMember(3, IsRequired = true, Name=@"is_json", DataFormat = DataFormat.Default)]
@@ -59,7 +59,7 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"event_id", DataFormat = DataFormat.Default)]
     public readonly byte[] EventId;
   
-    [ProtoMember(4, IsRequired = false, Name=@"event_type", DataFormat = DataFormat.Default)]
+    [ProtoMember(4, IsRequired = true, Name=@"event_type", DataFormat = DataFormat.Default)]
     public readonly string EventType;
   
     [ProtoMember(5, IsRequired = true, Name=@"data", DataFormat = DataFormat.Default)]
