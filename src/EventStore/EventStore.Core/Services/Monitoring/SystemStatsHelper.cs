@@ -125,7 +125,7 @@ namespace EventStore.Core.Services.Monitoring
             var drive = EsDriveInfo.FromDirectory(_dbPath, _log);
             if (drive != null)
             {
-                Func<string, string, string> driveStat = (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName, stat);
+                Func<string, string, string> driveStat = (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName.Replace("\\","").Replace(":",""), stat);
                 stats[driveStat(drive.DiskName, "availableBytes")] = drive.AvailableBytes;
                 stats[driveStat(drive.DiskName, "totalBytes")] = drive.TotalBytes;
                 stats[driveStat(drive.DiskName, "usage")] = drive.Usage;
