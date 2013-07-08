@@ -7,4 +7,4 @@ function err() {
 
 curdir=`dirname $0`
 
-$curdir/get-mono-patched.sh "mono-3.0.122" || err
+$curdir/get-mono-patched.sh "mono-3.0.12" || err
