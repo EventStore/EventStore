@@ -85,7 +85,7 @@ namespace EventStore.SingleNode
             var db = new TFChunkDb(CreateDbConfig(dbPath, options.CachedChunks, options.ChunksCacheSize));
             var vnodeSettings = GetVNodeSettings(options);
             var dbVerifyHashes = !options.SkipDbVerify;
-            var runProjections = !options.NoProjections;
+            var runProjections = options.RunProjections;
 
             Log.Info("\n{0,-25} {1}\n{2,-25} {3} (0x{3:X})\n{4,-25} {5} (0x{5:X})\n{6,-25} {7} (0x{7:X})\n{8,-25} {9} (0x{9:X})\n",
                      "DATABASE:", db.Config.Path,

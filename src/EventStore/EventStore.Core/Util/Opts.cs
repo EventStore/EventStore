@@ -111,11 +111,11 @@ namespace EventStore.Core.Util
         public const string SkipDbVerifyDescr = "Bypasses the checking of file hashes of database during startup (allows for faster startup).";
         public const bool SkipDbVerifyDefault = false;
 
-        public const string NoProjectionsCmd = "no-projections";
-        public const string NoProjectionsEnv = "NO_PROJECTIONS";
-        public const string NoProjectionsJson = "noProjections";
-        public const string NoProjectionsDescr = "Disables the running of JavaScript projections.";
-        public const bool   NoProjectionsDefault = false;
+        public const string RunProjectionsCmd = "run-projections";
+        public const string RunProjectionsEnv = "RUN_PROJECTIONS"
+        public const string RunProjectionsJson = "runProjections";
+        public const string RunProjectionsDescr = "Enables the running of JavaScript projections.";
+        public const bool   RunProjectionsDefault = true;
 
         public const string ProjectionThreadsCmd = "projection-threads=";
         public const string ProjectionThreadsEnv = "PROJECTION_THREADS";
