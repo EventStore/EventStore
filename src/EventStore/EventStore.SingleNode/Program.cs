@@ -85,7 +85,7 @@ namespace EventStore.SingleNode
             var db = new TFChunkDb(CreateDbConfig(dbPath, options.CachedChunks, options.ChunksCacheSize));
             var vnodeSettings = GetVNodeSettings(options);
             var dbVerifyHashes = !options.SkipDbVerify;
-            var runProjections = options.RunProjections;
+            var runProjections = !options.NoProjections;
 
             Log.Info("\n{0,-25} {1}\n{2,-25} {3} (0x{3:X})\n{4,-25} {5} (0x{5:X})\n{6,-25} {7} (0x{7:X})\n{8,-25} {9} (0x{9:X})\n",
                      "DATABASE:", db.Config.Path,
@@ -95,7 +95,7 @@ namespace EventStore.SingleNode
                      "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
 
             var enabledNodeSubsystems = runProjections ? new[] {NodeSubsystems.Projections} : new NodeSubsystems[0];
-            _projections = new Projections.Core.ProjectionsSubsystem(options.ProjectionThreads, options.RunProjections);
+            _projections = new Projections.Core.ProjectionsSubsystem(options.ProjectionThreads, runProjections);
             _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, ESConsts.MemTableEntryCount, _projections);
             RegisterWebControllers(enabledNodeSubsystems);
             RegisterUIProjections();
