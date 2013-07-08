@@ -22,7 +22,8 @@ Properties {
     $baseDirectory = Resolve-Path .
     $srcDirectory = Join-Path $baseDirectory (Join-Path "src" "EventStore")
     $libsDirectory = Join-Path $srcDirectory "libs"
-    $outputDirectory = Join-Path $baseDirectory "bin\"
+    #For now we'll use the output directories as configured in the solution. TODO: Change this.
+    #$outputDirectory = Join-Path $baseDirectory "bin\"
 }
 
 # Project Files
@@ -39,7 +40,8 @@ Properties {
 Task Build-EventStore {
     try {
         Invoke-Task Patch-AssemblyInfos
-        Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform=$platform /p:OutDir=$outputDirectory }
+        #TODO: put back in /p:OutDir=$outputDirectory
+        Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform=$platform }
     } finally {
         Invoke-Task Revert-AssemblyInfos
     }

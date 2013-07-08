@@ -7,15 +7,6 @@ COMPANYNAME="Event Store LLP"
 COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
 #------------ End of configuration -------------
 
-echo "--------------------"
-echo $PATH
-echo "--------------------"
-echo `whoami`
-pwd
-echo `which xbuild`
-echo `which mcs`
-echo "--------------------"
-
 function usage() {
     echo ""
     echo "Usage: $0 action <version=0.0.0.0> <platform=x64> <configuration=release>"
