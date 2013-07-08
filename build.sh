@@ -10,6 +10,9 @@ COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
 echo "--------------------"
 echo $PATH
 echo "--------------------"
+which xbuild
+which mcs
+echo "--------------------"
 
 function usage() {
     echo ""
