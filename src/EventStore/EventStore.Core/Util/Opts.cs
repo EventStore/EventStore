@@ -112,7 +112,7 @@ namespace EventStore.Core.Util
         public const bool SkipDbVerifyDefault = false;
 
         public const string RunProjectionsCmd = "run-projections";
-        public const string RunProjectionsEnv = "RUN_PROJECTIONS"
+        public const string RunProjectionsEnv = "RUN_PROJECTIONS";
         public const string RunProjectionsJson = "runProjections";
         public const string RunProjectionsDescr = "Enables the running of JavaScript projections.";
         public const bool   RunProjectionsDefault = true;
