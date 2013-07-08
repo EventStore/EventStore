@@ -14,44 +14,48 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 
 ####Prerequisites
 
-	- Visual Studio 2010 or 2012 (with .NET 4 and 64-bit C++ support)
-	- git on PATH
-	- svn on PATH
+- .NET Framework v4.0+
+- Windows platform SDK with compilers (v7.1) or Visual C++ installed
+- git on PATH
+- svn on PATH
 
-####Download and build v8
+####Building the Event Store
 
-	src\EventStore\Scripts\v8\get-v8.cmd 
+From a command prompt or powershell:
 
-	src\EventStore\Scripts\v8\build-v8_x64_release.cmd 
+	psake.cmd Build-Quick - only builds the Event Store, fails if V8 and JS1 aren't available
+	psake.cmd Build-Incremental - will build V8 if necessary, JS1 if necessary and Event Store always
+	psake.cmd Build-Full - cleans and builds everything
 
-####Build the v8 integration code
+Optional parameters (passed in the -parameters @{} hash):
 
-	src\EventStore\Scripts\v8\build-js1_x64_release.cmd 
+- `platform` - x86 or x64 (defaults to x64)
+- `configuration` - release or debug (defaults to release)
+- `version` - the semantic version number to give to the release (used only in the release pipeline, CI and nightlies default to 0.0.0.0 but still have the branch/commit hash embedded in them).
+- `platformToolset` - C++ toolset to use - v110, v100, WindowsSDK7.1 (defaults to the latest we can guess at)
+- `forceNetwork` - true if you want to force the script to get dependencies even if Windows thinks theres no network connection (otherwise we don't try to avoid sometimes lengthy delays).
 
-This step produces a file named js1.dll, which contains the projections framework. If you already have access to a suitable version of this file (e.g. from the binary distribution) you can proceed to step 4, having made it available in src\EventStore\libs\x64.
-
-####Build the Event Store solution using 64-bit msbuild
-
-	C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe /p:Configuration=Debug /p:Platform="Any CPU" src\EventStore\EventStore.sln
-
-*NOTE: EventStore.sln has build configurations set up to be compatible with either xbuild or msbuild. Although named "Any CPU", it in fact targets x64 only.*
 
 ###Debug Builds on Linux (Ubuntu 12.04) / Mono
 
 ####Prerequisites
 
-- Patched version of Mono on `PATH`
+- git on `PATH`
+- Patched version of Mono on `PATH` (see below)
 - svn on `PATH`
+- gcc installed
+
+####Building Patched Mono
 
 You can get and build the patched version of Mono necessary for Event Store by running
 
-	.\src\EventStore\Scripts\get-mono-307p.sh
+	.\src\EventStore\Scripts\get-mono-3012p.sh
 
 This script will install mono to `/opt/mono`, and must be run with root priviledges (since it installs packages via apt-get). However, the script will not add it to the `PATH` which must be done separately, such that `mono --version` outputs:
 
 <pre>
-Mono JIT compiler version (EventStore patched build: ThreadPool.c) 3.0.7 ((no/514fcd7 Fri Mar 15 14:49:41 GMT 2013) (EventStore build)
-Copyright (C) 2002-2012 Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com
+Mono JIT compiler version (EventStore patched build: ThreadPool.c) 3.0.12 ((no/514fcd7 Fri Mar 15 14:49:41 GMT 2013) (EventStore build)
+Copyright (C) 2002-2013 Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com
         TLS:           __thread
         SIGSEGV:       altstack
         Notifications: epoll
@@ -62,18 +66,13 @@ Copyright (C) 2002-2012 Novell, Inc, Xamarin Inc and Contributors. www.mono-proj
         GC:            Included Boehm (with typed GC and Parallel Mark)
 </pre>
 
-####Download and build v8 
+####Building the Event Store
 
-	./src/EventStore/Scripts/v8/get-v8.sh 
-	
-	./src/EventStore/Scripts/v8/build-v8_x64_release.sh 
+```bash
+./build.sh <mode> <version> <platform> <configuration>
+```
 
-####Build the v8 integration code (libjs1.so)
-
-	./src/EventStore/Scripts/v8/build-js1.sh 
-
-####Build the Event Store Solution
-
-The Event Store solution can be build using either MonoDevelop or xbuild.
-
-	/opt/mono/bin/xbuild src/EventStore/EventStore.sln /p:Configuration=Debug /p:Platform="Any CPU"
+- `mode` is one of `quick`, `incremental` or `full` (see above)
+- `version` is the semantic version to apply
+- `platform` - either x86 or x64 (defaults to x64)
+- `configuration` - either debug or release (defaults to release)
