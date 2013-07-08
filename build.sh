@@ -272,7 +272,7 @@ checkParams $1 $2 $3 $4
 echo "Running from base directory: $BASE_DIR"
 
 if [[ "$ACTION" == "full" ]] ; then
-    cleanall
+    cleanAll
 fi
 
 if [[ "$ACTION" == "incremental" || "$ACTION" == "full" ]] ; then
