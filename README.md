@@ -14,26 +14,26 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 
 ####Prerequisites
 
-	- .NET Framework v4.0+
-	- Windows platform SDK with compilers (v7.1) or Visual C++ installed
-	- git on PATH
-	- svn on PATH
+- .NET Framework v4.0+
+- Windows platform SDK with compilers (v7.1) or Visual C++ installed
+- git on PATH
+- svn on PATH
 
 ####Building the Event Store
 
 From a command prompt or powershell:
 
-	- `psake.cmd Build-Quick` - only builds the Event Store, fails if V8 and JS1 aren't available
-	- `psake.cmd Build-Incremental` - will build V8 if necessary, JS1 if necessary and Event Store always
-	- `psake.cmd Build-Full` - cleans and builds everything
+	psake.cmd Build-Quick - only builds the Event Store, fails if V8 and JS1 aren't available
+	psake.cmd Build-Incremental - will build V8 if necessary, JS1 if necessary and Event Store always
+	psake.cmd Build-Full - cleans and builds everything
 
 Optional parameters (passed in the -parameters @{} hash):
 
-	- `platform` - x86 or x64 (defaults to x64)
-	- `configuration` - release or debug (defaults to release)
-	- `version` - the semantic version number to give to the release (used only in the release pipeline, CI and nightlies default to 0.0.0.0 but still have the branch/commit hash embedded in them).
-	- `platformToolset` - C++ toolset to use - v110, v100, WindowsSDK7.1 (defaults to the latest we can guess at)
-	- `forceNetwork` - true if you want to force the script to get dependencies even if Windows thinks theres no network connection (otherwise we don't try to avoid sometimes lengthy delays).
+- `platform` - x86 or x64 (defaults to x64)
+- `configuration` - release or debug (defaults to release)
+- `version` - the semantic version number to give to the release (used only in the release pipeline, CI and nightlies default to 0.0.0.0 but still have the branch/commit hash embedded in them).
+- `platformToolset` - C++ toolset to use - v110, v100, WindowsSDK7.1 (defaults to the latest we can guess at)
+- `forceNetwork` - true if you want to force the script to get dependencies even if Windows thinks theres no network connection (otherwise we don't try to avoid sometimes lengthy delays).
 
 
 ###Debug Builds on Linux (Ubuntu 12.04) / Mono
