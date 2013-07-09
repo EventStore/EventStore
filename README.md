@@ -23,9 +23,9 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 
 From a command prompt or powershell:
 
-	psake.cmd Build-Quick - only builds the Event Store, fails if V8 and JS1 aren't available
-	psake.cmd Build-Incremental - will build V8 if necessary, JS1 if necessary and Event Store always
-	psake.cmd Build-Full - cleans and builds everything
+- `psake.cmd Build-Quick` - only builds the Event Store, fails if V8 and JS1 aren't available
+- `psake.cmd Build-Incremental` - will build V8 if necessary, JS1 if necessary and Event Store always
+- `psake.cmd Build-Full` - cleans and builds everything
 
 Optional parameters (passed in the -parameters @{} hash):
 
@@ -55,7 +55,7 @@ This script will install mono to `/opt/mono`, and must be run with root priviled
 
 <pre>
 Mono JIT compiler version (EventStore patched build: ThreadPool.c) 3.0.12 ((no/514fcd7 Fri Mar 15 14:49:41 GMT 2013) (EventStore build)
-Copyright (C) 2002-2013 Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com
+Copyright (C) 2002-2012 Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com
         TLS:           __thread
         SIGSEGV:       altstack
         Notifications: epoll

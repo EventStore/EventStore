@@ -19,8 +19,11 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                         status.status.indexOf("Stopped") === 0 ||
                         status.status.indexOf("Completed") === 0 ||
                         status.status.indexOf("Faulted") === 0;
+                var stopAvailable = status.status.indexOf("Running") === 0 
+                    || status.status.indexOf("Faulted") === 0 
+                    || (status.status.indexOf("Stopped") === 0 && status.status.indexOf("Enabled") > 0);
                 status.availableCommands = {
-                    stop: status.status.indexOf("Running") === 0,
+                    stop: stopAvailable,
                     start:startUpdateAvailable,
                     update: startUpdateAvailable,
                     debug: status.status.indexOf("Faulted") === 0,

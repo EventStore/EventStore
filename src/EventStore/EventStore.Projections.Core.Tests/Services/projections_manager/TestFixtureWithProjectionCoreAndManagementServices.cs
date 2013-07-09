@@ -29,6 +29,7 @@
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -68,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe(_consumer);
 
             _manager = new ProjectionManager(
-                GetInputQueue(), GetInputQueue(), new[] {GetInputQueue()}, _timeProvider, true,
+                GetInputQueue(), GetInputQueue(), new[] {GetInputQueue()}, _timeProvider, RunProjections.All,
                 _initializeSystemProjections);
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
             _readerService = new EventReaderCoreService(GetInputQueue(), 10, writerCheckpoint, runHeadingReader: true);

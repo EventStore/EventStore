@@ -52,7 +52,7 @@ namespace EventStore.SingleNode
 
         public string DbPath { get { return _helper.Get(() => DbPath); } }
         public bool SkipDbVerify { get { return _helper.Get(() => SkipDbVerify); } }
-        public bool NoProjections { get { return _helper.Get(() => NoProjections); } }
+        public RunProjections RunProjections { get { return _helper.Get(() => RunProjections); } }
         public int ProjectionThreads { get { return _helper.Get(() => ProjectionThreads); } }
         public int WorkerThreads { get { return _helper.Get(() => WorkerThreads); } }
 
@@ -92,7 +92,7 @@ namespace EventStore.SingleNode
             
             _helper.RegisterRef(() => DbPath, Opts.DbPathCmd, Opts.DbPathEnv, Opts.DbPathJson, Opts.DbPathDefault, Opts.DbPathDescr);
             _helper.Register(() => SkipDbVerify, Opts.SkipDbVerifyCmd, Opts.SkipDbVerifyEnv, Opts.SkipDbVerifyJson, Opts.SkipDbVerifyDefault, Opts.SkipDbVerifyDescr);
-            _helper.Register(() => NoProjections, Opts.NoProjectionsCmd, Opts.NoProjectionsEnv, Opts.NoProjectionsJson, Opts.NoProjectionsDefault, Opts.NoProjectionsDescr);
+            _helper.Register(() => RunProjections, Opts.RunProjectionsCmd, Opts.RunProjectionsEnv, Opts.RunProjectionsJson, Opts.RunProjectionsDefault, Opts.RunProjectionsDescr);
             _helper.Register(() => ProjectionThreads, Opts.ProjectionThreadsCmd, Opts.ProjectionThreadsEnv, Opts.ProjectionThreadsJson, Opts.ProjectionThreadsDefault, Opts.ProjectionThreadsDescr);
             _helper.Register(() => WorkerThreads, Opts.WorkerThreadsCmd, Opts.WorkerThreadsEnv, Opts.WorkerThreadsJson, Opts.WorkerThreadsDefault, Opts.WorkerThreadsDescr);
 
