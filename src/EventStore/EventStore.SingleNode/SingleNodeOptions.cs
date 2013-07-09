@@ -52,7 +52,7 @@ namespace EventStore.SingleNode
 
         public string DbPath { get { return _helper.Get(() => DbPath); } }
         public bool SkipDbVerify { get { return _helper.Get(() => SkipDbVerify); } }
-        public bool RunProjections { get { return _helper.Get(() => RunProjections); } }
+        public RunProjections RunProjections { get { return _helper.Get(() => RunProjections); } }
         public int ProjectionThreads { get { return _helper.Get(() => ProjectionThreads); } }
         public int WorkerThreads { get { return _helper.Get(() => WorkerThreads); } }
 

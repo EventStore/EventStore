@@ -36,6 +36,7 @@ using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Common.Utils;
 using System.Linq;
+using EventStore.Core.Util;
 using EventStore.Web.Playground;
 using EventStore.Web.Users;
 
@@ -94,7 +95,9 @@ namespace EventStore.SingleNode
                      "EPOCH CHECKPOINT:", db.Config.EpochCheckpoint.Read(),
                      "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
 
-            var enabledNodeSubsystems = runProjections ? new[] {NodeSubsystems.Projections} : new NodeSubsystems[0];
+            var enabledNodeSubsystems = runProjections >= RunProjections.System
+                ? new[] {NodeSubsystems.Projections}
+                : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(options.ProjectionThreads, runProjections);
             _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, ESConsts.MemTableEntryCount, _projections);
             RegisterWebControllers(enabledNodeSubsystems);

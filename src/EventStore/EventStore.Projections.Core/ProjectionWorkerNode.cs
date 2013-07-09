@@ -31,6 +31,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.EventReaders.Feeds;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -40,7 +41,7 @@ namespace EventStore.Projections.Core
 {
     public class ProjectionWorkerNode 
     {
-        private readonly bool _runProjections;
+        private readonly RunProjections _runProjections;
         private readonly ProjectionCoreService _projectionCoreService;
         private readonly InMemoryBus _coreOutput;
         private readonly EventReaderCoreService _eventReaderCoreService;
@@ -52,7 +53,7 @@ namespace EventStore.Projections.Core
 
         private FeedReaderService _feedReaderService;
 
-        public ProjectionWorkerNode(TFChunkDb db, QueuedHandler inputQueue, ITimeProvider timeProvider, bool runProjections)
+        public ProjectionWorkerNode(TFChunkDb db, QueuedHandler inputQueue, ITimeProvider timeProvider, RunProjections runProjections)
         {
             _runProjections = runProjections;
             Ensure.NotNull(db, "db");
@@ -67,9 +68,9 @@ namespace EventStore.Projections.Core
                         >(publisher, v => v.SubscriptionId, v => v.SubscriptionId);
             ;
             _eventReaderCoreService = new EventReaderCoreService(
-                publisher, 10, db.Config.WriterCheckpoint, runHeadingReader: runProjections);
+                publisher, 10, db.Config.WriterCheckpoint, runHeadingReader: runProjections >= RunProjections.System);
             _feedReaderService = new FeedReaderService(_subscriptionDispatcher, timeProvider);
-            if (runProjections)
+            if (runProjections >= RunProjections.System)
             {
                 _projectionCoreService = new ProjectionCoreService(inputQueue, publisher, _subscriptionDispatcher, timeProvider);
             }
@@ -90,7 +91,7 @@ namespace EventStore.Projections.Core
 
             coreInputBus.Subscribe(_feedReaderService);
 
-            if (_runProjections)
+            if (_runProjections >= RunProjections.System)
             {
 
                 coreInputBus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_projectionCoreService);

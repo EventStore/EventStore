@@ -26,11 +26,47 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using System.ComponentModel;
+using System.Globalization;
 using System.Net;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Util
 {
+
+    public enum RunProjections
+    {
+        None,
+        System,
+        All
+    }
+
+    [TypeConverter(typeof(RunProjections))]
+    public sealed class RunProjectionsTypeConverter : TypeConverter
+    {
+        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        {
+            var v = ((string) value).ToLowerInvariant();
+            switch (v)
+            {
+                case "none":
+                    return RunProjections.None;
+                case "system":
+                    return RunProjections.System;
+                case "all":
+                    return RunProjections.All;
+                default:
+                    throw new InvalidCastException();
+            }
+        }
+
+        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        {
+            return sourceType == typeof(string);
+        }
+    }
+
     public static class Opts
     {
         public const string EnvPrefix = "EVENTSTORE_";
@@ -111,11 +147,11 @@ namespace EventStore.Core.Util
         public const string SkipDbVerifyDescr = "Bypasses the checking of file hashes of database during startup (allows for faster startup).";
         public const bool SkipDbVerifyDefault = false;
 
-        public const string RunProjectionsCmd = "run-projections";
+        public const string RunProjectionsCmd = "run-projections=";
         public const string RunProjectionsEnv = "RUN_PROJECTIONS";
         public const string RunProjectionsJson = "runProjections";
         public const string RunProjectionsDescr = "Enables the running of JavaScript projections.";
-        public const bool   RunProjectionsDefault = true;
+        public const RunProjections RunProjectionsDefault = RunProjections.System;
 
         public const string ProjectionThreadsCmd = "projection-threads=";
         public const string ProjectionThreadsEnv = "PROJECTION_THREADS";

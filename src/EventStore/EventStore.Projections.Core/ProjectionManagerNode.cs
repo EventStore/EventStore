@@ -3,6 +3,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Http;
 using EventStore.Projections.Core.Services.Management;
@@ -11,11 +12,11 @@ namespace EventStore.Projections.Core
 {
     public class ProjectionManagerNode
     {
-        private readonly bool _runProjections;
+        private readonly RunProjections _runProjections;
         private readonly ProjectionManager _projectionManager;
         private readonly InMemoryBus _output;
 
-        private ProjectionManagerNode(IPublisher inputQueue, IPublisher[] queues, bool runProjections)
+        private ProjectionManagerNode(IPublisher inputQueue, IPublisher[] queues, RunProjections runProjections)
         {
             _runProjections = runProjections;
             _output = new InMemoryBus("ProjectionManagerOutput");
@@ -31,7 +32,7 @@ namespace EventStore.Projections.Core
         public void SetupMessaging(ISubscriber mainBus)
         {
             mainBus.Subscribe<SystemMessage.StateChangeMessage>(_projectionManager);
-            if (_runProjections)
+            if (_runProjections >= RunProjections.System)
             {
                 mainBus.Subscribe<ProjectionManagementMessage.Post>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.UpdateQuery>(_projectionManager);
@@ -63,7 +64,7 @@ namespace EventStore.Projections.Core
 
         public static ProjectionManagerNode Create(
             TFChunkDb db, QueuedHandler inputQueue, IHttpForwarder httpForwarder, HttpService[] httpServices, IPublisher networkSendQueue,
-            IPublisher[] queues, bool runProjections)
+            IPublisher[] queues, RunProjections runProjections)
         {
             var projectionManagerNode = new ProjectionManagerNode(inputQueue, queues, runProjections);
             var projectionsController = new ProjectionsController(httpForwarder, inputQueue, networkSendQueue);

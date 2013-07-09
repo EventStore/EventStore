@@ -34,6 +34,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing

@@ -103,6 +103,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly Guid _id;
         private readonly int _projectionId;
         private readonly string _name;
+        private readonly bool _enabledToRun;
         private ManagedProjectionState _state;
         private PersistedState _persistedState = new PersistedState();
         //private int _version;
@@ -118,7 +119,7 @@ namespace EventStore.Projections.Core.Services.Management
         private IPrincipal _runAs;
 
         public ManagedProjection(
-            IPublisher coreQueue, Guid id, int projectionId, string name, ILogger logger,
+            IPublisher coreQueue, Guid id, int projectionId, string name, bool enabledToRun, ILogger logger,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
@@ -133,6 +134,7 @@ namespace EventStore.Projections.Core.Services.Management
             _id = id;
             _projectionId = projectionId;
             _name = name;
+            _enabledToRun = enabledToRun;
             _logger = logger;
             _writeDispatcher = writeDispatcher;
             _readDispatcher = readDispatcher;
@@ -336,7 +338,7 @@ namespace EventStore.Projections.Core.Services.Management
                                 () =>
                                 StartOrLoadStopped(
                                     () =>
-                                    message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)))));
+                                        message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)))));
                     });
         }
 
@@ -477,7 +479,7 @@ namespace EventStore.Projections.Core.Services.Management
                 new ClientMessage.ReadStreamEventsBackward(
                     corrId, corrId, _readDispatcher.Envelope, "$projections-" + name, -1, 1, 
                     resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal), 
-                LoadCompleted);
+                completed => LoadCompleted(completed));
         }
 
         private void LoadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed)
@@ -495,7 +497,7 @@ namespace EventStore.Projections.Core.Services.Management
                 LoadPersistedState(persistedState);
                 //TODO: encapsulate this into managed projection
                 _state = ManagedProjectionState.Loaded;
-                if (Enabled)
+                if (Enabled && _enabledToRun)
                 {
                     if (Mode >= ProjectionMode.Continuous)
                         Prepare(() => Start(() => { }));
@@ -849,7 +851,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (_state == ManagedProjectionState.Prepared)
             {
-                if (Enabled)
+                if (Enabled && _enabledToRun)
                     Start(completed);
                 else
                     LoadStopped(completed);
