@@ -283,8 +283,8 @@ if [[ "$ACTION" == "incremental" || "$ACTION" == "full" ]] ; then
     buildJS1
     buildEventStore
 else
-    [[ -f src/EventStore/libs/libv8.so ]] || echo "Cannot find libv8.so - cannot do a quick build!"
-    [[ -f src/EventStore/libs/libjs1.so ]] || echo "Cannot find libjs1.so - cannot do a quick build!"
+    [[ -f src/EventStore/libs/libv8.so ]] || echo "Cannot find libv8.so - cannot do a quick build!" && exit 1
+    [[ -f src/EventStore/libs/libjs1.so ]] || echo "Cannot find libjs1.so - cannot do a quick build!" && exit 1
 
     buildEventStore
 fi
