@@ -212,11 +212,12 @@ namespace EventStore.Projections.Core.Services.Management
                 status = _lastReceivedStatistics.Clone();
                 status.Mode = GetMode();
                 status.Name = _name;
-                status.Status = status.Status == "Stopped" && _state == ManagedProjectionState.Completed
+                var enabledSuffix = ((_state == ManagedProjectionState.Stopped || _state == ManagedProjectionState.Faulted) && Enabled ? " (Enabled)" : "");
+                status.Status = (status.Status == "Stopped" && _state == ManagedProjectionState.Completed
                                     ? _state.EnumValueName()
                                     : (!status.Status.StartsWith(_state.EnumValueName())
                                            ? _state.EnumValueName() + "/" + status.Status
-                                           : status.Status);
+                                           : status.Status)) + enabledSuffix;
                 status.MasterStatus = _state;
             }
             if (_state == ManagedProjectionState.Faulted)
@@ -285,7 +286,7 @@ namespace EventStore.Projections.Core.Services.Management
             Action completed = () =>
                 {
                     if (_state == ManagedProjectionState.Prepared)
-                        Start(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
+                        StartOrLoadStopped(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
                     else
                         message.Envelope.ReplyWith(
                             new ProjectionManagementMessage.Updated(message.Name));
