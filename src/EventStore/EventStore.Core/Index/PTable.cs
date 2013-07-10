@@ -135,6 +135,7 @@ namespace EventStore.Core.Index
                 return null;
 
             var workItem = GetWorkItem();
+            //TODO GFY can make slightly faster with a sequential worker.
             try
             {
                 int midpointsCount;
@@ -148,11 +149,12 @@ namespace EventStore.Core.Index
                 {
                     throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.", exc);
                 }
-
+                workItem.Stream.Seek(PTableHeader.Size, SeekOrigin.Begin);
                 for (int k = 0; k < midpointsCount; ++k)
                 {
-                    int index = (int)((long)k * (Count - 1) / (midpointsCount - 1));
-                    midpoints[k] = new Midpoint(ReadEntry(index, workItem).Key, index);
+                    var nextindex = (int)((long)k * (Count - 1) / (midpointsCount - 1));
+                    ReadUntil(IndexEntrySize * (long)nextindex + PTableHeader.Size, workItem);
+                    midpoints[k] = new Midpoint(ReadNextNoSeek(workItem).Key, nextindex);
                 }
 
                 return midpoints;
@@ -161,6 +163,21 @@ namespace EventStore.Core.Index
             {
                 ReturnWorkItem(workItem);
             }
+        }
+
+        static byte[] crap = new byte[255];
+        private void ReadUntil(long nextindex, WorkItem workItem)
+        {
+            long toRead = 0;
+            do
+            {
+                toRead = nextindex - workItem.Stream.Position;
+                toRead = toRead > 255 ? 255 : toRead;
+                if (toRead > 0)
+                    workItem.Stream.Read(crap, 0, (int) toRead);
+                if (toRead < 0)
+                    workItem.Stream.Seek(nextindex, SeekOrigin.Begin);
+            } while (toRead > 0);
         }
 
         public void VerifyFileHash()
