@@ -27,28 +27,47 @@
 //  
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
+
+    //TODO GFY THIS CODE NEEDS SOME LOVE ITS KIND OF CONVOLUTED HOW ITS WORKING WITH TCP CONNECTIONS
     internal class TcpClientConnector
     {
-       private readonly SocketArgsPool _connectSocketArgsPool;
-
+        private readonly SocketArgsPool _connectSocketArgsPool;
+        private readonly List<ConnectingSocket> _connectingSockets;
+        private readonly Timer _timer;
         public TcpClientConnector()
         {
             _connectSocketArgsPool = new SocketArgsPool("TcpClientConnector._connectSocketArgsPool",
                                                         TcpConfiguration.ConnectPoolSize,
                                                         CreateConnectSocketArgs);
+            _connectingSockets = new List<ConnectingSocket>();
+            _timer = new Timer(TimerCallback, null, 500, 200);
+        }
+
+        private void TimerCallback(object state)
+        {
+            lock(_connectingSockets)
+            {
+                _connectingSockets.ForEach(
+                    x =>
+                        {
+                            if(x.WhenToKill < DateTime.Now) {HandleTimeout(x.Connection);}
+                        });
+            }
         }
 
         private SocketAsyncEventArgs CreateConnectSocketArgs()
         {
             var socketArgs = new SocketAsyncEventArgs();
             socketArgs.Completed += ConnectCompleted;
-            socketArgs.UserToken = new CallbacksToken();
+            socketArgs.UserToken = new CallbacksStateToken();
             return socketArgs;
         }
 
@@ -58,28 +77,47 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                         bool ssl,
                                         string targetHost,
                                         bool validateServer,
+                                        int timeout,
                                         Action<ITcpConnection> onConnectionEstablished = null,
                                         Action<ITcpConnection, SocketError> onConnectionFailed = null,
                                         Action<ITcpConnection, SocketError> onConnectionClosed = null)
         {
+            var timeoutAt = DateTime.Now.AddMilliseconds(timeout);
             Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
             if (ssl)
             {
                 Ensure.NotNullOrEmpty(targetHost, "targetHost");
-                return TcpConnectionSsl.CreateConnectingConnection(log, connectionId, remoteEndPoint,
+                var connecting = TcpConnectionSsl.CreateConnectingConnection(log, connectionId, remoteEndPoint,
                                                                    targetHost, validateServer, 
                                                                    this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
+                AddToConnecting(connecting, timeoutAt);
             }
-            else
+            var conn = TcpConnection.CreateConnectingConnection(log, connectionId, remoteEndPoint,
+                                                            this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
+            AddToConnecting(conn, timeoutAt);
+            return conn;
+        }
+
+        private void AddToConnecting(ITcpConnection conn, DateTime when)
+        {
+            lock (_connectingSockets)
             {
-                return TcpConnection.CreateConnectingConnection(log, connectionId, remoteEndPoint,
-                                                                this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
+                _connectingSockets.Add(new ConnectingSocket(conn, when));
+            }
+        }
+
+        private void RemoveFromConnecting(ITcpConnection conn)
+        {
+            lock (_connectingSockets)
+            {
+                _connectingSockets.RemoveAll(x => x.Connection == conn);
             }
         }
 
         internal void InitConnect(IPEndPoint serverEndPoint,
                                   Action<IPEndPoint, Socket> onConnectionEstablished,
-                                  Action<IPEndPoint, SocketError> onConnectionFailed)
+                                  Action<IPEndPoint, SocketError> onConnectionFailed,
+                                  ITcpConnection connection)
         {
             if (serverEndPoint == null)
                 throw new ArgumentNullException("serverEndPoint");
@@ -92,9 +130,10 @@ namespace EventStore.ClientAPI.Transport.Tcp
             var connectingSocket = new Socket(serverEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             socketArgs.RemoteEndPoint = serverEndPoint;
             socketArgs.AcceptSocket = connectingSocket;
-            var callbacks = (CallbacksToken)socketArgs.UserToken;
+            var callbacks = (CallbacksStateToken)socketArgs.UserToken;
             callbacks.OnConnectionEstablished = onConnectionEstablished;
             callbacks.OnConnectionFailed = onConnectionFailed;
+            callbacks.Connection = connection;
 
             try
             {
@@ -125,11 +164,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
         {
             var serverEndPoint = socketArgs.RemoteEndPoint;
             var socketError = socketArgs.SocketError;
-            var callbacks = (CallbacksToken)socketArgs.UserToken;
+            var callbacks = (CallbacksStateToken)socketArgs.UserToken;
             var onConnectionFailed = callbacks.OnConnectionFailed;
 
             Helper.EatException(() => socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
-
+            RemoveFromConnecting(callbacks.Connection);
             socketArgs.AcceptSocket = null;
             callbacks.Reset();
 
@@ -138,30 +177,49 @@ namespace EventStore.ClientAPI.Transport.Tcp
             onConnectionFailed((IPEndPoint)serverEndPoint, socketError);
         }
 
+        private void HandleTimeout(ITcpConnection connection)
+        {
+            RemoveFromConnecting(connection);
+            Helper.EatException(() => connection.Close("Timeout on connect."));
+        }
+
         private void OnSocketConnected(SocketAsyncEventArgs socketArgs)
         {
             var remoteEndPoint = (IPEndPoint) socketArgs.RemoteEndPoint;
             var socket = socketArgs.AcceptSocket;
-            var callbacks = (CallbacksToken)socketArgs.UserToken;
+            var callbacks = (CallbacksStateToken)socketArgs.UserToken;
             var onConnectionEstablished = callbacks.OnConnectionEstablished;
             socketArgs.AcceptSocket = null;
-
+            RemoveFromConnecting(callbacks.Connection);
             callbacks.Reset();
             _connectSocketArgsPool.Return(socketArgs);
-
+            
             onConnectionEstablished(remoteEndPoint, socket);
         }
 
-        private class CallbacksToken
+        private class CallbacksStateToken
         {
             public Action<IPEndPoint, Socket> OnConnectionEstablished;
             public Action<IPEndPoint, SocketError> OnConnectionFailed;
+            public ITcpConnection Connection;
 
             public void Reset()
             {
                 OnConnectionEstablished = null;
                 OnConnectionFailed = null;
+                Connection = null;
             }
+        }
+    }
+
+    class ConnectingSocket
+    {
+        public readonly ITcpConnection Connection;
+        public readonly DateTime WhenToKill;
+        public ConnectingSocket(ITcpConnection connection, DateTime whenToKill)
+        {
+            Connection = connection;
+            WhenToKill = whenToKill;
         }
     }
 }

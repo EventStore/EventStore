@@ -140,5 +140,44 @@ namespace EventStore.Core.Tests.ClientAPI
                 PortsHelper.ReturnPort(port);
             }
         }
+
+    }
+
+    [TestFixture(TcpType.Normal), TestFixture(TcpType.Ssl), Category("LongRunning")]
+    public class not_connected_tests
+    {
+        private TcpType _tcpType;
+        [Test, Category("Network"), Platform("WIN")]
+        public void should_timeout_connection_after_configured_amount_time_on_conenct()
+        {
+            var closed = new ManualResetEventSlim();
+            var settings =
+                ConnectionSettings.Create()
+                    .EnableVerboseLogging()
+                    .UseCustomLogger(ClientApiLoggerBridge.Default)
+                    .LimitReconnectionsTo(0)
+                    .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
+                    .OnClosed((x, r) => closed.Set())
+                    .OnConnected((x, ep) => Console.WriteLine("Connected to [{0}]...", ep))
+                    .OnReconnecting(x => Console.WriteLine("Reconnecting..."))
+                    .OnDisconnected((x, ep) => Console.WriteLine("Disconnected from [{0}]...", ep))
+                    .OnErrorOccurred(
+                            (x, exc) => Console.WriteLine("Error: {0}", exc)).FailOnNoServerResponse()
+                    .WithConnectionTimeoutOf(500);
+            if (_tcpType == TcpType.Ssl)
+                settings.UseSslConnection("ES", false);
+
+            var ip = new IPAddress(new byte[] {127, 0, 0, 0});
+            int port = 4567;
+            using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
+            {
+                connection.Connect();
+
+                if (!closed.Wait(TimeSpan.FromSeconds(5)))
+                    Assert.Fail("Connection timeout took too long.");
+            }
+
+        }
+
     }
 }

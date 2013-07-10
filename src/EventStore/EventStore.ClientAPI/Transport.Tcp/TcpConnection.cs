@@ -66,7 +66,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                   {
                                       if (onConnectionFailed != null)
                                           onConnectionFailed(connection, socketError);
-                                  });
+                                  }, connection);
 // ReSharper restore ImplicitlyCapturedClosure
             return connection;
         }

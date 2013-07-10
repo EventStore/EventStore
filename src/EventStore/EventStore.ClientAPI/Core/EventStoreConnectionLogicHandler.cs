@@ -177,6 +177,7 @@ namespace EventStore.ClientAPI.Core
                     _settings.UseSslConnection,
                     _settings.TargetHost,
                     _settings.ValidateServer,
+                    _settings.ClientConnectionTimeout,
                     (connection, package) => EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
                     (connection, exc) => EnqueueMessage(new TcpConnectionErrorMessage(connection, exc)),
                     connection => EnqueueMessage(new TcpConnectionEstablishedMessage(connection)),

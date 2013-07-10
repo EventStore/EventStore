@@ -50,7 +50,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             var connection = new TcpConnectionLockless(log, connectionId, remoteEndPoint, onConnectionClosed);
 // ReSharper disable ImplicitlyCapturedClosure
             connector.InitConnect(remoteEndPoint,
-                                  (_, socket) =>
+                                  (_ , socket) =>
                                   {
                                       if (connection.InitSocket(socket))
                                       {
@@ -64,7 +64,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                   {
                                       if (onConnectionFailed != null)
                                           onConnectionFailed(connection, socketError);
-                                  });
+                                  }, connection);
 // ReSharper restore ImplicitlyCapturedClosure
             return connection;
         }

@@ -67,6 +67,7 @@ namespace EventStore.ClientAPI
         private bool _failOnNoServerResponse;
         private TimeSpan _heartbeatInterval = TimeSpan.FromMilliseconds(750);
         private TimeSpan _heartbeatTimeout = TimeSpan.FromMilliseconds(1500);
+        private int _clientConnectionTimeout = 200;
 
         internal ConnectionSettingsBuilder()
         {
@@ -393,6 +394,12 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+        public ConnectionSettingsBuilder WithConnectionTimeoutOf(int milliseconds)
+        {
+            _clientConnectionTimeout = milliseconds;
+            return this;
+        }
+
         public static implicit operator ConnectionSettings(ConnectionSettingsBuilder builder)
         {
             return new ConnectionSettings(builder._log,
@@ -417,7 +424,8 @@ namespace EventStore.ClientAPI
                                           builder._authenticationFailed,
                                           builder._failOnNoServerResponse,
                                           builder._heartbeatInterval,
-                                          builder._heartbeatTimeout);
+                                          builder._heartbeatTimeout,
+                                          builder._clientConnectionTimeout);
         }
     }
 }
