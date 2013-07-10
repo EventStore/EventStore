@@ -66,8 +66,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
             foreach(var item in tokill)
             {
-                if(_connectingSockets.FirstOrDefault(x=>x.Connection == item) != null)
-                    HandleTimeout(item.Connection);
+                lock (_connectingSockets)
+                {
+                    if (_connectingSockets.FirstOrDefault(x => x.Connection == item) == null) continue;
+                }
+                HandleTimeout(item.Connection);
             }
         }
 
