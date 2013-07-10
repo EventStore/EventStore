@@ -67,7 +67,7 @@ namespace EventStore.ClientAPI
         private bool _failOnNoServerResponse;
         private TimeSpan _heartbeatInterval = TimeSpan.FromMilliseconds(750);
         private TimeSpan _heartbeatTimeout = TimeSpan.FromMilliseconds(1500);
-        private int _clientConnectionTimeout = 200;
+        private int _clientConnectionTimeout = 1000;
 
         internal ConnectionSettingsBuilder()
         {

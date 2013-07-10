@@ -17,7 +17,7 @@ namespace EventStore.Common.Utils
 
         static VersionInfo()
         {
-            var assembly = Assembly.GetAssembly(typeof (VersionInfo));
+            var assembly = Assembly.GetAssembly(typeof(VersionInfo));
             var location = assembly.Location;
 
             AssemblyVersion = assembly.GetName().Version.ToString() ?? string.Empty;

@@ -58,7 +58,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 _connectingSockets.ForEach(
                     x =>
                         {
-                            if(x.WhenToKill < DateTime.Now) {HandleTimeout(x.Connection);}
+                            var d = DateTime.Now;
+                            if(x.WhenToKill < d)
+                            {
+                                HandleTimeout(x.Connection);
+                            }
                         });
             }
         }
@@ -180,7 +184,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private void HandleTimeout(ITcpConnection connection)
         {
             RemoveFromConnecting(connection);
-            Helper.EatException(() => connection.Close("Timeout on connect."));
+            Helper.EatException(() => connection.Close("Timeout on occured connect."));
         }
 
         private void OnSocketConnected(SocketAsyncEventArgs socketArgs)

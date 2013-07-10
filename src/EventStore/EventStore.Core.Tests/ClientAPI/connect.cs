@@ -143,11 +143,13 @@ namespace EventStore.Core.Tests.ClientAPI
 
     }
 
-    [TestFixture(TcpType.Normal), TestFixture(TcpType.Ssl), Category("LongRunning")]
+    [TestFixture, Category("LongRunning")]
     public class not_connected_tests
     {
-        private TcpType _tcpType;
-        [Test, Category("Network"), Platform("WIN")]
+        private readonly TcpType _tcpType = TcpType.Normal;
+
+        
+        [Test]
         public void should_timeout_connection_after_configured_amount_time_on_conenct()
         {
             var closed = new ManualResetEventSlim();
@@ -163,17 +165,17 @@ namespace EventStore.Core.Tests.ClientAPI
                     .OnDisconnected((x, ep) => Console.WriteLine("Disconnected from [{0}]...", ep))
                     .OnErrorOccurred(
                             (x, exc) => Console.WriteLine("Error: {0}", exc)).FailOnNoServerResponse()
-                    .WithConnectionTimeoutOf(500);
+                    .WithConnectionTimeoutOf(200);
             if (_tcpType == TcpType.Ssl)
                 settings.UseSslConnection("ES", false);
 
-            var ip = new IPAddress(new byte[] {127, 0, 0, 0});
+            var ip = new IPAddress(new byte[] {192, 168, 1, 28}); //TODO you likely need to change this!
             int port = 4567;
             using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
             {
                 connection.Connect();
 
-                if (!closed.Wait(TimeSpan.FromSeconds(5)))
+                if (!closed.Wait(TimeSpan.FromSeconds(1)))
                     Assert.Fail("Connection timeout took too long.");
             }
 

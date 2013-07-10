@@ -88,7 +88,7 @@
     <Compile Include="Bus\when_unsubscribing_from_memory_bus.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
-    <Compile Include="ClientAPI\append_to_stream.cs" />
+    <Compile Include="ClientAPI\ssl_append_to_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />
     <Compile Include="ClientAPI\read_event_should.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />

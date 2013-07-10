@@ -101,8 +101,14 @@
     <PostBuildEvent>powershell.exe $(MSBuildProjectDirectory)\..\Scripts\version\resetCommitHash.ps1 $(MSBuildProjectDirectory)\Properties\AssemblyInfo.cs</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
-      <PreBuildEvent>$(MSBuildProjectDirectory)/../Scripts/version/updateCommitHash.sh $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs</PreBuildEvent>
-      <PostBuildEvent>$(MSBuildProjectDirectory)/../Scripts/version/resetCommitHash.sh $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs</PostBuildEvent> 
+    <PreBuildEvent>$(MSBuildProjectDirectory)/../Scripts/version/updateCommitHash.sh $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs</PreBuildEvent>
+    <PostBuildEvent>$(MSBuildProjectDirectory)/../Scripts/version/resetCommitHash.sh $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs</PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent />
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent />
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
