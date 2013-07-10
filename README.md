@@ -35,6 +35,26 @@ Optional parameters (passed in the -parameters @{} hash):
 - `platformToolset` - C++ toolset to use - v110, v100, WindowsSDK7.1 (defaults to the latest we can guess at)
 - `forceNetwork` - true if you want to force the script to get dependencies even if Windows thinks theres no network connection (otherwise we don't try to avoid sometimes lengthy delays).
 
+####Building the Event Store from Visual Studio
+
+If you want to build from Visual Studio, it's necessary to first build from the
+command line in order to build `js1.dll` which incorporates V8. When this is
+available in the `src\EventStore\Libs\` directory, it is possible to build the
+`src\EventStore\EventStore.sln` solution from within Visual Studio (this is
+largely speaking the same as using the psake build script in "Quick" mode).
+
+When building through Visual Studio, there are PowerShell scripts which run as
+pre- and post-build tasks on the EventStore.Common project, which set the
+informational version attribute of the EventStore.Common.dll assembly to the
+current commit hash on each build and then revert it.
+
+Unfortunately Visual Studio runs these scripts in 32-bit PowerShell. Since it's
+most likely that you're running 64-bit PowerShell under normal circumstances,
+the execution policy of 32-bit PowerShell will probably prohibit running
+scripts. *There is a batch file in the root of the repository named
+`RunMeElevatedFirst.cmd` which will set the execution policy for 32-bit
+PowerShell if you run it as Administrator. Obviously you may want to audit what
+the script does before executing it on your machine!*
 
 ###Debug Builds on Linux (Ubuntu 12.04) / Mono
 
