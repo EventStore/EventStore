@@ -217,17 +217,12 @@ function patchVersionFiles {
     for file in $files
     do
         tempfile="$file.tmp"
-        sed "/$assemblyVersionPattern/c\
-            $newAssemblyVersion" $file > $tempfile
-        sed "/$assemblyFileVersionPattern/c\
-            $newAssemblyFileVersion" $file > $tempfile
-        sed "/$assemblyVersionInformationalPattern/c\
-            $newAssemblyVersionInformational" $file > $tempfile
-        sed "/$assemblyProductNamePattern/c\
-            $newAssemblyProductName" $file > $tempfile
-        sed "/$assemblyCopyrightPattern/c\
-            $newAssemblyCopyright" $file > $tempfile
-        sed "/$assemblyCompanyPattern/c\
+        sed -e "/$assemblyVersionPattern/c\
+            $newAssemblyVersion" -e "/$assemblyFileVersionPattern/c\
+            $newAssemblyFileVersion" -e "/$assemblyVersionInformationalPattern/c\
+            $newAssemblyVersionInformational" -e "/$assemblyProductNamePattern/c\
+            $newAssemblyProductName" -e "/$assemblyCopyrightPattern/c\
+            $newAssemblyCopyright" -e "/$assemblyCompanyPattern/c\
             $newAssemblyCompany" $file > $tempfile
 
         mv $tempfile $file
@@ -267,6 +262,11 @@ function cleanAll {
     popd > /dev/null
 }
 
+function exitWithError {
+    echo $1
+    exit 1
+}
+
 checkParams $1 $2 $3 $4
 
 echo "Running from base directory: $BASE_DIR"
@@ -283,8 +283,8 @@ if [[ "$ACTION" == "incremental" || "$ACTION" == "full" ]] ; then
     buildJS1
     buildEventStore
 else
-    [[ -f src/EventStore/libs/libv8.so ]] || echo "Cannot find libv8.so - cannot do a quick build!"
-    [[ -f src/EventStore/libs/libjs1.so ]] || echo "Cannot find libjs1.so - cannot do a quick build!"
+    [[ -f src/EventStore/libs/libv8.so ]] || exitWithError "Cannot find libv8.so - cannot do a quick build!"
+    [[ -f src/EventStore/libs/libjs1.so ]] || exitWithError "Cannot find libjs1.so - cannot do a quick build!"
 
     buildEventStore
 fi
