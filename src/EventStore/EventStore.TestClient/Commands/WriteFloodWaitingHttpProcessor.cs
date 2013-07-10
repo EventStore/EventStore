@@ -111,8 +111,8 @@ namespace EventStore.TestClient.Commands
                         var request = Codec.Xml.To(write);
                         client.Post(url, 
                                     request,
-                                    Codec.Xml.ContentType, 
-                                    10000,
+                                    Codec.Xml.ContentType,
+                                    TimeSpan.FromMilliseconds(10000),
                                     succHandler, 
                                     exc => 
                                     {

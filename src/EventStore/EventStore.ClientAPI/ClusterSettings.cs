@@ -48,9 +48,9 @@ namespace EventStore.ClientAPI
         public readonly int ManagerExternalHttpPort;
 
         public readonly IPAddress[] FakeDnsEntries;
-        public int GossipTimeout;
+        public TimeSpan GossipTimeout;
 
-        internal ClusterSettings(string clusterDns, int maxDiscoverAttempts, int managerExternalHttpPort, IPAddress[] fakeDnsEntries, int gossipTimeout)
+        internal ClusterSettings(string clusterDns, int maxDiscoverAttempts, int managerExternalHttpPort, IPAddress[] fakeDnsEntries, TimeSpan gossipTimeout)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
             if (maxDiscoverAttempts < -1)

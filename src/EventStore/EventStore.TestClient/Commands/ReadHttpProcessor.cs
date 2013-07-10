@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -72,8 +73,8 @@ namespace EventStore.TestClient.Commands
                        {
                             {SystemHeaders.ResolveLinkTos, resolveLinkTos ? "True" : "False"},
                             {SystemHeaders.RequireMaster, requireMaster ? "True" : "False"}
-                       }, 
-                       10000,
+                       },
+                       TimeSpan.FromMilliseconds(10000),
                        response =>
                        {
                            sw.Stop();

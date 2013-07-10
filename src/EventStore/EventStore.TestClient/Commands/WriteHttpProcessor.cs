@@ -82,8 +82,8 @@ namespace EventStore.TestClient.Commands
                 {
                         {SystemHeaders.ExpectedVersion, expectedVersion.ToString()},
                         {SystemHeaders.RequireMaster, requireMaster ? "True" : "False"}
-                }, 
-                10000,
+                },
+                TimeSpan.FromMilliseconds(10000),
                 response =>
                 {
                     sw.Stop();

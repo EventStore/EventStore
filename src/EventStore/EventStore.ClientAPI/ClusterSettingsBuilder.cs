@@ -41,7 +41,7 @@ namespace EventStore.ClientAPI
         private int _managerExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
 
         private IPAddress[] _fakeDnsEntries;
-        private int _gossipTimeout = 1000;
+        private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 
         internal ClusterSettingsBuilder()
         {
@@ -62,10 +62,9 @@ namespace EventStore.ClientAPI
             return this;
         }
 
-        public ClusterSettingsBuilder WithGossipTimeoutOf(int milliseconds)
+        public ClusterSettingsBuilder WithGossipTimeoutOf(TimeSpan timeout)
         {
-            Ensure.Positive(milliseconds, "milliseconds");
-            _gossipTimeout = milliseconds;
+            _gossipTimeout = timeout;
             return this;
         }
 

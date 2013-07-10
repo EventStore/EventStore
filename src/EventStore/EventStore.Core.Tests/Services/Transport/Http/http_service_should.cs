@@ -118,7 +118,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             {
                 var i1 = i;
                 _portableServer.BuiltInClient.Get(_serverEndPoint.ToHttpUrl(requests[i]),
-                            10000,
+                            TimeSpan.FromMilliseconds(10000),
                             response =>
                                 {
                                     successes[i1] = response.HttpStatusCode == (int) HttpStatusCode.NotFound;

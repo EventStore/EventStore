@@ -53,7 +53,7 @@ namespace EventStore.ClientAPI.Transport.Http
             _log = log;
         }
 
-        public void Get(string url, UserCredentials userCredentials, int timeout,
+        public void Get(string url, UserCredentials userCredentials, TimeSpan timeout,
                         Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
@@ -63,7 +63,7 @@ namespace EventStore.ClientAPI.Transport.Http
             Receive(HttpMethod.Get, url, userCredentials, timeout, onSuccess, onException);
         }
 
-        public void Post(string url, string body, string contentType, int timeout, UserCredentials userCredentials,
+        public void Post(string url, string body, string contentType, TimeSpan timeout, UserCredentials userCredentials,
                          Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
@@ -75,7 +75,7 @@ namespace EventStore.ClientAPI.Transport.Http
             Send(HttpMethod.Post, url, body, contentType, userCredentials, timeout, onSuccess, onException);
         }
 
-        public void Delete(string url, UserCredentials userCredentials, int timeout,
+        public void Delete(string url, UserCredentials userCredentials, TimeSpan timeout,
                            Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
@@ -85,7 +85,7 @@ namespace EventStore.ClientAPI.Transport.Http
             Receive(HttpMethod.Delete, url, userCredentials, timeout, onSuccess, onException);
         }
 
-        public void Put(string url, string body, string contentType, UserCredentials userCredentials, int timeout,
+        public void Put(string url, string body, string contentType, UserCredentials userCredentials, TimeSpan timeout,
                         Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
@@ -97,11 +97,11 @@ namespace EventStore.ClientAPI.Transport.Http
             Send(HttpMethod.Put, url, body, contentType, userCredentials, timeout, onSuccess, onException);
         }
 
-        private void Receive(string method, string url, UserCredentials userCredentials, int timeout, 
+        private void Receive(string method, string url, UserCredentials userCredentials, TimeSpan timeout, 
                              Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
-            request.Timeout = timeout;
+            request.Timeout = (int) timeout.TotalMilliseconds;
             request.Method = method;
 #if __MonoCS__
             request.KeepAlive = false;
@@ -116,7 +116,7 @@ namespace EventStore.ClientAPI.Transport.Http
             request.BeginGetResponse(ResponseAcquired, new ClientOperationState(_log, request, onSuccess, onException));
         }
 
-        private void Send(string method, string url, string body, string contentType, UserCredentials userCredentials, int timeout,
+        private void Send(string method, string url, string body, string contentType, UserCredentials userCredentials, TimeSpan timeout,
                           Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
@@ -127,7 +127,7 @@ namespace EventStore.ClientAPI.Transport.Http
             request.Pipelined = true;
             request.ContentLength = bodyBytes.Length;
             request.ContentType = contentType;
-            request.Timeout = timeout;
+            request.Timeout = (int)timeout.TotalMilliseconds;
             if (userCredentials != null)
                 AddAuthenticationHeader(request, userCredentials);
 

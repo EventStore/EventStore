@@ -142,7 +142,7 @@ namespace EventStore.TestClient.Commands
                             requestString,
                             Codec.Json.ContentType,
                             new Dictionary<string, string> { },
-                            10000,
+                            TimeSpan.FromMilliseconds(10000),
                             onSuccess, onException);
                         
                         var localSent = Interlocked.Increment(ref sent);
