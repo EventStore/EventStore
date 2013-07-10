@@ -95,6 +95,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                                                    targetHost, validateServer, 
                                                                    this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
                 AddToConnecting(connecting, timeoutAt);
+                return connecting;
             }
             var conn = TcpConnection.CreateConnectingConnection(log, connectionId, remoteEndPoint,
                                                             this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
