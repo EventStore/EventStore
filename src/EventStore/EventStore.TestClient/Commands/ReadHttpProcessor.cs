@@ -73,6 +73,7 @@ namespace EventStore.TestClient.Commands
                             {SystemHeaders.ResolveLinkTos, resolveLinkTos ? "True" : "False"},
                             {SystemHeaders.RequireMaster, requireMaster ? "True" : "False"}
                        }, 
+                       10000,
                        response =>
                        {
                            sw.Stop();

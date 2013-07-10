@@ -117,6 +117,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var error = string.Empty;
 
             _client.Get(requestUrl,
+                        10000,
                         response =>
                             {
                                 success = verifyResponse(response);

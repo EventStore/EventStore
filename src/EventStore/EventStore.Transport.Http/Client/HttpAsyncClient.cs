@@ -41,29 +41,29 @@ namespace EventStore.Transport.Http.Client
             ServicePointManager.DefaultConnectionLimit = 500;
         }
 
-        public void Get(string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        public void Get(string url, int timeout, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Receive(HttpMethod.Get, url, null, onSuccess, onException);
+            Receive(HttpMethod.Get, url, null, timeout, onSuccess, onException);
         }
 
-        public void Get(string url, IEnumerable<KeyValuePair<string,string>> headers, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        public void Get(string url, IEnumerable<KeyValuePair<string,string>> headers, int timeout, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Receive(HttpMethod.Get, url, headers, onSuccess, onException);
+            Receive(HttpMethod.Get, url, headers, timeout, onSuccess, onException);
         }
-        public void Post(string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        public void Post(string url, string body, string contentType, int timeout, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
-            Post(url, body, contentType, null, onSuccess, onException);
+            Post(url, body, contentType, null, timeout, onSuccess, onException);
         }
 
-        public void Post(string url, string body, string contentType, IEnumerable<KeyValuePair<string,string>> headers, 
+        public void Post(string url, string body, string contentType, IEnumerable<KeyValuePair<string,string>> headers, int timeout,
                          Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
@@ -72,19 +72,19 @@ namespace EventStore.Transport.Http.Client
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Send(HttpMethod.Post, url, body, contentType, headers, onSuccess, onException);
+            Send(HttpMethod.Post, url, body, contentType, headers, timeout, onSuccess, onException);
         }
 
-        public void Delete(string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        public void Delete(string url, int timeout, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Receive(HttpMethod.Delete, url, null, onSuccess, onException);
+            Receive(HttpMethod.Delete, url, null, timeout, onSuccess, onException);
         }
 
-        public void Put(string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        public void Put(string url, string body, string contentType, int timeout, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(body, "body");
@@ -92,14 +92,14 @@ namespace EventStore.Transport.Http.Client
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Send(HttpMethod.Put, url, body, contentType, null, onSuccess, onException);
+            Send(HttpMethod.Put, url, body, contentType, null, timeout, onSuccess, onException);
         }
 
-        private void Receive(string method, string url, IEnumerable<KeyValuePair<string, string>> headers,
+        private void Receive(string method, string url, IEnumerable<KeyValuePair<string, string>> headers, int timeout,
                              Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
-
+            request.Timeout = timeout;
             request.Method = method;
 #if __MonoCS__
             request.KeepAlive = false;
@@ -120,12 +120,12 @@ namespace EventStore.Transport.Http.Client
         }
 
         private void Send(string method, string url, string body, string contentType, 
-                          IEnumerable<KeyValuePair<string, string>> headers, 
+                          IEnumerable<KeyValuePair<string, string>> headers, int timeout,
                           Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
             var bodyBytes = Helper.UTF8NoBom.GetBytes(body);
-
+            request.Timeout = timeout;
             request.Method = method;
             request.KeepAlive = true;
             request.Pipelined = true;

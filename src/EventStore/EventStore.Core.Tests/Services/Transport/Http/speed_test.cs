@@ -185,16 +185,16 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                 switch (route.Item2)
                 {
                     case HttpMethod.Get:
-                        httpClient.Get(route.Item1, x => { }, x => { throw new Exception();});
+                        httpClient.Get(route.Item1,10000,  x => { }, x => { throw new Exception();});
                         break;
                     case HttpMethod.Post:
-                        httpClient.Post(route.Item1, "abracadabra", ContentType.Json, x => { }, x => { throw new Exception();});
+                        httpClient.Post(route.Item1, "abracadabra", ContentType.Json, 10000, x => { }, x => { throw new Exception(); });
                         break;
                     case HttpMethod.Delete:
-                        httpClient.Delete(route.Item1, x => { }, x => { throw new Exception();});
+                        httpClient.Delete(route.Item1, 10000, x => { }, x => { throw new Exception();});
                         break;
                     case HttpMethod.Put:
-                        httpClient.Put(route.Item1, "abracadabra", ContentType.Json, x => { }, x => { throw new Exception();});
+                        httpClient.Put(route.Item1, "abracadabra", ContentType.Json, 10000, x => { }, x => { throw new Exception();});
                         break;
                     default:
                         throw new Exception();
