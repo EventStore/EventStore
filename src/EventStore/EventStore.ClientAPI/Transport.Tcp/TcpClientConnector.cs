@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -53,17 +54,20 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void TimerCallback(object state)
         {
+            List<ConnectingSocket> tokill;
             lock(_connectingSockets)
             {
-                _connectingSockets.ForEach(
+                tokill = _connectingSockets.Where(
                     x =>
                         {
                             var d = DateTime.Now;
-                            if(x.WhenToKill < d)
-                            {
-                                HandleTimeout(x.Connection);
-                            }
-                        });
+                            return x.WhenToKill < d;
+                        }).ToList();
+            }
+            foreach(var item in tokill)
+            {
+                if(_connectingSockets.FirstOrDefault(x=>x.Connection == item) != null)
+                    HandleTimeout(item.Connection);
             }
         }
 
