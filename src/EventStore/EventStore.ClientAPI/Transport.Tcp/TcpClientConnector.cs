@@ -81,12 +81,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                         bool ssl,
                                         string targetHost,
                                         bool validateServer,
-                                        int timeout,
+                                        TimeSpan timeout,
                                         Action<ITcpConnection> onConnectionEstablished = null,
                                         Action<ITcpConnection, SocketError> onConnectionFailed = null,
                                         Action<ITcpConnection, SocketError> onConnectionClosed = null)
         {
-            var timeoutAt = DateTime.Now.AddMilliseconds(timeout);
+            var timeoutAt = DateTime.Now.Add(timeout);
             Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
             if (ssl)
             {

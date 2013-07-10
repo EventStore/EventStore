@@ -59,7 +59,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                     bool ssl,
                                     string targetHost,
                                     bool validateServer,
-                                    int timeout,
+                                    TimeSpan timeout,
                                     Action<TcpPackageConnection, TcpPackage> handlePackage,
                                     Action<TcpPackageConnection, Exception> onError,
                                     Action<TcpPackageConnection> connectionEstablished,

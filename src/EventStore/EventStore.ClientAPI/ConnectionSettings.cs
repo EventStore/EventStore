@@ -125,7 +125,7 @@ namespace EventStore.ClientAPI
         public readonly bool FailOnNoServerResponse;
         public readonly TimeSpan HeartbeatInterval;
         public readonly TimeSpan HeartbeatTimeout;
-        public readonly int ClientConnectionTimeout;
+        public readonly TimeSpan ClientConnectionTimeout;
 
         internal ConnectionSettings(ILogger log,
                                     bool verboseLogging,
@@ -150,10 +150,9 @@ namespace EventStore.ClientAPI
                                     bool failOnNoServerResponse,
                                     TimeSpan heartbeatInterval,
                                     TimeSpan heartbeatTimeout,
-                                    int clientConnectionTimeout)
+                                    TimeSpan clientConnectionTimeout)
         {
             Ensure.NotNull(log, "log");
-            Ensure.Positive(clientConnectionTimeout, "clientConnectionTimeout");
             Ensure.Positive(maxQueueSize, "maxQueueSize");
             Ensure.Positive(maxConcurrentItems, "maxConcurrentItems");
             if (maxRetries < -1)

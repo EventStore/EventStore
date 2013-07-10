@@ -165,7 +165,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     .OnDisconnected((x, ep) => Console.WriteLine("Disconnected from [{0}]...", ep))
                     .OnErrorOccurred(
                             (x, exc) => Console.WriteLine("Error: {0}", exc)).FailOnNoServerResponse()
-                    .WithConnectionTimeoutOf(200);
+                    .WithConnectionTimeoutOf(TimeSpan.FromMilliseconds(200));
             if (_tcpType == TcpType.Ssl)
                 settings.UseSslConnection("ES", false);
 
