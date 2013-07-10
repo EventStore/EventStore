@@ -52,7 +52,8 @@ namespace EventStore.ClientAPI
                                                                       clusterSettings.ClusterDns,
                                                                       clusterSettings.MaxDiscoverAttempts,
                                                                       clusterSettings.ManagerExternalHttpPort,
-                                                                      clusterSettings.FakeDnsEntries);
+                                                                      clusterSettings.FakeDnsEntries,
+                                                                      clusterSettings.GossipTimeout);
             _conn = new EventStoreNodeConnection(connectionSettings, endPointDiscoverer, connectionName);
         }
 

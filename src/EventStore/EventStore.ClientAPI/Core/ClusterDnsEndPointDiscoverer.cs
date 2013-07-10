@@ -51,12 +51,14 @@ namespace EventStore.ClientAPI.Core
 
         private readonly HttpAsyncClient _client;
         private ClusterMessages.MemberInfoDto[] _oldGossip;
+        private int _gossipTimeout;
 
         public ClusterDnsEndPointDiscoverer(ILogger log, 
                                             string clusterDns,
                                             int maxDiscoverAttempts, 
                                             int managerExternalHttpPort,
-                                            IPAddress[] fakeDnsEntries)
+                                            IPAddress[] fakeDnsEntries,
+                                            int gossipTimeout)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
@@ -66,7 +68,7 @@ namespace EventStore.ClientAPI.Core
             _maxDiscoverAttempts = maxDiscoverAttempts;
             _managerExternalHttpPort = managerExternalHttpPort;
             _fakeDnsEntries = fakeDnsEntries;
-
+            _gossipTimeout = gossipTimeout;
             _client = new HttpAsyncClient(log);
         }
 
@@ -202,6 +204,7 @@ namespace EventStore.ClientAPI.Core
             _client.Get(
                 url,
                 null,
+                _gossipTimeout,
                 response =>
                 {
                     if (response.HttpStatusCode != HttpStatusCode.OK)

@@ -156,7 +156,9 @@ namespace EventStore.TestClient.Commands
 
                         var url = context.Client.HttpEndpoint.ToHttpUrl("/ping");
 
-                        client.Get(url,
+                        client.Get(url, 
+                                   null,
+                                   10000,
                                    succHandler,
                                    exc => context.Log.ErrorException(exc, "Error during GET."));
 
