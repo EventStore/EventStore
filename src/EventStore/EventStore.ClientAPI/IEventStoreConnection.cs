@@ -90,9 +90,8 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <remarks>
         /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
-        /// as an example.
+        /// make a very large difference in the observed behavior. For example, if no stream exists
+        /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
         /// 
         /// There are also differences in idempotency between different types of calls.
         /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
@@ -109,9 +108,8 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <remarks>
         /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
-        /// as an example.
+        /// make a very large difference in the observed behavior. For example, if no stream exists
+        /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
         /// 
         /// There are also differences in idempotency between different types of calls.
         /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
@@ -129,9 +127,8 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <remarks>
         /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
-        /// as an example.
+        /// make a very large difference in the observed behavior. For example, if no stream exists
+        /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
         /// 
         /// There are also differences in idempotency between different types of calls.
         /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
@@ -149,9 +146,8 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <remarks>
         /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
-        /// as an example.
+        /// make a very large difference in the observed behavior. For example, if no stream exists
+        /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
         /// 
         /// There are also differences in idempotency between different types of calls.
         /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
@@ -169,9 +165,8 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <remarks>
         /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
-        /// as an example.
+        /// make a very large difference in the observed behavior. For example, if no stream exists
+        /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
         /// 
         /// There are also differences in idempotency between different types of calls.
         /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
@@ -190,9 +185,8 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <remarks>
         /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
-        /// as an example.
+        /// make a very large difference in the observed behavior. For example, if no stream exists
+        /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
         /// 
         /// There are also differences in idempotency between different types of calls.
         /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
