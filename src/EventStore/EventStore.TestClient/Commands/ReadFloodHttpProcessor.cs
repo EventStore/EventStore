@@ -119,7 +119,7 @@ namespace EventStore.TestClient.Commands
 
                     for (int j = 0; j < count; ++j)
                     {
-                        client.Get(url, onSuccess, onException);
+                        client.Get(url, 10000, onSuccess, onException);
                         var localSent = Interlocked.Increment(ref sent);
                         while (localSent - Interlocked.Read(ref received) > context.Client.Options.ReadWindow/clientsCnt)
                         {

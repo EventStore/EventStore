@@ -193,7 +193,8 @@ namespace EventStore.TestClient.Commands
                         client.Post(url, 
                                     request, 
                                     Codec.Xml.ContentType,
-                                    succHandler, 
+                                    10000,
+                                    succHandler,
                                     exc =>
                                         {
                                             Interlocked.Increment(ref fail);
