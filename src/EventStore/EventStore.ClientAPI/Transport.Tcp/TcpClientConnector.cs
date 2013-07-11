@@ -49,7 +49,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                                         TcpConfiguration.ConnectPoolSize,
                                                         CreateConnectSocketArgs);
             _connectingSockets = new List<ConnectingSocket>();
-            _timer = new Timer(TimerCallback, null, 500, 200);
+            _timer = new Timer(TimerCallback, null, 200, 200);
         }
 
         private void TimerCallback(object state)
