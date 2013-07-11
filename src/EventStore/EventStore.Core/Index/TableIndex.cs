@@ -304,7 +304,15 @@ namespace EventStore.Core.Index
                         if (File.Exists(backupFile))
                             File.Delete(backupFile);
                         if (File.Exists(indexmapFile))
-                            File.Copy(indexmapFile, backupFile);
+                        {
+                            // same as File.Copy(indexmapFile, backupFile); but with forced flush
+                            var indexmapContent = File.ReadAllBytes(indexmapFile);
+                            using (var f = File.Create(backupFile))
+                            {
+                                f.Write(indexmapContent, 0, indexmapContent.Length);
+                                f.Flush(flushToDisk: true);
+                            }
+                        }
                     });
 
                     EnterUnsafeState(_directory);
