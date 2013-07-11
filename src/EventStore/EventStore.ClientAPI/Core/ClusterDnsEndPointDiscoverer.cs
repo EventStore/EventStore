@@ -51,14 +51,14 @@ namespace EventStore.ClientAPI.Core
 
         private readonly HttpAsyncClient _client;
         private ClusterMessages.MemberInfoDto[] _oldGossip;
-        private int _gossipTimeout;
+        private TimeSpan _gossipTimeout;
 
         public ClusterDnsEndPointDiscoverer(ILogger log, 
                                             string clusterDns,
                                             int maxDiscoverAttempts, 
                                             int managerExternalHttpPort,
                                             IPAddress[] fakeDnsEntries,
-                                            int gossipTimeout)
+                                            TimeSpan gossipTimeout)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");

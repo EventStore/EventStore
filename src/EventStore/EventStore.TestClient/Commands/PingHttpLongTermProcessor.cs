@@ -158,7 +158,7 @@ namespace EventStore.TestClient.Commands
 
                         client.Get(url, 
                                    null,
-                                   10000,
+                                   TimeSpan.FromMilliseconds(10000),
                                    succHandler,
                                    exc => context.Log.ErrorException(exc, "Error during GET."));
 

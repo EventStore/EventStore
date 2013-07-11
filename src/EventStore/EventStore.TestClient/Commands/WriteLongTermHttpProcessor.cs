@@ -193,7 +193,7 @@ namespace EventStore.TestClient.Commands
                         client.Post(url, 
                                     request, 
                                     Codec.Xml.ContentType,
-                                    10000,
+                                    TimeSpan.FromMilliseconds(10000),
                                     succHandler,
                                     exc =>
                                         {

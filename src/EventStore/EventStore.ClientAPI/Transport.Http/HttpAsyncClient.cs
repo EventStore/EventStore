@@ -30,6 +30,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Threading;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
 
@@ -53,7 +54,26 @@ namespace EventStore.ClientAPI.Transport.Http
             _log = log;
         }
 
-        public void Get(string url, UserCredentials userCredentials, int timeout,
+        //TODO GFY
+        //this is a really really stupid way of doing this and it only works properly if
+        //the moons align correctly in the 7th slot of jupiter on a tuesday when mercury
+        //is rising. However it sort of works right now (unless you have proxies/dns/other
+        //problems. The easy solution is to use httpclient from portable libraries but
+        //it is currently limited in license to windows only.
+
+        private void TimeoutCallback(object state, bool timedOut)
+        {
+            if(timedOut)
+            {
+                var req = state as HttpWebRequest;
+                if(req != null)
+                {
+                    req.Abort();
+                }
+            }
+        }
+
+        public void Get(string url, UserCredentials userCredentials, TimeSpan timeout,
                         Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
@@ -63,7 +83,7 @@ namespace EventStore.ClientAPI.Transport.Http
             Receive(HttpMethod.Get, url, userCredentials, timeout, onSuccess, onException);
         }
 
-        public void Post(string url, string body, string contentType, int timeout, UserCredentials userCredentials,
+        public void Post(string url, string body, string contentType, TimeSpan timeout, UserCredentials userCredentials,
                          Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
@@ -75,7 +95,7 @@ namespace EventStore.ClientAPI.Transport.Http
             Send(HttpMethod.Post, url, body, contentType, userCredentials, timeout, onSuccess, onException);
         }
 
-        public void Delete(string url, UserCredentials userCredentials, int timeout,
+        public void Delete(string url, UserCredentials userCredentials, TimeSpan timeout,
                            Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
@@ -85,7 +105,7 @@ namespace EventStore.ClientAPI.Transport.Http
             Receive(HttpMethod.Delete, url, userCredentials, timeout, onSuccess, onException);
         }
 
-        public void Put(string url, string body, string contentType, UserCredentials userCredentials, int timeout,
+        public void Put(string url, string body, string contentType, UserCredentials userCredentials, TimeSpan timeout,
                         Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
@@ -97,11 +117,10 @@ namespace EventStore.ClientAPI.Transport.Http
             Send(HttpMethod.Put, url, body, contentType, userCredentials, timeout, onSuccess, onException);
         }
 
-        private void Receive(string method, string url, UserCredentials userCredentials, int timeout, 
+        private void Receive(string method, string url, UserCredentials userCredentials, TimeSpan timeout, 
                              Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
-            request.Timeout = timeout;
             request.Method = method;
 #if __MonoCS__
             request.KeepAlive = false;
@@ -113,10 +132,12 @@ namespace EventStore.ClientAPI.Transport.Http
             if (userCredentials != null)
                 AddAuthenticationHeader(request, userCredentials);
 
-            request.BeginGetResponse(ResponseAcquired, new ClientOperationState(_log, request, onSuccess, onException));
+            var result = request.BeginGetResponse(ResponseAcquired, new ClientOperationState(_log, request, onSuccess, onException));
+            ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle, TimeoutCallback, request,
+                                       (int)timeout.TotalMilliseconds, true);
         }
 
-        private void Send(string method, string url, string body, string contentType, UserCredentials userCredentials, int timeout,
+        private void Send(string method, string url, string body, string contentType, UserCredentials userCredentials, TimeSpan timeout,
                           Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
@@ -127,14 +148,15 @@ namespace EventStore.ClientAPI.Transport.Http
             request.Pipelined = true;
             request.ContentLength = bodyBytes.Length;
             request.ContentType = contentType;
-            request.Timeout = timeout;
             if (userCredentials != null)
                 AddAuthenticationHeader(request, userCredentials);
 
             var state = new ClientOperationState(_log, request, onSuccess, onException);
             state.InputStream = new MemoryStream(bodyBytes);
 
-            request.BeginGetRequestStream(GotRequestStream, state);
+            var result = request.BeginGetRequestStream(GotRequestStream, state);
+            ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle, TimeoutCallback, request,
+                                                   (int) timeout.TotalMilliseconds, true);
         }
 
         private void AddAuthenticationHeader(HttpWebRequest request, UserCredentials userCredentials)

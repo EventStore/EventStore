@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
+using System;
 using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
@@ -114,7 +116,7 @@ namespace EventStore.ClientAPI
             var source = new TaskCompletionSource<string>();
             _client.Get(url,
                         userCredentials,
-                        1000,
+                        TimeSpan.FromMilliseconds(5000),
                         response =>
                         {
                             if (response.HttpStatusCode == expectedCode)
@@ -136,7 +138,7 @@ namespace EventStore.ClientAPI
             var source = new TaskCompletionSource<string>();
             _client.Delete(url,
                            userCredentials,
-                           1000,
+                           TimeSpan.FromMilliseconds(5000),
                            response =>
                            {
                                if (response.HttpStatusCode == expectedCode)
@@ -160,7 +162,7 @@ namespace EventStore.ClientAPI
                         content,
                         "application/json",
                         userCredentials,
-                        1000,
+                        TimeSpan.FromMilliseconds(5000),
                         response =>
                         {
                             if (response.HttpStatusCode == expectedCode)
@@ -183,7 +185,7 @@ namespace EventStore.ClientAPI
             _client.Post(url,
                          content,
                          "application/json",
-                         1000,
+                         TimeSpan.FromMilliseconds(5000),
                          userCredentials,
                          response =>
                          {
