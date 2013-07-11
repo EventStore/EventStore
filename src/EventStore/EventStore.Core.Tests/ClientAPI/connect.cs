@@ -163,19 +163,18 @@ namespace EventStore.Core.Tests.ClientAPI
                     .OnConnected((x, ep) => Console.WriteLine("Connected to [{0}]...", ep))
                     .OnReconnecting(x => Console.WriteLine("Reconnecting..."))
                     .OnDisconnected((x, ep) => Console.WriteLine("Disconnected from [{0}]...", ep))
-                    .OnErrorOccurred(
-                            (x, exc) => Console.WriteLine("Error: {0}", exc)).FailOnNoServerResponse()
-                    .WithConnectionTimeoutOf(TimeSpan.FromMilliseconds(200));
+                    .OnErrorOccurred((x, exc) => Console.WriteLine("Error: {0}", exc)).FailOnNoServerResponse()
+                    .WithConnectionTimeoutOf(TimeSpan.FromMilliseconds(1000));
             if (_tcpType == TcpType.Ssl)
                 settings.UseSslConnection("ES", false);
 
-            var ip = new IPAddress(new byte[] {192, 168, 1, 28}); //TODO you likely need to change this!
+            var ip = new IPAddress(new byte[] {8, 8, 8, 8}); //NOTE: This relies on Google DNS server being configured to swallow nonsense traffic
             int port = 4567;
             using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
             {
                 connection.Connect();
 
-                if (!closed.Wait(TimeSpan.FromSeconds(1)))
+                if (!closed.Wait(TimeSpan.FromSeconds(5)))
                     Assert.Fail("Connection timeout took too long.");
             }
 
