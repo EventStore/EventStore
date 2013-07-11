@@ -43,6 +43,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private readonly SocketArgsPool _connectSocketArgsPool;
         private readonly List<ConnectingSocket> _connectingSockets;
         private readonly Timer _timer;
+
         public TcpClientConnector()
         {
             _connectSocketArgsPool = new SocketArgsPool("TcpClientConnector._connectSocketArgsPool",
@@ -68,7 +69,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             {
                 lock (_connectingSockets)
                 {
-                    if (_connectingSockets.FirstOrDefault(x => x.Connection == item) == null) continue;
+                    if (_connectingSockets.FirstOrDefault(x => x.Connection == item.Connection) == null) continue;
                 }
                 HandleTimeout(item.Connection);
             }
