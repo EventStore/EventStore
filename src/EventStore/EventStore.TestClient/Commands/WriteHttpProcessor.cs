@@ -50,10 +50,9 @@ namespace EventStore.TestClient.Commands
         {
             var eventStreamId = "test-stream";
             var expectedVersion = ExpectedVersion.Any;
-            var data = "test-data";
-            string metadata = null;
+            string metadata = "{'user' : 'test'}";
             var requireMaster = false;
-
+            var data = "{'a' : 3 }";
             if (args.Length > 0)
             {
                 if (args.Length != 5)
@@ -70,14 +69,13 @@ namespace EventStore.TestClient.Commands
             var client = new HttpAsyncClient();
             var url = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}", eventStreamId);
             context.Log.Info("Writing to {0}...", url);
-
-            var request = Codec.Xml.To(new[] { new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), "type", data, metadata) });
+            var msg = "[{'eventType': 'fooevent', 'eventId' : '" + Guid.NewGuid() + "'" + ",'data' : " + data + ", 'metadata' : " + metadata + "}]";
 
             var sw = Stopwatch.StartNew();
             client.Post(
                 url,
-                request,
-                Codec.Xml.ContentType,
+                msg,
+                Codec.Json.ContentType,
                 new Dictionary<string, string>
                 {
                         {SystemHeaders.ExpectedVersion, expectedVersion.ToString()},
