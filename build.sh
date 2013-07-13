@@ -6,6 +6,16 @@ V8_TAG="3.19.7"
 PRODUCTNAME="Event Store Open Source"
 COMPANYNAME="Event Store LLP"
 COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
+
+make='make'
+if [[ `uname` == 'Linux' ]]; then
+    make='make'
+elif [[ `uname` == 'FreeBSD' ]]; then
+    make='gmake'
+elif [[ `uname` == 'Darwin' ]]; then
+    make='make'
+fi
+
 #------------ End of configuration -------------
 
 function usage() {
@@ -144,7 +154,7 @@ function getDependencies() {
 
     pushd v8 > /dev/null || err
     if [[ "$svnrevision" -ne "1501" ]] ; then
-        gmake dependencies || err
+        $make dependencies || err
     else
         echo "GYP already up to date (r $svnrevision)"
     fi
@@ -162,7 +172,7 @@ function buildV8() {
         echo "Unsupported platform $PLATFORM."
         exit 1
     fi
-    gmake $makecall library=shared || err
+    $make $makecall library=shared || err
 
     pushd out/$makecall/lib.target > /dev/null
     cp libv8.so ../../../../src/EventStore/libs || err
