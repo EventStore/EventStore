@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #------------ Start of configuration -------------
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -143,7 +144,7 @@ function getDependencies() {
 
     pushd v8 > /dev/null || err
     if [[ "$svnrevision" -ne "1501" ]] ; then
-        make dependencies || err
+        gmake dependencies || err
     else
         echo "GYP already up to date (r $svnrevision)"
     fi
@@ -161,7 +162,7 @@ function buildV8() {
         echo "Unsupported platform $PLATFORM."
         exit 1
     fi
-    make $makecall library=shared || err
+    gmake $makecall library=shared || err
 
     pushd out/$makecall/lib.target > /dev/null
     cp libv8.so ../../../../src/EventStore/libs || err
@@ -217,13 +218,13 @@ function patchVersionFiles {
     for file in $files
     do
         tempfile="$file.tmp"
-        sed -e "/$assemblyVersionPattern/c\
-            $newAssemblyVersion" -e "/$assemblyFileVersionPattern/c\
-            $newAssemblyFileVersion" -e "/$assemblyVersionInformationalPattern/c\
-            $newAssemblyVersionInformational" -e "/$assemblyProductNamePattern/c\
-            $newAssemblyProductName" -e "/$assemblyCopyrightPattern/c\
-            $newAssemblyCopyright" -e "/$assemblyCompanyPattern/c\
-            $newAssemblyCompany" $file > $tempfile
+        sed -e '/$assemblyVersionPattern/c\'$'\n''$newAssemblyVersion' \
+            -e '/$assemblyFileVersionPattern/c\'$'\n''$newAssemblyFileVersion' \
+            -e '/$assemblyVersionInformationalPattern/c\'$'\n''$newAssemblyVersionInformational' \
+            -e '/$assemblyProductNamePattern/c\'$'\n''$newAssemblyProductName' \
+            -e '/$assemblyCopyrightPattern/c\'$'\n''$newAssemblyCopyright' \
+            -e '/$assemblyCompanyPattern/c\'$'\n''$newAssemblyCompany' \
+            $file > $tempfile || err
 
         mv $tempfile $file
 
