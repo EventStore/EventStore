@@ -63,12 +63,13 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing
             }
 
             [Test]
-            [TestCase("%24", "$", "2", "2")]
-            [TestCase("$", "$", "2", "2")]
+			[Ignore("Only demonstrates differences between .NET and Mono")]
+            // [TestCase("%24", "$", "2", "2")]
+            // [TestCase("$", "$", "2", "2")]
             // [TestCase("%3F", "?", "2", "2")] // ?
-            //            [TestCase("%2F", "/", "2", "2")] // /
-            [TestCase("%20", " ", "2", "2")] // space
-            [TestCase("%25", "%", "2", "2")] // %
+            // [TestCase("%2F", "/", "2", "2")] // /
+            // [TestCase("%20", " ", "2", "2")] // space
+            // [TestCase("%25", "%", "2", "2")] // %
             public void returns_ok_status_code(string _a, string _ra, string _b, string _rb)
             {
                 _response = GetJson2<JObject>("/test-encoding-reserved-" + _a, "?b=" + _b);

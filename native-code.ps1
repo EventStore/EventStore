@@ -194,24 +194,31 @@ Function Get-BestGuessOfPlatformToolsetOrDie {
 
         Assert (Test-Path $mscppDir) "$mscppDir does not exist. It appears this machine either does not have MSBuild and C++ installed, or it's in a weird place. Specify the platform toolset manually as a parameter."
 
-        #Failing that, we'll have to look inside a platform to figure out which ones are there
+        # Platform toolset for VS2010 might be here...
+        $potentialV110Dir = Join-Path $mscppDir "V110"
+        # Older ones might be in here...
         $platformToolsetsDir = Join-Path $mscppDir (Join-Path "Platforms" (Join-Path $platform "PlatformToolsets"))
+        
 
-        Assert (Test-Path $platformToolsetsDir) "No platform toolsets directory exists. Specify the platform toolset manually as a parameter."
-
-        #If we have Windows7.1SDK we'll take that, otherwise we'll assume V100
-        if (Test-Path (Join-Path $platformToolsetsDir "Windows7.1SDK")) {
-            return "Windows7.1SDK"
-        } elseif (Test-Path (Join-Path $platformToolsetsDir "V100")) { 
-            return "V100"
+        if ((Test-Path $platformToolsetsDir) -eq $false) {
+            if (Test-Path $potentialV110Dir) {
+			    return "V110"
+            } else {
+			    Assert ($false) "Can't find any supported platform toolset (V100, V110, Windows7.1SDK). It's possible that this detection is wrong, in which case you should specify the platform toolset manually as a parameter."
+		    }
         } else {
-        	#Failing that V110 toolset (VS2012)
-	        $potentialV110Dir = Join-Path $mscppDir "V110"
-		if (Test-Path $potentialV110Dir) {
-			return "V110"
-       		} else {
-			Assert ($false) "Can't find any supported platform toolset (V100, V110, Windows7.1SDK). It's possible that this detection is wrong, in which case you should specify the platform toolset manually as a parameter."
-		}
+            if (Test-Path (Join-Path $platformToolsetsDir "Windows7.1SDK")) {
+                return "Windows7.1SDK"
+            } elseif (Test-Path (Join-Path $platformToolsetsDir "V100")) { 
+                return "V100"
+            } else {
+        	    #Failing that V110 toolset (VS2012)
+		        if (Test-Path $potentialV110Dir) {
+			        return "V110"
+                } else {
+			        Assert ($false) "Can't find any supported platform toolset (V100, V110, Windows7.1SDK). It's possible that this detection is wrong, in which case you should specify the platform toolset manually as a parameter."
+		        }
+            }
         }
     }
 }
