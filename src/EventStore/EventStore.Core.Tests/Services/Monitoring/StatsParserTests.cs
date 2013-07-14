@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Monitoring
         [Test]
         public void sample_io_doesnt_crash()
         {
-            var io = DiskIo.ParseOnLinux(ioStr, new FakeLogger());
+            var io = DiskIo.ParseOnUnix(ioStr, new FakeLogger());
             var success = io != null;
 
             Assert.That(success, Is.True);
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Services.Monitoring
         {
             var badIoStr = ioStr.Remove(5, 20);
 
-            DiskIo io = DiskIo.ParseOnLinux(badIoStr, new FakeLogger());
+            DiskIo io = DiskIo.ParseOnUnix(badIoStr, new FakeLogger());
             var success = io != null;
 
             Assert.That(success, Is.False);
@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Services.Monitoring
         [Test]
         public void read_bytes_parses_ok()
         {
-            var io = DiskIo.ParseOnLinux(ioStr, new FakeLogger());
+            var io = DiskIo.ParseOnUnix(ioStr, new FakeLogger());
 
             Assert.That(io.ReadBytes, Is.EqualTo(13824000));
         }
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.Services.Monitoring
         [Test]
         public void write_bytes_parses_ok()
         {
-            var io = DiskIo.ParseOnLinux(ioStr, new FakeLogger());
+            var io = DiskIo.ParseOnUnix(ioStr, new FakeLogger());
 
             Assert.That(io.WrittenBytes, Is.EqualTo(188416));
         }

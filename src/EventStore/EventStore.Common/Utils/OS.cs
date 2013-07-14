@@ -27,28 +27,39 @@
 // 
 using System;
 using System.Reflection;
+using EventStore.Common.Log;
 
 namespace EventStore.Common.Utils
 {
+    public enum OsFlavor
+    {
+        Unknown,
+        Windows,
+        Linux,
+        BSD,
+        MacOS
+    }
+
     public class OS
     {
-        public static bool IsLinux
+        private static readonly ILogger Log = LogManager.GetLoggerFor<OS>();
+
+        public static readonly OsFlavor OsFlavor = DetermineOSFlavor();
+
+        public static bool IsUnix
         {
             get
             {
-                var platform = (int) Environment.OSVersion.Platform;
+                var platform = (int)Environment.OSVersion.Platform;
                 return (platform == 4) || (platform == 6) || (platform == 128);
             }
         }
 
         public static string GetHomeFolder()
         {
-            if (IsLinux)
-            {
-                return Environment.GetEnvironmentVariable("HOME");
-            }
-
-            return Environment.ExpandEnvironmentVariables("%HOMEDRIVE%%HOMEPATH%");
+            return IsUnix
+                       ? Environment.GetEnvironmentVariable("HOME")
+                       : Environment.ExpandEnvironmentVariables("%HOMEDRIVE%%HOMEPATH%");
         }
 
         public static string GetRuntimeVersion()
@@ -57,20 +68,39 @@ namespace EventStore.Common.Utils
             if (type != null)
             {
                 MethodInfo getDisplayNameMethod = type.GetMethod("GetDisplayName", BindingFlags.NonPublic | BindingFlags.Static);
-                if (getDisplayNameMethod != null)
-                {
-                    var monoVersion = (string)getDisplayNameMethod.Invoke(null, null);
-                    return monoVersion;
-                }
-                else
-                {
-                    return "Mono <UNKNOWN>";
-                }
+                return getDisplayNameMethod != null ? (string)getDisplayNameMethod.Invoke(null, null) : "Mono <UNKNOWN>";
             }
-            else
+            // must be .NET
+            return ".NET " + Environment.Version;
+        }
+
+        private static OsFlavor DetermineOSFlavor()
+        {
+            if (!IsUnix) // assume Windows
+                return OsFlavor.Windows;
+
+            string uname = null;
+            try
             {
-                // must be .NET
-                return ".NET " + Environment.Version;
+                uname = ShellExecutor.GetOutput("uname", "");
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorException(ex, "Couldn't determine the flavor of Unix-like OS.");
+            }
+
+            switch (uname)
+            {
+                case "Linux":
+                    return OsFlavor.Linux;
+                case "Darwin":
+                    return OsFlavor.MacOS;
+                case "FreeBSD":
+                case "NetBSD":
+                case "OpenBSD":
+                    return OsFlavor.BSD;
+                default:
+                    return OsFlavor.Unknown;
             }
         }
     }

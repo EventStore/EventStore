@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.Monitoring
 {
     public class SystemStatsHelper : IDisposable
     {
-        private static readonly Regex SpacesRegex = new Regex(@"[\s\t]+", RegexOptions.Compiled);
+        internal static readonly Regex SpacesRegex = new Regex(@"[\s\t]+", RegexOptions.Compiled);
 
         private readonly ILogger _log;
         private readonly ICheckpoint _writerCheckpoint;
@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.Monitoring
             stats["proc-thrownExceptionsRate"] = _perfCounter.GetThrownExceptionsRate();
 
             stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
-            stats["sys-freeMem"] = OS.IsLinux ? GetFreeMemOnLinux() : _perfCounter.GetFreeMemory();
+            stats["sys-freeMem"] = GetFreeMem();
 
             var diskIo = DiskIo.GetDiskIo(process.Id, _log);
             if (diskIo != null)
@@ -83,10 +83,6 @@ namespace EventStore.Core.Services.Monitoring
                 stats["proc-diskIo-writtenBytes"] = diskIo.WrittenBytes;
                 stats["proc-diskIo-readOps"] = diskIo.ReadOps;
                 stats["proc-diskIo-writeOps"] = diskIo.WriteOps;
-                stats["proc-diskIo-readBytesFriendly"] = diskIo.ReadBytesFriendly;
-                stats["proc-diskIo-readOpsFriendly"] = diskIo.ReadOpsFriendly;
-                stats["proc-diskIo-writeOpsFriendly"] = diskIo.WriteOpsFriendly;
-                stats["proc-diskIo-writtenBytesFriendly"] = diskIo.WrittenBytesFriendly;
             }
 
             var tcp = TcpConnectionMonitor.Default.GetTcpStats();
@@ -101,11 +97,6 @@ namespace EventStore.Core.Services.Monitoring
             stats["proc-tcp-receivedBytesTotal"] = tcp.ReceivedBytesTotal;
             stats["proc-tcp-sentBytesSinceLastRun"] = tcp.SentBytesSinceLastRun;
             stats["proc-tcp-sentBytesTotal"] = tcp.SentBytesTotal;
-            stats["proc-tcp-measureTimeFriendly"] = tcp.MeasureTimeFriendly;
-            stats["proc-tcp-receivedBytesTotalFriendly"] = tcp.ReceivedBytesTotalFriendly;
-            stats["proc-tcp-receivingSpeedFriendly"] = tcp.ReceivingSpeedFriendly;
-            stats["proc-tcp-sendingSpeedFriendly"] = tcp.SendingSpeedFriendly;
-            stats["proc-tcp-sentBytesTotalFriendly"] = tcp.SentBytesTotalFriendly;
 
             var gcStats = _perfCounter.GetGcStats();
             stats["proc-gc-allocationSpeed"] = gcStats.AllocationSpeed;
@@ -130,9 +121,6 @@ namespace EventStore.Core.Services.Monitoring
                 stats[driveStat(drive.DiskName, "totalBytes")] = drive.TotalBytes;
                 stats[driveStat(drive.DiskName, "usage")] = drive.Usage;
                 stats[driveStat(drive.DiskName, "usedBytes")] = drive.UsedBytes;
-                stats[driveStat(drive.DiskName, "availableBytesFriendly")] = drive.AvailableBytesFriendly;
-                stats[driveStat(drive.DiskName, "totalBytesFriendly")] = drive.TotalBytesFriendly;
-                stats[driveStat(drive.DiskName, "usedBytesFriendly")] = drive.UsedBytesFriendly;
             }
 
             Func<string, string, string> queueStat = (queueName, stat) => string.Format("es-queue-{0}-{1}", queueName, stat);
@@ -150,12 +138,27 @@ namespace EventStore.Core.Services.Monitoring
                 stats[queueStat(queue.Name, "lengthCurrentTryPeak")] = queue.LengthCurrentTryPeak;
                 stats[queueStat(queue.Name, "lengthLifetimePeak")] = queue.LengthLifetimePeak;
                 stats[queueStat(queue.Name, "totalItemsProcessed")] = queue.TotalItemsProcessed;
-                stats[queueStat(queue.Name, "lengthLifetimePeakFriendly")] = queue.LengthLifetimePeakFriendly;
                 stats[queueStat(queue.Name, "inProgressMessage")] = queue.InProgressMessageType != null ? queue.InProgressMessageType.Name : "<none>";
                 stats[queueStat(queue.Name, "lastProcessedMessage")] = queue.LastProcessedMessageType != null ? queue.LastProcessedMessageType.Name : "<none>";
             }
 
             return stats;
+        }
+
+        private long GetFreeMem()
+        {
+            switch (OS.OsFlavor)
+            {
+                case OsFlavor.Windows:
+                    return _perfCounter.GetFreeMemory();
+                case OsFlavor.Linux:
+                case OsFlavor.MacOS:
+                    return GetFreeMemOnLinux();
+                case OsFlavor.BSD:
+                    return GetFreeMemOnBSD();
+                default:
+                    return -1;
+            }
         }
 
         private long GetFreeMemOnLinux()
@@ -173,6 +176,26 @@ namespace EventStore.Core.Services.Monitoring
             catch (Exception ex)
             {
                 _log.DebugException(ex, "Couldn't get free mem on linux, received memory info raw string: [{0}]", meminfo);
+                return -1;
+            }
+        }
+
+        // http://www.cyberciti.biz/files/scripts/freebsd-memory.pl.txt
+        private long GetFreeMemOnBSD()
+        {
+            try
+            {
+                var sysctl = ShellExecutor.GetOutput("sysctl", "-n hw.physmem hw.pagesize vm.stats.vm.v_free_count vm.stats.vm.v_cache_count vm.stats.vm.v_inactive_count");
+                var sysctlStats = sysctl.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                long pageSize = long.Parse(sysctlStats[1]);
+                long freePages = long.Parse(sysctlStats[2]);
+                long cachePages = long.Parse(sysctlStats[3]);
+                long inactivePages = long.Parse(sysctlStats[4]);
+                return pageSize * (freePages + cachePages + inactivePages);
+            }
+            catch (Exception ex)
+            {
+                _log.DebugException(ex, "Couldn't get free memory on BSD.");
                 return -1;
             }
         }

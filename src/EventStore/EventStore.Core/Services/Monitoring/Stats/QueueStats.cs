@@ -37,7 +37,6 @@ namespace EventStore.Core.Services.Monitoring.Stats
         public readonly int Length;
         public readonly long LengthLifetimePeak;
         public readonly long LengthCurrentTryPeak;
-        public readonly string LengthLifetimePeakFriendly;
         public readonly TimeSpan? CurrentItemProcessingTime;
         public readonly TimeSpan? CurrentIdleTime;
         public readonly long TotalItemsProcessed;
@@ -73,7 +72,6 @@ namespace EventStore.Core.Services.Monitoring.Stats
             LengthCurrentTryPeak = lengthCurrentTryPeak;
 
             LengthLifetimePeak = lengthLifetimePeak;
-            LengthLifetimePeakFriendly = lengthLifetimePeak.ToFriendlyNumberString();
 
             LastProcessedMessageType = lastProcessedMessageType;
             InProgressMessageType = inProgressMessageType;
