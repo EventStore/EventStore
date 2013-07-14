@@ -37,8 +37,6 @@ namespace EventStore.Core.Services.Transport.Tcp
 {
     public class SendOverTcpEnvelope : IEnvelope
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<SendOverTcpEnvelope>();
-
         private readonly IPublisher _networkSendQueue;
         private readonly WeakReference _manager;
 
