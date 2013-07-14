@@ -28,7 +28,7 @@
 
 using System.Diagnostics;
 
-namespace EventStore.Core.Services.Monitoring.Utils
+namespace EventStore.Common.Utils
 {
     public static class ShellExecutor
     {

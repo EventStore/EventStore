@@ -44,34 +44,19 @@ namespace EventStore.Core.Services.Monitoring.Stats
         public readonly ulong ReadOps;
         public readonly ulong WriteOps;
 
-        public readonly string ReadBytesFriendly;
-        public readonly string WrittenBytesFriendly;
-        public readonly string ReadOpsFriendly;
-        public readonly string WriteOpsFriendly;
-
         public DiskIo(ulong bytesRead, ulong bytesWritten, ulong readOps, ulong writeOps)
         {
             ReadBytes = bytesRead;
             WrittenBytes = bytesWritten;
             ReadOps = readOps;
             WriteOps = writeOps;
-
-            ReadBytesFriendly = bytesRead.ToFriendlySizeString();
-            WrittenBytesFriendly = bytesWritten.ToFriendlySizeString();
-            ReadOpsFriendly = ReadOps.ToFriendlyNumberString();
-            WriteOpsFriendly = WriteOps.ToFriendlyNumberString();
         }
 
         public static DiskIo GetDiskIo(int procId, ILogger logger)
         {
             try
             {
-                if (OS.IsLinux)
-                {
-                    var procIo = File.ReadAllText(string.Format("/proc/{0}/io", procId));
-                    return ParseOnLinux(procIo, logger);
-                }
-                return GetOnWindows(logger);
+                return OS.IsUnix ? GetOnUnix(procId, logger) : GetOnWindows(logger);
             }
             catch (Exception exc)
             {
@@ -81,14 +66,24 @@ namespace EventStore.Core.Services.Monitoring.Stats
         }
 
         // http://stackoverflow.com/questions/3633286/understanding-the-counters-in-proc-pid-io
-        public static DiskIo ParseOnLinux(string procIoStr, ILogger log)
+        private static DiskIo GetOnUnix(int procId, ILogger log)
+        {
+            var procIoFile = string.Format("/proc/{0}/io", procId);
+            if (!File.Exists(procIoFile)) // if no procfs exists/is mounted -- just don't return stats
+                return null;
+            var procIoStr = File.ReadAllText(procIoFile);
+            return ParseOnUnix(procIoStr, log);
+
+        }
+
+        internal static DiskIo ParseOnUnix(string procIoStr, ILogger log)
         {
             ulong readBytes, writtenBytes, readOps, writeOps;
-
             try
             {
                 var dict = procIoStr.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)
-                    .ToDictionary(s => s.Split(':')[0].Trim(), s => s.Split(':')[1].Trim());
+                                    .Select(x => x.Split(':'))
+                                    .ToDictionary(s => s[0].Trim(), s => s[1].Trim());
                 readBytes = ulong.Parse(dict["read_bytes"]);
                 writtenBytes = ulong.Parse(dict["write_bytes"]);
                 readOps = ulong.Parse(dict["syscr"]);
@@ -96,14 +91,14 @@ namespace EventStore.Core.Services.Monitoring.Stats
             }
             catch (Exception ex)
             {
-                log.InfoException(ex, "Couldn't parse linux stats");
+                log.InfoException(ex, "Couldn't parse Linux stats.");
                 return null;
             }
 
             return new DiskIo(readBytes, writtenBytes, readOps, writeOps);
         }
 
-        public static DiskIo GetOnWindows(ILogger log)
+        private static DiskIo GetOnWindows(ILogger log)
         {
             Ensure.NotNull(log, "log");
 
@@ -116,7 +111,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
             }
             catch (Exception ex)
             {
-                log.InfoException(ex, "error while reading disk io on windows");
+                log.InfoException(ex, "Error while reading disk io on Windows.");
                 return null;
             }
             finally
@@ -130,7 +125,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
 
 
         // http://msdn.microsoft.com/en-us/library/ms683218%28VS.85%29.aspx
-        struct IO_COUNTERS
+        private struct IO_COUNTERS
         {
             public ulong ReadOperationCount;
             public ulong WriteOperationCount;
@@ -142,6 +137,5 @@ namespace EventStore.Core.Services.Monitoring.Stats
 
         [DllImport("kernel32.dll")]
         static extern bool GetProcessIoCounters(IntPtr ProcessHandle, out IO_COUNTERS IoCounters);
-
     }
 }

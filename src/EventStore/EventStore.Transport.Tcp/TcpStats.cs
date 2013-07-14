@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Tcp
 {
@@ -43,12 +42,6 @@ namespace EventStore.Transport.Tcp
         public readonly long InSend;
         public readonly long PendingReceived;
         public readonly TimeSpan MeasureTime;
-
-        public readonly string SentBytesTotalFriendly;
-        public readonly string ReceivedBytesTotalFriendly;
-        public readonly string SendingSpeedFriendly;
-        public readonly string ReceivingSpeedFriendly;
-        public readonly string MeasureTimeFriendly;
 
         public TcpStats(int connections, 
                         long sentBytesTotal,
@@ -71,12 +64,6 @@ namespace EventStore.Transport.Tcp
             MeasureTime = measureTime;
             SendingSpeed =  (MeasureTime.TotalSeconds < 0.00001) ? 0 : SentBytesSinceLastRun / MeasureTime.TotalSeconds;
             ReceivingSpeed =  (MeasureTime.TotalSeconds < 0.00001) ? 0 : ReceivedBytesSinceLastRun / MeasureTime.TotalSeconds;
-
-            SentBytesTotalFriendly = SentBytesTotal.ToFriendlySizeString();
-            ReceivedBytesTotalFriendly = ReceivedBytesTotal.ToFriendlySizeString();
-            SendingSpeedFriendly = SendingSpeed.ToFriendlySpeedString();
-            ReceivingSpeedFriendly = ReceivingSpeed.ToFriendlySpeedString();
-            MeasureTimeFriendly = string.Format(@"{0:s\.fff}s", MeasureTime);
         }
     }
 }

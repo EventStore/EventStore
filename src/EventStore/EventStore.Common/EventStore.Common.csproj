@@ -81,6 +81,7 @@
     <Compile Include="Utils\Application.cs" />
     <Compile Include="Utils\Empty.cs" />
     <Compile Include="Utils\Json.cs" />
+    <Compile Include="Utils\ShellExecutor.cs" />
     <Compile Include="Utils\StringExtensions.cs" />
     <Compile Include="Utils\Helper.cs" />
     <Compile Include="Utils\HostName.cs" />
