@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Messages
         /// </summary>
         public class CheckpointSuggested : EventReaderSubscriptionMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public CheckpointSuggested(
@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class ProgressChanged : EventReaderSubscriptionMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public ProgressChanged(
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Messages
 
         public sealed class NotAuthorized : EventReaderSubscriptionMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public NotAuthorized(
@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class EofReached : EventReaderSubscriptionMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public EofReached(
@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class CommittedEventReceived : EventReaderSubscriptionMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public static CommittedEventReceived Sample(

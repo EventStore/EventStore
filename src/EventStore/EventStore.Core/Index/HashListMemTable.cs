@@ -38,7 +38,6 @@ namespace EventStore.Core.Index
 {
     public class HashListMemTable : IMemTable, ISearchTable
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<HashListMemTable>();
         private static readonly IComparer<Tuple<int, long>> MemTableComparer = new MemTableComparer();
 
         public int Count { get { return _count; } }
