@@ -67,9 +67,11 @@ namespace EventStore.Core.Services.Monitoring
         private readonly IPublisher _monitoringBus;
         private readonly IPublisher _statsCollectionBus;
         private readonly IPublisher _mainBus;
+        private readonly ICheckpoint _writerCheckpoint;
+        private readonly string _dbPath;
         private readonly StatsStorage _statsStorage;
         private readonly long _statsCollectionPeriodMs;
-        private readonly SystemStatsHelper _systemStats;
+        private SystemStatsHelper _systemStats;
 
         private string _lastWrittenCsvHeader;
         private DateTime _lastStatsRequestTime = DateTime.UtcNow;
@@ -98,15 +100,17 @@ namespace EventStore.Core.Services.Monitoring
             _monitoringBus = monitoringBus;
             _statsCollectionBus = statsCollectionBus;
             _mainBus = mainBus;
+            _writerCheckpoint = writerCheckpoint;
+            _dbPath = dbPath;
             _statsStorage = statsStorage;
             _statsCollectionPeriodMs = statsCollectionPeriod > TimeSpan.Zero ? (long)statsCollectionPeriod.TotalMilliseconds : Timeout.Infinite;
-            _systemStats = new SystemStatsHelper(Log, writerCheckpoint, dbPath);
             _nodeStatsStream = string.Format("{0}-{1}", SystemStreams.StatsStreamPrefix, nodeEndpoint);
             _timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
         }
 
         public void Handle(SystemMessage.SystemInit message)
         {
+            _systemStats = new SystemStatsHelper(Log, _writerCheckpoint, _dbPath);
             _timer.Change(_statsCollectionPeriodMs, Timeout.Infinite);
         }
 
