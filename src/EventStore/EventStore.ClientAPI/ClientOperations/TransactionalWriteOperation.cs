@@ -54,7 +54,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override object CreateRequestDto()
         {
-            var dtos = _events.Select(x => new ClientMessage.NewEvent(x.EventId.ToByteArray(), x.Type, x.IsJson, x.Data, x.Metadata)).ToArray();
+            var dtos = _events.Select(x => new ClientMessage.NewEvent(x.EventId.ToByteArray(), x.Type, x.IsJson ? 1 : 0, 0, x.Data, x.Metadata)).ToArray();
             return new ClientMessage.TransactionWrite(_transactionId, dtos, _requireMaster);
         }
 

@@ -167,7 +167,7 @@ namespace EventStore.TestClient.Commands
                             {
                                 new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
                                                                  "TakeSomeSpaceEvent",
-                                                                 true,
+                                                                 1,0,
                                                                  Common.Utils.Helper.UTF8NoBom.GetBytes("{ \"DATA\" : \"" + new string('*', size) + "\"}"),
                                                                  Common.Utils.Helper.UTF8NoBom.GetBytes("{ \"METADATA\" : \"" + new string('$', 100) + "\"}"))
                             },
