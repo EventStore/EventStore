@@ -26,8 +26,10 @@ message EventRecord {
 	required int32 event_number = 2;
 	required bytes event_id = 3;
 	required string event_type = 4;
-	required bytes data = 5;
-	optional bytes metadata = 6;
+	required int32 data_content_type = 5;
+	required int32 metadata_content_type = 6;
+	required bytes data = 7;
+	optional bytes metadata = 8;
 }
 
 message ResolvedIndexedEvent {

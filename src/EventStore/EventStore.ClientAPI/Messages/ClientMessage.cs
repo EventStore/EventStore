@@ -66,20 +66,28 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"event_type", DataFormat = DataFormat.Default)]
     public readonly string EventType;
   
-    [ProtoMember(5, IsRequired = true, Name=@"data", DataFormat = DataFormat.Default)]
+    [ProtoMember(5, IsRequired = true, Name=@"data_content_type", DataFormat = DataFormat.TwosComplement)]
+    public readonly int DataContentType;
+  
+    [ProtoMember(6, IsRequired = true, Name=@"metadata_content_type", DataFormat = DataFormat.TwosComplement)]
+    public readonly int MetadataContentType;
+  
+    [ProtoMember(7, IsRequired = true, Name=@"data", DataFormat = DataFormat.Default)]
     public readonly byte[] Data;
   
-    [ProtoMember(6, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
+    [ProtoMember(8, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
     public readonly byte[] Metadata;
   
     private EventRecord() {}
   
-    public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, byte[] data, byte[] metadata)
+    public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata)
     {
         EventStreamId = eventStreamId;
         EventNumber = eventNumber;
         EventId = eventId;
         EventType = eventType;
+        DataContentType = dataContentType;
+        MetadataContentType = metadataContentType;
         Data = data;
         Metadata = metadata;
     }
