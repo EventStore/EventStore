@@ -114,7 +114,7 @@ namespace EventStore.Transport.Tcp
                           stats.PendingSend,
                           stats.InSend,
                           stats.PendingSend,
-                          stats.MeasureTimeFriendly);
+                          stats.MeasureTime);
             }
             return stats;
         }

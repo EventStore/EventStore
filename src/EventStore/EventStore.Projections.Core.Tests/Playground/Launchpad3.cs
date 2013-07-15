@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Playground
         [SetUp]
         public void Setup()
         {
-            if (!OS.IsLinux)
+            if (!OS.IsUnix)
                 AllocConsole(); // this is required to keep console open after ExecuteAssembly has exited
 
             _binFolder = AppDomain.CurrentDomain.BaseDirectory;
