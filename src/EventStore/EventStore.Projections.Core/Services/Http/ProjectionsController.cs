@@ -246,9 +246,13 @@ namespace EventStore.Projections.Core.Services.Http
             if (_httpForwarder.ForwardRequest(http))
                 return;
 
-            http.ReplyStatus(
-                HttpStatusCode.NotImplemented, "Not Implemented",
-                e => Log.ErrorException(e, "Error while closing http connection (http service core)"));
+            var envelope =
+                new SendToHttpWithConversionEnvelope
+                    <ProjectionManagementMessage.Statistics, ProjectionStatisticsHttpFormatted>(
+                    _networkSendQueue, http, DefaultFormatter, OkNoCacheResponseConfigurator,
+                    status => new ProjectionStatisticsHttpFormatted(status.Projections[0], s => MakeUrl(match, s)),
+                    ErrorsEnvelope(http));
+            Publish(new ProjectionManagementMessage.GetStatistics(envelope, null, match.BoundVariables["name"], true));
         }
 
         private void OnProjectionDelete(HttpEntityManager http, UriTemplateMatch match)
