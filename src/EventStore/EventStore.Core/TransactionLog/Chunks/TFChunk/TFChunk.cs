@@ -301,16 +301,21 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             var tempFile = new FileStream(tempFilename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read,
                                           WriteBufferSize, FileOptions.SequentialScan);
             tempFile.SetLength(fileSize);
+
+            // we need to write header into temp file before moving it into correct chunk place, so in case of crash
+            // we don't end up with seemingly valid chunk file with no header at all...
+            WriteHeader(md5, tempFile, chunkHeader);
+
             tempFile.Flush(flushToDisk: true);
             tempFile.Close();
             File.Move(tempFilename, _filename);
 
             var stream = new FileStream(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read,
                                         WriteBufferSize, FileOptions.SequentialScan);
+            stream.Position = ChunkHeader.Size;
             var writer = new BinaryWriter(stream);
-            WriteHeader(md5, stream, chunkHeader);
             _writerWorkItem = new WriterWorkItem(stream, writer, md5);
-            Flush();
+            Flush(); // persist file move result
         }
 
         private void CreateWriterWorkItemForExistingChunk(int writePosition, out ChunkHeader chunkHeader)
