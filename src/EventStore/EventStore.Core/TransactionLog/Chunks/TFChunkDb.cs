@@ -103,7 +103,6 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var chunkFileName = lastChunkVersions[0];
                 var chunkHeader = ReadChunkHeader(chunkFileName);
                 var chunkLocalPos = chunkHeader.GetLocalLogPosition(checkpoint);
-                var chunkFooter = ReadChunkFooter(chunkFileName);
                 if (chunkHeader.IsScavenged)
                 {
                     var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false);
@@ -111,32 +110,24 @@ namespace EventStore.Core.TransactionLog.Chunks
                     {
                         lastChunk.Dispose();
                         throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-                            string.Format("Chunk {0} is corrupted. Expected local chunk position: {1}, " 
+                            string.Format("Chunk {0} is corrupted. Expected local chunk position: {1}, "
                                           + "but Chunk.LogicalDataSize is {2} (Chunk.PhysicalDataSize is {3}). Writer checkpoint: {4}.",
                                           chunkFileName, chunkLocalPos, lastChunk.LogicalDataSize, lastChunk.PhysicalDataSize, checkpoint)));
                     }
                     Manager.AddChunk(lastChunk);
                     if (!readOnly)
                     {
-                        Log.Info("Moving WriterCheckpoint from {0} to {1}, as it points to the scavenged chunk. " 
-                                 + "If that was not caused by replication of scavenged chunks, that could be bug!", 
+                        Log.Info("Moving WriterCheckpoint from {0} to {1}, as it points to the scavenged chunk. "
+                                 + "If that was not caused by replication of scavenged chunks, that could be bug!",
                                  checkpoint, lastChunk.ChunkHeader.ChunkEndPosition);
                         Config.WriterCheckpoint.Write(lastChunk.ChunkHeader.ChunkEndPosition);
                         Config.WriterCheckpoint.Flush();
                         Manager.AddNewChunk();
                     }
                 }
-                else 
+                else
                 {
                     var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false);
-                    if (chunkFooter.IsCompleted && chunkLocalPos > chunkFooter.LogicalDataSize)
-                    {
-                        lastChunk.Dispose();
-                        throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-                            string.Format("Chunk {0} is corrupted. Expected local chunk position {1} is greater than "
-                                          + "Chunk.LogicalDataSize {2} (Chunk.PhysicalDataSize is {3}). Writer checkpoint: {4}.",
-                                          chunkFileName, chunkLocalPos, lastChunk.LogicalDataSize, lastChunk.PhysicalDataSize, checkpoint)));
-                    }
                     Manager.AddChunk(lastChunk);
                 }
             }
@@ -155,7 +146,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var lastBgChunkNum = preLastChunk.ChunkHeader.ChunkStartNumber - 1;
                 ThreadPool.QueueUserWorkItem(_ =>
                 {
-                    for (int chunkNum = lastBgChunkNum; chunkNum >= 0;)
+                    for (int chunkNum = lastBgChunkNum; chunkNum >= 0; )
                     {
                         var chunk = Manager.GetChunk(chunkNum);
                         try
@@ -249,7 +240,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         private void RemoveOldChunksVersions(int lastChunkNum)
         {
-            for (int chunkNum = 0; chunkNum <= lastChunkNum;)
+            for (int chunkNum = 0; chunkNum <= lastChunkNum; )
             {
                 var chunk = Manager.GetChunk(chunkNum);
                 for (int i = chunk.ChunkHeader.ChunkStartNumber; i <= chunk.ChunkHeader.ChunkEndNumber; ++i)
@@ -263,7 +254,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
             }
         }
-        
+
         private void CleanUpTempFiles()
         {
             var tempFiles = Config.FileNamingStrategy.GetAllTempFiles();

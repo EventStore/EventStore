@@ -401,7 +401,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
             }
         }
 
-        [Test]
+        [Test, Ignore("We don't check this as it is too erroneous to read ChunkFooter from ongoing chunk...")]
         public void does_not_allow_checkpoint_to_point_into_the_middle_of_completed_chunk_when_not_enough_actual_data()
         {
             var config = new TFChunkDbConfig(PathName,
