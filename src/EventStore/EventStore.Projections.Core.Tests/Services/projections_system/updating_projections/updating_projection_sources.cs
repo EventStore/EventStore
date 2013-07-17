@@ -192,6 +192,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
                         type3: handle,
                     });
                 ";
+
             }
 
             [Test]
