@@ -69,7 +69,7 @@ the script does before executing it on your machine!*
 
 You can get and build the patched version of Mono necessary for Event Store by running
 
-	.\src\EventStore\Scripts\get-mono-3012p.sh
+	./src/EventStore/Scripts/get-mono-3012p.sh
 
 This script will install mono to `/opt/mono`, and must be run with root priviledges (since it installs packages via apt-get). However, the script will not add it to the `PATH` which must be done separately, such that `mono --version` outputs:
 
