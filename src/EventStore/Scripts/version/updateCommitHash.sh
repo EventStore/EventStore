@@ -22,7 +22,7 @@ commitHashAndTime=`git log -n1 --pretty=format:"%H@%aD" HEAD`
 # true for CI builds as well, the operation here is idempotent and
 # will be backed out by the post build step.
 assemblyVersionInformationalPattern='assembly: AssemblyInformationalVersion("\0\.0\.0\.0\..*'
-newAssemblyVersionInformational="[assembly: AssemblyInformationalVersion(\"0.0.0.0.$branchName@$commitHashAndTime\")]"
+newAssemblyVersionInformational="[assembly: System.Reflection.AssemblyInformationalVersion(\"0.0.0.0.$branchName@$commitHashAndTime\")]"
 
 tempfile="$file.tmp"
 

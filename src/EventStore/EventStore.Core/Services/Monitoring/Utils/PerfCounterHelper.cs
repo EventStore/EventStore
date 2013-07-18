@@ -81,7 +81,18 @@ namespace EventStore.Core.Services.Monitoring.Utils
 
         private PerformanceCounter CreatePerfCounterForProcess(string category, string counter)
         {
-            return CreatePerfCounter(category, counter, Process.GetCurrentProcess().ProcessName);
+            string processName = null;
+            try
+            {
+                processName = Process.GetCurrentProcess().ProcessName;
+                return CreatePerfCounter(category, counter, processName);
+            }
+            catch (Exception ex)
+            {
+                _log.Trace("Couldn't create performance counter: category='{0}', counter='{1}', instance='{2}'. Error: {3}",
+                           category, counter, processName ?? "<!error getting process name!>", ex.Message);
+                return null;
+            }
         }
 
         private PerformanceCounter CreatePerfCounter(string category, string counter, string instance = null)

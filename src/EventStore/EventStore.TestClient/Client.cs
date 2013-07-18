@@ -187,7 +187,7 @@ namespace EventStore.TestClient
                                               bool failContextOnError = true,
                                               IPEndPoint tcpEndPoint = null)
         {
-            var connectionCreatedEvent = new AutoResetEvent(false);
+            var connectionCreatedEvent = new ManualResetEventSlim(false);
             Connection typedConnection = null;
 
             var connection = _connector.ConnectTo(
@@ -195,13 +195,19 @@ namespace EventStore.TestClient
                 tcpEndPoint ?? TcpEndpoint,
                 conn =>
                 {
-                    if (!InteractiveMode)
-                        Log.Info("Connected to [{0}, L{1}].", conn.RemoteEndPoint, conn.LocalEndPoint);
-                    if (connectionEstablished != null)
+                    // we execute callback on ThreadPool because on FreeBSD it can be called synchronously
+                    // causing deadlock
+                    ThreadPool.QueueUserWorkItem(_ => 
                     {
-                        connectionCreatedEvent.WaitOne(500);
-                        connectionEstablished(typedConnection);
-                    }
+                        if (!InteractiveMode)
+                            Log.Info("Connected to [{0}, L{1}].", conn.RemoteEndPoint, conn.LocalEndPoint);
+                        if (connectionEstablished != null)
+                        {
+                            if (!connectionCreatedEvent.Wait(10000))
+                                throw new Exception("TcpTypedConnection creation took too long!");
+                            connectionEstablished(typedConnection);
+                        }
+                    });
                 },
                 (conn, error) =>
                 {

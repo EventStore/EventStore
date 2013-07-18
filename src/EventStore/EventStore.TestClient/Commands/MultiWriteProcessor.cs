@@ -71,7 +71,7 @@ namespace EventStore.TestClient.Commands
                         expectedVersion,
                         Enumerable.Range(0, writeCount).Select(x => new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
                                                                                                      "type",
-                                                                                                     false,
+                                                                                                     0,0,
                                                                                                      Helper.UTF8NoBom.GetBytes(data),
                                                                                                      new byte[0])).ToArray(),
                         false);

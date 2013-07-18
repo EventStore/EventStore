@@ -301,16 +301,21 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             var tempFile = new FileStream(tempFilename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read,
                                           WriteBufferSize, FileOptions.SequentialScan);
             tempFile.SetLength(fileSize);
+
+            // we need to write header into temp file before moving it into correct chunk place, so in case of crash
+            // we don't end up with seemingly valid chunk file with no header at all...
+            WriteHeader(md5, tempFile, chunkHeader);
+
             tempFile.Flush(flushToDisk: true);
             tempFile.Close();
             File.Move(tempFilename, _filename);
 
             var stream = new FileStream(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read,
                                         WriteBufferSize, FileOptions.SequentialScan);
+            stream.Position = ChunkHeader.Size;
             var writer = new BinaryWriter(stream);
-            WriteHeader(md5, stream, chunkHeader);
             _writerWorkItem = new WriterWorkItem(stream, writer, md5);
-            Flush();
+            Flush(); // persist file move result
         }
 
         private void CreateWriterWorkItemForExistingChunk(int writePosition, out ChunkHeader chunkHeader)
@@ -648,25 +653,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             return curPos;
         }
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool FlushFileBuffers(SafeFileHandle hFile);
-
         public void Flush()
         {
             if (_isReadOnly) 
                 throw new InvalidOperationException("Cannot write to a read-only TFChunk.");
 
-            if (Runtime.IsMono)
-            {
-                _writerWorkItem.Stream.Flush(flushToDisk: true);
-            }
-            else
-            {
-                _writerWorkItem.Stream.Flush(flushToDisk: false);
-                if (!FlushFileBuffers(_writerWorkItem.Stream.SafeFileHandle))
-                    throw new Exception(string.Format("FlushFileBuffers failed with err: {0}", Marshal.GetLastWin32Error()));
-            }
+            _writerWorkItem.Stream.Flush(flushToDisk: true);
 
 #if LESS_THAN_NET_4_0
             Win32.FlushFileBuffers(_fileStream.SafeFileHandle);

@@ -130,7 +130,7 @@ namespace EventStore.TestClient.Commands
                             Enumerable.Range(0, writeCnt).Select(x => 
                                 new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
                                                                  "type",
-                                                                 false,
+                                                                 0,0,
                                                                  Common.Utils.Helper.UTF8NoBom.GetBytes(data),
                                                                  new byte[0])).ToArray(),
                             false);
