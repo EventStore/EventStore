@@ -121,7 +121,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 // ReSharper disable PossibleNullReferenceException
                 var e = dto.Events[i];
 // ReSharper restore PossibleNullReferenceException
-                events[i] = new Event(new Guid(e.EventId), e.EventType, e.IsJson, e.Data, e.Metadata);
+                events[i] = new Event(new Guid(e.EventId), e.EventType, e.DataContentType == 1, e.Data, e.Metadata);
             }
             return new ClientMessage.WriteEvents(Guid.NewGuid(), package.CorrelationId, envelope, dto.RequireMaster,
                                                  dto.EventStreamId, dto.ExpectedVersion, events, user, login, password);
@@ -133,7 +133,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             for (int i = 0; i < events.Length; ++i)
             {
                 var e = msg.Events[i];
-                events[i] = new TcpClientMessageDto.NewEvent(e.EventId.ToByteArray(), e.EventType, e.IsJson, e.Data, e.Metadata);
+                events[i] = new TcpClientMessageDto.NewEvent(e.EventId.ToByteArray(), e.EventType, e.IsJson ? 1 : 0, 0, e.Data, e.Metadata);
             }
             var dto = new TcpClientMessageDto.WriteEvents(msg.EventStreamId, msg.ExpectedVersion, events, msg.RequireMaster);
             return CreateWriteRequestPackage(TcpCommand.WriteEvents, msg, dto);
@@ -205,7 +205,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 // ReSharper disable PossibleNullReferenceException
                 var e = dto.Events[i];
 // ReSharper restore PossibleNullReferenceException
-                events[i] = new Event(new Guid(e.EventId), e.EventType, e.IsJson, e.Data, e.Metadata);
+                events[i] = new Event(new Guid(e.EventId), e.EventType, e.DataContentType == 1, e.Data, e.Metadata);
             }
             return new ClientMessage.TransactionWrite(Guid.NewGuid(), package.CorrelationId, envelope, dto.RequireMaster,
                                                       dto.TransactionId, events, user, login, password);
@@ -217,7 +217,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             for (int i = 0; i < events.Length; ++i)
             {
                 var e = msg.Events[i];
-                events[i] = new TcpClientMessageDto.NewEvent(e.EventId.ToByteArray(), e.EventType, e.IsJson, e.Data, e.Metadata);
+                events[i] = new TcpClientMessageDto.NewEvent(e.EventId.ToByteArray(), e.EventType, e.IsJson ? 1 : 0, 0, e.Data, e.Metadata);
             }
             var dto = new TcpClientMessageDto.TransactionWrite(msg.TransactionId, events, msg.RequireMaster);
             return CreateWriteRequestPackage(TcpCommand.TransactionWrite, msg, dto);

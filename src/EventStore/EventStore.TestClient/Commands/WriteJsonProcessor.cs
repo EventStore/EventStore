@@ -70,7 +70,7 @@ namespace EventStore.TestClient.Commands
                 {
                     new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
                                                      "JsonDataEvent",
-                                                     true,
+                                                     1,0,
                                                      Helper.UTF8NoBom.GetBytes(data),
                                                      Helper.UTF8NoBom.GetBytes(metadata ?? string.Empty))
                 },
