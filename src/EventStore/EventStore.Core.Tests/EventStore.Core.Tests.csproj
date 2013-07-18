@@ -267,9 +267,9 @@
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_db_with_3_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_spanning_through_multiple_chunks_in_db_with_other_streams_read_index_should.cs" />
-    <Compile Include="Services\Storage\DeletingStream\when_deleting_streams_with_different_hashes_spanning_through_multiple_chunks_in_db_with_1_stream_with_same_hash_read_index_should.cs" />
-    <Compile Include="Services\Storage\DeletingStream\when_deleting_streams_with_same_hash_spanning_through_multiple_chunks_in_db_with_1_stream_with_different_hash_read_index_should.cs" />
-    <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_spanning_through_multiple_chunks_and_1_stream_with_same_hash_and_1_stream_with_different_hash_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\deleting_stream_tests_2.cs" />
+    <Compile Include="Services\Storage\DeletingStream\deleting_stream_tests_3.cs" />
+    <Compile Include="Services\Storage\DeletingStream\deleting_stream_tests_1.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_spanning_through_multiple_chunks_read_index_should.cs" />
     <Compile Include="Services\Storage\DeletingStream\is_stream_deleted_should.cs" />
     <Compile Include="Services\Storage\DeletingStream\with_empty_db_read_index_should.cs" />
