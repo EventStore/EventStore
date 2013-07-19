@@ -272,7 +272,6 @@ namespace EventStore.Core.Services.Transport.Tcp
                                       ConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId, package.CorrelationId,
                                       reason.IsEmptyString() ? "<reason missing>" : reason);
                     Log.Error(exitMessage);
-                    Application.Exit(ExitCode.Error, exitMessage);
                     break;
                 }
                 case TcpCommand.Authenticate:
