@@ -90,10 +90,6 @@ namespace EventStore.Core.TransactionLog.Chunks
                 chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
             }
 
-            if(!readOnly) {
-                CleanUpTempFiles();
-            }
-
             if (lastChunkVersions.Length == 0)
             {
                 var onBoundary = checkpoint == (Config.ChunkSize * (long)lastChunkNum);
@@ -138,9 +134,10 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             EnsureNoExcessiveChunks(lastChunkNum);
 
-            if (!readOnly) 
+            if (!readOnly)
             {
                 RemoveOldChunksVersions(lastChunkNum);
+                CleanUpTempFiles();
             }
 
             if (verifyHash && lastChunkNum > 0)

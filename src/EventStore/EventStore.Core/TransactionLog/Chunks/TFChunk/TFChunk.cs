@@ -297,7 +297,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             // create temp file first and set desired length
             // if there is not enough disk space or something else prevents file to be resized as desired
             // we'll end up with empty temp file, which won't trigger false error on next DB verification
-            var tempFilename = _filename + ".tmp";
+            var tempFilename = string.Format("{0}.{1}.tmp", _filename, Guid.NewGuid());
             var tempFile = new FileStream(tempFilename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read,
                                           WriteBufferSize, FileOptions.SequentialScan);
             tempFile.SetLength(fileSize);
