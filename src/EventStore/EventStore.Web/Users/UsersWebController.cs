@@ -41,7 +41,7 @@ namespace EventStore.Web.Users
         public UsersWebController(IPublisher publisher): base(publisher)
         {
             string nodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Web");
-            _miniWeb = new MiniWeb("/web/users", Path.Combine(nodeFSRoot, "Users", "Web"));
+            _miniWeb = new MiniWeb("/web/users", Path.Combine(nodeFSRoot, "Users", "web"));
         }
 
         protected override void SubscribeCore(IHttpService service)
