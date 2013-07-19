@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -66,13 +67,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly Dictionary<Guid, CoreProjection> _projections = new Dictionary<Guid, CoreProjection>();
 
-        private readonly
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-            _readDispatcher;
-
-        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
+        private readonly IODispatcher _ioDispatcher;
 
         private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
             _subscriptionDispatcher;
@@ -90,13 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _inputQueue = inputQueue;
             _publisher = publisher;
-            _readDispatcher =
-                new RequestResponseDispatcher
-                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
-                    publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(inputQueue));
-            _writeDispatcher =
-                new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
-                    _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+            _ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue));
             _subscriptionDispatcher = subscriptionDispatcher;
             _timeProvider = timeProvider;
         }
@@ -112,8 +101,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void StopProjections()
         {
-            _readDispatcher.CancelAll();
-            _writeDispatcher.CancelAll();
+            _ioDispatcher.BackwardReader.CancelAll();
+            _ioDispatcher.ForwardReader.CancelAll();
+            _ioDispatcher.Writer.CancelAll();
 
             var allProjections = _projections.Values;
             foreach (var projection in allProjections)
@@ -140,7 +130,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 ProjectionSourceDefinition sourceDefinition;
                 var projection = CoreProjection.CreateAndPrepare(
                     message.Name, message.Version, message.ProjectionId, _publisher, stateHandler, message.Config,
-                    _readDispatcher, _writeDispatcher, _subscriptionDispatcher, _logger, _timeProvider,
+                    _ioDispatcher, _subscriptionDispatcher, _logger, _timeProvider,
                     out sourceDefinition);
                 _projections.Add(message.ProjectionId, projection);
                 message.Envelope.ReplyWith(
@@ -162,7 +152,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 ProjectionSourceDefinition sourceDefinition;
                 var projection = CoreProjection.CreatePrepared(
                     message.Name, message.Version, message.ProjectionId, _publisher, message.SourceDefinition, message.Config,
-                    _readDispatcher, _writeDispatcher, _subscriptionDispatcher, _logger, _timeProvider, out sourceDefinition);
+                    _ioDispatcher, _subscriptionDispatcher, _logger, _timeProvider, out sourceDefinition);
                 _projections.Add(message.ProjectionId, projection);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
@@ -231,12 +221,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
         {
-            _readDispatcher.Handle(message);
+            _ioDispatcher.BackwardReader.Handle(message);
         }
 
         public void Handle(ClientMessage.WriteEventsCompleted message)
         {
-            _writeDispatcher.Handle(message);
+            _ioDispatcher.Writer.Handle(message);
         }
 
         public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)

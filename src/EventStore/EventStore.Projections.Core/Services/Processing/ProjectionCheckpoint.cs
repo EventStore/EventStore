@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Common.Log;
 using System.Linq;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
@@ -54,34 +55,24 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _started = false;
         private readonly CheckpointTag _zero;
 
-        private readonly RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-            _readDispatcher;
-
-        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
+        private readonly IODispatcher _ioDispatcher;
 
         private readonly ProjectionVersion _projectionVersion;
 
         private List<IEnvelope> _awaitingStreams;
 
-        public ProjectionCheckpoint(
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+        public ProjectionCheckpoint(IODispatcher ioDispatcher,
             ProjectionVersion projectionVersion, IPrincipal runAs, IProjectionCheckpointManager readyHandler,
             CheckpointTag from, PositionTagger positionTagger, CheckpointTag zero, int maxWriteBatchLength,
             ILogger logger = null)
         {
-            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
-            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
+            if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (zero == null) throw new ArgumentNullException("zero");
             if (from.CommitPosition < from.PreparePosition) throw new ArgumentException("from");
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
-            _readDispatcher = readDispatcher;
-            _writeDispatcher = writeDispatcher;
+            _ioDispatcher = ioDispatcher;
             _projectionVersion = projectionVersion;
             _runAs = runAs;
             _readyHandler = readyHandler;
@@ -166,8 +157,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_emittedStreams.TryGetValue(streamId, out stream))
             {
                 stream = new EmittedStream(
-                    streamId, _projectionVersion, _runAs, _positionTagger, _zero, _from, _readDispatcher,
-                    _writeDispatcher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
+                    streamId, _projectionVersion, _runAs, _positionTagger, _zero, _from, _ioDispatcher, this
+                    /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
                 if (_started)
                     stream.Start();
                 _emittedStreams.Add(streamId, stream);

@@ -76,23 +76,23 @@ namespace EventStore.Core.Helpers
                     publisher, v => v.CorrelationId, v => v.CorrelationId, envelope);
         }
 
-        public void ReadBackward(
+        public Guid ReadBackward(
             string streamId, int fromEventNumber, int maxCount, bool resolveLinks, IPrincipal principal,
             Action<ClientMessage.ReadStreamEventsBackwardCompleted> action)
         {
             var corrId = Guid.NewGuid();
-            BackwardReader.Publish(
+            return BackwardReader.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     corrId, corrId, BackwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, false, null, principal),
                 action);
         }
 
-        public void ReadForward(
+        public Guid ReadForward(
             string streamId, int fromEventNumber, int maxCount, bool resolveLinks, IPrincipal principal,
             Action<ClientMessage.ReadStreamEventsForwardCompleted> action)
         {
             var corrId = Guid.NewGuid();
-            ForwardReader.Publish(
+            return ForwardReader.Publish(
                 new ClientMessage.ReadStreamEventsForward(
                     corrId, corrId, ForwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, false, null, principal),
                 action);
@@ -136,13 +136,24 @@ namespace EventStore.Core.Helpers
                         });
         }
 
-        public void WriteEvents(
+        public Guid WriteEvents(
             string streamId, int expectedVersion, Event[] events, IPrincipal principal, 
             Action<ClientMessage.WriteEventsCompleted> action)
         {
             var corrId = Guid.NewGuid();
-            Writer.Publish(
+            return Writer.Publish(
                 new ClientMessage.WriteEvents(corrId, corrId, Writer.Envelope, false, streamId, expectedVersion, events, principal),
+                action);
+        }
+
+        public Guid WriteEvent(
+            string streamId, int expectedVersion, Event @event, IPrincipal principal,
+            Action<ClientMessage.WriteEventsCompleted> action)
+        {
+            var corrId = Guid.NewGuid();
+            return Writer.Publish(
+                new ClientMessage.WriteEvents(
+                    corrId, corrId, Writer.Envelope, false, streamId, expectedVersion, new[] {@event}, principal),
                 action);
         }
 

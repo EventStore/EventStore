@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
                 "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher,
+                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
                 _readyHandler, 50);
             ;
             _stream.Start();

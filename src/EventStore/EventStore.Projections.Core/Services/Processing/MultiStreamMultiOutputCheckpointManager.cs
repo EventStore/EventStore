@@ -33,6 +33,7 @@ using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
@@ -52,16 +53,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public MultiStreamMultiOutputCheckpointManager(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
+            IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
             ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints = false)
             : base(
-                publisher, projectionCorrelationId, projectionVersion, runAs, readDispatcher, writeDispatcher,
-                projectionConfig, name, positionTagger, namingBuilder, resultEmitter, useCheckpoints,
-                emitPartitionCheckpoints)
+                publisher, projectionCorrelationId, projectionVersion, runAs, ioDispatcher, projectionConfig, name,
+                positionTagger, namingBuilder, resultEmitter, useCheckpoints, emitPartitionCheckpoints)
         {
             _positionTagger = positionTagger;
         }
@@ -102,7 +99,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new EmittedStream(
                 _namingBuilder.GetOrderStreamName(), _projectionVersion, SystemAccount.Principal, _positionTagger,
-                _positionTagger.MakeZeroCheckpointTag(), from, _readDispatcher, _writeDispatcher,
+                _positionTagger.MakeZeroCheckpointTag(), from, _ioDispatcher,
                 /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger, noCheckpoints: true);
         }
 
@@ -126,53 +123,50 @@ namespace EventStore.Projections.Core.Services.Processing
         private void BeginLoadPrerecordedEventsChunk(CheckpointTag checkpointTag, int fromEventNumber)
         {
             _loadingPrerecordedEventsFrom = checkpointTag;
-            var corrId = Guid.NewGuid();
-            _readDispatcher.Publish(
-                new ClientMessage.ReadStreamEventsBackward(
-                    corrId, corrId, _readDispatcher.Envelope, _namingBuilder.GetOrderStreamName(), fromEventNumber, 100,
-                    resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal), 
-                    completed =>
-                        {
-                            switch (completed.Result)
+            _ioDispatcher.ReadBackward(
+                _namingBuilder.GetOrderStreamName(), fromEventNumber, 100, false, SystemAccount.Principal, completed =>
+                {
+                    switch (completed.Result)
+                    {
+                        case ReadStreamResult.NoStream:
+                            _lastOrderCheckpointTag = _positionTagger.MakeZeroCheckpointTag();
+                            PrerecordedEventsLoaded(checkpointTag);
+                            break;
+                        case ReadStreamResult.Success:
+                            var epochEnded = false;
+                            foreach (var @event in completed.Events)
                             {
-                                case ReadStreamResult.NoStream:
-                                    _lastOrderCheckpointTag = _positionTagger.MakeZeroCheckpointTag();
-                                    PrerecordedEventsLoaded(checkpointTag);
+                                var parsed = @event.Event.Metadata.ParseCheckpointTagVersionExtraJson(
+                                    _projectionVersion);
+                                //TODO: throw exception if different projectionID?
+                                if (_projectionVersion.ProjectionId != parsed.Version.ProjectionId
+                                    || _projectionVersion.Epoch > parsed.Version.Version)
+                                {
+                                    epochEnded = true;
                                     break;
-                                case ReadStreamResult.Success:
-                                    var epochEnded = false;
-                                    foreach (var @event in completed.Events)
-                                    {
-                                        var parsed = @event.Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
-                                        //TODO: throw exception if different projectionID?
-                                        if (_projectionVersion.ProjectionId != parsed.Version.ProjectionId
-                                            || _projectionVersion.Epoch > parsed.Version.Version)
-                                        {
-                                            epochEnded = true;
-                                            break;
-                                        }
-                                        var tag = parsed.AdjustBy(_positionTagger, _projectionVersion);
-                                        //NOTE: even if this tag <= checkpointTag we set last tag
-                                        // this is to know the exact last tag to request when writing
-                                        if (_lastOrderCheckpointTag == null)
-                                            _lastOrderCheckpointTag = tag; 
+                                }
+                                var tag = parsed.AdjustBy(_positionTagger, _projectionVersion);
+                                //NOTE: even if this tag <= checkpointTag we set last tag
+                                // this is to know the exact last tag to request when writing
+                                if (_lastOrderCheckpointTag == null)
+                                    _lastOrderCheckpointTag = tag;
 
-                                        if (tag <= checkpointTag)
-                                        {
-                                            SetOrderStreamReadCompleted();
-                                            break;
-                                        }
-                                        EnqueuePrerecordedEvent(@event.Event, tag);
-                                    }
-                                    if (epochEnded || completed.IsEndOfStream)
-                                        SetOrderStreamReadCompleted();
-                                    else
-                                        BeginLoadPrerecordedEventsChunk(checkpointTag, completed.NextEventNumber);
+                                if (tag <= checkpointTag)
+                                {
+                                    SetOrderStreamReadCompleted();
                                     break;
-                                default:
-                                    throw new Exception("Cannot read order stream");
+                                }
+                                EnqueuePrerecordedEvent(@event.Event, tag);
                             }
-                        });
+                            if (epochEnded || completed.IsEndOfStream)
+                                SetOrderStreamReadCompleted();
+                            else
+                                BeginLoadPrerecordedEventsChunk(checkpointTag, completed.NextEventNumber);
+                            break;
+                        default:
+                            throw new Exception("Cannot read order stream");
+                    }
+                });
         }
 
         private void EnqueuePrerecordedEvent(EventRecord @event, CheckpointTag tag)
@@ -195,27 +189,23 @@ namespace EventStore.Projections.Core.Services.Processing
             string streamId = parts[1];
 
 
-            var corrId = Guid.NewGuid();
-            _readDispatcher.Publish(
-                new ClientMessage.ReadStreamEventsBackward(
-                    corrId, corrId, _readDispatcher.Envelope, streamId, eventNumber, 1, true, false, null, SystemAccount.Principal),
-                    completed =>
-                        {
-                            switch (completed.Result)
-                            {
-                                case ReadStreamResult.Success:
-                                    if (completed.Events.Length != 1)
-                                        throw new Exception(
-                                            string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Error));
-                                    item.SetLoadedEvent(completed.Events[0]);
-                                    _loadingItemsCount--;
-                                    CheckAllEventsLoaded();
-                                    break;
-                                default:
-                                    throw new Exception(
-                                        string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Error));
-                            }
-                        });
+            _ioDispatcher.ReadBackward(
+                streamId, eventNumber, 1, true, SystemAccount.Principal, completed =>
+                {
+                    switch (completed.Result)
+                    {
+                        case ReadStreamResult.Success:
+                            if (completed.Events.Length != 1)
+                                throw new Exception(
+                                    string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Error));
+                            item.SetLoadedEvent(completed.Events[0]);
+                            _loadingItemsCount--;
+                            CheckAllEventsLoaded();
+                            break;
+                        default:
+                            throw new Exception(string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Error));
+                    }
+                });
         }
 
         private void CheckAllEventsLoaded()

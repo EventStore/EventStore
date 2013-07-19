@@ -29,6 +29,7 @@
 using System;
 using System.Security.Principal;
 using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -103,31 +104,29 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
             Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPublisher publisher,
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ProjectionConfig projectionConfig, string name, ProjectionNamesBuilder namingBuilder)
+            IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name,
+            ProjectionNamesBuilder namingBuilder)
         {
             var emitAny = projectionConfig.EmitEventEnabled;
             var emitPartitionCheckpoints = UseCheckpoints && (_byCustomPartitions || _byStream);
             var resultEmitter = _definesStateTransform
-                                    ? new ResultEmitter(namingBuilder)
-                                    : (IResultEmitter) new NoopResultEmitter();
+                ? new ResultEmitter(namingBuilder)
+                : (IResultEmitter) new NoopResultEmitter();
 
             //NOTE: not emitting one-time/transient projections are always handled by default checkpoint manager
             // as they don't depend on stable event order
             if (emitAny && !ReaderStrategy.IsReadingOrderRepeatable)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
-                    publisher, projectionCorrelationId, projectionVersion, _runAs, readDispatcher, writeDispatcher,
-                    projectionConfig, name, ReaderStrategy.PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
+                    publisher, projectionCorrelationId, projectionVersion, _runAs, ioDispatcher, projectionConfig, name,
+                    ReaderStrategy.PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
             else
             {
                 return new DefaultCheckpointManager(
-                    publisher, projectionCorrelationId, projectionVersion, _runAs, readDispatcher, writeDispatcher,
-                    projectionConfig, name, ReaderStrategy.PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
+                    publisher, projectionCorrelationId, projectionVersion, _runAs, ioDispatcher, projectionConfig, name,
+                    ReaderStrategy.PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
         }

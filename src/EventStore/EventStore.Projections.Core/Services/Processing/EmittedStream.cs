@@ -34,6 +34,7 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
@@ -45,12 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class EmittedStream : IDisposable, IHandle<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted>
     {
-        private readonly
-            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-            _readDispatcher;
-
-        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
+        private readonly IODispatcher _ioDispatcher;
 
 
         private readonly ILogger _logger;
@@ -88,9 +84,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public EmittedStream(
             string streamId, ProjectionVersion projectionVersion, IPrincipal writeAs, PositionTagger positionTagger,
             CheckpointTag zeroPosition, CheckpointTag from,
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+            IODispatcher ioDispatcher,
             IEmittedStreamContainer readyHandler, int maxWriteBatchLength, ILogger logger = null,
             bool noCheckpoints = false)
         {
@@ -98,8 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (zeroPosition == null) throw new ArgumentNullException("zeroPosition");
             if (@from == null) throw new ArgumentNullException("from");
-            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
-            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
+            if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
@@ -109,8 +102,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _zeroPosition = zeroPosition;
             _from = @from;
             _lastQueuedEventPosition = null;
-            _readDispatcher = readDispatcher;
-            _writeDispatcher = writeDispatcher;
+            _ioDispatcher = ioDispatcher;
             _readyHandler = readyHandler;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;
@@ -343,13 +335,10 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
                 throw new Exception();
             _awaitingListEventsCompleted = true;
-            var corrId = Guid.NewGuid();
-            _readDispatcher.Publish(
-                new ClientMessage.ReadStreamEventsBackward(
-                    //TODO: reading events history in batches of 1 event (slow?)
-                    corrId, corrId, _readDispatcher.Envelope, _streamId, fromEventNumber, 1, 
-                    resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal), 
-                completed => ReadStreamEventsBackwardCompleted(completed, upTo));
+            _ioDispatcher.ReadBackward(
+                //TODO: reading events history in batches of 1 event (slow?)
+                _streamId, fromEventNumber, 1, resolveLinks: false, principal: SystemAccount.Principal,
+                action: completed => ReadStreamEventsBackwardCompleted(completed, upTo));
         }
 
         private void SubmitWriteMetadata()
@@ -375,11 +364,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void PublishWriteMetaStream()
         {
-            var corrId = Guid.NewGuid();
-            _writeDispatcher.Publish(
-                new ClientMessage.WriteEvents(
-                    corrId, corrId, _writeDispatcher.Envelope, true, SystemStreams.MetastreamOf(_streamId), ExpectedVersion.Any,
-                    _submittedWriteMetastreamEvent, _writeAs), HandleMetadataWriteCompleted);
+            _ioDispatcher.WriteEvent(
+                SystemStreams.MetastreamOf(_streamId), ExpectedVersion.Any, _submittedWriteMetastreamEvent, _writeAs,
+                HandleMetadataWriteCompleted);
         }
 
         private void HandleMetadataWriteCompleted(ClientMessage.WriteEventsCompleted message)
@@ -508,11 +495,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             _awaitingWriteCompleted = true;
-            var corrId = Guid.NewGuid();
-            _writeDispatcher.Publish(
-                new ClientMessage.WriteEvents(
-                    corrId, corrId, _writeDispatcher.Envelope, false, _streamId, _lastKnownEventNumber,
-                    _submittedToWriteEvents, _writeAs), Handle);
+            _ioDispatcher.WriteEvents(_streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs, Handle);
 
         }
 
