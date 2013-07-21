@@ -15,6 +15,6 @@ exit /b 1
 :merge-assemblies
 
 mkdir ..\..\..\eventstore.client\
-..\..\..\..\tools\ilmerge\ILMerge.exe /internalize /targetplatform:v4,"%ProgramFiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /out:..\..\..\eventstore.client\EventStore.ClientAPI.dll eventstore.clientapi.dll protobuf-net.dll
+..\..\..\..\tools\ilmerge\ILMerge.exe /internalize /targetplatform:v4,"%ProgramFiles(x86)%\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /out:..\..\..\eventstore.client\EventStore.ClientAPI.dll eventstore.clientapi.dll protobuf-net.dll Newtonsoft.Json.dll
 
 exit /b 0
