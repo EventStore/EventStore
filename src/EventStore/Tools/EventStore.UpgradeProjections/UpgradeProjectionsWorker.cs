@@ -24,7 +24,6 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
 using System;
 using System.Collections.Generic;
@@ -54,8 +53,7 @@ namespace EventStore.UpgradeProjections
         private UserCredentials _credentials;
         private bool _upgradeRequired;
 
-        public UpgradeProjectionsWorker(
-            IPAddress ipAddress, int port, string userName, string password, bool runUpgrade)
+        public UpgradeProjectionsWorker(IPAddress ipAddress, int port, string userName, string password, bool runUpgrade)
         {
             _ipAddress = ipAddress;
             _port = port;
@@ -72,10 +70,8 @@ namespace EventStore.UpgradeProjections
             LoadProjectionCatalog();
             UpgradeProjectionCatalog();
             UpgradeProjectionStreams();
-            if (_upgradeRequired)
-            {
-                Log("*** Old style projection definitions found.  Run with --upgrade option");
-            }
+	        if (_upgradeRequired)
+		        Log("*** Old style projection definitions found.  Run with --upgrade option");
         }
 
         private void Connect()
@@ -84,10 +80,11 @@ namespace EventStore.UpgradeProjections
             var ip = new IPEndPoint(_ipAddress, _port);
             Log("Connecting to {0}:{1}...", _ipAddress, _port);
             _connection = EventStoreConnection.Create(settings, ip);
-            _connection.Connect();
-            Log("Connected.");
-            Log("User name to be used is: {0}", _userName);
-            _credentials = new UserCredentials(_userName, _password);
+	        _connection.Connect();
+			_connection.AppendToStream("hello", ExpectedVersion.Any, new EventData(Guid.NewGuid(), "Hello", false, new byte[0], new byte[0]));
+			Log("Connected.");
+			Log("Username to be used is: {0}", _userName);
+			_credentials = new UserCredentials(_userName, _password);
         }
 
         private void LoadProjectionCatalog()
@@ -98,7 +95,7 @@ namespace EventStore.UpgradeProjections
             do
             {
                 Log("Reading catalog chunk...");
-                projections = _connection.ReadStreamEventsForward("$projections-$all", 0, 100, false, _credentials);
+                projections = _connection.ReadStreamEventsForward("$projections-$all", _lastCatalogEventNumber, 100, false, _credentials);
                 Log("{0} events loaded", projections.Events.Length);
                 foreach (var e in projections.Events)
                 {
