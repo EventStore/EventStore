@@ -28,6 +28,7 @@
 using System;
 using System.Linq;
 using System.Net;
+using EventStore.ClientAPI.Exceptions;
 using NDesk.Options;
 
 namespace EventStore.UpgradeProjections
@@ -69,9 +70,19 @@ namespace EventStore.UpgradeProjections
             }
             try
             {
-                var upgrade = new UpgradeProjectionsWorker(IPAddress.Parse(_ipString), _port, _userName, _password, _runUpgrade);
+                var upgrade = new UpgradeProjectionsWorker(
+                    IPAddress.Parse(_ipString), _port, _userName, _password, _runUpgrade);
                 upgrade.RunUpgrade();
                 return 0;
+            }
+            catch (AggregateException ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                foreach (var inner in ex.InnerExceptions)
+                {
+                    Console.Error.WriteLine(inner.Message);
+                }
+                return 1;
             }
             catch (Exception ex)
             {
