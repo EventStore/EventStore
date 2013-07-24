@@ -83,14 +83,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public EmittedStream(
             string streamId, ProjectionVersion projectionVersion, IPrincipal writeAs, PositionTagger positionTagger,
-            CheckpointTag zeroPosition, CheckpointTag from,
-            IODispatcher ioDispatcher,
-            IEmittedStreamContainer readyHandler, int maxWriteBatchLength, ILogger logger = null,
-            bool noCheckpoints = false)
+            CheckpointTag from, IODispatcher ioDispatcher, IEmittedStreamContainer readyHandler, int maxWriteBatchLength,
+            ILogger logger = null, bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
-            if (zeroPosition == null) throw new ArgumentNullException("zeroPosition");
             if (@from == null) throw new ArgumentNullException("from");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
@@ -99,7 +96,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionVersion = projectionVersion;
             _writeAs = writeAs;
             _positionTagger = positionTagger;
-            _zeroPosition = zeroPosition;
+            _zeroPosition = positionTagger.MakeZeroCheckpointTag();
             _from = @from;
             _lastQueuedEventPosition = null;
             _ioDispatcher = ioDispatcher;

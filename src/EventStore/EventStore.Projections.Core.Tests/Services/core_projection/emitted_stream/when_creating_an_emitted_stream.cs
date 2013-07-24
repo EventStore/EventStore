@@ -55,8 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_stream_id_throws_argument_null_exception()
         {
             new EmittedStream(
-                null, new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
+                null, new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
                 new TestCheckpointManagerMessageHandler(), 50);
         }
 
@@ -64,17 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void empty_stream_id_throws_argument_exception()
         {
             new EmittedStream(
-                "", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
-                new TestCheckpointManagerMessageHandler(), 50);
-        }
-
-        [Test, ExpectedException(typeof(ArgumentNullException))]
-        public void null_zero_position_throws_argument_exception()
-        {
-            new EmittedStream(
-                "", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(), null,
-                CheckpointTag.FromPosition(0, -1), _ioDispatcher,
+                "", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
                 new TestCheckpointManagerMessageHandler(), 50);
         }
 
@@ -82,8 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_from_throws_argument_exception()
         {
             new EmittedStream(
-                "", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), null, _ioDispatcher,
+                "", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(), null, _ioDispatcher,
                 new TestCheckpointManagerMessageHandler(), 50);
         }
 
@@ -91,8 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_io_dispatcher_throws_argument_null_exception()
         {
             new EmittedStream(
-                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), null, 
+                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), null, 
                 new TestCheckpointManagerMessageHandler(), 50);
         }
 
@@ -100,8 +87,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_ready_handler_throws_argumenbt_null_exception()
         {
             new EmittedStream(
-                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
+                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
                 null, 50);
         }
 
@@ -109,8 +95,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void it_can_be_created()
         {
             new EmittedStream(
-                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
+                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
                 new TestCheckpointManagerMessageHandler(), 50);
         }
     }

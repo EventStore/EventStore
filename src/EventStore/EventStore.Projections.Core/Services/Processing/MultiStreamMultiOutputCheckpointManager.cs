@@ -98,9 +98,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private EmittedStream CreateOrderStream(CheckpointTag from)
         {
             return new EmittedStream(
-                _namingBuilder.GetOrderStreamName(), _projectionVersion, SystemAccount.Principal, _positionTagger,
-                _positionTagger.MakeZeroCheckpointTag(), from, _ioDispatcher,
-                /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger, noCheckpoints: true);
+                _namingBuilder.GetOrderStreamName(), _projectionVersion, SystemAccount.Principal, _positionTagger, from,
+                _ioDispatcher, /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger, noCheckpoints: true);
         }
 
         public override void GetStatistics(ProjectionStatistics info)
