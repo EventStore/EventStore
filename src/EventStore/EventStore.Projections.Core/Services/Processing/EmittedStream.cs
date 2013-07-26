@@ -286,11 +286,19 @@ namespace EventStore.Projections.Core.Services.Processing
                 var checkpointTagVersion = e.Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                 var ourEpoch = checkpointTagVersion.Version.ProjectionId == _projectionVersion.ProjectionId
                                && checkpointTagVersion.Version.Version >= _projectionVersion.Epoch;
+                if (checkpointTagVersion.Tag == null)
+                {
+                    Failed(
+                        string.Format(
+                            "A unstamped event found. Stream: '{0}'. EventNumber: '{1}'", message.EventStreamId,
+                            message.FromEventNumber));
+                    return true;
+                }
                 var doStop = !ourEpoch;
                 if (!doStop)
                 {
                     //NOTE: may need to compare with last pre-recorded event
-                    //      but should not push to alreadyCommitted if sourece changed (must be at checkpoint)
+                    //      but should not push to alreadyCommitted if source changed (must be at checkpoint)
                     var adjustedTag = checkpointTagVersion.AdjustBy(_positionTagger, _projectionVersion);
                     doStop = adjustedTag < upTo;
                 }
