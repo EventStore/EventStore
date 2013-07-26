@@ -28,6 +28,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using EventStore.ClientAPI;
@@ -70,8 +71,98 @@ namespace EventStore.UpgradeProjections
             LoadProjectionCatalog();
             UpgradeProjectionCatalog();
             UpgradeProjectionStreams();
-	        if (_upgradeRequired)
+            UpgradeProjectionCheckpoints();
+            UpgradeProjectionPartitionCheckpoints();
+            if (_upgradeRequired)
 		        Log("*** Old style projection definitions found.  Run with --upgrade option");
+        }
+
+        private void UpgradeProjectionPartitionCheckpoints()
+        {
+            Log("Looking for projection partition checkpoint streams");
+            var from = Position.Start;
+            AllEventsSlice slice;
+            do
+            {
+                slice = _connection.ReadAllEventsForward(@from, 100, false, _credentials);
+                foreach (var @event in slice.Events)
+                    if (@event.OriginalEventNumber == 0)
+                        UpgradeStreamIfPartitionCheckpoint(@event.OriginalStreamId);
+                from = slice.NextPosition;
+            } while (!slice.IsEndOfStream);
+            Log("Completed looking for partition checkpoint streams");
+        }
+
+        private void UpgradeStreamIfPartitionCheckpoint(string streamId)
+        {
+            if (streamId.StartsWith("$projections-") && streamId.EndsWith("-checkpoint"))
+            {
+                var candidates = _existingProjections.Where(v => streamId.StartsWith("$projections-" + v)).ToList();
+                if (candidates.Count > 0)
+                {
+                    if (candidates.Any(v => streamId == "$projections-" + v + "-checkpoint"))
+                    {
+                        Log("Skipping projection checkpoint stream '{0}'", streamId);
+                    }
+                    else
+                    {
+                        UpgradeCheckpointStream(streamId, "Checkpoint");
+                    }
+                }
+                else
+                {
+                    Log("The '{0}' stream looks like checkpoint stream, but no corresponding projection found", streamId);
+                }
+            }
+        }
+
+        private void UpgradeProjectionCheckpoints()
+        {
+            foreach (var existingProjection in _existingProjections)
+                UpgradeProjectionCheckpoints(existingProjection);
+        }
+
+        private void UpgradeProjectionCheckpoints(string existingProjection)
+        {
+            var checkpointStream = "$projections-" + existingProjection + "-checkpoint";
+            UpgradeCheckpointStream(checkpointStream, "ProjectionCheckpoint");
+        }
+
+        private void UpgradeCheckpointStream(string checkpointStream, string eventTypeSuffix)
+        {
+            Log("Reading last event in the projection checkpoint stream '{0}'", checkpointStream);
+            var slice = _connection.ReadStreamEventsBackward(checkpointStream, -1, 1, false, _credentials);
+            if (slice.Events.Length > 0)
+            {
+                var lastEvent = slice.Events[0];
+                var eventType = lastEvent.Event.EventType;
+                Log(
+                    "{0} events loaded from the '{1}' stream.  Last event number is: {2} Event type is: {3}",
+                    slice.Events.Length, checkpointStream, lastEvent.OriginalEventNumber, eventType);
+                if (eventType == eventTypeSuffix)
+                {
+                    Log("Old style projection checkpoint found at {0}@{1}", lastEvent.OriginalEventNumber, checkpointStream);
+                    if (_runUpgrade)
+                    {
+                        Log("Writing converted checkpoint to stream {0}", checkpointStream);
+                        _connection.AppendToStream(
+                            checkpointStream, lastEvent.OriginalEventNumber, _credentials,
+                            new EventData(
+                                Guid.NewGuid(), "$" + eventTypeSuffix, true, lastEvent.Event.Data, lastEvent.Event.Metadata));
+                    }
+                    else
+                    {
+                        _upgradeRequired = true;
+                        Log("*** Old style projection checkpoint found.  Run with --upgrade option");
+                    }
+                }
+            }
+            else
+            {
+                Log(
+                    "No events loaded from the '{0}' stream. Read status: {1}", slice.Events.Length, checkpointStream,
+                    slice.Status);
+            }
         }
 
         private void Connect()
@@ -99,6 +190,8 @@ namespace EventStore.UpgradeProjections
                 Log("{0} events loaded", projections.Events.Length);
                 foreach (var e in projections.Events)
                 {
+                    if (e.Event.EventType == "$stream-created-implicit")
+                        continue;
                     var projectionName = Encoding.UTF8.GetString(e.Event.Data);
                     if (e.Event.EventType == ProjectionCreatedOld)
                     {
