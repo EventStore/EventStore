@@ -84,6 +84,10 @@ namespace EventStore.Core.Services
         public const string StatsCollection = "$statsCollected";
         public const string LinkTo = "$>";
         public const string StreamMetadata = "$metadata";
+
+        public const string V1__StreamCreated__ = "$stream-created";
+        public const string V1__StreamCreatedImplicit__ = "$stream-created-implicit";
+
     }
 
     public static class SystemUsers

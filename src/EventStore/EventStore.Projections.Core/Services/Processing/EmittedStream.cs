@@ -286,12 +286,16 @@ namespace EventStore.Projections.Core.Services.Processing
                 var checkpointTagVersion = e.Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                 var ourEpoch = checkpointTagVersion.Version.ProjectionId == _projectionVersion.ProjectionId
                                && checkpointTagVersion.Version.Version >= _projectionVersion.Epoch;
+
+                if (IsV1StreamCreatedEvent(e))
+                    continue;
+
                 if (checkpointTagVersion.Tag == null)
                 {
                     Failed(
                         string.Format(
                             "A unstamped event found. Stream: '{0}'. EventNumber: '{1}'", message.EventStreamId,
-                            message.FromEventNumber));
+                            e.OriginalEventNumber));
                     return true;
                 }
                 var doStop = !ourEpoch;
@@ -312,6 +316,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 _alreadyCommittedEvents.Push(Tuple.Create(checkpointTagVersion.Tag, eventType, e.Event.EventNumber));
             }
             return stop || message.IsEndOfStream;
+        }
+
+        private static bool IsV1StreamCreatedEvent(EventStore.Core.Data.ResolvedEvent e)
+        {
+            return !e.IsResolved && e.OriginalEventNumber == 0
+                   && (e.OriginalEvent.EventType == SystemEventTypes.V1__StreamCreatedImplicit__
+                       || e.OriginalEvent.EventType == SystemEventTypes.V1__StreamCreated__);
         }
 
         private void ProcessWrites()
