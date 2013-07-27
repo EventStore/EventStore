@@ -37,7 +37,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class when_checkpoint_requested_with_all_writes_already_completed: TestFixtureWithExistingEvents
+    public class when_checkpoint_requested_with_all_writes_already_completed : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;
@@ -54,15 +54,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
-                _readyHandler, 50);
+                "test", new EmittedStream.WriterConfiguration(null, 50), new ProjectionVersion(1, 0, 0),
+                new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher, _readyHandler);
             _stream.Start();
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(10, 5), null)
-                    });
+                {
+                    new EmittedDataEvent(
+                        "test", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(10, 5), null)
+                });
             var msg = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First();
             _bus.Publish(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, 0));
             _stream.Checkpoint();

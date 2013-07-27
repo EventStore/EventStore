@@ -25,14 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Principal;
 using EventStore.Common.Log;
-using System.Linq;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 
@@ -61,10 +60,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private List<IEnvelope> _awaitingStreams;
 
-        public ProjectionCheckpoint(IODispatcher ioDispatcher,
-            ProjectionVersion projectionVersion, IPrincipal runAs, IProjectionCheckpointManager readyHandler,
-            CheckpointTag from, PositionTagger positionTagger, CheckpointTag zero, int maxWriteBatchLength,
-            ILogger logger = null)
+        public ProjectionCheckpoint(
+            IODispatcher ioDispatcher, ProjectionVersion projectionVersion, IPrincipal runAs,
+            IProjectionCheckpointManager readyHandler, CheckpointTag from, PositionTagger positionTagger,
+            CheckpointTag zero, int maxWriteBatchLength, ILogger logger = null)
         {
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
@@ -110,7 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             foreach (var emittedEvent in events)
             {
-                if (emittedEvent.CausedByTag > _last) 
+                if (emittedEvent.CausedByTag > _last)
                     _last = emittedEvent.CausedByTag;
             }
         }
@@ -157,8 +156,10 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_emittedStreams.TryGetValue(streamId, out stream))
             {
                 stream = new EmittedStream(
-                    streamId, _projectionVersion, _runAs, _positionTagger, _from, _ioDispatcher, this
-                    /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
+                    streamId,
+                    new EmittedStream.WriterConfiguration(
+                        _runAs, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger), _projectionVersion,
+                    _positionTagger, _from, _ioDispatcher, this);
                 if (_started)
                     stream.Start();
                 _emittedStreams.Add(streamId, stream);
@@ -210,7 +211,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_emittedStreams != null)
                 foreach (var stream in _emittedStreams.Values)
                     stream.Dispose();
-
         }
 
         public void Handle(CoreProjectionProcessingMessage.EmittedStreamAwaiting message)
@@ -228,6 +228,5 @@ namespace EventStore.Projections.Core.Services.Processing
                 foreach (var stream in awaitingStreams)
                     stream.ReplyWith(message);
         }
-
     }
 }

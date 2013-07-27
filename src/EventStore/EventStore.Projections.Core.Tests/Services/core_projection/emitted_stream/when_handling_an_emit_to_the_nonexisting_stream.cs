@@ -1,4 +1,32 @@
-﻿using System;
+﻿// Copyright (c) 2012, Event Store LLP
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+// Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+// Neither the name of the Event Store LLP nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 
+
+using System;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
@@ -25,20 +53,21 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(), CheckpointTag.FromPosition(40, 30), _ioDispatcher,
-                _readyHandler, maxWriteBatchLength: 50);
+                "test_stream", new EmittedStream.WriterConfiguration(null, maxWriteBatchLength: 50),
+                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(), CheckpointTag.FromPosition(40, 30),
+                _ioDispatcher, _readyHandler);
             _stream.Start();
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test, ExpectedException(typeof (InvalidOperationException))]
         public void throws_if_position_is_prior_to_from_position()
         {
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(20, 10), null)
-                    });
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(20, 10), null)
+                });
         }
 
         [Test]
@@ -46,15 +75,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(100, 50), null)
-                    });
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(100, 50), null)
+                });
             Assert.AreEqual(
                 1,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
-                         .ExceptOfEventType(SystemEventTypes.StreamMetadata)
-                         .Count());
+                    .ExceptOfEventType(SystemEventTypes.StreamMetadata)
+                    .Count());
         }
 
         [Test]
@@ -62,15 +91,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null)
-                    });
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null)
+                });
             Assert.AreEqual(
                 1,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
-                         .ExceptOfEventType(SystemEventTypes.StreamMetadata)
-                         .Count());
+                    .ExceptOfEventType(SystemEventTypes.StreamMetadata)
+                    .Count());
         }
 
         [Test]
@@ -78,10 +107,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null)
-                    });
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null)
+                });
             Assert.AreEqual(0, _readyHandler.HandledWriteCompletedMessage.Count);
         }
 
@@ -90,13 +119,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null)
-                    });
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null)
+                });
             OneWriteCompletes();
-            Assert.IsTrue(_readyHandler.HandledWriteCompletedMessage.Any(v => v.StreamId == "test_stream")); // more than one is ok
+            Assert.IsTrue(_readyHandler.HandledWriteCompletedMessage.Any(v => v.StreamId == "test_stream"));
+                // more than one is ok
         }
-
     }
 }

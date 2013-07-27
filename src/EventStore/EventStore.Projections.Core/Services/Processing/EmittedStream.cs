@@ -78,13 +78,42 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _noCheckpoints;
         private bool _disposed;
         private bool _recoveryCompleted;
-        private Event _submittedWriteMetastreamEvent;
+        private Event _submittedWriteMetaStreamEvent;
 
+
+        public class WriterConfiguration
+        {
+            private readonly IPrincipal _writeAs;
+            private readonly int _maxWriteBatchLength;
+            private readonly ILogger _logger;
+
+            public WriterConfiguration(IPrincipal writeAs, int maxWriteBatchLength, ILogger logger = null)
+            {
+                _writeAs = writeAs;
+                _maxWriteBatchLength = maxWriteBatchLength;
+                _logger = logger;
+            }
+
+            public IPrincipal WriteAs
+            {
+                get { return _writeAs; }
+            }
+
+            public int MaxWriteBatchLength
+            {
+                get { return _maxWriteBatchLength; }
+            }
+
+            public ILogger Logger
+            {
+                get { return _logger; }
+            }
+        }
 
         public EmittedStream(
-            string streamId, ProjectionVersion projectionVersion, IPrincipal writeAs, PositionTagger positionTagger,
-            CheckpointTag from, IODispatcher ioDispatcher, IEmittedStreamContainer readyHandler, int maxWriteBatchLength,
-            ILogger logger = null, bool noCheckpoints = false)
+            string streamId, WriterConfiguration writerConfiguration, ProjectionVersion projectionVersion,
+            PositionTagger positionTagger, CheckpointTag @from, IODispatcher ioDispatcher,
+            IEmittedStreamContainer readyHandler, bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
@@ -94,15 +123,15 @@ namespace EventStore.Projections.Core.Services.Processing
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
             _projectionVersion = projectionVersion;
-            _writeAs = writeAs;
+            _writeAs = writerConfiguration.WriteAs;
             _positionTagger = positionTagger;
             _zeroPosition = positionTagger.MakeZeroCheckpointTag();
             _from = @from;
             _lastQueuedEventPosition = null;
             _ioDispatcher = ioDispatcher;
             _readyHandler = readyHandler;
-            _maxWriteBatchLength = maxWriteBatchLength;
-            _logger = logger;
+            _maxWriteBatchLength = writerConfiguration.MaxWriteBatchLength;
+            _logger = writerConfiguration.Logger;
             _noCheckpoints = noCheckpoints;
         }
 
@@ -342,7 +371,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
                 throw new Exception();
-            _submittedWriteMetastreamEvent = _streamId.StartsWith("$")
+            _submittedWriteMetaStreamEvent = _streamId.StartsWith("$")
                                                  ? new Event(
                                                        Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
                                                        new StreamMetadata(
@@ -362,7 +391,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void PublishWriteMetaStream()
         {
             _ioDispatcher.WriteEvent(
-                SystemStreams.MetastreamOf(_streamId), ExpectedVersion.Any, _submittedWriteMetastreamEvent, _writeAs,
+                SystemStreams.MetastreamOf(_streamId), ExpectedVersion.Any, _submittedWriteMetaStreamEvent, _writeAs,
                 HandleMetadataWriteCompleted);
         }
 

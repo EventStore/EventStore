@@ -33,7 +33,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class when_checkpoint_requested: TestFixtureWithReadWriteDispatchers
+    public class when_checkpoint_requested : TestFixtureWithReadWriteDispatchers
     {
         private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;
@@ -41,10 +41,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
+            _readyHandler = new TestCheckpointManagerMessageHandler();
+            ;
             _stream = new EmittedStream(
-                "test", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
-                _readyHandler, 50);
+                "test", new EmittedStream.WriterConfiguration(null, 50), new ProjectionVersion(1, 0, 0),
+                new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher, _readyHandler);
             _stream.Start();
             _stream.Checkpoint();
         }
@@ -54,10 +55,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test", Guid.NewGuid(), "type2", "data2", null, CheckpointTag.FromPosition(-1, -1), null)
-                    });
+                {
+                    new EmittedDataEvent(
+                        "test", Guid.NewGuid(), "type2", "data2", null, CheckpointTag.FromPosition(-1, -1), null)
+                });
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
