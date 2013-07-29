@@ -53,6 +53,8 @@ namespace EventStore.UpgradeProjections
         private IEventStoreConnection _connection;
         private UserCredentials _credentials;
         private bool _upgradeRequired;
+        private long _lastTfPosition;
+        private double _oldTfScanPercent;
 
         public UpgradeProjectionsWorker(IPAddress ipAddress, int port, string userName, string password, bool runUpgrade)
         {
@@ -77,105 +79,17 @@ namespace EventStore.UpgradeProjections
 		        Log("*** Old style projection definitions found.  Run with --upgrade option");
         }
 
-        private void UpgradeProjectionPartitionCheckpoints()
-        {
-            Log("Looking for projection partition checkpoint streams");
-            var from = Position.Start;
-            AllEventsSlice slice;
-            do
-            {
-                slice = _connection.ReadAllEventsForward(@from, 100, false, _credentials);
-                foreach (var @event in slice.Events)
-                    if (@event.OriginalEventNumber == 0)
-                        UpgradeStreamIfPartitionCheckpoint(@event.OriginalStreamId);
-                from = slice.NextPosition;
-            } while (!slice.IsEndOfStream);
-            Log("Completed looking for partition checkpoint streams");
-        }
-
-        private void UpgradeStreamIfPartitionCheckpoint(string streamId)
-        {
-            if (streamId.StartsWith("$projections-") && streamId.EndsWith("-checkpoint"))
-            {
-                var candidates = _existingProjections.Where(v => streamId.StartsWith("$projections-" + v)).ToList();
-                if (candidates.Count > 0)
-                {
-                    if (candidates.Any(v => streamId == "$projections-" + v + "-checkpoint"))
-                    {
-                        Log("Skipping projection checkpoint stream '{0}'", streamId);
-                    }
-                    else
-                    {
-                        UpgradeCheckpointStream(streamId, "Checkpoint");
-                    }
-                }
-                else
-                {
-                    Log("The '{0}' stream looks like checkpoint stream, but no corresponding projection found", streamId);
-                }
-            }
-        }
-
-        private void UpgradeProjectionCheckpoints()
-        {
-            foreach (var existingProjection in _existingProjections)
-                UpgradeProjectionCheckpoints(existingProjection);
-        }
-
-        private void UpgradeProjectionCheckpoints(string existingProjection)
-        {
-            var checkpointStream = "$projections-" + existingProjection + "-checkpoint";
-            UpgradeCheckpointStream(checkpointStream, "ProjectionCheckpoint");
-        }
-
-        private void UpgradeCheckpointStream(string checkpointStream, string eventTypeSuffix)
-        {
-            Log("Reading last event in the projection checkpoint stream '{0}'", checkpointStream);
-            var slice = _connection.ReadStreamEventsBackward(checkpointStream, -1, 1, false, _credentials);
-            if (slice.Events.Length > 0)
-            {
-                var lastEvent = slice.Events[0];
-                var eventType = lastEvent.Event.EventType;
-                Log(
-                    "{0} events loaded from the '{1}' stream.  Last event number is: {2} Event type is: {3}",
-                    slice.Events.Length, checkpointStream, lastEvent.OriginalEventNumber, eventType);
-                if (eventType == eventTypeSuffix)
-                {
-                    Log("Old style projection checkpoint found at {0}@{1}", lastEvent.OriginalEventNumber, checkpointStream);
-                    if (_runUpgrade)
-                    {
-                        Log("Writing converted checkpoint to stream {0}", checkpointStream);
-                        _connection.AppendToStream(
-                            checkpointStream, lastEvent.OriginalEventNumber, _credentials,
-                            new EventData(
-                                Guid.NewGuid(), "$" + eventTypeSuffix, true, lastEvent.Event.Data, lastEvent.Event.Metadata));
-                    }
-                    else
-                    {
-                        _upgradeRequired = true;
-                        Log("*** Old style projection checkpoint found.  Run with --upgrade option");
-                    }
-                }
-            }
-            else
-            {
-                Log(
-                    "No events loaded from the '{0}' stream. Read status: {1}", slice.Events.Length, checkpointStream,
-                    slice.Status);
-            }
-        }
-
         private void Connect()
         {
             var settings = ConnectionSettings.Create();
             var ip = new IPEndPoint(_ipAddress, _port);
             Log("Connecting to {0}:{1}...", _ipAddress, _port);
             _connection = EventStoreConnection.Create(settings, ip);
-	        _connection.Connect();
-			_connection.AppendToStream("hello", ExpectedVersion.Any, new EventData(Guid.NewGuid(), "Hello", false, new byte[0], new byte[0]));
-			Log("Connected.");
-			Log("Username to be used is: {0}", _userName);
-			_credentials = new UserCredentials(_userName, _password);
+            _connection.Connect();
+            _connection.AppendToStream("hello", ExpectedVersion.Any, new EventData(Guid.NewGuid(), "Hello", false, new byte[0], new byte[0]));
+            Log("Connected.");
+            Log("Username to be used is: {0}", _userName);
+            _credentials = new UserCredentials(_userName, _password);
         }
 
         private void LoadProjectionCatalog()
@@ -284,6 +198,115 @@ namespace EventStore.UpgradeProjections
             else
             {
                 Log("The {0} projection definition stream is empty", projectionStream);
+            }
+        }
+
+        private void UpgradeProjectionCheckpoints()
+        {
+            foreach (var existingProjection in _existingProjections)
+                UpgradeProjectionCheckpoints(existingProjection);
+        }
+
+        private void UpgradeProjectionCheckpoints(string existingProjection)
+        {
+            var checkpointStream = "$projections-" + existingProjection + "-checkpoint";
+            UpgradeCheckpointStream(checkpointStream, "ProjectionCheckpoint");
+        }
+
+        private void UpgradeProjectionPartitionCheckpoints()
+        {
+            Log("Looking for projection partition checkpoint streams");
+            var from = Position.Start;
+            _oldTfScanPercent = 0d;
+            var lastSlice = _connection.ReadAllEventsBackward(Position.End, 1, false, _credentials);
+            if (lastSlice.Events.Length == 0)
+                throw new Exception("Empty TF");
+            _lastTfPosition = lastSlice.Events[0].OriginalPosition.Value.PreparePosition;
+            AllEventsSlice slice;
+            do
+            {
+                slice = _connection.ReadAllEventsForward(@from, 100, false, _credentials);
+                DisplayTfScanProgress(slice);
+                foreach (var @event in slice.Events)
+                    if (@event.OriginalEventNumber == 0)
+                        UpgradeStreamIfPartitionCheckpoint(@event.OriginalStreamId);
+                from = slice.NextPosition;
+            } while (!slice.IsEndOfStream);
+            Log("Completed looking for partition checkpoint streams");
+        }
+
+        private void DisplayTfScanProgress(AllEventsSlice slice)
+        {
+            if (slice.Events.Length > 0)
+            {
+                var percent =
+                    Math.Round(
+                        (float) slice.Events[slice.Events.Length - 1].OriginalPosition.Value.PreparePosition/_lastTfPosition*100);
+                if (percent != _oldTfScanPercent)
+                {
+                    _oldTfScanPercent = percent;
+                    Console.WriteLine("{0,2}% completed.", percent);
+                }
+            }
+        }
+
+        private void UpgradeStreamIfPartitionCheckpoint(string streamId)
+        {
+            if (streamId.StartsWith("$projections-") && streamId.EndsWith("-checkpoint"))
+            {
+                var candidates = _existingProjections.Where(v => streamId.StartsWith("$projections-" + v)).ToList();
+                if (candidates.Count > 0)
+                {
+                    if (candidates.Any(v => streamId == "$projections-" + v + "-checkpoint"))
+                    {
+                        Log("Skipping projection checkpoint stream '{0}'", streamId);
+                    }
+                    else
+                    {
+                        UpgradeCheckpointStream(streamId, "Checkpoint");
+                    }
+                }
+                else
+                {
+                    Log("The '{0}' stream looks like checkpoint stream, but no corresponding projection found", streamId);
+                }
+            }
+        }
+
+        private void UpgradeCheckpointStream(string checkpointStream, string eventTypeSuffix)
+        {
+            Log("Reading last event in the projection checkpoint stream '{0}'", checkpointStream);
+            var slice = _connection.ReadStreamEventsBackward(checkpointStream, -1, 1, false, _credentials);
+            if (slice.Events.Length > 0)
+            {
+                var lastEvent = slice.Events[0];
+                var eventType = lastEvent.Event.EventType;
+                Log(
+                    "{0} events loaded from the '{1}' stream.  Last event number is: {2} Event type is: {3}",
+                    slice.Events.Length, checkpointStream, lastEvent.OriginalEventNumber, eventType);
+                if (eventType == eventTypeSuffix)
+                {
+                    Log("Old style projection checkpoint found at {0}@{1}", lastEvent.OriginalEventNumber, checkpointStream);
+                    if (_runUpgrade)
+                    {
+                        Log("Writing converted checkpoint to stream {0}", checkpointStream);
+                        _connection.AppendToStream(
+                            checkpointStream, lastEvent.OriginalEventNumber, _credentials,
+                            new EventData(
+                                Guid.NewGuid(), "$" + eventTypeSuffix, true, lastEvent.Event.Data, lastEvent.Event.Metadata));
+                    }
+                    else
+                    {
+                        _upgradeRequired = true;
+                        Log("*** Old style projection checkpoint found.  Run with --upgrade option");
+                    }
+                }
+            }
+            else
+            {
+                Log(
+                    "No events loaded from the '{0}' stream. Read status: {1}", slice.Events.Length, checkpointStream,
+                    slice.Status);
             }
         }
 
