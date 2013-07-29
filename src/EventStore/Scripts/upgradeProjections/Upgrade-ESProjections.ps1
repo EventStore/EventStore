@@ -44,18 +44,27 @@
 
         function Get-EventData {
             param(
-                [Parameter(ValueFromPipeline)]$Event
+                [Parameter(ValueFromPipeline)]$Event,
+                [switch]$DataOnly = $false
                 )
             process {
                 $uri = $event.links `
                        | Where-Object relation -eq edit `                       | ForEach-Object uri
+                if ($DataOnly) {
+                    $uri += '?format=json'
+                }
 
-                Invoke-RestMethod -Uri ($uri + "?format=json") -WebSession $session
+                Invoke-RestMethod -Uri $uri -WebSession $session
             }
         }
 
         function Append-Event {
-            param([string]$Stream, [string]$EventType, $Data)
+            param(
+                [string]$Stream,
+                [string]$EventType, 
+                $Data,
+                $Metadata
+                )
 
             process
             {
@@ -63,6 +72,7 @@
                     eventId = [Guid]::NewGuid()
                     eventType = $EventType
                     data = $Data
+                    metadata = $Metadata
                 }) -Depth 10
 
                 Invoke-WebRequest -Uri "$store/streams/$stream" -Method Post  `
@@ -77,9 +87,9 @@
         
         $oldProjections = $projectionRefs `
                           | Where-Object summary -eq ProjectionCreated `
-                          | Get-EventData
+                          | Get-EventData -DataOnly
         $newProjections = $projectionRefs `                          | Where-Object summary -eq '$ProjectionCreated' `
-                          | Get-EventData
+                          | Get-EventData -DataOnly
 
         # take projections names that have no match with $ProjectionCreated event
         $toConvert = diff $oldProjections $newProjections `                     | Where-Object SideIndicator -eq '<=' `                     | ForEach-Object InputObject
@@ -97,6 +107,7 @@
         # when projection has not been converted yet
         $oldProjections | ForEach-Object {
 
+            #convert projections ProjectionUpdated event to $ProjectionUpdated
             $projectionName = "`$projections-$_"
 
             $events = Get-AllStreamEventsRef $projectionName
@@ -109,12 +120,37 @@
                 | ForEach-Object {
                     Write-Host converting ProjectionUpdated for $projectionName
                     $data = $_ | Get-EventData
-                    Append-Event $projectionName '$ProjectionUpdated' $data | Out-Null
+
+                    Append-Event $projectionName '$ProjectionUpdated' $data.content.data $data.content.metadata | Out-Null
                 }
             }
             else {
                 Write-Host Skipping $projectionName. Already converted -ForegroundColor Gray
             }
+
+
+            #convert checkpoints ProjectionCheckpoint to $ProjectionCheckpoint
+
+            $checkpointName = "$projectionName-checkpoint"
+
+            $checkpointEvents = Get-AllStreamEventsRef $checkpointName
+
+            $newcheckPointEvents = $checkpointEvents | Where-Object summary -eq '$ProjectionCheckpoint'
+
+            if (!$newcheckPointEvents) {
+
+                $checkpointEvents `                | Where-Object summary -eq "ProjectionCheckpoint" `                | Select-Object -Last 1 `
+                | ForEach-Object {
+                    Write-Host converting ProjectionCheckpoint for $checkpointName
+                    $data = $_ | Get-EventData
+                    Append-Event $checkpointName '$ProjectionCheckpoint' $data.content.data $data.content.metadata | Out-Null
+                }
+            }
+            else {
+                Write-Host Skipping $checkpointName. Already converted -ForegroundColor Gray
+            }
+
+
         }
 
         Write-Host Upgrade completed.
