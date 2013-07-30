@@ -99,12 +99,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         public StreamMetadata GetStreamMetadata(string streamId)
         {
             if (SystemStreams.IsMetastream(streamId))
-                return new StreamMetadata(_metastreamMaxCount, null, null, null);
+                return new StreamMetadata(_metastreamMaxCount, null, null, null, null);
 
             StreamInfo streamInfo;
             if (_streams.TryGetValue(streamId, out streamInfo))
                 return streamInfo.StreamMetadata ?? StreamMetadata.Empty;
-            return new StreamMetadata(null, null, null, null);
+            return new StreamMetadata(null, null, null, null, null);
         }
 
         public void Close()

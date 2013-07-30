@@ -77,6 +77,7 @@ namespace EventStore.ClientAPI
     {
         public readonly int? MaxCount;
         public readonly TimeSpan? MaxAge;
+        public readonly int? StartFrom;
         public readonly TimeSpan? CacheControl;
         public readonly StreamAcl Acl;
 
@@ -88,26 +89,30 @@ namespace EventStore.ClientAPI
 
         private readonly IDictionary<string, JToken> _customMetadata;
 
-        internal StreamMetadata(int? maxCount, TimeSpan? maxAge, TimeSpan? cacheControl, 
+        internal StreamMetadata(int? maxCount, TimeSpan? maxAge, int? startFrom, TimeSpan? cacheControl, 
                                 StreamAcl acl, IDictionary<string, JToken> customMetadata = null)
         {
             if (maxCount <= 0)
                 throw new ArgumentOutOfRangeException("maxCount", string.Format("{0} should be positive value.", SystemMetadata.MaxCount));
             if (maxAge <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException("maxAge", string.Format("{0} should be positive time span.", SystemMetadata.MaxAge));
+            if (startFrom < 0)
+                throw new ArgumentOutOfRangeException("startFrom", string.Format("{0} should be non negative value.", SystemMetadata.StartFrom));
+
             if (cacheControl <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException("cacheControl", string.Format("{0} should be positive time span.", SystemMetadata.CacheControl));
 
             MaxCount = maxCount;
             MaxAge = maxAge;
+            StartFrom = startFrom;
             CacheControl = cacheControl;
             Acl = acl;
             _customMetadata = customMetadata ?? Empty.CustomStreamMetadata;  
         }
 
-        public static StreamMetadata Create(int? maxCount = null, TimeSpan? maxAge = null, TimeSpan? cacheControl = null, StreamAcl acl = null)
+        public static StreamMetadata Create(int? maxCount = null, TimeSpan? maxAge = null, int? startFrom = null, TimeSpan? cacheControl = null, StreamAcl acl = null)
         {
-            return new StreamMetadata(maxCount, maxAge, cacheControl, acl);
+            return new StreamMetadata(maxCount, maxAge, startFrom, cacheControl, acl);
         }
 
         public static StreamMetadataBuilder Build()
@@ -198,6 +203,11 @@ namespace EventStore.ClientAPI
                 jsonWriter.WritePropertyName(SystemMetadata.MaxAge);
                 jsonWriter.WriteValue((long) MaxAge.Value.TotalSeconds);
             }
+            if (StartFrom.HasValue)
+            {
+                jsonWriter.WritePropertyName(SystemMetadata.StartFrom);
+                jsonWriter.WriteValue(StartFrom.Value);
+            }
             if (CacheControl.HasValue)
             {
                 jsonWriter.WritePropertyName(SystemMetadata.CacheControl);
@@ -253,6 +263,7 @@ namespace EventStore.ClientAPI
 
                 int? maxCount = null;
                 TimeSpan? maxAge = null;
+                int? startFrom = null;
                 TimeSpan? cacheControl = null;
                 StreamAcl acl = null;
                 Dictionary<string, JToken> customMetadata = null;
@@ -280,6 +291,13 @@ namespace EventStore.ClientAPI
                             maxAge = TimeSpan.FromSeconds((long)reader.Value);
                             break;
                         }
+                        case SystemMetadata.StartFrom:
+                        {
+                            Check(reader.Read(), reader);
+                            Check(JsonToken.Integer, reader);
+                            startFrom = (int)(long)reader.Value;
+                            break;
+                        }
                         case SystemMetadata.CacheControl:
                         {
                             Check(reader.Read(), reader);
@@ -303,7 +321,7 @@ namespace EventStore.ClientAPI
                         }
                     }
                 }
-                return new StreamMetadata(maxCount, maxAge, cacheControl, acl, customMetadata);
+                return new StreamMetadata(maxCount, maxAge, startFrom, cacheControl, acl, customMetadata);
             }
         }
 
@@ -377,6 +395,7 @@ namespace EventStore.ClientAPI
     {
         private int? _maxCount;
         private TimeSpan? _maxAge;
+        private int? _startFrom;
         private TimeSpan? _cacheControl;
         private string[] _aclRead;
         private string[] _aclWrite;
@@ -399,7 +418,7 @@ namespace EventStore.ClientAPI
                       && builder._aclMetaWrite == null
                               ? null
                               : new StreamAcl(builder._aclRead, builder._aclWrite, builder._aclDelete, builder._aclMetaRead, builder._aclMetaWrite);
-            return new StreamMetadata(builder._maxCount, builder._maxAge, builder._cacheControl, acl, builder._customMetadata);
+            return new StreamMetadata(builder._maxCount, builder._maxAge, builder._startFrom, builder._cacheControl, acl, builder._customMetadata);
         }
 
         public StreamMetadataBuilder SetMaxCount(int maxCount)
@@ -413,6 +432,13 @@ namespace EventStore.ClientAPI
         {
             Ensure.Positive(maxAge.Ticks, "maxAge");
             _maxAge = maxAge;
+            return this;
+        }
+
+        public StreamMetadataBuilder SetStartFrom(int startFrom)
+        {
+            Ensure.Nonnegative(startFrom, "startFrom");
+            _startFrom = startFrom;
             return this;
         }
 

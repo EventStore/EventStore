@@ -100,6 +100,13 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("Network")]
+        public void return_no_stream_if_requested_last_event_in_empty_stream()
+        {
+            var res = _conn.ReadEvent("some-really-empty-stream", -1, false);
+            Assert.AreEqual(EventReadStatus.NoStream, res.Status);
+        }
+
+        [Test, Category("Network")]
         public void notify_using_status_code_if_stream_was_deleted()
         {
             var res = _conn.ReadEvent("deleted-stream", 5, false);

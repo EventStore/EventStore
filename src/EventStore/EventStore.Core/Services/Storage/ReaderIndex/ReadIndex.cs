@@ -68,7 +68,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             _backend = new IndexBackend(readerPool, streamInfoCache);
 
-            var metastreamMetadata = new StreamMetadata(metastreamMaxCount, null, null, null);
+            var metastreamMetadata = new StreamMetadata(metastreamMaxCount, null, null, null, null);
             _indexReader = new IndexReader(_backend, hasher, tableIndex, metastreamMetadata);
 
             _indexWriter = new IndexWriter(bus, _backend, _indexReader, tableIndex, hasher, additionalCommitChecks);

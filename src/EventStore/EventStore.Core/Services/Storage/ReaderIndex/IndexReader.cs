@@ -105,12 +105,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (eventNumber == -1)
                 eventNumber = lastEventNumber;
 
+            int minEventNumber = 0;
             if (metadata.MaxCount.HasValue)
-            {
-                var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
-                if (eventNumber < minEventNumber || eventNumber > lastEventNumber)
-                    return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber);
-            }
+                minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
+            if (metadata.StartFrom.HasValue)
+                minEventNumber = Math.Max(minEventNumber, metadata.StartFrom.Value);
+
+            if (eventNumber < minEventNumber || eventNumber > lastEventNumber)
+                return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber);
 
             PrepareLogRecord prepare = GetPrepare(reader, streamId, eventNumber);
             if (prepare != null)
@@ -180,14 +182,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 int startEventNumber = fromEventNumber;
                 int endEventNumber = (int) Math.Min(int.MaxValue, (long) fromEventNumber + maxCount - 1);
 
+                int minEventNumber = 0;
                 if (metadata.MaxCount.HasValue)
-                {
-                    var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
-                    if (endEventNumber < minEventNumber)
-                        return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
-                                                         metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
-                    startEventNumber = Math.Max(startEventNumber, minEventNumber);
-                }
+                    minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
+                if (metadata.StartFrom.HasValue) 
+                    minEventNumber = Math.Max(minEventNumber, metadata.StartFrom.Value);
+                if (endEventNumber < minEventNumber)
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
+                                                     metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
+                startEventNumber = Math.Max(startEventNumber, minEventNumber);
 
                 var recordsQuery = _tableIndex.GetRange(streamHash, startEventNumber, endEventNumber)
                                               .Select(x => new {x.Version, Prepare = GetPrepare(reader, x.Position)})
@@ -229,18 +232,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 int startEventNumber = (int)Math.Max(0L, (long)endEventNumber - maxCount + 1);
                 bool isEndOfStream = false;
 
+                int minEventNumber = 0;
                 if (metadata.MaxCount.HasValue)
-                {
-                    var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
-                    if (endEventNumber < minEventNumber)
-                        return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
-                                                         metadata, -1, lastEventNumber, isEndOfStream: true);
+                    minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
+                if (metadata.StartFrom.HasValue)
+                    minEventNumber = Math.Max(minEventNumber, metadata.StartFrom.Value);
+                if (endEventNumber < minEventNumber)
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
+                                                     metadata, -1, lastEventNumber, isEndOfStream: true);
 
-                    if (startEventNumber <= minEventNumber)
-                    {
-                        isEndOfStream = true;
-                        startEventNumber = minEventNumber;
-                    }
+                if (startEventNumber <= minEventNumber)
+                {
+                    isEndOfStream = true;
+                    startEventNumber = minEventNumber;
                 }
 
                 var recordsQuery = _tableIndex.GetRange(streamHash, startEventNumber, endEventNumber)
