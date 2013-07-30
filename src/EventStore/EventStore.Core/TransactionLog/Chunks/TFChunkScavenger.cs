@@ -325,6 +325,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                         keep = false;
                 }
 
+                if (streamMetadata.StartFrom.HasValue)
+                {
+                    int maxKeptEventNumber = streamMetadata.StartFrom.Value;
+                    if (eventNumber < maxKeptEventNumber)
+                        keep = false;
+                }
+
                 if (streamMetadata.MaxAge.HasValue)
                 {
                     if (prepare.TimeStamp < DateTime.UtcNow - streamMetadata.MaxAge.Value)

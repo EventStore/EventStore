@@ -107,7 +107,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _readers = new ObjectPool<ITransactionFileReader>("ReadIndex readers pool", initialReaderCount, maxReaderCount, readerFactory);
 
             _additionalCommitChecks = additionalCommitChecks;
-            _metastreamMetadata = new StreamMetadata(metastreamMaxCount, null, null, null);
+            _metastreamMetadata = new StreamMetadata(metastreamMaxCount, null, null, null, null);
         }
 
         public void Init(long writerCheckpoint, long buildToPosition)
@@ -366,6 +366,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     return new IndexReadEventResult(ReadEventResult.NotFound, metadata);
             }
 
+            if (metadata.StartFrom.HasValue)
+            {
+                var minEventNumber = metadata.StartFrom.Value ;
+                if (eventNumber < minEventNumber  || eventNumber > lastEventNumber)
+                    return new IndexReadEventResult(ReadEventResult.NotFound, metadata);
+            }
+
             EventRecord record;
             var success = GetStreamRecord(reader, streamId, eventNumber, out record);
             if (success)
@@ -402,6 +409,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 {
                     var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
                     if (endEventNumber < minEventNumber)
+                        return new IndexReadStreamResult(fromEventNumber, maxCount, EmptyRecords, metadata,
+                                                         minEventNumber, lastEventNumber, isEndOfStream: false);
+                    startEventNumber = Math.Max(startEventNumber, minEventNumber);
+                }
+                if (metadata.StartFrom.HasValue)
+                {
+                    var minEventNumber = metadata.StartFrom.Value;
+                    if (endEventNumber < minEventNumber )
                         return new IndexReadStreamResult(fromEventNumber, maxCount, EmptyRecords, metadata,
                                                          minEventNumber, lastEventNumber, isEndOfStream: false);
                     startEventNumber = Math.Max(startEventNumber, minEventNumber);
@@ -456,6 +471,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (metadata.MaxCount.HasValue)
                 {
                     var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
+                    if (endEventNumber < minEventNumber)
+                        return new IndexReadStreamResult(fromEventNumber, maxCount, EmptyRecords, metadata,
+                                                         -1, lastEventNumber, isEndOfStream: true);
+
+                    if (startEventNumber <= minEventNumber)
+                    {
+                        isEndOfStream = true;
+                        startEventNumber = minEventNumber;
+                    }
+                }
+
+                if (metadata.StartFrom.HasValue)
+                {
+                    var minEventNumber = metadata.StartFrom.Value;
                     if (endEventNumber < minEventNumber)
                         return new IndexReadStreamResult(fromEventNumber, maxCount, EmptyRecords, metadata,
                                                          -1, lastEventNumber, isEndOfStream: true);
