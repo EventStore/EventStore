@@ -284,7 +284,7 @@ namespace EventStore.Core.Services.UserManagement
         {
             _ioDispatcher.ConfigureStreamAndWriteEvents(
                 UserPasswordNotificationsStreamId, ExpectedVersion.Any,
-                new Lazy<StreamMetadata>(() => new StreamMetadata(null, TimeSpan.FromHours(1), null, null)),
+                new Lazy<StreamMetadata>(() => new StreamMetadata(null, TimeSpan.FromHours(1), null, null, null)),
                 new[] {CreatePasswordChangedEvent(loginName)}, SystemAccount.Principal, completed);
         }
 
@@ -355,7 +355,7 @@ namespace EventStore.Core.Services.UserManagement
             _ioDispatcher.UpdateStreamAcl(
                 "$user-" + loginName, ExpectedVersion.Any, SystemAccount.Principal,
                 new StreamMetadata(
-                    null, null, null, new StreamAcl(null, SystemUserGroups.Admins, SystemUserGroups.Admins, null, SystemUserGroups.Admins)),
+                    null, null, null, null, new StreamAcl(null, SystemUserGroups.Admins, SystemUserGroups.Admins, null, SystemUserGroups.Admins)),
                 onCompleted);
         }
 

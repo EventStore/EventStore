@@ -68,6 +68,7 @@ namespace EventStore.Core.Services
     {
         public const string MaxAge = "$maxAge";
         public const string MaxCount = "$maxCount";
+        public const string StartFrom = "$startFrom";
         public const string CacheControl = "$cacheControl";
 
         public const string Acl = "$acl";
