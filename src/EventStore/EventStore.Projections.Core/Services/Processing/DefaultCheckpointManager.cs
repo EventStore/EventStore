@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _inCheckpointWriteAttempt = 1;
             //TODO: pass correct expected version
             _checkpointEventToBePublished = new Event(
-                Guid.NewGuid(), "$ProjectionCheckpoint", true,
+                Guid.NewGuid(), ProjectionNamesBuilder.EventType_ProjectionCheckpoint, true,
                 requestedCheckpointState == null ? null : Helper.UTF8NoBom.GetBytes(requestedCheckpointState),
                 requestedCheckpointPosition.ToJsonBytes(projectionVersion: _projectionVersion));
             PublishWriteCheckpointEvent();
@@ -201,7 +201,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (message.Events.Length > 0)
             {
-                EventRecord checkpoint = message.Events.FirstOrDefault(v => v.Event.EventType == "$ProjectionCheckpoint").Event;
+                var checkpoint =
+                    message.Events.FirstOrDefault(
+                        v => v.Event.EventType == ProjectionNamesBuilder.EventType_ProjectionCheckpoint).Event;
                 if (checkpoint != null)
                 {
                     var parsed = checkpoint.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
