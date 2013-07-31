@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType, encoding, headrs);
         }
 
-        public static ResponseConfiguration PermanentRedirect(Uri originalUrl, string targetHost, int targetPort)
+        public static ResponseConfiguration TemporaryRedirect(Uri originalUrl, string targetHost, int targetPort)
         {
             var srcBase = new Uri(string.Format("{0}://{1}:{2}/", originalUrl.Scheme, originalUrl.Host, originalUrl.Port), UriKind.Absolute);
             var targetBase = new Uri(string.Format("{0}://{1}:{2}/", originalUrl.Scheme, targetHost, targetPort), UriKind.Absolute);
@@ -407,7 +407,7 @@ namespace EventStore.Core.Services.Transport.Http
                     var masterInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.MasterInfo;
                     if (masterInfo == null)
                         return InternalServerError("No master info available in response");
-                    return PermanentRedirect(requestedUri, masterInfo.ExternalHttpAddress, masterInfo.ExternalHttpPort);
+                    return TemporaryRedirect(requestedUri, masterInfo.ExternalHttpAddress, masterInfo.ExternalHttpPort);
                 }
                 default:
                     return InternalServerError(string.Format("Unknown not handled reason: {0}", notHandled.Reason));
