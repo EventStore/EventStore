@@ -41,7 +41,6 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
-using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 {
@@ -234,12 +233,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             _physicalDataSize = 0;
             _logicalDataSize = 0;
 
-            SetAttributes();
             CreateWriterWorkItemForNewChunk(chunkHeader, fileSize);
+            SetAttributes();
             CreateReaderStreams();
 
             _readSide = chunkHeader.IsScavenged ? (IChunkReadSide) new TFChunkReadSideScavenged(this) : new TFChunkReadSideUnscavenged(this);
-
         }
 
         private void InitOngoing(int writePosition, bool checkSize)
