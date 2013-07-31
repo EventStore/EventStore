@@ -78,7 +78,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void only_one_checkpoint_has_been_written()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+            Assert.AreEqual(
+                1,
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+                    .ToStream("$projections-projection-checkpoint")
+                    .Count());
         }
     }
 }

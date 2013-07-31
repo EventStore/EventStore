@@ -444,7 +444,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 var e = _pendingWrites.Peek();
                 if (!e.IsReady())
                 {
-                    _readyHandler.Handle(new CoreProjectionProcessingMessage.EmittedStreamAwaiting(_streamId, new SendToThisEnvelope(this)));
+                    _readyHandler.Handle(
+                        new CoreProjectionProcessingMessage.EmittedStreamAwaiting(
+                            _streamId, new SendToThisEnvelope(this)));
                     _awaitingReady = true;
                     break;
                 }
