@@ -133,6 +133,7 @@
     <Compile Include="Services\core_projection\emitted_stream\another_projection\when_handling_an_emit_with_expected_tag_the_started_in_recovery_stream.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_to_the_nonexisting_stream.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_caused_by_and_correlation_id.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_stream_metadata.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_write_as_configured.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_checkpoint_requested_but_disabled.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_committed_callback.cs" />

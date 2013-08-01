@@ -73,7 +73,7 @@ namespace EventStore.Web.Users
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
-            out EmittedEvent[] emittedEvents)
+            out EmittedEventEnvelope[] emittedEvents)
         {
             if (!data.EventStreamId.StartsWith(UserStreamPrefix))
                 throw new InvalidOperationException(
@@ -90,10 +90,11 @@ namespace EventStore.Web.Users
                         "Invalid $UserCreated event found.  '{0}' login name expected, but '{1}' found", loginName,
                         userData.LoginName));
 
-            emittedEvents = new EmittedEvent[]
+            emittedEvents = new[]
             {
-                new EmittedDataEvent(
-                    UsersStream, null, Guid.NewGuid(), UserEventType, loginName, null, eventPosition, null)
+                new EmittedEventEnvelope(
+                    new EmittedDataEvent(
+                        UsersStream, Guid.NewGuid(), UserEventType, loginName, null, eventPosition, null))
             };
             newState = "";
             return true;

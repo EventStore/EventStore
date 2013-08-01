@@ -188,6 +188,7 @@
     <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\DefaultCheckpointManager.cs" />
     <Compile Include="Services\Processing\EmittedDataEvent.cs" />
+    <Compile Include="Services\Processing\EmittedEventEnvelope.cs" />
     <Compile Include="Services\Processing\EmittedLinkTo.cs" />
     <Compile Include="Services\Processing\EventByTypeIndexEventFilter.cs" />
     <Compile Include="Services\Processing\EventByTypeIndexEventReader.cs" />

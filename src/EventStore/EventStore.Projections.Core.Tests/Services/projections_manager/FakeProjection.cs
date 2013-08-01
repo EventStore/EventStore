@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEvent[] emittedEvents)
+            out string newState, out EmittedEventEnvelope[] emittedEvents)
         {
             if (data.EventType == "fail" || _query == "fail")
                 throw new Exception("failed");

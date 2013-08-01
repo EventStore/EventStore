@@ -26,38 +26,19 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
-
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
+namespace EventStore.Projections.Core.Services.Processing
 {
-    [TestFixture]
-    public class when_v8_projection_loading_state : TestFixtureWithJsProjection
+    public sealed class EmittedEventEnvelope
     {
-        protected override void Given()
+        public readonly EmittedEvent Event;
+        public readonly EmittedStream.WriterConfiguration.StreamMetadata StreamMetadata;
+
+        public EmittedEventEnvelope(
+            EmittedEvent @event, EmittedStream.WriterConfiguration.StreamMetadata streamMetadata = null)
         {
-            _projection = @"
-                fromAll().when({$any: 
-                    function(state, event) {
-                        return state;
-                    }
-                });
-            ";
-            _state = @"{""A"":""A"",""B"":""B""}";
+            Event = @event;
+            StreamMetadata = streamMetadata;
         }
 
-        [Test, Category("v8")]
-        public void the_state_is_loaded()
-        {
-            string state;
-            EmittedEventEnvelope[] emittedEvents;
-            _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
-                @"{""x"":""y""}", out state, out emittedEvents);
-
-            Assert.AreEqual(_state, state);
-        }
     }
 }

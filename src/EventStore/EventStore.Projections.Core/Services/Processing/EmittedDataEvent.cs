@@ -37,20 +37,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ExtraMetaData _metadata;
 
         public EmittedDataEvent(
-            string streamId, EmittedStream.WriterConfiguration.StreamMetadata streamMetadata, Guid eventId,
-            string eventType, string data, ExtraMetaData metadata, CheckpointTag causedByTag, CheckpointTag expectedTag,
-            Action<int> onCommitted = null)
-            : base(streamId, streamMetadata, eventId, eventType, causedByTag, expectedTag, onCommitted)
-        {
-            _data = data;
-            _metadata = metadata;
-        }
-
-        public EmittedDataEvent(
             string streamId, Guid eventId,
             string eventType, string data, ExtraMetaData metadata, CheckpointTag causedByTag, CheckpointTag expectedTag,
             Action<int> onCommitted = null)
-            : base(streamId, null, eventId, eventType, causedByTag, expectedTag, onCommitted)
+            : base(streamId, eventId, eventType, causedByTag, expectedTag, onCommitted)
         {
             _data = data;
             _metadata = metadata;

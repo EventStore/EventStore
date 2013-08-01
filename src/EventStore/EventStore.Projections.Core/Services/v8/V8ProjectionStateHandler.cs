@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Services.v8
     {
         private readonly PreludeScript _prelude;
         private readonly QueryScript _query;
-        private List<EmittedEvent> _emittedEvents;
+        private List<EmittedEventEnvelope> _emittedEvents;
         private CheckpointTag _eventPosition;
         private bool _disposed;
 
@@ -101,11 +101,12 @@ namespace EventStore.Projections.Core.Services.v8
                 throw new ArgumentException("Failed to deserialize emitted event JSON", ex);
             }
             if (_emittedEvents == null)
-                _emittedEvents = new List<EmittedEvent>();
+                _emittedEvents = new List<EmittedEventEnvelope>();
             _emittedEvents.Add(
-                new EmittedDataEvent(
-                    emittedEvent.streamId, null, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body,
-                    emittedEvent.GetExtraMetadata(), _eventPosition, expectedTag: null));
+                new EmittedEventEnvelope(
+                    new EmittedDataEvent(
+                        emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body,
+                        emittedEvent.GetExtraMetadata(), _eventPosition, expectedTag: null)));
         }
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
@@ -149,7 +150,7 @@ namespace EventStore.Projections.Core.Services.v8
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
-            out EmittedEvent[] emittedEvents)
+            out EmittedEventEnvelope[] emittedEvents)
         {
             CheckDisposed();
             if (data == null)

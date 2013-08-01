@@ -120,8 +120,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 _writeAs = writeAs;
                 _maxWriteBatchLength = maxWriteBatchLength;
                 _logger = logger;
-                this.maxCount = streamMetadata.MaxCount;
-                this.maxAge = streamMetadata.MaxAge;
+                if (streamMetadata != null)
+                {
+                    this.maxCount = streamMetadata.MaxCount;
+                    this.maxAge = streamMetadata.MaxAge;
+                }
             }
 
             public IPrincipal WriteAs

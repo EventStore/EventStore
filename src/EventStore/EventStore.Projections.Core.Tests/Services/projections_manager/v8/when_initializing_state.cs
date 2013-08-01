@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void process_event_should_return_initialized_state()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
                 "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category",
                 Guid.NewGuid(), 0, "metadata", @"{""a"":""b""}", out state, out emittedEvents);

@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_states.Count > 0)
             {
-                var list = new List<EmittedEvent>();
+                var list = new List<EmittedEventEnvelope>();
                 foreach (var entry in _states)
                 {
                     var partition = entry.Key;
@@ -78,14 +78,15 @@ namespace EventStore.Projections.Core.Services.Processing
                     var causedBy = entry.Value.PartitionState.CausedBy;
                     var expectedTag = entry.Value.ExpectedTag;
                     list.Add(
-                        new EmittedDataEvent(
-                            streamId, _partitionCheckpointStreamMetadata, Guid.NewGuid(),
-                            ProjectionNamesBuilder.EventType_PartitionCheckpoint, data, null, causedBy, expectedTag));
+                        new EmittedEventEnvelope(
+                            new EmittedDataEvent(
+                                streamId, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint, data,
+                                null, causedBy, expectedTag), _partitionCheckpointStreamMetadata));
                 }
                 //NOTE: order yb is required to satisfy internal emit events validation
                 // which ensures that events are ordered by causedBy tag.  
                 // it is too strong check, but ...
-                eventWriter.ValidateOrderAndEmitEvents(list.OrderBy(v => v.CausedByTag).ToArray());
+                eventWriter.ValidateOrderAndEmitEvents(list.OrderBy(v => v.Event.CausedByTag).ToArray());
             }
         }
     }

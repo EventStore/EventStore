@@ -736,8 +736,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             string newState;
             string projectionResult;
-            EmittedEvent[] emittedEvents;
-            var hasBeenProcessed = SafeProcessEventByHandler(partition, message, out newState, out projectionResult, out emittedEvents);
+            EmittedEventEnvelope[] emittedEvents;
+            var hasBeenProcessed = SafeProcessEventByHandler(
+                partition, message, out newState, out projectionResult, out emittedEvents);
             if (hasBeenProcessed)
             {
                 return InternalCommittedEventProcessed(partition, message, emittedEvents, newState, projectionResult);
@@ -747,7 +748,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool SafeProcessEventByHandler(
             string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, out string newState,
-            out string projectionResult, out EmittedEvent[] emittedEvents)
+            out string projectionResult, out EmittedEventEnvelope[] emittedEvents)
         {
             projectionResult = null;
             //TODO: not emitting (optimized) projection handlers can skip serializing state on each processed event
@@ -773,8 +774,8 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private EventProcessedResult InternalCommittedEventProcessed(
-            string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, EmittedEvent[] emittedEvents,
-            string newState, string projectionResult)
+            string partition, EventReaderSubscriptionMessage.CommittedEventReceived message,
+            EmittedEventEnvelope[] emittedEvents, string newState, string projectionResult)
         {
             if (!ValidateEmittedEvents(emittedEvents))
                 return null;
@@ -786,7 +787,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             PartitionState partitionState = null;
             // NOTE: projectionResult cannot change independently unless projection definition has changed
-            if (stateWasChanged || projectionResultChanged) 
+            if (stateWasChanged || projectionResultChanged)
             {
                 var lockPartitionStateAt = partition != "" ? message.CheckpointTag : null;
                 partitionState = new PartitionState(newState, projectionResult, message.CheckpointTag);
@@ -803,7 +804,7 @@ namespace EventStore.Projections.Core.Services.Processing
             else return null;
         }
 
-        private bool ValidateEmittedEvents(EmittedEvent[] emittedEvents)
+        private bool ValidateEmittedEvents(EmittedEventEnvelope[] emittedEvents)
         {
             if (!_projectionConfig.EmitEventEnabled)
             {
@@ -818,7 +819,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool ProcessEventByHandler(
             string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, out string newState, out string projectionResult,
-            out EmittedEvent[] emittedEvents)
+            out EmittedEventEnvelope[] emittedEvents)
         {
             projectionResult = null;
             SetHandlerState(partition);
@@ -1059,7 +1060,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var checkpointHandler = _projectionStateHandler as IProjectionCheckpointHandler;
             if (checkpointHandler != null)
             {
-                EmittedEvent[] emittedEvents;
+                EmittedEventEnvelope[] emittedEvents;
                 try
                 {
                     checkpointHandler.ProcessNewCheckpoint(at, out emittedEvents);

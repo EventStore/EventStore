@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new[]
                 {
                     new EmittedDataEvent(
-                        orderStreamName, null, Guid.NewGuid(), "$>",
+                        orderStreamName, Guid.NewGuid(), "$>",
                         resolvedEvent.PositionSequenceNumber + "@" + resolvedEvent.PositionStreamId, null,
                         orderCheckpointTag, _lastOrderCheckpointTag, v => committed())
                 });
@@ -101,8 +101,9 @@ namespace EventStore.Projections.Core.Services.Processing
             return new EmittedStream(
                 /* MUST NEVER SEND READY MESSAGE */
                 _namingBuilder.GetOrderStreamName(),
-                new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), SystemAccount.Principal, 100, _logger), _projectionVersion,
-                _positionTagger, @from, _ioDispatcher, this, noCheckpoints: true);
+                new EmittedStream.WriterConfiguration(
+                    new EmittedStream.WriterConfiguration.StreamMetadata(), SystemAccount.Principal, 100, _logger),
+                _projectionVersion, _positionTagger, @from, _ioDispatcher, this, noCheckpoints: true);
         }
 
         public override void GetStatistics(ProjectionStatistics info)

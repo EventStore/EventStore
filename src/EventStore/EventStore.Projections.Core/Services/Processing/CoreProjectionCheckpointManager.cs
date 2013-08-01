@@ -233,7 +233,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _handledEventsAfterCheckpoint++;
         }
 
-        public void EventsEmitted(EmittedEvent[] scheduledWrites, Guid causedBy, string correlationId)
+        public void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
         {
             if (_stopped)
                 return;
@@ -242,10 +242,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Stopping");
             if (scheduledWrites != null)
             {
-                foreach (EmittedEvent @event in scheduledWrites)
+                foreach (var @event in scheduledWrites)
                 {
-                    @event.SetCausedBy(causedBy);
-                    @event.SetCorrelationId(correlationId);
+                    var emittedEvent = @event.Event;
+                    emittedEvent.SetCausedBy(causedBy);
+                    emittedEvent.SetCorrelationId(correlationId);
                 }
                 _currentCheckpoint.ValidateOrderAndEmitEvents(scheduledWrites);
             }
@@ -297,7 +298,7 @@ namespace EventStore.Projections.Core.Services.Processing
             string statePartition, CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted);
 
         protected abstract ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition);
-        protected abstract EmittedEvent[] RegisterNewPartition(string partition, CheckpointTag at);
+        protected abstract EmittedEventEnvelope[] RegisterNewPartition(string partition, CheckpointTag at);
         protected abstract void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
         protected abstract void BeforeBeginLoadState();
         protected abstract void RequestLoadState();
@@ -476,7 +477,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Failed(message.Reason);
         }
 
-        private EmittedEvent[] ResultUpdated(string partition, PartitionState oldState, PartitionState newState)
+        private EmittedEventEnvelope[] ResultUpdated(string partition, PartitionState oldState, PartitionState newState)
         {
             return _resultEmitter.ResultUpdated(partition, newState.Result, newState.CausedBy);
         }

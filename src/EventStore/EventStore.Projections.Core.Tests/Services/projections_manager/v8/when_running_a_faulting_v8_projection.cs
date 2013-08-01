@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             public void process_event_throws_js1_exception()
             {
                 string state;
-                EmittedEvent[] emittedEvents;
+                EmittedEventEnvelope[] emittedEvents;
                 _stateHandler.ProcessEvent(
                     "", CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                     @"{""a"":""b""}", out state, out emittedEvents);
@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             public void process_event_throws_js1_exception()
             {
                 string state;
-                EmittedEvent[] emittedEvents;
+                EmittedEventEnvelope[] emittedEvents;
                 Assert.DoesNotThrow(() => _stateHandler.ProcessEvent(
                     "", CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                     @"{""a"":""b""}", out state, out emittedEvents));

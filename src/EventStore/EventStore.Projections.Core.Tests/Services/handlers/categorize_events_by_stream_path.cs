@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
         {
             private CategorizeEventsByStreamPath _handler;
             private string _state;
-            private EmittedEvent[] _emittedEvents;
+            private EmittedEventEnvelope[] _emittedEvents;
             private bool _result;
 
             [SetUp]
@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
             {
                 Assert.NotNull(_emittedEvents);
                 Assert.AreEqual(1, _emittedEvents.Length);
-                var @event = _emittedEvents[0];
+                var @event = _emittedEvents[0].Event;
                 Assert.AreEqual("$>", @event.EventType);
                 Assert.AreEqual("$ce-cat1", @event.StreamId);
                 Assert.AreEqual("10@cat1-stream1", @event.Data);
@@ -87,7 +87,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
         {
             private CategorizeEventsByStreamPath _handler;
             private string _state;
-            private EmittedEvent[] _emittedEvents;
+            private EmittedEventEnvelope[] _emittedEvents;
             private bool _result;
 
             [SetUp]
@@ -119,7 +119,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
             {
                 Assert.NotNull(_emittedEvents);
                 Assert.AreEqual(1, _emittedEvents.Length);
-                var @event = _emittedEvents[0];
+                var @event = _emittedEvents[0].Event;
                 Assert.AreEqual("$>", @event.EventType);
                 Assert.AreEqual("$ce-cat2", @event.StreamId);
                 Assert.AreEqual("10@cat1-stream1", @event.Data);

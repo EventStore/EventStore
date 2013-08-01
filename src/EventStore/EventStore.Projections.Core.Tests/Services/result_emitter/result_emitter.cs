@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
             private string _partition;
             private string _projection;
             private CheckpointTag _partitionAt;
-            private EmittedEvent[] _emittedEvents;
+            private EmittedEventEnvelope[] _emittedEvents;
 
             [SetUp]
             public void setup()
@@ -108,7 +108,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
             private string _partition;
             private string _projection;
             private CheckpointTag _resultAt;
-            private EmittedEvent[] _emittedEvents;
+            private EmittedEventEnvelope[] _emittedEvents;
             private string _result;
 
             [SetUp]
@@ -139,13 +139,13 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 Assert.NotNull(_emittedEvents);
                 Assert.AreEqual(2, _emittedEvents.Length);
                 var @event = _emittedEvents[0];
-                var link = _emittedEvents[1];
+                var link = _emittedEvents[1].Event;
 
-                Assert.AreEqual("Result", @event.EventType);
-                Assert.AreEqual(_result, @event.Data);
-                Assert.AreEqual("$projections-projection-partition-result", @event.StreamId);
-                Assert.AreEqual(_resultAt, @event.CausedByTag);
-                Assert.IsNull(@event.ExpectedTag);
+                Assert.AreEqual("Result", @event.Event.EventType);
+                Assert.AreEqual(_result, @event.Event.Data);
+                Assert.AreEqual("$projections-projection-partition-result", @event.Event.StreamId);
+                Assert.AreEqual(_resultAt, @event.Event.CausedByTag);
+                Assert.IsNull(@event.Event.ExpectedTag);
 
                 Assert.AreEqual("$>", link.EventType);
                 ((EmittedLinkTo) link).SetTargetEventNumber(1);
@@ -167,7 +167,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
             private string _partition;
             private string _projection;
             private CheckpointTag _resultAt;
-            private EmittedEvent[] _emittedEvents;
+            private EmittedEventEnvelope[] _emittedEvents;
 
             [SetUp]
             public void setup()
@@ -196,13 +196,13 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 Assert.NotNull(_emittedEvents);
                 Assert.AreEqual(2, _emittedEvents.Length);
                 var @event = _emittedEvents[0];
-                var link = _emittedEvents[1];
+                var link = _emittedEvents[1].Event;
 
-                Assert.AreEqual("ResultRemoved", @event.EventType);
-                Assert.IsNull(@event.Data);
-                Assert.AreEqual("$projections-projection-partition-result", @event.StreamId);
-                Assert.AreEqual(_resultAt, @event.CausedByTag);
-                Assert.IsNull(@event.ExpectedTag);
+                Assert.AreEqual("ResultRemoved", @event.Event.EventType);
+                Assert.IsNull(@event.Event.Data);
+                Assert.AreEqual("$projections-projection-partition-result", @event.Event.StreamId);
+                Assert.AreEqual(_resultAt, @event.Event.CausedByTag);
+                Assert.IsNull(@event.Event.ExpectedTag);
 
                 Assert.AreEqual("$>", link.EventType);
                 ((EmittedLinkTo)link).SetTargetEventNumber(1);
@@ -225,7 +225,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
             private string _partition;
             private string _projection;
             private CheckpointTag _resultAt;
-            private EmittedEvent[] _emittedEvents;
+            private EmittedEventEnvelope[] _emittedEvents;
             private string _result;
 
             [SetUp]
@@ -255,7 +255,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
             {
                 Assert.NotNull(_emittedEvents);
                 Assert.AreEqual(1, _emittedEvents.Length);
-                var @event = _emittedEvents[0];
+                var @event = _emittedEvents[0].Event;
 
                 Assert.AreEqual("Result", @event.EventType);
                 Assert.AreEqual(_result, @event.Data);

@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
 
         class FakeEventWriter : IEventWriter
         {
-            public void ValidateOrderAndEmitEvents(EmittedEvent[] events)
+            public void ValidateOrderAndEmitEvents(EmittedEventEnvelope[] events)
             {
                 Assert.Fail("Should not write any events");
             }

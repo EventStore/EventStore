@@ -93,24 +93,24 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void ValidateOrderAndEmitEvents(EmittedEvent[] events)
+        public void ValidateOrderAndEmitEvents(EmittedEventEnvelope[] events)
         {
             UpdateLastPosition(events);
             EnsureCheckpointNotRequested();
 
-            var groupedEvents = events.GroupBy(v => v.StreamId);
+            var groupedEvents = events.GroupBy(v => v.Event.StreamId);
             foreach (var eventGroup in groupedEvents)
             {
                 EmitEventsToStream(eventGroup.Key, eventGroup.ToArray());
             }
         }
 
-        private void UpdateLastPosition(EmittedEvent[] events)
+        private void UpdateLastPosition(EmittedEventEnvelope[] events)
         {
             foreach (var emittedEvent in events)
             {
-                if (emittedEvent.CausedByTag > _last)
-                    _last = emittedEvent.CausedByTag;
+                if (emittedEvent.Event.CausedByTag > _last)
+                    _last = emittedEvent.Event.CausedByTag;
             }
         }
 
@@ -150,22 +150,24 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Checkpoint requested");
         }
 
-        private void EmitEventsToStream(string streamId, EmittedEvent[] emittedEvents)
+        private void EmitEventsToStream(string streamId, EmittedEventEnvelope[] emittedEvents)
         {
             EmittedStream stream;
             if (!_emittedStreams.TryGetValue(streamId, out stream))
             {
+                var streamMetadata = emittedEvents.Length > 0 ? emittedEvents[0].StreamMetadata : null;
+
+                var writerConfiguration = new EmittedStream.WriterConfiguration(
+                    streamMetadata, _runAs, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
+
                 stream = new EmittedStream(
-                    streamId,
-                    new EmittedStream.WriterConfiguration(
-                        new EmittedStream.WriterConfiguration.StreamMetadata(), _runAs,
-                        maxWriteBatchLength: _maxWriteBatchLength, logger: _logger), _projectionVersion, _positionTagger,
-                    _from, _ioDispatcher, this);
+                    streamId, writerConfiguration, _projectionVersion, _positionTagger, _from, _ioDispatcher, this);
+
                 if (_started)
                     stream.Start();
                 _emittedStreams.Add(streamId, stream);
             }
-            stream.EmitEvents(emittedEvents);
+            stream.EmitEvents(emittedEvents.Select(v => v.Event).ToArray());
         }
 
         public void Handle(CoreProjectionProcessingMessage.ReadyForCheckpoint message)

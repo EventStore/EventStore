@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Standard
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEvent[] emittedEvents)
+            out string newState, out EmittedEventEnvelope[] emittedEvents)
         {
             emittedEvents = null;
             newState = null;
@@ -78,9 +78,10 @@ namespace EventStore.Projections.Core.Standard
 
             emittedEvents = new[]
             {
-                new EmittedDataEvent(
-                    SystemStreams.StreamsStream, null, Guid.NewGuid(), SystemEventTypes.LinkTo,
-                    data.EventSequenceNumber + "@" + data.EventStreamId, null, eventPosition, expectedTag: null)
+                new EmittedEventEnvelope(
+                    new EmittedDataEvent(
+                        SystemStreams.StreamsStream, Guid.NewGuid(), SystemEventTypes.LinkTo,
+                        data.EventSequenceNumber + "@" + data.EventStreamId, null, eventPosition, expectedTag: null))
             };
 
             return true;

@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                 {
                     new EmittedLinkTo(
-                        "test_stream", null, Guid.NewGuid(), "other_stream", CheckpointTag.FromPosition(1100, 1000), null)
+                        "test_stream", Guid.NewGuid(), "other_stream", CheckpointTag.FromPosition(1100, 1000), null)
                 });
             Assert.AreEqual(1, _readyHandler.HandledStreamAwaitingMessage.Count);
             Assert.AreEqual("test_stream", _readyHandler.HandledStreamAwaitingMessage[0].StreamId);
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void processes_write_on_write_completed_if_ready()
         {
             var linkTo = new EmittedLinkTo(
-                "test_stream", null, Guid.NewGuid(), "other_stream", CheckpointTag.FromPosition(1100, 1000), null);
+                "test_stream", Guid.NewGuid(), "other_stream", CheckpointTag.FromPosition(1100, 1000), null);
             _stream.EmitEvents(new[] {linkTo});
             linkTo.SetTargetEventNumber(1);
             _stream.Handle(new CoreProjectionProcessingMessage.EmittedStreamWriteCompleted("other_stream"));
@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void replies_with_await_message_on_write_completed_if_not_yet_ready()
         {
             var linkTo = new EmittedLinkTo(
-                "test_stream", null, Guid.NewGuid(), "other_stream", CheckpointTag.FromPosition(1100, 1000), null);
+                "test_stream", Guid.NewGuid(), "other_stream", CheckpointTag.FromPosition(1100, 1000), null);
             _stream.EmitEvents(new[] {linkTo});
             _stream.Handle(new CoreProjectionProcessingMessage.EmittedStreamWriteCompleted("one_more_stream"));
 

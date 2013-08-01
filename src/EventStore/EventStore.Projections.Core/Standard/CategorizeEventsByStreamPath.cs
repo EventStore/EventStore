@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Standard
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEvent[] emittedEvents)
+            out string newState, out EmittedEventEnvelope[] emittedEvents)
         {
             emittedEvents = null;
             newState = null;
@@ -98,11 +98,12 @@ namespace EventStore.Projections.Core.Standard
                 linkTarget = data.EventSequenceNumber + "@" + data.EventStreamId;
 
             emittedEvents = new[]
-                {
+            {
+                new EmittedEventEnvelope(
                     new EmittedLinkToWithRecategorization(
-                        _categoryStreamPrefix + category, null, Guid.NewGuid(), linkTarget, eventPosition, expectedTag: null,
-                        originalStreamId: data.PositionStreamId)
-                };
+                        _categoryStreamPrefix + category, Guid.NewGuid(), linkTarget, eventPosition, expectedTag: null,
+                        originalStreamId: data.PositionStreamId))
+            };
 
             return true;
         }

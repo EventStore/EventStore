@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Standard
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEvent[] emittedEvents)
+            out string newState, out EmittedEventEnvelope[] emittedEvents)
         {
             emittedEvents = null;
             newState = null;
@@ -83,11 +83,12 @@ namespace EventStore.Projections.Core.Standard
                 return false;
 
             emittedEvents = new[]
-                {
+            {
+                new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        _indexStreamPrefix + data.EventType, null, Guid.NewGuid(), "$>",
-                        data.EventSequenceNumber + "@" + data.EventStreamId, null, eventPosition, expectedTag: null)
-                };
+                        _indexStreamPrefix + data.EventType, Guid.NewGuid(), "$>",
+                        data.EventSequenceNumber + "@" + data.EventStreamId, null, eventPosition, expectedTag: null))
+            };
 
             return true;
         }
@@ -101,13 +102,14 @@ namespace EventStore.Projections.Core.Standard
         {
         }
 
-        public void ProcessNewCheckpoint(CheckpointTag checkpointPosition, out EmittedEvent[] emittedEvents)
+        public void ProcessNewCheckpoint(CheckpointTag checkpointPosition, out EmittedEventEnvelope[] emittedEvents)
         {
             emittedEvents = new[]
             {
-                new EmittedDataEvent(
-                    _indexCheckpointStream, null, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint,
-                    checkpointPosition.ToJsonString(), null, checkpointPosition, expectedTag: null)
+                new EmittedEventEnvelope(
+                    new EmittedDataEvent(
+                        _indexCheckpointStream, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint,
+                        checkpointPosition.ToJsonString(), null, checkpointPosition, expectedTag: null))
             };
         }
     }

@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void process_event_should_reflect_event()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
                 "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, @"{""metadata"":1}",
                 @"{""a"":""b""}", out state, out emittedEvents);
@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void process_event_should_reflect_event_2()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
                 "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, @"{""metadata"":1}",
                 @"{""a"":1}", out state, out emittedEvents);
@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void multiple_process_event_should_reflect_events()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
                 "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, @"{""metadata"":0}",
                 @"{""a"":""b""}", out state, out emittedEvents);
@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void process_event_returns_true()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
                 "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, @"{""metadata"":1}",
                 @"{""a"":""b""}", out state, out emittedEvents);
@@ -105,7 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void process_event_with_null_category_returns_true()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
                 "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", null, Guid.NewGuid(), 0, @"{""metadata"":1}", @"{""a"":""b""}",
                 out state, out emittedEvents);

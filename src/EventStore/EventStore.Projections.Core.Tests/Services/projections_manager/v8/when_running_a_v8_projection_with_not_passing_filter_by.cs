@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void filter_by_that_passes_returns_correct_result()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
                 "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""2""}", out state, out emittedEvents);
@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void filter_by_that_does_not_pass_returns_correct_result()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
                 "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""3""}", out state, out emittedEvents);

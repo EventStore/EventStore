@@ -32,12 +32,12 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class NoopResultEmitter : IResultEmitter
     {
-        public EmittedEvent[] ResultUpdated(string partition, string result, CheckpointTag at)
+        public EmittedEventEnvelope[] ResultUpdated(string partition, string result, CheckpointTag at)
         {
             throw new NotSupportedException("No results are expected from the projection");
         }
 
-        public EmittedEvent[] NewPartition(string partition, CheckpointTag at)
+        public EmittedEventEnvelope[] NewPartition(string partition, CheckpointTag at)
         {
             // Do nothing. Noop result emitter does not care about partitions
             return null;

@@ -43,41 +43,44 @@ namespace EventStore.Projections.Core.Services.Processing
             _namesBuilder = namesBuilder;
         }
 
-        public EmittedEvent[] ResultUpdated(string partition, string result, CheckpointTag at)
+        public EmittedEventEnvelope[] ResultUpdated(string partition, string result, CheckpointTag at)
         {
             return CreateResultUpdatedEvents(partition, result, at);
         }
 
-        public EmittedEvent[] NewPartition(string partition, CheckpointTag at)
+        public EmittedEventEnvelope[] NewPartition(string partition, CheckpointTag at)
         {
             return null;
         }
 
-        private EmittedEvent[] CreateResultUpdatedEvents(string partition, string projectionResult, CheckpointTag at)
+        private EmittedEventEnvelope[] CreateResultUpdatedEvents(string partition, string projectionResult, CheckpointTag at)
         {
             var streamId = _namesBuilder.MakePartitionResultStreamName(partition);
             var allResultsStreamId = _namesBuilder.GetResultStreamName();
             if (string.IsNullOrEmpty(partition))
             {
-                var result = projectionResult == null
-                    ? new EmittedDataEvent(
-                        streamId, _resultStreamMetadata, Guid.NewGuid(), "ResultRemoved", null, null, at, null)
-                    : new EmittedDataEvent(
-                        streamId, _resultStreamMetadata, Guid.NewGuid(), "Result", projectionResult, null, at, null);
-                return new EmittedEvent[] {result};
+                var result =
+                    new EmittedEventEnvelope(
+                        projectionResult == null
+                            ? new EmittedDataEvent(streamId, Guid.NewGuid(), "ResultRemoved", null, null, at, null)
+                            : new EmittedDataEvent(streamId, Guid.NewGuid(), "Result", projectionResult, null, at, null),
+                        _resultStreamMetadata);
+                return new[] {result};
             }
             else
             {
-                var linkTo = new EmittedLinkTo(
-                    allResultsStreamId, _resultStreamMetadata, Guid.NewGuid(), streamId, at, null);
-                var result = projectionResult == null
-                    ? new EmittedDataEvent(
-                        streamId, _resultStreamMetadata, Guid.NewGuid(), "ResultRemoved", null, null, at, null,
-                        linkTo.SetTargetEventNumber)
-                    : new EmittedDataEvent(
-                        streamId, _resultStreamMetadata, Guid.NewGuid(), "Result", projectionResult, null, at, null,
-                        linkTo.SetTargetEventNumber);
-                return new EmittedEvent[] {result, linkTo};
+                var linkTo = new EmittedLinkTo(allResultsStreamId, Guid.NewGuid(), streamId, at, null);
+                var linkToEnvelope = new EmittedEventEnvelope(linkTo, _resultStreamMetadata);
+                var result =
+                    new EmittedEventEnvelope(
+                        projectionResult == null
+                            ? new EmittedDataEvent(
+                                streamId, Guid.NewGuid(), "ResultRemoved", null, null, at, null,
+                                linkTo.SetTargetEventNumber)
+                            : new EmittedDataEvent(
+                                streamId, Guid.NewGuid(), "Result", projectionResult, null, at, null,
+                                linkTo.SetTargetEventNumber), _resultStreamMetadata);
+                return new[] {result, linkToEnvelope};
             }
         }
     }

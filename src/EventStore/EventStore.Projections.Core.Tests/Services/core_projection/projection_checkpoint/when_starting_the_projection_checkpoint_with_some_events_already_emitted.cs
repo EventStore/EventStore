@@ -58,20 +58,24 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                 CheckpointTag.FromPosition(0, -1), 250);
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[]
-                    {
+                {
+                    new EmittedEventEnvelope(
                         new EmittedDataEvent(
-                    "stream2", Guid.NewGuid(), "type", "data2", null, CheckpointTag.FromPosition(120, 110), null),
+                            "stream2", Guid.NewGuid(), "type", "data2", null, CheckpointTag.FromPosition(120, 110), null)),
+                    new EmittedEventEnvelope(
                         new EmittedDataEvent(
-                    "stream3", Guid.NewGuid(), "type", "data3", null, CheckpointTag.FromPosition(120, 110), null),
+                            "stream3", Guid.NewGuid(), "type", "data3", null, CheckpointTag.FromPosition(120, 110), null)),
+                    new EmittedEventEnvelope(
                         new EmittedDataEvent(
-                    "stream2", Guid.NewGuid(), "type", "data4", null, CheckpointTag.FromPosition(120, 110), null),
-                    });
+                            "stream2", Guid.NewGuid(), "type", "data4", null, CheckpointTag.FromPosition(120, 110), null)),
+                });
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[]
-                    {
+                {
+                    new EmittedEventEnvelope(
                         new EmittedDataEvent(
-                    "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(140, 130), null)
-                    });
+                            "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(140, 130), null))
+                });
             _checkpoint.Start();
         }
 

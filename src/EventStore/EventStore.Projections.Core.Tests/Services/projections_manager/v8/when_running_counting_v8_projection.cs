@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void process_event_counts_events()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
                 "", CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             {
                 _logged.Clear();
                 string state;
-                EmittedEvent[] emittedEvents;
+                EmittedEventEnvelope[] emittedEvents;
                 _stateHandler.ProcessEvent(
                     "", CheckpointTag.FromPosition(i * 10, i * 10 - 5), "stream" + i, "type" + i, "category", Guid.NewGuid(), 0,
                     "metadata", @"{""a"":""" + i + @"""}", out state, out emittedEvents);
