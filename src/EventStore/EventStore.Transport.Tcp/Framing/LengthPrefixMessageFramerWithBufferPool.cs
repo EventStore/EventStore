@@ -28,12 +28,15 @@
 using System;
 using System.Collections.Generic;
 using EventStore.BufferManagement;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Tcp.Framing
 {
     public class LengthPrefixMessageFramerWithBufferPool
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<LengthPrefixMessageFramerWithBufferPool>();
+
         private const int PrefixLength = sizeof(int);
 
         private readonly int _maxPackageSize;
@@ -95,7 +98,11 @@ namespace EventStore.Transport.Tcp.Framing
                     if (_headerBytes == PrefixLength)
                     {
                         if (_packageLength <= 0 || _packageLength > _maxPackageSize)
-                            throw new PackageFramingException(string.Format("Package size is out of bounds: {0} (max: {1}).", _packageLength, _maxPackageSize));
+                        {
+                            Log.Error("FRAMING ERROR! Data:\n{0}", Common.Utils.Helper.FormatBinaryDump(bytes));
+                            throw new PackageFramingException(string.Format("Package size is out of bounds: {0} (max: {1}).",
+                                                                            _packageLength, _maxPackageSize));
+                        }
 
                         _messageBuffer = new BufferPool(_bufferManager);
                     }

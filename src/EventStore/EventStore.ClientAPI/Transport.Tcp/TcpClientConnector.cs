@@ -27,8 +27,7 @@
 //  
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -40,39 +39,19 @@ namespace EventStore.ClientAPI.Transport.Tcp
     //TODO GFY THIS CODE NEEDS SOME LOVE ITS KIND OF CONVOLUTED HOW ITS WORKING WITH TCP CONNECTIONS
     internal class TcpClientConnector
     {
+        private const int CheckPeriodMs = 200;
+
         private readonly SocketArgsPool _connectSocketArgsPool;
-        private readonly List<ConnectingSocket> _connectingSockets;
+        private readonly ConcurrentDictionary<Guid, PendingConnection> _pendingConections;
         private readonly Timer _timer;
 
         public TcpClientConnector()
         {
-            _connectSocketArgsPool = new SocketArgsPool("TcpClientConnector._connectSocketArgsPool",
+            _connectSocketArgsPool = new SocketArgsPool("TcpClientConnectorSocketArgsPool",
                                                         TcpConfiguration.ConnectPoolSize,
                                                         CreateConnectSocketArgs);
-            _connectingSockets = new List<ConnectingSocket>();
-            _timer = new Timer(TimerCallback, null, 200, 200);
-        }
-
-        private void TimerCallback(object state)
-        {
-            List<ConnectingSocket> tokill;
-            lock(_connectingSockets)
-            {
-                tokill = _connectingSockets.Where(
-                    x =>
-                        {
-                            var d = DateTime.Now;
-                            return x.WhenToKill < d;
-                        }).ToList();
-            }
-            foreach(var item in tokill)
-            {
-                lock (_connectingSockets)
-                {
-                    if (_connectingSockets.FirstOrDefault(x => x.Connection == item.Connection) == null) continue;
-                }
-                HandleTimeout(item.Connection);
-            }
+            _pendingConections = new ConcurrentDictionary<Guid, PendingConnection>();
+            _timer = new Timer(TimerCallback, null, CheckPeriodMs, Timeout.Infinite);
         }
 
         private SocketAsyncEventArgs CreateConnectSocketArgs()
@@ -94,43 +73,24 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                         Action<ITcpConnection, SocketError> onConnectionFailed = null,
                                         Action<ITcpConnection, SocketError> onConnectionClosed = null)
         {
-            var timeoutAt = DateTime.Now.Add(timeout);
             Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
             if (ssl)
             {
                 Ensure.NotNullOrEmpty(targetHost, "targetHost");
-                var connecting = TcpConnectionSsl.CreateConnectingConnection(log, connectionId, remoteEndPoint,
-                                                                   targetHost, validateServer, 
-                                                                   this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
-                AddToConnecting(connecting, timeoutAt);
-                return connecting;
+                return TcpConnectionSsl.CreateConnectingConnection(
+                        log, connectionId, remoteEndPoint, targetHost, validateServer,
+                        this, timeout, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
             }
-            var conn = TcpConnection.CreateConnectingConnection(log, connectionId, remoteEndPoint,
-                                                            this, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
-            AddToConnecting(conn, timeoutAt);
-            return conn;
-        }
-
-        private void AddToConnecting(ITcpConnection conn, DateTime when)
-        {
-            lock (_connectingSockets)
-            {
-                _connectingSockets.Add(new ConnectingSocket(conn, when));
-            }
-        }
-
-        private void RemoveFromConnecting(ITcpConnection conn)
-        {
-            lock (_connectingSockets)
-            {
-                _connectingSockets.RemoveAll(x => x.Connection == conn);
-            }
+            return TcpConnection.CreateConnectingConnection(
+                    log, connectionId, remoteEndPoint, this, timeout,
+                    onConnectionEstablished, onConnectionFailed, onConnectionClosed);
         }
 
         internal void InitConnect(IPEndPoint serverEndPoint,
                                   Action<IPEndPoint, Socket> onConnectionEstablished,
                                   Action<IPEndPoint, SocketError> onConnectionFailed,
-                                  ITcpConnection connection)
+                                  ITcpConnection connection,
+                                  TimeSpan connectionTimeout)
         {
             if (serverEndPoint == null)
                 throw new ArgumentNullException("serverEndPoint");
@@ -146,7 +106,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
             var callbacks = (CallbacksStateToken)socketArgs.UserToken;
             callbacks.OnConnectionEstablished = onConnectionEstablished;
             callbacks.OnConnectionFailed = onConnectionFailed;
-            callbacks.Connection = connection;
+            callbacks.PendingConnection = new PendingConnection(connection, DateTime.UtcNow.Add(connectionTimeout));
+
+            AddToConnecting(callbacks.PendingConnection);
 
             try
             {
@@ -179,21 +141,15 @@ namespace EventStore.ClientAPI.Transport.Tcp
             var socketError = socketArgs.SocketError;
             var callbacks = (CallbacksStateToken)socketArgs.UserToken;
             var onConnectionFailed = callbacks.OnConnectionFailed;
+            var pendingConnection = callbacks.PendingConnection;
 
             Helper.EatException(() => socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
-            RemoveFromConnecting(callbacks.Connection);
             socketArgs.AcceptSocket = null;
             callbacks.Reset();
-
             _connectSocketArgsPool.Return(socketArgs);
 
-            onConnectionFailed((IPEndPoint)serverEndPoint, socketError);
-        }
-
-        private void HandleTimeout(ITcpConnection connection)
-        {
-            RemoveFromConnecting(connection);
-            Helper.EatException(() => connection.Close("Timeout on occurred connect."));
+            if (RemoveFromConnecting(pendingConnection))
+                onConnectionFailed((IPEndPoint)serverEndPoint, socketError);
         }
 
         private void OnSocketConnected(SocketAsyncEventArgs socketArgs)
@@ -202,37 +158,63 @@ namespace EventStore.ClientAPI.Transport.Tcp
             var socket = socketArgs.AcceptSocket;
             var callbacks = (CallbacksStateToken)socketArgs.UserToken;
             var onConnectionEstablished = callbacks.OnConnectionEstablished;
+            var pendingConnection = callbacks.PendingConnection;
+                
             socketArgs.AcceptSocket = null;
-            RemoveFromConnecting(callbacks.Connection);
             callbacks.Reset();
             _connectSocketArgsPool.Return(socketArgs);
             
-            onConnectionEstablished(remoteEndPoint, socket);
+            if (RemoveFromConnecting(pendingConnection))
+                onConnectionEstablished(remoteEndPoint, socket);
+        }
+
+        private void TimerCallback(object state)
+        {
+            foreach (var pendingConnection in _pendingConections.Values)
+            {
+                if (DateTime.UtcNow >= pendingConnection.WhenToKill && RemoveFromConnecting(pendingConnection))
+                    Helper.EatException(() => pendingConnection.Connection.Close("Connection establishment timeout."));
+            }
+            _timer.Change(CheckPeriodMs, Timeout.Infinite);
+        }
+
+        private void AddToConnecting(PendingConnection pendingConnection)
+        {
+            _pendingConections.TryAdd(pendingConnection.Connection.ConnectionId, pendingConnection);
+        }
+
+        private bool RemoveFromConnecting(PendingConnection pendingConnection)
+        {
+            PendingConnection conn;
+            return _pendingConections.TryRemove(pendingConnection.Connection.ConnectionId, out conn)
+                   && Interlocked.CompareExchange(ref conn.Done, 1, 0) == 0;
         }
 
         private class CallbacksStateToken
         {
             public Action<IPEndPoint, Socket> OnConnectionEstablished;
             public Action<IPEndPoint, SocketError> OnConnectionFailed;
-            public ITcpConnection Connection;
+            public PendingConnection PendingConnection;
 
             public void Reset()
             {
                 OnConnectionEstablished = null;
                 OnConnectionFailed = null;
-                Connection = null;
+                PendingConnection = null;
             }
         }
-    }
 
-    class ConnectingSocket
-    {
-        public readonly ITcpConnection Connection;
-        public readonly DateTime WhenToKill;
-        public ConnectingSocket(ITcpConnection connection, DateTime whenToKill)
+        private class PendingConnection
         {
-            Connection = connection;
-            WhenToKill = whenToKill;
+            public readonly ITcpConnection Connection;
+            public readonly DateTime WhenToKill;
+            public int Done;
+
+            public PendingConnection(ITcpConnection connection, DateTime whenToKill)
+            {
+                Connection = connection;
+                WhenToKill = whenToKill;
+            }
         }
     }
 }

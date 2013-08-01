@@ -193,6 +193,7 @@ namespace EventStore.TestClient
             var connection = _connector.ConnectTo(
                 Guid.NewGuid(),
                 tcpEndPoint ?? TcpEndpoint,
+                TcpConnectionManager.ConnectionTimeout,
                 conn =>
                 {
                     // we execute callback on ThreadPool because on FreeBSD it can be called synchronously

@@ -33,6 +33,7 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Log;
+using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Tcp;
 using NUnit.Framework;
@@ -96,6 +97,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                 "ES",
                 false,
                 new TcpClientConnector(),
+                TcpConnectionManager.ConnectionTimeout,
                 conn =>
                 {
                     Log.Info("Sending bytes...");

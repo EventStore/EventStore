@@ -72,14 +72,16 @@ es.projection = function (settings) {
                 nextPageUrl + "?embed=content",
                 {
                     headers: {
-                        Accept: 'application/json'
+                        Accept: 'application/vnd.eventstore.atom+json'
                     },
                     success: function(page) {
                         var lastLink = getFeedLink(page.links, 'last');
                         if (!lastLink) {
                             // head is the last page already
-                            for (var i = 0, n = page.entries.length; i < n; i += 1) {
-                                callback(page.entries[n - i - 1].content);
+                            if (page.entries) {
+                                for (var i = 0, n = page.entries.length; i < n; i += 1) {
+                                    callback(page.entries[n - i - 1].content);
+                                }
                             }
                             nextPageUrl = getFeedLink(page.links, 'previous');
                         } else {
@@ -102,9 +104,13 @@ es.projection = function (settings) {
                     headers: {
                         Accept: 'application/vnd.eventstore.atom+json'
                     },
-                    success: function (page) {
-                        for (var i = 0, n = page.entries.length; i < n; i += 1) {
-                            callback(page.entries[n - i - 1].content);
+                    success: function (pageStr) {
+                        var page = jQuery.parseJSON(pageStr);
+                        if (!page) page = pageStr;
+                        if (page.entries) {
+                            for (var i = 0, n = page.entries.length; i < n; i += 1) {
+                                callback(page.entries[n - i - 1].content);
+                            }
                         }
                         var prevLink = getFeedLink(page.links, 'previous');
                         nextPageUrl = prevLink || nextPageUrl;
