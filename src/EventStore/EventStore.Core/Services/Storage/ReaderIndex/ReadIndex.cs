@@ -590,7 +590,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        StreamAccessResult IReadIndex.CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
+        StreamAccess IReadIndex.CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
         {
             var reader = _readers.Get();
             try
@@ -603,8 +603,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private StreamAccessResult CheckStreamAccessInternal(ITransactionFileReader reader, string streamId, 
-                                                             StreamAccessType streamAccessType, IPrincipal user)
+        private StreamAccess CheckStreamAccessInternal(ITransactionFileReader reader, string streamId, 
+                                                       StreamAccessType streamAccessType, IPrincipal user)
         {
             if (SystemStreams.IsMetastream(streamId))
             {
@@ -617,7 +617,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     case StreamAccessType.Delete:
                     case StreamAccessType.MetaRead:
                     case StreamAccessType.MetaWrite:
-                        return StreamAccessResult.Denied;
+                        return new StreamAccess(false);
                     default:
                         throw new ArgumentOutOfRangeException("streamAccessType");
                 }
@@ -625,41 +625,46 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             if ((streamAccessType == StreamAccessType.Write || streamAccessType == StreamAccessType.Delete)
                 && streamId == SystemStreams.AllStream)
-                return StreamAccessResult.Denied;
-
-            if (user != null && user.IsInRole(SystemRoles.Admins))
-                return StreamAccessResult.Granted;
+                return new StreamAccess(false);
 
             var sysSettings = _systemSettings ?? SystemSettings.Default;
             var meta = GetStreamMetadataCached(reader, streamId);
             StreamAcl acl;
             StreamAcl sysAcl;
+            StreamAcl defAcl;
             if (SystemStreams.IsSystemStream(streamId))
             {
-                sysAcl = SystemSettings.Default.SystemStreamAcl;
-                acl = meta.Acl ?? sysSettings.SystemStreamAcl ?? sysAcl;
+                defAcl = SystemSettings.Default.SystemStreamAcl;
+                sysAcl = sysSettings.SystemStreamAcl ?? defAcl;
+                acl = meta.Acl ?? sysAcl;
             }
             else
             {
-                sysAcl = SystemSettings.Default.UserStreamAcl;
-                acl = meta.Acl ?? sysSettings.UserStreamAcl ?? sysAcl;
+                defAcl = SystemSettings.Default.UserStreamAcl;
+                sysAcl = sysSettings.UserStreamAcl ?? defAcl;
+                acl = meta.Acl ?? sysAcl;
             }
-            string role;
+            string[] roles;
             switch (streamAccessType)
             {
-                case StreamAccessType.Read: role = acl.ReadRole ?? sysAcl.ReadRole; break;
-                case StreamAccessType.Write: role = acl.WriteRole ?? sysAcl.WriteRole; break;
-                case StreamAccessType.Delete: role = acl.DeleteRole ?? sysAcl.DeleteRole; break;
-                case StreamAccessType.MetaRead: role = acl.MetaReadRole ?? sysAcl.MetaReadRole; break;
-                case StreamAccessType.MetaWrite: role = acl.MetaWriteRole ?? sysAcl.MetaWriteRole; break;
+                case StreamAccessType.Read: roles = acl.ReadRoles ?? sysAcl.ReadRoles ?? defAcl.ReadRoles; break;
+                case StreamAccessType.Write: roles = acl.WriteRoles ?? sysAcl.WriteRoles ?? defAcl.WriteRoles; break;
+                case StreamAccessType.Delete: roles = acl.DeleteRoles ?? sysAcl.DeleteRoles ?? defAcl.DeleteRoles; break;
+                case StreamAccessType.MetaRead: roles = acl.MetaReadRoles ?? sysAcl.MetaReadRoles ?? defAcl.MetaReadRoles; break;
+                case StreamAccessType.MetaWrite: roles = acl.MetaWriteRoles ?? sysAcl.MetaWriteRoles ?? defAcl.MetaWriteRoles; break;
                 default: throw new ArgumentOutOfRangeException("streamAccessType");
             }
 
-            if (role == SystemRoles.All)
-                return StreamAccessResult.Granted;
-            if (user == null || role == null)
-                return StreamAccessResult.Denied;
-            return user.IsInRole(role) ? StreamAccessResult.Granted : StreamAccessResult.Denied;
+            var isPublic = roles.Contains(x => x == SystemRoles.All);
+            if (isPublic) return new StreamAccess(true, true);
+            if (user == null) return new StreamAccess(false);
+            if (user.IsInRole(SystemRoles.Admins)) return new StreamAccess(true);
+            for (int i = 0; i < roles.Length; ++i)
+            {
+                if (user.IsInRole(roles[i]))
+                    return new StreamAccess(true);
+            }
+            return new StreamAccess(false);
         }
 
         private int GetLastStreamEventNumberCached(ITransactionFileReader reader, string streamId)

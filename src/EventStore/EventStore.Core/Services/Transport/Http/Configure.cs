@@ -139,14 +139,13 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     case ReadEventResult.Success:
                         var codec = entity.ResponseCodec;
-                        var isPublic = IsCachePublic(msg.EventStreamId, msg.StreamMetadata);
                         if (headEvent)
                         {
                             var etag = GetPositionETag(msg.Record.OriginalEventNumber, codec.ContentType);
                             var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
-                            return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, isPublic);
+                            return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
                         }
-                        return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, isPublic);
+                        return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
                     case ReadEventResult.NotFound:
                     case ReadEventResult.NoStream:
                         return NotFound();
@@ -180,12 +179,11 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     case ReadStreamResult.Success:
                         var codec = entity.ResponseCodec;
-                        var isPublic = IsCachePublic(msg.EventStreamId, msg.StreamMetadata);
                         if (msg.LastEventNumber >= msg.FromEventNumber && !headOfStream)
-                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, isPublic);
+                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
                         var etag = GetPositionETag(msg.LastEventNumber, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
-                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, isPublic);
+                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
                     case ReadStreamResult.NoStream:
                         return NotFound();
                     case ReadStreamResult.StreamDeleted:
@@ -215,14 +213,13 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     case ReadStreamResult.Success:
                         var codec = entity.ResponseCodec;
-                        var isPublic = IsCachePublic(msg.EventStreamId, msg.StreamMetadata);
                         var etag = GetPositionETag(msg.LastEventNumber, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
                         //if (msg.IsEndOfStream && msg.Events.Length == 0)
                         //    return NotFound(etag, cacheSeconds, isPublic, "text/html");
                         if (msg.LastEventNumber >= msg.FromEventNumber + msg.MaxCount)
-                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, isPublic);
-                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, isPublic);
+                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
+                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
                     case ReadStreamResult.NoStream:
                         return NotFound();
                     case ReadStreamResult.StreamDeleted:
@@ -252,12 +249,11 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     case ReadAllResult.Success:
                         var codec = entity.ResponseCodec;
-                        var isPublic = IsCachePublic(SystemStreams.AllStream, msg.StreamMetadata);
                         if (!headOfTf && msg.CurrentPos.CommitPosition <= msg.TfEofPosition)
-                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, isPublic);
+                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
                         var etag = GetPositionETag(msg.TfEofPosition, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
-                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, isPublic);
+                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
                     case ReadAllResult.NotModified:
                         return NotModified();
                     case ReadAllResult.Error:
@@ -283,14 +279,13 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     case ReadAllResult.Success:
                         var codec = entity.ResponseCodec;
-                        var isPublic = IsCachePublic(SystemStreams.AllStream, msg.StreamMetadata);
                         if (!headOfTf && msg.Events.Length == msg.MaxCount)
-                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, isPublic);
+                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
                         var etag = GetPositionETag(msg.TfEofPosition, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
                         //if (!headOfTf && msg.Events.Length == 0)
                         //    return NotFound(etag, cacheSeconds, isPublic, "text/plain");
-                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, isPublic);
+                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
                     case ReadAllResult.NotModified:
                         return NotModified();
                     case ReadAllResult.Error:
@@ -317,16 +312,6 @@ namespace EventStore.Core.Services.Transport.Http
             return metadata != null && metadata.CacheControl.HasValue
                            ? (int) metadata.CacheControl.Value.TotalSeconds
                            : (int?) null;
-        }
-
-        private static bool IsCachePublic(string streamId, StreamMetadata metadata)
-        {
-            if (SystemStreams.IsMetastream(streamId))
-                return false; // we don't have enough info here for metastreams
-
-            var isSystem = SystemStreams.IsSystemStream(streamId);
-            var role = (metadata == null || metadata.Acl == null) ? null : metadata.Acl.ReadRole;
-            return isSystem ? (role == SystemRoles.All) : (role == null || role == SystemRoles.All);
         }
 
         public static ResponseConfiguration WriteEventsCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)

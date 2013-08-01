@@ -27,6 +27,7 @@
 //  
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Services;
@@ -135,11 +136,11 @@ namespace EventStore.Core.Data
             Check(reader.Read(), reader);
             Check(JsonToken.StartObject, reader);
 
-            string read = null;
-            string write = null;
-            string delete = null;
-            string metaRead = null;
-            string metaWrite = null;
+            string[] read = null;
+            string[] write = null;
+            string[] delete = null;
+            string[] metaRead = null;
+            string[] metaWrite = null;
 
             while (true)
             {
@@ -160,12 +161,12 @@ namespace EventStore.Core.Data
             return new StreamAcl(read, write, delete, metaRead, metaWrite);
         }
 
-        private static string ReadRoles(JsonTextReader reader)
+        private static string[] ReadRoles(JsonTextReader reader)
         {
             Check(reader.Read(), reader);
             if (reader.TokenType == JsonToken.String)
-                return (string) reader.Value;
-/*
+                return new[] {(string) reader.Value};
+
             if (reader.TokenType == JsonToken.StartArray)
             {
                 var roles = new List<string>();
@@ -177,9 +178,9 @@ namespace EventStore.Core.Data
                     Check(JsonToken.String, reader);
                     roles.Add((string) reader.Value);
                 }
-                return roles;
+                return roles.ToArray();
             }
-*/
+
             throw new Exception("Invalid JSON");
         }
 
@@ -248,163 +249,29 @@ namespace EventStore.Core.Data
         internal static void WriteAcl(JsonTextWriter jsonWriter, StreamAcl acl)
         {
             jsonWriter.WriteStartObject();
-            if (acl.ReadRole != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.AclRead);
-                jsonWriter.WriteValue(acl.ReadRole);
-            }
-            if (acl.WriteRole != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.AclWrite);
-                jsonWriter.WriteValue(acl.WriteRole);
-            }
-            if (acl.DeleteRole != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.AclDelete);
-                jsonWriter.WriteValue(acl.DeleteRole);
-            }
-            if (acl.MetaReadRole != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.AclMetaRead);
-                jsonWriter.WriteValue(acl.MetaReadRole);
-            }
-            if (acl.MetaWriteRole != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.AclMetaWrite);
-                jsonWriter.WriteValue(acl.MetaWriteRole);
-            }
+            WriteAclRoles(jsonWriter, SystemMetadata.AclRead, acl.ReadRoles);
+            WriteAclRoles(jsonWriter, SystemMetadata.AclWrite, acl.WriteRoles);
+            WriteAclRoles(jsonWriter, SystemMetadata.AclDelete, acl.DeleteRoles);
+            WriteAclRoles(jsonWriter, SystemMetadata.AclMetaRead, acl.MetaReadRoles);
+            WriteAclRoles(jsonWriter, SystemMetadata.AclMetaWrite, acl.MetaWriteRoles);
             jsonWriter.WriteEndObject();
         }
-    }
 
-    public class StreamAcl
-    {
-        public readonly string ReadRole;
-        public readonly string WriteRole;
-        public readonly string DeleteRole;
-        public readonly string MetaReadRole;
-        public readonly string MetaWriteRole;
-
-        public StreamAcl(string readRole, string writeRole, string deleteRole, string metaReadRole, string metaWriteRole)
+        private static void WriteAclRoles(JsonTextWriter jsonWriter, string propertyName, string[] roles)
         {
-            ReadRole = readRole;
-            WriteRole = writeRole;
-            DeleteRole = deleteRole;
-            MetaReadRole = metaReadRole;
-            MetaWriteRole = metaWriteRole;
-        }
-
-        public override string ToString()
-        {
-            return string.Format("Read: {0}, Write: {1}, Delete: {2}, MetaRead: {3}, MetaWrite: {4}",
-                                 ReadRole, WriteRole, DeleteRole, MetaReadRole, MetaWriteRole);
-        }
-    }
-
-    public class SystemSettings
-    {
-        public static readonly SystemSettings Default = new SystemSettings(
-            new StreamAcl(SystemRoles.All, SystemRoles.All, SystemRoles.All, SystemRoles.All, SystemRoles.All),
-            new StreamAcl(SystemRoles.Admins, SystemRoles.Admins, SystemRoles.Admins, SystemRoles.Admins, SystemRoles.Admins));
-
-        public readonly StreamAcl UserStreamAcl;
-        public readonly StreamAcl SystemStreamAcl;
-
-        public SystemSettings(StreamAcl userStreamAcl, StreamAcl systemStreamAcl)
-        {
-            UserStreamAcl = userStreamAcl;
-            SystemStreamAcl = systemStreamAcl;
-        }
-
-        public override string ToString()
-        {
-            return string.Format("UserStreamAcl: ({0}), SystemStreamAcl: ({1})", UserStreamAcl, SystemStreamAcl);
-        }
-
-        public static SystemSettings FromJsonBytes(byte[] json)
-        {
-            using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(json))))
+            if (roles == null)
+                return;
+            jsonWriter.WritePropertyName(propertyName);
+            if (roles.Length == 1)
             {
-                Check(reader.Read(), reader);
-                Check(JsonToken.StartObject, reader);
-
-                StreamAcl userStreamAcl = null;
-                StreamAcl systemStreamAcl = null;
-
-                while (true)
-                {
-                    Check(reader.Read(), reader);
-                    if (reader.TokenType == JsonToken.EndObject)
-                        break;
-                    Check(JsonToken.PropertyName, reader);
-                    var name = (string)reader.Value;
-                    switch (name)
-                    {
-                        case SystemMetadata.UserStreamAcl: userStreamAcl = StreamMetadata.ReadAcl(reader); break;
-                        case SystemMetadata.SystemStreamAcl: systemStreamAcl = StreamMetadata.ReadAcl(reader); break;
-                        default:
-                        {
-                            Check(reader.Read(), reader);
-                            // skip
-                            JToken.ReadFrom(reader);
-                            break;
-                        }
-                    }
-                }
-                return new SystemSettings(userStreamAcl, systemStreamAcl);
+                jsonWriter.WriteValue(roles[0]);
             }
-        }
-
-        private static void Check(JsonToken type, JsonTextReader reader)
-        {
-            if (reader.TokenType != type)
-                throw new Exception("Invalid JSON");
-        }
-
-        private static void Check(bool read, JsonTextReader reader)
-        {
-            if (!read)
-                throw new Exception("Invalid JSON");
-        }
-
-        public byte[] ToJsonBytes()
-        {
-            using (var memoryStream = new MemoryStream())
+            else
             {
-                using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream, Helper.UTF8NoBom)))
-                {
-                    WriteAsJson(jsonWriter);
-                }
-                return memoryStream.ToArray();
+                jsonWriter.WriteStartArray();
+                Array.ForEach(roles, jsonWriter.WriteValue);
+                jsonWriter.WriteEndArray();
             }
-        }
-
-        public string ToJsonString()
-        {
-            using (var stringWriter = new StringWriter())
-            {
-                using (var jsonWriter = new JsonTextWriter(stringWriter))
-                {
-                    WriteAsJson(jsonWriter);
-                }
-                return stringWriter.ToString();
-            }
-        }
-
-        private void WriteAsJson(JsonTextWriter jsonWriter)
-        {
-            jsonWriter.WriteStartObject();
-            if (UserStreamAcl != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.UserStreamAcl);
-                StreamMetadata.WriteAcl(jsonWriter, UserStreamAcl);
-            }
-            if (SystemStreamAcl != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.SystemStreamAcl);
-                StreamMetadata.WriteAcl(jsonWriter, SystemStreamAcl);
-            }
-            jsonWriter.WriteEndObject();
         }
     }
 }

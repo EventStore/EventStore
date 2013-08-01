@@ -85,6 +85,8 @@
     <Compile Include="Bus\IPublisher.cs" />
     <Compile Include="Bus\IHandle.cs" />
     <Compile Include="Bus\QueueMonitor.cs" />
+    <Compile Include="Data\StreamAcl.cs" />
+    <Compile Include="Data\SystemSettings.cs" />
     <Compile Include="Data\VNodeInfo.cs" />
     <Compile Include="Data\VNodeState.cs" />
     <Compile Include="DataStructures\ILRUCache.cs" />
@@ -146,7 +148,7 @@
     <Compile Include="Services\Storage\EpochManager\IEpochManager.cs" />
     <Compile Include="NodeSubsystems.cs" />
     <Compile Include="Services\Storage\ReaderIndex\StreamAccessType.cs" />
-    <Compile Include="Services\Storage\ReaderIndex\StreamAccessResult.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\StreamAccess.cs" />
     <Compile Include="Services\Storage\ReaderIndex\TransactionInfo.cs" />
     <Compile Include="Services\SubscriptionsService.cs" />
     <Compile Include="Services\HttpSendService.cs" />

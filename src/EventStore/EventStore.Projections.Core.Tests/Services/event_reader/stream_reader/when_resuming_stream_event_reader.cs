@@ -90,7 +90,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                             10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type", new byte[0], new byte[0]))
-                    }, null, "", 11, 10, true, 100));
+                    }, null, false, "", 11, 10, true, 100));
         }
     }
 }

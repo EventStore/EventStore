@@ -99,24 +99,21 @@ namespace EventStore.Core.Services
             var streamAccess = _readIndex.CheckStreamAccess(
                 msg.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : msg.EventStreamId, StreamAccessType.Read, msg.User);
 
-            switch (streamAccess)
+            if (streamAccess.Granted)
             {
-                case StreamAccessResult.Granted:
-                    var lastEventNumber = msg.EventStreamId.IsEmptyString()
-                                                  ? (int?) null
-                                                  : _readIndex.GetLastStreamEventNumber(msg.EventStreamId);
-                    var lastCommitPos = _readIndex.LastCommitPosition;
-                    SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId, 
-                                      msg.ResolveLinkTos, lastCommitPos, lastEventNumber);
-                    var subscribedMessage = new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
-                    msg.Envelope.ReplyWith(subscribedMessage);
-                    break;
-                case StreamAccessResult.Denied:
-                    msg.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(msg.CorrelationId, SubscriptionDropReason.AccessDenied));
-                    break;
-                default: throw new Exception(string.Format("Unknown StreamAccessResult '{0}'.", streamAccess));
+                var lastEventNumber = msg.EventStreamId.IsEmptyString()
+                                                ? (int?) null
+                                                : _readIndex.GetLastStreamEventNumber(msg.EventStreamId);
+                var lastCommitPos = _readIndex.LastCommitPosition;
+                SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId, 
+                                    msg.ResolveLinkTos, lastCommitPos, lastEventNumber);
+                var subscribedMessage = new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
+                msg.Envelope.ReplyWith(subscribedMessage);
             }
-
+            else
+            {
+                msg.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(msg.CorrelationId, SubscriptionDropReason.AccessDenied));
+            }
         }
 
         public void Handle(ClientMessage.UnsubscribeFromStream message)
