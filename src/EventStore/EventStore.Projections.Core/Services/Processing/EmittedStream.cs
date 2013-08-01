@@ -94,8 +94,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
             public class StreamMetadata
             {
-                private int? _maxCount;
-                private TimeSpan? _maxAge;
+                private readonly int? _maxCount;
+                private readonly TimeSpan? _maxAge;
 
                 public StreamMetadata(int? maxCount = null, TimeSpan? maxAge = null)
                 {

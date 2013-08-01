@@ -88,10 +88,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.FromAll();
                     source.IncludeEvent("non-existing");
                 };
-                NoStream("$projections-projection-state");
+                NoStream("$$$projections-projection-order");
                 NoStream("$projections-projection-order");
+                AllWritesToSucceed("$$$projections-projection-order");
                 AllWritesToSucceed("$projections-projection-order");
+
+                NoStream("$$$projections-projection-checkpoint");
                 NoStream("$projections-projection-checkpoint");
+                AllWritesToSucceed("$$$projections-projection-checkpoint");
+
                 NoStream(FakeProjectionStateHandler._emit1StreamId);
                 AllWritesQueueUp();
             }

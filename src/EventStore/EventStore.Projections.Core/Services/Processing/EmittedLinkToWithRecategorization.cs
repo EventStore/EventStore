@@ -38,9 +38,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _originalStreamId;
 
         public EmittedLinkToWithRecategorization(
-            string streamId, Guid eventId, string target, CheckpointTag causedByTag, CheckpointTag expectedTag,
-            string originalStreamId = null)
-            : base(streamId, eventId, "$>", causedByTag, expectedTag, null)
+            string streamId, EmittedStream.WriterConfiguration.StreamMetadata streamMetadata, Guid eventId,
+            string target, CheckpointTag causedByTag, CheckpointTag expectedTag, string originalStreamId = null)
+            : base(streamId, streamMetadata, eventId, "$>", causedByTag, expectedTag, null)
         {
             _target = target;
             _originalStreamId = originalStreamId;

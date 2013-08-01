@@ -43,6 +43,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, State> _states = new Dictionary<string, State>();
         private readonly ProjectionNamesBuilder _namingBuilder;
 
+        private readonly EmittedStream.WriterConfiguration.StreamMetadata _partitionCheckpointStreamMetadata =
+            new EmittedStream.WriterConfiguration.StreamMetadata(maxCount: 2);
+
         public PartitionStateUpdateManager(ProjectionNamesBuilder namingBuilder)
         {
             if (namingBuilder == null) throw new ArgumentNullException("namingBuilder");
@@ -76,8 +79,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     var expectedTag = entry.Value.ExpectedTag;
                     list.Add(
                         new EmittedDataEvent(
-                            streamId, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint, data, null,
-                            causedBy, expectedTag));
+                            streamId, _partitionCheckpointStreamMetadata, Guid.NewGuid(),
+                            ProjectionNamesBuilder.EventType_PartitionCheckpoint, data, null, causedBy, expectedTag));
                 }
                 //NOTE: order yb is required to satisfy internal emit events validation
                 // which ensures that events are ordered by causedBy tag.  

@@ -82,11 +82,13 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
             var orderStreamName = _namingBuilder.GetOrderStreamName();
+            //TODO: -order stream requires correctly configured event expiration. 
+            // the best is to truncate using $startFrom, but $maxAge should be also acceptable
             _orderStream.EmitEvents(
                 new[]
                 {
                     new EmittedDataEvent(
-                        orderStreamName, Guid.NewGuid(), "$>",
+                        orderStreamName, null, Guid.NewGuid(), "$>",
                         resolvedEvent.PositionSequenceNumber + "@" + resolvedEvent.PositionStreamId, null,
                         orderCheckpointTag, _lastOrderCheckpointTag, v => committed())
                 });

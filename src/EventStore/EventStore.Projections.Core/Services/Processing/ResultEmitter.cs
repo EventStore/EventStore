@@ -34,6 +34,9 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly ProjectionNamesBuilder _namesBuilder;
 
+        private readonly EmittedStream.WriterConfiguration.StreamMetadata _resultStreamMetadata =
+            new EmittedStream.WriterConfiguration.StreamMetadata(/* TBD */);
+
         public ResultEmitter(ProjectionNamesBuilder namesBuilder)
         {
             if (namesBuilder == null) throw new ArgumentNullException("namesBuilder");
@@ -57,21 +60,23 @@ namespace EventStore.Projections.Core.Services.Processing
             if (string.IsNullOrEmpty(partition))
             {
                 var result = projectionResult == null
-                                 ? new EmittedDataEvent(streamId, Guid.NewGuid(), "ResultRemoved", null, null, at, null)
-                                 : new EmittedDataEvent(
-                                       streamId, Guid.NewGuid(), "Result", projectionResult, null, at, null);
+                    ? new EmittedDataEvent(
+                        streamId, _resultStreamMetadata, Guid.NewGuid(), "ResultRemoved", null, null, at, null)
+                    : new EmittedDataEvent(
+                        streamId, _resultStreamMetadata, Guid.NewGuid(), "Result", projectionResult, null, at, null);
                 return new EmittedEvent[] {result};
             }
             else
             {
-                var linkTo = new EmittedLinkTo(allResultsStreamId, Guid.NewGuid(), streamId, at, null);
+                var linkTo = new EmittedLinkTo(
+                    allResultsStreamId, _resultStreamMetadata, Guid.NewGuid(), streamId, at, null);
                 var result = projectionResult == null
-                                 ? new EmittedDataEvent(
-                                       streamId, Guid.NewGuid(), "ResultRemoved", null, null, at, null,
-                                       linkTo.SetTargetEventNumber)
-                                 : new EmittedDataEvent(
-                                       streamId, Guid.NewGuid(), "Result", projectionResult, null, at, null,
-                                       linkTo.SetTargetEventNumber);
+                    ? new EmittedDataEvent(
+                        streamId, _resultStreamMetadata, Guid.NewGuid(), "ResultRemoved", null, null, at, null,
+                        linkTo.SetTargetEventNumber)
+                    : new EmittedDataEvent(
+                        streamId, _resultStreamMetadata, Guid.NewGuid(), "Result", projectionResult, null, at, null,
+                        linkTo.SetTargetEventNumber);
                 return new EmittedEvent[] {result, linkTo};
             }
         }

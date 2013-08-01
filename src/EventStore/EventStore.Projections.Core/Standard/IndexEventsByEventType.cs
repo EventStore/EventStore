@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Standard
             emittedEvents = new[]
                 {
                     new EmittedDataEvent(
-                        _indexStreamPrefix + data.EventType, Guid.NewGuid(), "$>",
+                        _indexStreamPrefix + data.EventType, null, Guid.NewGuid(), "$>",
                         data.EventSequenceNumber + "@" + data.EventStreamId, null, eventPosition, expectedTag: null)
                 };
 
@@ -106,7 +106,7 @@ namespace EventStore.Projections.Core.Standard
             emittedEvents = new[]
             {
                 new EmittedDataEvent(
-                    _indexCheckpointStream, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint,
+                    _indexCheckpointStream, null, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint,
                     checkpointPosition.ToJsonString(), null, checkpointPosition, expectedTag: null)
             };
         }

@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Services.v8
                 _emittedEvents = new List<EmittedEvent>();
             _emittedEvents.Add(
                 new EmittedDataEvent(
-                    emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body,
+                    emittedEvent.streamId, null, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body,
                     emittedEvent.GetExtraMetadata(), _eventPosition, expectedTag: null));
         }
 

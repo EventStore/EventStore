@@ -33,6 +33,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public abstract class EmittedEvent
     {
         public readonly string StreamId;
+        private readonly EmittedStream.WriterConfiguration.StreamMetadata _streamMetadata;
         public readonly Guid EventId;
         public readonly string EventType;
         private readonly CheckpointTag _causedByTag;
@@ -43,11 +44,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         //TODO: stream metadata
         protected EmittedEvent(
-            string streamId, Guid eventId, string eventType, CheckpointTag causedByTag,
-            CheckpointTag expectedTag, Action<int> onCommitted = null)
+            string streamId, EmittedStream.WriterConfiguration.StreamMetadata streamMetadata, Guid eventId,
+            string eventType, CheckpointTag causedByTag, CheckpointTag expectedTag, Action<int> onCommitted = null)
         {
             if (causedByTag == null) throw new ArgumentNullException("causedByTag");
             StreamId = streamId;
+            _streamMetadata = streamMetadata;
             EventId = eventId;
             EventType = eventType;
             _causedByTag = causedByTag;
@@ -80,6 +82,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public string CorrelationId
         {
             get { return _correlationId; }
+        }
+
+        public EmittedStream.WriterConfiguration.StreamMetadata StreamMetadata
+        {
+            get { return _streamMetadata; }
         }
 
         public abstract bool IsReady();

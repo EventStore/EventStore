@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.Standard
             emittedEvents = new[]
                 {
                     new EmittedLinkToWithRecategorization(
-                        _categoryStreamPrefix + category, Guid.NewGuid(), linkTarget, eventPosition, expectedTag: null,
+                        _categoryStreamPrefix + category, null, Guid.NewGuid(), linkTarget, eventPosition, expectedTag: null,
                         originalStreamId: data.PositionStreamId)
                 };
 

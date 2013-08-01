@@ -38,17 +38,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private int? _eventNumber;
 
         public EmittedLinkTo(
-            string streamId, Guid eventId, string targetStreamId, CheckpointTag causedByTag,
-            CheckpointTag expectedTag, Action<int> onCommitted = null)
-            : base(streamId, eventId, "$>", causedByTag, expectedTag, onCommitted)
+            string streamId, EmittedStream.WriterConfiguration.StreamMetadata streamMetadata, Guid eventId,
+            string targetStreamId, CheckpointTag causedByTag, CheckpointTag expectedTag, Action<int> onCommitted = null)
+            : base(streamId, streamMetadata, eventId, "$>", causedByTag, expectedTag, onCommitted)
         {
             _targetStreamId = targetStreamId;
         }
 
         public EmittedLinkTo(
-            string streamId, Guid eventId, string targetStreamId, int targetEventNumber, CheckpointTag causedByTag,
-            CheckpointTag expectedTag, string originalStreamId = null)
-            : base(streamId, eventId, "$>", causedByTag, expectedTag, null)
+            string streamId, EmittedStream.WriterConfiguration.StreamMetadata streamMetadata, Guid eventId,
+            string targetStreamId, int targetEventNumber, CheckpointTag causedByTag, CheckpointTag expectedTag,
+            string originalStreamId = null)
+            : base(streamId, streamMetadata, eventId, "$>", causedByTag, expectedTag, null)
         {
             _eventNumber = targetEventNumber;
             _targetStreamId = targetStreamId;

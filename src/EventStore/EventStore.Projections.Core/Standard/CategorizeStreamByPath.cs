@@ -89,11 +89,11 @@ namespace EventStore.Projections.Core.Standard
             var category = data.EventStreamId.Substring(0, lastSlashPos);
 
             emittedEvents = new[]
-                {
-                    new EmittedDataEvent(
-                        "$category" + _separator + category, Guid.NewGuid(), "StreamCreated", data.EventStreamId, null,
-                        eventPosition, expectedTag: null)
-                };
+            {
+                new EmittedDataEvent(
+                    "$category" + _separator + category, null, Guid.NewGuid(), "StreamCreated", data.EventStreamId, null,
+                    eventPosition, expectedTag: null)
+            };
 
             return true;
         }
