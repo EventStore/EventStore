@@ -118,7 +118,7 @@ namespace EventStore.Core
                 if(GC.MaxGeneration == 0)
                 {
                     Application.Exit(3, "Appears that we are running in mono with boehm GC this is generally not a good idea, please run with sgen instead." + 
-                        "to run with sgen use mono--sgen. If you really want to run with boehm GC you can use --force to override this error.");
+                        "to run with sgen use mono --gc=sgen. If you really want to run with boehm GC you can use --force to override this error.");
                 }
                 if(OS.IsUnix && !OS.GetRuntimeVersion().StartsWith("3"))
                 {
