@@ -80,12 +80,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                             DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, null, "", 12, 11, true, 200));
+                        }, null, false, "", 12, 11, true, 200));
             _edp.Pause();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0]
-                    , null, "", 12, 11, true, 400));
+                    , null, false, "", 12, 11, true, 400));
         }
 
         [Test]

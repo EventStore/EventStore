@@ -113,16 +113,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(StorageMessage.CheckStreamAccessCompleted message)
         {
-            switch (message.AccessResult)
-            {
-                case StreamAccessResult.Granted:
-                    OnSecurityAccessGranted(_internalCorrId);
-                    break;
-                case StreamAccessResult.Denied:
-                    CompleteFailedRequest(OperationResult.AccessDenied, "Access denied.");
-                    break;
-                default: throw new Exception(string.Format("Unexpected SecurityAccessResult '{0}'.", message.AccessResult));
-            }
+            if (message.AccessResult.Granted)
+                OnSecurityAccessGranted(_internalCorrId);
+            else
+                CompleteFailedRequest(OperationResult.AccessDenied, "Access denied.");
         }
 
         public void Handle(StorageMessage.WrongExpectedVersion message)

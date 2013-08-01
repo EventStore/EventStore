@@ -219,32 +219,29 @@ namespace EventStore.ClientAPI
         internal static void WriteAcl(JsonTextWriter jsonWriter, StreamAcl acl)
         {
             jsonWriter.WriteStartObject();
-            if (acl.ReadRole != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.AclRead);
-                jsonWriter.WriteValue(acl.ReadRole);
-            }
-            if (acl.WriteRole != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.AclWrite);
-                jsonWriter.WriteValue(acl.WriteRole);
-            }
-            if (acl.DeleteRole != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.AclDelete);
-                jsonWriter.WriteValue(acl.DeleteRole);
-            }
-            if (acl.MetaReadRole != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.AclMetaRead);
-                jsonWriter.WriteValue(acl.MetaReadRole);
-            }
-            if (acl.MetaWriteRole != null)
-            {
-                jsonWriter.WritePropertyName(SystemMetadata.AclMetaWrite);
-                jsonWriter.WriteValue(acl.MetaWriteRole);
-            }
+            WriteAclRoles(jsonWriter, SystemMetadata.AclRead, acl.ReadRoles);
+            WriteAclRoles(jsonWriter, SystemMetadata.AclWrite, acl.WriteRoles);
+            WriteAclRoles(jsonWriter, SystemMetadata.AclDelete, acl.DeleteRoles);
+            WriteAclRoles(jsonWriter, SystemMetadata.AclMetaRead, acl.MetaReadRoles);
+            WriteAclRoles(jsonWriter, SystemMetadata.AclMetaWrite, acl.MetaWriteRoles);
             jsonWriter.WriteEndObject();
+        }
+
+        private static void WriteAclRoles(JsonTextWriter jsonWriter, string propertyName, string[] roles)
+        {
+            if (roles == null)
+                return;
+            jsonWriter.WritePropertyName(propertyName);
+            if (roles.Length == 1)
+            {
+                jsonWriter.WriteValue(roles[0]);
+            }
+            else
+            {
+                jsonWriter.WriteStartArray();
+                Array.ForEach(roles, jsonWriter.WriteValue);
+                jsonWriter.WriteEndArray();
+            }
         }
 
         public static StreamMetadata FromJsonBytes(byte[] json)
@@ -315,11 +312,11 @@ namespace EventStore.ClientAPI
             Check(reader.Read(), reader);
             Check(JsonToken.StartObject, reader);
 
-            string read = null;
-            string write = null;
-            string delete = null;
-            string metaRead = null;
-            string metaWrite = null;
+            string[] read = null;
+            string[] write = null;
+            string[] delete = null;
+            string[] metaRead = null;
+            string[] metaWrite = null;
 
             while (true)
             {
@@ -327,47 +324,40 @@ namespace EventStore.ClientAPI
                 if (reader.TokenType == JsonToken.EndObject)
                     break;
                 Check(JsonToken.PropertyName, reader);
-                var name = (string) reader.Value;
+                var name = (string)reader.Value;
                 switch (name)
                 {
-                    case SystemMetadata.AclRead:
-                    {
-                        Check(reader.Read(), reader);
-                        Check(JsonToken.String, reader);
-                        read = (string) reader.Value;
-                        break;
-                    }
-                    case SystemMetadata.AclWrite:
-                    {
-                        Check(reader.Read(), reader);
-                        Check(JsonToken.String, reader);
-                        write = (string) reader.Value;
-                        break;
-                    }
-                    case SystemMetadata.AclDelete:
-                    {
-                        Check(reader.Read(), reader);
-                        Check(JsonToken.String, reader);
-                        delete = (string)reader.Value;
-                        break;
-                    }
-                    case SystemMetadata.AclMetaRead:
-                    {
-                        Check(reader.Read(), reader);
-                        Check(JsonToken.String, reader);
-                        metaRead = (string) reader.Value;
-                        break;
-                    }
-                    case SystemMetadata.AclMetaWrite:
-                    {
-                        Check(reader.Read(), reader);
-                        Check(JsonToken.String, reader);
-                        metaWrite = (string) reader.Value;
-                        break;
-                    }
+                    case SystemMetadata.AclRead: read = ReadRoles(reader); break;
+                    case SystemMetadata.AclWrite: write = ReadRoles(reader); break;
+                    case SystemMetadata.AclDelete: delete = ReadRoles(reader); break;
+                    case SystemMetadata.AclMetaRead: metaRead = ReadRoles(reader); break;
+                    case SystemMetadata.AclMetaWrite: metaWrite = ReadRoles(reader); break;
                 }
             }
             return new StreamAcl(read, write, delete, metaRead, metaWrite);
+        }
+
+        private static string[] ReadRoles(JsonTextReader reader)
+        {
+            Check(reader.Read(), reader);
+            if (reader.TokenType == JsonToken.String)
+                return new[] { (string)reader.Value };
+
+            if (reader.TokenType == JsonToken.StartArray)
+            {
+                var roles = new List<string>();
+                while (true)
+                {
+                    Check(reader.Read(), reader);
+                    if (reader.TokenType == JsonToken.EndArray)
+                        break;
+                    Check(JsonToken.String, reader);
+                    roles.Add((string)reader.Value);
+                }
+                return roles.ToArray();
+            }
+
+            throw new Exception("Invalid JSON");
         }
 
         private static void Check(JsonToken type, JsonTextReader reader)
@@ -388,11 +378,11 @@ namespace EventStore.ClientAPI
         private int? _maxCount;
         private TimeSpan? _maxAge;
         private TimeSpan? _cacheControl;
-        private string _aclRead;
-        private string _aclWrite;
-        private string _aclDelete;
-        private string _aclMetaRead;
-        private string _aclMetaWrite;
+        private string[] _aclRead;
+        private string[] _aclWrite;
+        private string[] _aclDelete;
+        private string[] _aclMetaRead;
+        private string[] _aclMetaWrite;
 
         private readonly IDictionary<string, JToken> _customMetadata = new Dictionary<string, JToken>();
 
@@ -435,31 +425,61 @@ namespace EventStore.ClientAPI
 
         public StreamMetadataBuilder SetReadRole(string role)
         {
-            _aclRead = role;
+            _aclRead = role == null ? null : new[] { role };
+            return this;
+        }
+
+        public StreamMetadataBuilder SetReadRoles(string[] roles)
+        {
+            _aclRead = roles;
             return this;
         }
         
         public StreamMetadataBuilder SetWriteRole(string role)
         {
-            _aclWrite = role;
+            _aclWrite = role == null ? null : new[] { role };
+            return this;
+        }
+
+        public StreamMetadataBuilder SetWriteRoles(string[] roles)
+        {
+            _aclWrite = roles;
             return this;
         }
 
         public StreamMetadataBuilder SetDeleteRole(string role)
         {
-            _aclDelete = role;
+            _aclDelete = role == null ? null : new[] { role };
+            return this;
+        }
+
+        public StreamMetadataBuilder SetDeleteRoles(string[] roles)
+        {
+            _aclDelete = roles;
             return this;
         }
 
         public StreamMetadataBuilder SetMetadataReadRole(string role)
         {
-            _aclMetaRead = role;
+            _aclMetaRead = role == null ? null : new[] { role };
+            return this;
+        }
+
+        public StreamMetadataBuilder SetMetadataReadRoles(string[] roles)
+        {
+            _aclMetaRead = roles;
             return this;
         }
 
         public StreamMetadataBuilder SetMetadataWriteRole(string role)
         {
-            _aclMetaWrite = role;
+            _aclMetaWrite = role == null ? null : new[] { role };
+            return this;
+        }
+
+        public StreamMetadataBuilder SetMetadataWriteRoles(string[] roles)
+        {
+            _aclMetaWrite = roles;
             return this;
         }
 

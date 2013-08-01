@@ -458,10 +458,11 @@ namespace EventStore.Core.Messages
             public readonly ReadEventResult Result;
             public readonly ResolvedEvent Record;
             public readonly StreamMetadata StreamMetadata;
+            public readonly bool IsCachePublic;
             public readonly string Error;
 
             public ReadEventCompleted(Guid correlationId, string eventStreamId, ReadEventResult result,
-                                      ResolvedEvent record, StreamMetadata streamMetadata, string error)
+                                      ResolvedEvent record, StreamMetadata streamMetadata, bool isCachePublic, string error)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (result == ReadEventResult.Success)
@@ -472,6 +473,7 @@ namespace EventStore.Core.Messages
                 Result = result;
                 Record = record;
                 StreamMetadata = streamMetadata;
+                IsCachePublic = isCachePublic;
                 Error = error;
             }
         }
@@ -527,6 +529,7 @@ namespace EventStore.Core.Messages
             public readonly ReadStreamResult Result;
             public readonly ResolvedEvent[] Events;
             public readonly StreamMetadata StreamMetadata;
+            public readonly bool IsCachePublic;
             public readonly string Error;
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
@@ -534,7 +537,8 @@ namespace EventStore.Core.Messages
             public readonly long LastCommitPosition;
 
             public ReadStreamEventsForwardCompleted(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount,
-                                                    ReadStreamResult result, ResolvedEvent[] events, StreamMetadata streamMetadata,
+                                                    ReadStreamResult result, ResolvedEvent[] events,
+                                                    StreamMetadata streamMetadata, bool isCachePublic,
                                                     string error, int nextEventNumber, int lastEventNumber, bool isEndOfStream,
                                                     long lastCommitPosition)
             {
@@ -555,6 +559,7 @@ namespace EventStore.Core.Messages
                 Result = result;
                 Events = events;
                 StreamMetadata = streamMetadata;
+                IsCachePublic = isCachePublic;
                 Error = error;
                 NextEventNumber = nextEventNumber;
                 LastEventNumber = lastEventNumber;
@@ -566,7 +571,7 @@ namespace EventStore.Core.Messages
                                                                   int fromEventNumber, int maxCount, long lastCommitPosition, string message = null)
             {
                 return new ReadStreamEventsForwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount, 
-                                                            result, EmptyRecords, null, message ?? string.Empty, 
+                                                            result, EmptyRecords, null, false, message ?? string.Empty, 
                                                             -1, -1, true, lastCommitPosition);
             }
         }
@@ -622,6 +627,7 @@ namespace EventStore.Core.Messages
             public readonly ReadStreamResult Result;
             public readonly ResolvedEvent[] Events;
             public readonly StreamMetadata StreamMetadata;
+            public readonly bool IsCachePublic;
             public readonly string Error;
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
@@ -635,6 +641,7 @@ namespace EventStore.Core.Messages
                                                      ReadStreamResult result,
                                                      ResolvedEvent[] events,
                                                      StreamMetadata streamMetadata,
+                                                     bool isCachePublic,
                                                      string error,
                                                      int nextEventNumber,
                                                      int lastEventNumber,
@@ -658,6 +665,7 @@ namespace EventStore.Core.Messages
                 Result = result;
                 Events = events;
                 StreamMetadata = streamMetadata;
+                IsCachePublic = isCachePublic;
                 Error = error;
                 NextEventNumber = nextEventNumber;
                 LastEventNumber = lastEventNumber;
@@ -669,7 +677,7 @@ namespace EventStore.Core.Messages
                                                                    int fromEventNumber, int maxCount, long lastCommitPosition, string message = null)
             {
                 return new ReadStreamEventsBackwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
-                                                             result, EmptyRecords, null, message ?? string.Empty,
+                                                             result, EmptyRecords, null, false, message ?? string.Empty,
                                                              -1, -1, true, lastCommitPosition);
             }
         }
@@ -713,6 +721,7 @@ namespace EventStore.Core.Messages
 
             public readonly ResolvedEvent[] Events;
             public readonly StreamMetadata StreamMetadata;
+            public readonly bool IsCachePublic;
             public readonly int MaxCount;
             public readonly TFPos CurrentPos;
             public readonly TFPos NextPos;
@@ -722,7 +731,7 @@ namespace EventStore.Core.Messages
             public bool IsEndOfStream { get { return Events == null || Events.Length < MaxCount; } }
 
             public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events,
-                                                 StreamMetadata streamMetadata, int maxCount,
+                                                 StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
                                                  TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
             {
                 Ensure.NotNull(events, "events");
@@ -732,6 +741,7 @@ namespace EventStore.Core.Messages
                 Error = error;
                 Events = events;
                 StreamMetadata = streamMetadata;
+                IsCachePublic = isCachePublic;
                 MaxCount = maxCount;
                 CurrentPos = currentPos;
                 NextPos = nextPos;
@@ -779,6 +789,7 @@ namespace EventStore.Core.Messages
 
             public readonly ResolvedEvent[] Events;
             public readonly StreamMetadata StreamMetadata;
+            public readonly bool IsCachePublic;
             public readonly int MaxCount;
             public readonly TFPos CurrentPos;
             public readonly TFPos NextPos;
@@ -788,7 +799,7 @@ namespace EventStore.Core.Messages
             public bool IsEndOfStream { get { return Events == null || Events.Length < MaxCount; } }
 
             public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events, 
-                                                  StreamMetadata streamMetadata, int maxCount,
+                                                  StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
                                                   TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
             {
                 Ensure.NotNull(events, "events");
@@ -798,6 +809,7 @@ namespace EventStore.Core.Messages
                 Error = error;
                 Events = events;
                 StreamMetadata = streamMetadata;
+                IsCachePublic = isCachePublic;
                 MaxCount = maxCount;
                 CurrentPos = currentPos;
                 NextPos = nextPos;

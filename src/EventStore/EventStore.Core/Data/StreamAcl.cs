@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -26,9 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
-
-namespace EventStore.ClientAPI
+namespace EventStore.Core.Data
 {
     public class StreamAcl
     {
@@ -38,18 +36,12 @@ namespace EventStore.ClientAPI
         public readonly string[] MetaReadRoles;
         public readonly string[] MetaWriteRoles;
 
-        public string ReadRole { get { return CheckAndReturnIfSingle(ReadRoles); } }
-        public string WriteRole { get { return CheckAndReturnIfSingle(WriteRoles); } }
-        public string DeleteRole { get { return CheckAndReturnIfSingle(DeleteRoles); } }
-        public string MetaReadRole { get { return CheckAndReturnIfSingle(MetaReadRoles); } }
-        public string MetaWriteRole { get { return CheckAndReturnIfSingle(MetaWriteRoles); } }
-
         public StreamAcl(string readRole, string writeRole, string deleteRole, string metaReadRole, string metaWriteRole)
-            : this(readRole == null ? null : new[] { readRole },
-                   writeRole == null ? null : new[] { writeRole },
-                   deleteRole == null ? null : new[] { deleteRole },
-                   metaReadRole == null ? null : new[] { metaReadRole },
-                   metaWriteRole == null ? null : new[] { metaWriteRole })
+                : this(readRole == null ? null : new[]{readRole},
+                       writeRole == null ? null : new[]{writeRole},
+                       deleteRole == null ? null : new[]{deleteRole},
+                       metaReadRole == null ? null : new[]{metaReadRole},
+                       metaWriteRole == null ? null : new[]{metaWriteRole})
         {
         }
 
@@ -70,13 +62,6 @@ namespace EventStore.ClientAPI
                                  DeleteRoles == null ? "<null>" : "[" + string.Join(",", DeleteRoles) + "]",
                                  MetaReadRoles == null ? "<null>" : "[" + string.Join(",", MetaReadRoles) + "]",
                                  MetaWriteRoles == null ? "<null>" : "[" + string.Join(",", MetaWriteRoles) + "]");
-        }
-
-        private static string CheckAndReturnIfSingle(string[] readRoles)
-        {
-            if (readRoles.Length > 1)
-                throw new ArgumentException("Underlying stream ACL has multiple roles, which is not supported in old version of this API.");
-            return readRoles.Length == 0 ? null : readRoles[0];
         }
     }
 }

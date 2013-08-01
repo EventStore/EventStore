@@ -35,6 +35,7 @@ namespace EventStore.ClientAPI
     internal static class Empty
     {
         public static readonly byte[] ByteArray = new byte[0];
+        public static readonly string[] StringArray = new string[0];
         public static readonly ResolvedEvent[] ResolvedEvents = new ResolvedEvent[0];
 
         public static readonly Action Action = () => { };

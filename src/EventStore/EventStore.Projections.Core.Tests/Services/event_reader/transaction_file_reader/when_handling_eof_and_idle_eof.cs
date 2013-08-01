@@ -82,17 +82,17 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
                                 2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "b", ExpectedVersion.Any, _fakeTimeProvider.Now,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                                 "event_type1", new byte[] {1}, new byte[] {2}), null, 200), 
-                    }, null, 100, new EventStore.Core.Data.TFPos(200, 150), new EventStore.Core.Data.TFPos(500, -1), new EventStore.Core.Data.TFPos(100, 50), 500));
+                    }, null, false, 100, new EventStore.Core.Data.TFPos(200, 150), new TFPos(500, -1), new TFPos(100, 50), 500));
 
             _edp.Handle(
                 new ClientMessage.ReadAllEventsForwardCompleted(
                     _distibutionPointCorrelationId, ReadAllResult.Success, null,
-                    new EventStore.Core.Data.ResolvedEvent[0], null, 100, new EventStore.Core.Data.TFPos(), new EventStore.Core.Data.TFPos(), new EventStore.Core.Data.TFPos(), 500));
+                    new EventStore.Core.Data.ResolvedEvent[0], null, false, 100, new TFPos(), new TFPos(), new TFPos(), 500));
             _fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(500));
             _edp.Handle(
                 new ClientMessage.ReadAllEventsForwardCompleted(
                     _distibutionPointCorrelationId, ReadAllResult.Success, null,
-                    new EventStore.Core.Data.ResolvedEvent[0], null, 100, new EventStore.Core.Data.TFPos(), new EventStore.Core.Data.TFPos(), new EventStore.Core.Data.TFPos(), 500));
+                    new EventStore.Core.Data.ResolvedEvent[0], null, false, 100, new TFPos(), new TFPos(), new TFPos(), 500));
         }
 
         [Test]

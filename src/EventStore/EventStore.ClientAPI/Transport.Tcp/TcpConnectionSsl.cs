@@ -50,6 +50,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                                                 string targetHost,
                                                                 bool validateServer,
                                                                 TcpClientConnector connector, 
+                                                                TimeSpan connectionTimeout,
                                                                 Action<ITcpConnection> onConnectionEstablished, 
                                                                 Action<ITcpConnection, SocketError> onConnectionFailed,
                                                                 Action<ITcpConnection, SocketError> onConnectionClosed)
@@ -67,7 +68,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                   {
                                       if (onConnectionFailed != null)
                                           onConnectionFailed(connection, socketError);
-                                  }, connection);
+                                  }, connection, connectionTimeout);
             // ReSharper restore ImplicitlyCapturedClosure
             return connection;
         }

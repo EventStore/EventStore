@@ -97,7 +97,7 @@ namespace EventStore.Core.Tests.TransactionLog
             throw new NotImplementedException();
         }
 
-        public StreamAccessResult CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
+        public StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
         {
             throw new NotImplementedException();
         }
