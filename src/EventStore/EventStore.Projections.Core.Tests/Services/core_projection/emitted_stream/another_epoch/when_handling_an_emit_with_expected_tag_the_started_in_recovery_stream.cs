@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", new EmittedStream.WriterConfiguration(null, maxWriteBatchLength: 50),
+                "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
                 new ProjectionVersion(1, 2, 2), new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1),
                 _ioDispatcher, _readyHandler);
             _stream.Start();

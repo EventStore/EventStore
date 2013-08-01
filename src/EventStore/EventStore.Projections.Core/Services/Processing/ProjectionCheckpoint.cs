@@ -158,8 +158,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 stream = new EmittedStream(
                     streamId,
                     new EmittedStream.WriterConfiguration(
-                        _runAs, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger), _projectionVersion,
-                    _positionTagger, _from, _ioDispatcher, this);
+                        new EmittedStream.WriterConfiguration.StreamMetadata(), _runAs,
+                        maxWriteBatchLength: _maxWriteBatchLength, logger: _logger), _projectionVersion, _positionTagger,
+                    _from, _ioDispatcher, this);
                 if (_started)
                     stream.Start();
                 _emittedStreams.Add(streamId, stream);

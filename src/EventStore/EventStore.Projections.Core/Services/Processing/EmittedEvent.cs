@@ -41,6 +41,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private Guid _causedBy;
         private string _correlationId;
 
+        //TODO: stream metadata
         protected EmittedEvent(
             string streamId, Guid eventId, string eventType, CheckpointTag causedByTag,
             CheckpointTag expectedTag, Action<int> onCommitted = null)

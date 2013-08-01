@@ -75,7 +75,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     var causedBy = entry.Value.PartitionState.CausedBy;
                     var expectedTag = entry.Value.ExpectedTag;
                     list.Add(
-                        new EmittedDataEvent(streamId, Guid.NewGuid(), "$Checkpoint", data, null, causedBy, expectedTag));
+                        new EmittedDataEvent(
+                            streamId, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint, data, null,
+                            causedBy, expectedTag));
                 }
                 //NOTE: order yb is required to satisfy internal emit events validation
                 // which ensures that events are ordered by causedBy tag.  

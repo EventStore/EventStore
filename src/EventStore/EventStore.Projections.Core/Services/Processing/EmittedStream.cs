@@ -51,6 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly ILogger _logger;
         private readonly string _streamId;
+        private readonly WriterConfiguration _writerConfiguration;
         private readonly ProjectionVersion _projectionVersion;
         private readonly IPrincipal _writeAs;
         private readonly PositionTagger _positionTagger;
@@ -58,7 +59,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CheckpointTag _from;
         private readonly IEmittedStreamContainer _readyHandler;
 
-        private readonly Stack<Tuple<CheckpointTag, string, int>> _alreadyCommittedEvents = new Stack<Tuple<CheckpointTag, string, int>>();
+        private readonly Stack<Tuple<CheckpointTag, string, int>> _alreadyCommittedEvents =
+            new Stack<Tuple<CheckpointTag, string, int>>();
         private readonly Queue<EmittedEvent> _pendingWrites = new Queue<EmittedEvent>();
 
         private bool _checkpointRequested;
@@ -87,11 +89,39 @@ namespace EventStore.Projections.Core.Services.Processing
             private readonly int _maxWriteBatchLength;
             private readonly ILogger _logger;
 
-            public WriterConfiguration(IPrincipal writeAs, int maxWriteBatchLength, ILogger logger = null)
+            private readonly int? maxCount;
+            private readonly TimeSpan? maxAge;
+
+            public class StreamMetadata
+            {
+                private int? _maxCount;
+                private TimeSpan? _maxAge;
+
+                public StreamMetadata(int? maxCount = null, TimeSpan? maxAge = null)
+                {
+                    _maxCount = maxCount;
+                    _maxAge = maxAge;
+                }
+
+                public int? MaxCount
+                {
+                    get { return _maxCount; }
+                }
+
+                public TimeSpan? MaxAge
+                {
+                    get { return _maxAge; }
+                }
+            }
+
+            public WriterConfiguration(
+                StreamMetadata streamMetadata, IPrincipal writeAs, int maxWriteBatchLength, ILogger logger = null)
             {
                 _writeAs = writeAs;
                 _maxWriteBatchLength = maxWriteBatchLength;
                 _logger = logger;
+                this.maxCount = streamMetadata.MaxCount;
+                this.maxAge = streamMetadata.MaxAge;
             }
 
             public IPrincipal WriteAs
@@ -108,6 +138,16 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 get { return _logger; }
             }
+
+            public int? MaxCount
+            {
+                get { return maxCount; }
+            }
+
+            public TimeSpan? MaxAge
+            {
+                get { return maxAge; }
+            }
         }
 
         public EmittedStream(
@@ -116,12 +156,14 @@ namespace EventStore.Projections.Core.Services.Processing
             IEmittedStreamContainer readyHandler, bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
+            if (writerConfiguration == null) throw new ArgumentNullException("writerConfiguration");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (@from == null) throw new ArgumentNullException("from");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
+            _writerConfiguration = writerConfiguration;
             _projectionVersion = projectionVersion;
             _writeAs = writerConfiguration.WriteAs;
             _positionTagger = positionTagger;
@@ -371,20 +413,19 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
                 throw new Exception();
-            _submittedWriteMetaStreamEvent = _streamId.StartsWith("$")
-                                                 ? new Event(
-                                                       Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
-                                                       new StreamMetadata(
-                                                           null, null, null,
-                                                           new StreamAcl(
-                                                               SystemRoles.All, null, null, SystemRoles.All,
-                                                               null)).ToJsonBytes(), null)
-                                                 : new Event(
-                                                       Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
-                                                       new StreamMetadata(
-                                                           null, null, null, new StreamAcl((string)null, null, null, null, null))
-                                                           .ToJsonBytes(), null);
+
+            var streamAcl = _streamId.StartsWith("$")
+                ? new StreamAcl(SystemUserGroups.All, null, null, SystemUserGroups.All, null)
+                : new StreamAcl(null, null, null, null, null);
+
+            var streamMetadata = new StreamMetadata(
+                _writerConfiguration.MaxCount, _writerConfiguration.MaxAge, null, streamAcl);
+
+            _submittedWriteMetaStreamEvent = new Event(
+                Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, streamMetadata.ToJsonBytes(), null);
+
             _awaitingMetadataWriteCompleted = true;
+
             PublishWriteMetaStream();
         }
 

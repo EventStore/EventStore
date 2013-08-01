@@ -14,7 +14,7 @@ var $projections = {
         var sources = {
             /* TODO: comment out default falses to reduce message size */
             allStreams: false, 
-            allEvents: false,
+            allEvents: true,
             byStreams: false,
             byCustomPartitions: false,
             categories: [], 
@@ -91,6 +91,7 @@ var $projections = {
 
         function on_event(eventName, eventHandler) {
             eventHandlers[eventName] = eventHandler;
+            sources.allEvents = false;
             sources.events.push(eventName);
         }
 

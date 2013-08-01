@@ -33,6 +33,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ProjectionNamesBuilder 
     {
         public const string EventType_ProjectionCheckpoint = "$ProjectionCheckpoint";
+        public const string EventType_PartitionCheckpoint = "$Checkpoint";
 
         public static ProjectionNamesBuilder CreateForTest(string name)
         {
@@ -79,6 +80,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             get { return _options.ForceProjectionName ?? _name; }
         }
+
 
         private string GetPartitionResultStreamName(string partitionName)
         {

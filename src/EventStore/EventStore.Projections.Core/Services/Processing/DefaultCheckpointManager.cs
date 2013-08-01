@@ -30,13 +30,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Principal;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 
@@ -92,12 +90,14 @@ namespace EventStore.Projections.Core.Services.Processing
             PublishWriteStreamMetadataAndCheckpointEvent();
         }
 
-        public override void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action committed)
+        public override void RecordEventOrder(
+            ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action committed)
         {
             committed();
         }
 
-        private void WriteCheckpointEventCompleted(string eventStreamId, OperationResult operationResult, int firstWrittenEventNumber)
+        private void WriteCheckpointEventCompleted(
+            string eventStreamId, OperationResult operationResult, int firstWrittenEventNumber)
         {
             EnsureStarted();
             if (_inCheckpointWriteAttempt == 0)
@@ -147,7 +147,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
             if (_lastWrittenCheckpointEventNumber == ExpectedVersion.NoStream)
                 PublishWriteStreamMetadata();
-            else 
+            else
                 PublishWriteCheckpointEvent();
         }
 
@@ -211,18 +211,18 @@ namespace EventStore.Projections.Core.Services.Processing
             info.ReadsInProgress += _readRequestsInProgress;
             info.WritesInProgress = ((_inCheckpointWriteAttempt != 0) ? 1 : 0) + info.WritesInProgress;
             info.CheckpointStatus = _inCheckpointWriteAttempt > 0
-                                        ? "Writing (" + _inCheckpointWriteAttempt + ")"
-                                        : info.CheckpointStatus;
+                ? "Writing (" + _inCheckpointWriteAttempt + ")"
+                : info.CheckpointStatus;
         }
 
         protected override EmittedEvent[] RegisterNewPartition(string partition, CheckpointTag at)
         {
             return new[]
-                {
-                    new EmittedDataEvent(
-                        _namingBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "$partition", partition, null,
-                        at, null)
-                };
+            {
+                new EmittedDataEvent(
+                    _namingBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "$partition", partition, null, at,
+                    null)
+            };
         }
 
         protected override void BeforeBeginLoadState()
@@ -282,10 +282,10 @@ namespace EventStore.Projections.Core.Services.Processing
             PrerecordedEventsLoaded(checkpointTag);
         }
 
-        public override void BeginLoadPartitionStateAt(string statePartition,
-                                              CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted)
+        public override void BeginLoadPartitionStateAt(
+            string statePartition, CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted)
         {
-            var stateEventType = "$Checkpoint";
+            var stateEventType = ProjectionNamesBuilder.EventType_PartitionCheckpoint;
             var partitionCheckpointStreamName = _namingBuilder.MakePartitionCheckpointStreamName(statePartition);
             _readRequestsInProgress++;
             var requestId = _ioDispatcher.ReadBackward(
@@ -352,8 +352,8 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition)
         {
             return new ProjectionCheckpoint(
-                _ioDispatcher, _projectionVersion, _runAs, this, checkpointPosition,
-                _positionTagger, _zeroTag, _projectionConfig.MaxWriteBatchLength, _logger);
+                _ioDispatcher, _projectionVersion, _runAs, this, checkpointPosition, _positionTagger, _zeroTag,
+                _projectionConfig.MaxWriteBatchLength, _logger);
         }
     }
 }

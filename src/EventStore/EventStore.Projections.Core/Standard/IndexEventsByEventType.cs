@@ -104,11 +104,11 @@ namespace EventStore.Projections.Core.Standard
         public void ProcessNewCheckpoint(CheckpointTag checkpointPosition, out EmittedEvent[] emittedEvents)
         {
             emittedEvents = new[]
-                {
-                    new EmittedDataEvent(
-                        _indexCheckpointStream, Guid.NewGuid(), "$Checkpoint", checkpointPosition.ToJsonString(), null,
-                        checkpointPosition, expectedTag: null)
-                };
+            {
+                new EmittedDataEvent(
+                    _indexCheckpointStream, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint,
+                    checkpointPosition.ToJsonString(), null, checkpointPosition, expectedTag: null)
+            };
         }
     }
 }

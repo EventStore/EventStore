@@ -95,10 +95,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private EmittedStream CreateOrderStream(CheckpointTag from)
         {
+            //TODO: this stream requires $startFrom to be updated from time to time to reduce space taken
             return new EmittedStream(
                 /* MUST NEVER SEND READY MESSAGE */
                 _namingBuilder.GetOrderStreamName(),
-                new EmittedStream.WriterConfiguration(SystemAccount.Principal, 100, _logger), _projectionVersion,
+                new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), SystemAccount.Principal, 100, _logger), _projectionVersion,
                 _positionTagger, @from, _ioDispatcher, this, noCheckpoints: true);
         }
 
