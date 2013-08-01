@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void all_operations_are_not_authenticated_when_overriden_with_not_exsiting_credentials()
+        public void all_operations_are_not_authenticated_when_overriden_with_not_existing_credentials()
         {
             Expect<NotAuthenticatedException>(() => ReadAllForward("badlogin", "badpass"));
             Expect<NotAuthenticatedException>(() => ReadAllBackward("badlogin", "badpass"));

@@ -98,21 +98,21 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_normal_admin_stream_with_no_user_is_not_allowed()
         {
-            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemUserGroups.Admins));
+            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
             Expect<AccessDeniedException>(() => DeleteStream(streamId, null, null));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_normal_admin_stream_with_existing_user_is_not_allowed()
         {
-            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemUserGroups.Admins));
+            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
             Expect<AccessDeniedException>(() => DeleteStream(streamId, "user1", "pa$$1"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_normal_admin_stream_with_admin_user_is_allowed()
         {
-            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemUserGroups.Admins));
+            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
             ExpectNoException(() => DeleteStream(streamId, "adm", "admpa$$"));
         }
 
@@ -120,21 +120,21 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_normal_all_stream_with_no_user_is_allowed()
         {
-            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemUserGroups.All));
+            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
             ExpectNoException(() => DeleteStream(streamId, null, null));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_normal_all_stream_with_existing_user_is_allowed()
         {
-            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemUserGroups.All));
+            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
             ExpectNoException(() => DeleteStream(streamId, "user1", "pa$$1"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_normal_all_stream_with_admin_user_is_allowed()
         {
-            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemUserGroups.All));
+            var streamId = CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
             ExpectNoException(() => DeleteStream(streamId, "adm", "admpa$$"));
         }
 
@@ -194,21 +194,21 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_system_admin_stream_with_no_user_is_not_allowed()
         {
-            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemUserGroups.Admins));
+            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
             Expect<AccessDeniedException>(() => DeleteStream(streamId, null, null));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_system_admin_stream_with_existing_user_is_not_allowed()
         {
-            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemUserGroups.Admins));
+            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
             Expect<AccessDeniedException>(() => DeleteStream(streamId, "user1", "pa$$1"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_system_admin_stream_with_admin_user_is_allowed()
         {
-            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemUserGroups.Admins));
+            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
             ExpectNoException(() => DeleteStream(streamId, "adm", "admpa$$"));
         }
 
@@ -216,21 +216,21 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_system_all_stream_with_no_user_is_allowed()
         {
-            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemUserGroups.All));
+            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
             ExpectNoException(() => DeleteStream(streamId, null, null));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_system_all_stream_with_existing_user_is_allowed()
         {
-            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemUserGroups.All));
+            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
             ExpectNoException(() => DeleteStream(streamId, "user1", "pa$$1"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void deleting_system_all_stream_with_admin_user_is_allowed()
         {
-            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemUserGroups.All));
+            var streamId = CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
             ExpectNoException(() => DeleteStream(streamId, "adm", "admpa$$"));
         }
     }

@@ -206,38 +206,43 @@ namespace EventStore.ClientAPI
             if (Acl != null)
             {
                 jsonWriter.WritePropertyName(SystemMetadata.Acl);
-                jsonWriter.WriteStartObject();
-                if (Acl.ReadRole != null)
-                {
-                    jsonWriter.WritePropertyName(SystemMetadata.AclRead);
-                    jsonWriter.WriteValue(Acl.ReadRole);
-                }
-                if (Acl.WriteRole != null)
-                {
-                    jsonWriter.WritePropertyName(SystemMetadata.AclWrite);
-                    jsonWriter.WriteValue(Acl.WriteRole);
-                }
-                if (Acl.DeleteRole != null)
-                {
-                    jsonWriter.WritePropertyName(SystemMetadata.AclDelete);
-                    jsonWriter.WriteValue(Acl.DeleteRole);
-                }
-                if (Acl.MetaReadRole != null)
-                {
-                    jsonWriter.WritePropertyName(SystemMetadata.AclMetaRead);
-                    jsonWriter.WriteValue(Acl.MetaReadRole);
-                }
-                if (Acl.MetaWriteRole != null)
-                {
-                    jsonWriter.WritePropertyName(SystemMetadata.AclMetaWrite);
-                    jsonWriter.WriteValue(Acl.MetaWriteRole);
-                }
-                jsonWriter.WriteEndObject();
+                WriteAcl(jsonWriter, Acl);
             }
             foreach (var customMetadata in _customMetadata)
             {
                 jsonWriter.WritePropertyName(customMetadata.Key);
                 customMetadata.Value.WriteTo(jsonWriter);
+            }
+            jsonWriter.WriteEndObject();
+        }
+
+        internal static void WriteAcl(JsonTextWriter jsonWriter, StreamAcl acl)
+        {
+            jsonWriter.WriteStartObject();
+            if (acl.ReadRole != null)
+            {
+                jsonWriter.WritePropertyName(SystemMetadata.AclRead);
+                jsonWriter.WriteValue(acl.ReadRole);
+            }
+            if (acl.WriteRole != null)
+            {
+                jsonWriter.WritePropertyName(SystemMetadata.AclWrite);
+                jsonWriter.WriteValue(acl.WriteRole);
+            }
+            if (acl.DeleteRole != null)
+            {
+                jsonWriter.WritePropertyName(SystemMetadata.AclDelete);
+                jsonWriter.WriteValue(acl.DeleteRole);
+            }
+            if (acl.MetaReadRole != null)
+            {
+                jsonWriter.WritePropertyName(SystemMetadata.AclMetaRead);
+                jsonWriter.WriteValue(acl.MetaReadRole);
+            }
+            if (acl.MetaWriteRole != null)
+            {
+                jsonWriter.WritePropertyName(SystemMetadata.AclMetaWrite);
+                jsonWriter.WriteValue(acl.MetaWriteRole);
             }
             jsonWriter.WriteEndObject();
         }
@@ -305,7 +310,7 @@ namespace EventStore.ClientAPI
             }
         }
 
-        private static StreamAcl ReadAcl(JsonTextReader reader)
+        internal static StreamAcl ReadAcl(JsonTextReader reader)
         {
             Check(reader.Read(), reader);
             Check(JsonToken.StartObject, reader);
@@ -375,30 +380,6 @@ namespace EventStore.ClientAPI
         {
             if (!read)
                 throw new Exception("Invalid JSON");
-        }
-    }
-
-    public class StreamAcl
-    {
-        public readonly string ReadRole;
-        public readonly string WriteRole;
-        public readonly string DeleteRole;
-        public readonly string MetaReadRole;
-        public readonly string MetaWriteRole;
-
-        public StreamAcl(string readRole, string writeRole, string deleteRole, string metaReadRole, string metaWriteRole)
-        {
-            ReadRole = readRole;
-            WriteRole = writeRole;
-            DeleteRole = deleteRole;
-            MetaReadRole = metaReadRole;
-            MetaWriteRole = metaWriteRole;
-        }
-
-        public override string ToString()
-        {
-            return string.Format("Read: {0}, Write: {1}, Delete: {2}, MetaRead: {3}, MetaWrite: {4}",
-                                 ReadRole, WriteRole, DeleteRole, MetaReadRole, MetaWriteRole);
         }
     }
 

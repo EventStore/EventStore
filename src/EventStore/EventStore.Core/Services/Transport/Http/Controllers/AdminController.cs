@@ -47,14 +47,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service)
         {
-            service.RegisterControllerAction(new ControllerAction("/admin/halt", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostHalt);
-            service.RegisterControllerAction(new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostShutdown);
-            service.RegisterControllerAction(new ControllerAction("/admin/scavenge", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
+            service.RegisterAction(new ControllerAction("/admin/halt", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostHalt);
+            service.RegisterAction(new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostShutdown);
+            service.RegisterAction(new ControllerAction("/admin/scavenge", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
         }
 
         private void OnPostHalt(HttpEntityManager entity, UriTemplateMatch match)
         {
-            if (entity.User != null && entity.User.IsInRole(SystemUserGroups.Admins))
+            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
             {
                 Log.Info("Request shut down of node because halt command has been received.");
                 Publish(new ClientMessage.RequestShutdown(exitProcess: false));
@@ -68,7 +68,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match)
         {
-            if (entity.User != null && entity.User.IsInRole(SystemUserGroups.Admins))
+            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
             {
                 Log.Info("Request shut down of node because shutdown command has been received.");
                 Publish(new ClientMessage.RequestShutdown(exitProcess: true));
@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnPostScavenge(HttpEntityManager entity, UriTemplateMatch match)
         {
-            if (entity.User != null && entity.User.IsInRole(SystemUserGroups.Admins))
+            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
             {
                 Log.Info("Request scavenging because /admin/scavenge request has been received.");
                 Publish(new SystemMessage.ScavengeDatabase());

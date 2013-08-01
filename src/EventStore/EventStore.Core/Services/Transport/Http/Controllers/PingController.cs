@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public void Subscribe(IHttpService service)
         {
             Ensure.NotNull(service, "service");
-            service.RegisterControllerAction(new ControllerAction("/ping", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetPing);
+            service.RegisterAction(new ControllerAction("/ping", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetPing);
         }
 
         private void OnGetPing(HttpEntityManager entity, UriTemplateMatch match)

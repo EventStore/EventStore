@@ -355,7 +355,7 @@ namespace EventStore.Core.Services.UserManagement
             _ioDispatcher.UpdateStreamAcl(
                 "$user-" + loginName, ExpectedVersion.Any, SystemAccount.Principal,
                 new StreamMetadata(
-                    null, null, null, new StreamAcl(null, SystemUserGroups.Admins, SystemUserGroups.Admins, null, SystemUserGroups.Admins)),
+                    null, null, null, new StreamAcl(null, SystemRoles.Admins, SystemRoles.Admins, null, SystemRoles.Admins)),
                 onCompleted);
         }
 
@@ -456,7 +456,7 @@ namespace EventStore.Core.Services.UserManagement
         private void CreateAdminUser()
         {
             var userData = CreateUserData(
-                SystemUsers.Admin, "Event Store Administrator", new[] {SystemUserGroups.Admins},
+                SystemUsers.Admin, "Event Store Administrator", new[] {SystemRoles.Admins},
                 SystemUsers.DefaultAdminPassword);
             WriteStreamAcl(
                 SystemUsers.Admin, completed1 =>
@@ -498,7 +498,7 @@ namespace EventStore.Core.Services.UserManagement
 
         private bool DemandAdmin(UserManagementMessage.UserManagementRequestMessage message)
         {
-            if (message.Principal == null || !message.Principal.IsInRole(SystemUserGroups.Admins))
+            if (message.Principal == null || !message.Principal.IsInRole(SystemRoles.Admins))
             {
                 ReplyUnauthorized(message);
                 return false;

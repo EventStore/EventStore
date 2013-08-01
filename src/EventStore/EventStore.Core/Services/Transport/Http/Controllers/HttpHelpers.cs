@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         public static void RegisterRedirectAction(IHttpService service, string fromUrl, string toUrl)
         {
-            service.RegisterControllerAction(
+            service.RegisterAction(
                 new ControllerAction(
                     fromUrl,
                     HttpMethod.Get,

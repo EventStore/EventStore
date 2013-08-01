@@ -362,7 +362,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                                        new StreamMetadata(
                                                            null, null, null,
                                                            new StreamAcl(
-                                                               SystemUserGroups.All, null, null, SystemUserGroups.All,
+                                                               SystemRoles.All, null, null, SystemRoles.All,
                                                                null)).ToJsonBytes(), null)
                                                  : new Event(
                                                        Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,

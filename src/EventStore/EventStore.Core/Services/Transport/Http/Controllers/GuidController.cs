@@ -41,7 +41,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service)
         {
-            service.RegisterControllerAction(
+            service.RegisterAction(
                 new ControllerAction("/new-guid", "GET", Codec.NoCodecs, new ICodec[] {Codec.Text}),
                 (manager, match) => manager.Reply(Guid.NewGuid().ToString("D"), 200, "OK", "text/plain"));
         }
