@@ -50,6 +50,7 @@ namespace EventStore.Core.Services.Transport.Tcp
     public class TcpConnectionManager: IHandle<TcpMessage.Heartbeat>, IHandle<TcpMessage.HeartbeatTimeout>
     {
         public const int ConnectionQueueSizeThreshold = 50000;
+        public static readonly TimeSpan ConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionManager>();
 
@@ -167,8 +168,9 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             RemoteEndPoint = remoteEndPoint;
             _connection = useSsl 
-                ? connector.ConnectSslTo(ConnectionId, remoteEndPoint, sslTargetHost, sslValidateServer, OnConnectionEstablished, OnConnectionFailed)
-                : connector.ConnectTo(ConnectionId, remoteEndPoint, OnConnectionEstablished, OnConnectionFailed);
+                ? connector.ConnectSslTo(ConnectionId, remoteEndPoint, ConnectionTimeout,
+                                         sslTargetHost, sslValidateServer, OnConnectionEstablished, OnConnectionFailed)
+                : connector.ConnectTo(ConnectionId, remoteEndPoint, ConnectionTimeout, OnConnectionEstablished, OnConnectionFailed);
             _connection.ConnectionClosed += OnConnectionClosed;
             if (_connection.IsClosed)
                 OnConnectionClosed(_connection, SocketError.Success);

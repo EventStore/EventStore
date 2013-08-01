@@ -43,6 +43,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                                                   Guid connectionId, 
                                                                   IPEndPoint remoteEndPoint, 
                                                                   TcpClientConnector connector, 
+                                                                  TimeSpan connectionTimeout,
                                                                   Action<ITcpConnection> onConnectionEstablished, 
                                                                   Action<ITcpConnection, SocketError> onConnectionFailed,
                                                                   Action<ITcpConnection, SocketError> onConnectionClosed)
@@ -64,7 +65,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                   {
                                       if (onConnectionFailed != null)
                                           onConnectionFailed(connection, socketError);
-                                  }, connection);
+                                  }, connection, connectionTimeout);
 // ReSharper restore ImplicitlyCapturedClosure
             return connection;
         }
