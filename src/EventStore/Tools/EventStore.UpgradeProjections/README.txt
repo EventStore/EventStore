@@ -20,7 +20,10 @@ With the database attached to Event Store 1.x:
    endpoint. This forces checkpoints for each projection to be written.
 
 2) Attach the database to Event Store 2.0.0, by running using the "--db ./mydata"
-   command line attribute.
+   command line attribute. Do NOT turn on user projections, however system projections
+   need to be switched on. The command line will likely look like this:
+
+      ./EventStore.SingleNode.exe --run-projections=system --db ./mydatabase
 
 With the database attached to Event Store 2.x:
 
@@ -42,7 +45,8 @@ With the database attached to Event Store 2.x:
 3) Re-run the projection upgrade tool with the "--upgrade" flag if the output of the
    previous step looks reasonable and does not report any errors.
 
-4) Restart the Event Store 2.0.0 server
+4) Restart the Event Store 2.0.0 server, allowing user projections to run by
+   using the "--run-projections=all" command line parameter.
 
 5) Enable projections one-by-one watching for any errors in the log files.
 
