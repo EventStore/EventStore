@@ -30,7 +30,6 @@ using System;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
-using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.Helpers;

@@ -79,7 +79,6 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => SubscribeToStream("$system-no-acl", "adm", "admpa$$"));
         }
 
-
         [Test, Category("LongRunning"), Category("Network")]
         public void operations_on_system_stream_with_acl_set_to_usual_user_fail_for_not_authorized_user()
         {
@@ -164,7 +163,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             };
 
             Expect<AccessDeniedException>(() => ReadMeta("$system-adm", "user1", "pa$$1"));
-            Expect<AccessDeniedException>(() => WriteMeta("$system-adm", "user1", "pa$$1", SystemUserGroups.Admins));
+            Expect<AccessDeniedException>(() => WriteMeta("$system-adm", "user1", "pa$$1", SystemRoles.Admins));
 
             Expect<AccessDeniedException>(() => SubscribeToStream("$system-adm", "user1", "pa$$1"));
         }
@@ -186,7 +185,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             };
 
             ExpectNoException(() => ReadMeta("$system-adm", "adm", "admpa$$"));
-            ExpectNoException(() => WriteMeta("$system-adm", "adm", "admpa$$", SystemUserGroups.Admins));
+            ExpectNoException(() => WriteMeta("$system-adm", "adm", "admpa$$", SystemRoles.Admins));
 
             ExpectNoException(() => SubscribeToStream("$system-adm", "adm", "admpa$$"));
         }
@@ -209,7 +208,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             };
 
             ExpectNoException(() => ReadMeta("$system-all", null, null));
-            ExpectNoException(() => WriteMeta("$system-all", null, null, SystemUserGroups.All));
+            ExpectNoException(() => WriteMeta("$system-all", null, null, SystemRoles.All));
 
             ExpectNoException(() => SubscribeToStream("$system-all", null, null));
         }
@@ -231,7 +230,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             };
 
             ExpectNoException(() => ReadMeta("$system-all", "user1", "pa$$1"));
-            ExpectNoException(() => WriteMeta("$system-all", "user1", "pa$$1", SystemUserGroups.All));
+            ExpectNoException(() => WriteMeta("$system-all", "user1", "pa$$1", SystemRoles.All));
 
             ExpectNoException(() => SubscribeToStream("$system-all", "user1", "pa$$1"));
         }
@@ -253,7 +252,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             };
 
             ExpectNoException(() => ReadMeta("$system-all", "adm", "admpa$$"));
-            ExpectNoException(() => WriteMeta("$system-all", "adm", "admpa$$", SystemUserGroups.All));
+            ExpectNoException(() => WriteMeta("$system-all", "adm", "admpa$$", SystemRoles.All));
 
             ExpectNoException(() => SubscribeToStream("$system-all", "adm", "admpa$$"));
         }

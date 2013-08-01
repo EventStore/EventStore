@@ -33,7 +33,7 @@ namespace EventStore.Common.Options
         bool ShowVersion { get; }
         string LogsDir { get; }
         string[] Defines { get; }
-
+        bool Force { get; }
         void Parse(params string[] args);
         string DumpOptions();
         string GetUsage();

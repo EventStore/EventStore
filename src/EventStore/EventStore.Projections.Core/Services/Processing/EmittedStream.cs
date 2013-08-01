@@ -286,11 +286,23 @@ namespace EventStore.Projections.Core.Services.Processing
                 var checkpointTagVersion = e.Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                 var ourEpoch = checkpointTagVersion.Version.ProjectionId == _projectionVersion.ProjectionId
                                && checkpointTagVersion.Version.Version >= _projectionVersion.Epoch;
+
+                if (IsV1StreamCreatedEvent(e))
+                    continue;
+
+                if (checkpointTagVersion.Tag == null)
+                {
+                    Failed(
+                        string.Format(
+                            "A unstamped event found. Stream: '{0}'. EventNumber: '{1}'", message.EventStreamId,
+                            e.OriginalEventNumber));
+                    return true;
+                }
                 var doStop = !ourEpoch;
                 if (!doStop)
                 {
                     //NOTE: may need to compare with last pre-recorded event
-                    //      but should not push to alreadyCommitted if sourece changed (must be at checkpoint)
+                    //      but should not push to alreadyCommitted if source changed (must be at checkpoint)
                     var adjustedTag = checkpointTagVersion.AdjustBy(_positionTagger, _projectionVersion);
                     doStop = adjustedTag < upTo;
                 }
@@ -304,6 +316,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 _alreadyCommittedEvents.Push(Tuple.Create(checkpointTagVersion.Tag, eventType, e.Event.EventNumber));
             }
             return stop || message.IsEndOfStream;
+        }
+
+        private static bool IsV1StreamCreatedEvent(EventStore.Core.Data.ResolvedEvent e)
+        {
+            return !e.IsResolved && e.OriginalEventNumber == 0
+                   && (e.OriginalEvent.EventType == SystemEventTypes.V1__StreamCreatedImplicit__
+                       || e.OriginalEvent.EventType == SystemEventTypes.V1__StreamCreated__);
         }
 
         private void ProcessWrites()
@@ -343,12 +362,12 @@ namespace EventStore.Projections.Core.Services.Processing
                                                        new StreamMetadata(
                                                            null, null, null,
                                                            new StreamAcl(
-                                                               SystemUserGroups.All, null, null, SystemUserGroups.All,
+                                                               SystemRoles.All, null, null, SystemRoles.All,
                                                                null)).ToJsonBytes(), null)
                                                  : new Event(
                                                        Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
                                                        new StreamMetadata(
-                                                           null, null, null, new StreamAcl(null, null, null, null, null))
+                                                           null, null, null, new StreamAcl((string)null, null, null, null, null))
                                                            .ToJsonBytes(), null);
             _awaitingMetadataWriteCompleted = true;
             PublishWriteMetaStream();

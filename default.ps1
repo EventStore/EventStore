@@ -46,6 +46,9 @@ Task ? -description "Writes script documentation to the host" {
     Write-Host "        platformToolset - the platform toolset to use. Default is to detect the latest"
     Write-Host "                          supported version. Valid values are v100, v110, WindowsSDK7.1"
     Write-Host ""
+    Write-Host "        defines - any additional preprocessor constants to define during build (semicolon"
+    Write-Host "                  separated list)."
+    Write-Host ""
 }
  
 # Configuration
@@ -54,41 +57,48 @@ Properties {
     $managedBuildParameters = @{}
     $nativeBuildProperties = @{}
     $managedBuildProperties = @{}
- 
+     
     if ($platform -eq $null) {
-        Write-Verbose "Platform: defaulting to x64 and Any CPU for managed"
+        Write-Host "Platform: defaulting to x64 and Any CPU for managed"
         $platform = "x64"
         $managedBuildParameters.Add("platform", "Any CPU")
         $nativeBuildParameters.Add("platform", "x64")
     } else {
-        Write-Verbose "Platform: set to $platform"
+        Write-Host "Platform: set to $platform"
         $managedBuildParameters.Add("platform", $platform)
         $nativeBuildParameters.Add("platform", $platform)
     }
  
     if ($configuration -eq $null) {
-        Write-Verbose "Configuration: defaulting to Release"
+        Write-Host "Configuration: defaulting to Release"
         $managedBuildParameters.Add("configuration", "release")
         $nativeBuildParameters.Add("configuration", "release")
     } else {
-        Write-Verbose "Configuration: set to $configuration"
+        Write-Host "Configuration: set to $configuration"
         $managedBuildParameters.Add("configuration", $configuration)
         $nativeBuildParameters.Add("configuration", $configuration)
     }
  
     if ($platformToolset -ne $null) {
-        Write-Verbose "Platform Toolset: set to $platformToolset for native code"
+        Write-Host "Platform Toolset: set to $platformToolset for native code"
         $nativeBuildParameters.Add("platformToolset", $platformToolset)
     } else {
-        Write-Verbose "Platform Toolset will be guessed by a horrible, probably brittle mechanism recommended by MSFT support"
+        Write-Host "Platform Toolset will be guessed by a horrible, probably brittle mechanism recommended by MSFT support"
     }
  
     if ($version -ne $null) {
-                Write-Verbose "Version: Set to $version"
-                $nativeBuildProperties.Add("versionString", $version)
-                $managedBuildProperties.Add("versionString", $version)
+        Write-Host "Version: Set to $version"
+        $nativeBuildProperties.Add("versionString", $version)
+        $managedBuildProperties.Add("versionString", $version)
     } else {
-                Write-Verbose "Version: None specified, defaulting to 0.0.0.0"
+        Write-Host "Version: None specified, defaulting to 0.0.0.0"
+    }
+
+    if ($defines -ne $null) {
+        $managedBuildParameters.Add("defines", $defines)
+        Write-Host "Additional compile-time constants: $defines"
+    } else {
+        Write-Host "No additional compile-time constants"
     }
  
     $baseDirectory = Resolve-Path .
@@ -97,7 +107,7 @@ Properties {
     $outputDirectory = Join-Path $baseDirectory "bin\"
     $managedBuildParameters.Add("outputDirectory", $outputDirectory)
 }
- 
+
 Task Clean-Output {
     Remove-Item -Recurse -Force $outputDirectory -ErrorAction SilentlyContinue
 }

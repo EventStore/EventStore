@@ -77,6 +77,7 @@ namespace EventStore.Core
                 else
                 {
                     Init(options);
+                    CommitSuicideIfInBoehmOrOnBadVersionsOfMono(options);
                     Create(options);
                     Start();
 
@@ -108,6 +109,23 @@ namespace EventStore.Core
 
             Application.ExitSilent(_exitCode, "Normal exit.");
             return _exitCode;
+        }
+
+        private void CommitSuicideIfInBoehmOrOnBadVersionsOfMono(TOptions options)
+        {
+            if(!options.Force)
+            {
+                if(GC.MaxGeneration == 0)
+                {
+                    Application.Exit(3, "Appears that we are running in mono with boehm GC this is generally not a good idea, please run with sgen instead." + 
+                        "to run with sgen use mono --gc=sgen. If you really want to run with boehm GC you can use --force to override this error.");
+                }
+                if(OS.IsUnix && !OS.GetRuntimeVersion().StartsWith("3"))
+                {
+                    Application.Exit(4, "Appears that we are running in linux with a version 2 build of mono. This is generally not a good idea." +
+                        "We recommend running with 3.0 or higher (3.2 especially). If you really want to run with this version of mono use --force to override this error.");
+                }
+            }
         }
 
         private void Exit(int exitCode)

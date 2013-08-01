@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             return -1;
         }
 
-        public StreamAccessResult CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
+        public StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
         {
             throw new NotImplementedException();
         }

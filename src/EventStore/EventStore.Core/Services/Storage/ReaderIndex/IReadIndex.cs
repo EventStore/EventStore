@@ -48,7 +48,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         bool IsStreamDeleted(string streamId);
         int GetLastStreamEventNumber(string streamId);
-        StreamAccessResult CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
+        StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
         StreamMetadata GetStreamMetadata(string streamId);
 
         CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition);

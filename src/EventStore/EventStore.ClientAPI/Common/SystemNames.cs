@@ -31,6 +31,7 @@ namespace EventStore.ClientAPI.Common
     public static class SystemStreams
     {
         public const string StreamsStream = "$streams";
+        public const string SettingsStream = "$settings";
         public const string StatsStreamPrefix = "$stats";
 
         public static string MetastreamOf(string streamId)
@@ -61,6 +62,9 @@ namespace EventStore.ClientAPI.Common
         public const string AclDelete = "$d";
         public const string AclMetaRead = "$mr";
         public const string AclMetaWrite = "$mw";
+
+        public const string UserStreamAcl = "$userStreamAcl";
+        public const string SystemStreamAcl = "$systemStreamAcl";
     }
 
     public static class SystemEventTypes

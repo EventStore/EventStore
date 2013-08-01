@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn = TestConnection.Create(_node.TcpEndPoint);
             _conn.Connect();
             _conn.SetStreamMetadata("$all", -1,
-                                    StreamMetadata.Build().SetReadRole(SystemUserGroups.All),
+                                    StreamMetadata.Build().SetReadRole(SystemRoles.All),
                                     new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
         }
 

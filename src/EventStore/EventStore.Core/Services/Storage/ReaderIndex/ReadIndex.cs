@@ -65,7 +65,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly IHasher _hasher;
         private readonly IPublisher _bus;
         private readonly ILRUCache<string, StreamCacheInfo> _streamInfoCache;
-        private readonly ILRUCache<long, TransactionInfo> _transactionInfoCache = new LRUCache<long, TransactionInfo>(ESConsts.TransactionMetadataCacheCapacity); 
+        private readonly ILRUCache<long, TransactionInfo> _transactionInfoCache = new LRUCache<long, TransactionInfo>(ESConsts.TransactionMetadataCacheCapacity);
+        private SystemSettings _systemSettings;
 
         private long _persistedPrepareCheckpoint = -1;
         private long _persistedCommitCheckpoint = -1;
@@ -129,15 +130,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Log.Info("ReadIndex building...");
 
             _indexRebuild = true;
-            var seqReader = _readers.Get();
+            var reader = _readers.Get();
             try
             {
                 var startPosition = Math.Max(0, _persistedCommitCheckpoint);
-                seqReader.Reposition(startPosition);
+                reader.Reposition(startPosition);
 
                 long processed = 0;
                 SeqReadResult result;
-                while ((result = seqReader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition)
+                while ((result = reader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition)
                 {
                     switch (result.LogRecord.RecordType)
                     {
@@ -162,10 +163,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     }
                 }
                 Log.Debug("ReadIndex Rebuilding Done: total processed {0} records, time elapsed: {1}.", processed, DateTime.UtcNow - startTime);
+
+                _systemSettings = GetSystemSettings();
             }
             finally
             {
-                _readers.Return(seqReader);
+                _readers.Return(reader);
             }
 
             _indexRebuild = false;
@@ -241,6 +244,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var newLastCommitPosition = commit.LogPosition > lastCommitPosition ? commit.LogPosition : lastCommitPosition;
             if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) != lastCommitPosition)
                 throw new Exception("Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
+
+            if (!_indexRebuild && streamId == SystemStreams.SettingsStream)
+                _systemSettings = GetSystemSettings();
 
             for (int i = 0, n = indexEntries.Count; i < n; ++i)
             {
@@ -329,6 +335,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 _readers.Return(seqReader);
             }
+        }
+
+        private SystemSettings GetSystemSettings()
+        {
+            var eventRes = ((IReadIndex) this).ReadEvent(SystemStreams.SettingsStream, -1);
+            if (eventRes.Result == ReadEventResult.Success)
+            {
+                try
+                {
+                    return SystemSettings.FromJsonBytes(eventRes.Record.Data);
+                }
+                catch (Exception exc)
+                {
+                    Log.ErrorException(exc, "Error deserializing SystemSettings record.");
+                }
+            }
+            return null;
         }
 
         IndexReadEventResult IReadIndex.ReadEvent(string streamId, int eventNumber)
@@ -567,7 +590,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        StreamAccessResult IReadIndex.CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
+        StreamAccess IReadIndex.CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
         {
             var reader = _readers.Get();
             try
@@ -580,8 +603,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private StreamAccessResult CheckStreamAccessInternal(ITransactionFileReader reader, string streamId, 
-                                                             StreamAccessType streamAccessType, IPrincipal user)
+        private StreamAccess CheckStreamAccessInternal(ITransactionFileReader reader, string streamId, 
+                                                       StreamAccessType streamAccessType, IPrincipal user)
         {
             if (SystemStreams.IsMetastream(streamId))
             {
@@ -594,7 +617,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     case StreamAccessType.Delete:
                     case StreamAccessType.MetaRead:
                     case StreamAccessType.MetaWrite:
-                        return StreamAccessResult.Denied;
+                        return new StreamAccess(false);
                     default:
                         throw new ArgumentOutOfRangeException("streamAccessType");
                 }
@@ -602,36 +625,46 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             if ((streamAccessType == StreamAccessType.Write || streamAccessType == StreamAccessType.Delete)
                 && streamId == SystemStreams.AllStream)
-                return StreamAccessResult.Denied;
+                return new StreamAccess(false);
 
-            if (user != null && user.IsInRole(SystemUserGroups.Admins))
-                return StreamAccessResult.Granted;
-
+            var sysSettings = _systemSettings ?? SystemSettings.Default;
             var meta = GetStreamMetadataCached(reader, streamId);
-            var isSystemStream = SystemStreams.IsSystemStream(streamId);
+            StreamAcl acl;
+            StreamAcl sysAcl;
+            StreamAcl defAcl;
+            if (SystemStreams.IsSystemStream(streamId))
+            {
+                defAcl = SystemSettings.Default.SystemStreamAcl;
+                sysAcl = sysSettings.SystemStreamAcl ?? defAcl;
+                acl = meta.Acl ?? sysAcl;
+            }
+            else
+            {
+                defAcl = SystemSettings.Default.UserStreamAcl;
+                sysAcl = sysSettings.UserStreamAcl ?? defAcl;
+                acl = meta.Acl ?? sysAcl;
+            }
+            string[] roles;
             switch (streamAccessType)
             {
-                case StreamAccessType.Read: 
-                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.ReadRole, user, isSystemStream);
-                case StreamAccessType.Write:
-                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.WriteRole, user, isSystemStream);
-                case StreamAccessType.Delete:
-                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.DeleteRole, user, isSystemStream);
-                case StreamAccessType.MetaRead:
-                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.MetaReadRole, user, isSystemStream);
-                case StreamAccessType.MetaWrite:
-                    return CheckRoleAccess(meta.Acl == null ? null : meta.Acl.MetaWriteRole, user, isSystemStream);
+                case StreamAccessType.Read: roles = acl.ReadRoles ?? sysAcl.ReadRoles ?? defAcl.ReadRoles; break;
+                case StreamAccessType.Write: roles = acl.WriteRoles ?? sysAcl.WriteRoles ?? defAcl.WriteRoles; break;
+                case StreamAccessType.Delete: roles = acl.DeleteRoles ?? sysAcl.DeleteRoles ?? defAcl.DeleteRoles; break;
+                case StreamAccessType.MetaRead: roles = acl.MetaReadRoles ?? sysAcl.MetaReadRoles ?? defAcl.MetaReadRoles; break;
+                case StreamAccessType.MetaWrite: roles = acl.MetaWriteRoles ?? sysAcl.MetaWriteRoles ?? defAcl.MetaWriteRoles; break;
                 default: throw new ArgumentOutOfRangeException("streamAccessType");
             }
-        }
 
-        private StreamAccessResult CheckRoleAccess(string role, IPrincipal user, bool isSystemStream)
-        {
-            if (role == SystemUserGroups.All)
-                return StreamAccessResult.Granted;
-            if (role == null)
-                return isSystemStream ? StreamAccessResult.Denied : StreamAccessResult.Granted;
-            return (user != null && user.IsInRole(role)) ? StreamAccessResult.Granted : StreamAccessResult.Denied;
+            var isPublic = roles.Contains(x => x == SystemRoles.All);
+            if (isPublic) return new StreamAccess(true, true);
+            if (user == null) return new StreamAccess(false);
+            if (user.IsInRole(SystemRoles.Admins)) return new StreamAccess(true);
+            for (int i = 0; i < roles.Length; ++i)
+            {
+                if (user.IsInRole(roles[i]))
+                    return new StreamAccess(true);
+            }
+            return new StreamAccess(false);
         }
 
         private int GetLastStreamEventNumberCached(ITransactionFileReader reader, string streamId)

@@ -49,7 +49,7 @@ namespace EventStore.TestClient
         public int ReadWindow { get { return _helper.Get(() => ReadWindow); } }
         public int WriteWindow { get { return _helper.Get(() => WriteWindow); } }
         public int PingWindow { get { return _helper.Get(() => PingWindow); } }
-
+        public bool Force { get { return _helper.Get(() => Force); } }
         public string[] Command { get; private set; }
 
         private readonly OptsHelper _helper;
@@ -70,6 +70,7 @@ namespace EventStore.TestClient
             _helper.Register(() => ReadWindow, "r|read-window=", null, null, 2000, "The difference between sent/received read commands.");
             _helper.Register(() => WriteWindow, "w|write-window=", null, null, 2000, "The difference between sent/received write commands.");
             _helper.Register(() => PingWindow, "p|ping-window=", null, null, 2000, "The difference between sent/received ping commands.");
+            _helper.Register(() => Force, "f|force", null, null, false, "Force usage on non-recommended environments such as Boehm GC");
         }
 
         public string GetUsage()

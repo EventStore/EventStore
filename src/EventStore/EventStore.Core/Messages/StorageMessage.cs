@@ -399,10 +399,10 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
             public readonly long? TransactionId;
             public readonly StreamAccessType AccessType;
-            public readonly StreamAccessResult AccessResult;
+            public readonly StreamAccess AccessResult;
 
             public CheckStreamAccessCompleted(Guid correlationId, string eventStreamId, long? transactionId, 
-                                              StreamAccessType accessType, StreamAccessResult accessResult)
+                                              StreamAccessType accessType, StreamAccess accessResult)
             {
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;

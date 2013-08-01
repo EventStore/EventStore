@@ -67,6 +67,8 @@ namespace EventStore.SingleNode
         public int PrepareTimeoutMs { get { return _helper.Get(() => PrepareTimeoutMs); } }
         public int CommitTimeoutMs { get { return _helper.Get(() => CommitTimeoutMs); } }
 
+        public bool Force { get { return _helper.Get(() => Force); } }
+
         private readonly OptsHelper _helper;
 
         public SingleNodeOptions()
@@ -106,6 +108,7 @@ namespace EventStore.SingleNode
 
             _helper.Register(() => PrepareTimeoutMs, Opts.PrepareTimeoutMsCmd, Opts.PrepareTimeoutMsEnv, Opts.PrepareTimeoutMsJson, Opts.PrepareTimeoutMsDefault, Opts.PrepareTimeoutMsDescr);
             _helper.Register(() => CommitTimeoutMs, Opts.CommitTimeoutMsCmd, Opts.CommitTimeoutMsEnv, Opts.CommitTimeoutMsJson, Opts.CommitTimeoutMsDefault, Opts.CommitTimeoutMsDescr);
+            _helper.Register(() => Force, Opts.ForceCmd, Opts.ForceEnv, Opts.ForceJson, false, "Force usage on non-recommended environments such as Boehm GC");
         }
 
         public void Parse(params string[] args)

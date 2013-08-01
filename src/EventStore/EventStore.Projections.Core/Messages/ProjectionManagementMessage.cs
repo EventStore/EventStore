@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Messages
             {
                 if (mode > ProjectionMode.Transient && readWrite == ReadWrite.Write
                     && (message.RunAs == null || message.RunAs.Principal == null
-                        || !message.RunAs.Principal.IsInRole(SystemUserGroups.Admins)))
+                        || !message.RunAs.Principal.IsInRole(SystemRoles.Admins)))
                 {
                     message.Envelope.ReplyWith(new NotAuthorized());
                     return false;

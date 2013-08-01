@@ -193,7 +193,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private void HandleTimeout(ITcpConnection connection)
         {
             RemoveFromConnecting(connection);
-            Helper.EatException(() => connection.Close("Timeout on occured connect."));
+            Helper.EatException(() => connection.Close("Timeout on occurred connect."));
         }
 
         private void OnSocketConnected(SocketAsyncEventArgs socketArgs)
