@@ -326,7 +326,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var isSystem = SystemStreams.IsSystemStream(streamId);
             var role = (metadata == null || metadata.Acl == null) ? null : metadata.Acl.ReadRole;
-            return isSystem ? (role == SystemUserGroups.All) : (role == null || role == SystemUserGroups.All);
+            return isSystem ? (role == SystemRoles.All) : (role == null || role == SystemRoles.All);
         }
 
         public static ResponseConfiguration WriteEventsCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)

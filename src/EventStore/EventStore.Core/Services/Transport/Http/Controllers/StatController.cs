@@ -52,8 +52,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             Ensure.NotNull(service, "service");
 
-            service.RegisterControllerAction(new ControllerAction("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
-            service.RegisterControllerAction(new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
+            service.RegisterAction(new ControllerAction("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
+            service.RegisterAction(new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
         }
 
         private void OnGetFreshStats(HttpEntityManager entity, UriTemplateMatch match)

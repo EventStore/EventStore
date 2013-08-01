@@ -94,26 +94,26 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         [Test, Category("LongRunning"), Category("Network")]
         public void writing_meta_to_all_access_normal_stream_succeeds_when_no_credentials_are_passed()
         {
-            ExpectNoException(() => WriteMeta("normal-all", null, null, SystemUserGroups.All));
+            ExpectNoException(() => WriteMeta("normal-all", null, null, SystemRoles.All));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void writing_meta_to_all_access_normal_stream_is_not_authenticated_when_not_existing_credentials_are_passed()
         {
-            Expect<NotAuthenticatedException>(() => WriteMeta("normal-all", "badlogin", "badpass", SystemUserGroups.All));
+            Expect<NotAuthenticatedException>(() => WriteMeta("normal-all", "badlogin", "badpass", SystemRoles.All));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void writing_meta_to_all_access_normal_stream_succeeds_when_any_existing_user_credentials_are_passed()
         {
-            ExpectNoException(() => WriteMeta("normal-all", "user1", "pa$$1", SystemUserGroups.All));
-            ExpectNoException(() => WriteMeta("normal-all", "user2", "pa$$2", SystemUserGroups.All));
+            ExpectNoException(() => WriteMeta("normal-all", "user1", "pa$$1", SystemRoles.All));
+            ExpectNoException(() => WriteMeta("normal-all", "user2", "pa$$2", SystemRoles.All));
         }
 
         [Test, Category("LongRunning"), Category("Network")]
         public void writing_meta_to_all_access_normal_stream_succeeds_when_admin_user_credentials_are_passed()
         {
-            ExpectNoException(() => WriteMeta("normal-all", "adm", "admpa$$", SystemUserGroups.All));
+            ExpectNoException(() => WriteMeta("normal-all", "adm", "admpa$$", SystemRoles.All));
         }
     }
 }

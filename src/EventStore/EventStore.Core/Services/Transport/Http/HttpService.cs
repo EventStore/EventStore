@@ -146,12 +146,12 @@ namespace EventStore.Core.Services.Transport.Http
             controller.Subscribe(this);
         }
 
-        public void RegisterControllerAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
+        public void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
         {
             Ensure.NotNull(action, "action");
             Ensure.NotNull(handler, "handler");
 
-            _uriRouter.RegisterControllerAction(action, handler);
+            _uriRouter.RegisterAction(action, handler);
         }
 
         public List<UriToActionMatch> GetAllUriMatches(Uri uri)

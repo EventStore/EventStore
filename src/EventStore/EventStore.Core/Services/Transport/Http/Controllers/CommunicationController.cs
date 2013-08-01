@@ -85,7 +85,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         protected void Register(IHttpService service, string uriTemplate, string httpMethod, 
                                 Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs)
         {
-            service.RegisterControllerAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs), handler);
+            service.RegisterAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs), handler);
         }
 
         protected void RegisterTextBody(
