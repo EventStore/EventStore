@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Standard
         {
             emittedEvents = null;
             newState = null;
-            if (data.EventSequenceNumber != 0)
+            if (data.EventSequenceNumber != 0 || data.ResolvedLinkTo)
                 return false; // not our event
 
             emittedEvents = new[]
