@@ -35,13 +35,20 @@ Properties {
 Properties {
     $platform = "Any CPU"
     $configuration = "Release"
+
+    
+    if ($defines -eq $null) {
+        $definesCommandLine = ""
+    } else {
+        $definesCommandLine = "/p:AppendedDefineConstants=$defines"
+    }
 }
 
 Task Build-EventStore {
     try {
         Invoke-Task Patch-AssemblyInfos
         #TODO: put back in /p:OutDir=$outputDirectory
-        Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform=$platform }
+        Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform=$platform $definesCommandLine }
     } finally {
         Invoke-Task Revert-AssemblyInfos
     }
