@@ -45,7 +45,7 @@ namespace EventStore.Web.Playground
         public string DbPath { get { return _helper.Get(() => DbPath); } }
         public int WorkerThreads { get { return _helper.Get(() => WorkerThreads); } }
         public string[] HttpPrefixes { get { return _helper.Get(() => HttpPrefixes); } }
-
+        public bool Force { get { return false; } }
         private readonly OptsHelper _helper;
 
         public PlaygroundNodeOptions()
