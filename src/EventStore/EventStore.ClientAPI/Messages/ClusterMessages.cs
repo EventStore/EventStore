@@ -29,7 +29,7 @@ using System;
 
 namespace EventStore.ClientAPI.Messages
 {
-    public class ClusterMessages
+    internal class ClusterMessages
     {
         public class ClusterInfoDto
         {

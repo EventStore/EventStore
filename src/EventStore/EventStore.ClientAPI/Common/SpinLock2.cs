@@ -45,7 +45,7 @@ using System.Threading;
 
 namespace EventStore.ClientAPI.Common
 {
-    public class SpinLock2
+    internal class SpinLock2
     {
         private int state;
         private readonly EventWaitHandle available = new AutoResetEvent(false);
@@ -130,7 +130,7 @@ namespace EventStore.ClientAPI.Common
     }
 
     // BE VERY CAREFUL USING THIS!!!
-    public struct LockReleaserSlim: IDisposable
+    internal struct LockReleaserSlim: IDisposable
     {
         private readonly SpinLock2 _spinLock;
 

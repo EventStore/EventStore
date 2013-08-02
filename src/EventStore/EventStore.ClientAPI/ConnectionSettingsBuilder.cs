@@ -114,7 +114,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Turns on excessive <see cref="EventStoreConnection"/> internal logic logging.
+        /// Turns on verbose <see cref="EventStoreConnection"/> internal logic logging.
         /// </summary>
         /// <returns></returns>
         public ConnectionSettingsBuilder EnableVerboseLogging()
@@ -271,6 +271,12 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+        /// <summary>
+        /// Sets the default <see cref="UserCredentials"> to be used for this connection.
+        /// If user credentials are not given for an operation, these credentials will be used.
+        /// </summary>
+        /// <param name="userCredentials"></param>
+        /// <returns></returns>
         public ConnectionSettingsBuilder SetDefaultUserCredentials(UserCredentials userCredentials)
         {
             _defaultUserCredentials = userCredentials;
@@ -278,7 +284,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Tells to use SSL TCP connection.
+        /// Uses a SSL connection over TCP. This should generally be used with authentication.
         /// </summary>
         /// <param name="targetHost">HostName of server certificate.</param>
         /// <param name="validateServer">Whether to accept connection from server with not trusted certificate.</param>
@@ -293,7 +299,8 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Tells to use normal TCP connection.
+        /// Use an unencrypted TCP connection. This should generally not be used with authentication
+        /// as it will send usernames and passwords over the network as plaintext.
         /// </summary>
         /// <returns></returns>
         public ConnectionSettingsBuilder UseNormalConnection()
@@ -316,7 +323,8 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Sets handler of <see cref="EventStoreConnection"/> closing.
+        /// Sets handler of <see cref="EventStoreConnection"/> closing. For all disconnections
+        /// use the OnDisconnected handler.
         /// </summary>
         /// <param name="handler"></param>
         /// <returns></returns>
@@ -339,6 +347,7 @@ namespace EventStore.ClientAPI
 
         /// <summary>
         /// Sets handler called when connection is dropped.
+        /// This happens on all disconnections. Closed in when the connection is explicitly closed.
         /// </summary>
         /// <param name="handler"></param>
         /// <returns></returns>
@@ -370,30 +379,53 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+        /// <summary>
+        /// Marks that no response from server should cause an error on the request
+        /// </summary>
+        /// <returns></returns>
         public ConnectionSettingsBuilder FailOnNoServerResponse()
         {
             _failOnNoServerResponse = true;
             return this;
         }
 
+        /// <summary>
+        /// Marks that no response from server for request should result in a retry
+        /// </summary>
+        /// <returns></returns>
         public ConnectionSettingsBuilder DoNotFailOnNoServerResponse()
         {
             _failOnNoServerResponse = false;
             return this;
         }
 
+        /// <summary>
+        /// Sets how often heartbeats should be expected on the connection (lower values detect broken sockets faster)
+        /// </summary>
+        /// <param name="interval"></param>
+        /// <returns></returns>
         public ConnectionSettingsBuilder SetHeartbeatInterval(TimeSpan interval)
         {
             _heartbeatInterval = interval;
             return this;
         }
 
+        /// <summary>
+        /// Sets how long to wait without heartbeats before determining a connection to be dead (must be longer than heartbeat interval)
+        /// </summary>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
         public ConnectionSettingsBuilder SetHeartbeatTimeout(TimeSpan timeout)
         {
             _heartbeatTimeout = timeout;
             return this;
         }
 
+        /// <summary>
+        /// Sets the timeout for attempting to connect to a server before aborting and attempting a reconnect.
+        /// </summary>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
         public ConnectionSettingsBuilder WithConnectionTimeoutOf(TimeSpan timeout)
         {
             _clientConnectionTimeout = timeout;
