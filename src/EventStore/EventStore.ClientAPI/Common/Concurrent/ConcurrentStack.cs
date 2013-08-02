@@ -30,7 +30,7 @@ namespace EventStore.ClientAPI.Common.Concurrent
 {
 #if !PSEUDO_CONCURRENT_COLLECTIONS
 
-    public class ConcurrentStack<T> : System.Collections.Concurrent.ConcurrentStack<T>
+    internal class ConcurrentStack<T> : System.Collections.Concurrent.ConcurrentStack<T>
     {
         // JUST INHERITING EVERYTHING
     }
@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI.Common.Concurrent
     /// Not very concurrent stack for use in mono
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class ConcurrentStack<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
+    internal class ConcurrentStack<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
     {
         private readonly Stack<T> _stack = new Stack<T>();
         // ReSharper disable FieldCanBeMadeReadOnly.Local

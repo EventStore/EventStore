@@ -31,7 +31,7 @@ namespace EventStore.ClientAPI.Common.Concurrent
 
     using System.Collections.Generic;
 
-    public class ConcurrentQueue<T> : System.Collections.Concurrent.ConcurrentQueue<T>
+    internal class ConcurrentQueue<T> : System.Collections.Concurrent.ConcurrentQueue<T>
     {
         public ConcurrentQueue()
         {
@@ -57,7 +57,7 @@ namespace EventStore.ClientAPI.Common.Concurrent
     /// This is a not concurrent ConcurrentQueue that actually works with mono. Alas one day it may be fixed.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
+    internal class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
     {
         private readonly Queue<T> _queue = new Queue<T>();
         // ReSharper disable FieldCanBeMadeReadOnly.Local
