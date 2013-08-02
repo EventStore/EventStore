@@ -418,8 +418,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new Exception();
 
             var streamAcl = _streamId.StartsWith("$")
-                ? new StreamAcl(SystemUserGroups.All, null, null, SystemUserGroups.All, null)
-                : new StreamAcl(null, null, null, null, null);
+                ? new StreamAcl(SystemRoles.All, null, null, SystemRoles.All, null)
+                : new StreamAcl((string)null, null, null, null, null);
 
             var streamMetadata = new StreamMetadata(
                 _writerConfiguration.MaxCount, _writerConfiguration.MaxAge, null, streamAcl);

@@ -173,9 +173,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var eventId = Guid.NewGuid();
             var acl = new StreamAcl(
-                readRole: SystemUserGroups.Admins, writeRole: SystemUserGroups.Admins,
-                deleteRole: SystemUserGroups.Admins, metaReadRole: SystemUserGroups.All,
-                metaWriteRole: SystemUserGroups.Admins);
+                readRole: SystemRoles.Admins, writeRole: SystemRoles.Admins,
+                deleteRole: SystemRoles.Admins, metaReadRole: SystemRoles.All,
+                metaWriteRole: SystemRoles.Admins);
             var metadata = new StreamMetadata(maxCount: 2, maxAge: null, cacheControl: null, acl: acl);
             var dataBytes = metadata.ToJsonBytes();
             return new Event(eventId, SystemEventTypes.StreamMetadata, isJson: true, data: dataBytes, metadata: null);
