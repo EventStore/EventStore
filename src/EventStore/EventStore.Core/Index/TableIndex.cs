@@ -310,7 +310,7 @@ namespace EventStore.Core.Index
                             using (var f = File.Create(backupFile))
                             {
                                 f.Write(indexmapContent, 0, indexmapContent.Length);
-                                f.Flush(flushToDisk: true);
+                                f.FlushToDisk();
                             }
                         }
                     });
@@ -579,7 +579,7 @@ namespace EventStore.Core.Index
             {
                 using (var f = File.Create(Path.Combine(directory, "merging.m")))
                 {
-                    f.Flush(flushToDisk: true);
+                    f.FlushToDisk();
                 }
             }
         }

@@ -32,6 +32,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using EventStore.Core.Util;
 using NUnit.Framework;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.Index
 {
@@ -156,6 +157,7 @@ namespace EventStore.Core.Tests.Index
                     }
                     fileWriter.WriteLine();
                     fileWriter.Flush();
+                    f.FlushToDisk();
                 }
             }
         }

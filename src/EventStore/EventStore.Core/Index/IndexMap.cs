@@ -313,7 +313,7 @@ namespace EventStore.Core.Index
                 using (var f = File.OpenWrite(tmpIndexMap)) 
                 {
                     f.Write(memStream.GetBuffer(), 0, (int)memStream.Length);
-                    f.Flush(flushToDisk: true);
+                    f.FlushToDisk();
                 }
             }
 

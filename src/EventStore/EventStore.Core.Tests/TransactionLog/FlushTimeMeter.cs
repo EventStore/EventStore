@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using EventStore.Common.Utils;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog
@@ -31,7 +32,7 @@ namespace EventStore.Core.Tests.TransactionLog
                         fs.Write(arr, 0, arr.Length);
                         
                         sw.Restart();
-                        fs.Flush(flushToDisk: true);
+                        fs.FlushToDisk();
                         var elapsed = sw.Elapsed;
 
                         min = elapsed < min ? elapsed : min;

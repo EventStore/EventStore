@@ -31,6 +31,8 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Threading;
+using EventStore.Common.Utils;
+using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Checkpoint
 {
@@ -49,6 +51,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         private readonly string _name;
         private readonly bool _cached;
         private readonly FileStream _fileStream;
+        private readonly SafeFileHandle _fileHandle;
         private readonly MemoryMappedFile _file;
         private long _last;
         private long _lastFlushed;
@@ -70,6 +73,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
                                             mustExist ? FileMode.Open : FileMode.OpenOrCreate,
                                             FileAccess.ReadWrite,
                                             FileShare.ReadWrite);
+            _fileHandle = _fileStream.SafeFileHandle;
             _file = MemoryMappedFile.CreateFromFile(_fileStream,
                                                     Guid.NewGuid().ToString(),
                                                     sizeof(long),
@@ -110,7 +114,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _accessor.Flush();
 
             //FlushViewOfFile(_accessor.SafeMemoryMappedViewHandle.DangerousGetHandle(), (UIntPtr)sizeof(long));
-            FlushFileBuffers(_fileStream.SafeFileHandle.DangerousGetHandle());
+            if (!FileStreamExtensions.FlushFileBuffers(_fileHandle))
+                throw new Exception(string.Format("FlushFileBuffers failed with err: {0}", Marshal.GetLastWin32Error()));
 
             Interlocked.Exchange(ref _lastFlushed, last);
 

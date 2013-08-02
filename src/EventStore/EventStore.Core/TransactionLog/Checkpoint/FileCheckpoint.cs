@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using System.Threading;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.TransactionLog.Checkpoint
 {
@@ -107,10 +108,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _fileStream.Seek(0, SeekOrigin.Begin);
             _writer.Write(last);
 
-            _fileStream.Flush(flushToDisk: true);
-#if LESS_THAN_NET_4_0
-            Win32.FlushFileBuffers(_fileStream.SafeFileHandle);
-#endif
+            _fileStream.FlushToDisk();
             Interlocked.Exchange(ref _lastFlushed, last);
 
             lock (_flushLocker)

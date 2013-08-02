@@ -304,7 +304,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             // we don't end up with seemingly valid chunk file with no header at all...
             WriteHeader(md5, tempFile, chunkHeader);
 
-            tempFile.Flush(flushToDisk: true);
+            tempFile.FlushToDisk();
             tempFile.Close();
             File.Move(tempFilename, _filename);
 
@@ -656,11 +656,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             if (_isReadOnly) 
                 throw new InvalidOperationException("Cannot write to a read-only TFChunk.");
 
-            _writerWorkItem.Stream.Flush(flushToDisk: true);
-
-#if LESS_THAN_NET_4_0
-            Win32.FlushFileBuffers(_fileStream.SafeFileHandle);
-#endif
+            _writerWorkItem.Stream.FlushToDisk();
         }
 
         public void Complete()

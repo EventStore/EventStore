@@ -143,7 +143,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     fs.Write(zeros, 0, toWrite);
                     leftToWrite -= toWrite;
                 }
-                fs.Flush(flushToDisk: true);
+                fs.FlushToDisk();
             }
         }
     }
