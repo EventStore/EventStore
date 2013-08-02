@@ -50,6 +50,7 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing
         }
 
         [TestFixture, Category("LongRunning")]
+        [Ignore("Only demonstrates differences between .NET and Mono")]
         class when_matching_against_placeholders_with_reserved_characters : HttpBehaviorSpecification
         {
             private JObject _response;
@@ -63,7 +64,6 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing
             }
 
             [Test]
-			[Ignore("Only demonstrates differences between .NET and Mono")]
             // [TestCase("%24", "$", "2", "2")]
             // [TestCase("$", "$", "2", "2")]
             // [TestCase("%3F", "?", "2", "2")] // ?

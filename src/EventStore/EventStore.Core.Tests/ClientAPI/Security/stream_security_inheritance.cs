@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
@@ -45,10 +44,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
             var settings = new SystemSettings(userStreamAcl: new StreamAcl(null, "user1", null, null, null),
                                               systemStreamAcl: new StreamAcl(null, "user1", null, null, null));
-            Connection.AppendToStream(SystemStreams.SettingsStream,
-                                      ExpectedVersion.Any,
-                                      new UserCredentials("adm", "admpa$$"),
-                                      new EventData(Guid.NewGuid(), "$settings", true, settings.ToJsonBytes(), null));
+            Connection.SetSystemSettings(settings, new UserCredentials("adm", "admpa$$"));
 
             Connection.SetStreamMetadata("user-no-acl", ExpectedVersion.NoStream,
                                          StreamMetadata.Build(), new UserCredentials("adm", "admpa$$"));
