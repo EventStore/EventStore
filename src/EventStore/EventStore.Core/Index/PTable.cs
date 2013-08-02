@@ -60,7 +60,6 @@ namespace EventStore.Core.Index
         public string Filename { get { return _filename; } }
 
         private readonly Guid _id;
-        private readonly int _bufferSize;
         private readonly string _filename;
         private readonly long _size;
         private readonly Midpoint[] _midpoints;
@@ -71,7 +70,6 @@ namespace EventStore.Core.Index
 
         private PTable(string filename, 
                        Guid id, 
-                       int bufferSize = DefaultSequentialBufferSize, 
                        int initialReaders = ESConsts.PTableInitialReaderCount, 
                        int maxReaders = ESConsts.PTableMaxReaderCount, 
                        int depth = 16)
@@ -79,15 +77,17 @@ namespace EventStore.Core.Index
             Ensure.NotNullOrEmpty(filename, "filename");
             Ensure.NotEmptyGuid(id, "id");
             Ensure.Positive(maxReaders, "maxReaders");
-            Ensure.Positive(bufferSize, "bufferSize");
             Ensure.Nonnegative(depth, "depth");
 
             if (!File.Exists(filename)) 
                 throw new CorruptIndexException(new PTableNotFoundException(filename));
 
             _id = id;
-            _bufferSize = bufferSize;
             _filename = filename;
+
+            var sw = Stopwatch.StartNew();
+            Log.Trace("Loading PTable '{0}' started...", Filename);
+            
             _size = new FileInfo(_filename).Length - PTableHeader.Size - MD5Size;
             File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
 
@@ -122,39 +122,41 @@ namespace EventStore.Core.Index
             }
             catch (PossibleToHandleOutOfMemoryException)
             {
-                Log.Error("Was unable to create midpoints for PTable. Performance hit possible. OOM Exception.");
+                Log.Error("Was unable to create midpoints for PTable '{0}' ({1} entries, depth {2} requested). "
+                          + "Performance hit possible. OOM Exception.", Filename, Count, depth);
             }
+            Log.Trace("Loading PTable '{0}' ({1} entries, cache depth {2}) done in {3}.", Filename, Count, depth, sw.Elapsed);
         }
 
         internal Midpoint[] CacheMidpoints(int depth)
         {
             if (depth < 0 || depth > 30)
                 throw new ArgumentOutOfRangeException("depth");
-
-            if (Count == 0 || depth == 0)
+            var count = Count;
+            if (count == 0 || depth == 0)
                 return null;
 
-            var workItem = GetWorkItem();
             //TODO GFY can make slightly faster with a sequential worker.
+            var workItem = GetWorkItem();
             try
             {
                 int midpointsCount;
                 Midpoint[] midpoints;
                 try
                 {
-                    midpointsCount = Math.Max(2, Math.Min(1 << depth, Count));
+                    midpointsCount = Math.Max(2, Math.Min(1 << depth, count));
                     midpoints = new Midpoint[midpointsCount];
                 }
                 catch (OutOfMemoryException exc)
                 {
                     throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.", exc);
                 }
-                workItem.Stream.Seek(PTableHeader.Size, SeekOrigin.Begin);
+                workItem.Stream.Position = PTableHeader.Size;
                 for (int k = 0; k < midpointsCount; ++k)
                 {
-                    var nextindex = (int)((long)k * (Count - 1) / (midpointsCount - 1));
-                    ReadUntil(IndexEntrySize * (long)nextindex + PTableHeader.Size, workItem);
-                    midpoints[k] = new Midpoint(ReadNextNoSeek(workItem).Key, nextindex);
+                    var nextIndex = (long)k * (count - 1) / (midpointsCount - 1);
+                    ReadUntil(PTableHeader.Size + IndexEntrySize*nextIndex, workItem.Stream);
+                    midpoints[k] = new Midpoint(ReadNextNoSeek(workItem).Key, (int)nextIndex);
                 }
 
                 return midpoints;
@@ -165,27 +167,32 @@ namespace EventStore.Core.Index
             }
         }
 
-        static byte[] crap = new byte[255];
-        private void ReadUntil(long nextindex, WorkItem workItem)
+        private static readonly byte[] TmpBuf = new byte[DefaultBufferSize];
+        private static void ReadUntil(long nextPos, FileStream fileStream)
         {
-            long toRead = 0;
-            do
+            long toRead = nextPos - fileStream.Position;
+            if (toRead < 0)
             {
-                toRead = nextindex - workItem.Stream.Position;
-                toRead = toRead > 255 ? 255 : toRead;
-                if (toRead > 0)
-                    workItem.Stream.Read(crap, 0, (int) toRead);
-                if (toRead < 0)
-                    workItem.Stream.Seek(nextindex, SeekOrigin.Begin);
-            } while (toRead > 0);
+                fileStream.Seek(nextPos, SeekOrigin.Begin);
+                return;
+            }
+            while (toRead > 0)
+            {
+                var localReadCount = Math.Min(toRead, TmpBuf.Length);
+                fileStream.Read(TmpBuf, 0, (int)localReadCount);
+                toRead -= localReadCount;
+            }
         }
 
         public void VerifyFileHash()
         {
+            var sw = Stopwatch.StartNew();
+            Log.Trace("Verifying file hash of PTable '{0}' started...", Filename);
+
             var workItem = GetWorkItem();
             try
             {
-                workItem.Stream.Seek(0, SeekOrigin.Begin);
+                workItem.Stream.Position = 0;
                 var hash = MD5Hash.GetHashFor(workItem.Stream, 0, workItem.Stream.Length - MD5Size);
 
                 var fileHash = new byte[MD5Size];
@@ -211,19 +218,24 @@ namespace EventStore.Core.Index
             {
                 ReturnWorkItem(workItem);
             }
+
+            Log.Trace("Verifying file hash of PTable '{0}' ({1} entries) done in {2}.", Filename, Count, sw.Elapsed);
         }
 
         public IEnumerable<IndexEntry> IterateAllInOrder()
         {
-            // TODO AN: integrate this with general mechanism of work items, so in the middle of iteration 
-            // TODO AN: we wouldn't delete the file
-            using (var workItem = new WorkItem(_filename, _bufferSize))
+            var workItem = GetWorkItem();
+            try
             {
-                workItem.Stream.Seek(PTableHeader.Size, SeekOrigin.Begin);
+                workItem.Stream.Position = PTableHeader.Size;
                 for (int i = 0, n = Count; i < n; i++)
                 {
                     yield return ReadNextNoSeek(workItem);
                 }
+            }
+            finally
+            {
+                ReturnWorkItem(workItem);
             }
         }
 

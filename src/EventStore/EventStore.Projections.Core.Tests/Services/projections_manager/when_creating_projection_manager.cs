@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;

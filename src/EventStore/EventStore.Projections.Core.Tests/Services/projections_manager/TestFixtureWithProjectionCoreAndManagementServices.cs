@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.Checkpoint;

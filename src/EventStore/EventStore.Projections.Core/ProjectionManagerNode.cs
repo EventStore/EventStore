@@ -1,3 +1,4 @@
+using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;

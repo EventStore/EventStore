@@ -29,6 +29,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;

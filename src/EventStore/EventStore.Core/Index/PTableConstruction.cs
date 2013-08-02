@@ -81,7 +81,7 @@ namespace EventStore.Core.Index
                     fs.Write(hash, 0, hash.Length);
                 }
             }
-            Log.Trace("Dumped MemTable [{0}] in {1}.", table.Id, sw.Elapsed);
+            Log.Trace("Dumped MemTable [{0}, {1} entries] in {2}.", table.Id, table.Count, sw.Elapsed);
             return new PTable(filename, table.Id, depth: cacheDepth);
         }
 
@@ -95,14 +95,14 @@ namespace EventStore.Core.Index
             Ensure.NotNull(isHashCollision, "isHashCollision");
             Ensure.Nonnegative(cacheDepth, "cacheDepth");
 
-            var enumerators = tables.Select(table => table.IterateAllInOrder().GetEnumerator()).ToList();
             var fileSize = GetFileSize(tables); // approximate file size
-            if (enumerators.Count == 2)
-                return MergeTo2(enumerators, fileSize, outputFile, isHashCollision, cacheDepth); // special case
+            if (tables.Count == 2)
+                return MergeTo2(tables, fileSize, outputFile, isHashCollision, cacheDepth); // special case
 
             Log.Trace("PTables merge started.");
             var watch = Stopwatch.StartNew();
 
+            var enumerators = tables.Select(table => table.IterateAllInOrder().GetEnumerator()).ToList();
             for (int i = 0; i < enumerators.Count; i++)
             {
                 if (!enumerators[i].MoveNext())
@@ -113,6 +113,7 @@ namespace EventStore.Core.Index
                 }
             }
 
+            long dumpedEntryCount = 0;
             using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
                                           DefaultSequentialBufferSize, FileOptions.SequentialScan))
             {
@@ -138,11 +139,15 @@ namespace EventStore.Core.Index
                         {
                             lastDeleted = current.Stream;
                             AppendRecordTo(bs, current.Bytes, buffer);
+                            dumpedEntryCount += 1;
                         }
                         else
                         {
                             if (lastDeleted != current.Stream || current.Version == 0) // we keep 0th event for hash collision detection
+                            {
                                 AppendRecordTo(bs, current.Bytes, buffer);
+                                dumpedEntryCount += 1;
+                            }
                         }
                         if (!enumerators[idx].MoveNext())
                         {
@@ -162,11 +167,12 @@ namespace EventStore.Core.Index
                     f.FlushToDisk();
                 }
             }
-            Log.Trace("PTables merge finished in " + watch.Elapsed);
+            Log.Trace("PTables merge finished in {0} ([{1}] entries merged into {2}).",
+                      watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
             return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);
         }
 
-        private static PTable MergeTo2(List<IEnumerator<IndexEntry>> enumerators,
+        private static PTable MergeTo2(IList<PTable> tables,
                                        long fileSize,
                                        string outputFile,
                                        Func<IndexEntry, bool> isHashCollision,
@@ -175,6 +181,8 @@ namespace EventStore.Core.Index
             Log.Trace("PTables merge started (specialized for <= 2 tables).");
             var watch = Stopwatch.StartNew();
 
+            var enumerators = tables.Select(table => table.IterateAllInOrder().GetEnumerator()).ToList();
+            long dumpedEntryCount = 0;
             using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
                                           DefaultSequentialBufferSize, FileOptions.SequentialScan))
             {
@@ -214,17 +222,20 @@ namespace EventStore.Core.Index
                         {
                             lastDeleted = current.Stream;
                             AppendRecordTo(bs, current.Bytes, buffer);
+                            dumpedEntryCount += 1;
                         }
                         else
                         {
                             if (lastDeleted != current.Stream || current.Version == 0) // we keep 0th event for hash collision detection
+                            {
                                 AppendRecordTo(bs, current.Bytes, buffer);
+                                dumpedEntryCount += 1;
+                            }
                         }
                     }
                     bs.Flush();
                     cs.FlushFinalBlock();
 
-                    f.FlushToDisk();
                     f.SetLength(f.Position + MD5Size);
 
                     // WRITE MD5
@@ -233,7 +244,8 @@ namespace EventStore.Core.Index
                     f.FlushToDisk();
                 }
             }
-            Log.Trace("PTables merge finished in {0}.", watch.Elapsed);
+            Log.Trace("PTables merge finished in {0} ([{1}] entries merged into {2}).",
+                      watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
             return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);
         }
 
@@ -244,7 +256,7 @@ namespace EventStore.Core.Index
             {
                 count += tables[i].Count;
             }
-            return PTableHeader.Size + IndexEntrySize * count + MD5Size;
+            return PTableHeader.Size + IndexEntrySize*count + MD5Size;
         }
 
         private static int GetMaxOf(List<IEnumerator<IndexEntry>> enumerators)

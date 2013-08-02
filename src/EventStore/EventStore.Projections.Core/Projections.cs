@@ -28,6 +28,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;

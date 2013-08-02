@@ -247,14 +247,8 @@ namespace EventStore.Core.Index
                     var path = Path.GetDirectoryName(indexmapFilename);
                     var ptablePath = Path.Combine(path, file);
 
-                    var sw = Stopwatch.StartNew();
-                    Log.Trace("Loading PTable '{0}' started...", ptablePath);
                     ptable = PTable.FromFile(ptablePath);
-                    Log.Trace("Loading PTable '{0}' done in {1}.", ptablePath, sw.Elapsed);
-                    sw.Restart();
-                    Log.Trace("Verifying file hash of PTable '{0}' started...", ptablePath);
                     ptable.VerifyFileHash();
-                    Log.Trace("Verifying file hash of PTable '{0}' done in {1}.", ptablePath, sw.Elapsed);
 
                     CreateIfNeeded(level, tables);
                     tables[level].Insert(position, ptable);
