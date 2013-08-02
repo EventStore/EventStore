@@ -40,12 +40,11 @@ namespace EventStore.Core.Util
          *  COMMON OPTIONS 
          */
 
-        public const string ForceCmd = "f|force";
+        public const string ForceCmd = "force";
         public const string ForceEnv = null;
         public const string ForceJson = null;
-        public const string ForceDescr = "Force the Event Store to run in possibly harmful environments such a with Boehm gc";
+        public const string ForceDescr = "Force the Event Store to run in possibly harmful environments such as with Boehm GC.";
         public const bool ForceDefault = false;
-
 
         public const string LogsCmd = "log|logsdir=";
         public const string LogsEnv = "LOGSDIR";
