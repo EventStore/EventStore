@@ -318,7 +318,8 @@ namespace EventStore.Core.Index
                 for (int i=high, n=Count; i<n; ++i)
                 {
                     IndexEntry entry = ReadEntry(i, workItem);
-                    Debug.Assert(entry.Key <= endKey);
+                    if (entry.Key > endKey) 
+                        throw new Exception(string.Format("enty.Key {0} > endKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", entry.Key, endKey, stream, startNumber, endNumber, Filename));
                     if (entry.Key < startKey)
                         return result;
                     result.Add(entry);

@@ -185,7 +185,7 @@ namespace EventStore.Core.Services.Storage
                     Log.FatalException(exc, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...");
                     _queueStats.EnterIdle();
                     _queueStats.ProcessingStarted<FaultedChaserState>(0);
-                    Application.Exit(ExitCode.Error, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...\bError: " + exc.Message);
+                    Application.Exit(ExitCode.Error, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...\nError: " + exc.Message);
                     while (!_stop)
                     {
                         Thread.Sleep(100);
