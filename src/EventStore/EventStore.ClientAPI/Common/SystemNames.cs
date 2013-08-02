@@ -73,5 +73,6 @@ namespace EventStore.ClientAPI.Common
         public const string StatsCollection = "$statsCollected";
         public const string LinkTo = "$>";
         public const string StreamMetadata = "$metadata";
+        public const string Settings = "$settings";
     }
 }
