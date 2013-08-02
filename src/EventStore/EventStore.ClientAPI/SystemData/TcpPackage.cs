@@ -31,13 +31,13 @@ using EventStore.ClientAPI.Common.Utils;
 namespace EventStore.ClientAPI.SystemData
 {
     [Flags]
-    public enum TcpFlags : byte
+    internal enum TcpFlags : byte
     {
         None = 0x00,
         Authenticated = 0x01,
     }
 
-    public struct TcpPackage
+    internal struct TcpPackage
     {
         public const int CommandOffset = 0;
         public const int FlagsOffset = CommandOffset + 1;

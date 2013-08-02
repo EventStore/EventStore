@@ -34,7 +34,7 @@ using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    public class TcpConnectionBase : IMonitoredTcpConnection
+    internal class TcpConnectionBase : IMonitoredTcpConnection
     {
         public IPEndPoint RemoteEndPoint { get { return _remoteEndPoint; } }
         public IPEndPoint LocalEndPoint { get { return _localEndPoint; } }
