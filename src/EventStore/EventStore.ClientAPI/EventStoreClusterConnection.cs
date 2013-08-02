@@ -294,5 +294,15 @@ namespace EventStore.ClientAPI
         {
             return _conn.GetStreamMetadataAsRawBytesAsync(stream, userCredentials);
         }
+
+        public void SetSystemSettings(SystemSettings settings, UserCredentials userCredentials = null)
+        {
+            _conn.SetSystemSettings(settings, userCredentials);
+        }
+
+        public Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null)
+        {
+            return _conn.SetSystemSettingsAsync(settings, userCredentials);
+        }
     }
 }

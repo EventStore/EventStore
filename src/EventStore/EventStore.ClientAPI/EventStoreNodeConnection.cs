@@ -472,5 +472,16 @@ namespace EventStore.ClientAPI
                 }
             });
         }
+
+        public void SetSystemSettings(SystemSettings settings, UserCredentials userCredentials = null)
+        {
+            SetSystemSettingsAsync(settings, userCredentials).Wait();
+        }
+
+        public Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null)
+        {
+            return AppendToStreamAsync(SystemStreams.SettingsStream, ExpectedVersion.Any, userCredentials,
+                                       new EventData(Guid.NewGuid(), SystemEventTypes.Settings, true, settings.ToJsonBytes(), null));
+        }
     }
 }

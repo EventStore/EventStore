@@ -45,11 +45,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             
             var settings = new SystemSettings(userStreamAcl: null,
                                               systemStreamAcl: new StreamAcl("user1", "user1", "user1", "user1", "user1"));
-            Connection.AppendToStream(SystemStreams.SettingsStream,
-                                      ExpectedVersion.Any,
-                                      new UserCredentials("adm", "admpa$$"),
-                                      new EventData(Guid.NewGuid(), "$settings", true, settings.ToJsonBytes(), null));
-
+            Connection.SetSystemSettings(settings, new UserCredentials("adm", "admpa$$"));
         }
 
         [Test, Category("LongRunning"), Category("Network")]

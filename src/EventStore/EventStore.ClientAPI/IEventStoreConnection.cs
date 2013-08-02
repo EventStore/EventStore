@@ -403,5 +403,9 @@ namespace EventStore.ClientAPI
         RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream, UserCredentials userCredentials = null);
         
         Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null);
+
+        void SetSystemSettings(SystemSettings settings, UserCredentials userCredentials = null);
+        
+        Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null);
     }
 }
