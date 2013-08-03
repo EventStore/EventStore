@@ -35,9 +35,8 @@ namespace EventStore.Projections.Core.Services.Processing
     class GetResultWorkItem : GetDataWorkItemBase
     {
         public GetResultWorkItem(
-            IEnvelope envelope, Guid correlationId, Guid projectionId, CoreProjection projection,
-            PartitionStateCache partitionStateCache, string partition)
-            : base(envelope, correlationId, projectionId, projection, partitionStateCache, partition)
+            IEnvelope envelope, Guid correlationId, Guid projectionId, CoreProjection projection, string partition)
+            : base(envelope, correlationId, projectionId, projection, projection.PartitionStateCache, partition)
         {
         }
 

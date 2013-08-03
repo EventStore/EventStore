@@ -224,6 +224,7 @@
     <Compile Include="Services\Processing\ProgressWorkItem.cs" />
     <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
     <Compile Include="Services\Processing\EventReaderCoreService.cs" />
+    <Compile Include="Services\Processing\ProjectionProcessingPhase.cs" />
     <Compile Include="Services\Processing\ProjectionSourceDefinition.cs" />
     <Compile Include="Services\Processing\ProjectionSubscriptionBase.cs" />
     <Compile Include="Services\Processing\ProjectionVersion.cs" />
