@@ -43,12 +43,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CoreProjection _coreProjection;
         private readonly PartitionStateCache _partitionStateCache;
         private readonly Guid _projectionCorrelationId;
+        private readonly CoreProjectionQueue _processingQueue;
 
-        public CoreProjectionInputDataHandler(CoreProjection coreProjection, PartitionStateCache partitionStateCache, Guid projectionCorrelationId)
+        public CoreProjectionInputDataHandler(
+            CoreProjection coreProjection, PartitionStateCache partitionStateCache, Guid projectionCorrelationId,
+            IPublisher publisher, ProjectionConfig projectionConfig, Action updateStatistics)
         {
             _coreProjection = coreProjection;
             _partitionStateCache = partitionStateCache;
             _projectionCorrelationId = projectionCorrelationId;
+            var projectionQueue = new CoreProjectionQueue(
+                projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, updateStatistics);
+            _processingQueue = projectionQueue;
         }
 
         public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
@@ -57,7 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 CheckpointTag eventTag = message.CheckpointTag;
                 var committedEventWorkItem = new CommittedEventWorkItem(_coreProjection, message, _coreProjection._statePartitionSelector);
-                _coreProjection._processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
+                _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
             }
             catch (Exception ex)
             {
@@ -70,8 +76,8 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var progressWorkItem = new ProgressWorkItem(_coreProjection, _coreProjection._checkpointManager, message.Progress);
-                _coreProjection._processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
-                _coreProjection._processingQueue.ProcessEvent();
+                _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
+                _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -84,8 +90,8 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var progressWorkItem = new NotAuthorizedWorkItem(_coreProjection);
-                _coreProjection._processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
-                _coreProjection._processingQueue.ProcessEvent();
+                _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
+                _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -99,8 +105,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _coreProjection.Unsubscribed();
                 var progressWorkItem = new CompletedWorkItem(_coreProjection);
-                _coreProjection._processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
-                _coreProjection._processingQueue.ProcessEvent();
+                _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
+                _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -116,9 +122,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     CheckpointTag checkpointTag = message.CheckpointTag;
                     var checkpointSuggestedWorkItem = new CheckpointSuggestedWorkItem(_coreProjection, message, _coreProjection.CheckpointManager);
-                    _coreProjection._processingQueue.EnqueueTask(checkpointSuggestedWorkItem, checkpointTag, allowCurrentPosition: true);
+                    _processingQueue.EnqueueTask(checkpointSuggestedWorkItem, checkpointTag, allowCurrentPosition: true);
                 }
-                _coreProjection._processingQueue.ProcessEvent();
+                _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -132,8 +138,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var getStateWorkItem = new GetStateWorkItem(
                     message.Envelope, message.CorrelationId, message.ProjectionId, _coreProjection, _coreProjection.PartitionStateCache, message.Partition);
-                _coreProjection.ProcessingQueue1.EnqueueOutOfOrderTask(getStateWorkItem);
-                _coreProjection.ProcessingQueue1.ProcessEvent();
+                _processingQueue.EnqueueOutOfOrderTask(getStateWorkItem);
+                _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -151,8 +157,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var getResultWorkItem = new GetResultWorkItem(
                     message.Envelope, message.CorrelationId, message.ProjectionId, _coreProjection, _partitionStateCache, message.Partition);
-                _coreProjection._processingQueue.EnqueueOutOfOrderTask(getResultWorkItem);
-                _coreProjection._processingQueue.ProcessEvent();
+                _processingQueue.EnqueueOutOfOrderTask(getResultWorkItem);
+                _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -167,12 +173,37 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Initialize()
         {
             _partitionStateCache.Initialize();
-            _coreProjection._processingQueue.Initialize();
+            _processingQueue.Initialize();
         }
 
         public void ProcessEvent()
         {
-            _coreProjection._processingQueue.ProcessEvent();
+            _processingQueue.ProcessEvent();
+        }
+
+        public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
+        {
+            _processingQueue.InitializeQueue(checkpointTag);
+        }
+
+        public void Subscribed(Guid subscriptionId)
+        {
+            _processingQueue.Subscribed(subscriptionId);
+        }
+
+        public void Unsubscribed()
+        {
+            _processingQueue.Unsubscribed();
+        }
+
+        public int GetBufferedEventCount()
+        {
+            return _processingQueue.GetBufferedEventCount();
+        }
+
+        public string GetStatus()
+        {
+            return _processingQueue.GetStatus();
         }
     }
 
@@ -312,7 +343,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private string _handlerPartition;
         private readonly PartitionStateCache _partitionStateCache;
-        internal readonly CoreProjectionQueue _processingQueue;
         internal readonly ICoreProjectionCheckpointManager _checkpointManager;
         internal readonly StatePartitionSelector _statePartitionSelector;
 
@@ -341,8 +371,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
             var coreProjectionCheckpointManager = checkpointStrategy.CreateCheckpointManager(
                 projectionCorrelationId, version, publisher, ioDispatcher, projectionConfig, name, namingBuilder);
-            var projectionQueue = new CoreProjectionQueue(
-                projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
 
             _projectionCorrelationId = projectionCorrelationId;
             _name = name;
@@ -355,13 +383,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _definesStateTransform = definesStateTransform;
             _statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(projectionStateHandler);
             _partitionStateCache = new PartitionStateCache(_zeroCheckpointTag);
-            _processingQueue = projectionQueue;
             _checkpointManager = coreProjectionCheckpointManager;
             _projectionStateHandler = projectionStateHandler;
             _zeroCheckpointTag = _checkpointStrategy.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag();
             namingBuilder.GetPartitionCatalogStreamName();
             _coreProjectionInputDataHandler = new CoreProjectionInputDataHandler(
-                this, this._partitionStateCache, this._projectionCorrelationId);
+                this, this._partitionStateCache, this._projectionCorrelationId, publisher, projectionConfig,
+                UpdateStatistics);
             GoToState(State.Initial);
         }
 
@@ -411,14 +439,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private void GetStatistics(ProjectionStatistics info)
         {
             _checkpointManager.GetStatistics(info);
-            info.Status = _state.EnumValueName() + info.Status + _processingQueue.GetStatus();
+            info.Status = _state.EnumValueName() + info.Status + _coreProjectionInputDataHandler.GetStatus();
             info.Name = _name;
             info.EffectiveName = _name;
             info.ProjectionId = _version.ProjectionId;
             info.Epoch = _version.Epoch;
             info.Version = _version.Version;
             info.StateReason = "";
-            info.BufferedEvents = _processingQueue.GetBufferedEventCount();
+            info.BufferedEvents = _coreProjectionInputDataHandler.GetBufferedEventCount();
             info.PartitionsCached = _partitionStateCache.CachedItemCount;
         }
 
@@ -485,7 +513,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _subscriptionDispatcher.Cancel(_projectionCorrelationId);
             _subscribed = false;
-            _processingQueue.Unsubscribed();
+            _coreProjectionInputDataHandler.Unsubscribed();
         }
 
         internal void Complete()
@@ -947,7 +975,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
             _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(state, checkpointTag), null);
             _checkpointManager.Start(checkpointTag);
-            _processingQueue.InitializeQueue(checkpointTag);
+            _coreProjectionInputDataHandler.InitializeFromCheckpoint(checkpointTag);
             NewCheckpointStarted(checkpointTag);
             GoToState(State.StateLoaded);
         }
@@ -956,7 +984,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _expectedSubscriptionMessageSequenceNumber = 0;
             _currentSubscriptionId = Guid.NewGuid();
-            _processingQueue.Subscribed(_currentSubscriptionId);
+            _coreProjectionInputDataHandler.Subscribed(_currentSubscriptionId);
             var subscriptionOptions = new ReaderSubscriptionOptions(
                 _projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold,
                 _projectionConfig.StopOnEof, stopAfterNEvents: null);
@@ -1166,11 +1194,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public PartitionStateCache PartitionStateCache
         {
             get { return _partitionStateCache; }
-        }
-
-        public CoreProjectionQueue ProcessingQueue1
-        {
-            get { return _processingQueue; }
         }
 
         public Guid ProjectionCorrelationId
