@@ -37,6 +37,11 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class PartitionState
     {
+        public bool IsChanged(PartitionState newState)
+        {
+            return State != newState.State || Result != newState.Result;
+        }
+
         public static PartitionState Deserialize(string serializedState, CheckpointTag causedBy)
         {
             if (serializedState == null)

@@ -62,10 +62,10 @@ namespace EventStore.Projections.Core.Services.Processing
         public DefaultCheckpointManager(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
             IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
-            ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
+            ProjectionNamesBuilder namingBuilder, bool useCheckpoints,
             bool emitPartitionCheckpoints = false)
             : base(
-                publisher, projectionCorrelationId, projectionConfig, name, positionTagger, namingBuilder, resultEmitter,
+                publisher, projectionCorrelationId, projectionConfig, name, positionTagger, namingBuilder,
                 useCheckpoints, emitPartitionCheckpoints)
         {
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");

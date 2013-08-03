@@ -41,8 +41,7 @@ namespace EventStore.Projections.Core.Services.Processing
         void NewPartition(string partition, CheckpointTag eventCheckpointTag);
         void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId);
 
-        void StateUpdated(
-            string partition, PartitionState oldState, PartitionState newState, Guid causedBy, string correlationId);
+        void StateUpdated(string partition, PartitionState oldState, PartitionState newState);
         void EventProcessed(CheckpointTag checkpointTag, float progress);
 
         /// <summary>

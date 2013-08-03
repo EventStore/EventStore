@@ -109,9 +109,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var emitAny = projectionConfig.EmitEventEnabled;
             var emitPartitionCheckpoints = UseCheckpoints && (_byCustomPartitions || _byStream);
-            var resultEmitter = _definesStateTransform
-                ? new ResultEmitter(namingBuilder)
-                : (IResultEmitter) new NoopResultEmitter();
 
             //NOTE: not emitting one-time/transient projections are always handled by default checkpoint manager
             // as they don't depend on stable event order
@@ -119,16 +116,24 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 return new MultiStreamMultiOutputCheckpointManager(
                     publisher, projectionCorrelationId, projectionVersion, _runAs, ioDispatcher, projectionConfig, name,
-                    ReaderStrategy.PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
+                    ReaderStrategy.PositionTagger, namingBuilder, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
             else
             {
                 return new DefaultCheckpointManager(
                     publisher, projectionCorrelationId, projectionVersion, _runAs, ioDispatcher, projectionConfig, name,
-                    ReaderStrategy.PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
+                    ReaderStrategy.PositionTagger, namingBuilder, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
+        }
+
+        public IResultEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
+        {
+            var resultEmitter = _definesStateTransform
+                ? new ResultEmitter(namingBuilder)
+                : (IResultEmitter) new NoopResultEmitter();
+            return resultEmitter;
         }
     }
 }

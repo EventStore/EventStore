@@ -44,7 +44,6 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly ProjectionConfig _projectionConfig;
         protected readonly ILogger _logger;
 
-        private readonly IResultEmitter _resultEmitter;
         private readonly bool _useCheckpoints;
         private readonly bool _emitPartitionCheckpoints;
 
@@ -76,7 +75,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected CoreProjectionCheckpointManager(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionConfig projectionConfig, string name,
-            PositionTagger positionTagger, ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter,
+            PositionTagger positionTagger, ProjectionNamesBuilder namingBuilder,
             bool useCheckpoints, bool emitPartitionCheckpoints)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -84,7 +83,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (name == null) throw new ArgumentNullException("name");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (namingBuilder == null) throw new ArgumentNullException("namingBuilder");
-            if (resultEmitter == null) throw new ArgumentNullException("resultEmitter");
             if (name == "") throw new ArgumentException("name");
 
             _lastProcessedEventPosition = new PositionTracker(positionTagger);
@@ -96,7 +94,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger = LogManager.GetLoggerFor<CoreProjectionCheckpointManager>();
             _name = name;
             _namingBuilder = namingBuilder;
-            _resultEmitter = resultEmitter;
             _useCheckpoints = useCheckpoints;
             _emitPartitionCheckpoints = emitPartitionCheckpoints;
             _requestedCheckpointState = new PartitionState("", null, _zeroTag);
@@ -190,7 +187,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void StateUpdated(
-            string partition, PartitionState oldState, PartitionState newState, Guid causedBy, string correlationId)
+            string partition, PartitionState oldState, PartitionState newState)
         {
             if (_stopped)
                 return;
@@ -198,12 +195,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
 
-            if (oldState.Result != newState.Result)
-            {
-                var result = ResultUpdated(partition, oldState, newState);
-                if (result != null)
-                    EventsEmitted(result, causedBy, correlationId);
-            }
 
             if (_emitPartitionCheckpoints && partition != "")
                 CapturePartitionStateUpdated(partition, oldState, newState);
@@ -473,9 +464,5 @@ namespace EventStore.Projections.Core.Services.Processing
             Failed(message.Reason);
         }
 
-        private EmittedEventEnvelope[] ResultUpdated(string partition, PartitionState oldState, PartitionState newState)
-        {
-            return _resultEmitter.ResultUpdated(partition, newState.Result, newState.CausedBy);
-        }
     }
 }
