@@ -25,25 +25,28 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+using System;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class ProgressWorkItem : CheckpointWorkItemBase
+    public interface IProjectionPhaseEventProcessor
     {
-        private readonly ICoreProjectionCheckpointManager _checkpointManager;
-        private readonly float _progress;
+        EventProcessedResult ProcessCommittedEvent(EventReaderSubscriptionMessage.CommittedEventReceived message,
+            string partition);
 
-        public ProgressWorkItem(ICoreProjectionCheckpointManager checkpointManager, float progress)
-            : base(null) 
-        {
-            _checkpointManager = checkpointManager;
-            _progress = progress;
-        }
+        void BeginGetPartitionStateAt(
+            string statePartition, CheckpointTag at, Action<PartitionState> loadCompleted,
+            bool lockLoaded);
 
-        protected override void WriteOutput()
-        {
-            _checkpointManager.Progress(_progress);
-            NextStage();
-        }
+        void FinalizeEventProcessing(
+            EventProcessedResult result, CheckpointTag eventCheckpointTag, float progress);
+
+        void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action completed);
+        void EnsureTickPending();
+        CheckpointTag LastProcessedEventPosition { get; }
+        void Complete();
+        void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem);
+        void NewCheckpointStarted(CheckpointTag checkpointTag);
     }
 }

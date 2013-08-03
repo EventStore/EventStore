@@ -32,18 +32,15 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class WorkItem : StagedTask
     {
-        protected readonly CoreProjection Projection;
-
         private readonly int _lastStage;
         private Action<int, object> _complete;
         private int _onStage;
         private CheckpointTag _checkpointTag;
         private object _lastStageCorrelationId;
 
-        protected WorkItem(CoreProjection projection, object initialCorrelationId)
+        protected WorkItem(object initialCorrelationId)
             : base(initialCorrelationId)
         {
-            Projection = projection;
             _lastStage = 5;
         }
 
@@ -76,7 +73,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 default:
                     throw new NotSupportedException();
             }
-            Projection.EnsureTickPending();
         }
 
         protected virtual void RecordEventOrder()

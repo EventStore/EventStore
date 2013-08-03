@@ -79,10 +79,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _queuePendingEvents.Initialize();
         }
 
-        public void ProcessEvent()
+        public bool ProcessEvent()
         {
+            var processed = false;
             if (_queuePendingEvents.Count > 0)
-                ProcessOneEventBatch();
+                processed = ProcessOneEventBatch();
+            return processed;
         }
 
         public int GetBufferedEventCount()
@@ -156,11 +158,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _unsubscribed;
         private Guid _subscriptionId;
 
-        private void ProcessOneEventBatch()
+        private bool ProcessOneEventBatch()
         {
             if (_queuePendingEvents.Count > _pendingEventsThreshold)
                 PauseSubscription();
-            _queuePendingEvents.Process(max: 30);
+            var processed = _queuePendingEvents.Process(max: 30);
             if (_subscriptionPaused && _queuePendingEvents.Count < _pendingEventsThreshold / 2)
                 ResumeSubscription();
 
@@ -169,6 +171,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     || (DateTime.UtcNow - _lastReportedStatisticsTimeStamp).TotalMilliseconds > 500))
                 _updateStatistics();
             _lastReportedStatisticsTimeStamp = DateTime.UtcNow;
+            return processed;
         }
 
         public void Unsubscribed()
