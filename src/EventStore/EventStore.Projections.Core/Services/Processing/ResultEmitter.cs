@@ -48,11 +48,6 @@ namespace EventStore.Projections.Core.Services.Processing
             return CreateResultUpdatedEvents(partition, result, at);
         }
 
-        public EmittedEventEnvelope[] NewPartition(string partition, CheckpointTag at)
-        {
-            return null;
-        }
-
         private EmittedEventEnvelope[] CreateResultUpdatedEvents(string partition, string projectionResult, CheckpointTag at)
         {
             var streamId = _namesBuilder.MakePartitionResultStreamName(partition);

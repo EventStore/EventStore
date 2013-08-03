@@ -61,46 +61,6 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
         }
 
         [TestFixture]
-        public class when_new_partition
-        {
-            private ProjectionNamesBuilder _namesBuilder;
-            private ResultEmitter _re;
-            private string _partition;
-            private string _projection;
-            private CheckpointTag _partitionAt;
-            private EmittedEventEnvelope[] _emittedEvents;
-
-            [SetUp]
-            public void setup()
-            {
-                Given();
-                When();
-            }
-
-            private void Given()
-            {
-                _projection = "projection";
-                _partitionAt = CheckpointTag.FromPosition(100, 50);
-                _partition = "partition";
-                _namesBuilder = ProjectionNamesBuilder.CreateForTest(_projection);
-                _re = new ResultEmitter(_namesBuilder);
-            }
-
-            private void When()
-            {
-                _emittedEvents = _re.NewPartition(_partition, _partitionAt);
-            }
-
-            [Test]
-            public void emits_no_events()
-            {
-                Assert.IsTrue(_emittedEvents == null || _emittedEvents.Length == 0);
-            }
-
-
-        }
-
-        [TestFixture]
         public class when_result_updated
         {
             private ProjectionNamesBuilder _namesBuilder;

@@ -187,10 +187,6 @@ namespace EventStore.Projections.Core.Services.Processing
             var result = RegisterNewPartition(partition, eventCheckpointTag);
             if (result != null)
                 EventsEmitted(result, Guid.Empty, correlationId: null);
-
-            result = _resultEmitter.NewPartition(partition, eventCheckpointTag);
-            if (result != null)
-                EventsEmitted(result, Guid.Empty, correlationId: null);
         }
 
         public void StateUpdated(

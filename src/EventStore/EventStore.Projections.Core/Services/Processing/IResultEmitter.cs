@@ -31,6 +31,5 @@ namespace EventStore.Projections.Core.Services.Processing
     public interface IResultEmitter
     {
         EmittedEventEnvelope[] ResultUpdated(string partition, string result, CheckpointTag at);
-        EmittedEventEnvelope[] NewPartition(string partition, CheckpointTag at);
     }
 }

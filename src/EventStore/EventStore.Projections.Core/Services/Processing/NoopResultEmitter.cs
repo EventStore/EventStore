@@ -36,11 +36,5 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             throw new NotSupportedException("No results are expected from the projection");
         }
-
-        public EmittedEventEnvelope[] NewPartition(string partition, CheckpointTag at)
-        {
-            // Do nothing. Noop result emitter does not care about partitions
-            return null;
-        }
     }
 }
