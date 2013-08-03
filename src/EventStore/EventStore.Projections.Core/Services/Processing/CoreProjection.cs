@@ -165,14 +165,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ProjectionConfig _projectionConfig;
         private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> _subscriptionDispatcher;
         private readonly CheckpointStrategy _checkpointStrategy;
-        private readonly bool _definesStateTransform;
         private readonly ILogger _logger;
 
         private State _state;
 
         private string _faultedReason;
 
-        private string _handlerPartition;
         private readonly PartitionStateCache _partitionStateCache;
         internal readonly ICoreProjectionCheckpointManager _checkpointManager;
         internal readonly StatePartitionSelector _statePartitionSelector;
@@ -211,7 +209,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger = logger;
             _publisher = publisher;
             _checkpointStrategy = checkpointStrategy;
-            _definesStateTransform = definesStateTransform;
             _statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(projectionStateHandler);
             _partitionStateCache = new PartitionStateCache(_zeroCheckpointTag);
             _checkpointManager = coreProjectionCheckpointManager;
@@ -546,7 +543,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterInitial()
         {
-            _handlerPartition = null;
             _completed = false;
             _subscribed = false;
             _partitionStateCache.Initialize();
