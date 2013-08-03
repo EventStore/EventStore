@@ -145,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public enum State : uint
         {
             Initial = 0x80000000,
-            LoadStateRequsted = 0x1,
+            LoadStateRequested = 0x1,
             StateLoaded = 0x2,
             Subscribed = 0x4,
             Running = 0x08,
@@ -169,7 +169,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ILogger _logger;
 
         private readonly IProjectionStateHandler _projectionStateHandler;
-        internal State _state;
+        private State _state;
 
         private string _faultedReason;
 
@@ -221,7 +221,7 @@ namespace EventStore.Projections.Core.Services.Processing
             namingBuilder.GetPartitionCatalogStreamName();
             _resultEmitter = checkpointStrategy.CreateResultEmitter(namingBuilder);
             _projectionProcessingPhase = new ProjectionProcessingPhase(
-                this, this._projectionCorrelationId, publisher, projectionConfig,
+                this, _projectionCorrelationId, publisher, projectionConfig,
                 UpdateStatistics);
             GoToState(State.Initial);
         }
@@ -238,22 +238,22 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _startOnLoad = true;
             EnsureState(State.Initial);
-            GoToState(State.LoadStateRequsted);
+            GoToState(State.LoadStateRequested);
         }
 
         public void LoadStopped()
         {
             _startOnLoad = false;
             EnsureState(State.Initial);
-            GoToState(State.LoadStateRequsted);
+            GoToState(State.LoadStateRequested);
         }
 
         public void Stop()
         {
-            EnsureState(State.LoadStateRequsted | State.StateLoaded | State.Subscribed | State.Running);
+            EnsureState(State.LoadStateRequested | State.StateLoaded | State.Subscribed | State.Running);
             try
             {
-                if (_state == State.LoadStateRequsted)
+                if (_state == State.LoadStateRequested)
                     GoToState(State.Stopped);
                 else
                     GoToState(State.Stopping);
@@ -363,7 +363,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
-            if (_state == State.LoadStateRequsted || _state == State.StateLoaded)
+            if (_state == State.LoadStateRequested || _state == State.StateLoaded)
             {
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.StateReport(
@@ -377,7 +377,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionManagementMessage.GetResult message)
         {
-            if (_state == State.LoadStateRequsted || _state == State.StateLoaded)
+            if (_state == State.LoadStateRequested || _state == State.StateLoaded)
             {
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.ResultReport(
@@ -396,7 +396,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
         {
-            EnsureState(State.LoadStateRequsted);
+            EnsureState(State.LoadStateRequested);
             try
             {
                 InitializeProjectionFromCheckpoint(message.CheckpointData, message.CheckpointTag);
@@ -490,7 +490,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 case State.Initial:
                     EnterInitial();
                     break;
-                case State.LoadStateRequsted:
+                case State.LoadStateRequested:
                     EnterLoadStateRequested();
                     break;
                 case State.StateLoaded:
@@ -599,7 +599,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new CoreProjectionManagementMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }
 
-        public bool IsOutOfOrderSubscriptionMessage(EventReaderSubscriptionMessage message)
+        private bool IsOutOfOrderSubscriptionMessage(EventReaderSubscriptionMessage message)
         {
             if (_currentSubscriptionId != message.SubscriptionId)
                 return true;
@@ -608,7 +608,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        public void RegisterSubscriptionMessage(EventReaderSubscriptionMessage message)
+        private void RegisterSubscriptionMessage(EventReaderSubscriptionMessage message)
         {
             _expectedSubscriptionMessageSequenceNumber = message.SubscriptionMessageSequenceNumber + 1;
         }
@@ -777,7 +777,7 @@ namespace EventStore.Projections.Core.Services.Processing
             GoToState(State.FaultedStopping);
         }
 
-        public void EnsureState(State expectedStates)
+        private void EnsureState(State expectedStates)
         {
             if ((_state & expectedStates) == 0)
             {
@@ -958,14 +958,14 @@ namespace EventStore.Projections.Core.Services.Processing
             var newState = result.NewState;
             if (oldState.Result != newState.Result)
             {
-                var resultEvents = ResultUpdated(result.Partition, oldState, newState);
+                var resultEvents = ResultUpdated(result.Partition, newState);
                 if (resultEvents != null)
                     _checkpointManager.EventsEmitted(resultEvents, result.CausedBy, result.CorrelationId);
             }
         }
 
 
-        private EmittedEventEnvelope[] ResultUpdated(string partition, PartitionState oldState, PartitionState newState)
+        private EmittedEventEnvelope[] ResultUpdated(string partition, PartitionState newState)
         {
             return _resultEmitter.ResultUpdated(partition, newState.Result, newState.CausedBy);
         }
