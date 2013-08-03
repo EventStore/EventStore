@@ -41,14 +41,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
     public class CoreProjection : IDisposable,
                                   ICoreProjection,
+                                  ICoreProjectionForProcessingPhase,
                                   IHandle<CoreProjectionManagementMessage.GetState>,
-                                  IHandle<CoreProjectionManagementMessage.GetResult>,
-                                  IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
-                                  IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
-                                  IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
-                                  IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
-                                  IHandle<EventReaderSubscriptionMessage.NotAuthorized>,
-                                  IHandle<EventReaderSubscriptionMessage.EofReached>
+                                  IHandle<CoreProjectionManagementMessage.GetResult>
     {
         public static CoreProjection CreateAndPrepare(
             string name, ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
@@ -142,7 +137,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         [Flags]
-        public enum State : uint
+        private enum State : uint
         {
             Initial = 0x80000000,
             LoadStateRequested = 0x1,
@@ -163,7 +158,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly Guid _projectionCorrelationId;
         private readonly ProjectionConfig _projectionConfig;
-        private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> _subscriptionDispatcher;
+
+        private readonly
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.Subscribe,
+                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+            _subscriptionDispatcher;
         private readonly CheckpointStrategy _checkpointStrategy;
         private readonly ILogger _logger;
 
@@ -172,8 +172,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private string _faultedReason;
 
         private readonly PartitionStateCache _partitionStateCache;
-        internal readonly ICoreProjectionCheckpointManager _checkpointManager;
-        internal readonly StatePartitionSelector _statePartitionSelector;
+        private readonly ICoreProjectionCheckpointManager _checkpointManager;
 
         private bool _tickPending;
         private long _expectedSubscriptionMessageSequenceNumber = -1;
@@ -182,6 +181,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _subscribed;
         private bool _startOnLoad;
         private bool _completed;
+
+        private CheckpointSuggestedWorkItem _checkpointSuggestedWorkItem;
+        private readonly IProjectionProcessingPhase _projectionProcessingPhase;
+
 
 
         private CoreProjection(
@@ -209,15 +212,18 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger = logger;
             _publisher = publisher;
             _checkpointStrategy = checkpointStrategy;
-            _statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(projectionStateHandler);
-            _partitionStateCache = new PartitionStateCache(_zeroCheckpointTag);
-            _checkpointManager = coreProjectionCheckpointManager;
+
             _zeroCheckpointTag = _checkpointStrategy.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag();
+            _checkpointManager = coreProjectionCheckpointManager;
+            _partitionStateCache = new PartitionStateCache(_zeroCheckpointTag);
+
+            var statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(projectionStateHandler);
             namingBuilder.GetPartitionCatalogStreamName();
-            IResultEmitter resultEmitter = checkpointStrategy.CreateResultEmitter(namingBuilder);
-            _projectionProcessingPhase = new ProjectionProcessingPhase(
-                this, _projectionCorrelationId, publisher, projectionConfig, UpdateStatistics, projectionStateHandler,
-                _partitionStateCache, definesStateTransform, name, logger, _zeroCheckpointTag, resultEmitter);
+            var projectionProcessingPhase = checkpointStrategy.CreateFirstProcessingPhase(
+                name, publisher, projectionStateHandler, projectionConfig, logger, projectionCorrelationId,
+                _partitionStateCache, UpdateStatistics, this, namingBuilder, _checkpointManager, statePartitionSelector);
+            _projectionProcessingPhase = projectionProcessingPhase;
+
             GoToState(State.Initial);
         }
 
@@ -267,15 +273,17 @@ namespace EventStore.Projections.Core.Services.Processing
         private void GetStatistics(ProjectionStatistics info)
         {
             _checkpointManager.GetStatistics(info);
-            info.Status = _state.EnumValueName() + info.Status + _projectionProcessingPhase.GetStatus();
+            info.Status = _state.EnumValueName() + info.Status; 
             info.Name = _name;
             info.EffectiveName = _name;
             info.ProjectionId = _version.ProjectionId;
             info.Epoch = _version.Epoch;
             info.Version = _version.Version;
             info.StateReason = "";
-            info.BufferedEvents = _projectionProcessingPhase.GetBufferedEventCount();
+            info.BufferedEvents = 0; 
             info.PartitionsCached = _partitionStateCache.CachedItemCount;
+
+            _projectionProcessingPhase.GetStatistics(info);
         }
 
         public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
@@ -337,14 +345,14 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionProcessingPhase.Handle(message);
         }
 
-        internal void Unsubscribed()
+        public void Unsubscribed()
         {
             _subscriptionDispatcher.Cancel(_projectionCorrelationId);
             _subscribed = false;
             _projectionProcessingPhase.Unsubscribed();
         }
 
-        internal void Complete()
+        public void Complete()
         {
             if (_state != State.Running)
                 return;
@@ -449,7 +457,7 @@ namespace EventStore.Projections.Core.Services.Processing
             SetFaulted(message.Reason);
         }
 
-        internal void EnsureUnsubscribed()
+        public void EnsureUnsubscribed()
         {
             if (_subscribed)
             {
@@ -634,11 +642,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _expectedSubscriptionMessageSequenceNumber = message.SubscriptionMessageSequenceNumber + 1;
         }
 
-        
-
-        private CheckpointSuggestedWorkItem _checkpointSuggestedWorkItem;
-        private readonly ProjectionProcessingPhase _projectionProcessingPhase;
-
         private void EnsureState(State expectedStates)
         {
             if ((_state & expectedStates) == 0)
@@ -784,24 +787,5 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _checkpointManager.LastProcessedEventPosition; }
         }
 
-        public CheckpointStrategy CheckpointStrategy
-        {
-            get { return _checkpointStrategy; }
-        }
-
-        public ICoreProjectionCheckpointManager CheckpointManager
-        {
-            get { return _checkpointManager; }
-        }
-
-        public PartitionStateCache PartitionStateCache
-        {
-            get { return _partitionStateCache; }
-        }
-
-        public Guid ProjectionCorrelationId
-        {
-            get { return _projectionCorrelationId; }
-        }
     }
 }

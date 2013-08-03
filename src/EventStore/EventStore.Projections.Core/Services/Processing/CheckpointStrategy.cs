@@ -28,10 +28,9 @@
 
 using System;
 using System.Security.Principal;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -128,12 +127,28 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public IResultEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
+        private IResultEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
         {
             var resultEmitter = _definesStateTransform
                 ? new ResultEmitter(namingBuilder)
                 : (IResultEmitter) new NoopResultEmitter();
             return resultEmitter;
+        }
+
+        public ProjectionProcessingPhase CreateFirstProcessingPhase(
+            string name, IPublisher publisher, IProjectionStateHandler projectionStateHandler,
+            ProjectionConfig projectionConfig, ILogger logger, Guid projectionCorrelationId,
+            PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection,
+            ProjectionNamesBuilder namingBuilder, ICoreProjectionCheckpointManager checkpointManager,
+            StatePartitionSelector statePartitionSelector)
+        {
+            var resultEmitter = CreateResultEmitter(namingBuilder);
+            var zeroCheckpointTag = _readerStrategy.PositionTagger.MakeZeroCheckpointTag();
+            var projectionProcessingPhase = new ProjectionProcessingPhase(
+                coreProjection, projectionCorrelationId, publisher, projectionConfig, updateStatistics,
+                projectionStateHandler, partitionStateCache, _definesStateTransform, name, logger, zeroCheckpointTag,
+                resultEmitter, checkpointManager, statePartitionSelector, this);
+            return projectionProcessingPhase;
         }
     }
 }
