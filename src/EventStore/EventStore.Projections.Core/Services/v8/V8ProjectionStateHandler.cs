@@ -31,6 +31,7 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.v8;
 using Newtonsoft.Json.Linq;
@@ -111,11 +112,17 @@ namespace EventStore.Projections.Core.Services.v8
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
         {
+            var sourcesDefinition = GetQuerySourcesDefinition();
+            sourcesDefinition.ConfigureSourceProcessingStrategy(builder);
+        }
+
+        private QuerySourcesDefinition GetQuerySourcesDefinition()
+        {
             CheckDisposed();
             var sourcesDefinition = _query.GetSourcesDefintion();
             if (sourcesDefinition == null)
                 throw new InvalidOperationException("Invalid query.  No source definition.");
-            sourcesDefinition.ConfigureSourceProcessingStrategy(builder);
+            return sourcesDefinition;
         }
 
         public void Load(string state)
@@ -189,6 +196,11 @@ namespace EventStore.Projections.Core.Services.v8
                 _query.Dispose();
             if (_prelude != null)
                 _prelude.Dispose();
+        }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return GetQuerySourcesDefinition();
         }
     }
 }

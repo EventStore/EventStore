@@ -50,9 +50,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             public void source_definition_is_correct()
             {
                 Assert.AreEqual(true, _source.AllStreams);
-                Assert.That(_source.Streams == null || _source.Streams.Count == 0);
-                Assert.That(_source.Categories == null || _source.Categories.Count == 0);
-                Assert.AreEqual(false, _source.ByStream);
+                Assert.That(_source.Streams == null || _source.Streams.Length == 0);
+                Assert.That(_source.Categories == null || _source.Categories.Length== 0);
+                Assert.AreEqual(false, _source.ByStreams);
             }
         }
 
@@ -75,10 +75,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             {
                 Assert.AreEqual(false, _source.AllStreams);
                 Assert.IsNotNull(_source.Streams);
-                Assert.AreEqual(1, _source.Streams.Count);
+                Assert.AreEqual(1, _source.Streams.Length);
                 Assert.AreEqual("stream1", _source.Streams[0]);
-                Assert.That(_source.Categories == null || _source.Categories.Count == 0);
-                Assert.AreEqual(false, _source.ByStream);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
+                Assert.AreEqual(false, _source.ByStreams);
             }
         }
 
@@ -101,12 +101,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             {
                 Assert.AreEqual(false, _source.AllStreams);
                 Assert.IsNotNull(_source.Streams);
-                Assert.AreEqual(3, _source.Streams.Count);
+                Assert.AreEqual(3, _source.Streams.Length);
                 Assert.AreEqual("stream1", _source.Streams[0]);
                 Assert.AreEqual("stream2", _source.Streams[1]);
                 Assert.AreEqual("stream3", _source.Streams[2]);
-                Assert.That(_source.Categories == null || _source.Categories.Count == 0);
-                Assert.AreEqual(false, _source.ByStream);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
+                Assert.AreEqual(false, _source.ByStreams);
             }
         }
 
@@ -129,12 +129,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             {
                 Assert.AreEqual(false, _source.AllStreams);
                 Assert.IsNotNull(_source.Streams);
-                Assert.AreEqual(3, _source.Streams.Count);
+                Assert.AreEqual(3, _source.Streams.Length);
                 Assert.AreEqual("stream1", _source.Streams[0]);
                 Assert.AreEqual("stream2", _source.Streams[1]);
                 Assert.AreEqual("stream3", _source.Streams[2]);
-                Assert.That(_source.Categories == null || _source.Categories.Count == 0);
-                Assert.AreEqual(false, _source.ByStream);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
+                Assert.AreEqual(false, _source.ByStreams);
             }
         }
 
@@ -157,10 +157,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             {
                 Assert.AreEqual(false, _source.AllStreams);
                 Assert.IsNotNull(_source.Categories);
-                Assert.AreEqual(1, _source.Categories.Count);
+                Assert.AreEqual(1, _source.Categories.Length);
                 Assert.AreEqual("category1", _source.Categories[0]);
-                Assert.That(_source.Streams == null || _source.Streams.Count == 0);
-                Assert.AreEqual(false, _source.ByStream);
+                Assert.That(_source.Streams == null || _source.Streams.Length == 0);
+                Assert.AreEqual(false, _source.ByStreams);
             }
         }
 
@@ -183,10 +183,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             {
                 Assert.AreEqual(false, _source.AllStreams);
                 Assert.IsNotNull(_source.Categories);
-                Assert.AreEqual(1, _source.Categories.Count);
+                Assert.AreEqual(1, _source.Categories.Length);
                 Assert.AreEqual("category1", _source.Categories[0]);
-                Assert.That(_source.Streams == null || _source.Streams.Count == 0);
-                Assert.AreEqual(true, _source.ByStream);
+                Assert.That(_source.Streams == null || _source.Streams.Length == 0);
+                Assert.AreEqual(true, _source.ByStreams);
             }
         }
 
@@ -210,10 +210,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             public void source_definition_is_correct()
             {
                 Assert.AreEqual(true, _source.AllStreams);
-                Assert.That(_source.Categories == null || _source.Categories.Count == 0);
-                Assert.That(_source.Streams == null || _source.Streams.Count == 0);
-                Assert.AreEqual(true, _source.ByCustomParititions);
-                Assert.AreEqual(false, _source.ByStream);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
+                Assert.That(_source.Streams == null || _source.Streams.Length == 0);
+                Assert.AreEqual(true, _source.ByCustomPartitions);
+                Assert.AreEqual(false, _source.ByStreams);
             }
         }
 
@@ -301,7 +301,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             [Test, Category("v8")]
             public void source_definition_is_correct()
             {
-                Assert.AreEqual("state-stream", _source.Options.ResultStreamName);
+                Assert.AreEqual("state-stream", _source.ResultStreamNameOption);
             }
         }
 
@@ -325,7 +325,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             [Test, Category("v8")]
             public void source_definition_is_correct()
             {
-                Assert.AreEqual(true, _source.Options.IncludeLinks);
+                Assert.AreEqual(true, _source.IncludeLinksOption);
             }
         }
 
@@ -350,8 +350,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             [Test, Category("v8")]
             public void source_definition_is_correct()
             {
-                Assert.AreEqual(500, _source.Options.ProcessingLag);
-                Assert.AreEqual(true, _source.Options.ReorderEvents);
+                Assert.AreEqual(500, _source.ProcessingLagOption);
+                Assert.AreEqual(true, _source.ReorderEventsOption);
             }
         }
 
@@ -379,8 +379,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             [Test, Category("v8")]
             public void source_definition_is_correct()
             {
-                Assert.AreEqual(500, _source.Options.ProcessingLag);
-                Assert.AreEqual(true, _source.Options.ReorderEvents);
+                Assert.AreEqual(500, _source.ProcessingLagOption);
+                Assert.AreEqual(true, _source.ReorderEventsOption);
             }
         }
 

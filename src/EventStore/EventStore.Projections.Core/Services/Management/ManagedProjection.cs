@@ -782,7 +782,7 @@ namespace EventStore.Projections.Core.Services.Management
             var createProjectionMessage =
                 new CoreProjectionManagementMessage.CreatePrepared(
                     new PublishEnvelope(_inputQueue), _id, _name, new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0,
-                    _persistedState.Version ?? 1), config, new SourceDefinition(_persistedState.SourceDefinition));
+                    _persistedState.Version ?? 1), config, _persistedState.SourceDefinition);
 
             //note: set running before start as coreProjection.start() can respond with faulted
             _state = ManagedProjectionState.Preparing;
@@ -939,11 +939,11 @@ namespace EventStore.Projections.Core.Services.Management
         public string[] Roles { get; set; }
     }
 
-    class SourceDefinition : ISourceDefinitionConfigurator
+    public class SourceDefinition : ISourceDefinitionConfigurator
     {
-        private readonly ProjectionSourceDefinition _sourceDefinition;
+        private readonly IQuerySources _sourceDefinition;
 
-        public SourceDefinition(ProjectionSourceDefinition sourceDefinition)
+        public SourceDefinition(IQuerySources sourceDefinition)
         {
             if (sourceDefinition == null) throw new ArgumentNullException("sourceDefinition");
 
@@ -967,28 +967,29 @@ namespace EventStore.Projections.Core.Services.Management
                 foreach (var @event in _sourceDefinition.Events)
                     builder.IncludeEvent(@event);
 
-            if (_sourceDefinition.ByStream)
+            if (_sourceDefinition.ByStreams)
                 builder.SetByStream();
+
+            if (_sourceDefinition.ByCustomPartitions)
+                builder.SetByCustomPartitions();
 
             //TODO: set false if options == null?
 
-            if (_sourceDefinition.Options != null && _sourceDefinition.Options.IncludeLinks)
-                builder.SetIncludeLinks(_sourceDefinition.Options.IncludeLinks);
+            builder.SetIncludeLinks(_sourceDefinition.IncludeLinksOption);
 
-            if (_sourceDefinition.Options != null && !string.IsNullOrEmpty(_sourceDefinition.Options.ResultStreamName))
-                builder.SetResultStreamNameOption(_sourceDefinition.Options.ResultStreamName);
+            if (!string.IsNullOrEmpty(_sourceDefinition.ResultStreamNameOption))
+                builder.SetResultStreamNameOption(_sourceDefinition.ResultStreamNameOption);
 
-            if (_sourceDefinition.Options != null && !string.IsNullOrEmpty(_sourceDefinition.Options.PartitionResultStreamNamePattern))
-                builder.SetPartitionResultStreamNamePatternOption(_sourceDefinition.Options.PartitionResultStreamNamePattern);
+            if (!string.IsNullOrEmpty(_sourceDefinition.PartitionResultStreamNamePatternOption))
+                builder.SetPartitionResultStreamNamePatternOption(_sourceDefinition.PartitionResultStreamNamePatternOption);
 
-            if (_sourceDefinition.Options != null && !string.IsNullOrEmpty(_sourceDefinition.Options.ForceProjectionName))
-                builder.SetForceProjectionName(_sourceDefinition.Options.ForceProjectionName);
+            if (!string.IsNullOrEmpty(_sourceDefinition.ForceProjectionNameOption))
+                builder.SetForceProjectionName(_sourceDefinition.ForceProjectionNameOption);
 
-            if (_sourceDefinition.Options != null)
-                builder.SetReorderEvents(_sourceDefinition.Options.ReorderEvents);
+                builder.SetReorderEvents(_sourceDefinition.ReorderEventsOption);
 
-            if (_sourceDefinition.Options != null)
-                builder.SetProcessingLag(_sourceDefinition.Options.ProcessingLag);
+            if (_sourceDefinition.ProcessingLagOption != null)
+                builder.SetProcessingLag(_sourceDefinition.ProcessingLagOption.GetValueOrDefault());
 
             if (_sourceDefinition.DefinesStateTransform)
                 builder.SetDefinesStateTransform();

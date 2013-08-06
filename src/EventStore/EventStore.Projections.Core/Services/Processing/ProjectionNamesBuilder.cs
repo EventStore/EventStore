@@ -40,14 +40,6 @@ namespace EventStore.Projections.Core.Services.Processing
             return new ProjectionNamesBuilder(name);
         }
 
-        public class Factory : QuerySourceProcessingStrategyBuilder
-        {
-            public ProjectionNamesBuilder Create(string name)
-            {
-                return new ProjectionNamesBuilder(name, _options);
-            }
-        }
-
         private readonly string _name;
         private readonly QuerySourceProcessingStrategyBuilder.QuerySourceOptions _options;
         private readonly string _partitionResultStreamNamePattern;
@@ -61,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
         }
 
-        private ProjectionNamesBuilder(string name, QuerySourceProcessingStrategyBuilder.QuerySourceOptions options)
+        public ProjectionNamesBuilder(string name, QuerySourceProcessingStrategyBuilder.QuerySourceOptions options)
         {
             _name = name;
             _options = options;

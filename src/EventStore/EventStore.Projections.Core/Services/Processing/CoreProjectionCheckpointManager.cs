@@ -45,7 +45,6 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly ILogger _logger;
 
         private readonly bool _useCheckpoints;
-        private readonly bool _emitPartitionCheckpoints;
 
         private readonly IPublisher _publisher;
         private readonly Guid _projectionCorrelationId;
@@ -76,7 +75,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected CoreProjectionCheckpointManager(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionConfig projectionConfig, string name,
             PositionTagger positionTagger, ProjectionNamesBuilder namingBuilder,
-            bool useCheckpoints, bool emitPartitionCheckpoints)
+            bool useCheckpoints)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (projectionConfig == null) throw new ArgumentNullException("projectionConfig");
@@ -95,7 +94,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _name = name;
             _namingBuilder = namingBuilder;
             _useCheckpoints = useCheckpoints;
-            _emitPartitionCheckpoints = emitPartitionCheckpoints;
             _requestedCheckpointState = new PartitionState("", null, _zeroTag);
             _currentProjectionState = new PartitionState("", null, _zeroTag);
         }
@@ -196,7 +194,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Stopping");
 
 
-            if (_emitPartitionCheckpoints && partition != "")
+            if (partition != "")
                 CapturePartitionStateUpdated(partition, oldState, newState);
 
             if (partition == "" && newState.State == null) // ignore non-root partitions and non-changed states
@@ -351,8 +349,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (requestedCheckpointPosition == _lastCompletedCheckpointPosition)
                 return true; // either suggested or requested to stop
 
-            if (_emitPartitionCheckpoints)
-                EmitPartitionCheckpoints();
+           EmitPartitionCheckpoints();
 
             _inCheckpoint = true;
             _requestedCheckpointPosition = requestedCheckpointPosition;

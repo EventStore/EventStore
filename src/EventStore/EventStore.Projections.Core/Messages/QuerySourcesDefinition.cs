@@ -34,7 +34,7 @@ using EventStore.Projections.Core.Services.Processing;
 namespace EventStore.Projections.Core.Messages
 {
     [DataContract]
-    public class QuerySourcesDefinition: ISourceDefinitionConfigurator
+    public class QuerySourcesDefinition : ISourceDefinitionConfigurator, IQuerySources
     {
         [DataMember(Name = "allStreams")]
         public bool AllStreams { get; set; }
@@ -59,6 +59,39 @@ namespace EventStore.Projections.Core.Messages
 
         [DataMember(Name = "definesStateTransform")]
         public bool DefinesStateTransform { get; set; }
+
+        bool IQuerySources.IncludeLinksOption
+        {
+            get { return Options != null && Options.IncludeLinks; }
+        }
+
+        string IQuerySources.ResultStreamNameOption
+        {
+            get { return Options != null ? Options.ResultStreamName : null; }
+        }
+
+        string IQuerySources.PartitionResultStreamNamePatternOption
+        {
+            get { return Options != null ? Options.PartitionResultStreamNamePattern : null; }
+        }
+
+        string IQuerySources.ForceProjectionNameOption
+        {
+            get { return Options != null ? Options.ForceProjectionName : null; }
+        }
+
+        bool IQuerySources.ReorderEventsOption
+        {
+            get
+            {
+                return Options != null && Options.ReorderEvents;
+            }
+        }
+
+        int? IQuerySources.ProcessingLagOption
+        {
+            get { return Options != null ? Options.ProcessingLag : null; }
+        }
 
         [DataMember(Name = "options")]
         public QuerySourcesDefinitionOptions Options { get; set; }

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Bus.Helpers;
@@ -74,9 +75,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _projectionConfig = new ProjectionConfig(null, 
                 _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
                 _createTempStreams, _stopOnEof);
-            _coreProjection = ProjectionProcessingStrategy.CreateAndPrepare(
-                "projection", _version, _projectionCorrelationId, _bus, _stateHandler, _projectionConfig, _ioDispatcher,
-                _subscriptionDispatcher, null, _timeProvider);
+            _coreProjection =
+                new ProjectionProcessingStrategy(
+                    "projection", _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null)
+                    .CreateAndPrepare(
+                        _projectionCorrelationId, _bus, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_coreProjection);

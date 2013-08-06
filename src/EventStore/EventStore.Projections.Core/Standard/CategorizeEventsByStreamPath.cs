@@ -27,6 +27,7 @@
 // 
 using System;
 using EventStore.Core.Services;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using Microsoft.Win32;
@@ -115,6 +116,11 @@ namespace EventStore.Projections.Core.Standard
 
         public void Dispose()
         {
+        }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return SourceDefinitionRecorder.From(ConfigureSourceProcessingStrategy);
         }
     }
 }

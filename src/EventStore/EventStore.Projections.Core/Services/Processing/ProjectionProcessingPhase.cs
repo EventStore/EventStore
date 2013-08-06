@@ -28,6 +28,7 @@
 using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -36,11 +37,12 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly ICoreProjectionForProcessingPhase _coreProjection;
         private readonly Guid _projectionCorrelationId;
+        private readonly ProjectionProcessingStrategy _projectionProcessingStrategy;
         private readonly IProjectionStateHandler _projectionStateHandler;
         private readonly CoreProjectionQueue _processingQueue;
         private PhaseState _state;
         private bool _faulted;
-        private readonly ICoreProjectionCheckpointManager _checkpointManager;
+        internal readonly ICoreProjectionCheckpointManager _checkpointManager;
         private readonly PartitionStateCache _partitionStateCache;
         private readonly bool _definesStateTransform;
         private string _handlerPartition;
@@ -51,17 +53,19 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IResultEmitter _resultEmitter;
         private readonly StatePartitionSelector _statePartitionSelector;
         private CheckpointStrategy _checkpointStrategy;
+        private readonly ITimeProvider _timeProvider;
 
         public EventProcessingProjectionProcessingPhase(
-            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
+            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher, ProjectionProcessingStrategy projectionProcessingStrategy,
             ProjectionConfig projectionConfig, Action updateStatistics, IProjectionStateHandler projectionStateHandler,
             PartitionStateCache partitionStateCache, bool definesStateTransform, string projectionName, ILogger logger,
             CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
             ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
-            StatePartitionSelector statePartitionSelector, CheckpointStrategy checkpointStrategy)
+            StatePartitionSelector statePartitionSelector, CheckpointStrategy checkpointStrategy, ITimeProvider timeProvider)
         {
             _coreProjection = coreProjection;
             _projectionCorrelationId = projectionCorrelationId;
+            _projectionProcessingStrategy = projectionProcessingStrategy;
             _projectionStateHandler = projectionStateHandler;
             _partitionStateCache = partitionStateCache;
             _definesStateTransform = definesStateTransform;
@@ -76,6 +80,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointManager = coreProjectionCheckpointManager;
             _statePartitionSelector = statePartitionSelector;
             _checkpointStrategy = checkpointStrategy;
+            _timeProvider = timeProvider;
         }
 
         public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
@@ -227,6 +232,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return _processingQueue.GetStatus();
         }
+
 
         public EventProcessedResult ProcessCommittedEvent(EventReaderSubscriptionMessage.CommittedEventReceived message, string partition)
         {

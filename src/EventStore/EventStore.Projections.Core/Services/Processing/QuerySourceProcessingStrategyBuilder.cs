@@ -28,6 +28,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Management;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -68,6 +70,14 @@ namespace EventStore.Projections.Core.Services.Processing
         protected bool _byStream;
         protected bool _byCustomPartitions;
         protected bool _definesStateTransform;
+
+        public void Apply(IQuerySources definition)
+        {
+            if (definition == null) throw new ArgumentNullException("definition");
+
+            var s = new SourceDefinition(definition);
+            s.ConfigureSourceProcessingStrategy(this);
+        }
 
         public void FromAll()
         {

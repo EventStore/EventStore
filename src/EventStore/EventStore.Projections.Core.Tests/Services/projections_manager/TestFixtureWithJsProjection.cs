@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Tests;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -43,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected List<string> _logged;
         protected string _projection;
         protected string _state = null;
-        protected SourceRecorder _source;
+        protected IQuerySources _source;
 
         [SetUp]
         public void Setup()
@@ -59,8 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                         if (!s.StartsWith("P:")) _logged.Add(s);
                         else Console.WriteLine(s);
                     }); // skip prelude debug output
-            _source = new SourceRecorder();
-            _stateHandler.ConfigureSourceProcessingStrategy(_source);
+            _source = _stateHandler.GetSourceDefinition();
             if (_state != null)
                 _stateHandler.Load(_state);
             else

@@ -32,6 +32,7 @@ using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -42,7 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _useCheckpoints;
         internal readonly bool _definesStateTransform;
         private readonly IReaderStrategy _readerStrategy;
-        private readonly IPrincipal _runAs;
+        internal readonly IPrincipal _runAs;
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
@@ -62,10 +63,10 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public static CheckpointStrategy Create(
-            int phase, ISourceDefinitionConfigurator sources, ProjectionConfig config, ITimeProvider timeProvider)
+            int phase, IQuerySources sources, ProjectionConfig config, ITimeProvider timeProvider)
         {
             var builder = new Builder();
-            sources.ConfigureSourceProcessingStrategy(builder);
+            builder.Apply(sources);
             return builder.Build(
                 config, config.RunAs, Processing.ReaderStrategy.Create(phase, sources, timeProvider, config.RunAs));
         }
@@ -104,25 +105,23 @@ namespace EventStore.Projections.Core.Services.Processing
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
             Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPublisher publisher,
             IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name,
-            ProjectionNamesBuilder namingBuilder)
+            ProjectionNamesBuilder namingBuilder, bool isReadingOrderRepeatable, IPrincipal runAs)
         {
             var emitAny = projectionConfig.EmitEventEnabled;
-            var emitPartitionCheckpoints = UseCheckpoints && (_byCustomPartitions || _byStream);
 
             //NOTE: not emitting one-time/transient projections are always handled by default checkpoint manager
             // as they don't depend on stable event order
-            if (emitAny && !ReaderStrategy.IsReadingOrderRepeatable)
+            if (emitAny && !isReadingOrderRepeatable)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
-                    publisher, projectionCorrelationId, projectionVersion, _runAs, ioDispatcher, projectionConfig, name,
-                    ReaderStrategy.PositionTagger, namingBuilder, UseCheckpoints,
-                    emitPartitionCheckpoints);
+                    publisher, projectionCorrelationId, projectionVersion, runAs, ioDispatcher, projectionConfig, name,
+                    ReaderStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled);
             }
             else
             {
                 return new DefaultCheckpointManager(
-                    publisher, projectionCorrelationId, projectionVersion, _runAs, ioDispatcher, projectionConfig, name,
-                    ReaderStrategy.PositionTagger, namingBuilder, UseCheckpoints, emitPartitionCheckpoints);
+                    publisher, projectionCorrelationId, projectionVersion, runAs, ioDispatcher, projectionConfig, name,
+                    ReaderStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled);
             }
         }
 

@@ -4,103 +4,115 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Management;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ProjectionProcessingStrategy
     {
-        private CoreProjection InternalCreate(
-            string name, ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
-            IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig, IODispatcher ioDispatcher,
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher, ILogger logger, ITimeProvider timeProvider,
-            ISourceDefinitionConfigurator sourceDefinition, out ProjectionSourceDefinition preparedSourceDefinition)
-        {
-            var builder = new CheckpointStrategy.Builder();
-            var namingBuilderFactory = new ProjectionNamesBuilder.Factory();
-            sourceDefinition.ConfigureSourceProcessingStrategy(builder);
-            sourceDefinition.ConfigureSourceProcessingStrategy(namingBuilderFactory);
-            var namingBuilder = namingBuilderFactory.Create(name);
-            var effectiveProjectionName = namingBuilder.EffectiveProjectionName;
+        private readonly string _name;
+        private readonly ProjectionVersion _projectionVersion;
+        private readonly IProjectionStateHandler _stateHandler;
+        private readonly ProjectionConfig _projectionConfig;
+        private readonly IQuerySources _sourceDefinition;
+        private readonly ILogger _logger;
 
-            var checkpointStrategy = CheckpointStrategy.Create(0, sourceDefinition, projectionConfig, timeProvider);
-            var sourceDefinitionRecorder = new SourceDefinitionRecorder();
-            (projectionStateHandler ?? sourceDefinition).ConfigureSourceProcessingStrategy(sourceDefinitionRecorder);
-            preparedSourceDefinition = sourceDefinitionRecorder.Build(namingBuilder);
-            return new CoreProjection(
-                effectiveProjectionName, version, projectionCorrelationId, publisher, projectionStateHandler,
-                projectionConfig, ioDispatcher, subscriptionDispatcher, logger, checkpointStrategy, namingBuilder, this);
+        public ProjectionProcessingStrategy(
+            string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
+            ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger)
+        {
+            _name = name;
+            _projectionVersion = projectionVersion;
+            _stateHandler = stateHandler;
+            _projectionConfig = projectionConfig;
+            _sourceDefinition = sourceDefinition;
+            _logger = logger;
         }
 
-        public static CoreProjection CreateAndPrepare(
-            string name, ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
-            IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig, IODispatcher ioDispatcher,
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher, ILogger logger, ITimeProvider timeProvider)
+        private CoreProjection InternalCreate(
+            Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
+            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher, ITimeProvider timeProvider,
+            out ProjectionSourceDefinition preparedSourceDefinition)
         {
-            if (name == null) throw new ArgumentNullException("name");
-            if (name == "") throw new ArgumentException("name");
-            if (publisher == null) throw new ArgumentNullException("publisher");
-            if (projectionStateHandler == null) throw new ArgumentNullException("projectionStateHandler");
-            if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
-            if (timeProvider == null) throw new ArgumentNullException("timeProvider");
+            var s = new SourceDefinition(_sourceDefinition);
+            var builder = new CheckpointStrategy.Builder();
+            s.ConfigureSourceProcessingStrategy(builder);
+            var sourceDefinitionRecorder = new SourceDefinitionRecorder();
+            s.ConfigureSourceProcessingStrategy(sourceDefinitionRecorder);
+            preparedSourceDefinition = sourceDefinitionRecorder.Build(_name);
 
+
+            var namingBuilder = new ProjectionNamesBuilder(_name, preparedSourceDefinition.Options);
+
+            
+            return new CoreProjection(_projectionVersion, projectionCorrelationId, publisher, _stateHandler,
+                _projectionConfig, ioDispatcher, subscriptionDispatcher, _logger, namingBuilder,
+                this, timeProvider);
+        }
+
+        public CoreProjection CreateAndPrepare(
+            Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
+            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher, ITimeProvider timeProvider)
+        {
             ProjectionSourceDefinition temp;
 
-            return new ProjectionProcessingStrategy().InternalCreate(
-                name, version, projectionCorrelationId, publisher, projectionStateHandler, projectionConfig,
-                ioDispatcher, subscriptionDispatcher, logger, timeProvider, sourceDefinition: projectionStateHandler,
-                preparedSourceDefinition: out temp);
+            return CreateAndPrepare(
+                projectionCorrelationId, publisher, ioDispatcher, subscriptionDispatcher, timeProvider, out temp);
         }
 
-        public static CoreProjection CreateAndPrepare(
-            string name, ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
-            IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig, IODispatcher ioDispatcher,
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher, ILogger logger, ITimeProvider timeProvider,
+        public CoreProjection CreateAndPrepare(
+            Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
+            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher, ITimeProvider timeProvider,
             out ProjectionSourceDefinition preparedSourceDefinition)
         {
-            if (name == null) throw new ArgumentNullException("name");
-            if (name == "") throw new ArgumentException("name");
-            if (publisher == null) throw new ArgumentNullException("publisher");
-            if (projectionStateHandler == null) throw new ArgumentNullException("projectionStateHandler");
-            if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
-            if (timeProvider == null) throw new ArgumentNullException("timeProvider");
-
-            return new ProjectionProcessingStrategy().InternalCreate(
-                name, version, projectionCorrelationId, publisher, projectionStateHandler, projectionConfig,
-                ioDispatcher, subscriptionDispatcher, logger, timeProvider, sourceDefinition: projectionStateHandler,
-                preparedSourceDefinition: out preparedSourceDefinition);
-        }
-
-        public static CoreProjection CreatePrepared(
-            string name, ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
-            ISourceDefinitionConfigurator sourceDefinition, ProjectionConfig projectionConfig, IODispatcher ioDispatcher,
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher, ILogger logger, ITimeProvider timeProvider,
-            out ProjectionSourceDefinition preparedSourceDefinition)
-        {
-            if (name == null) throw new ArgumentNullException("name");
-            if (name == "") throw new ArgumentException("name");
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
 
-            return new ProjectionProcessingStrategy().InternalCreate(
-                name, version, projectionCorrelationId, publisher, null, projectionConfig, ioDispatcher,
-                subscriptionDispatcher, logger, timeProvider, sourceDefinition: sourceDefinition,
+            return InternalCreate(
+                projectionCorrelationId, publisher, ioDispatcher, subscriptionDispatcher, timeProvider,
                 preparedSourceDefinition: out preparedSourceDefinition);
         }
 
-        public EventProcessingProjectionProcessingPhase CreateFirstProcessingPhase(CheckpointStrategy checkpointStrategy, string name, IPublisher publisher, IProjectionStateHandler projectionStateHandler,
-            ProjectionConfig projectionConfig, ILogger logger, Guid projectionCorrelationId,
-            PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection,
-            ProjectionNamesBuilder namingBuilder, ICoreProjectionCheckpointManager checkpointManager,
-            StatePartitionSelector statePartitionSelector)
+        public CoreProjection CreatePrepared(
+            Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
+            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher, ITimeProvider timeProvider,
+            out ProjectionSourceDefinition preparedSourceDefinition)
         {
+            if (publisher == null) throw new ArgumentNullException("publisher");
+            if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
+            if (timeProvider == null) throw new ArgumentNullException("timeProvider");
+
+            return InternalCreate(
+                projectionCorrelationId, publisher, ioDispatcher, subscriptionDispatcher, timeProvider,
+                preparedSourceDefinition: out preparedSourceDefinition);
+        }
+
+        public EventProcessingProjectionProcessingPhase CreateFirstProcessingPhase(
+            IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
+            Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
+            ITimeProvider timeProvider, IODispatcher ioDispatcher)
+        {
+            var checkpointStrategy = CheckpointStrategy.Create(0, _sourceDefinition, _projectionConfig, timeProvider);
+
             var resultEmitter = checkpointStrategy.CreateResultEmitter(namingBuilder);
             var zeroCheckpointTag = checkpointStrategy.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag();
+            var statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(_stateHandler);
+
+            var checkpointManager = checkpointStrategy.CreateCheckpointManager(
+                projectionCorrelationId, _projectionVersion, publisher, ioDispatcher, _projectionConfig, _name,
+                namingBuilder, checkpointStrategy.ReaderStrategy.IsReadingOrderRepeatable, checkpointStrategy._runAs);
+
+
+
+
             var projectionProcessingPhase = new EventProcessingProjectionProcessingPhase(
-                coreProjection, projectionCorrelationId, publisher, projectionConfig, updateStatistics,
-                projectionStateHandler, partitionStateCache, checkpointStrategy._definesStateTransform, name, logger, zeroCheckpointTag,
-                resultEmitter, checkpointManager, statePartitionSelector, checkpointStrategy);
+                coreProjection, projectionCorrelationId, publisher, this, _projectionConfig, updateStatistics,
+                _stateHandler, partitionStateCache, checkpointStrategy._definesStateTransform, _name, _logger,
+                zeroCheckpointTag, resultEmitter, checkpointManager, statePartitionSelector, checkpointStrategy,
+                timeProvider);
             return projectionProcessingPhase;
         }
+
     }
 }

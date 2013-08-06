@@ -33,6 +33,7 @@ using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Services.TimerService;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -74,10 +75,10 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public static IReaderStrategy Create(
-            int phase, ISourceDefinitionConfigurator sources, ITimeProvider timeProvider, IPrincipal runAs)
+            int phase, IQuerySources sources, ITimeProvider timeProvider, IPrincipal runAs)
         {
             var builder = new Builder();
-            sources.ConfigureSourceProcessingStrategy(builder);
+            builder.Apply(sources);
             return builder.Build(phase, timeProvider, runAs);
         }
 

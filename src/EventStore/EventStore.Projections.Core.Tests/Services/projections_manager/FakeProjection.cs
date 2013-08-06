@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -89,5 +90,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             throw new NotImplementedException();
         }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return SourceDefinitionRecorder.From(ConfigureSourceProcessingStrategy);
+        }
+
     }
 }

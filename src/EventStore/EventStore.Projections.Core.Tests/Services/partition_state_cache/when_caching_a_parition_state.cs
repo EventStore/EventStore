@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         [SetUp]
         public void when()
         {
-            _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, 0, -1));
+            _cache = new PartitionStateCache();
             _cachedAtCheckpointTag = CheckpointTag.FromPosition(0, 1000, 900);
             _cache.CachePartitionState(
                 "partition", new PartitionState("data", null, _cachedAtCheckpointTag));

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -81,9 +82,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(_ioDispatcher);
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             _projectionConfig = new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false);
-            _coreProjection = ProjectionProcessingStrategy.CreateAndPrepare(
-                "projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), _bus, projectionStateHandler,
-                _projectionConfig, _ioDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
+            var version = new ProjectionVersion(1, 0, 0);
+            _coreProjection =
+                new ProjectionProcessingStrategy(
+                    "projection", version, projectionStateHandler, _projectionConfig,
+                    projectionStateHandler.GetSourceDefinition(), null).CreateAndPrepare(
+                        Guid.NewGuid(), _bus, _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
             _coreProjection.Start();
         }
 

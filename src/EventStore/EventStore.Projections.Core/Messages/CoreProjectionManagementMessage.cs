@@ -408,13 +408,13 @@ namespace EventStore.Projections.Core.Messages
 
             private readonly IEnvelope _envelope;
             private readonly ProjectionConfig _config;
-            private readonly ISourceDefinitionConfigurator _sourceDefinition;
+            private readonly IQuerySources _sourceDefinition;
             private readonly string _name;
             private readonly ProjectionVersion _version;
 
             public CreatePrepared(
                 IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
-                ISourceDefinitionConfigurator sourceDefinition)
+                IQuerySources sourceDefinition)
                 : base(projectionId)
             {
                 if (name == null) throw new ArgumentNullException("name");
@@ -442,7 +442,7 @@ namespace EventStore.Projections.Core.Messages
                 get { return _envelope; }
             }
 
-            public ISourceDefinitionConfigurator SourceDefinition
+            public IQuerySources SourceDefinition
             {
                 get { return _sourceDefinition; }
             }

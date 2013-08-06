@@ -1,9 +1,10 @@
 using System.Runtime.Serialization;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     [DataContract]
-    public class ProjectionSourceDefinition
+    public class ProjectionSourceDefinition : IQuerySources
     {
         [DataMember]
         public bool AllEvents { get; set; }
@@ -32,6 +33,39 @@ namespace EventStore.Projections.Core.Services.Processing
         [DataMember]
         public bool DefinesStateTransform { get; set; }
 
+        bool IQuerySources.IncludeLinksOption
+        {
+            get { return Options != null && Options.IncludeLinks; }
+        }
+
+        string IQuerySources.ResultStreamNameOption
+        {
+            get { return Options != null ? Options.ResultStreamName : null; }
+        }
+
+        string IQuerySources.PartitionResultStreamNamePatternOption
+        {
+            get { return Options != null ? Options.PartitionResultStreamNamePattern : null; }
+        }
+
+        string IQuerySources.ForceProjectionNameOption
+        {
+            get { return Options != null ? Options.ForceProjectionName : null; }
+        }
+
+        bool IQuerySources.ReorderEventsOption
+        {
+            get
+            {
+                return Options != null && Options.ReorderEvents;
+            }
+        }
+
+        int? IQuerySources.ProcessingLagOption
+        {
+            get { return Options != null ? Options.ProcessingLag : (int?) null; }
+        }
+
         [DataMember]
         public string ResultStreamName { get; set; }
 
@@ -43,5 +77,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         [DataMember]
         public string PartitionResultCatalogStream { get; set; }
+
+        bool IQuerySources.ByStreams {
+            get { return ByStream; } 
+        }
     }
 }

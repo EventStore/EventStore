@@ -28,6 +28,7 @@
 
 using System;
 using EventStore.Core.Data;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
@@ -38,7 +39,13 @@ namespace EventStore.Projections.Core.Services
         void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder);
     }
 
-    public interface IProjectionStateHandler : IDisposable, ISourceDefinitionConfigurator
+    public interface ISourceDefinitionSource
+    {
+        IQuerySources GetSourceDefinition();
+    }
+
+
+    public interface IProjectionStateHandler : IDisposable, ISourceDefinitionSource
     {
         void Load(string state);
         void Initialize();

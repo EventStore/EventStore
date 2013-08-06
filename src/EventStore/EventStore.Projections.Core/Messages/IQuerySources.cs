@@ -26,39 +26,36 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
-
-namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
+namespace EventStore.Projections.Core.Messages
 {
-    [TestFixture]
-    public class when_relocking_the_state_at_earlier_position
+    public interface IQuerySources
     {
-        private PartitionStateCache _cache;
-        private CheckpointTag _cachedAtCheckpointTag;
+        bool AllStreams { get; }
 
-        [SetUp]
-        public void given()
-        {
-            //given
-            _cache = new PartitionStateCache();
-            _cachedAtCheckpointTag = CheckpointTag.FromPosition(0, 1000, 900);
-            _cache.CacheAndLockPartitionState("partition", new PartitionState("data", null, _cachedAtCheckpointTag), _cachedAtCheckpointTag);
-        }
+        string[] Categories { get; }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void thorws_invalid_operation_exception()
-        {
-            _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(0, 500, 400));
-        }
+        string[] Streams { get; }
 
-        [Test]
-        public void the_state_can_be_retrieved()
-        {
-            var state = _cache.TryGetPartitionState("partition");
-            Assert.AreEqual("data", state.State);
-        }
+        bool AllEvents { get; }
 
+        string[] Events { get; }
+
+        bool ByStreams { get; }
+
+        bool ByCustomPartitions { get; }
+
+        bool DefinesStateTransform { get; }
+
+        bool IncludeLinksOption { get; }
+
+        string ResultStreamNameOption { get; }
+
+        string PartitionResultStreamNamePatternOption { get; }
+
+        string ForceProjectionNameOption { get; }
+
+        bool ReorderEventsOption { get; }
+
+        int? ProcessingLagOption { get; }
     }
 }

@@ -159,6 +159,7 @@
     <Compile Include="Messages\EventReaders\Feeds\FeedReaderMessage.cs" />
     <Compile Include="Messages\ICoreProjection.cs" />
     <Compile Include="Messages\IProjectionCheckpointManager.cs" />
+    <Compile Include="Messages\IQuerySources.cs" />
     <Compile Include="Messages\ProjectionCoreServiceMessage.cs" />
     <Compile Include="Messages\QuerySourcesDefinition.cs" />
     <Compile Include="Messages\QuerySourcesDefinitionOptions.cs" />

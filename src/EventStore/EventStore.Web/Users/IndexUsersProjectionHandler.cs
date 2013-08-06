@@ -29,6 +29,7 @@
 using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Core.Util;
@@ -104,5 +105,11 @@ namespace EventStore.Web.Users
         {
             throw new NotImplementedException();
         }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return SourceDefinitionRecorder.From(ConfigureSourceProcessingStrategy);
+        }
+
     }
 }

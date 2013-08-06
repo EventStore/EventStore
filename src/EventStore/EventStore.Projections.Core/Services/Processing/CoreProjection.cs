@@ -30,6 +30,7 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Utils;
 
@@ -60,7 +61,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly string _name;
         private readonly ProjectionVersion _version;
-        private readonly CheckpointTag _zeroCheckpointTag;
 
         private readonly IPublisher _publisher;
 
@@ -95,21 +95,19 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public CoreProjection(
-            string name, ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
+            ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
             IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig, IODispatcher ioDispatcher,
             PublishSubscribeDispatcher
                 <ReaderSubscriptionManagement.Subscribe,
                     ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
-                subscriptionDispatcher, ILogger logger, CheckpointStrategy checkpointStrategy,
-            ProjectionNamesBuilder namingBuilder, ProjectionProcessingStrategy projectionProcessingStrategy)
+                subscriptionDispatcher, ILogger logger, ProjectionNamesBuilder namingBuilder,
+            ProjectionProcessingStrategy projectionProcessingStrategy, ITimeProvider timeProvider)
         {
-            if (name == null) throw new ArgumentNullException("name");
-            if (name == "") throw new ArgumentException("name");
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
-            var coreProjectionCheckpointManager = checkpointStrategy.CreateCheckpointManager(
-                projectionCorrelationId, version, publisher, ioDispatcher, projectionConfig, name, namingBuilder);
+
+            var name = namingBuilder.EffectiveProjectionName;
 
             _projectionCorrelationId = projectionCorrelationId;
             _name = name;
@@ -119,17 +117,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger = logger;
             _publisher = publisher;
 
-            _zeroCheckpointTag = CheckpointTag.Empty;
-            _checkpointManager = coreProjectionCheckpointManager;
-            _partitionStateCache = new PartitionStateCache(_zeroCheckpointTag);
+            _partitionStateCache = new PartitionStateCache();
 
-            var statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(projectionStateHandler);
-            namingBuilder.GetPartitionCatalogStreamName();
             var projectionProcessingPhase = projectionProcessingStrategy.CreateFirstProcessingPhase(
-                checkpointStrategy, name, publisher, projectionStateHandler, projectionConfig, logger,
-                projectionCorrelationId, _partitionStateCache, UpdateStatistics, this, namingBuilder, _checkpointManager,
-                statePartitionSelector);
+                publisher, projectionCorrelationId, _partitionStateCache, UpdateStatistics, this, namingBuilder,
+                timeProvider, ioDispatcher);
             _projectionProcessingPhase = projectionProcessingPhase;
+            _checkpointManager = projectionProcessingPhase._checkpointManager;
 
             GoToState(State.Initial);
         }
@@ -464,7 +458,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionProcessingPhase.Initialize();
             _checkpointManager.Initialize();
             _tickPending = false;
-            _partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, _zeroCheckpointTag), null);
+            _partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, CheckpointTag.Empty), null);
             _expectedSubscriptionMessageSequenceNumber = -1; // this is to be overridden when subscribing
             _currentSubscriptionId = Guid.Empty;
             // NOTE: this is to workaround exception in GetState requests submitted by client

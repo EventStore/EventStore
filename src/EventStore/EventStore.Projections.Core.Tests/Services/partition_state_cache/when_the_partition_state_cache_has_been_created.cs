@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         {
             try
             {
-                _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, 0, -1));
+                _cache = new PartitionStateCache();
             }
             catch (Exception ex)
             {
