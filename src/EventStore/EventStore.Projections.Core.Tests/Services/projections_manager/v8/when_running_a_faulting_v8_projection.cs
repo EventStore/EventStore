@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 string state;
                 EmittedEventEnvelope[] emittedEvents;
                 _stateHandler.ProcessEvent(
-                    "", CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                    "", CheckpointTag.FromPosition(0, 10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                     @"{""a"":""b""}", out state, out emittedEvents);
             }
         }
@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 string state;
                 EmittedEventEnvelope[] emittedEvents;
                 Assert.DoesNotThrow(() => _stateHandler.ProcessEvent(
-                    "", CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                    "", CheckpointTag.FromPosition(0, 10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                     @"{""a"":""b""}", out state, out emittedEvents));
                 _stateHandler.TransformStateToResult();
             }

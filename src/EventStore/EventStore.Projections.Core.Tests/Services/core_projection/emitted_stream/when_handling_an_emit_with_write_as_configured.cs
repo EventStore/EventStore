@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _writeAs = new OpenGenericPrincipal("test-user");
             _stream = new EmittedStream(
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), _writeAs, maxWriteBatchLength: 50),
-                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(), CheckpointTag.FromPosition(40, 30),
+                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 40, 30),
                 _ioDispatcher, _readyHandler);
             _stream.Start();
 
@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                 {
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null)
+                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
                 });
         }
 

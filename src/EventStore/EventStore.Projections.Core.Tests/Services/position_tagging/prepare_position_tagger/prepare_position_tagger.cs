@@ -60,58 +60,58 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_po
         [Test]
         public void can_be_created()
         {
-            new PreparePositionTagger();
+            new PreparePositionTagger(0);
         }
 
         [Test]
         public void is_message_after_checkpoint_tag_after_case()
         {
-            var t = new PreparePositionTagger();
-            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPreparePosition(10), _firstEvent);
+            var t = new PreparePositionTagger(0);
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPreparePosition(0, 10), _firstEvent);
             Assert.IsTrue(result);
         }
 
         [Test]
         public void is_message_after_checkpoint_tag_before_case()
         {
-            var t = new PreparePositionTagger();
-            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPreparePosition(40), _firstEvent);
+            var t = new PreparePositionTagger(0);
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPreparePosition(0, 40), _firstEvent);
             Assert.IsFalse(result);
         }
 
         [Test]
         public void is_message_after_checkpoint_tag_equal_case()
         {
-            var t = new PreparePositionTagger();
-            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPreparePosition(20), _firstEvent);
+            var t = new PreparePositionTagger(0);
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPreparePosition(0, 20), _firstEvent);
             Assert.IsFalse(result);
         }
 
         [Test]
         public void prepare_position_checkpoint_tag_is_compatible()
         {
-            var t = new PreparePositionTagger();
-            Assert.IsTrue(t.IsCompatible(CheckpointTag.FromPreparePosition(500)));
+            var t = new PreparePositionTagger(0);
+            Assert.IsTrue(t.IsCompatible(CheckpointTag.FromPreparePosition(0, 500)));
         }
 
         [Test]
         public void tf_position_checkpoint_tag_is_incompatible()
         {
-            var t = new PreparePositionTagger();
-            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromPosition(510, 500)));
+            var t = new PreparePositionTagger(0);
+            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromPosition(0, 510, 500)));
         }
 
         [Test]
         public void stream_checkpoint_tag_is_incompatible()
         {
-            var t = new PreparePositionTagger();
-            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromStreamPosition("stream2", 100)));
+            var t = new PreparePositionTagger(0);
+            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromStreamPosition(0, "stream2", 100)));
         }
 
         [Test]
         public void zero_position_tag_is_before_first_event_possible()
         {
-            var t = new PreparePositionTagger();
+            var t = new PreparePositionTagger(0);
             var zero = t.MakeZeroCheckpointTag();
 
             var zeroFromEvent = t.MakeCheckpointTag(zero, _zeroEvent);
@@ -122,7 +122,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_po
         [Test]
         public void produced_checkpoint_tags_are_correctly_ordered()
         {
-            var t = new PreparePositionTagger();
+            var t = new PreparePositionTagger(0);
             var zero = t.MakeZeroCheckpointTag();
 
             var zeroEvent = t.MakeCheckpointTag(zero, _zeroEvent);

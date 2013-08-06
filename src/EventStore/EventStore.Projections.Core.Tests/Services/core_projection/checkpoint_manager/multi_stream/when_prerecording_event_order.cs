@@ -69,9 +69,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             Action noop = () => { };
             _manager.Initialize();
             _manager.BeginLoadState();
-            _manager.Start(CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "pa", -1 }, { "pb", -1 } }));
-            _manager.RecordEventOrder(_event1, CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"pa", 1},{"pb", -1}}), committed: noop);
-            _manager.RecordEventOrder(_event2, CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"pa", 1},{"pb", 1}}), committed: noop);
+            _manager.Start(CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> { { "pa", -1 }, { "pb", -1 } }));
+            _manager.RecordEventOrder(_event1, CheckpointTag.FromStreamPositions(0, new Dictionary<string, int>{{"pa", 1},{"pb", -1}}), committed: noop);
+            _manager.RecordEventOrder(_event2, CheckpointTag.FromStreamPositions(0, new Dictionary<string, int>{{"pa", 1},{"pb", 1}}), committed: noop);
         }
 
         [Test]

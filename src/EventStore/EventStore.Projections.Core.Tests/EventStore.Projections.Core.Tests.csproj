@@ -122,6 +122,7 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_tf_position.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_event_type_index_positions_when_updating.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_phase.cs" />
     <Compile Include="Services\core_projection\another_epoch\when_loading_an_existing_projection.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_prerecording_event_order.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\TestFixtureWithMultiStreamCheckpointManager.cs" />

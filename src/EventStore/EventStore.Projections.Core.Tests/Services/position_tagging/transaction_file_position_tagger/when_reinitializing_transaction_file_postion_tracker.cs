@@ -15,13 +15,13 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         public void When()
         {
             // given
-            var tagger = new TransactionFilePositionTagger();
+            var tagger = new TransactionFilePositionTagger(0);
             var positionTracker = new PositionTracker(tagger);
 
-            var newTag = CheckpointTag.FromPosition(100, 50);
+            var newTag = CheckpointTag.FromPosition(0, 100, 50);
             positionTracker.UpdateByCheckpointTagInitial(newTag);
             _tag = positionTracker.LastTag;
-            _tagger = new TransactionFilePositionTagger();
+            _tagger = new TransactionFilePositionTagger(0);
             _positionTracker = new PositionTracker(_tagger);
             _positionTracker.UpdateByCheckpointTagInitial(_tag);
             // when 
@@ -34,14 +34,14 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         public void it_can_be_updated()
         {
             // even not initialized (UpdateToZero can be removed)
-            var newTag = CheckpointTag.FromPosition(100, 50);
+            var newTag = CheckpointTag.FromPosition(0, 100, 50);
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void initial_position_cannot_be_set_twice()
         {
-            var newTag = CheckpointTag.FromPosition(100, 50);
+            var newTag = CheckpointTag.FromPosition(0, 100, 50);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void it_cannot_be_updated_forward()
         {
-            var newTag = CheckpointTag.FromPosition(100, 50);
+            var newTag = CheckpointTag.FromPosition(0, 100, 50);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 

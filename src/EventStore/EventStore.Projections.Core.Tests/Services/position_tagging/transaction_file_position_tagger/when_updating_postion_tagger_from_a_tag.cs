@@ -42,13 +42,13 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         public void When()
         {
             // given
-            var tagger = new TransactionFilePositionTagger();
+            var tagger = new TransactionFilePositionTagger(0);
             var positionTracker = new PositionTracker(tagger);
 
-            var newTag = CheckpointTag.FromPosition(100, 50);
+            var newTag = CheckpointTag.FromPosition(0, 100, 50);
             positionTracker.UpdateByCheckpointTagInitial(newTag);
             _tag = positionTracker.LastTag;
-            _tagger = new TransactionFilePositionTagger();
+            _tagger = new TransactionFilePositionTagger(0);
             _positionTracker = new PositionTracker(_tagger);
             // when 
 

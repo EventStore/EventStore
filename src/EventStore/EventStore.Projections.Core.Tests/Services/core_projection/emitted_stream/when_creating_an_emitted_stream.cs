@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             new EmittedStream(
                 null, new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
-                new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
+                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher,
                 new TestCheckpointManagerMessageHandler());
         }
 
@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             new EmittedStream(
                 null, null, new ProjectionVersion(1, 0, 0),
-                new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
+                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher,
                 new TestCheckpointManagerMessageHandler());
         }
 
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             new EmittedStream(
                 "", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
-                new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
+                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher,
                 new TestCheckpointManagerMessageHandler());
         }
 
@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             new EmittedStream(
                 "", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
-                new TransactionFilePositionTagger(), null, _ioDispatcher, new TestCheckpointManagerMessageHandler());
+                new TransactionFilePositionTagger(0), null, _ioDispatcher, new TestCheckpointManagerMessageHandler());
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             new EmittedStream(
                 "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
-                new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), null,
+                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), null,
                 new TestCheckpointManagerMessageHandler());
         }
 
@@ -98,7 +98,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             new EmittedStream(
                 "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
-                new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher, null);
+                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher, null);
         }
 
         [Test]
@@ -106,7 +106,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             new EmittedStream(
                 "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
-                new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1), _ioDispatcher,
+                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher,
                 new TestCheckpointManagerMessageHandler());
         }
     }

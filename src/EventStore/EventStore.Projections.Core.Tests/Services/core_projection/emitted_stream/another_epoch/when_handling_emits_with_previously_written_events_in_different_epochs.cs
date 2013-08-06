@@ -57,13 +57,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             return new EmittedEvent[]
             {
                 new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type1", "data", null, CheckpointTag.FromPosition(100, 50), null,
+                    "test_stream", Guid.NewGuid(), "type1", "data", null, CheckpointTag.FromPosition(0, 100, 50), null,
                     v => _1 = v),
                 new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type2", "data", null, CheckpointTag.FromPosition(100, 50), null,
+                    "test_stream", Guid.NewGuid(), "type2", "data", null, CheckpointTag.FromPosition(0, 100, 50), null,
                     v => _2 = v),
                 new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type3", "data", null, CheckpointTag.FromPosition(100, 50), null,
+                    "test_stream", Guid.NewGuid(), "type3", "data", null, CheckpointTag.FromPosition(0, 100, 50), null,
                     v => _3 = v)
             };
         }
@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
-                new ProjectionVersion(1, 2, 2), new TransactionFilePositionTagger(), CheckpointTag.FromPosition(100, 50),
+                new ProjectionVersion(1, 2, 2), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 100, 50),
                 _ioDispatcher, _readyHandler);
             _stream.Start();
             _stream.EmitEvents(CreateEventBatch());

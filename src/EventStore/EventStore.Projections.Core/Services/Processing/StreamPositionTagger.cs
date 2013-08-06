@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly string _stream;
 
-        public StreamPositionTagger(string stream)
+        public StreamPositionTagger(int phase, string stream): base(phase)
         {
             if (stream == null) throw new ArgumentNullException("stream");
             if (string.IsNullOrEmpty(stream)) throw new ArgumentException("stream");
@@ -60,13 +60,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException(
                     string.Format(
                         "Invalid stream '{0}'.  Expected stream is '{1}'", committedEvent.Data.EventStreamId, _stream));
-            return CheckpointTag.FromStreamPosition(
-                committedEvent.Data.PositionStreamId, committedEvent.Data.PositionSequenceNumber);
+            return CheckpointTag.FromStreamPosition(previous.Phase, committedEvent.Data.PositionStreamId, committedEvent.Data.PositionSequenceNumber);
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()
         {
-            return CheckpointTag.FromStreamPosition(_stream, -1);
+            return CheckpointTag.FromStreamPosition(0, _stream, -1);
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
@@ -79,17 +78,21 @@ namespace EventStore.Projections.Core.Services.Processing
             if (tag.Mode_ == CheckpointTag.Mode.Stream)
             {
                 int p;
-                return CheckpointTag.FromStreamPosition(_stream, tag.Streams.TryGetValue(_stream, out p) ? p : -1);
+                return CheckpointTag.FromStreamPosition(
+                    tag.Phase, _stream, tag.Streams.TryGetValue(_stream, out p) ? p : -1);
             }
             switch (tag.Mode_)
             {
                 case CheckpointTag.Mode.EventTypeIndex:
-                    throw new NotSupportedException("Conversion from EventTypeIndex to Stream position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from EventTypeIndex to Stream position tag is not supported");
                 case CheckpointTag.Mode.PreparePosition:
-                    throw new NotSupportedException("Conversion from PreparePosition to Stream position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from PreparePosition to Stream position tag is not supported");
                 case CheckpointTag.Mode.MultiStream:
                     int p;
-                    return CheckpointTag.FromStreamPosition(_stream, tag.Streams.TryGetValue(_stream, out p) ? p : -1);
+                    return CheckpointTag.FromStreamPosition(
+                        tag.Phase, _stream, tag.Streams.TryGetValue(_stream, out p) ? p : -1);
                 case CheckpointTag.Mode.Position:
                     throw new NotSupportedException("Conversion from Position to Stream position tag is not supported");
                 default:

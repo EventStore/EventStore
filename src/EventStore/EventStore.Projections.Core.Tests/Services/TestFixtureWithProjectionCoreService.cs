@@ -152,7 +152,7 @@ namespace EventStore.Projections.Core.Tests.Services
             var result = new ReaderStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(new RealTimeProvider(), runAs: null);
+            return result.Build(0, new RealTimeProvider(), runAs: null);
         }
 
         protected static ResolvedEvent CreateEvent()

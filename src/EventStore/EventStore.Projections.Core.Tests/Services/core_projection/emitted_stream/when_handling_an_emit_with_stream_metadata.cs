@@ -55,14 +55,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", _writerConfiguration, new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(40, 30), _ioDispatcher, _readyHandler);
+                "test_stream", _writerConfiguration, new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0),
+                CheckpointTag.FromPosition(0, 40, 30), _ioDispatcher, _readyHandler);
             _stream.Start();
             _stream.EmitEvents(
                 new[]
                 {
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null)
+                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
                 });
         }
 
@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                 {
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(400, 350), null)
+                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(0, 400, 350), null)
                 });
             Assert.AreEqual(
                 1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().ToStream("$$test_stream").Count());

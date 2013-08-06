@@ -42,13 +42,13 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_pos
         public void When()
         {
             // given
-            var tagger = new StreamPositionTagger("stream1");
+            var tagger = new StreamPositionTagger(0, "stream1");
             var tracker = new PositionTracker(tagger);
 
-            var newTag = CheckpointTag.FromStreamPosition("stream1", 1);
+            var newTag = CheckpointTag.FromStreamPosition(0, "stream1", 1);
             tracker.UpdateByCheckpointTagInitial(newTag);
             _tag = tracker.LastTag;
-            _tagger = new StreamPositionTagger("stream1");
+            _tagger = new StreamPositionTagger(0, "stream1");
             _positionTracker = new PositionTracker(_tagger);
             // when 
 

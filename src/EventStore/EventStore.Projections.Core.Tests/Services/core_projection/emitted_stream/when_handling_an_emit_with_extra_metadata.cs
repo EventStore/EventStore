@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
-                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(), CheckpointTag.FromPosition(40, 30),
+                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 40, 30),
                 _ioDispatcher, _readyHandler);
             _stream.Start();
 
@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", "data",
                         new ExtraMetaData(new Dictionary<string, string> {{"a", "1"}, {"b", "{}"}}),
-                        CheckpointTag.FromPosition(200, 150), null)
+                        CheckpointTag.FromPosition(0, 200, 150), null)
                 });
         }
 
@@ -87,7 +87,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
 
             HelperExtensions.AssertJson(new {a = 1, b = new {}}, metadata);
             var checkpoint = @event.Metadata.ParseCheckpointTagJson();
-            Assert.AreEqual(CheckpointTag.FromPosition(200, 150), checkpoint);
+            Assert.AreEqual(CheckpointTag.FromPosition(0, 200, 150), checkpoint);
         }
     }
 }

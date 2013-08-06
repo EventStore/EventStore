@@ -58,8 +58,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         {
             new ProjectionCheckpoint(
                 null, new ProjectionVersion(1, 0, 0), null, _readyHandler,
-                CheckpointTag.FromPosition(100, 50), new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), 250);
+                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0),
+                CheckpointTag.FromPosition(0, 0, -1), 250);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -67,8 +67,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         {
             new ProjectionCheckpoint(
                 _ioDispatcher, new ProjectionVersion(1, 0, 0), null, null,
-                CheckpointTag.FromPosition(100, 50), new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), 250);
+                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0),
+                CheckpointTag.FromPosition(0, 0, -1), 250);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -76,8 +76,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         {
             new ProjectionCheckpoint(
                 _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
-                CheckpointTag.FromPosition(100, 101), new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), 250);
+                CheckpointTag.FromPosition(0, 100, 101), new TransactionFilePositionTagger(0),
+                CheckpointTag.FromPosition(0, 0, -1), 250);
         }
 
         [Test]
@@ -85,8 +85,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         {
             new ProjectionCheckpoint(
                 _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
-                CheckpointTag.FromPosition(100, 50), new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), 250);
+                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0),
+                CheckpointTag.FromPosition(0, 0, -1), 250);
         }
     }
 }

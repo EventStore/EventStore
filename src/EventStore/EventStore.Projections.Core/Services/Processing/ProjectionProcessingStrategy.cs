@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var namingBuilder = namingBuilderFactory.Create(name);
             var effectiveProjectionName = namingBuilder.EffectiveProjectionName;
 
-            var checkpointStrategy = CheckpointStrategy.Create(sourceDefinition, projectionConfig, timeProvider);
+            var checkpointStrategy = CheckpointStrategy.Create(0, sourceDefinition, projectionConfig, timeProvider);
             var sourceDefinitionRecorder = new SourceDefinitionRecorder();
             (projectionStateHandler ?? sourceDefinition).ConfigureSourceProcessingStrategy(sourceDefinitionRecorder);
             preparedSourceDefinition = sourceDefinitionRecorder.Build(namingBuilder);

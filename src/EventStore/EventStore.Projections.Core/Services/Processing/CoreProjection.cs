@@ -119,8 +119,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger = logger;
             _publisher = publisher;
 
-            var readerStrategy = checkpointStrategy.ReaderStrategy;
-            _zeroCheckpointTag = readerStrategy.PositionTagger.MakeZeroCheckpointTag();
+            _zeroCheckpointTag = CheckpointTag.Empty;
             _checkpointManager = coreProjectionCheckpointManager;
             _partitionStateCache = new PartitionStateCache(_zeroCheckpointTag);
 

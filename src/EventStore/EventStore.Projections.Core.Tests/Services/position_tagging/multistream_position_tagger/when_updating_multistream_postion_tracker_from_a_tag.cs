@@ -43,13 +43,13 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.multistrea
         public void When()
         {
             // given
-            var tagger = new MultiStreamPositionTagger(new []{"stream1", "stream2"});
+            var tagger = new MultiStreamPositionTagger(0, new []{"stream1", "stream2"});
             var tracker = new PositionTracker(tagger);
 
-            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"stream1", 1}, {"stream2", 2}});
+            var newTag = CheckpointTag.FromStreamPositions(0, new Dictionary<string, int>{{"stream1", 1}, {"stream2", 2}});
             tracker.UpdateByCheckpointTagInitial(newTag);
             _tag = tracker.LastTag;
-            _tagger = new MultiStreamPositionTagger(new []{"stream1", "stream2"});
+            _tagger = new MultiStreamPositionTagger(0, new []{"stream1", "stream2"});
             _positionTracker = new PositionTracker(_tagger);
             // when 
 

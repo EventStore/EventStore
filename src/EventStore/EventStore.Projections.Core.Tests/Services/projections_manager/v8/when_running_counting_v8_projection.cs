@@ -56,10 +56,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             string state;
             EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                "", CheckpointTag.FromPosition(0, 10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
             _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(20, 15), "stream1", "type1", "category", Guid.NewGuid(), 1, "metadata",
+                "", CheckpointTag.FromPosition(0, 20, 15), "stream1", "type1", "category", Guid.NewGuid(), 1, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
             Assert.AreEqual(2, _logged.Count);
             Assert.AreEqual(@"1", _logged[0]);
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 string state;
                 EmittedEventEnvelope[] emittedEvents;
                 _stateHandler.ProcessEvent(
-                    "", CheckpointTag.FromPosition(i * 10, i * 10 - 5), "stream" + i, "type" + i, "category", Guid.NewGuid(), 0,
+                    "", CheckpointTag.FromPosition(0, i * 10, i * 10 - 5), "stream" + i, "type" + i, "category", Guid.NewGuid(), 0,
                     "metadata", @"{""a"":""" + i + @"""}", out state, out emittedEvents);
                 Assert.AreEqual(1, _logged.Count);
                 Assert.AreEqual((i + 1).ToString(CultureInfo.InvariantCulture), _logged[_logged.Count - 1]);

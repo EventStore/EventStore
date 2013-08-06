@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 string newState;
                 EmittedEventEnvelope[] emittedevents;
                 h.ProcessEvent(
-                    "partition", CheckpointTag.FromPosition(100, 50), "stream", "event", "", Guid.NewGuid(), 1, "", "{}",
+                    "partition", CheckpointTag.FromPosition(0, 100, 50), "stream", "event", "", Guid.NewGuid(), 1, "", "{}",
                     out newState, out emittedevents);
             }
         }
@@ -177,7 +177,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 string newState;
                 EmittedEventEnvelope[] emittedevents;
                 h.ProcessEvent(
-                    "partition", CheckpointTag.FromPosition(100, 50), "stream", "event", "", Guid.NewGuid(), 1, "", "{}",
+                    "partition", CheckpointTag.FromPosition(0, 100, 50), "stream", "event", "", Guid.NewGuid(), 1, "", "{}",
                     out newState, out emittedevents);
                 h.TransformStateToResult();
             }
@@ -214,7 +214,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                         string newState;
                         EmittedEventEnvelope[] emittedevents;
                         h.ProcessEvent(
-                            "partition", CheckpointTag.FromPosition(100, 50), "stream", "event", "", Guid.NewGuid(), 1,
+                            "partition", CheckpointTag.FromPosition(0, 100, 50), "stream", "event", "", Guid.NewGuid(), 1,
                             "", "{}", out newState, out emittedevents);
                     }
                 }

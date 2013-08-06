@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                         AllEvents = true,
                         Options = new QuerySourcesDefinitionOptions {ReorderEvents = true, ProcessingLag = 100}
                     };
-                _readerStrategy = ReaderStrategy.Create(_sourceDefinition, _timeProvider, runAs: null);
+                _readerStrategy = ReaderStrategy.Create(0, _sourceDefinition, _timeProvider, runAs: null);
                 _readerSubscriptionOptions = new ReaderSubscriptionOptions(
                     checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, stopOnEof: false,
                     stopAfterNEvents: null);
@@ -117,7 +117,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             protected override IEnumerable<WhenStep> When()
             {
                 var fromZeroPosition =
-                    CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"stream-a", -1}, {"stream-b", -1}});
+                    CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"stream-a", -1}, {"stream-b", -1}});
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);

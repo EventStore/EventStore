@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             string state;
             EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category",
+                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category",
                 Guid.NewGuid(), 0, "metadata", @"{""a"":""b""}", out state, out emittedEvents);
             Assert.IsTrue(state.Contains("\"newValue\":\"new\""));
         }
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             string state;
             EmittedEventEnvelope[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category",
+                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category",
                 Guid.NewGuid(), 0, "metadata", @"{""a"":""b""}", out state, out emittedEvents);
 
             Assert.IsTrue(result);

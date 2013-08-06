@@ -53,10 +53,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PositionTagger _positionTagger;
         private readonly ITimeProvider _timeProvider;
 
+        private readonly int _phase;
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
-            public IReaderStrategy Build(ITimeProvider timeProvider, IPrincipal runAs)
+            public IReaderStrategy Build(int phase, ITimeProvider timeProvider, IPrincipal runAs)
             {
                 base.Validate();
                 HashSet<string> categories = ToSet(_categories);
@@ -66,24 +67,25 @@ namespace EventStore.Projections.Core.Services.Processing
                 bool reorderEvents = _options.ReorderEvents;
                 int processingLag = _options.ProcessingLag;
                 var readerStrategy = new ReaderStrategy(
-                    _allStreams, categories, streams, _allEvents, includeLinks, events, processingLag, reorderEvents,
-                    runAs, timeProvider);
+                    phase, _allStreams, categories, streams, _allEvents, includeLinks, events, processingLag,
+                    reorderEvents, runAs, timeProvider);
                 return readerStrategy;
             }
         }
 
         public static IReaderStrategy Create(
-            ISourceDefinitionConfigurator sources, ITimeProvider timeProvider, IPrincipal runAs)
+            int phase, ISourceDefinitionConfigurator sources, ITimeProvider timeProvider, IPrincipal runAs)
         {
             var builder = new Builder();
             sources.ConfigureSourceProcessingStrategy(builder);
-            return builder.Build(timeProvider, runAs);
+            return builder.Build(phase, timeProvider, runAs);
         }
 
-        private ReaderStrategy(
+        private ReaderStrategy(int phase, 
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, bool includeLinks,
             HashSet<string> events, int processingLag, bool reorderEvents, IPrincipal runAs, ITimeProvider timeProvider)
         {
+            _phase = phase;
             _allStreams = allStreams;
             _categories = categories;
             _streams = streams;
@@ -114,6 +116,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public PositionTagger PositionTagger
         {
             get { return _positionTagger; }
+        }
+
+        public int Phase
+        {
+            get { return _phase; }
         }
 
         public IReaderSubscription CreateReaderSubscription(
@@ -195,22 +202,23 @@ namespace EventStore.Projections.Core.Services.Processing
         private PositionTagger CreatePositionTagger()
         {
             if (_allStreams && _events != null && _events.Count >= 1)
-                return new EventByTypeIndexPositionTagger(_events.ToArray());
+                return new EventByTypeIndexPositionTagger(_phase, _events.ToArray());
             if (_allStreams && _reorderEvents)
-                return new PreparePositionTagger();
+                return new PreparePositionTagger(_phase);
             if (_allStreams)
-                return new TransactionFilePositionTagger();
+                return new TransactionFilePositionTagger(_phase);
             if (_categories != null && _categories.Count == 1)
                 //TODO: '-' is a hardcoded separator
-                return new StreamPositionTagger("$ce-" + _categories.First());
+                return new StreamPositionTagger(_phase, "$ce-" + _categories.First());
             if (_categories != null)
                 throw new NotSupportedException();
             if (_streams != null && _streams.Count == 1)
-                return new StreamPositionTagger(_streams.First());
+                return new StreamPositionTagger(_phase, _streams.First());
             if (_streams != null && _streams.Count > 1)
-                return new MultiStreamPositionTagger(_streams.ToArray());
+                return new MultiStreamPositionTagger(_phase, _streams.ToArray());
             throw new NotSupportedException();
         }
+
 
         private string[] GetEventIndexStreams()
         {

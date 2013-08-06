@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_pos
         [SetUp]
         public void When()
         {
-            _tagger = new StreamPositionTagger("stream1");
+            _tagger = new StreamPositionTagger(0, "stream1");
             _positionTracker = new PositionTracker(_tagger);
             // when 
 

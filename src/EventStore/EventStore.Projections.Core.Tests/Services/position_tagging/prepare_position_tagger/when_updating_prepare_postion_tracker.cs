@@ -42,9 +42,9 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_po
         public void When()
         {
             // given
-            _tagger = new PreparePositionTagger();
+            _tagger = new PreparePositionTagger(0);
             _positionTracker = new PositionTracker(_tagger);
-            var newTag = CheckpointTag.FromPreparePosition(50);
+            var newTag = CheckpointTag.FromPreparePosition(0, 50);
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_po
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cannot_update_to_the_same_postion()
         {
-            var newTag = CheckpointTag.FromPreparePosition(50);
+            var newTag = CheckpointTag.FromPreparePosition(0, 50);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
     }

@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         public void it_can_be_created()
         {
             new ReaderSubscription(
-                new FakePublisher(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
+                new FakePublisher(), Guid.NewGuid(), CheckpointTag.FromPosition(0, 0, -1),
                 CreateReaderStrategy(),
                 1000, 2000);
         }
@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         public void null_publisher_throws_argument_null_exception()
         {
             new ReaderSubscription(null,
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
+                Guid.NewGuid(), CheckpointTag.FromPosition(0, 0, -1),
                 CreateReaderStrategy(), 1000, 2000);
         }
 
@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         public void null_checkpoint_strategy_throws_argument_null_exception()
         {
             new ReaderSubscription(new FakePublisher(),
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), 
+                Guid.NewGuid(), CheckpointTag.FromPosition(0, 0, -1), 
                 null, 1000, 2000);
         }
 
@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var result = new ReaderStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(new RealTimeProvider(), runAs: null);
+            return result.Build(0, new RealTimeProvider(), runAs: null);
         }
     }
 }

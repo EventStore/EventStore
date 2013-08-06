@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly HashSet<string> _streams;
 
-        public MultiStreamPositionTagger(string[] streams)
+        public MultiStreamPositionTagger(int phase, string[] streams): base(phase)
         {
             if (streams == null) throw new ArgumentNullException("streams");
             if (streams.Length == 0) throw new ArgumentException("streams");
@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override CheckpointTag MakeZeroCheckpointTag()
         {
-            return CheckpointTag.FromStreamPositions(_streams.ToDictionary(v => v, v => ExpectedVersion.NoStream));
+            return CheckpointTag.FromStreamPositions(0, _streams.ToDictionary(v => v, v => ExpectedVersion.NoStream));
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
@@ -82,22 +82,24 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 int p;
                 return CheckpointTag.FromStreamPositions(
-                    _streams.ToDictionary(v => v, v => tag.Streams.TryGetValue(v, out p) ? p : -1));
+                    tag.Phase, _streams.ToDictionary(v => v, v => tag.Streams.TryGetValue(v, out p) ? p : -1));
             }
 
             switch (tag.Mode_)
             {
                 case CheckpointTag.Mode.EventTypeIndex:
-                    throw new NotSupportedException("Conversion from EventTypeIndex to MultiStream position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from EventTypeIndex to MultiStream position tag is not supported");
                 case CheckpointTag.Mode.Stream:
                     int p;
-                    return
-                        CheckpointTag.FromStreamPositions(
-                            _streams.ToDictionary(v => v, v => tag.Streams.TryGetValue(v, out p) ? p : -1));
+                    return CheckpointTag.FromStreamPositions(
+                        tag.Phase, _streams.ToDictionary(v => v, v => tag.Streams.TryGetValue(v, out p) ? p : -1));
                 case CheckpointTag.Mode.PreparePosition:
-                    throw new NotSupportedException("Conversion from PreparePosition to MultiStream position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from PreparePosition to MultiStream position tag is not supported");
                 case CheckpointTag.Mode.Position:
-                    throw new NotSupportedException("Conversion from Position to MultiStream position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from Position to MultiStream position tag is not supported");
                 default:
                     throw new Exception();
             }

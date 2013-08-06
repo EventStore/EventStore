@@ -62,12 +62,12 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public static CheckpointStrategy Create(
-            ISourceDefinitionConfigurator sources, ProjectionConfig config, ITimeProvider timeProvider)
+            int phase, ISourceDefinitionConfigurator sources, ProjectionConfig config, ITimeProvider timeProvider)
         {
             var builder = new Builder();
             sources.ConfigureSourceProcessingStrategy(builder);
             return builder.Build(
-                config, config.RunAs, Processing.ReaderStrategy.Create(sources, timeProvider, config.RunAs));
+                config, config.RunAs, Processing.ReaderStrategy.Create(phase, sources, timeProvider, config.RunAs));
         }
 
         public bool UseCheckpoints
@@ -122,8 +122,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 return new DefaultCheckpointManager(
                     publisher, projectionCorrelationId, projectionVersion, _runAs, ioDispatcher, projectionConfig, name,
-                    ReaderStrategy.PositionTagger, namingBuilder, UseCheckpoints,
-                    emitPartitionCheckpoints);
+                    ReaderStrategy.PositionTagger, namingBuilder, UseCheckpoints, emitPartitionCheckpoints);
             }
         }
 

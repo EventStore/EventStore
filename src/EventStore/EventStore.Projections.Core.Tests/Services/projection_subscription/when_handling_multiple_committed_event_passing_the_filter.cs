@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         public void suggests_a_checkpoint()
         {
             Assert.AreEqual(1, _checkpointHandler.HandledMessages.Count);
-            Assert.AreEqual(CheckpointTag.FromPosition(300, 250), _checkpointHandler.HandledMessages[0].CheckpointTag);
+            Assert.AreEqual(CheckpointTag.FromPosition(0, 300, 250), _checkpointHandler.HandledMessages[0].CheckpointTag);
         }
     }
 }

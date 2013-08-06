@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 
         public void Start()
         {
-            var readerStrategy = ReaderStrategy.Create(_querySource, _timeProvider, runAs: _user);
+            var readerStrategy = ReaderStrategy.Create(0, _querySource, _timeProvider, runAs: _user);
             //TODO: make reader mode explicit
             var readerOptions = new ReaderSubscriptionOptions(
                 1024*1024, _maxEvents + 1, stopOnEof: true, stopAfterNEvents: _maxEvents);

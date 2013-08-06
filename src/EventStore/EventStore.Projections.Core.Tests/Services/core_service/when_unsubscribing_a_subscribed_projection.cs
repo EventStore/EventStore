@@ -51,11 +51,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_service
             _projectionCorrelationId2 = Guid.NewGuid();
             _readerService.Handle(
                 new ReaderSubscriptionManagement.Subscribe(
-                    _projectionCorrelationId, CheckpointTag.FromPosition(0, 0), CreateReaderStrategy(),
+                    _projectionCorrelationId, CheckpointTag.FromPosition(0, 0, 0), CreateReaderStrategy(),
                     new ReaderSubscriptionOptions(1000, 2000, false, stopAfterNEvents: null)));
             _readerService.Handle(
                 new ReaderSubscriptionManagement.Subscribe(
-                    _projectionCorrelationId2, CheckpointTag.FromPosition(0, 0), CreateReaderStrategy(),
+                    _projectionCorrelationId2, CheckpointTag.FromPosition(0, 0, 0), CreateReaderStrategy(),
                     new ReaderSubscriptionOptions(1000, 2000, false, stopAfterNEvents: null)));
             // when
             _readerService.Handle(new ReaderSubscriptionManagement.Unsubscribe(_projectionCorrelationId));

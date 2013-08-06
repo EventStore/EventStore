@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                         "metadata"), _subscriptionId, 2));
             _coreProjection.Handle(
                 new EventReaderSubscriptionMessage.CheckpointSuggested(
-                    _subscriptionId, CheckpointTag.FromPosition(160, 150), 77.7f, 3));
+                    _subscriptionId, CheckpointTag.FromPosition(0, 160, 150), 77.7f, 3));
             _coreProjection.Stop();
         }
 

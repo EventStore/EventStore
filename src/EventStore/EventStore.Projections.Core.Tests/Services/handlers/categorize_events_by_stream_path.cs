@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
                 _handler = new CategorizeEventsByStreamPath("-", Console.WriteLine);
                 _handler.Initialize();
                 _result = _handler.ProcessEvent(
-                    "", CheckpointTag.FromPosition(200, 150), null,
+                    "", CheckpointTag.FromPosition(0, 200, 150), null,
                     new ResolvedEvent(
                         "cat1-stream1", 10, "cat1-stream1", 10, false, new TFPos(200, 150), Guid.NewGuid(),
                         "event_type", true, "{}", "{}"), out _state, out _emittedEvents);
@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
                 _handler = new CategorizeEventsByStreamPath("-", Console.WriteLine);
                 _handler.Initialize();
                 _result = _handler.ProcessEvent(
-                    "", CheckpointTag.FromPosition(200, 150), null,
+                    "", CheckpointTag.FromPosition(0, 200, 150), null,
                     new ResolvedEvent(
                         "cat2-stream2", 20, "cat2-stream2", 20, true, new TFPos(200, 150), Guid.NewGuid(),
                         "$>", true, "10@cat1-stream1", "{}"), out _state, out _emittedEvents);

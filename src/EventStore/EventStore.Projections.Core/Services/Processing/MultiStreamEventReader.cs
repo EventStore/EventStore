@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (streams.Length == 0) throw new ArgumentException("streams");
             _streams = new HashSet<string>(streams);
             _eofs = _streams.ToDictionary(v => v, v => false);
-            var positions = CheckpointTag.FromStreamPositions(fromPositions);
+            var positions = CheckpointTag.FromStreamPositions(0, fromPositions);
             ValidateTag(positions);
             _fromPositions = positions;
             _resolveLinkTos = resolveLinkTos;

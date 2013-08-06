@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
             private void Given()
             {
                 _projection = "projection";
-                _resultAt = CheckpointTag.FromPosition(100, 50);
+                _resultAt = CheckpointTag.FromPosition(0, 100, 50);
                 _partition = "partition";
                 _result = "{\"result\":1}";
                 _namesBuilder = ProjectionNamesBuilder.CreateForTest(_projection);
@@ -139,7 +139,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
             private void Given()
             {
                 _projection = "projection";
-                _resultAt = CheckpointTag.FromPosition(100, 50);
+                _resultAt = CheckpointTag.FromPosition(0, 100, 50);
                 _partition = "partition";
                 _namesBuilder = ProjectionNamesBuilder.CreateForTest(_projection);
                 _re = new ResultEmitter(_namesBuilder);
@@ -198,7 +198,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
             private void Given()
             {
                 _projection = "projection";
-                _resultAt = CheckpointTag.FromPosition(100, 50);
+                _resultAt = CheckpointTag.FromPosition(0, 100, 50);
                 _partition = "";
                 _result = "{\"result\":1}";
                 _namesBuilder = ProjectionNamesBuilder.CreateForTest(_projection);

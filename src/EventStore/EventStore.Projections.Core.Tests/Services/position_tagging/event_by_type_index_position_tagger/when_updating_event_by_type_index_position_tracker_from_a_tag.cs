@@ -44,15 +44,14 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         public void When()
         {
             // given
-            var tagger = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var tagger = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var tracker = new PositionTracker(tagger);
 
-            var newTag = CheckpointTag.FromEventTypeIndexPositions(
-                new TFPos(10, 5), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
+            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(10, 5), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
 
             tracker.UpdateByCheckpointTagInitial(newTag);
             _tag = tracker.LastTag;
-            _tagger = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            _tagger = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             _positionTracker = new PositionTracker(_tagger);
             // when 
 

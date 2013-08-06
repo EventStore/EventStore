@@ -70,40 +70,37 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         [Test]
         public void can_be_created()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             new PositionTracker(t);
         }
 
         [Test]
         public void is_message_after_checkpoint_tag_after_case()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        new TFPos(10, 5), new Dictionary<string, int> {{"type1", 0}, {"type2", -1}}), _firstEvent);
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(10, 5), new Dictionary<string, int> {{"type1", 0}, {"type2", -1}}), _firstEvent);
             Assert.IsTrue(result);
         }
 
         [Test]
         public void is_message_after_checkpoint_tag_tf_only_after_case()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        new TFPos(10, 5), new Dictionary<string, int> {{"type1", 0}, {"type2", 0}}), _firstEvent);
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(10, 5), new Dictionary<string, int> {{"type1", 0}, {"type2", 0}}), _firstEvent);
             Assert.IsTrue(result);
         }
 
         [Test]
         public void is_message_after_checkpoint_tag_before_case()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        new TFPos(40, 35), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}}),
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(40, 35), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}}),
                     _firstEvent);
             Assert.IsFalse(result);
         }
@@ -111,11 +108,10 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         [Test]
         public void is_message_after_checkpoint_tag_tf_only_before_case()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        new TFPos(40, 35), new Dictionary<string, int> {{"type1", 0}, {"type2", 0}}),
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(40, 35), new Dictionary<string, int> {{"type1", 0}, {"type2", 0}}),
                     _firstEvent);
             Assert.IsFalse(result);
         }
@@ -123,11 +119,10 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         [Test]
         public void is_message_after_checkpoint_tag_equal_case()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        new TFPos(30, 20), new Dictionary<string, int> {{"type1", 0}, {"type2", 0}}),
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 20), new Dictionary<string, int> {{"type1", 0}, {"type2", 0}}),
                     _firstEvent);
             Assert.IsFalse(result);
         }
@@ -135,11 +130,10 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         [Test]
         public void is_message_after_checkpoint_tag_tf_only_equal_case()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        new TFPos(30, 20), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}}),
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 20), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}}),
                     _firstEvent);
             Assert.IsFalse(result);
         }
@@ -147,11 +141,10 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         [Test]
         public void is_message_after_checkpoint_tag_incompatible_streams_case()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        new TFPos(30, 20), new Dictionary<string, int> {{"type1", -1}, {"type3", -1}}),
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 20), new Dictionary<string, int> {{"type1", -1}, {"type3", -1}}),
                     _firstEvent);
             Assert.IsFalse(result);
         }
@@ -160,75 +153,70 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_streams_throws_argument_null_exception()
         {
-            new EventByTypeIndexPositionTagger(null);
+            new EventByTypeIndexPositionTagger(0, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_streams_throws_argument_exception()
         {
-            new EventByTypeIndexPositionTagger(new string[] {});
+            new EventByTypeIndexPositionTagger(0, new string[] {});
         }
 
         [Test]
         public void position_checkpoint_tag_is_incompatible()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
-            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromPosition(1000, 500)));
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
+            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromPosition(0, 1000, 500)));
         }
 
         [Test]
         public void streams_checkpoint_tag_is_incompatible()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             Assert.IsFalse(
                 t.IsCompatible(
-                    CheckpointTag.FromStreamPositions(
-                        new Dictionary<string, int> {{"$et-type1", 100}, {"$et-type2", 150}})));
+                    CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"$et-type1", 100}, {"$et-type2", 150}})));
         }
 
         [Test]
         public void another_events_checkpoint_tag_is_compatible()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             Assert.IsFalse(
                 t.IsCompatible(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        new TFPos(100, 50), new Dictionary<string, int> {{"type1", 100}, {"type3", 150}})));
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 100}, {"type3", 150}})));
         }
 
         [Test]
         public void the_same_events_checkpoint_tag_is_compatible()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             Assert.IsTrue(
                 t.IsCompatible(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        new TFPos(100, 50), new Dictionary<string, int> {{"type1", 100}, {"type2", 150}})));
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 100}, {"type2", 150}})));
         }
 
         [Test]
         public void adjust_compatible_tag_returns_the_same_tag()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
-            var tag = CheckpointTag.FromEventTypeIndexPositions(
-                new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
+            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
             Assert.AreEqual(tag, t.AdjustTag(tag));
         }
 
         [Test]
         public void can_adjust_tf_position_tag()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
-            var tag = CheckpointTag.FromEventTypeIndexPositions(
-                new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
-            var original = CheckpointTag.FromPosition(100, 50);
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
+            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
+            var original = CheckpointTag.FromPosition(0, 100, 50);
             Assert.AreEqual(tag, t.AdjustTag(original));
         }
 
         [Test]
         public void zero_position_tag_is_before_first_event_possible()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var zero = t.MakeZeroCheckpointTag();
 
             var zeroFromEvent = t.MakeCheckpointTag(zero, _zeroEvent);
@@ -239,12 +227,11 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         [Test]
         public void can_update_by_tf_event_if_with_prior_index_position()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var linkEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(180, 170), "$et-type2", 1, false, Guid.NewGuid(), "$>", false,
                 Helper.UTF8NoBom.GetBytes("0@stream2"), new byte[0]);
-            var tag = CheckpointTag.FromEventTypeIndexPositions(
-                new TFPos(70, 60), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
+            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(70, 60), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
             var updated = t.MakeCheckpointTag(tag, linkEvent);
             Assert.AreEqual(new TFPos(180, 170), updated.Position);
             Assert.AreEqual(2, updated.Streams["type1"]);
@@ -254,19 +241,18 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void cannot_update_by_prior_tf_position()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var linkEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(180, 170), "$et-type2", 1, false, Guid.NewGuid(), "$>", false,
                 Helper.UTF8NoBom.GetBytes("0@stream2"), new byte[0]);
-            var tag = CheckpointTag.FromEventTypeIndexPositions(
-                new TFPos(270, 260), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
+            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(270, 260), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
             t.MakeCheckpointTag(tag, linkEvent);
         }
 
         [Test]
         public void produced_checkpoint_tags_are_correctly_ordered()
         {
-            var t = new EventByTypeIndexPositionTagger(new[] {"type1", "type2"});
+            var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var zero = t.MakeZeroCheckpointTag();
 
             var zeroEvent = t.MakeCheckpointTag(zero, _zeroEvent);

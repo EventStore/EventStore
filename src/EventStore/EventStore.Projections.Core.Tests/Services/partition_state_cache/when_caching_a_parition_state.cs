@@ -41,8 +41,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         [SetUp]
         public void when()
         {
-            _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, -1));
-            _cachedAtCheckpointTag = CheckpointTag.FromPosition(1000, 900);
+            _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, 0, -1));
+            _cachedAtCheckpointTag = CheckpointTag.FromPosition(0, 1000, 900);
             _cache.CachePartitionState(
                 "partition", new PartitionState("data", null, _cachedAtCheckpointTag));
         }
@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         [Test]
         public void the_state_can_be_retrieved_as_unlocked_and_relocked_at_later_position()
         {
-            var state = _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(1500, 1400));
+            var state = _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(0, 1500, 1400));
             Assert.AreEqual("data", state.State);
         }
     }

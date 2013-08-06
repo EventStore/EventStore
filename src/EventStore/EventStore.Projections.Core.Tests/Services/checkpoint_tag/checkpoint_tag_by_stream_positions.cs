@@ -39,22 +39,22 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
     public class checkpoint_tag_by_stream_positions
     {
         private readonly CheckpointTag _a1 = CheckpointTag.FromStreamPositions(
-            new Dictionary<string, int> {{"a", 1}});
+            1, new Dictionary<string, int> {{"a", 1}});
 
         private readonly CheckpointTag _b1 = CheckpointTag.FromStreamPositions(
-            new Dictionary<string, int> {{"b", 1}});
+            1, new Dictionary<string, int> {{"b", 1}});
 
-        private readonly CheckpointTag _a1b1 =
-            CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 1}});
+        private readonly CheckpointTag _a1b1 = CheckpointTag.FromStreamPositions(
+            1, new Dictionary<string, int> {{"a", 1}, {"b", 1}});
 
-        private readonly CheckpointTag _a2b1 =
-            CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 2}, {"b", 1}});
+        private readonly CheckpointTag _a2b1 = CheckpointTag.FromStreamPositions(
+            1, new Dictionary<string, int> {{"a", 2}, {"b", 1}});
 
-        private readonly CheckpointTag _a1b2 =
-            CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 2}});
+        private readonly CheckpointTag _a1b2 = CheckpointTag.FromStreamPositions(
+            1, new Dictionary<string, int> {{"a", 1}, {"b", 2}});
 
-        private readonly CheckpointTag _a2b2 =
-            CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 2}, {"b", 2}});
+        private readonly CheckpointTag _a2b2 = CheckpointTag.FromStreamPositions(
+            1, new Dictionary<string, int> {{"a", 2}, {"b", 2}});
 
         [Test]
         public void equal_equals()

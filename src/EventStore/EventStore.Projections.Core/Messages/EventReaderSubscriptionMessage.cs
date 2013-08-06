@@ -139,7 +139,7 @@ namespace EventStore.Projections.Core.Messages
                 long subscriptionMessageSequenceNumber)
                 : this(
                     subscriptionId,
-                    CheckpointTag.FromPosition(data.Position.CommitPosition, data.Position.PreparePosition),
+                    CheckpointTag.FromPosition(0, data.Position.CommitPosition, data.Position.PreparePosition),
                     eventCategory, data, progress, subscriptionMessageSequenceNumber, null)
             {
             }

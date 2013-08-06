@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
-                new ProjectionVersion(1, 2, 2), new TransactionFilePositionTagger(), CheckpointTag.FromPosition(0, -1),
+                new ProjectionVersion(1, 2, 2), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1),
                 _ioDispatcher, _readyHandler);
             _stream.Start();
         }
@@ -63,8 +63,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                 {
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(100, 50),
-                        CheckpointTag.FromPosition(40, 20))
+                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(0, 100, 50),
+                        CheckpointTag.FromPosition(0, 40, 20))
                 });
             Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
             Assert.AreEqual(1, _readyHandler.HandledFailedMessages.Count());

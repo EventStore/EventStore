@@ -42,13 +42,13 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_po
         public void When()
         {
             // given
-            var tagger = new PreparePositionTagger();
+            var tagger = new PreparePositionTagger(0);
             var positionTracker = new PositionTracker(tagger);
 
-            var newTag = CheckpointTag.FromPreparePosition(50);
+            var newTag = CheckpointTag.FromPreparePosition(0, 50);
             positionTracker.UpdateByCheckpointTagInitial(newTag);
             _tag = positionTracker.LastTag;
-            _tagger = new PreparePositionTagger();
+            _tagger = new PreparePositionTagger(0);
             _positionTracker = new PositionTracker(_tagger);
             // when 
 

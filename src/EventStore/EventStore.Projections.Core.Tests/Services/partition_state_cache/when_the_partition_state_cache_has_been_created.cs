@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         {
             try
             {
-                _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, -1));
+                _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, 0, -1));
             }
             catch (Exception ex)
             {
@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         [Test]
         public void state_can_be_cached()
         {
-            CheckpointTag at = CheckpointTag.FromPosition(100, 90);
+            CheckpointTag at = CheckpointTag.FromPosition(0, 100, 90);
             _cache.CacheAndLockPartitionState("partition", new PartitionState("data", null, at), at);
         }
 
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         {
             Assert.IsNull(
                 _cache.TryGetAndLockPartitionState(
-                    "random", CheckpointTag.FromPosition(200, 190)),
+                    "random", CheckpointTag.FromPosition(0, 200, 190)),
                 "Cache should be empty");
         }
 
@@ -90,14 +90,14 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         {
             Assert.IsNull(
                 _cache.TryGetAndLockPartitionState(
-                    "", CheckpointTag.FromPosition(200, 190)),
+                    "", CheckpointTag.FromPosition(0, 200, 190)),
                 "Cache should be empty");
         }
 
         [Test]
         public void unlock_succeeds()
         {
-            _cache.Unlock(CheckpointTag.FromPosition(300, 290));
+            _cache.Unlock(CheckpointTag.FromPosition(0, 300, 290));
         }
     }
 }

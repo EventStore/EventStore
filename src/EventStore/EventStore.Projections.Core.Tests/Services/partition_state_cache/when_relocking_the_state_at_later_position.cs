@@ -43,10 +43,10 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void given()
         {
             //given
-            _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, -1));
-            _cachedAtCheckpointTag = CheckpointTag.FromPosition(1000, 900);
+            _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, 0, -1));
+            _cachedAtCheckpointTag = CheckpointTag.FromPosition(0, 1000, 900);
             _cache.CacheAndLockPartitionState("partition", new PartitionState("data", null, _cachedAtCheckpointTag), _cachedAtCheckpointTag);
-            _relockedData = _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(2000, 1900));
+            _relockedData = _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(0, 2000, 1900));
         }
 
         [Test]

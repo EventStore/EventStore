@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void get_state_partition_returns_correct_result()
         {
             var result = _stateHandler.GetStatePartition(
-                CheckpointTag.FromPosition(100, 50), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                CheckpointTag.FromPosition(0, 100, 50), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""region"":""Europe""}");
 
             Assert.AreEqual("Europe", result);
