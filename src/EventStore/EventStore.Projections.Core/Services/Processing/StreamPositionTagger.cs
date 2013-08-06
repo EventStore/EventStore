@@ -47,6 +47,8 @@ namespace EventStore.Projections.Core.Services.Processing
         public override bool IsMessageAfterCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent)
         {
+            if (previous.Phase < Phase)
+                return true;
             if (previous.Mode_ != CheckpointTag.Mode.Stream)
                 throw new ArgumentException("Mode.Stream expected", "previous");
             return committedEvent.Data.PositionStreamId == _stream
@@ -56,6 +58,10 @@ namespace EventStore.Projections.Core.Services.Processing
         public override CheckpointTag MakeCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent)
         {
+            if (previous.Phase != Phase)
+                throw new ArgumentException(
+                    string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
+
             if (committedEvent.Data.PositionStreamId != _stream)
                 throw new InvalidOperationException(
                     string.Format(
@@ -75,6 +81,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override CheckpointTag AdjustTag(CheckpointTag tag)
         {
+            if (tag.Phase != Phase)
+                throw new ArgumentException(
+                    string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, tag.Phase), "tag");
+
             if (tag.Mode_ == CheckpointTag.Mode.Stream)
             {
                 int p;
