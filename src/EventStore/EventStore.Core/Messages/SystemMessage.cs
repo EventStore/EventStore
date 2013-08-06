@@ -59,6 +59,12 @@ namespace EventStore.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
         }
 
+        public class WriteEpoch: Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+        }
+
         public abstract class StateChangeMessage: Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

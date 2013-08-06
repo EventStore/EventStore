@@ -45,6 +45,7 @@ namespace EventStore.Core.Services.Storage
 {
     public class StorageWriterService : IHandle<SystemMessage.SystemInit>,
                                         IHandle<SystemMessage.StateChangeMessage>,
+                                        IHandle<SystemMessage.WriteEpoch>,
                                         IHandle<SystemMessage.WaitForChaserToCatchUp>,
                                         IHandle<StorageMessage.WritePrepares>,
                                         IHandle<StorageMessage.WriteDelete>,
@@ -127,6 +128,7 @@ namespace EventStore.Core.Services.Storage
 
             SubscribeToMessage<SystemMessage.SystemInit>();
             SubscribeToMessage<SystemMessage.StateChangeMessage>();
+            SubscribeToMessage<SystemMessage.WriteEpoch>();
             SubscribeToMessage<SystemMessage.WaitForChaserToCatchUp>();
             SubscribeToMessage<StorageMessage.WritePrepares>();
             SubscribeToMessage<StorageMessage.WriteDelete>();
@@ -214,6 +216,13 @@ namespace EventStore.Core.Services.Storage
                     break;
                 }
             }
+        }
+
+        public void Handle(SystemMessage.WriteEpoch message)
+        {
+            if (_vnodeState != VNodeState.Master)
+                throw new Exception(string.Format("New Epoch request came not in master state!!! State: {0}.", _vnodeState));
+            EpochManager.WriteNewEpoch();
         }
 
         void IHandle<SystemMessage.WaitForChaserToCatchUp>.Handle(SystemMessage.WaitForChaserToCatchUp message)
