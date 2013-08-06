@@ -30,7 +30,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IProjectionPhaseEventProcessor
+    public interface IEventProcessingProjectionPhase
     {
         EventProcessedResult ProcessCommittedEvent(EventReaderSubscriptionMessage.CommittedEventReceived message,
             string partition);
@@ -43,7 +43,6 @@ namespace EventStore.Projections.Core.Services.Processing
             EventProcessedResult result, CheckpointTag eventCheckpointTag, float progress);
 
         void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action completed);
-        void EnsureTickPending();
         CheckpointTag LastProcessedEventPosition { get; }
         void Complete();
         void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem);

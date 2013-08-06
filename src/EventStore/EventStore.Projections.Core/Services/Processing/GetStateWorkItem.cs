@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing
     class GetStateWorkItem : GetDataWorkItemBase
     {
         public GetStateWorkItem(
-            IEnvelope envelope, Guid correlationId, Guid projectionId, IProjectionPhaseEventProcessor projection,
+            IEnvelope envelope, Guid correlationId, Guid projectionId, IEventProcessingProjectionPhase projection,
             PartitionStateCache partitionStateCache, string partition)
             : base(envelope, correlationId, projectionId, projection, partitionStateCache, partition)
         {

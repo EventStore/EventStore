@@ -205,7 +205,7 @@
     <Compile Include="Services\Processing\IEventWriter.cs" />
     <Compile Include="Services\Processing\IndexedEventTypeEventFilter.cs" />
     <Compile Include="Services\Processing\IndexedEventTypesEventFilter.cs" />
-    <Compile Include="Services\Processing\IProjectionPhaseEventProcessor.cs" />
+    <Compile Include="Services\Processing\IEventProcessingPhase.cs" />
     <Compile Include="Services\Processing\IProjectionProcessingPhase.cs" />
     <Compile Include="Services\Processing\IReaderStrategy.cs" />
     <Compile Include="Services\Processing\IResultEmitter.cs" />
@@ -228,6 +228,7 @@
     <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
     <Compile Include="Services\Processing\EventReaderCoreService.cs" />
     <Compile Include="Services\Processing\ProjectionProcessingPhase.cs" />
+    <Compile Include="Services\Processing\ProjectionProcessingStrategy.cs" />
     <Compile Include="Services\Processing\ProjectionSourceDefinition.cs" />
     <Compile Include="Services\Processing\ProjectionSubscriptionBase.cs" />
     <Compile Include="Services\Processing\ProjectionVersion.cs" />

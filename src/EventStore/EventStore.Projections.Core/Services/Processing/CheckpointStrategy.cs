@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _byStream;
         private readonly bool _byCustomPartitions;
         private readonly bool _useCheckpoints;
-        private readonly bool _definesStateTransform;
+        internal readonly bool _definesStateTransform;
         private readonly IReaderStrategy _readerStrategy;
         private readonly IPrincipal _runAs;
 
@@ -127,28 +127,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private IResultEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
+        public IResultEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
         {
             var resultEmitter = _definesStateTransform
                 ? new ResultEmitter(namingBuilder)
                 : (IResultEmitter) new NoopResultEmitter();
             return resultEmitter;
-        }
-
-        public ProjectionProcessingPhase CreateFirstProcessingPhase(
-            string name, IPublisher publisher, IProjectionStateHandler projectionStateHandler,
-            ProjectionConfig projectionConfig, ILogger logger, Guid projectionCorrelationId,
-            PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection,
-            ProjectionNamesBuilder namingBuilder, ICoreProjectionCheckpointManager checkpointManager,
-            StatePartitionSelector statePartitionSelector)
-        {
-            var resultEmitter = CreateResultEmitter(namingBuilder);
-            var zeroCheckpointTag = _readerStrategy.PositionTagger.MakeZeroCheckpointTag();
-            var projectionProcessingPhase = new ProjectionProcessingPhase(
-                coreProjection, projectionCorrelationId, publisher, projectionConfig, updateStatistics,
-                projectionStateHandler, partitionStateCache, _definesStateTransform, name, logger, zeroCheckpointTag,
-                resultEmitter, checkpointManager, statePartitionSelector, this);
-            return projectionProcessingPhase;
         }
     }
 }

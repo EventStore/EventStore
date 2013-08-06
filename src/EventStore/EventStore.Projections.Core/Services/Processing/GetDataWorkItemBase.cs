@@ -37,13 +37,13 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly IEnvelope _envelope;
         protected Guid _correlationId;
         protected Guid _projectionId;
-        private readonly IProjectionPhaseEventProcessor _projection;
+        private readonly IEventProcessingProjectionPhase _projection;
         private PartitionStateCache _partitionStateCache;
         private PartitionState _state;
         private CheckpointTag _lastProcessedCheckpointTag;
 
         protected GetDataWorkItemBase(
-            IEnvelope envelope, Guid correlationId, Guid projectionId, IProjectionPhaseEventProcessor projection,
+            IEnvelope envelope, Guid correlationId, Guid projectionId, IEventProcessingProjectionPhase projection,
             PartitionStateCache partitionStateCache, string partition)
             : base(null)
         {

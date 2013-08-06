@@ -128,7 +128,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 IProjectionStateHandler stateHandler = message.HandlerFactory();
                 // constructor can fail if wrong source definition
                 ProjectionSourceDefinition sourceDefinition;
-                var projection = CoreProjection.CreateAndPrepare(
+                var projection = ProjectionProcessingStrategy.CreateAndPrepare(
                     message.Name, message.Version, message.ProjectionId, _publisher, stateHandler, message.Config,
                     _ioDispatcher, _subscriptionDispatcher, _logger, _timeProvider,
                     out sourceDefinition);
@@ -150,7 +150,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: factory method can throw!
                 // constructor can fail if wrong source defintion
                 ProjectionSourceDefinition sourceDefinition;
-                var projection = CoreProjection.CreatePrepared(
+                var projection = ProjectionProcessingStrategy.CreatePrepared(
                     message.Name, message.Version, message.ProjectionId, _publisher, message.SourceDefinition, message.Config,
                     _ioDispatcher, _subscriptionDispatcher, _logger, _timeProvider, out sourceDefinition);
                 _projections.Add(message.ProjectionId, projection);

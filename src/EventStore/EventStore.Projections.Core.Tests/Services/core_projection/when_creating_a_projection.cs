@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void a_null_name_throws_argument_null_excveption()
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
-            CoreProjection.CreateAndPrepare(null, new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler, _defaultProjectionConfig,
+            ProjectionProcessingStrategy.CreateAndPrepare(null, new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler, _defaultProjectionConfig,
                                          _ioDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
         }
 
@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void an_empty_name_throws_argument_exception()
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
-            CoreProjection.CreateAndPrepare("", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler, _defaultProjectionConfig,
+            ProjectionProcessingStrategy.CreateAndPrepare("", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), projectionStateHandler, _defaultProjectionConfig,
                                          _ioDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
         }
 
@@ -88,14 +88,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void a_null_publisher_throws_exception()
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
-            CoreProjection.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), null, projectionStateHandler, _defaultProjectionConfig,
+            ProjectionProcessingStrategy.CreateAndPrepare("projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), null, projectionStateHandler, _defaultProjectionConfig,
                                          _ioDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void a_null_projection_handler_throws_argument_null_exception()
         {
-            CoreProjection.CreateAndPrepare(
+            ProjectionProcessingStrategy.CreateAndPrepare(
                 "projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(), null,
                 _defaultProjectionConfig, _ioDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
         }
@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void a_negative_checkpoint_handled_interval_throws_argument_out_of_range_exception()
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
-            CoreProjection.CreateAndPrepare(
+            ProjectionProcessingStrategy.CreateAndPrepare(
                 "projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(),
                 projectionStateHandler, new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false),
                 _ioDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
@@ -114,7 +114,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void a_zero_checkpoint_handled_threshold_throws_argument_out_of_range_exception()
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
-            CoreProjection.CreateAndPrepare(
+            ProjectionProcessingStrategy.CreateAndPrepare(
                 "projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(),
                 projectionStateHandler, new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false),
                 _ioDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
@@ -125,7 +125,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             )
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
-            CoreProjection.CreateAndPrepare(
+            ProjectionProcessingStrategy.CreateAndPrepare(
                 "projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(),
                 projectionStateHandler, new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false),
                 _ioDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
@@ -135,7 +135,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void a_null_io_dispatcher__throws_argument_null_exception()
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
-            CoreProjection.CreateAndPrepare(
+            ProjectionProcessingStrategy.CreateAndPrepare(
                 "projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(),
                 projectionStateHandler, _defaultProjectionConfig, null, _subscriptionDispatcher, null,
                 new RealTimeProvider());
@@ -145,7 +145,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void a_null_subscription_dispatcher__throws_argument_null_exception()
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
-            CoreProjection.CreateAndPrepare(
+            ProjectionProcessingStrategy.CreateAndPrepare(
                 "projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(),
                 projectionStateHandler, _defaultProjectionConfig, _ioDispatcher, null, null, new RealTimeProvider());
         }
@@ -154,7 +154,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void a_null_time_provider__throws_argument_null_exception()
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
-            CoreProjection.CreateAndPrepare(
+            ProjectionProcessingStrategy.CreateAndPrepare(
                 "projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), new FakePublisher(),
                 projectionStateHandler, _defaultProjectionConfig, _ioDispatcher, _subscriptionDispatcher, null, null);
         }

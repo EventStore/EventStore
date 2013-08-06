@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(_ioDispatcher);
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             _projectionConfig = new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false);
-            _coreProjection = CoreProjection.CreateAndPrepare(
+            _coreProjection = ProjectionProcessingStrategy.CreateAndPrepare(
                 "projection", new ProjectionVersion(1, 0, 0), Guid.NewGuid(), _bus, projectionStateHandler,
                 _projectionConfig, _ioDispatcher, _subscriptionDispatcher, null, new RealTimeProvider());
             _coreProjection.Start();

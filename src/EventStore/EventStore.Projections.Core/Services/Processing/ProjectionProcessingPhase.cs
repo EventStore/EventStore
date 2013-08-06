@@ -32,7 +32,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionProcessingPhase : IProjectionPhaseEventProcessor, IProjectionProcessingPhase
+    public class EventProcessingProjectionProcessingPhase : IEventProcessingProjectionPhase, IProjectionProcessingPhase
     {
         private readonly ICoreProjectionForProcessingPhase _coreProjection;
         private readonly Guid _projectionCorrelationId;
@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly StatePartitionSelector _statePartitionSelector;
         private CheckpointStrategy _checkpointStrategy;
 
-        public ProjectionProcessingPhase(
+        public EventProcessingProjectionProcessingPhase(
             CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
             ProjectionConfig projectionConfig, Action updateStatistics, IProjectionStateHandler projectionStateHandler,
             PartitionStateCache partitionStateCache, bool definesStateTransform, string projectionName, ILogger logger,
@@ -205,6 +205,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
         {
             _processingQueue.InitializeQueue(checkpointTag);
+            NewCheckpointStarted(checkpointTag);
         }
 
         public void Subscribed(Guid subscriptionId)
@@ -557,6 +558,11 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             info.Status = info.Status + GetStatus();
             info.BufferedEvents += GetBufferedEventCount();
+        }
+
+        public IReaderStrategy ReaderStrategy
+        {
+            get { return _checkpointStrategy.ReaderStrategy; }
         }
     }
 }

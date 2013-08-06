@@ -16,7 +16,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         void Initialize();
         void InitializeFromCheckpoint(CheckpointTag checkpointTag);
-        void NewCheckpointStarted(CheckpointTag checkpointTag);
 
         void ProcessEvent();
 
@@ -29,5 +28,6 @@ namespace EventStore.Projections.Core.Services.Processing
         void SetFaulted();
 
         void GetStatistics(ProjectionStatistics info);
+        IReaderStrategy ReaderStrategy { get; }
     }
 }

@@ -35,12 +35,12 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly EventReaderSubscriptionMessage.CommittedEventReceived _message;
         private string _partition;
-        private readonly IProjectionPhaseEventProcessor _projection;
+        private readonly IEventProcessingProjectionPhase _projection;
         private readonly StatePartitionSelector _statePartitionSelector;
         private EventProcessedResult _eventProcessedResult;
 
         public CommittedEventWorkItem(
-            IProjectionPhaseEventProcessor projection, EventReaderSubscriptionMessage.CommittedEventReceived message,
+            IEventProcessingProjectionPhase projection, EventReaderSubscriptionMessage.CommittedEventReceived message,
             StatePartitionSelector statePartitionSelector)
             : base(null)
         {
