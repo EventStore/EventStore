@@ -258,8 +258,8 @@ namespace EventStore.Projections.Core.Services.Processing
             var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
 
             return new MultiStreamEventReader(
-                publisher, eventReaderId, _runAs, streams.ToArray(), nextPositions, resolveLinkTos, _timeProvider,
-                stopOnEof, stopAfterNEvents);
+                publisher, eventReaderId, _runAs, Phase, 
+                streams.ToArray(), nextPositions, resolveLinkTos, _timeProvider, stopOnEof, stopAfterNEvents);
         }
     }
 }

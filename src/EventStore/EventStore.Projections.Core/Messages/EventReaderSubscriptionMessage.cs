@@ -119,14 +119,16 @@ namespace EventStore.Projections.Core.Messages
                 ResolvedEvent data, Guid subscriptionId, long subscriptionMessageSequenceNumber)
             {
                 return new CommittedEventReceived(
-                    subscriptionId, null, data, 77.7f, subscriptionMessageSequenceNumber);
+                    subscriptionId, 0, null, data, 77.7f, subscriptionMessageSequenceNumber);
             }
 
             private readonly ResolvedEvent _data;
 
             private readonly string _eventCategory;
 
-            private CommittedEventReceived(Guid subscriptionId, CheckpointTag checkpointTag, string eventCategory, ResolvedEvent data, float progress, long subscriptionMessageSequenceNumber, object source)
+            private CommittedEventReceived(
+                Guid subscriptionId, CheckpointTag checkpointTag, string eventCategory, ResolvedEvent data,
+                float progress, long subscriptionMessageSequenceNumber, object source)
                 : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber, source)
             {
                 if (data == null) throw new ArgumentNullException("data");
@@ -135,11 +137,11 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private CommittedEventReceived(
-                Guid subscriptionId, string eventCategory, ResolvedEvent data, float progress,
+                Guid subscriptionId, int phase, string eventCategory, ResolvedEvent data, float progress,
                 long subscriptionMessageSequenceNumber)
                 : this(
                     subscriptionId,
-                    CheckpointTag.FromPosition(0, data.Position.CommitPosition, data.Position.PreparePosition),
+                    CheckpointTag.FromPosition(phase, data.Position.CommitPosition, data.Position.PreparePosition),
                     eventCategory, data, progress, subscriptionMessageSequenceNumber, null)
             {
             }

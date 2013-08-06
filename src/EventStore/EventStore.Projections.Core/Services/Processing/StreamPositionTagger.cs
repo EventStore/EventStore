@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override CheckpointTag MakeZeroCheckpointTag()
         {
-            return CheckpointTag.FromStreamPosition(0, _stream, -1);
+            return CheckpointTag.FromStreamPosition(Phase, _stream, -1);
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
