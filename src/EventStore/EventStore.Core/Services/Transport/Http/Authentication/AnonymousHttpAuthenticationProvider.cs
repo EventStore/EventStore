@@ -26,13 +26,21 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
+using EventStore.Core.Services.Transport.Http.Messages;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    public abstract class PasswordHashAlgorithm
+    public class AnonymousHttpAuthenticationProvider : HttpAuthenticationProvider
     {
-        public abstract void Hash(string password, out string hash, out string salt);
-        public abstract bool Verify(string password, string hash, string salt);
+        public override bool Authenticate(IncomingHttpRequestMessage message)
+        {
+            var entity = message.Entity;
+            if (entity.User == null)
+            {
+                Authenticated(message, user: null);
+                return true;
+            }
+            return false;
+        }
     }
 }

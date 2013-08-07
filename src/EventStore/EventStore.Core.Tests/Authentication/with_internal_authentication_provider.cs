@@ -24,17 +24,15 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
 using System;
 using System.Security.Principal;
+using EventStore.Core.Authentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.Tests.Services.Transport.Http.Authentication;
 
-namespace EventStore.Core.Tests.Services.Authentication
+namespace EventStore.Core.Tests.Authentication
 {
     public class with_internal_authentication_provider : TestFixtureWithExistingEvents
     {
@@ -51,19 +49,18 @@ namespace EventStore.Core.Tests.Services.Authentication
             _bus.Subscribe(_ioDispatcher);
 
             PasswordHashAlgorithm passwordHashAlgorithm = new StubPasswordHashAlgorithm();
-            _internalAuthenticationProvider = new InternalAuthenticationProvider(this._ioDispatcher, passwordHashAlgorithm, 1000);
+            _internalAuthenticationProvider = new InternalAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm, 1000);
             _bus.Subscribe(_internalAuthenticationProvider);
         }
     }
 
-    class TestAuthenticationRequest : InternalAuthenticationProvider.AuthenticationRequest
+    class TestAuthenticationRequest : AuthenticationRequest
     {
         private readonly Action _unauthorized;
         private readonly Action<IPrincipal> _authenticated;
         private readonly Action _error;
 
-        public TestAuthenticationRequest(
-            string name, string suppliedPassword, Action unauthorized, Action<IPrincipal> authenticated, Action error)
+        public TestAuthenticationRequest(string name, string suppliedPassword, Action unauthorized, Action<IPrincipal> authenticated, Action error)
             : base(name, suppliedPassword)
         {
             _unauthorized = unauthorized;

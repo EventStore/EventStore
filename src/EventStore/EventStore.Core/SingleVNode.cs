@@ -24,13 +24,13 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using EventStore.Common.Log;
+using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Helpers;
@@ -244,13 +244,13 @@ namespace EventStore.Core
             });
 
             // HTTP
-            var authenticationProviders = new List<AuthenticationProvider>
+            var httpAuthenticationProviders = new List<HttpAuthenticationProvider>
             {
                 new BasicHttpAuthenticationProvider(internalAuthenticationProvider),
             };
             if (_settings.EnableTrustedAuth)
-                authenticationProviders.Add(new TrustedAuthenticationProvider());
-            authenticationProviders.Add(new AnonymousAuthenticationProvider());
+                httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
+            httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
 
             var httpPipe = new HttpMessagePipe();
             var httpSendService = new HttpSendService(httpPipe, forwardRequests: false);
@@ -280,7 +280,7 @@ namespace EventStore.Core
 
             SubscribeWorkers(bus =>
             {
-                HttpService.CreateAndSubscribePipeline(bus, authenticationProviders.ToArray());
+                HttpService.CreateAndSubscribePipeline(bus, httpAuthenticationProviders.ToArray());
             });
 
             // REQUEST MANAGEMENT

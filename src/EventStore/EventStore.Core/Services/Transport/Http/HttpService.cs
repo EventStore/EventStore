@@ -78,12 +78,12 @@ namespace EventStore.Core.Services.Transport.Http
             _server.RequestReceived += RequestReceived;
         }
 
-        public static void CreateAndSubscribePipeline(IBus bus, AuthenticationProvider[] authenticationProviders)
+        public static void CreateAndSubscribePipeline(IBus bus, HttpAuthenticationProvider[] httpAuthenticationProviders)
         {
-            Ensure.NotNull(authenticationProviders, "authenticationProviders");
+            Ensure.NotNull(httpAuthenticationProviders, "httpAuthenticationProviders");
 
             var requestProcessor = new AuthenticatedHttpRequestProcessor();
-            var requestAuthenticationManager = new IncomingHttpRequestAuthenticationManager(authenticationProviders);
+            var requestAuthenticationManager = new IncomingHttpRequestAuthenticationManager(httpAuthenticationProviders);
 
 // ReSharper disable RedundantTypeArgumentsOfMethod
             bus.Subscribe<IncomingHttpRequestMessage>(requestAuthenticationManager);

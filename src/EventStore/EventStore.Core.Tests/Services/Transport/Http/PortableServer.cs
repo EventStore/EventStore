@@ -80,11 +80,11 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                 var pipelineBus = InMemoryBus.CreateTest();
                 var queue = new QueuedHandlerThreadPool(pipelineBus, "Test", true, TimeSpan.FromMilliseconds(50));
                 _multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[]{queue}, null);
-                var authenticationProviders = new AuthenticationProvider[] {new AnonymousAuthenticationProvider()};
+                var httpAuthenticationProviders = new HttpAuthenticationProvider[] {new AnonymousHttpAuthenticationProvider()};
 
                 _service = new HttpService(ServiceAccessibility.Private, _bus, new NaiveUriRouter(),
                                            _multiQueuedHandler, _serverEndPoint.ToHttpUrl());
-                HttpService.CreateAndSubscribePipeline(pipelineBus, authenticationProviders);
+                HttpService.CreateAndSubscribePipeline(pipelineBus, httpAuthenticationProviders);
                 _client = new HttpAsyncClient();
             }
 

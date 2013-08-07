@@ -24,16 +24,16 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+
 using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Transport.Tcp;
 
 namespace EventStore.Core.Services.Transport.Tcp
@@ -65,7 +65,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly Func<Guid, IPEndPoint, ITcpDispatcher> _dispatcherFactory;
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _heartbeatTimeout;
-        private readonly InternalAuthenticationProvider _authProvider;
+        private readonly IAuthenticationProvider _authProvider;
         private readonly X509Certificate _certificate;
 
         public TcpService(IPublisher publisher,
@@ -76,7 +76,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                           ITcpDispatcher dispatcher,
                           TimeSpan heartbeatInterval,
                           TimeSpan heartbeatTimeout,
-                          InternalAuthenticationProvider authProvider,
+                          IAuthenticationProvider authProvider,
                           X509Certificate certificate)
             : this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher, 
                    heartbeatInterval, heartbeatTimeout, authProvider, certificate)
@@ -91,7 +91,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                           Func<Guid, IPEndPoint, ITcpDispatcher> dispatcherFactory,
                           TimeSpan heartbeatInterval,
                           TimeSpan heartbeatTimeout,
-                          InternalAuthenticationProvider authProvider,
+                          IAuthenticationProvider authProvider,
                           X509Certificate certificate)
         {
             Ensure.NotNull(publisher, "publisher");
