@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected FakeProjectionStateHandler _stateHandler;
         protected int _checkpointHandledThreshold = 5;
         protected int _checkpointUnhandledBytesThreshold = 10000;
-        protected Action<QuerySourceProcessingStrategyBuilder> _configureBuilderByQuerySource = null;
+        protected Action<SourceDefinitionBuilder> _configureBuilderByQuerySource = null;
         protected Guid _projectionCorrelationId;
         private bool _createTempStreams = false;
         private bool _stopOnEof = false;

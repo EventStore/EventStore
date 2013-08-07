@@ -110,12 +110,6 @@ namespace EventStore.Projections.Core.Services.v8
                         emittedEvent.GetExtraMetadata(), _eventPosition, expectedTag: null)));
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
-        {
-            var sourcesDefinition = GetQuerySourcesDefinition();
-            sourcesDefinition.ConfigureSourceProcessingStrategy(builder);
-        }
-
         private QuerySourcesDefinition GetQuerySourcesDefinition()
         {
             CheckDisposed();

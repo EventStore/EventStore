@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Runtime.Serialization;
 using EventStore.Projections.Core.Messages;
 
@@ -28,7 +29,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public string[] Streams { get; set; }
 
         [DataMember]
-        public QuerySourceProcessingStrategyBuilder.QuerySourceOptions Options { get; set; }
+        public QuerySourceOptions Options { get; set; }
 
         [DataMember]
         public bool DefinesStateTransform { get; set; }
@@ -80,6 +81,35 @@ namespace EventStore.Projections.Core.Services.Processing
 
         bool IQuerySources.ByStreams {
             get { return ByStream; } 
+        }
+
+        public static ProjectionSourceDefinition From(string name, IQuerySources sources)
+        {
+            var namingBuilder = new ProjectionNamesBuilder(name, sources);
+            return new ProjectionSourceDefinition
+            {
+                AllEvents = sources.AllEvents,
+                AllStreams = sources.AllStreams,
+                ByStream = sources.ByStreams,
+                ByCustomPartitions = sources.ByCustomPartitions,
+                Categories = (sources.Categories ?? new string[0]).ToArray(),
+                Events = (sources.Events ?? new string[0]).ToArray(),
+                Streams = (sources.Streams ?? new string[0]).ToArray(),
+                DefinesStateTransform = sources.DefinesStateTransform,
+                Options = new QuerySourceOptions{
+                    DefinesStateTransform = sources.DefinesStateTransform,
+                    ForceProjectionName = sources.ForceProjectionNameOption,
+                    IncludeLinks = sources.IncludeLinksOption,
+                    PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,
+                    ProcessingLag = sources.ProcessingLagOption.GetValueOrDefault(),
+                    ReorderEvents = sources.ReorderEventsOption,
+                    ResultStreamName = sources.ResultStreamNameOption,
+                },
+                ResultStreamName = namingBuilder.GetResultStreamName(),
+                PartitionResultStreamNamePattern = namingBuilder.GetPartitionResultStreamNamePattern(),
+                PartitionResultCatalogStream = namingBuilder.GetPartitionResultCatalogStreamName(),
+                PartitionCatalogStream = namingBuilder.GetPartitionCatalogStreamName(),
+            };
         }
     }
 }

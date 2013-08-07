@@ -65,10 +65,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
 
         private IReaderStrategy CreateReaderStrategy()
         {
-            var result = new ReaderStrategy.Builder();
+            var result = new SourceDefinitionBuilder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(0, new RealTimeProvider(), runAs: null);
+            return ReaderStrategy.Create(0, result.Build(), new RealTimeProvider(), runAs: null);
         }
     }
 }

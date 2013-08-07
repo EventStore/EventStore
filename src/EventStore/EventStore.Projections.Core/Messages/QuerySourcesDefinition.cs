@@ -26,15 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
+using System.Linq;
 using System.Runtime.Serialization;
-using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
     [DataContract]
-    public class QuerySourcesDefinition : ISourceDefinitionConfigurator, IQuerySources
+    public class QuerySourcesDefinition : IQuerySources
     {
         [DataMember(Name = "allStreams")]
         public bool AllStreams { get; set; }
@@ -96,45 +94,29 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "options")]
         public QuerySourcesDefinitionOptions Options { get; set; }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public static QuerySourcesDefinition From(IQuerySources sources)
         {
-            if (AllStreams)
-                builder.FromAll();
-            else
+            return new QuerySourcesDefinition
             {
-                if (Streams != null)
-                    foreach (var stream in Streams)
-                        builder.FromStream(stream);
-                if (Categories != null)
-                    foreach (var category in Categories)
-                        builder.FromCategory(category);
-            }
-            if (AllEvents)
-                builder.AllEvents();
-            else if (Events != null)
-                foreach (var @event in Events)
-                    builder.IncludeEvent(@event);
-            if (ByStreams)
-                builder.SetByStream();
-            if (ByCustomPartitions)
-                builder.SetByCustomPartitions();
-            if (Options != null)
-            {
-                if (Options.IncludeLinks)
-                    builder.SetIncludeLinks();
-                if (!String.IsNullOrWhiteSpace(Options.ResultStreamName))
-                    builder.SetResultStreamNameOption(Options.ResultStreamName);
-                if (!String.IsNullOrWhiteSpace(Options.PartitionResultStreamNamePattern))
-                    builder.SetPartitionResultStreamNamePatternOption(Options.PartitionResultStreamNamePattern);
-                if (!String.IsNullOrWhiteSpace(Options.ForceProjectionName))
-                    builder.SetForceProjectionName(Options.ForceProjectionName);
-                if (Options.ReorderEvents)
-                    builder.SetReorderEvents(true);
-                if (Options.ProcessingLag != null)
-                    builder.SetProcessingLag(Options.ProcessingLag.GetValueOrDefault());
-            }
-            if (DefinesStateTransform)
-                builder.SetDefinesStateTransform();
+                AllEvents = sources.AllEvents,
+                AllStreams = sources.AllStreams,
+                ByStreams = sources.ByStreams,
+                ByCustomPartitions = sources.ByCustomPartitions,
+                Categories = (sources.Categories ?? new string[0]).ToArray(),
+                Events = (sources.Events ?? new string[0]).ToArray(),
+                Streams = (sources.Streams ?? new string[0]).ToArray(),
+                DefinesStateTransform = sources.DefinesStateTransform,
+                Options =
+                    new QuerySourcesDefinitionOptions
+                    {
+                        ForceProjectionName = sources.ForceProjectionNameOption,
+                        IncludeLinks = sources.IncludeLinksOption,
+                        PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,
+                        ProcessingLag = sources.ProcessingLagOption.GetValueOrDefault(),
+                        ReorderEvents = sources.ReorderEventsOption,
+                        ResultStreamName = sources.ResultStreamNameOption,
+                    }
+            };
         }
     }
 }

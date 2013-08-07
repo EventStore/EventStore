@@ -51,7 +51,7 @@ namespace EventStore.Web.Users
         {
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             builder.FromAll();
             builder.IncludeEvent("$UserCreated");
@@ -108,7 +108,7 @@ namespace EventStore.Web.Users
 
         public IQuerySources GetSourceDefinition()
         {
-            return SourceDefinitionRecorder.From(ConfigureSourceProcessingStrategy);
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
         }
 
     }

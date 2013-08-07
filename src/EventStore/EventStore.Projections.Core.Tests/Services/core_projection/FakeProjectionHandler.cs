@@ -58,12 +58,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private readonly bool _failOnLoad;
         private readonly bool _failOnProcessEvent;
         private readonly bool _failOnGetPartition;
-        private readonly Action<QuerySourceProcessingStrategyBuilder> _configureBuilder;
+        private readonly Action<SourceDefinitionBuilder> _configureBuilder;
 
         public FakeProjectionStateHandler(
             bool failOnInitialize = false, bool failOnLoad = false, bool failOnProcessEvent = false,
             bool failOnGetPartition = true,
-            Action<QuerySourceProcessingStrategyBuilder> configureBuilder = null)
+            Action<SourceDefinitionBuilder> configureBuilder = null)
         {
             _failOnInitialize = failOnInitialize;
             _failOnLoad = failOnLoad;
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _configureBuilder = configureBuilder;
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             if (_configureBuilder != null)
                 _configureBuilder(builder);
@@ -220,7 +220,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         public IQuerySources GetSourceDefinition()
         {
-            return SourceDefinitionRecorder.From(ConfigureSourceProcessingStrategy);
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
         }
 
     }

@@ -233,7 +233,7 @@
     <Compile Include="Services\Processing\ProjectionSourceDefinition.cs" />
     <Compile Include="Services\Processing\ProjectionSubscriptionBase.cs" />
     <Compile Include="Services\Processing\ProjectionVersion.cs" />
-    <Compile Include="Services\Processing\QuerySourceProcessingStrategyBuilder.cs" />
+    <Compile Include="Services\Processing\SourceDefinitionBuilder.cs" />
     <Compile Include="Services\Processing\CheckpointTag.cs" />
     <Compile Include="Services\Processing\EmittedEvent.cs" />
     <Compile Include="Services\Processing\EmittedStream.cs" />
@@ -242,7 +242,6 @@
     <Compile Include="Services\Processing\ReaderSubscriptionOptions.cs" />
     <Compile Include="Services\Processing\ResolvedEvent.cs" />
     <Compile Include="Services\Processing\ResultEmitter.cs" />
-    <Compile Include="Services\Processing\SourceDefinitionRecorder.cs" />
     <Compile Include="Services\Processing\EmittedLinkToWithRecategorization.cs" />
     <Compile Include="Services\Processing\StagedProcessingQueue.cs" />
     <Compile Include="Services\Processing\StatePartitionSelector.cs" />

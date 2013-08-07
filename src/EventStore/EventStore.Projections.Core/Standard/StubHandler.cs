@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Standard
                     "Does not require source");
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             builder.FromAll();
             builder.AllEvents();
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Standard
 
         public IQuerySources GetSourceDefinition()
         {
-            return SourceDefinitionRecorder.From(ConfigureSourceProcessingStrategy);
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
         }
 
     }

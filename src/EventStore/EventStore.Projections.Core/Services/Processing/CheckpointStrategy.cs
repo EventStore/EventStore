@@ -45,30 +45,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IReaderStrategy _readerStrategy;
         internal readonly IPrincipal _runAs;
 
-        public class Builder : QuerySourceProcessingStrategyBuilder
-        {
-            public CheckpointStrategy Build(ProjectionConfig config, IPrincipal runAs, IReaderStrategy readerStrategy)
-            {
-                base.Validate();
-                return new CheckpointStrategy(
-                    _byStream, _byCustomPartitions, config.CheckpointsEnabled, _definesStateTransform, runAs, readerStrategy);
-            }
-
-            public void Validate(ProjectionConfig config)
-            {
-                base.Validate();
-                if (_definesStateTransform && !config.EmitEventEnabled)
-                    throw new InvalidOperationException("transformBy/filterBy requires EmitEventEnabled mode");
-            }
-        }
-
         public static CheckpointStrategy Create(
             int phase, IQuerySources sources, ProjectionConfig config, ITimeProvider timeProvider)
         {
-            var builder = new Builder();
-            builder.Apply(sources);
-            return builder.Build(
-                config, config.RunAs, Processing.ReaderStrategy.Create(phase, sources, timeProvider, config.RunAs));
+            return new CheckpointStrategy(
+                sources.ByStreams, sources.ByCustomPartitions, config.CheckpointsEnabled, sources.DefinesStateTransform,
+                config.RunAs, Processing.ReaderStrategy.Create(phase, sources, timeProvider, config.RunAs));
         }
 
         public bool UseCheckpoints

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -41,7 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private readonly string _name;
-        private readonly QuerySourceProcessingStrategyBuilder.QuerySourceOptions _options;
+        private readonly IQuerySources _sources;
         private readonly string _partitionResultStreamNamePattern;
         private readonly string _resultStreamName;
         private readonly string _partitionCatalogStreamName;
@@ -49,18 +50,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _orderStreamName;
 
         private ProjectionNamesBuilder(string name)
-            : this(name, new QuerySourceProcessingStrategyBuilder.QuerySourceOptions())
+            : this(name, new QuerySourcesDefinition())
         {
         }
 
-        public ProjectionNamesBuilder(string name, QuerySourceProcessingStrategyBuilder.QuerySourceOptions options)
+        public ProjectionNamesBuilder(string name, IQuerySources sources)
         {
             _name = name;
-            _options = options;
-            _partitionResultStreamNamePattern = _options.PartitionResultStreamNamePattern
+            _sources = sources;
+            _partitionResultStreamNamePattern = _sources.PartitionResultStreamNamePatternOption
                                                 ?? ProjectionsStreamPrefix + EffectiveProjectionName + "-{0}"
                                                 + ProjectionsStateStreamSuffix;
-            _resultStreamName = _options.ResultStreamName
+            _resultStreamName = _sources.ResultStreamNameOption
                                 ?? ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionsStateStreamSuffix;
             _partitionCatalogStreamName = ProjectionsStreamPrefix + EffectiveProjectionName
                                           + ProjectionPartitionCatalogStreamSuffix;
@@ -70,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public string EffectiveProjectionName
         {
-            get { return _options.ForceProjectionName ?? _name; }
+            get { return _sources.ForceProjectionNameOption ?? _name; }
         }
 
 
@@ -87,7 +88,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public string GetPartitionResultStreamNamePattern()
         {
-            return _options.PartitionResultStreamNamePattern
+            return _sources.PartitionResultStreamNamePatternOption
                     ?? ProjectionsStreamPrefix + EffectiveProjectionName + "-{0}" + ProjectionsStateStreamSuffix;
         }
 

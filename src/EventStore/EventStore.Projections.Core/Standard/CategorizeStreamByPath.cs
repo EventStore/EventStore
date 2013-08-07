@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Standard
             // we will need to declare event types we are interested in
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             builder.FromAll();
             builder.AllEvents();
@@ -111,7 +111,7 @@ namespace EventStore.Projections.Core.Standard
 
         public IQuerySources GetSourceDefinition()
         {
-            return SourceDefinitionRecorder.From(ConfigureSourceProcessingStrategy);
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
         }
     }
 }

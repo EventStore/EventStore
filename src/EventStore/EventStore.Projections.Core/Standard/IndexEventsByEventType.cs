@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Standard
             _indexCheckpointStream = "$et";
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             builder.FromAll();
             builder.AllEvents();
@@ -116,7 +116,7 @@ namespace EventStore.Projections.Core.Standard
 
         public IQuerySources GetSourceDefinition()
         {
-            return SourceDefinitionRecorder.From(ConfigureSourceProcessingStrategy);
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
         }
 
     }

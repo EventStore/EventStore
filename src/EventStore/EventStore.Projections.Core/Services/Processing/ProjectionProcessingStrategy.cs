@@ -34,15 +34,10 @@ namespace EventStore.Projections.Core.Services.Processing
             PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> subscriptionDispatcher, ITimeProvider timeProvider,
             out ProjectionSourceDefinition preparedSourceDefinition)
         {
-            var s = new SourceDefinition(_sourceDefinition);
-            var builder = new CheckpointStrategy.Builder();
-            s.ConfigureSourceProcessingStrategy(builder);
-            var sourceDefinitionRecorder = new SourceDefinitionRecorder();
-            s.ConfigureSourceProcessingStrategy(sourceDefinitionRecorder);
-            preparedSourceDefinition = sourceDefinitionRecorder.Build(_name);
+            preparedSourceDefinition = ProjectionSourceDefinition.From(_name, _sourceDefinition);
 
 
-            var namingBuilder = new ProjectionNamesBuilder(_name, preparedSourceDefinition.Options);
+            var namingBuilder = new ProjectionNamesBuilder(_name, preparedSourceDefinition);
 
             
             return new CoreProjection(_projectionVersion, projectionCorrelationId, publisher, _stateHandler,

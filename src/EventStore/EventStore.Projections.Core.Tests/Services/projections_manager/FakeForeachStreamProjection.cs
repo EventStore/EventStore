@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             _logger("ConfigureSourceProcessingStrategy(" + builder + ")");
             builder.FromAll();
@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         public IQuerySources GetSourceDefinition()
         {
-            return SourceDefinitionRecorder.From(ConfigureSourceProcessingStrategy);
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
         }
 
     }

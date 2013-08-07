@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected IReaderSubscription _subscription;
         protected IEventReader ForkedReader;
         protected InMemoryBus _bus;
-        protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
+        protected Action<SourceDefinitionBuilder> _source = null;
         protected int _checkpointUnhandledBytesThreshold;
         protected int _checkpointProcessedEventsThreshold;
         protected IReaderStrategy _readerStrategy;
@@ -93,22 +93,18 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
 
         protected virtual CheckpointStrategy CreateCheckpointStrategy()
         {
-            var result = new CheckpointStrategy.Builder();
-            var readerBuilder = new ReaderStrategy.Builder();
+            var readerBuilder = new SourceDefinitionBuilder();
             if (_source != null)
             {
                 _source(readerBuilder);
-                _source(result);
             }
             else
             {
                 readerBuilder.FromAll();
                 readerBuilder.AllEvents();
-                result.FromAll();
-                result.AllEvents();
             }
             var config = ProjectionConfig.GetTest();
-            return result.Build(config, null, readerBuilder.Build(0, new RealTimeProvider(), runAs: null));
+            return CheckpointStrategy.Create(0, readerBuilder.Build(), config, new RealTimeProvider());
         }
     }
 }

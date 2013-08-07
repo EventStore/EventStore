@@ -56,44 +56,55 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly int _phase;
 
-        public class Builder : QuerySourceProcessingStrategyBuilder
-        {
-            public IReaderStrategy Build(int phase, ITimeProvider timeProvider, IPrincipal runAs)
-            {
-                base.Validate();
-                HashSet<string> categories = ToSet(_categories);
-                HashSet<string> streams = ToSet(_streams);
-                bool includeLinks = _options.IncludeLinks;
-                HashSet<string> events = ToSet(_events);
-                bool reorderEvents = _options.ReorderEvents;
-                int processingLag = _options.ProcessingLag;
-                var readerStrategy = new ReaderStrategy(
-                    phase, _allStreams, categories, streams, _allEvents, includeLinks, events, processingLag,
-                    reorderEvents, runAs, timeProvider);
-                return readerStrategy;
-            }
-        }
-
         public static IReaderStrategy Create(
             int phase, IQuerySources sources, ITimeProvider timeProvider, IPrincipal runAs)
         {
-            var builder = new Builder();
-            builder.Apply(sources);
-            return builder.Build(phase, timeProvider, runAs);
+            if (!sources.AllStreams && !sources.HasCategories() && !sources.HasStreams())
+                throw new InvalidOperationException("None of streams and categories are included");
+            if (!sources.AllEvents && !sources.HasEvents())
+                throw new InvalidOperationException("None of events are included");
+            if (sources.HasStreams() && sources.HasCategories())
+                throw new InvalidOperationException(
+                    "Streams and categories cannot be included in a filter at the same time");
+            if (sources.AllStreams && (sources.HasCategories() || sources.HasStreams()))
+                throw new InvalidOperationException("Both FromAll and specific categories/streams cannot be set");
+            if (sources.AllEvents && sources.HasEvents())
+                throw new InvalidOperationException("Both AllEvents and specific event filters cannot be set");
+
+            if (sources.ByStreams && sources.HasStreams())
+                throw new InvalidOperationException("foreachStream projections are not supported on stream based sources");
+            if (sources.ReorderEventsOption)
+            {
+                if (sources.AllStreams)
+                    throw new InvalidOperationException("Event reordering cannot be used with fromAll()");
+                if (!(sources.HasStreams() && sources.Streams.Length > 1))
+                {
+                    throw new InvalidOperationException(
+                        "Event reordering is only available in fromStreams([]) projections");
+                }
+                if (sources.ProcessingLagOption < 50)
+                    throw new InvalidOperationException("Event reordering requires processing lag at least of 50ms");
+            }
+
+            var readerStrategy = new ReaderStrategy(
+                phase, sources.AllStreams, sources.Categories, sources.Streams, sources.AllEvents,
+                sources.IncludeLinksOption, sources.Events, sources.ProcessingLagOption, sources.ReorderEventsOption,
+                runAs, timeProvider);
+            return readerStrategy;
         }
 
         private ReaderStrategy(int phase, 
-            bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, bool includeLinks,
-            HashSet<string> events, int processingLag, bool reorderEvents, IPrincipal runAs, ITimeProvider timeProvider)
+            bool allStreams, string[] categories, string[] streams, bool allEvents, bool includeLinks,
+            string[] events, int? processingLag, bool reorderEvents, IPrincipal runAs, ITimeProvider timeProvider)
         {
             _phase = phase;
             _allStreams = allStreams;
-            _categories = categories;
-            _streams = streams;
+            _categories = categories != null && categories.Length > 0 ? new HashSet<string>(categories) : null;
+            _streams = streams != null && streams.Length > 0 ? new HashSet<string>(streams) : null;
             _allEvents = allEvents;
             _includeLinks = includeLinks;
-            _events = events;
-            _processingLag = processingLag;
+            _events = events != null && events.Length > 0 ? new HashSet<string>(events): null;
+            _processingLag = processingLag.GetValueOrDefault();
             _reorderEvents = reorderEvents;
             _runAs = runAs;
 

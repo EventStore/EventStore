@@ -58,4 +58,25 @@ namespace EventStore.Projections.Core.Messages
 
         int? ProcessingLagOption { get; }
     }
+
+    public static class QuerySourcesExtensions
+    {
+        public static bool HasStreams(this IQuerySources sources)
+        {
+            var streams = sources.Streams;
+            return streams != null && streams.Length > 0;
+        }
+
+        public static bool HasCategories(this IQuerySources sources)
+        {
+            var categories = sources.Categories;
+            return categories != null && categories.Length > 0;
+        }
+
+        public static bool HasEvents(this IQuerySources sources)
+        {
+            var events = sources.Events;
+            return events != null && events.Length > 0;
+        }
+    }
 }

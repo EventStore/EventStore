@@ -32,7 +32,6 @@ using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
@@ -77,54 +76,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _stateHandler = null;
             GC.Collect(2, GCCollectionMode.Forced);
             GC.WaitForPendingFinalizers();
-        }
-    }
-
-    public class SourceRecorder : QuerySourceProcessingStrategyBuilder
-    {
-        public bool AllStreams
-        {
-            get { return _allStreams; }
-        }
-
-        public List<string> Categories
-        {
-            get { return _categories; }
-        }
-
-        public List<string> Streams
-        {
-            get { return _streams; }
-        }
-
-        public bool AllEvents1
-        {
-            get { return _allEvents; }
-        }
-
-        public List<string> Events
-        {
-            get { return _events; }
-        }
-
-        public bool ByStream
-        {
-            get { return _byStream; }
-        }
-
-        public bool ByCustomParititions
-        {
-            get { return _byCustomPartitions; }
-        }
-
-        public bool DefinesStateTransform
-        {
-            get { return _definesStateTransform; }
-        }
-
-        public QuerySourceOptions Options 
-        {
-            get { return _options; }
         }
     }
 }

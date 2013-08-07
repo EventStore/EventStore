@@ -34,11 +34,6 @@ using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEv
 
 namespace EventStore.Projections.Core.Services
 {
-    public interface ISourceDefinitionConfigurator
-    {
-        void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder);
-    }
-
     public interface ISourceDefinitionSource
     {
         IQuerySources GetSourceDefinition();

@@ -25,42 +25,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Management;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class QuerySourceProcessingStrategyBuilder // name it!!
+    public sealed class SourceDefinitionBuilder: IQuerySources // name it!!
     {
-        [DataContract]
-        public class QuerySourceOptions
-        {
-            [DataMember]
-            public string ResultStreamName { get; set; }
-
-            [DataMember]
-            public string PartitionResultStreamNamePattern { get; set; }
-
-            [DataMember]
-            public string ForceProjectionName { get; set; }
-
-            [DataMember]
-            public bool ReorderEvents { get; set; }
-
-            [DataMember]
-            public int ProcessingLag { get; set; }
-
-            [DataMember]
-            public bool DefinesStateTransform { get; set; }
-
-            [DataMember]
-            public bool IncludeLinks { get; set; }
-
-        }
-
         protected readonly QuerySourceOptions _options = new QuerySourceOptions();
         protected bool _allStreams;
         protected List<string> _categories;
@@ -70,14 +44,6 @@ namespace EventStore.Projections.Core.Services.Processing
         protected bool _byStream;
         protected bool _byCustomPartitions;
         protected bool _definesStateTransform;
-
-        public void Apply(IQuerySources definition)
-        {
-            if (definition == null) throw new ArgumentNullException("definition");
-
-            var s = new SourceDefinition(definition);
-            s.ConfigureSourceProcessingStrategy(this);
-        }
 
         public void FromAll()
         {
@@ -132,17 +98,17 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void SetResultStreamNameOption(string resultStreamName)
         {
-            _options.ResultStreamName = string.IsNullOrWhiteSpace(resultStreamName) ? null : resultStreamName;
+            _options.ResultStreamName = String.IsNullOrWhiteSpace(resultStreamName) ? null : resultStreamName;
         }
 
         public void SetPartitionResultStreamNamePatternOption(string partitionResultStreamNamePattern)
         {
-            _options.PartitionResultStreamNamePattern = string.IsNullOrWhiteSpace(partitionResultStreamNamePattern) ? null : partitionResultStreamNamePattern;
+            _options.PartitionResultStreamNamePattern = String.IsNullOrWhiteSpace(partitionResultStreamNamePattern) ? null : partitionResultStreamNamePattern;
         }
 
         public void SetForceProjectionName(string forceProjectionName)
         {
-            _options.ForceProjectionName = string.IsNullOrWhiteSpace(forceProjectionName) ? null : forceProjectionName;
+            _options.ForceProjectionName = String.IsNullOrWhiteSpace(forceProjectionName) ? null : forceProjectionName;
         }
 
         public void SetReorderEvents(bool reorderEvents)
@@ -155,42 +121,120 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.ProcessingLag = processingLag;
         }
 
-        protected HashSet<string> ToSet(IEnumerable<string> list)
+        public bool AllStreams
         {
-            if (list == null)
-                return null;
-            return new HashSet<string>(list);
+            get { return _allStreams; }
         }
 
-        protected void Validate()
+        public string[] Categories
         {
-            if (!_allStreams && _categories == null && _streams == null)
-                throw new InvalidOperationException("None of streams and categories are included");
-            if (!_allEvents && _events == null)
-                throw new InvalidOperationException("None of events are included");
-            if (_streams != null && _categories != null)
-                throw new InvalidOperationException(
-                    "Streams and categories cannot be included in a filter at the same time");
-            if (_allStreams && (_categories != null || _streams != null))
-                throw new InvalidOperationException("Both FromAll and specific categories/streams cannot be set");
-            if (_allEvents && _events != null)
-                throw new InvalidOperationException("Both AllEvents and specific event filters cannot be set");
+            get { return _categories != null ? _categories.ToArray() : null; }
+        }
 
-            if (_byStream && _streams != null)
-                throw new InvalidOperationException("foreachStream projections are not supported on stream based sources");
-            if (_options.ReorderEvents)
+        public string[] Streams
+        {
+            get { return _streams != null ? _streams.ToArray() : null; }
+        }
+
+        bool IQuerySources.AllEvents
+        {
+            get
             {
-                if (_allStreams)
-                    throw new InvalidOperationException("Event reordering cannot be used with fromAll()");
-                if (!(_streams != null && _streams.Count > 1))
-                {
-                    throw new InvalidOperationException(
-                        "Event reordering is only available in fromStreams([]) projections");
-                }
-                if (_options.ProcessingLag < 50)
-                    throw new InvalidOperationException("Event reordering requires processing lag at least of 50ms");
+                return _allEvents;
             }
         }
+
+        public string[] Events
+        {
+            get
+            {
+                return _events != null ? _events.ToArray() : null; }
+        }
+
+        public bool ByStreams
+        {
+            get { return _byStream; }
+        }
+
+        public bool ByCustomPartitions
+        {
+            get { return _byCustomPartitions; }
+        }
+
+        public bool DefinesStateTransform
+        {
+            get { return _definesStateTransform; }
+        }
+
+        public bool IncludeLinksOption
+        {
+            get { return _options.IncludeLinks; }
+        }
+
+        public string ResultStreamNameOption
+        {
+            get
+            {
+                return _options.ResultStreamName;
+            }
+        }
+
+        public string PartitionResultStreamNamePatternOption
+        {
+            get { return _options.PartitionResultStreamNamePattern; }
+        }
+
+        public string ForceProjectionNameOption
+        {
+            get { return _options.ForceProjectionName; }
+        }
+
+        public bool ReorderEventsOption
+        {
+            get { return _options.ReorderEvents; }
+        }
+
+        public int? ProcessingLagOption
+        {
+            get { return _options.ProcessingLag; }
+        }
+
+        public static IQuerySources From(Action<SourceDefinitionBuilder> configure)
+        {
+            var b = new SourceDefinitionBuilder();
+            configure(b);
+            return b.Build();
+        }
+
+        public IQuerySources Build()
+        {
+            return QuerySourcesDefinition.From(this);
+        }
+    }
+
+    [DataContract]
+    public class QuerySourceOptions
+    {
+        [DataMember]
+        public string ResultStreamName { get; set; }
+
+        [DataMember]
+        public string PartitionResultStreamNamePattern { get; set; }
+
+        [DataMember]
+        public string ForceProjectionName { get; set; }
+
+        [DataMember]
+        public bool ReorderEvents { get; set; }
+
+        [DataMember]
+        public int ProcessingLag { get; set; }
+
+        [DataMember]
+        public bool DefinesStateTransform { get; set; }
+
+        [DataMember]
+        public bool IncludeLinks { get; set; }
 
     }
 }
