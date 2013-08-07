@@ -56,13 +56,14 @@ namespace EventStore.Core.Index
         private static readonly ILogger Log = LogManager.GetLoggerFor<PTable>();
 
         public Guid Id { get { return _id; } }
-        public int Count { get { return (int)(_size / IndexEntrySize); } }
+        public int Count { get { return _count; } }
         public string Filename { get { return _filename; } }
 
         private readonly Guid _id;
         private readonly string _filename;
-        private readonly long _size;
+        private readonly int _count;
         private readonly Midpoint[] _midpoints;
+        private readonly ulong _minEntry, _maxEntry;
         private readonly ObjectPool<WorkItem> _workItems;
 
         private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
@@ -85,10 +86,10 @@ namespace EventStore.Core.Index
             _id = id;
             _filename = filename;
 
-            var sw = Stopwatch.StartNew();
             Log.Trace("Loading PTable '{0}' started...", Filename);
+            var sw = Stopwatch.StartNew();
             
-            _size = new FileInfo(_filename).Length - PTableHeader.Size - MD5Size;
+            _count = (int)((new FileInfo(_filename).Length - PTableHeader.Size - MD5Size) / IndexEntrySize);
             File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
 
             _workItems = new ObjectPool<WorkItem>(string.Format("PTable {0} work items", _id),
@@ -105,6 +106,17 @@ namespace EventStore.Core.Index
                 var header = PTableHeader.FromStream(readerWorkItem.Stream);
                 if (header.Version != Version)
                     throw new CorruptIndexException(new WrongFileVersionException(_filename, header.Version, Version));
+
+                if (Count == 0)
+                {
+                    _minEntry = ulong.MaxValue;
+                    _maxEntry = ulong.MinValue;
+                }
+                else
+                {
+                    _minEntry = ReadEntry(Count - 1, readerWorkItem).Key;
+                    _maxEntry = ReadEntry(0, readerWorkItem).Key;
+                }
             }
             catch (Exception)
             {
@@ -266,7 +278,8 @@ namespace EventStore.Core.Index
             var startKey = BuildKey(stream, startNumber);
             var endKey = BuildKey(stream, endNumber);
 
-            if (_midpoints != null && (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key))
+            //if (_midpoints != null && (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key))
+            if (startKey > _maxEntry || endKey < _minEntry)
                 return false;
 
             var workItem = GetWorkItem();
@@ -287,7 +300,8 @@ namespace EventStore.Core.Index
                 }
 
                 var candEntry = ReadEntry(high, workItem);
-                Debug.Assert(candEntry.Key <= endKey);
+                if (candEntry.Key > endKey)
+                    throw new Exception(string.Format("candEntry.Key {0} > startKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", candEntry.Key, startKey, stream, startNumber, endNumber, Filename));
                 if (candEntry.Key < startKey)
                     return false;
                 entry = candEntry;
@@ -308,7 +322,8 @@ namespace EventStore.Core.Index
             var startKey = BuildKey(stream, startNumber);
             var endKey = BuildKey(stream, endNumber);
 
-            if (_midpoints != null && (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key))
+            //if (_midpoints != null && (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key))
+            if (startKey > _maxEntry || endKey < _minEntry)
                 return result;
 
             var workItem = GetWorkItem();
@@ -327,9 +342,10 @@ namespace EventStore.Core.Index
                         low = mid + 1;
                 }
                 
+                PositionAtEntry(high, workItem);
                 for (int i=high, n=Count; i<n; ++i)
                 {
-                    IndexEntry entry = ReadEntry(i, workItem);
+                    IndexEntry entry = ReadNextNoSeek(workItem);
                     if (entry.Key > endKey) 
                         throw new Exception(string.Format("enty.Key {0} > endKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", entry.Key, endKey, stream, startNumber, endNumber, Filename));
                     if (entry.Key < startKey)
@@ -387,6 +403,11 @@ namespace EventStore.Core.Index
                     l = m + 1;
             }
             return r;
+        }
+
+        private static void PositionAtEntry(int indexNum, WorkItem workItem)
+        {
+            workItem.Stream.Seek(IndexEntrySize * (long)indexNum + PTableHeader.Size, SeekOrigin.Begin);
         }
 
         private static IndexEntry ReadEntry(int indexNum, WorkItem workItem)
