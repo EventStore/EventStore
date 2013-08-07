@@ -437,43 +437,61 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         // WARNING CacheInMemory/UncacheFromMemory should not be called simultaneously !!!
         public void CacheInMemory()
         {
-            if (Interlocked.CompareExchange(ref _isCached, 1, 0) == 0)
+            if (Interlocked.CompareExchange(ref _isCached, 1, 0) != 0)
+                return;
+
+            // we won the right to cache
+            var sw = Stopwatch.StartNew();
+            try
             {
-                // we won the right to cache
-                var sw = Stopwatch.StartNew();
-
-                try
-                {
-                    BuildCacheArray();
-                }
-                catch (OutOfMemoryException)
-                {
-                    Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk #{0}-{1} at {2}.",
-                              _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
-                    _isCached = 0;
-                    return;
-                }
-                catch (FileBeingDeletedException)
-                {
-                    Log.Debug("CACHING FAILED due to FileBeingDeleted exception (TFChunk is being disposed) in TFChunk #{0}-{1} at {2}.",
-                              _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
-                    _isCached = 0;
-                    return;
-                }
-
-                BuildCacheReaders();
-                _readSide.Uncache();
-
-                var writerWorkItem = _writerWorkItem;
-                if (writerWorkItem != null)
-                {
-                    writerWorkItem.UnmanagedMemoryStream =
-                        new UnmanagedMemoryStream((byte*) _cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite);
-                }
-
-                Log.Trace("CACHED TFChunk #{0}-{1} ({2}) in {3}.", 
-                          _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename), sw.Elapsed);
+                BuildCacheArray();
             }
+            catch (OutOfMemoryException)
+            {
+                Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk #{0}-{1} at {2}.",
+                          _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
+                _isCached = 0;
+                return;
+            }
+            catch (FileBeingDeletedException)
+            {
+                Log.Debug("CACHING FAILED due to FileBeingDeleted exception (TFChunk is being disposed) in TFChunk #{0}-{1} at {2}.",
+                          _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
+                _isCached = 0;
+                return;
+            }
+
+            Interlocked.Add(ref _memStreamCount, _maxReaderCount);
+            if (_selfdestructin54321)
+            {
+                if (Interlocked.Add(ref _memStreamCount, -_maxReaderCount) == 0)
+                    FreeCachedData();
+                Log.Trace("CACHING ABORTED for TFChunk #{0}-{1} ({2}) as TFChunk was probably marked for deletion.",
+                          _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
+                return;
+            }
+
+            var writerWorkItem = _writerWorkItem;
+            if (writerWorkItem != null)
+            {
+                writerWorkItem.UnmanagedMemoryStream =
+                    new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite);
+            }
+
+            for (int i = 0; i < _maxReaderCount; i++)
+            {
+                var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
+                var reader = new BinaryReader(stream);
+                _memStreams.Enqueue(new ReaderWorkItem(stream, reader, isMemory: true));
+            }
+
+            _readSide.Uncache();
+
+            Log.Trace("CACHED TFChunk #{0}-{1} ({2}) in {3}.",
+                      _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename), sw.Elapsed);
+
+            if (_selfdestructin54321)
+                TryDestructMemStreams();
         }
 
         private void BuildCacheArray()
@@ -807,6 +825,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private void TryDestructMemStreams()
         {
+            var writerWorkItem = _writerWorkItem;
+            var unmanagedStream = writerWorkItem == null ? null : writerWorkItem.UnmanagedMemoryStream;
+            if (unmanagedStream != null)
+            {
+                unmanagedStream.Dispose();
+                writerWorkItem.UnmanagedMemoryStream = null;
+            }
+
             int memStreamCount = int.MaxValue;
 
             ReaderWorkItem workItem;
