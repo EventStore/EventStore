@@ -27,6 +27,7 @@
 //  
 
 using System;
+using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -53,6 +54,11 @@ namespace EventStore.Core.Tests.TransactionLog
         }
 
         public void Commit(CommitLogRecord record)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Commit(List<PrepareLogRecord> commitedPrepares)
         {
             throw new NotImplementedException();
         }
@@ -108,6 +114,11 @@ namespace EventStore.Core.Tests.TransactionLog
         }
 
         public CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition)
+        {
+            throw new NotImplementedException();
+        }
+
+        public CommitCheckResult CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds)
         {
             throw new NotImplementedException();
         }

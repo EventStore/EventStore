@@ -41,7 +41,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
         TransactionEnd = 0x04,            // prepare ends transaction
         StreamDelete = 0x08,              // prepare deletes stream
 
-        //IsCommited = 0x20,              // prepare should be considered committed immediately, no commit will follow in TF
+        IsCommited = 0x20,              // prepare should be considered committed immediately, no commit will follow in TF
         //Update = 0x30,                  // prepare updates previous instance of the same event, DANGEROUS!
 
         IsJson = 0x100,                   // indicates data & metadata are valid json

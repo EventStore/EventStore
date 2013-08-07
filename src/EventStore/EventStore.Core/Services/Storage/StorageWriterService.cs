@@ -28,6 +28,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -260,6 +261,13 @@ namespace EventStore.Core.Services.Storage
                 if (message.LiveUntil < DateTime.UtcNow)
                     return;
 
+                var commitCheck = ReadIndex.CheckCommit(message.EventStreamId, message.ExpectedVersion, message.Events.Select(x => x.EventId));
+                if (commitCheck.Decision != CommitDecision.Ok)
+                {
+                    ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
+                    return;
+                }
+                var prepares = new List<PrepareLogRecord>();
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
                 if (message.Events.Length > 0)
                 {
@@ -267,7 +275,7 @@ namespace EventStore.Core.Services.Storage
                     for (int i = 0; i < message.Events.Length; ++i)
                     {
                         var evnt = message.Events[i];
-                        var flags = PrepareFlags.Data;
+                        var flags = PrepareFlags.Data | PrepareFlags.IsCommited;
                         if (i == 0)
                             flags |= PrepareFlags.TransactionBegin;
                         if (i == message.Events.Length - 1)
@@ -276,36 +284,29 @@ namespace EventStore.Core.Services.Storage
                             flags |= PrepareFlags.IsJson;
 
                         var expectedVersion = i == 0 ? message.ExpectedVersion : ExpectedVersion.Any;
-                        var res = WritePrepareWithRetry(LogRecord.Prepare(logPosition,
-                                                                          message.CorrelationId,
-                                                                          evnt.EventId,
-                                                                          transactionPosition,
-                                                                          i,
-                                                                          message.EventStreamId,
-                                                                          expectedVersion,
-                                                                          flags,
-                                                                          evnt.EventType,
-                                                                          evnt.Data,
-                                                                          evnt.Metadata));
+                        var eventNumber = commitCheck.CurrentVersion + 1 + i;
+                        var res = WritePrepareWithRetry(
+                            LogRecord.Prepare(logPosition, message.CorrelationId, evnt.EventId,
+                                              /* when IsCommited, transaction offset is REALLY absolute eventNumber! */
+                                              transactionPosition, eventNumber,
+                                              message.EventStreamId, expectedVersion, flags,
+                                              evnt.EventType, evnt.Data, evnt.Metadata));
                         logPosition = res.NewPos;
                         if (i == 0)
                             transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
+                        prepares.Add(res.Prepare);
                     }
                 }
                 else
                 {
-                    WritePrepareWithRetry(LogRecord.Prepare(logPosition,
-                                                            message.CorrelationId,
-                                                            Guid.NewGuid(),
-                                                            logPosition,
-                                                            -1,
-                                                            message.EventStreamId,
-                                                            message.ExpectedVersion,
-                                                            PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                                            null,
-                                                            Empty.ByteArray,
-                                                            Empty.ByteArray));
+                    var res = WritePrepareWithRetry(
+                        LogRecord.Prepare(logPosition, message.CorrelationId, Guid.NewGuid(), logPosition, -1,
+                                          message.EventStreamId, message.ExpectedVersion,
+                                          PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommited,
+                                          null, Empty.ByteArray, Empty.ByteArray));
+                    prepares.Add(res.Prepare);
                 }
+                ReadIndex.Commit(prepares);
             }
             catch (Exception exc)
             {
@@ -418,7 +419,7 @@ namespace EventStore.Core.Services.Storage
             }
         }
 
-        private bool CheckTransactionInfo(long transactionId, TransactionInfo transactionInfo)
+        private static bool CheckTransactionInfo(long transactionId, TransactionInfo transactionInfo)
         {
             if (transactionInfo.TransactionOffset < -1 || transactionInfo.EventStreamId.IsEmptyString())
             {
@@ -439,40 +440,15 @@ namespace EventStore.Core.Services.Storage
             {
                 var commitPos = Writer.Checkpoint.ReadNonFlushed();
                 var result = ReadIndex.CheckCommitStartingAt(message.TransactionPosition, commitPos);
-                switch (result.Decision)
+                if (result.Decision == CommitDecision.Ok)
                 {
-                    case CommitDecision.Ok:
-                    {
-                        var commit = WriteCommitWithRetry(LogRecord.Commit(commitPos,
-                                                                           message.CorrelationId,
-                                                                           message.TransactionPosition,
-                                                                           result.CurrentVersion + 1));
-                        ReadIndex.Commit(commit);
-                        break;
-                    }
-                    case CommitDecision.WrongExpectedVersion:
-                        message.Envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(message.CorrelationId));
-                        break;
-                    case CommitDecision.Deleted:
-                        message.Envelope.ReplyWith(new StorageMessage.StreamDeleted(message.CorrelationId));
-                        break;
-                    case CommitDecision.Idempotent:
-                        message.Envelope.ReplyWith(new StorageMessage.AlreadyCommitted(message.CorrelationId,
-                                                                                       result.EventStreamId,
-                                                                                       result.StartEventNumber,
-                                                                                       result.EndEventNumber));
-                        break;
-                    case CommitDecision.CorruptedIdempotency:
-                        // in case of corrupted idempotency (part of transaction is ok, other is different)
-                        // then we can say that the transaction is not idempotent, so WrongExpectedVersion is ok answer
-                        message.Envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(message.CorrelationId));
-                        break;
-                    case CommitDecision.InvalidTransaction:
-                        message.Envelope.ReplyWith(new StorageMessage.InvalidTransaction(message.CorrelationId));
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
+                    var commit = WriteCommitWithRetry(LogRecord.Commit(commitPos,
+                                                                       message.CorrelationId,
+                                                                       message.TransactionPosition,
+                                                                       result.CurrentVersion + 1));
+                    ReadIndex.Commit(commit);
                 }
+                else ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, result);
             }
             catch (Exception exc)
             {
@@ -482,6 +458,35 @@ namespace EventStore.Core.Services.Storage
             finally
             {
                 Flush();
+            }
+        }
+
+        private static void ActOnCommitCheckFailure(IEnvelope envelope, Guid correlationId, CommitCheckResult result)
+        {
+            switch (result.Decision)
+            {
+                case CommitDecision.WrongExpectedVersion:
+                    envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(correlationId));
+                    break;
+                case CommitDecision.Deleted:
+                    envelope.ReplyWith(new StorageMessage.StreamDeleted(correlationId));
+                    break;
+                case CommitDecision.Idempotent:
+                    envelope.ReplyWith(new StorageMessage.AlreadyCommitted(correlationId,
+                                                                           result.EventStreamId,
+                                                                           result.StartEventNumber,
+                                                                           result.EndEventNumber));
+                    break;
+                case CommitDecision.CorruptedIdempotency:
+                    // in case of corrupted idempotency (part of transaction is ok, other is different)
+                    // then we can say that the transaction is not idempotent, so WrongExpectedVersion is ok answer
+                    envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(correlationId));
+                    break;
+                case CommitDecision.InvalidTransaction:
+                    envelope.ReplyWith(new StorageMessage.InvalidTransaction(correlationId));
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 
@@ -514,21 +519,22 @@ namespace EventStore.Core.Services.Storage
         {
             long writtenPos = prepare.LogPosition;
             long newPos;
+            PrepareLogRecord record = prepare;
             if (!Writer.Write(prepare, out newPos))
             {
                 var transactionPos = prepare.TransactionPosition == prepare.LogPosition ? newPos : prepare.TransactionPosition;
-                var record = new PrepareLogRecord(newPos,
-                                                  prepare.CorrelationId,
-                                                  prepare.EventId,
-                                                  transactionPos,
-                                                  prepare.TransactionOffset,
-                                                  prepare.EventStreamId,
-                                                  prepare.ExpectedVersion,
-                                                  prepare.TimeStamp,
-                                                  prepare.Flags,
-                                                  prepare.EventType,
-                                                  prepare.Data,
-                                                  prepare.Metadata);
+                record = new PrepareLogRecord(newPos,
+                                              prepare.CorrelationId,
+                                              prepare.EventId,
+                                              transactionPos,
+                                              prepare.TransactionOffset,
+                                              prepare.EventStreamId,
+                                              prepare.ExpectedVersion,
+                                              prepare.TimeStamp,
+                                              prepare.Flags,
+                                              prepare.EventType,
+                                              prepare.Data,
+                                              prepare.Metadata);
                 writtenPos = newPos;
                 if (!Writer.Write(record, out newPos))
                 {
@@ -537,7 +543,7 @@ namespace EventStore.Core.Services.Storage
                                                       writtenPos));
                 }
             }
-            return new WriteResult(writtenPos, newPos);
+            return new WriteResult(writtenPos, newPos, prepare);
         }
 
         private CommitLogRecord WriteCommitWithRetry(CommitLogRecord commit)
@@ -604,11 +610,13 @@ namespace EventStore.Core.Services.Storage
         {
             public readonly long WrittenPos;
             public readonly long NewPos;
+            public readonly PrepareLogRecord Prepare;
 
-            public WriteResult(long writtenPos, long newPos)
+            public WriteResult(long writtenPos, long newPos, PrepareLogRecord prepare)
             {
                 WrittenPos = writtenPos;
                 NewPos = newPos;
+                Prepare = prepare;
             }
         }
 

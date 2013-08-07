@@ -30,6 +30,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             throw new System.NotImplementedException();
         }
 
+        public void Commit(List<PrepareLogRecord> commitedPrepares)
+        {
+            throw new NotImplementedException();
+        }
+
         public ReadIndexStats GetStatistics()
         {
             throw new System.NotImplementedException();
@@ -96,6 +101,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         public CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition)
         {
             throw new System.NotImplementedException();
+        }
+
+        public CommitCheckResult CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds)
+        {
+            throw new NotImplementedException();
         }
 
         public void UpdateTransactionInfo(long transactionId, Core.Services.Storage.ReaderIndex.TransactionInfo transactionInfo)

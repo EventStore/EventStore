@@ -254,6 +254,86 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
+        public void Commit(List<PrepareLogRecord> commitedPrepares)
+        {
+            if (commitedPrepares.Count == 0)
+                return;
+
+            var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
+            var lastPrepare = commitedPrepares[commitedPrepares.Count - 1];
+
+            string streamId = lastPrepare.EventStreamId;
+            uint streamHash = _hasher.Hash(streamId);
+            int eventNumber = int.MinValue;
+            var indexEntries = new List<IndexEntry>();
+            var prepares = new List<PrepareLogRecord>();
+
+            foreach (var prepare in commitedPrepares)
+            {
+                if ((prepare.Flags & (PrepareFlags.StreamDelete | PrepareFlags.Data)) == 0)
+                    continue;
+
+                if (prepare.EventStreamId != streamId)
+                    throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
+
+                if (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !_indexRebuild))
+                    return;  // already committed
+
+                eventNumber = (prepare.Flags & PrepareFlags.StreamDelete) != 0
+                                  ? EventNumber.DeletedStream
+                                  : prepare.TransactionOffset; /* for committed prepare transaction offset IS event number */
+                _committedEvents.PutRecord(prepare.EventId, Tuple.Create(streamId, eventNumber), throwOnDuplicate: false);
+
+                var addToIndex = prepare.LogPosition > _persistedCommitCheckpoint
+                                 || prepare.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
+                if (addToIndex)
+                {
+                    indexEntries.Add(new IndexEntry(streamHash, eventNumber, prepare.LogPosition));
+                    prepares.Add(prepare);
+                }
+            }
+
+            if (indexEntries.Count > 0)
+            {
+                if (_additionalCommitChecks)
+                {
+                    CheckStreamVersion(streamId, indexEntries[0].Version, null); // TODO AN: bad passing null commit
+                    CheckDuplicateEvents(streamHash, null, indexEntries, prepares); // TODO AN: bad passing null commit
+                }
+                _tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries); // atomically add a whole bulk of entries
+            }
+
+            if (eventNumber != int.MinValue)
+            {
+                if (eventNumber < 0) throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
+
+                _streamInfoCache.Put(streamId,
+                                     key => new StreamCacheInfo(eventNumber, null),
+                                     (key, old) => new StreamCacheInfo(eventNumber, old.Metadata));
+                if (SystemStreams.IsMetastream(streamId))
+                {
+                    // if we are committing to metastream, we need to invalidate metastream cache
+                    // TODO AN: race condition in setting/clearing metadata
+                    // in the meantime GetStreamMetadataCached could be trying to set stale metadata
+                    _streamInfoCache.Put(SystemStreams.OriginalStreamOf(streamId),
+                                         key => new StreamCacheInfo(-1, null),
+                                         (key, old) => new StreamCacheInfo(old.LastEventNumber, null));
+                }
+            }
+
+            var newLastCommitPosition = lastPrepare.LogPosition > lastCommitPosition ? lastPrepare.LogPosition : lastCommitPosition;
+            if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) != lastCommitPosition)
+                throw new Exception("Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
+
+            if (!_indexRebuild && streamId == SystemStreams.SettingsStream)
+                _systemSettings = GetSystemSettings();
+
+            for (int i = 0, n = indexEntries.Count; i < n; ++i)
+            {
+                _bus.Publish(new StorageMessage.EventCommited(prepares[i].LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
+            }
+        }
+
         private void CheckStreamVersion(string streamId, int newEventNumber, CommitLogRecord commit)
         {
             if (newEventNumber == EventNumber.DeletedStream)
@@ -946,78 +1026,91 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     return new CommitCheckResult(CommitDecision.InvalidTransaction, string.Empty, -1, -1, -1);
                 }
 
-                var curVersion = GetLastStreamEventNumberCached(reader, streamId);
-                if (curVersion == EventNumber.DeletedStream)
-                    return new CommitCheckResult(CommitDecision.Deleted, streamId, curVersion, -1, -1);
-
-                // idempotency checks
-                if (expectedVersion == ExpectedVersion.Any)
-                {
-                    var first = true;
-                    int startEventNumber = -1;
-                    int endEventNumber = -1;
-                    foreach (var prepare in GetTransactionPrepares(transactionPosition, commitPosition))
-                    {
-                        // we should skip prepares without data, as they don't mean anything for idempotency
-                        // though we have to check deletes, otherwise they always will be considered idempotent :)
-                        if ((prepare.Flags & PrepareFlags.Data) == 0 && (prepare.Flags & PrepareFlags.StreamDelete) == 0) 
-                            continue;
-
-                        Tuple<string, int> prepInfo;
-                        if (!_committedEvents.TryGetRecord(prepare.EventId, out prepInfo) || prepInfo.Item1 != prepare.EventStreamId)
-                        {
-                            return new CommitCheckResult(
-                                first ? CommitDecision.Ok : CommitDecision.CorruptedIdempotency,
-                                streamId, curVersion, -1, -1);
-                        }
-                        if (first)
-                            startEventNumber = prepInfo.Item2;
-                        endEventNumber = prepInfo.Item2;
-                        first = false;
-                    }
-                    return first /* no data in transaction */ 
-                        ? new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1)
-                        : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber);
-                }
-                else if (expectedVersion < curVersion)
-                {
-                    var eventNumber = expectedVersion;
-                    var first = true;
-                    foreach (var prepare in GetTransactionPrepares(transactionPosition, commitPosition))
-                    {
-                        // we should skip prepares without data, as they don't mean anything for idempotency
-                        // though we have to check deletes, otherwise they always will be considered idempotent :)
-                        if ((prepare.Flags & PrepareFlags.Data) == 0 && (prepare.Flags & PrepareFlags.StreamDelete) == 0)
-                            continue;
-
-                        eventNumber += 1;
-
-                        EventRecord record;
-                        if (!GetStreamRecord(reader, streamId, eventNumber, out record) || record.EventId != prepare.EventId)
-                        {
-                            return new CommitCheckResult(
-                                first ? CommitDecision.WrongExpectedVersion : CommitDecision.CorruptedIdempotency,
-                                streamId, curVersion, -1, -1);
-                        }
-
-                        first = false;
-                    }
-                    return first /* no data in transaction */
-                        ? new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1)
-                        : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber);
-                }
-                else if (expectedVersion > curVersion)
-                {
-                    return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1);
-                }
-
-                // expectedVersion == currentVersion
-                return new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1);
+                // we should skip prepares without data, as they don't mean anything for idempotency
+                // though we have to check deletes, otherwise they always will be considered idempotent :)
+                var dataPrepares = from prepare in GetTransactionPrepares(transactionPosition, commitPosition)
+                                   where (prepare.Flags & (PrepareFlags.Data | PrepareFlags.StreamDelete)) != 0
+                                   select prepare.EventId;
+                return CheckCommit(reader, streamId, expectedVersion, dataPrepares);
             }
             finally
             {
                 _readers.Return(reader);
             }
+        }
+
+        CommitCheckResult IReadIndex.CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds)
+        {
+            var reader = _readers.Get();
+            try
+            {
+                return CheckCommit(reader, streamId, expectedVersion, eventIds);
+            }
+            finally
+            {
+                _readers.Return(reader);
+            }
+        }
+
+        private CommitCheckResult CheckCommit(ITransactionFileReader reader, string streamId, int expectedVersion, IEnumerable<Guid> eventIds)
+        {
+            var curVersion = GetLastStreamEventNumberCached(reader, streamId);
+            if (curVersion == EventNumber.DeletedStream)
+                return new CommitCheckResult(CommitDecision.Deleted, streamId, curVersion, -1, -1);
+
+            // idempotency checks
+            if (expectedVersion == ExpectedVersion.Any)
+            {
+                var first = true;
+                int startEventNumber = -1;
+                int endEventNumber = -1;
+                foreach (var eventId in eventIds)
+                {
+                    Tuple<string, int> prepInfo;
+                    if (!_committedEvents.TryGetRecord(eventId, out prepInfo) || prepInfo.Item1 != streamId)
+                    {
+                        return new CommitCheckResult(
+                            first ? CommitDecision.Ok : CommitDecision.CorruptedIdempotency,
+                            streamId, curVersion, -1, -1);
+                    }
+                    if (first)
+                        startEventNumber = prepInfo.Item2;
+                    endEventNumber = prepInfo.Item2;
+                    first = false;
+                }
+                return first /* no data in transaction */ 
+                    ? new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1)
+                    : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber);
+            }
+            else if (expectedVersion < curVersion)
+            {
+                var eventNumber = expectedVersion;
+                var first = true;
+                foreach (var eventId in eventIds)
+                {
+                    eventNumber += 1;
+
+                    EventRecord record;
+                    if (!GetStreamRecord(reader, streamId, eventNumber, out record) || record.EventId != eventId)
+                    {
+                        return new CommitCheckResult(
+                            first ? CommitDecision.WrongExpectedVersion : CommitDecision.CorruptedIdempotency,
+                            streamId, curVersion, -1, -1);
+                    }
+
+                    first = false;
+                }
+                return first /* no data in transaction */
+                    ? new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1)
+                    : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber);
+            }
+            else if (expectedVersion > curVersion)
+            {
+                return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1);
+            }
+
+            // expectedVersion == currentVersion
+            return new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1);
         }
 
         void IReadIndex.UpdateTransactionInfo(long transactionId, TransactionInfo transactionInfo)

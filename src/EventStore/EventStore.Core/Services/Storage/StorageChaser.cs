@@ -124,10 +124,10 @@ namespace EventStore.Core.Services.Storage
                             case LogRecordType.Prepare:
                             {
                                 var record = (PrepareLogRecord) result.LogRecord;
-                                if ((record.Flags & (PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd)) != 0)
-                                {
+                                if ((record.Flags & PrepareFlags.TransactionEnd) != 0 && (record.Flags & PrepareFlags.IsCommited) != 0)
+                                    _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition, record.TransactionPosition, int.MaxValue)); // TODO AN: somehow get actual first event number
+                                else if ((record.Flags & (PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd)) != 0)
                                     _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
-                                }
 
                                 break;
                             }

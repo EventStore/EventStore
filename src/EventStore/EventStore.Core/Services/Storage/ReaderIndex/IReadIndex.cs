@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -38,6 +40,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         void Init(long writerCheckpoint, long buildToPosition);
         void Commit(CommitLogRecord record);
+        void Commit(List<PrepareLogRecord> commitedPrepares);
         ReadIndexStats GetStatistics();
         
         IndexReadEventResult ReadEvent(string streamId, int eventNumber);
@@ -52,6 +55,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         StreamMetadata GetStreamMetadata(string streamId);
 
         CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition);
+        CommitCheckResult CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds);
 
         void UpdateTransactionInfo(long transactionId, TransactionInfo transactionInfo);
         TransactionInfo GetTransactionInfo(long writerCheckpoint, long transactionId);
