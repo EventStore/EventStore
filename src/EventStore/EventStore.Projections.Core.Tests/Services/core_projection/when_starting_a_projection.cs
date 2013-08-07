@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private InMemoryBus _bus;
         private TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
         private IODispatcher _ioDispatcher;
-        private PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> _subscriptionDispatcher;
+        private ReaderSubscriptionDispatcher _subscriptionDispatcher;
         private ProjectionConfig _projectionConfig;
 
         [SetUp]
@@ -65,9 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(_listEventsHandler);
             _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
             _subscriptionDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+                new ReaderSubscriptionDispatcher
                     (_bus, v => v.SubscriptionId, v => v.SubscriptionId);
             _bus.Subscribe(
                 _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
@@ -83,10 +81,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             _projectionConfig = new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false);
             var version = new ProjectionVersion(1, 0, 0);
+            var projectionProcessingStrategy = new ProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, _projectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null);
             _coreProjection =
-                new ProjectionProcessingStrategy(
-                    "projection", version, projectionStateHandler, _projectionConfig,
-                    projectionStateHandler.GetSourceDefinition(), null).CreateAndPrepare(
+                projectionProcessingStrategy.Create(
                         Guid.NewGuid(), _bus, _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
             _coreProjection.Start();
         }

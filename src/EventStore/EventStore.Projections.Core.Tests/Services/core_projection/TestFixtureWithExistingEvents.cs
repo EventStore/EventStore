@@ -45,9 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
     {
         protected
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
-                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+            ReaderSubscriptionDispatcher
             _subscriptionDispatcher;
 
         protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
@@ -63,9 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void SetUp()
         {
             _subscriptionDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+                new ReaderSubscriptionDispatcher
                     (_bus, v => v.SubscriptionId, v => v.SubscriptionId);
             _bus.Subscribe(
                 _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());

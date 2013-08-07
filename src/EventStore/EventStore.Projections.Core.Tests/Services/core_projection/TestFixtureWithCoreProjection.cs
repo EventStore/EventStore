@@ -75,11 +75,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _projectionConfig = new ProjectionConfig(null, 
                 _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
                 _createTempStreams, _stopOnEof);
-            _coreProjection =
-                new ProjectionProcessingStrategy(
-                    "projection", _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null)
-                    .CreateAndPrepare(
-                        _projectionCorrelationId, _bus, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
+            var projectionProcessingStrategy = new ProjectionProcessingStrategy(
+                "projection", _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null);
+            _coreProjection = projectionProcessingStrategy.Create(
+                _projectionCorrelationId, _bus, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_coreProjection);

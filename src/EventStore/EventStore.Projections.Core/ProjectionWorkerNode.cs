@@ -48,9 +48,7 @@ namespace EventStore.Projections.Core
         private readonly InMemoryBus _coreOutput;
         private readonly EventReaderCoreService _eventReaderCoreService;
 
-        private readonly PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
-                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+        private readonly ReaderSubscriptionDispatcher
             _subscriptionDispatcher;
 
         private FeedReaderService _feedReaderService;
@@ -64,10 +62,7 @@ namespace EventStore.Projections.Core
 
             IPublisher publisher = CoreOutput;
             _subscriptionDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
-                        >(publisher, v => v.SubscriptionId, v => v.SubscriptionId);
+                new ReaderSubscriptionDispatcher(publisher, v => v.SubscriptionId, v => v.SubscriptionId);
             ;
             _eventReaderCoreService = new EventReaderCoreService(
                 publisher, 10, db.Config.WriterCheckpoint, runHeadingReader: runProjections >= RunProjections.System);

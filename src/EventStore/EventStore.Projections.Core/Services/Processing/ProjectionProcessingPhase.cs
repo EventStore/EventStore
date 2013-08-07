@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CheckpointTag _zeroCheckpointTag;
         private readonly IResultEmitter _resultEmitter;
         private readonly StatePartitionSelector _statePartitionSelector;
-        private CheckpointStrategy _checkpointStrategy;
+        private readonly CheckpointStrategy _checkpointStrategy;
         private readonly ITimeProvider _timeProvider;
 
         public EventProcessingProjectionProcessingPhase(
@@ -569,6 +569,13 @@ namespace EventStore.Projections.Core.Services.Processing
         public IReaderStrategy ReaderStrategy
         {
             get { return _checkpointStrategy.ReaderStrategy; }
+        }
+
+        public ReaderSubscriptionOptions GetSubscriptionOptions()
+        {
+            return new ReaderSubscriptionOptions(
+                _projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold,
+                _projectionConfig.StopOnEof, stopAfterNEvents: null);
         }
     }
 }

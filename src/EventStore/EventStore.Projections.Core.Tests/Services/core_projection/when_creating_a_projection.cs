@@ -48,10 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _ioDispatcher = new IODispatcher(fakePublisher, new PublishEnvelope(fakePublisher));
 
             _subscriptionDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
-                        >(new FakePublisher(), v => v.SubscriptionId, v => v.SubscriptionId);
+                new ReaderSubscriptionDispatcher(new FakePublisher(), v => v.SubscriptionId, v => v.SubscriptionId);
         }
 
         private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
@@ -61,9 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
 
         private
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
-                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+            ReaderSubscriptionDispatcher
             _subscriptionDispatcher;
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -75,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false);
             new ProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
-                projectionStateHandler.GetSourceDefinition(), null).CreateAndPrepare(
+                projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
         }
 
@@ -87,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false);
             new ProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
-                projectionStateHandler.GetSourceDefinition(), null).CreateAndPrepare(
+                projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
         }
 
@@ -98,7 +93,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var version = new ProjectionVersion(1, 0, 0);
             new ProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
-                projectionStateHandler.GetSourceDefinition(), null).CreateAndPrepare(
+                projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), null, _subscriptionDispatcher, new RealTimeProvider());
         }
 
@@ -109,7 +104,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var version = new ProjectionVersion(1, 0, 0);
             new ProjectionProcessingStrategy(
                 null, version, projectionStateHandler, _defaultProjectionConfig,
-                projectionStateHandler.GetSourceDefinition(), null).CreateAndPrepare(
+                projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
         }
 
@@ -120,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var version = new ProjectionVersion(1, 0, 0);
             new ProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
-                projectionStateHandler.GetSourceDefinition(), null).CreateAndPrepare(
+                projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), null, _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
         }
 
@@ -131,7 +126,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var version = new ProjectionVersion(1, 0, 0);
             new ProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
-                projectionStateHandler.GetSourceDefinition(), null).CreateAndPrepare(
+                projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, null, new RealTimeProvider());
         }
 
@@ -142,7 +137,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var version = new ProjectionVersion(1, 0, 0);
             new ProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
-                projectionStateHandler.GetSourceDefinition(), null).CreateAndPrepare(
+                projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, null);
         }
 
@@ -154,7 +149,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false);
             new ProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
-                projectionStateHandler.GetSourceDefinition(), null).CreateAndPrepare(
+                projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
         }
 
@@ -165,7 +160,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var version = new ProjectionVersion(1, 0, 0);
             new ProjectionProcessingStrategy(
                 "", version, projectionStateHandler, _defaultProjectionConfig,
-                projectionStateHandler.GetSourceDefinition(), null).CreateAndPrepare(
+                projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
         }
     }

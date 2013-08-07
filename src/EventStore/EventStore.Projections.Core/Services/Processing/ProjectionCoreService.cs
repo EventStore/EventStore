@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly IODispatcher _ioDispatcher;
 
-        private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+        private readonly ReaderSubscriptionDispatcher
             _subscriptionDispatcher;
 
         private readonly ITimeProvider _timeProvider;
@@ -77,10 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ProjectionCoreService(
             IPublisher inputQueue, IPublisher publisher,
-            PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
-                        >
+            ReaderSubscriptionDispatcher
                 subscriptionDispatcher, ITimeProvider timeProvider)
         {
             _inputQueue = inputQueue;
@@ -126,18 +123,9 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 //TODO: factory method can throw!
                 IProjectionStateHandler stateHandler = message.HandlerFactory();
-                // constructor can fail if wrong source definition
-                ProjectionSourceDefinition sourceDefinition;
                 string name = message.Name;
-                ProjectionVersion version = message.Version;
-                ProjectionConfig projectionConfig = message.Config;
-                var projection =
-                    new ProjectionProcessingStrategy(
-                        name, version, stateHandler, projectionConfig, stateHandler.GetSourceDefinition(), _logger)
-                        .CreateAndPrepare(
-                            message.ProjectionId, _publisher, _ioDispatcher, _subscriptionDispatcher, _timeProvider,
-                            out sourceDefinition);
-                _projections.Add(message.ProjectionId, projection);
+                var sourceDefinition = ProjectionSourceDefinition.From(name, stateHandler.GetSourceDefinition());
+                CreateCoreProjection(message.ProjectionId, name, message.Version, sourceDefinition, message.Config, stateHandler);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
             }
@@ -152,16 +140,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             try
             {
-                //TODO: factory method can throw!
-                // constructor can fail if wrong source defintion
-                ProjectionSourceDefinition sourceDefinition;
-                string name = message.Name;
-                ProjectionVersion version = message.Version;
-                var sourceDefinition1 = message.SourceDefinition;
-                ProjectionConfig projectionConfig = message.Config;
-                var projection = new ProjectionProcessingStrategy(name, version, null, projectionConfig, sourceDefinition1, _logger).CreatePrepared(message.ProjectionId, _publisher,
-                    _ioDispatcher, _subscriptionDispatcher, _timeProvider, out sourceDefinition);
-                _projections.Add(message.ProjectionId, projection);
+                var name = message.Name;
+                var sourceDefinition = ProjectionSourceDefinition.From(name, message.SourceDefinition);
+                CreateCoreProjection(message.ProjectionId, name, message.Version, sourceDefinition, message.Config, null);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
             }
@@ -170,6 +151,18 @@ namespace EventStore.Projections.Core.Services.Processing
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
             }
+        }
+
+        private void CreateCoreProjection(
+            Guid projectionCorrelationId, string name, ProjectionVersion projectionVersion,
+            ProjectionSourceDefinition sourceDefinition, ProjectionConfig projectionConfig,
+            IProjectionStateHandler stateHandler)
+        {
+            var projectionProcessingStrategy = new ProjectionProcessingStrategy(
+                name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger);
+            var projection = projectionProcessingStrategy.Create(
+                projectionCorrelationId, _publisher, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
+            _projections.Add(projectionCorrelationId, projection);
         }
 
         public void Handle(CoreProjectionManagementMessage.Dispose message)

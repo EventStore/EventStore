@@ -119,9 +119,7 @@ namespace EventStore.Projections.Core.Tests.Services
         protected EventReaderCoreService _readerService;
 
         private
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
-                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+            ReaderSubscriptionDispatcher
             _subscriptionDispatcher;
 
         [SetUp]
@@ -133,10 +131,7 @@ namespace EventStore.Projections.Core.Tests.Services
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
             _readerService = new EventReaderCoreService(_bus, 10, writerCheckpoint, runHeadingReader: true);
             _subscriptionDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
-                        >(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
+                new ReaderSubscriptionDispatcher(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
             _service = new ProjectionCoreService(_bus, _bus, _subscriptionDispatcher, new RealTimeProvider());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());

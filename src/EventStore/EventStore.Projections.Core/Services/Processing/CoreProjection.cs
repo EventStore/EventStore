@@ -65,13 +65,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IPublisher _publisher;
 
         private readonly Guid _projectionCorrelationId;
-        private readonly ProjectionConfig _projectionConfig;
 
-        private readonly
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
-                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
-            _subscriptionDispatcher;
+        private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
         private readonly ILogger _logger;
 
@@ -92,16 +87,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private CheckpointSuggestedWorkItem _checkpointSuggestedWorkItem;
         private readonly IProjectionProcessingPhase _projectionProcessingPhase;
+        private readonly bool _stopOnEof;
 
 
         public CoreProjection(
-            ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher,
-            IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig, IODispatcher ioDispatcher,
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
-                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+            ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
+            ReaderSubscriptionDispatcher
                 subscriptionDispatcher, ILogger logger, ProjectionNamesBuilder namingBuilder,
-            ProjectionProcessingStrategy projectionProcessingStrategy, ITimeProvider timeProvider)
+            ProjectionProcessingStrategy projectionProcessingStrategy, ITimeProvider timeProvider, bool stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
@@ -112,7 +105,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionCorrelationId = projectionCorrelationId;
             _name = name;
             _version = version;
-            _projectionConfig = projectionConfig;
+            _stopOnEof = stopOnEof;
             _subscriptionDispatcher = subscriptionDispatcher;
             _logger = logger;
             _publisher = publisher;
@@ -257,7 +250,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_state != State.Running)
                 return;
-            if (!_projectionConfig.StopOnEof)
+            if (!_stopOnEof)
                 throw new InvalidOperationException("!_projectionConfig.StopOnEof");
             _completed = true;
             _checkpointManager.Progress(100.0f);
@@ -585,12 +578,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _expectedSubscriptionMessageSequenceNumber = 0;
             _currentSubscriptionId = Guid.NewGuid();
             _projectionProcessingPhase.Subscribed(_currentSubscriptionId);
-            var subscriptionOptions = new ReaderSubscriptionOptions(
-                _projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold,
-                _projectionConfig.StopOnEof, stopAfterNEvents: null);
             _subscriptionDispatcher.PublishSubscribe(
                 new ReaderSubscriptionManagement.Subscribe(
-                    _currentSubscriptionId, checkpointTag, _projectionProcessingPhase.ReaderStrategy, subscriptionOptions), this);
+                    _currentSubscriptionId, checkpointTag, _projectionProcessingPhase.ReaderStrategy,
+                    _projectionProcessingPhase.GetSubscriptionOptions()), this);
             _subscribed = true;
             try
             {

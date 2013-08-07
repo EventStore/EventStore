@@ -56,10 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             _readerService = new EventReaderCoreService(
                 GetInputQueue(), 10, writerCheckpoint, runHeadingReader: GivenHeadingReaderRunning());
             _subscriptionDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
-                        >(GetInputQueue(), v => v.SubscriptionId, v => v.SubscriptionId);
+                new ReaderSubscriptionDispatcher(GetInputQueue(), v => v.SubscriptionId, v => v.SubscriptionId);
 
 
             _bus.Subscribe(
