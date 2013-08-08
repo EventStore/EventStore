@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly ICoreProjectionForProcessingPhase _coreProjection;
         private readonly Guid _projectionCorrelationId;
-        private readonly IProjectionProcessingStrategy _projectionProcessingStrategy;
+        private readonly ProjectionProcessingStrategy _projectionProcessingStrategy;
         private readonly IProjectionStateHandler _projectionStateHandler;
         private readonly CoreProjectionQueue _processingQueue;
         private PhaseState _state;
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ITimeProvider _timeProvider;
 
         public EventProcessingProjectionProcessingPhase(
-            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher, IProjectionProcessingStrategy projectionProcessingStrategy,
+            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher, ProjectionProcessingStrategy projectionProcessingStrategy,
             ProjectionConfig projectionConfig, Action updateStatistics, IProjectionStateHandler projectionStateHandler,
             PartitionStateCache partitionStateCache, bool definesStateTransform, string projectionName, ILogger logger,
             CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
@@ -221,6 +221,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Unsubscribed()
         {
             _processingQueue.Unsubscribed();
+        }
+
+        public void SetState(PhaseState state)
+        {
+            _state = state;
         }
 
         public int GetBufferedEventCount()
@@ -527,31 +532,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void SetRunning()
-        {
-            _state = PhaseState.Running;
-        }
-
-        public void SetStopped()
-        {
-            _state = PhaseState.Stopped;
-        }
-
-        public void SetUnknownState()
-        {
-            _state = PhaseState.Unknown;
-        }
-
         public void SetFaulted()
         {
             _faulted = true;
-        }
-
-        private enum PhaseState
-        {
-            Unknown,
-            Stopped,
-            Running
         }
 
         public void Dispose()
@@ -580,7 +563,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new ReaderSubscriptionOptions(
                 _projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold,
-                _projectionConfig.StopOnEof, stopAfterNEvents: null);
+                _projectionProcessingStrategy.GetStopOnEof(), stopAfterNEvents: null);
         }
     }
 }

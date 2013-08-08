@@ -26,18 +26,23 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Core.Bus;
-using EventStore.Core.Helpers;
-using EventStore.Core.Services.TimerService;
+using EventStore.Common.Log;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IProjectionProcessingStrategy
+    public class QueryProcessingStrategy : DefaultProjectionProcessingStrategy
     {
-        IProjectionProcessingPhase[] CreateProcessingPhases(
-            IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
-            Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
-            ITimeProvider timeProvider, IODispatcher ioDispatcher);
+        public QueryProcessingStrategy(
+            string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
+            ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger)
+            : base(name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger)
+        {
+        }
+
+        public override bool GetStopOnEof()
+        {
+            return true;
+        }
     }
 }

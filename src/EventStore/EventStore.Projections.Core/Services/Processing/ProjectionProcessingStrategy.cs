@@ -35,24 +35,17 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionProcessingStrategy : IProjectionProcessingStrategy
+    public abstract class ProjectionProcessingStrategy 
     {
-        private readonly string _name;
-        private readonly ProjectionVersion _projectionVersion;
-        private readonly IProjectionStateHandler _stateHandler;
-        private readonly ProjectionConfig _projectionConfig;
-        private readonly IQuerySources _sourceDefinition;
-        private readonly ILogger _logger;
+        protected readonly string _name;
+        protected readonly ProjectionVersion _projectionVersion;
+        protected readonly ILogger _logger;
 
-        public ProjectionProcessingStrategy(
-            string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
-            ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger)
+        protected ProjectionProcessingStrategy(
+            string name, ProjectionVersion projectionVersion, ILogger logger)
         {
             _name = name;
             _projectionVersion = projectionVersion;
-            _stateHandler = stateHandler;
-            _projectionConfig = projectionConfig;
-            _sourceDefinition = sourceDefinition;
             _logger = logger;
         }
 
@@ -64,35 +57,20 @@ namespace EventStore.Projections.Core.Services.Processing
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
 
-            var namingBuilder = new ProjectionNamesBuilder(_name, _sourceDefinition);
+            var namingBuilder = new ProjectionNamesBuilder(_name, GetSourceDefinition());
 
             return new CoreProjection(
                 _projectionVersion, projectionCorrelationId, publisher, ioDispatcher, subscriptionDispatcher, _logger,
-                namingBuilder, this, timeProvider, _projectionConfig.StopOnEof);
+                namingBuilder, this, timeProvider, GetStopOnEof());
         }
 
-        public IProjectionProcessingPhase[] CreateProcessingPhases(
+        protected abstract IQuerySources GetSourceDefinition();
+
+        public abstract bool GetStopOnEof();
+
+        public abstract IProjectionProcessingPhase[] CreateProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
             Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
-            ITimeProvider timeProvider, IODispatcher ioDispatcher)
-        {
-            var checkpointStrategy = CheckpointStrategy.Create(0, _sourceDefinition, _projectionConfig, timeProvider);
-
-            var resultEmitter = checkpointStrategy.CreateResultEmitter(namingBuilder);
-            var zeroCheckpointTag = checkpointStrategy.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag();
-            var statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(_stateHandler);
-
-            var checkpointManager = checkpointStrategy.CreateCheckpointManager(
-                projectionCorrelationId, _projectionVersion, publisher, ioDispatcher, _projectionConfig, _name,
-                namingBuilder, checkpointStrategy.ReaderStrategy.IsReadingOrderRepeatable, checkpointStrategy._runAs);
-
-
-            var projectionProcessingPhase = new EventProcessingProjectionProcessingPhase(
-                coreProjection, projectionCorrelationId, publisher, this, _projectionConfig, updateStatistics,
-                _stateHandler, partitionStateCache, checkpointStrategy._definesStateTransform, _name, _logger,
-                zeroCheckpointTag, resultEmitter, checkpointManager, statePartitionSelector, checkpointStrategy,
-                timeProvider);
-            return new IProjectionProcessingPhase[] { projectionProcessingPhase };
-        }
+            ITimeProvider timeProvider, IODispatcher ioDispatcher);
     }
 }

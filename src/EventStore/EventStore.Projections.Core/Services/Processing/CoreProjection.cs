@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
             ReaderSubscriptionDispatcher
                 subscriptionDispatcher, ILogger logger, ProjectionNamesBuilder namingBuilder,
-            IProjectionProcessingStrategy projectionProcessingStrategy, ITimeProvider timeProvider, bool stopOnEof)
+            ProjectionProcessingStrategy projectionProcessingStrategy, ITimeProvider timeProvider, bool stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
@@ -426,24 +426,24 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     case State.Running:
                         if (!wasRunning)
-                            _projectionProcessingPhase.SetRunning();
+                            _projectionProcessingPhase.SetState(PhaseState.Running);
                         break;
                     case State.Faulted:
                     case State.FaultedStopping:
                         if (!wasFaulted)
                             _projectionProcessingPhase.SetFaulted();
                         if (wasRunning)
-                            _projectionProcessingPhase.SetStopped();
+                            _projectionProcessingPhase.SetState(PhaseState.Stopped);
                         break;
                     case State.Stopped:
                     case State.Stopping:
                     case State.CompletingPhase:
                     case State.PhaseCompleted:
                         if (wasRunning)
-                            _projectionProcessingPhase.SetStopped();
+                            _projectionProcessingPhase.SetState(PhaseState.Stopped);
                         break;
                     default:
-                        _projectionProcessingPhase.SetUnknownState();
+                        _projectionProcessingPhase.SetState(PhaseState.Unknown);
                         break;
 
                 }

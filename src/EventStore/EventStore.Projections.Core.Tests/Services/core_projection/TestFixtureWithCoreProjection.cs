@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private bool _stopOnEof = false;
         private ProjectionConfig _projectionConfig;
         protected ProjectionVersion _version;
-        private string _projectionName;
+        protected string _projectionName;
 
         protected override void Given1()
         {
@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         protected virtual ProjectionProcessingStrategy GivenProjectionProcessingStrategy()
         {
-            return new ProjectionProcessingStrategy(
+            return new ContinuousProjectionProcessingStrategy(
                 _projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null);
         }
 

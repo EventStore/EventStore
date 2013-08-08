@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
             var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false);
-            new ProjectionProcessingStrategy(
+            new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
             var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false);
-            new ProjectionProcessingStrategy(
+            new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            new ProjectionProcessingStrategy(
+            new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), null, _subscriptionDispatcher, new RealTimeProvider());
@@ -102,7 +102,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            new ProjectionProcessingStrategy(
+            new ContinuousProjectionProcessingStrategy(
                 null, version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
@@ -113,7 +113,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            new ProjectionProcessingStrategy(
+            new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), null, _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            new ProjectionProcessingStrategy(
+            new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, null, new RealTimeProvider());
@@ -135,7 +135,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            new ProjectionProcessingStrategy(
+            new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, null);
@@ -147,7 +147,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
             var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false);
-            new ProjectionProcessingStrategy(
+            new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
@@ -158,7 +158,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            new ProjectionProcessingStrategy(
+            new ContinuousProjectionProcessingStrategy(
                 "", version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(
                     Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());

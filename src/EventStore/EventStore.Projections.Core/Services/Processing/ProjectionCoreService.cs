@@ -158,8 +158,11 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionSourceDefinition sourceDefinition, ProjectionConfig projectionConfig,
             IProjectionStateHandler stateHandler)
         {
-            var projectionProcessingStrategy = new ProjectionProcessingStrategy(
-                name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger);
+            var projectionProcessingStrategy = projectionConfig.StopOnEof
+                ? (ProjectionProcessingStrategy) new QueryProcessingStrategy(
+                    name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger)
+                : new ContinuousProjectionProcessingStrategy(
+                    name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger);
             var projection = projectionProcessingStrategy.Create(
                 projectionCorrelationId, _publisher, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
             _projections.Add(projectionCorrelationId, projection);

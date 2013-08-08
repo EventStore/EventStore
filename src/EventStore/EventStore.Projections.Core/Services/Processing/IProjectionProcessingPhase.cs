@@ -3,6 +3,15 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
+
+    public enum PhaseState
+    {
+        Unknown,
+        Stopped,
+        Running
+    }
+
+
     public interface IProjectionProcessingPhase : IDisposable
     {
         void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message);
@@ -22,9 +31,7 @@ namespace EventStore.Projections.Core.Services.Processing
         void Subscribed(Guid subscriptionId);
         void Unsubscribed();
 
-        void SetRunning();
-        void SetStopped();
-        void SetUnknownState();
+        void SetState(PhaseState state);
         void SetFaulted();
 
         void GetStatistics(ProjectionStatistics info);
