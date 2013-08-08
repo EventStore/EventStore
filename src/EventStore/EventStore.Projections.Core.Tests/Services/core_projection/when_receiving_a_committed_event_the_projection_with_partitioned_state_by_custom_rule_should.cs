@@ -55,8 +55,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             TicksAreHandledImmediately();
             AllWritesSucceed();
             NoOtherStreams();
-            _stateHandler = new FakeProjectionStateHandler(
-                 configureBuilder: _configureBuilderByQuerySource, failOnGetPartition: false);
+        }
+
+        protected override FakeProjectionStateHandler GivenProjectionStateHandler()
+        {
+            return new FakeProjectionStateHandler(
+                configureBuilder: _configureBuilderByQuerySource, failOnGetPartition: false);
         }
 
         protected override void When()

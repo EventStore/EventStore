@@ -143,6 +143,7 @@
     <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_in_invalid_order.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_with_previously_written_events.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_with_previously_written_events_at_the_same_position.cs" />
+    <Compile Include="Services\core_projection\multi_phase\specification_with_multi_phase_core_projection.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_handling_stream_awaiting_message.cs" />
     <Compile Include="Services\core_projection\TestFixtureUtils.cs" />
     <Compile Include="Services\core_projection\TestFixtureWithReadWriteDispatchers.cs" />

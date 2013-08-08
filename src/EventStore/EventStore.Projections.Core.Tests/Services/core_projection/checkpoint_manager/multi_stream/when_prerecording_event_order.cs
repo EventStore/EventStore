@@ -34,6 +34,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
@@ -69,6 +70,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             Action noop = () => { };
             _manager.Initialize();
             _manager.BeginLoadState();
+            _manager.BeginLoadPrerecordedEvents(
+                _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.CheckpointLoaded>()
+                    .First()
+                    .CheckpointTag);
             _manager.Start(CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> { { "pa", -1 }, { "pb", -1 } }));
             _manager.RecordEventOrder(_event1, CheckpointTag.FromStreamPositions(0, new Dictionary<string, int>{{"pa", 1},{"pb", -1}}), committed: noop);
             _manager.RecordEventOrder(_event2, CheckpointTag.FromStreamPositions(0, new Dictionary<string, int>{{"pa", 1},{"pb", 1}}), committed: noop);

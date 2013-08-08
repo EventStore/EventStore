@@ -27,40 +27,17 @@
 // 
 
 using System;
+using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
+using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface ICoreProjectionCheckpointManager
+    public interface IProjectionProcessingStrategy
     {
-        void Initialize();
-        void Start(CheckpointTag checkpointTag);
-        void Stopping();
-        void Stopped();
-        void GetStatistics(ProjectionStatistics info);
-
-        void NewPartition(string partition, CheckpointTag eventCheckpointTag);
-        void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId);
-
-        void StateUpdated(string partition, PartitionState oldState, PartitionState newState);
-        void EventProcessed(CheckpointTag checkpointTag, float progress);
-
-        /// <summary>
-        /// Suggests a checkpoint which may complete immediately or be delayed
-        /// </summary>
-        /// <param name="checkpointTag"></param>
-        /// <param name="progress"></param>
-        /// <returns>true - if checkpoint has been completed (or skipped)</returns>
-        bool CheckpointSuggested(CheckpointTag checkpointTag, float progress);
-        void Progress(float progress);
-
-        void BeginLoadState();
-        void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
-
-        void BeginLoadPartitionStateAt(
-            string statePartition, CheckpointTag requestedStateCheckpointTag,
-            Action<PartitionState> loadCompleted);
-
-        void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action committed);
-        CheckpointTag LastProcessedEventPosition { get; }
+        IProjectionProcessingPhase[] CreateProcessingPhases(
+            IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
+            Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
+            ITimeProvider timeProvider, IODispatcher ioDispatcher);
     }
 }

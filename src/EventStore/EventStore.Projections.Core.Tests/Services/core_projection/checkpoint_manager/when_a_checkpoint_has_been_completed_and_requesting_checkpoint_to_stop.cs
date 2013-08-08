@@ -29,6 +29,7 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -54,6 +55,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             try
             {
                 _manager.BeginLoadState();
+                _manager.BeginLoadPrerecordedEvents(
+                    _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.CheckpointLoaded>()
+                        .First()
+                        .CheckpointTag);
                 _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10));
 //                _manager.StateUpdated("", @"{""state"":""state1""}");
                 _manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 11), 77.7f);

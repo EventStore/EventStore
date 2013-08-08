@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly ICoreProjectionForProcessingPhase _coreProjection;
         private readonly Guid _projectionCorrelationId;
-        private readonly ProjectionProcessingStrategy _projectionProcessingStrategy;
+        private readonly IProjectionProcessingStrategy _projectionProcessingStrategy;
         private readonly IProjectionStateHandler _projectionStateHandler;
         private readonly CoreProjectionQueue _processingQueue;
         private PhaseState _state;
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ITimeProvider _timeProvider;
 
         public EventProcessingProjectionProcessingPhase(
-            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher, ProjectionProcessingStrategy projectionProcessingStrategy,
+            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher, IProjectionProcessingStrategy projectionProcessingStrategy,
             ProjectionConfig projectionConfig, Action updateStatistics, IProjectionStateHandler projectionStateHandler,
             PartitionStateCache partitionStateCache, bool definesStateTransform, string projectionName, ILogger logger,
             CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
@@ -569,6 +569,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public IReaderStrategy ReaderStrategy
         {
             get { return _checkpointStrategy.ReaderStrategy; }
+        }
+
+        public ICoreProjectionCheckpointManager CheckpointManager
+        {
+            get { return _checkpointManager; }
         }
 
         public ReaderSubscriptionOptions GetSubscriptionOptions()

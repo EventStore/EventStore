@@ -284,7 +284,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected abstract ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition);
         protected abstract EmittedEventEnvelope[] RegisterNewPartition(string partition, CheckpointTag at);
-        protected abstract void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
+        public abstract void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
         protected abstract void BeforeBeginLoadState();
         protected abstract void RequestLoadState();
 
@@ -382,7 +382,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(
                 new CoreProjectionProcessingMessage.CheckpointLoaded(
                     _projectionCorrelationId, checkpointTag, checkpointData));
-            BeginLoadPrerecordedEvents(checkpointTag);
         }
 
         protected void SendPrerecordedEvent(

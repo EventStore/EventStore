@@ -35,7 +35,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionProcessingStrategy
+    public class ProjectionProcessingStrategy : IProjectionProcessingStrategy
     {
         private readonly string _name;
         private readonly ProjectionVersion _projectionVersion;
@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 namingBuilder, this, timeProvider, _projectionConfig.StopOnEof);
         }
 
-        public EventProcessingProjectionProcessingPhase CreateFirstProcessingPhase(
+        public IProjectionProcessingPhase[] CreateProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
             Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
             ITimeProvider timeProvider, IODispatcher ioDispatcher)
@@ -92,7 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _stateHandler, partitionStateCache, checkpointStrategy._definesStateTransform, _name, _logger,
                 zeroCheckpointTag, resultEmitter, checkpointManager, statePartitionSelector, checkpointStrategy,
                 timeProvider);
-            return projectionProcessingPhase;
+            return new IProjectionProcessingPhase[] { projectionProcessingPhase };
         }
     }
 }

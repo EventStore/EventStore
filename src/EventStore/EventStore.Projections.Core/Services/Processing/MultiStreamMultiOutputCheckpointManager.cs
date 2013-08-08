@@ -118,7 +118,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
 
-        protected override void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag)
+        public override void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag)
         {
             BeginLoadPrerecordedEventsChunk(checkpointTag, -1);
         }

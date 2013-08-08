@@ -29,6 +29,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         void GetStatistics(ProjectionStatistics info);
         IReaderStrategy ReaderStrategy { get; }
+        ICoreProjectionCheckpointManager CheckpointManager { get; }
         ReaderSubscriptionOptions GetSubscriptionOptions();
     }
 }

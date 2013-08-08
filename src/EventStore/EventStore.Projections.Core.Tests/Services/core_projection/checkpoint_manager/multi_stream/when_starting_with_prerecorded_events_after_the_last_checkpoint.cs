@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -78,6 +79,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             base.When();
             _manager.BeginLoadState();
+            _manager.BeginLoadPrerecordedEvents(
+                _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.CheckpointLoaded>()
+                    .First()
+                    .CheckpointTag);
         }
 
         [Test]

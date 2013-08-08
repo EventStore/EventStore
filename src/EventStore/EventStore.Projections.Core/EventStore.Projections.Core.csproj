@@ -208,6 +208,7 @@
     <Compile Include="Services\Processing\IndexedEventTypesEventFilter.cs" />
     <Compile Include="Services\Processing\IEventProcessingPhase.cs" />
     <Compile Include="Services\Processing\IProjectionProcessingPhase.cs" />
+    <Compile Include="Services\Processing\IProjectionProcessingStrategy.cs" />
     <Compile Include="Services\Processing\IReaderStrategy.cs" />
     <Compile Include="Services\Processing\IResultEmitter.cs" />
     <Compile Include="Services\Processing\MultiStreamEventReader.cs" />

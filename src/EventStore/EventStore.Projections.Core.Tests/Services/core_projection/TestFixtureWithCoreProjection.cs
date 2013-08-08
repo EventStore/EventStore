@@ -53,10 +53,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private bool _stopOnEof = false;
         private ProjectionConfig _projectionConfig;
         protected ProjectionVersion _version;
+        private string _projectionName;
 
         protected override void Given1()
         {
             _version = new ProjectionVersion(1, 0, 0);
+            _projectionName = "projection";
         }
 
         [SetUp]
@@ -68,17 +70,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(_writeEventHandler);
 
 
-            _stateHandler = _stateHandler
-                            ?? new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource);
+            _stateHandler = GivenProjectionStateHandler();
             _firstWriteCorrelationId = Guid.NewGuid();
             _projectionCorrelationId = Guid.NewGuid();
-            _projectionConfig = new ProjectionConfig(null, 
-                _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
-                _createTempStreams, _stopOnEof);
-            var projectionProcessingStrategy = new ProjectionProcessingStrategy(
-                "projection", _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null);
-            _coreProjection = projectionProcessingStrategy.Create(
-                _projectionCorrelationId, _bus, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
+            _projectionConfig = GivenProjectionConfig();
+            var projectionProcessingStrategy = GivenProjectionProcessingStrategy();
+            _coreProjection = GivenCoreProjection(projectionProcessingStrategy);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_coreProjection);
@@ -93,6 +90,30 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(new AdHocHandler<ReaderCoreServiceMessage.ReaderTick>(tick => tick.Action()));
             PreWhen();
             When();
+        }
+
+        protected virtual CoreProjection GivenCoreProjection(ProjectionProcessingStrategy projectionProcessingStrategy)
+        {
+            return projectionProcessingStrategy.Create(
+                _projectionCorrelationId, _bus, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
+        }
+
+        protected virtual ProjectionProcessingStrategy GivenProjectionProcessingStrategy()
+        {
+            return new ProjectionProcessingStrategy(
+                _projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null);
+        }
+
+        protected virtual ProjectionConfig GivenProjectionConfig()
+        {
+            return new ProjectionConfig(null, 
+                _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
+                _createTempStreams, _stopOnEof);
+        }
+
+        protected virtual FakeProjectionStateHandler GivenProjectionStateHandler()
+        {
+            return new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource);
         }
 
         protected new virtual void PreWhen()
