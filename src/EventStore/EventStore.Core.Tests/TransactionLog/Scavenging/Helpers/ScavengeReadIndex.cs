@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             throw new System.NotImplementedException();
         }
 
-        public void Commit(List<PrepareLogRecord> commitedPrepares)
+        public void Commit(IList<PrepareLogRecord> commitedPrepares)
         {
             throw new NotImplementedException();
         }

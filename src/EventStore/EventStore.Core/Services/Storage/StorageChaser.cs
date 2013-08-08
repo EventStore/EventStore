@@ -111,74 +111,7 @@ namespace EventStore.Core.Services.Storage
             {
                 try
                 {
-                    _queueStats.EnterBusy();
-                    _queueStats.ProcessingStarted<ChaserTryReadNext>(0);
-                    var result = _chaser.TryReadNext();
-                    _queueStats.ProcessingEnded(1);
-
-                    if (result.Success)
-                    {
-                        _queueStats.ProcessingStarted(result.LogRecord.GetType(), 0);
-                        switch (result.LogRecord.RecordType)
-                        {
-                            case LogRecordType.Prepare:
-                            {
-                                var record = (PrepareLogRecord) result.LogRecord;
-                                if ((record.Flags & PrepareFlags.TransactionEnd) != 0 && (record.Flags & PrepareFlags.IsCommited) != 0)
-                                    _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition, record.TransactionPosition, int.MaxValue)); // TODO AN: somehow get actual first event number
-                                else if ((record.Flags & (PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd)) != 0)
-                                    _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
-
-                                break;
-                            }
-                            case LogRecordType.Commit:
-                            {
-                                var record = (CommitLogRecord) result.LogRecord;
-                                _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, 
-                                                                                record.LogPosition,
-                                                                                record.TransactionPosition,
-                                                                                record.FirstEventNumber));
-                                _readIndex.Commit(record);
-                                break;
-                            }
-                            case LogRecordType.System:
-                            {
-                                var record = (SystemLogRecord) result.LogRecord;
-                                if (record.SystemRecordType == SystemRecordType.Epoch)
-                                {
-                                    // Epoch record is written to TF, but possibly is not added to EpochManager 
-                                    // as we could be in Slave\Clone mode. We try to add epoch to EpochManager 
-                                    // every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent, 
-                                    // but does integrity checks.
-                                    var epoch = record.GetEpochRecord();
-                                    _epochManager.SetLastEpoch(epoch);
-                                }
-                                break;
-                            }
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
-                        _queueStats.ProcessingEnded(1);
-                    }
-
-                    var start = _watch.ElapsedTicks;
-                    if (!result.Success || start - _lastFlush >= _flushDelay + MinFlushDelay)
-                    {
-                        _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
-                        _chaser.Flush();
-                        _queueStats.ProcessingEnded(1);
-
-                        var end = _watch.ElapsedTicks;
-                        _flushDelay = end - start;
-                        _lastFlush = end;
-                    }
-
-                    if (!result.Success)
-                    {
-                        _queueStats.EnterIdle();
-                        //Thread.Sleep(1);
-                        _writerCheckpoint.WaitForFlush(FlushWaitTimeout);
-                    }
+                    ChaserIteration();
                 }
                 catch (Exception exc)
                 {
@@ -199,6 +132,87 @@ namespace EventStore.Core.Services.Storage
             _queueStats.EnterIdle();
             _queueStats.Stop();
             QueueMonitor.Default.Unregister(this);
+        }
+
+        private void ChaserIteration()
+        {
+            _queueStats.EnterBusy();
+            _queueStats.ProcessingStarted<ChaserTryReadNext>(0);
+            var result = _chaser.TryReadNext();
+            _queueStats.ProcessingEnded(1);
+
+            if (result.Success)
+            {
+                _queueStats.ProcessingStarted(result.LogRecord.GetType(), 0);
+                ProcessLogRecord(result);
+                _queueStats.ProcessingEnded(1);
+            }
+
+            var start = _watch.ElapsedTicks;
+            if (!result.Success || start - _lastFlush >= _flushDelay + MinFlushDelay)
+            {
+                _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
+                _chaser.Flush();
+                _queueStats.ProcessingEnded(1);
+
+                var end = _watch.ElapsedTicks;
+                _flushDelay = end - start;
+                _lastFlush = end;
+            }
+
+            if (!result.Success)
+            {
+                _queueStats.EnterIdle();
+                //Thread.Sleep(1);
+                _writerCheckpoint.WaitForFlush(FlushWaitTimeout);
+            }
+        }
+
+        private void ProcessLogRecord(SeqReadResult result)
+        {
+            switch (result.LogRecord.RecordType)
+            {
+                case LogRecordType.Prepare:
+                {
+                    var record = (PrepareLogRecord) result.LogRecord;
+                    if (record.Flags.HasAllOf(PrepareFlags.IsCommitted | PrepareFlags.TransactionEnd))
+                    {
+                        _masterBus.Publish(new StorageMessage.CommitAck(
+                            record.CorrelationId, record.LogPosition, record.TransactionPosition,
+                            record.ExpectedVersion + 1 - record.TransactionOffset));
+                    }
+                    else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd))
+                        _masterBus.Publish(new StorageMessage.PrepareAck(
+                            record.CorrelationId, record.LogPosition, record.Flags));
+                    break;
+                }
+                case LogRecordType.Commit:
+                {
+                    var record = (CommitLogRecord) result.LogRecord;
+                    _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
+                                                                    record.LogPosition,
+                                                                    record.TransactionPosition,
+                                                                    record.FirstEventNumber));
+                    _readIndex.Commit(record);
+                    break;
+                }
+                case LogRecordType.System:
+                {
+                    var record = (SystemLogRecord) result.LogRecord;
+                    if (record.SystemRecordType == SystemRecordType.Epoch)
+                    {
+                        // Epoch record is written to TF, but possibly is not added to EpochManager 
+                        // as we could be in Slave\Clone mode. We try to add epoch to EpochManager 
+                        // every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent, 
+                        // but does integrity checks.
+                        var epoch = record.GetEpochRecord();
+                        _epochManager.SetLastEpoch(epoch);
+                    }
+                    break;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         public void Handle(SystemMessage.BecomeShuttingDown message)

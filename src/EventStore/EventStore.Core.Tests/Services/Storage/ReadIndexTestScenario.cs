@@ -335,9 +335,7 @@ namespace EventStore.Core.Tests.Services.Storage
         protected EventRecord WriteDelete(string eventStreamId)
         {
             var prepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(),
-                                                    Guid.NewGuid(),
-                                                    eventStreamId,
-                                                    ExpectedVersion.Any);
+                                                    Guid.NewGuid(), Guid.NewGuid(), eventStreamId, ExpectedVersion.Any);
             long pos;
             Assert.IsTrue(Writer.Write(prepare, out pos));
             var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(),
@@ -352,9 +350,7 @@ namespace EventStore.Core.Tests.Services.Storage
         protected PrepareLogRecord WriteDeletePrepare(string eventStreamId)
         {
             var prepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(),
-                                                    Guid.NewGuid(),
-                                                    eventStreamId,
-                                                    ExpectedVersion.Any);
+                                                    Guid.NewGuid(), Guid.NewGuid(), eventStreamId, ExpectedVersion.Any);
             long pos;
             Assert.IsTrue(Writer.Write(prepare, out pos));
 

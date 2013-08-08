@@ -112,11 +112,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                         DateTime.UtcNow, PrepareFlags.TransactionEnd, null, NoData, NoData);
         }
 
-        public static PrepareLogRecord DeleteTombstone(long logPosition, Guid correlationId, string eventStreamId, int expectedVersion)
+        public static PrepareLogRecord DeleteTombstone(long logPosition, Guid correlationId, Guid eventId,
+                                                       string eventStreamId, int expectedVersion, PrepareFlags additionalFlags = PrepareFlags.None)
         {
-            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), logPosition, 0, eventStreamId, 
+            return new PrepareLogRecord(logPosition, correlationId, eventId, logPosition, 0, eventStreamId, 
                                         expectedVersion, DateTime.UtcNow, 
-                                        PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, 
+                                        PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | additionalFlags, 
                                         SystemEventTypes.StreamDeleted, NoData, NoData);
         }
 

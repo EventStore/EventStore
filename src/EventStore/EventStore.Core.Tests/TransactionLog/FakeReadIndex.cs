@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.TransactionLog
             throw new NotImplementedException();
         }
 
-        public void Commit(List<PrepareLogRecord> commitedPrepares)
+        public void Commit(IList<PrepareLogRecord> commitedPrepares)
         {
             throw new NotImplementedException();
         }

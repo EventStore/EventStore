@@ -448,15 +448,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             }
             catch (OutOfMemoryException)
             {
-                Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk #{0}-{1} at {2}.",
-                          _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
+                Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk {0}.", this);
                 _isCached = 0;
                 return;
             }
             catch (FileBeingDeletedException)
             {
-                Log.Debug("CACHING FAILED due to FileBeingDeleted exception (TFChunk is being disposed) in TFChunk #{0}-{1} at {2}.",
-                          _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
+                Log.Debug("CACHING FAILED due to FileBeingDeleted exception (TFChunk is being disposed) in TFChunk {0}.", this);
                 _isCached = 0;
                 return;
             }
@@ -466,8 +464,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             {
                 if (Interlocked.Add(ref _memStreamCount, -_maxReaderCount) == 0)
                     FreeCachedData();
-                Log.Trace("CACHING ABORTED for TFChunk #{0}-{1} ({2}) as TFChunk was probably marked for deletion.",
-                          _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
+                Log.Trace("CACHING ABORTED for TFChunk {0} as TFChunk was probably marked for deletion.", this);
                 return;
             }
 
@@ -487,8 +484,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             _readSide.Uncache();
 
-            Log.Trace("CACHED TFChunk #{0}-{1} ({2}) in {3}.",
-                      _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename), sw.Elapsed);
+            Log.Trace("CACHED TFChunk {0} in {1}.", this, sw.Elapsed);
 
             if (_selfdestructin54321)
                 TryDestructMemStreams();
@@ -568,7 +564,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
                 TryDestructMemStreams();
 
-                Log.Trace("UNCACHED TFChunk #{0}-{1} ({2})", _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
+                Log.Trace("UNCACHED TFChunk {0}.", this);
             }
         }
 
@@ -937,6 +933,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 throw new Exception("Somehow we managed to decrease count of file streams below zero.");
             if (_selfdestructin54321 && fileStreamCount == 0)
                 CleanUpFileStreamDestruction();
+        }
+
+        public override string ToString()
+        {
+            return string.Format("#{0}-{1} ({2})", _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber, Path.GetFileName(_filename));
         }
 
         private struct Midpoint

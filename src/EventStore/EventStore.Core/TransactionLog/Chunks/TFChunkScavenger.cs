@@ -264,7 +264,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             CommitInfo commitInfo;
             if (commits.TryGetValue(prepare.TransactionPosition, out commitInfo))
             {
-                if ((prepare.Flags & PrepareFlags.StreamDelete) != 0) // we always keep delete tombstones
+                if (prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete)) // we always keep delete tombstones
                 {
                     commitInfo.KeepCommit = true; // see notes below
                     return true;
@@ -281,7 +281,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     return false;
                 }
 
-                if ((prepare.Flags & PrepareFlags.Data) == 0)
+                if (prepare.Flags.HasNoneOf(PrepareFlags.Data))
                 {
                     // We encountered system prepare with no data. As of now it can appear only in explicit
                     // transactions so we can safely remove it. The performance shouldn't hurt, because
@@ -339,10 +339,8 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             else
             {
-                if ((prepare.Flags & PrepareFlags.StreamDelete) != 0) // we always keep delete tombstones
-                {
+                if (prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete)) // we always keep delete tombstones
                     return true;
-                }
 
                 // So here we have prepare which commit is in the following chunks or prepare is not committed at all.
                 // Now, whatever heuristic on prepare scavenge we use, we should never delete the very first prepare
@@ -351,7 +349,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 // that prepare wouldn't ever be needed (e.g., stream was deleted, $maxAge or $maxCount rule it out)
                 // we still need the first prepare to find out StreamId for possible commit in StorageWriterService.WriteCommit method. 
                 // There could be other reasons where it is needed, so we just safely filter it out to not bother further.
-                if ((prepare.Flags & PrepareFlags.TransactionBegin) != 0)
+                if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionBegin))
                     return true;
 
                 // If stream of this prepare is deleted, then we can safely delete this prepare.

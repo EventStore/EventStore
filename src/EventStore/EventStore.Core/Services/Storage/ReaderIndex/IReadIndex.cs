@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         void Init(long writerCheckpoint, long buildToPosition);
         void Commit(CommitLogRecord record);
-        void Commit(List<PrepareLogRecord> commitedPrepares);
+        void Commit(IList<PrepareLogRecord> commitedPrepares);
         ReadIndexStats GetStatistics();
         
         IndexReadEventResult ReadEvent(string streamId, int eventNumber);

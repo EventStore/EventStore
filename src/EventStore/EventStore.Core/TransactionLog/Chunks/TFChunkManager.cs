@@ -194,8 +194,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             catch (TimeoutException exc)
             {
-                throw new Exception(string.Format("The chunk that is being switched #{0}-{1} ({2}) is used by someone else.",
-                                                  chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, oldFileName), exc);
+                throw new Exception(string.Format("The chunk that is being switched {0} is used by someone else.", chunk), exc);
             }
 
             var newFileName = _config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber);
@@ -209,8 +208,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 if (!ReplaceChunksWith(newChunk, "Old"))
                 {
-                    Log.Info("Chunk #{0}-{1} ({2}) will be not switched, marking for remove...",
-                             chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber,newFileName);
+                    Log.Info("Chunk {0} will be not switched, marking for remove...", newChunk);
                     newChunk.MarkForDeletion();
                 }
 
@@ -248,8 +246,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {
                     oldChunk.MarkForDeletion();
 
-                    Log.Info("{0} chunk #{1}-{2} ({3}) is marked for deletion.", chunkExplanation,
-                                oldChunk.ChunkHeader.ChunkStartNumber, oldChunk.ChunkHeader.ChunkEndNumber, oldChunk.FileName);
+                    Log.Info("{0} chunk #{1} is marked for deletion.", chunkExplanation, oldChunk);
                 }
                 lastRemovedChunk = oldChunk;
             }
@@ -265,8 +262,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (oldChunk != null && !ReferenceEquals(lastRemovedChunk, oldChunk))
                 {
                     oldChunk.MarkForDeletion();
-                    Log.Info("{0} chunk #{1}-{2} ({3}) is marked for deletion.", chunkExplanation,
-                             oldChunk.ChunkHeader.ChunkStartNumber, oldChunk.ChunkHeader.ChunkEndNumber, oldChunk.FileName);
+                    Log.Info("{0} chunk {1} is marked for deletion.", chunkExplanation, oldChunk);
                 }
                 lastRemovedChunk = oldChunk;
             }

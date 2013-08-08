@@ -136,6 +136,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var startPosition = Math.Max(0, _persistedCommitCheckpoint);
                 reader.Reposition(startPosition);
 
+                var commitedPrepares = new List<PrepareLogRecord>();
+
                 long processed = 0;
                 SeqReadResult result;
                 while ((result = reader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition)
@@ -143,7 +145,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     switch (result.LogRecord.RecordType)
                     {
                         case LogRecordType.Prepare:
+                        {
+                            var prepare = (PrepareLogRecord) result.LogRecord;
+                            if (prepare.Flags.HasAllOf(PrepareFlags.IsCommitted))
+                            {
+                                commitedPrepares.Add(prepare);
+                                if (prepare.Flags.HasAllOf(PrepareFlags.TransactionEnd))
+                                {
+                                    Commit(commitedPrepares);
+                                    commitedPrepares.Clear();
+                                }
+                            }
                             break;
+                        }
                         case LogRecordType.Commit:
                             Commit((CommitLogRecord)result.LogRecord);
                             break;
@@ -180,15 +194,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !_indexRebuild))
                 return;  // already committed
 
-            uint streamHash = 0;
             string streamId = null;
+            uint streamHash = 0;
             int eventNumber = int.MinValue;
             var indexEntries = new List<IndexEntry>();
             var prepares = new List<PrepareLogRecord>();
 
             foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition))
             {
-                if ((prepare.Flags & (PrepareFlags.StreamDelete | PrepareFlags.Data)) == 0)
+                if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
                     continue;
 
                 if (streamId == null)
@@ -197,11 +211,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     streamHash = _hasher.Hash(prepare.EventStreamId);
                 }
                 else
-                    Debug.Assert(prepare.EventStreamId == streamId);
-
-                eventNumber = (prepare.Flags & PrepareFlags.StreamDelete) != 0
-                                  ? EventNumber.DeletedStream
-                                  : commit.FirstEventNumber + prepare.TransactionOffset;
+                {
+                    if (prepare.EventStreamId != streamId)
+                        throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
+                }
+                eventNumber = prepare.Flags.HasAllOf(PrepareFlags.StreamDelete)
+                                      ? EventNumber.DeletedStream
+                                      : commit.FirstEventNumber + prepare.TransactionOffset;
                 _committedEvents.PutRecord(prepare.EventId, Tuple.Create(streamId, eventNumber), throwOnDuplicate: false);
                 
                 var addToIndex = commit.LogPosition > _persistedCommitCheckpoint
@@ -254,7 +270,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        public void Commit(List<PrepareLogRecord> commitedPrepares)
+        public void Commit(IList<PrepareLogRecord> commitedPrepares)
         {
             if (commitedPrepares.Count == 0)
                 return;
@@ -270,18 +286,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             foreach (var prepare in commitedPrepares)
             {
-                if ((prepare.Flags & (PrepareFlags.StreamDelete | PrepareFlags.Data)) == 0)
+                if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
                     continue;
 
-                if (prepare.EventStreamId != streamId)
+                if (prepare.EventStreamId != streamId) 
                     throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
 
                 if (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !_indexRebuild))
                     return;  // already committed
 
-                eventNumber = (prepare.Flags & PrepareFlags.StreamDelete) != 0
-                                  ? EventNumber.DeletedStream
-                                  : prepare.TransactionOffset; /* for committed prepare transaction offset IS event number */
+                eventNumber = prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
                 _committedEvents.PutRecord(prepare.EventId, Tuple.Create(streamId, eventNumber), throwOnDuplicate: false);
 
                 var addToIndex = prepare.LogPosition > _persistedCommitCheckpoint
@@ -407,7 +421,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         continue;
 
                     yield return prepare;
-                    if ((prepare.Flags & PrepareFlags.TransactionEnd) != 0)
+                    if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
                         yield break;
                 }
             }
@@ -880,21 +894,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                             continue;
 
                         // prepare with useful data or delete tombstone
-                        if ((prepare.Flags & (PrepareFlags.Data | PrepareFlags.StreamDelete)) != 0) 
+                        if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete) 
+                            && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos)
                         {
-                            if (new TFPos(commit.LogPosition, prepare.LogPosition) >= pos)
-                            {
-                                var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
-                                records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
-                                count++;
+                            var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
+                            records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
+                            count++;
 
-                                // for forward pass position is inclusive, 
-                                // so we put pre-position of commit and post-position of prepare
-                                nextPos = new TFPos(commit.LogPosition, result.RecordPostPosition); 
-                            }
+                            // for forward pass position is inclusive, 
+                            // so we put pre-position of commit and post-position of prepare
+                            nextPos = new TFPos(commit.LogPosition, result.RecordPostPosition); 
                         }
 
-                        if ((prepare.Flags & PrepareFlags.TransactionEnd) != 0)
+                        if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
                             break;
                     }
                 }
@@ -974,20 +986,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                             continue;
 
                         // prepare with useful data or delete tombstone
-                        if ((prepare.Flags & (PrepareFlags.Data | PrepareFlags.StreamDelete)) != 0) 
+                        if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete) 
+                            && new TFPos(commitPostPos, result.RecordPostPosition) <= pos)
                         {
-                            if (new TFPos(commitPostPos, result.RecordPostPosition) <= pos)
-                            {
-                                var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
-                                records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
-                                count++;
+                            var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
+                            records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
+                            count++;
 
-                                // for backward pass we allow read the same commit, but force to skip last read prepare
-                                // so we put post-position of commit and pre-position of prepare
-                                nextPos = new TFPos(commitPostPos, prepare.LogPosition);
-                            }
+                            // for backward pass we allow read the same commit, but force to skip last read prepare
+                            // so we put post-position of commit and pre-position of prepare
+                            nextPos = new TFPos(commitPostPos, prepare.LogPosition);
                         }
-                        if ((prepare.Flags & PrepareFlags.TransactionBegin) != 0)
+                        if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionBegin))
                             break;
                     }
                 }
@@ -1029,7 +1039,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 // we should skip prepares without data, as they don't mean anything for idempotency
                 // though we have to check deletes, otherwise they always will be considered idempotent :)
                 var dataPrepares = from prepare in GetTransactionPrepares(transactionPosition, commitPosition)
-                                   where (prepare.Flags & (PrepareFlags.Data | PrepareFlags.StreamDelete)) != 0
+                                   where prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
                                    select prepare.EventId;
                 return CheckCommit(reader, streamId, expectedVersion, dataPrepares);
             }

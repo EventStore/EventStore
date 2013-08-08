@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.Storage
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageWriterService>();
 
         protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
-        private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(200);
 
         protected readonly TFChunkDb Db;
         protected readonly TFChunkWriter Writer;
@@ -219,7 +219,7 @@ namespace EventStore.Core.Services.Storage
             }
         }
 
-        public void Handle(SystemMessage.WriteEpoch message)
+        void IHandle<SystemMessage.WriteEpoch>.Handle(SystemMessage.WriteEpoch message)
         {
             if (_vnodeState != VNodeState.Master)
                 throw new Exception(string.Format("New Epoch request came not in master state!!! State: {0}.", _vnodeState));
@@ -247,7 +247,7 @@ namespace EventStore.Core.Services.Storage
             }
 
             var totalTime = message.TotalTimeWasted + sw.Elapsed;
-            if (totalTime < TimeSpan.FromSeconds(5) || (int)totalTime.TotalSeconds % 5 == 0) // too verbose otherwise
+            if (totalTime < TimeSpan.FromSeconds(5) || (int)totalTime.TotalSeconds % 30 == 0) // too verbose otherwise
                 Log.Debug("Still waiting for chaser to catch up already for {0}...", totalTime);
             Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(message.CorrelationId, totalTime));
         }
@@ -275,7 +275,7 @@ namespace EventStore.Core.Services.Storage
                     for (int i = 0; i < message.Events.Length; ++i)
                     {
                         var evnt = message.Events[i];
-                        var flags = PrepareFlags.Data | PrepareFlags.IsCommited;
+                        var flags = PrepareFlags.Data | PrepareFlags.IsCommitted;
                         if (i == 0)
                             flags |= PrepareFlags.TransactionBegin;
                         if (i == message.Events.Length - 1)
@@ -283,14 +283,12 @@ namespace EventStore.Core.Services.Storage
                         if (evnt.IsJson)
                             flags |= PrepareFlags.IsJson;
 
-                        var expectedVersion = i == 0 ? message.ExpectedVersion : ExpectedVersion.Any;
-                        var eventNumber = commitCheck.CurrentVersion + 1 + i;
+                        // when IsCommitted ExpectedVersion is always explicit
+                        var expectedVersion = commitCheck.CurrentVersion + i;
                         var res = WritePrepareWithRetry(
                             LogRecord.Prepare(logPosition, message.CorrelationId, evnt.EventId,
-                                              /* when IsCommited, transaction offset is REALLY absolute eventNumber! */
-                                              transactionPosition, eventNumber,
-                                              message.EventStreamId, expectedVersion, flags,
-                                              evnt.EventType, evnt.Data, evnt.Metadata));
+                                              transactionPosition, i, message.EventStreamId,
+                                              expectedVersion, flags, evnt.EventType, evnt.Data, evnt.Metadata));
                         logPosition = res.NewPos;
                         if (i == 0)
                             transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
@@ -302,11 +300,45 @@ namespace EventStore.Core.Services.Storage
                     var res = WritePrepareWithRetry(
                         LogRecord.Prepare(logPosition, message.CorrelationId, Guid.NewGuid(), logPosition, -1,
                                           message.EventStreamId, message.ExpectedVersion,
-                                          PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommited,
+                                          PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommitted,
                                           null, Empty.ByteArray, Empty.ByteArray));
                     prepares.Add(res.Prepare);
                 }
                 ReadIndex.Commit(prepares);
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Exception in writer.");
+                throw;
+            }
+            finally
+            {
+                Flush();
+            }
+        }
+
+        void IHandle<StorageMessage.WriteDelete>.Handle(StorageMessage.WriteDelete message)
+        {
+            Interlocked.Decrement(ref FlushMessagesInQueue);
+            try
+            {
+                if (message.LiveUntil < DateTime.UtcNow)
+                    return;
+
+                var eventId = Guid.NewGuid();
+                
+                var commitCheck = ReadIndex.CheckCommit(message.EventStreamId, message.ExpectedVersion, new[]{eventId});
+                if (commitCheck.Decision != CommitDecision.Ok)
+                {
+                    ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
+                    return;
+                }
+                // when IsCommitted ExpectedVersion is actually real EventNumber
+                const int expectedVersion = EventNumber.DeletedStream - 1;
+                var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(), message.CorrelationId,
+                                                       eventId, message.EventStreamId, expectedVersion, PrepareFlags.IsCommitted); 
+                var res = WritePrepareWithRetry(record);
+                ReadIndex.Commit(new[] {res.Prepare});
             }
             catch (Exception exc)
             {
@@ -490,31 +522,6 @@ namespace EventStore.Core.Services.Storage
             }
         }
 
-        void IHandle<StorageMessage.WriteDelete>.Handle(StorageMessage.WriteDelete message)
-        {
-            Interlocked.Decrement(ref FlushMessagesInQueue);
-            try
-            {
-                if (message.LiveUntil < DateTime.UtcNow)
-                    return;
-
-                var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(),
-                                                       message.CorrelationId,
-                                                       message.EventStreamId,
-                                                       message.ExpectedVersion);
-                WritePrepareWithRetry(record);
-            }
-            catch (Exception exc)
-            {
-                Log.ErrorException(exc, "Exception in writer.");
-                throw;
-            }
-            finally
-            {
-                Flush();
-            }
-        }
-
         private WriteResult WritePrepareWithRetry(PrepareLogRecord prepare)
         {
             long writtenPos = prepare.LogPosition;
@@ -543,7 +550,7 @@ namespace EventStore.Core.Services.Storage
                                                       writtenPos));
                 }
             }
-            return new WriteResult(writtenPos, newPos, prepare);
+            return new WriteResult(writtenPos, newPos, record);
         }
 
         private CommitLogRecord WriteCommitWithRetry(CommitLogRecord commit)

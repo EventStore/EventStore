@@ -65,6 +65,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
+
                 Assert.DoesNotThrow(() => store.AppendToStream(stream, ExpectedVersion.NoStream));
 
                 var read = store.ReadStreamEventsForward(stream, 0, 2, resolveLinkTos: false);
@@ -131,8 +132,15 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
-                Assert.DoesNotThrow(delete.Wait);
+                try
+                {
+                    store.DeleteStream(stream, ExpectedVersion.EmptyStream);
+                }
+                catch (Exception exc)
+                {
+                    Console.WriteLine(exc);
+                    Assert.Fail();
+                }
 
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { TestEvent.NewTestEvent() });
                 Assert.That(() => append.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
