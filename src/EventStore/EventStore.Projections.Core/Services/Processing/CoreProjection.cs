@@ -244,6 +244,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
                 | State.CompletingPhase | State.PhaseCompleted);
 
+            Unsubscribed();
             _projectionProcessingPhase.Handle(message);
         }
 
@@ -260,14 +261,14 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionProcessingPhase.Handle(message);
         }
 
-        public void Unsubscribed()
+        private void Unsubscribed()
         {
             _subscriptionDispatcher.Cancel(_projectionCorrelationId);
             _subscribed = false;
             _projectionProcessingPhase.Unsubscribed();
         }
 
-        public void Complete()
+        public void CompletePhase()
         {
             if (_state != State.Running)
                 return;

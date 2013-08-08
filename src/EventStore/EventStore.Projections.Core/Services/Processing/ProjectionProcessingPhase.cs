@@ -129,7 +129,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             try
             {
-                _coreProjection.Unsubscribed();
                 var progressWorkItem = new CompletedWorkItem(this);
                 _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 ProcessEvent();
@@ -495,7 +494,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Complete()
         {
-            _coreProjection.Complete();
+            _coreProjection.CompletePhase();
         }
 
         public void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem)

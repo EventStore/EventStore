@@ -31,8 +31,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public interface ICoreProjectionForProcessingPhase
     {
-        void Unsubscribed();
-        void Complete();
+        void CompletePhase();
         void EnsureUnsubscribed();
         void SetFaulted(string reason);
         void SetFaulted(Exception ex);

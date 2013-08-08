@@ -26,24 +26,26 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 {
     [TestFixture]
-    class when_creating_a_multi_phase_projection : specification_with_multi_phase_core_projection
+    class when_completing_phase1_of_a_multiphase_projection : specification_with_multi_phase_core_projection
     {
         protected override void When()
         {
+            _coreProjection.Start();
+            _coreProjection.Handle(
+                new EventReaderSubscriptionMessage.EofReached(
+                    Phase1.SubscriptionId, CheckpointTag.FromPosition(0, 500, 450), 0));
         }
 
         [Test]
-        public void it_is_created()
+        public void writes_a_checkpoint()
         {
         }
     }
-}
-
-namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
-{
 }

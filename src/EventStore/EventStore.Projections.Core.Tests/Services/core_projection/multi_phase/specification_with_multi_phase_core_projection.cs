@@ -42,6 +42,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
         private FakeCheckpointManager _checkpointManager;
         private FakeProjectionProcessingPhase _phase1;
         private FakeProjectionProcessingPhase _phase2;
+        private IReaderStrategy _phase1readerStrategy;
+        private IReaderStrategy _phase2readerStrategy;
 
         class FakeProjectionProcessingStrategy : ProjectionProcessingStrategy
         {
@@ -88,16 +90,23 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
         internal class FakeProjectionProcessingPhase : IProjectionProcessingPhase
         {
+            private readonly specification_with_multi_phase_core_projection _specification;
             private readonly ICoreProjectionCheckpointManager _checkpointManager;
+            private readonly IReaderStrategy _readerStrategy;
+
             private bool _initialized;
             private bool _initializedFromCheckpoint;
             private CheckpointTag _initializedFromCheckpointAt;
             private PhaseState _state;
             private Guid _subscriptionId;
+            private bool _unsubscribed;
 
-            public FakeProjectionProcessingPhase(ICoreProjectionCheckpointManager checkpointManager)
+            public FakeProjectionProcessingPhase(specification_with_multi_phase_core_projection specification,
+                ICoreProjectionCheckpointManager checkpointManager, IReaderStrategy readerStrategy)
             {
+                _specification = specification;
                 _checkpointManager = checkpointManager;
+                _readerStrategy = readerStrategy;
             }
 
             public void Dispose()
@@ -122,7 +131,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public void Handle(EventReaderSubscriptionMessage.EofReached message)
             {
-                throw new NotImplementedException();
+                _specification._coreProjection.CompletePhase();
             }
 
             public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
@@ -153,7 +162,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public void Unsubscribed()
             {
-                throw new NotImplementedException();
+                _unsubscribed = true;
             }
 
             public void SetState(PhaseState state)
@@ -168,7 +177,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public void ProcessEvent()
             {
-                throw new NotImplementedException();
             }
 
             public void Subscribed(Guid subscriptionId)
@@ -178,7 +186,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public ReaderSubscriptionOptions GetSubscriptionOptions()
             {
-                throw new NotImplementedException();
+                return new ReaderSubscriptionOptions(10000, 100, true, null);
             }
 
             public ICoreProjectionCheckpointManager CheckpointManager
@@ -188,7 +196,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public IReaderStrategy ReaderStrategy
             {
-                get { throw new NotImplementedException(); }
+                get { return _readerStrategy; }
             }
 
             public bool Initialized
@@ -216,9 +224,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 get { return _subscriptionId; }
             }
 
+            public bool Unsubscribed_
+            {
+                get { return _unsubscribed; }
+            }
+
             public void GetStatistics(ProjectionStatistics info)
             {
-                throw new NotImplementedException();
             }
         }
 
@@ -229,6 +241,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             private bool _started;
             private CheckpointTag _startedAt;
+            private CheckpointTag _lastEvent;
+            private float _progress;
+            private bool _stopped;
 
             public FakeCheckpointManager(IPublisher publisher, Guid projectionCorrelationId)
             {
@@ -244,21 +259,22 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             {
                 _started = true;
                 _startedAt = checkpointTag;
+                _lastEvent = checkpointTag;
             }
 
             public void Stopping()
             {
-                throw new NotImplementedException();
+                _publisher.Publish(
+                    new CoreProjectionProcessingMessage.CheckpointCompleted(_projectionCorrelationId, _lastEvent));
             }
 
             public void Stopped()
             {
-                throw new NotImplementedException();
+                _stopped = true;
             }
 
             public void GetStatistics(ProjectionStatistics info)
             {
-                throw new NotImplementedException();
             }
 
             public void NewPartition(string partition, CheckpointTag eventCheckpointTag)
@@ -288,7 +304,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public void Progress(float progress)
             {
-                throw new NotImplementedException();
+                _progress = progress;
             }
 
             public void BeginLoadState()
@@ -328,6 +344,47 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             {
                 get { return _startedAt; }
             }
+
+            public float Progress_
+            {
+                get { return _progress; }
+            }
+
+            public bool Stopped_
+            {
+                get { return _stopped; }
+            }
+        }
+
+        class FakeReaderStrategy : IReaderStrategy
+        {
+            public bool IsReadingOrderRepeatable
+            {
+                get { throw new NotImplementedException(); }
+            }
+
+            public EventFilter EventFilter
+            {
+                get { throw new NotImplementedException(); }
+            }
+
+            public PositionTagger PositionTagger
+            {
+                get { throw new NotImplementedException(); }
+            }
+
+            public IReaderSubscription CreateReaderSubscription(
+                IPublisher publisher, CheckpointTag fromCheckpointTag, Guid subscriptionId,
+                ReaderSubscriptionOptions readerSubscriptionOptions)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IEventReader CreatePausedEventReader(
+                Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         public ICoreProjectionCheckpointManager CheckpointManager
@@ -348,11 +405,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
         protected override ProjectionProcessingStrategy GivenProjectionProcessingStrategy()
         {
             _checkpointManager = new FakeCheckpointManager(_bus, _projectionCorrelationId);
-            _phase1 = new FakeProjectionProcessingPhase(CheckpointManager);
-            _phase2 = new FakeProjectionProcessingPhase(CheckpointManager);
+            _phase1readerStrategy = new FakeReaderStrategy();
+            _phase2readerStrategy = new FakeReaderStrategy();
+            _phase1 = new FakeProjectionProcessingPhase(this, CheckpointManager, _phase1readerStrategy);
+            _phase2 = new FakeProjectionProcessingPhase(this, CheckpointManager, _phase2readerStrategy);
             return new FakeProjectionProcessingStrategy(
                 _projectionName, _version, new ConsoleLogger("logger"), Phase1, Phase2);
         }
+
     }
 
 }
