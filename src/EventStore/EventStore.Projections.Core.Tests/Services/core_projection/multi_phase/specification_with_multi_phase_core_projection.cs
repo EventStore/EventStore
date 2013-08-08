@@ -39,7 +39,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 {
     abstract class specification_with_multi_phase_core_projection: TestFixtureWithCoreProjection
     {
-        private FakeCheckpointManager _checkpointManager;
+        private FakeCheckpointManager _phase1checkpointManager;
+        private FakeCheckpointManager _phase2checkpointManager;
         private FakeProjectionProcessingPhase _phase1;
         private FakeProjectionProcessingPhase _phase2;
         private IReaderStrategy _phase1readerStrategy;
@@ -234,7 +235,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             }
         }
 
-        class FakeCheckpointManager : ICoreProjectionCheckpointManager
+        internal class FakeCheckpointManager : ICoreProjectionCheckpointManager
         {
             private readonly IPublisher _publisher;
             private readonly Guid _projectionCorrelationId;
@@ -244,6 +245,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             private CheckpointTag _lastEvent;
             private float _progress;
             private bool _stopped;
+            private bool _stopping;
 
             public FakeCheckpointManager(IPublisher publisher, Guid projectionCorrelationId)
             {
@@ -264,6 +266,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public void Stopping()
             {
+                _stopping = true;
                 _publisher.Publish(
                     new CoreProjectionProcessingMessage.CheckpointCompleted(_projectionCorrelationId, _lastEvent));
             }
@@ -354,6 +357,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             {
                 get { return _stopped; }
             }
+
+            public bool Stopping_
+            {
+                get { return _stopping; }
+            }
         }
 
         class FakeReaderStrategy : IReaderStrategy
@@ -387,10 +395,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             }
         }
 
-        public ICoreProjectionCheckpointManager CheckpointManager
+        public FakeCheckpointManager Phase1CheckpointManager
         {
-            get { return _checkpointManager; }
+            get { return _phase1checkpointManager; }
         }
+        public FakeCheckpointManager Phase2CheckpointManager
+        {
+            get { return _phase2checkpointManager; }
+        }
+
 
         public FakeProjectionProcessingPhase Phase1
         {
@@ -404,11 +417,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
         protected override ProjectionProcessingStrategy GivenProjectionProcessingStrategy()
         {
-            _checkpointManager = new FakeCheckpointManager(_bus, _projectionCorrelationId);
+            _phase1checkpointManager = new FakeCheckpointManager(_bus, _projectionCorrelationId);
+            _phase2checkpointManager = new FakeCheckpointManager(_bus, _projectionCorrelationId);
             _phase1readerStrategy = new FakeReaderStrategy();
             _phase2readerStrategy = new FakeReaderStrategy();
-            _phase1 = new FakeProjectionProcessingPhase(this, CheckpointManager, _phase1readerStrategy);
-            _phase2 = new FakeProjectionProcessingPhase(this, CheckpointManager, _phase2readerStrategy);
+            _phase1 = new FakeProjectionProcessingPhase(this, Phase1CheckpointManager, _phase1readerStrategy);
+            _phase2 = new FakeProjectionProcessingPhase(this, Phase2CheckpointManager, _phase2readerStrategy);
             return new FakeProjectionProcessingStrategy(
                 _projectionName, _version, new ConsoleLogger("logger"), Phase1, Phase2);
         }

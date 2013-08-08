@@ -44,8 +44,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
         }
 
         [Test]
-        public void writes_a_checkpoint()
+        public void stops_phase1_checkpoint_manager()
         {
+            Assert.IsTrue(Phase1CheckpointManager.Stopped_);
         }
     }
 }
