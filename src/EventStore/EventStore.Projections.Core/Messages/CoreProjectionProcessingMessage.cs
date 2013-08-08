@@ -215,5 +215,6 @@ namespace EventStore.Projections.Core.Messages
                 get { return _streamId; }
             }
         }
+
     }
 }

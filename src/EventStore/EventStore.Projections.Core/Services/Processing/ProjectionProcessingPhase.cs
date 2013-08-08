@@ -479,7 +479,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void EnsureTickPending()
+        private void EnsureTickPending()
         {
             _coreProjection.EnsureTickPending();
         }

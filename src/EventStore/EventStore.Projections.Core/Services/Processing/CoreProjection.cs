@@ -57,6 +57,8 @@ namespace EventStore.Projections.Core.Services.Processing
             Stopped = 0x80,
             FaultedStopping = 0x100,
             Faulted = 0x200,
+            CompletingPhase = 0x400,
+            PhaseCompleted = 0x800,
         }
 
         private readonly string _name;
@@ -191,7 +193,7 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureState(
                 /* load state restores already ordered events by sending committed events back to the projection */
                 State.StateLoaded | State.Running | State.Stopping | State.Stopped | State.FaultedStopping
-                | State.Faulted);
+                | State.Faulted | State.CompletingPhase | State.PhaseCompleted);
             //TODO: should we allow stopped states here? 
             _projectionProcessingPhase.Handle(message);
             if (_state != State.StateLoaded)
@@ -204,7 +206,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             RegisterSubscriptionMessage(message);
 
-            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            EnsureState(
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
+                | State.CompletingPhase | State.PhaseCompleted);
+
             _projectionProcessingPhase.Handle(message);
         }
 
@@ -214,7 +219,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             RegisterSubscriptionMessage(message);
 
-            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            EnsureState(
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
+                | State.CompletingPhase | State.PhaseCompleted);
 
             _projectionProcessingPhase.Handle(message);
         }
@@ -225,7 +232,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             RegisterSubscriptionMessage(message);
 
-            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            EnsureState(
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
+                | State.CompletingPhase | State.PhaseCompleted);
+
             _projectionProcessingPhase.Handle(message);
         }
 
@@ -235,7 +245,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             RegisterSubscriptionMessage(message);
 
-            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            EnsureState(
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
+                | State.CompletingPhase | State.PhaseCompleted);
+
             _projectionProcessingPhase.Handle(message);
         }
 
@@ -268,7 +281,11 @@ namespace EventStore.Projections.Core.Services.Processing
                         exception: new Exception("Not yet available")));
                 return;
             }
-            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+
+            EnsureState(
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
+                | State.CompletingPhase | State.PhaseCompleted);
+
             _projectionProcessingPhase.Handle(message);
         }
 
@@ -282,7 +299,11 @@ namespace EventStore.Projections.Core.Services.Processing
                         exception: new Exception("Not yet available")));
                 return;
             }
-            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+
+            EnsureState(
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
+                | State.CompletingPhase | State.PhaseCompleted);
+
             _projectionProcessingPhase.Handle(message);
         }
 
@@ -364,10 +385,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void GoToState(State state)
         {
-            var wasStopped = _state == State.Stopped || _state == State.Faulted;
-            var wasStopping = _state == State.Stopping || _state == State.FaultedStopping;
-            var wasStarted = _state == State.Subscribed 
-                             || _state == State.Running || _state == State.Stopping || _state == State.FaultedStopping;
+            var wasStopped = _state == State.Stopped || _state == State.Faulted || _state == State.PhaseCompleted;
+            var wasStopping = _state == State.Stopping || _state == State.FaultedStopping
+                              || _state == State.CompletingPhase;
+            var wasStarted = _state == State.Subscribed || _state == State.Running || _state == State.Stopping
+                             || _state == State.FaultedStopping || _state == State.CompletingPhase;
             var wasRunning = _state == State.Running;
             var wasFaulted = _state == State.Faulted || _state == State.FaultedStopping;
 
@@ -376,11 +398,13 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 case State.Stopped:
                 case State.Faulted:
+                case State.PhaseCompleted:
                     if (wasStarted && !wasStopped)
                         _checkpointManager.Stopped();
                     break;
                 case State.Stopping:
                 case State.FaultedStopping:
+                case State.CompletingPhase:
                     if (wasStarted && !wasStopping)
                         _checkpointManager.Stopping();
                     break;
@@ -401,6 +425,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 case State.Stopped:
                 case State.Stopping:
+                case State.CompletingPhase:
+                case State.PhaseCompleted:
                     if (wasRunning)
                         _projectionProcessingPhase.SetStopped();
                     break;
@@ -437,6 +463,12 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 case State.Faulted:
                     EnterFaulted();
+                    break;
+                case State.CompletingPhase:
+                    EnterCompletingPhase();
+                    break;
+                case State.PhaseCompleted:
+                    EnterPhaseCompleted();
                     break;
                 default:
                     throw new Exception();
@@ -522,6 +554,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 new CoreProjectionManagementMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }
 
+        private void EnterCompletingPhase()
+        {
+        }
+
+        private void EnterPhaseCompleted()
+        {
+        }
+
         private bool IsOutOfOrderSubscriptionMessage(EventReaderSubscriptionMessage message)
         {
             if (_currentSubscriptionId != message.SubscriptionId)
@@ -550,8 +590,12 @@ namespace EventStore.Projections.Core.Services.Processing
             // ignore any ticks received when not pending. this may happen when restart requested
             if (!_tickPending)
                 return;
-            // process messagesin almost all states as we now ignore work items when processing
-            EnsureState(State.Running | State.Stopped | State.Stopping | State.FaultedStopping | State.Faulted);
+            // process messages in almost all states as we now ignore work items when processing
+
+            EnsureState(
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
+                | State.CompletingPhase | State.PhaseCompleted);
+
             try
             {
                 _tickPending = false;
@@ -648,6 +692,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 case State.FaultedStopping:
                     GoToState(State.Faulted);
+                    break;
+                case State.CompletingPhase:
+                    GoToState(State.PhaseCompleted);
                     break;
             }
         }
