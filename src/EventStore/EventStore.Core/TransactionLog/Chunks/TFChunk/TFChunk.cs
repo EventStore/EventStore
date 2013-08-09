@@ -532,17 +532,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             }
         }
 
-        private void BuildCacheReaders()
-        {
-            Interlocked.Add(ref _memStreamCount, _maxReaderCount);
-            for (int i = 0; i < _maxReaderCount; i++)
-            {
-                var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
-                var reader = new BinaryReader(stream);
-                _memStreams.Enqueue(new ReaderWorkItem(stream, reader, isMemory: true));
-            }
-        }
-
         //WARNING CacheInMemory/UncacheFromMemory should not be called simultaneously !!!
         public void UnCacheFromMemory()
         {
