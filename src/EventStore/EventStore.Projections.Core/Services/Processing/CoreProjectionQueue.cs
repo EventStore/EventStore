@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Net.Configuration;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
@@ -67,6 +68,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _updateStatistics = updateStatistics;
         }
 
+        public bool IsRunning
+        {
+            get { return _isRunning; }
+        }
+
         public bool ProcessEvent()
         {
             var processed = false;
@@ -83,6 +89,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void EnqueueTask(WorkItem workItem, CheckpointTag workItemCheckpointTag, bool allowCurrentPosition = false)
         {
             ValidateQueueingOrder(workItemCheckpointTag, allowCurrentPosition);
+            workItem.SetProjectionQueue(this);
             workItem.SetCheckpointTag(workItemCheckpointTag);
             _queuePendingEvents.Enqueue(workItem);
         }
@@ -92,6 +99,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_lastEnqueuedEventTag == null)
                 throw new InvalidOperationException(
                     "Cannot enqueue an out-of-order task.  The projection position is currently unknown.");
+            workItem.SetProjectionQueue(this);
             workItem.SetCheckpointTag(_lastEnqueuedEventTag);
             _queuePendingEvents.Enqueue(workItem);
         }
@@ -153,6 +161,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
         private bool _unsubscribed;
         private Guid _subscriptionId;
+        private bool _isRunning;
 
         private bool ProcessOneEventBatch()
         {
@@ -182,6 +191,11 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_subscriptionId != Guid.Empty)
                 throw new InvalidOperationException("Already subscribed");
             _subscriptionId = currentSubscriptionId;
+        }
+
+        public void SetIsRunning(bool isRunning)
+        {
+            _isRunning = isRunning;
         }
     }
 }

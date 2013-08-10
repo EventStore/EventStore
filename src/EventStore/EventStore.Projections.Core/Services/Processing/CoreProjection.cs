@@ -330,8 +330,10 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 InitializeProjectionFromCheckpoint(message.CheckpointData, message.CheckpointTag);
-                _checkpointManager.BeginLoadPrerecordedEvents(message.CheckpointTag);
-
+                if (_startOnLoad)
+                    _checkpointManager.BeginLoadPrerecordedEvents(message.CheckpointTag);
+                else 
+                    GoToState(State.Stopped);
             }
             catch (Exception ex)
             {
@@ -430,24 +432,25 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     case State.Running:
                         if (!wasRunning)
-                            _projectionProcessingPhase.SetState(PhaseState.Running);
+                            _projectionProcessingPhase.SetProjectionState(PhaseState.Running);
                         break;
                     case State.Faulted:
                     case State.FaultedStopping:
                         if (!wasFaulted)
-                            _projectionProcessingPhase.SetFaulted();
+                        {
+                        }
                         if (wasRunning)
-                            _projectionProcessingPhase.SetState(PhaseState.Stopped);
+                            _projectionProcessingPhase.SetProjectionState(PhaseState.Stopped);
                         break;
                     case State.Stopped:
                     case State.Stopping:
                     case State.CompletingPhase:
                     case State.PhaseCompleted:
                         if (wasRunning)
-                            _projectionProcessingPhase.SetState(PhaseState.Stopped);
+                            _projectionProcessingPhase.SetProjectionState(PhaseState.Stopped);
                         break;
                     default:
-                        _projectionProcessingPhase.SetState(PhaseState.Unknown);
+                        _projectionProcessingPhase.SetProjectionState(PhaseState.Unknown);
                         break;
 
                 }
@@ -552,19 +555,23 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterStopping()
         {
+            EnsureUnsubscribed();
         }
 
         private void EnterStopped()
         {
+            EnsureUnsubscribed();
             _publisher.Publish(new CoreProjectionManagementMessage.Stopped(_projectionCorrelationId, _completed));
         }
 
         private void EnterFaultedStopping()
         {
+            EnsureUnsubscribed();
         }
 
         private void EnterFaulted()
         {
+            EnsureUnsubscribed();
             _publisher.Publish(
                 new CoreProjectionManagementMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }

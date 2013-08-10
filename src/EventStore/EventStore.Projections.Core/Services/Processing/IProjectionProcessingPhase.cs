@@ -30,8 +30,7 @@ namespace EventStore.Projections.Core.Services.Processing
         void Subscribed(Guid subscriptionId);
         void Unsubscribed();
 
-        void SetState(PhaseState state);
-        void SetFaulted();
+        void SetProjectionState(PhaseState state);
 
         void GetStatistics(ProjectionStatistics info);
         IReaderStrategy ReaderStrategy { get; }

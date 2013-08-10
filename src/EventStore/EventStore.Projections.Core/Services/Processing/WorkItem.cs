@@ -37,11 +37,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _onStage;
         private CheckpointTag _checkpointTag;
         private object _lastStageCorrelationId;
+        private CoreProjectionQueue _queue;
+        protected bool _requiresRunning;
 
         protected WorkItem(object initialCorrelationId)
             : base(initialCorrelationId)
         {
             _lastStage = 5;
+        }
+
+        protected CoreProjectionQueue Queue
+        {
+            get { return _queue; }
         }
 
         public override void Process(int onStage, Action<int, object> readyForStage)
@@ -50,28 +57,33 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("CheckpointTag has not been initialized");
             _complete = readyForStage;
             _onStage = onStage;
-            switch (onStage)
+            if (_requiresRunning && !Queue.IsRunning)
+                NextStage();
+            else
             {
-                case 0:
-                    RecordEventOrder();
-                    break;
-                case 1:
-                    GetStatePartition();
-                    break;
-                case 2:
-                    Load(_checkpointTag);
-                    break;
-                case 3:
-                    ProcessEvent();
-                    break;
-                case 4:
-                    WriteOutput();
-                    break;
-                case 5:
-                    CompleteItem();
-                    break;
-                default:
-                    throw new NotSupportedException();
+                switch (onStage)
+                {
+                    case 0:
+                        RecordEventOrder();
+                        break;
+                    case 1:
+                        GetStatePartition();
+                        break;
+                    case 2:
+                        Load(_checkpointTag);
+                        break;
+                    case 3:
+                        ProcessEvent();
+                        break;
+                    case 4:
+                        WriteOutput();
+                        break;
+                    case 5:
+                        CompleteItem();
+                        break;
+                    default:
+                        throw new NotSupportedException();
+                }
             }
         }
 
@@ -115,6 +127,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public void SetCheckpointTag(CheckpointTag checkpointTag)
         {
             _checkpointTag = checkpointTag;
+        }
+
+        public void SetProjectionQueue(CoreProjectionQueue coreProjectionQueue)
+        {
+            _queue = coreProjectionQueue;
         }
     }
 }

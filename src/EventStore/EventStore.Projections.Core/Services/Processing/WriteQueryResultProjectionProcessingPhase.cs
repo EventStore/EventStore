@@ -31,7 +31,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class WriteQueryResultProjectionProcessingPhase : IProjectionProcessingPhase
+    public sealed class WriteQueryResultProjectionProcessingPhase : IProjectionProcessingPhase
     {
         public void Dispose()
         {
@@ -74,7 +74,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
         {
-            throw new NotImplementedException();
         }
 
         public void ProcessEvent()
@@ -92,12 +91,7 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotImplementedException();
         }
 
-        public void SetState(PhaseState state)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void SetFaulted()
+        public void SetProjectionState(PhaseState state)
         {
             throw new NotImplementedException();
         }

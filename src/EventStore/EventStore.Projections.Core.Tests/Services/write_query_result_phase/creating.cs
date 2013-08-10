@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,21 +26,54 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-namespace EventStore.Projections.Core.Services.Processing
-{
-    public class CheckpointWorkItemBase : WorkItem
-    {
-        private static readonly object _correlationId = new object();
+using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
-        protected CheckpointWorkItemBase()
-            : base(_correlationId)
+namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
+{
+    namespace creating
+    {
+
+        [TestFixture]
+        class when_creating
         {
-            _requiresRunning = true;
+            [Test]
+            public void it_can_be_created()
+            {
+                var it = new WriteQueryResultProjectionProcessingPhase();
+            }
         }
 
-        protected CheckpointWorkItemBase(object correlation)
-            : base(correlation)
+        class specification_with_write_query_result_projection_processing_phase
         {
+            private WriteQueryResultProjectionProcessingPhase _phase;
+
+            public WriteQueryResultProjectionProcessingPhase Phase
+            {
+                get { return _phase; }
+            }
+
+            [SetUp]
+            public void SetUp()
+            {
+                _phase = new WriteQueryResultProjectionProcessingPhase();
+            }
+
+            [TearDown]
+            public void TearDown()
+            {
+                _phase = null;
+            }
+        }
+
+        [TestFixture]
+        class when_created: specification_with_write_query_result_projection_processing_phase
+        {
+            [Test]
+            public void can_be_initialized_from_phase_checkpoint()
+            {
+                Phase.InitializeFromCheckpoint(CheckpointTag.FromPhase(1));
+            }
         }
     }
 }

@@ -161,14 +161,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 _unsubscribed = true;
             }
 
-            public void SetState(PhaseState state)
+            public void SetProjectionState(PhaseState state)
             {
                 _state = state;
-            }
-
-            public void SetFaulted()
-            {
-                throw new Exception("Faulted");
             }
 
             public void ProcessEvent()

@@ -41,7 +41,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IProjectionStateHandler _projectionStateHandler;
         private readonly CoreProjectionQueue _processingQueue;
         private PhaseState _state;
-        private bool _faulted;
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
         private readonly PartitionStateCache _partitionStateCache;
         private readonly bool _definesStateTransform;
@@ -217,9 +216,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingQueue.Unsubscribed();
         }
 
-        public void SetState(PhaseState state)
+        public void SetProjectionState(PhaseState state)
         {
             _state = state;
+            _processingQueue.SetIsRunning(state == PhaseState.Running);
         }
 
         public int GetBufferedEventCount()
@@ -239,11 +239,9 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 case PhaseState.Running:
                     var result = InternalProcessCommittedEvent(partition, message);
-                    if (_faulted)
-                        _coreProjection.EnsureUnsubscribed();
                     return result;
                 case PhaseState.Stopped:
-                    _coreProjection.EnsureUnsubscribed();
+                    _logger.Error("Ignoring committed event in stopped state");
                     return null;
                 default:
                     throw new NotSupportedException();
@@ -473,6 +471,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     });
                     break;
                 case PhaseState.Stopped:
+                    _logger.Error("Should not receive events in stopped state anymore");
                     completed(); // allow collecting events for debugging
                     break;
             }
@@ -524,11 +523,6 @@ namespace EventStore.Projections.Core.Services.Processing
                         _checkpointManager.EventsEmitted(emittedEvents, Guid.Empty, correlationId: null);
                 }
             }
-        }
-
-        public void SetFaulted()
-        {
-            _faulted = true;
         }
 
         public void Dispose()

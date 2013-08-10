@@ -47,6 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projection = projection;
             _statePartitionSelector = statePartitionSelector;
             _message = message;
+            _requiresRunning = true;
         }
 
         protected override void RecordEventOrder()
