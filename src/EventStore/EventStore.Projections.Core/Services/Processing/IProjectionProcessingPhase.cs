@@ -23,7 +23,6 @@ namespace EventStore.Projections.Core.Services.Processing
         void Handle(CoreProjectionManagementMessage.GetState message);
         void Handle(CoreProjectionManagementMessage.GetResult message);
 
-        void Initialize();
         void InitializeFromCheckpoint(CheckpointTag checkpointTag);
 
         void ProcessEvent();

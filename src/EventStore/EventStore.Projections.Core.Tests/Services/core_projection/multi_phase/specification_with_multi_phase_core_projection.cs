@@ -95,7 +95,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             private readonly ICoreProjectionCheckpointManager _checkpointManager;
             private readonly IReaderStrategy _readerStrategy;
 
-            private bool _initialized;
             private bool _initializedFromCheckpoint;
             private CheckpointTag _initializedFromCheckpointAt;
             private PhaseState _state;
@@ -151,11 +150,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 throw new NotImplementedException();
             }
 
-            public void Initialize()
-            {
-                _initialized = true;
-            }
-
             public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
             {
                 _initializedFromCheckpoint = true;
@@ -200,11 +194,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             public IReaderStrategy ReaderStrategy
             {
                 get { return _readerStrategy; }
-            }
-
-            public bool Initialized
-            {
-                get { return _initialized; }
             }
 
             public bool InitializedFromCheckpoint

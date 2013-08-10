@@ -195,11 +195,6 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void Initialize()
-        {
-            _processingQueue.Initialize();
-        }
-
         public void ProcessEvent()
         {
             if (_processingQueue.ProcessEvent())

@@ -124,11 +124,13 @@ namespace EventStore.Projections.Core.Services.Processing
             GoToState(State.Initial);
         }
 
-        private void BeginPhase(IProjectionProcessingPhase processingPhase)
+        private void BeginPhase(IProjectionProcessingPhase processingPhase, CheckpointTag startFrom)
         {
             _projectionProcessingPhase = processingPhase;
-            _projectionProcessingPhase.Initialize();
             _checkpointManager = processingPhase.CheckpointManager;
+
+            _projectionProcessingPhase.InitializeFromCheckpoint(startFrom);
+            _checkpointManager.Start(startFrom);
         }
 
         internal void UpdateStatistics()
@@ -580,13 +582,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                BeginPhase(_projectionProcessingPhases[completedPhaseIndex + 1]);
-                var phaseZeroPosition = _projectionProcessingPhase.ReaderStrategy != null
-                    ? _projectionProcessingPhase.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag()
+                var nextPhase = _projectionProcessingPhases[completedPhaseIndex + 1];
+                var nextPhaseZeroPosition = nextPhase.ReaderStrategy != null
+                    ? nextPhase.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag()
                     : CheckpointTag.FromPhase(completedPhaseIndex + 1);
-                _checkpointManager.Start(phaseZeroPosition);
-                _projectionProcessingPhase.InitializeFromCheckpoint(phaseZeroPosition);
-                Subscribe(phaseZeroPosition);
+                BeginPhase(nextPhase, nextPhaseZeroPosition);
+                Subscribe(nextPhaseZeroPosition);
             }
         }
 
@@ -643,11 +644,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(state, checkpointTag), null);
             //TODO: handle errors
             var projectionProcessingPhase = _projectionProcessingPhases[checkpointTag.Phase];
-            BeginPhase(projectionProcessingPhase);
-
-
-            _checkpointManager.Start(checkpointTag);
-            _projectionProcessingPhase.InitializeFromCheckpoint(checkpointTag);
+            BeginPhase(projectionProcessingPhase, checkpointTag);
             GoToState(State.StateLoaded);
         }
 

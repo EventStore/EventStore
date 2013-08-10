@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
         [Test]
         public void initializes_phase2()
         {
-            Assert.IsTrue(Phase2.Initialized);
+            Assert.IsTrue(Phase2.InitializedFromCheckpoint);
         }
 
         [Test]

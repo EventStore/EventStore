@@ -12,7 +12,7 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
         private readonly CheckpointTag _p1a = CheckpointTag.FromPhase(1);
         private readonly CheckpointTag _p1b = CheckpointTag.FromPhase(1);
         private readonly CheckpointTag _p2 = CheckpointTag.FromPosition(2, 30, 29);
-        private readonly CheckpointTag _p3 = CheckpointTag.FromStreamPosition(3, "stream", 100);
+        private readonly CheckpointTag _p3 = CheckpointTag.FromPosition(3, 30, 29);
 
         private readonly CheckpointTag _p4 = CheckpointTag.FromEventTypeIndexPositions(
             4, new TFPos(200, 150), new Dictionary<string, int> {{"a", 1}});
@@ -26,6 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsTrue(_p1a.Equals(_p1b));
             Assert.IsTrue(_p2.Equals(_p2));
             Assert.IsTrue(_p3.Equals(_p3));
+            Assert.IsFalse(_p2.Equals(_p3));
         }
 
         [Test]

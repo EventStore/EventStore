@@ -67,18 +67,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _updateStatistics = updateStatistics;
         }
 
-        public void Initialize()
-        {
-            _lastEnqueuedEventTag = default(CheckpointTag);
-            _subscriptionPaused = false;
-            _unsubscribed = false;
-            _lastReportedStatisticsTimeStamp = default(DateTime);
-            _unsubscribed = false;
-            _subscriptionId = Guid.Empty;
-
-            _queuePendingEvents.Initialize();
-        }
-
         public bool ProcessEvent()
         {
             var processed = false;
@@ -110,6 +98,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void InitializeQueue(CheckpointTag zeroCheckpointTag)
         {
+            _subscriptionPaused = false;
+            _unsubscribed = false;
+            _lastReportedStatisticsTimeStamp = default(DateTime);
+            _unsubscribed = false;
+            _subscriptionId = Guid.Empty;
+
+            _queuePendingEvents.Initialize();
+
             _lastEnqueuedEventTag = zeroCheckpointTag;
             _justInitialized = true;
         }
