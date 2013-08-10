@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CoreProjectionQueue _processingQueue;
         private PhaseState _state;
         private bool _faulted;
-        internal readonly ICoreProjectionCheckpointManager _checkpointManager;
+        private readonly ICoreProjectionCheckpointManager _checkpointManager;
         private readonly PartitionStateCache _partitionStateCache;
         private readonly bool _definesStateTransform;
         private string _handlerPartition;

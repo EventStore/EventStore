@@ -335,7 +335,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public CheckpointTag LastProcessedEventPosition
             {
-                get { throw new NotImplementedException(); }
+                get { return _lastEvent; }
             }
 
             public bool Started
@@ -366,6 +366,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
         class FakeReaderStrategy : IReaderStrategy
         {
+            private readonly int _phase;
+
+            public FakeReaderStrategy(int phase)
+            {
+                _phase = phase;
+            }
+
             public bool IsReadingOrderRepeatable
             {
                 get { throw new NotImplementedException(); }
@@ -378,7 +385,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public PositionTagger PositionTagger
             {
-                get { throw new NotImplementedException(); }
+                get { return new TransactionFilePositionTagger(Phase); }
+            }
+
+            public int Phase
+            {
+                get { return _phase; }
             }
 
             public IReaderSubscription CreateReaderSubscription(
@@ -419,8 +431,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
         {
             _phase1checkpointManager = new FakeCheckpointManager(_bus, _projectionCorrelationId);
             _phase2checkpointManager = new FakeCheckpointManager(_bus, _projectionCorrelationId);
-            _phase1readerStrategy = new FakeReaderStrategy();
-            _phase2readerStrategy = new FakeReaderStrategy();
+            _phase1readerStrategy = new FakeReaderStrategy(0);
+            _phase2readerStrategy = new FakeReaderStrategy(1);
             _phase1 = new FakeProjectionProcessingPhase(this, Phase1CheckpointManager, _phase1readerStrategy);
             _phase2 = new FakeProjectionProcessingPhase(this, Phase2CheckpointManager, _phase2readerStrategy);
             return new FakeProjectionProcessingStrategy(

@@ -30,6 +30,7 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
+using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Utils;
@@ -154,10 +155,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Stop()
         {
-            EnsureState(State.LoadStateRequested | State.StateLoaded | State.Subscribed | State.Running);
+            EnsureState(State.LoadStateRequested | State.StateLoaded | State.Subscribed | State.Running | State.PhaseCompleted);
             try
             {
-                if (_state == State.LoadStateRequested)
+                if (_state == State.LoadStateRequested || _state == State.PhaseCompleted)
                     GoToState(State.Stopped);
                 else
                     GoToState(State.Stopping);
@@ -277,7 +278,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _completed = true;
             _checkpointManager.Progress(100.0f);
             Unsubscribed(); // NOTE:  stopOnEof subscriptions automatically unsubscribe when handling this message
-            Stop();
+            GoToState(State.CompletingPhase);
         }
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
@@ -486,6 +487,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 default:
                     throw new Exception();
             }
+            UpdateStatistics();
         }
 
         private void EnterInitial()
@@ -538,7 +540,6 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 _publisher.Publish(new CoreProjectionManagementMessage.Started(_projectionCorrelationId));
-                UpdateStatistics();
                 _projectionProcessingPhase.ProcessEvent();
             }
             catch (Exception ex)
@@ -553,7 +554,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterStopped()
         {
-            UpdateStatistics();
             _publisher.Publish(new CoreProjectionManagementMessage.Stopped(_projectionCorrelationId, _completed));
         }
 
@@ -563,7 +563,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterFaulted()
         {
-            UpdateStatistics();
             _publisher.Publish(
                 new CoreProjectionManagementMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }
@@ -574,9 +573,23 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterPhaseCompleted()
         {
+            var completedPhaseIndex = _checkpointManager.LastProcessedEventPosition.Phase;
+            if (completedPhaseIndex == _projectionProcessingPhases.Length - 1)
+            {
+                Stop();
+            }
+            else
+            {
+                BeginPhase(_projectionProcessingPhases[completedPhaseIndex + 1]);
+                var phaseZeroPosition = _projectionProcessingPhase.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag();
+                _checkpointManager.Start(phaseZeroPosition);
+                _projectionProcessingPhase.InitializeFromCheckpoint(phaseZeroPosition);
+                Subscribe(phaseZeroPosition);
+            }
         }
 
-        private bool IsOutOfOrderSubscriptionMessage(EventReaderSubscriptionMessage message)
+        private
+            bool IsOutOfOrderSubscriptionMessage(EventReaderSubscriptionMessage message)
         {
             if (_currentSubscriptionId != message.SubscriptionId)
                 return true;
