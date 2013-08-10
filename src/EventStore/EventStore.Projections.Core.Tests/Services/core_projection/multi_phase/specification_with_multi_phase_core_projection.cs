@@ -101,6 +101,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             private PhaseState _state;
             private Guid _subscriptionId;
             private bool _unsubscribed;
+            private int _processEventInvoked;
 
             public FakeProjectionProcessingPhase(specification_with_multi_phase_core_projection specification,
                 ICoreProjectionCheckpointManager checkpointManager, IReaderStrategy readerStrategy)
@@ -178,6 +179,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public void ProcessEvent()
             {
+                ProcessEventInvoked++;
             }
 
             public void Subscribed(Guid subscriptionId)
@@ -228,6 +230,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             public bool Unsubscribed_
             {
                 get { return _unsubscribed; }
+            }
+
+            public int ProcessEventInvoked
+            {
+                get { return _processEventInvoked; }
+                set { _processEventInvoked = value; }
             }
 
             public void GetStatistics(ProjectionStatistics info)
@@ -364,7 +372,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             }
         }
 
-        class FakeReaderStrategy : IReaderStrategy
+        protected class FakeReaderStrategy : IReaderStrategy
         {
             private readonly int _phase;
 
@@ -431,14 +439,23 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
         {
             _phase1checkpointManager = new FakeCheckpointManager(_bus, _projectionCorrelationId);
             _phase2checkpointManager = new FakeCheckpointManager(_bus, _projectionCorrelationId);
-            _phase1readerStrategy = new FakeReaderStrategy(0);
-            _phase2readerStrategy = new FakeReaderStrategy(1);
+            _phase1readerStrategy = GivenPhase1ReaderStrategy();
+            _phase2readerStrategy = GivenPhase2ReaderStrategy();
             _phase1 = new FakeProjectionProcessingPhase(this, Phase1CheckpointManager, _phase1readerStrategy);
             _phase2 = new FakeProjectionProcessingPhase(this, Phase2CheckpointManager, _phase2readerStrategy);
             return new FakeProjectionProcessingStrategy(
                 _projectionName, _version, new ConsoleLogger("logger"), Phase1, Phase2);
         }
 
+        protected virtual FakeReaderStrategy GivenPhase2ReaderStrategy()
+        {
+            return new FakeReaderStrategy(1);
+        }
+
+        protected virtual FakeReaderStrategy GivenPhase1ReaderStrategy()
+        {
+            return new FakeReaderStrategy(0);
+        }
     }
 
 }

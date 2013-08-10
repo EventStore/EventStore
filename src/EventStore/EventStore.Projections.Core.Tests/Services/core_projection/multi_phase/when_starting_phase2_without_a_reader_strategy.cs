@@ -34,20 +34,19 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 {
     [TestFixture]
-    class when_completing_phase1_of_a_multiphase_projection : specification_with_multi_phase_core_projection
+    class when_starting_phase2_without_a_reader_strategy : specification_with_multi_phase_core_projection
     {
+        protected override FakeReaderStrategy GivenPhase2ReaderStrategy()
+        {
+            return null;
+        }
+
         protected override void When()
         {
             _coreProjection.Start();
             _coreProjection.Handle(
                 new EventReaderSubscriptionMessage.EofReached(
                     Phase1.SubscriptionId, CheckpointTag.FromPosition(0, 500, 450), 0));
-        }
-
-        [Test]
-        public void stops_phase1_checkpoint_manager()
-        {
-            Assert.IsTrue(Phase1CheckpointManager.Stopped_);
         }
 
         [Test]
@@ -63,9 +62,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
         }
 
         [Test]
-        public void publishes_subscribe_message()
+        public void starts_processing_phase2()
         {
-            Assert.AreEqual(2, HandledMessages.OfType<ReaderSubscriptionManagement.Subscribe>().Count());
+            Assert.AreEqual(1, Phase2.ProcessEventInvoked);
         }
     }
 }

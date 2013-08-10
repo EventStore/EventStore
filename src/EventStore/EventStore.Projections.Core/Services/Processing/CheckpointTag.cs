@@ -47,11 +47,20 @@ namespace EventStore.Projections.Core.Services.Processing
 
         internal enum Mode
         {
+            Phase,
             Position,
             Stream,
             MultiStream,
             EventTypeIndex,
             PreparePosition
+        }
+
+        private CheckpointTag(int phase)
+        {
+            Phase = phase;
+            Position = new TFPos(long.MinValue, long.MinValue);
+            Streams = null;
+            Mode_ = CalculateMode();
         }
 
         private CheckpointTag(int phase, TFPos position, Dictionary<string, int> streams)
@@ -116,7 +125,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private Mode CalculateMode()
         {
             if (Streams == null || Streams.Count == 0)
-                if (Position.CommitPosition == Int64.MinValue && Position.PreparePosition != Int64.MinValue)
+                if (Position.CommitPosition == Int64.MinValue && Position.PreparePosition == Int64.MinValue)
+                    return Mode.Phase;
+                else if (Position.CommitPosition == Int64.MinValue && Position.PreparePosition != Int64.MinValue)
                     return Mode.PreparePosition;
                 else
                     return Mode.Position;
@@ -146,6 +157,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new NotSupportedException("Cannot compare checkpoint tags in different modes");
             switch (leftMode)
             {
+                case Mode.Phase:
+                    return false;
                 case Mode.Position:
                 case Mode.EventTypeIndex:
                     return left.Position > right.Position;
@@ -196,6 +209,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new NotSupportedException("Cannot compare checkpoint tags in different modes");
             switch (leftMode)
             {
+                case Mode.Phase:
+                    return true;
                 case Mode.Position:
                 case Mode.EventTypeIndex:
                     return left.Position >= right.Position;
@@ -252,6 +267,8 @@ namespace EventStore.Projections.Core.Services.Processing
             UpgradeModes(ref leftMode, ref rightMode);
             switch (leftMode)
             {
+                case Mode.Phase:
+                    return true;
                 case Mode.EventTypeIndex: 
                     // NOTE: we ignore stream positions as they are only suggestion on 
                     //       where to start to gain better performance
@@ -324,7 +341,12 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         internal readonly Mode Mode_;
-        private static readonly CheckpointTag _empty = new CheckpointTag(-1, new TFPos(0, -1));
+        private static readonly CheckpointTag _empty = new CheckpointTag(-1);
+
+        public static CheckpointTag FromPhase(int phase)
+        {
+            return new CheckpointTag(phase);
+        }
 
         public static CheckpointTag FromPosition(int phase, long commitPosition, long preparePosition)
         {
@@ -368,6 +390,8 @@ namespace EventStore.Projections.Core.Services.Processing
             string result;
             switch (Mode_)
             {
+                case Mode.Phase:
+                    return "Phase: " + Phase;
                 case Mode.Position:
                     result = Position.ToString();
                     break;
@@ -543,6 +567,8 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             switch (Mode_)
             {
+                case Mode.Phase:
+                    break;
                 case Mode.Position:
                 case Mode.EventTypeIndex:
                     jsonWriter.WritePropertyName("$c");

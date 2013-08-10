@@ -581,7 +581,9 @@ namespace EventStore.Projections.Core.Services.Processing
             else
             {
                 BeginPhase(_projectionProcessingPhases[completedPhaseIndex + 1]);
-                var phaseZeroPosition = _projectionProcessingPhase.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag();
+                var phaseZeroPosition = _projectionProcessingPhase.ReaderStrategy != null
+                    ? _projectionProcessingPhase.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag()
+                    : CheckpointTag.FromPhase(completedPhaseIndex + 1);
                 _checkpointManager.Start(phaseZeroPosition);
                 _projectionProcessingPhase.InitializeFromCheckpoint(phaseZeroPosition);
                 Subscribe(phaseZeroPosition);
@@ -654,14 +656,23 @@ namespace EventStore.Projections.Core.Services.Processing
             _expectedSubscriptionMessageSequenceNumber = 0;
             _currentSubscriptionId = Guid.NewGuid();
             _projectionProcessingPhase.Subscribed(_currentSubscriptionId);
-            _subscriptionDispatcher.PublishSubscribe(
-                new ReaderSubscriptionManagement.Subscribe(
-                    _currentSubscriptionId, checkpointTag, _projectionProcessingPhase.ReaderStrategy,
-                    _projectionProcessingPhase.GetSubscriptionOptions()), this);
-            _subscribed = true;
             try
             {
-                GoToState(State.Subscribed);
+                if (_projectionProcessingPhase.ReaderStrategy != null)
+                {
+                    _subscriptionDispatcher.PublishSubscribe(
+                        new ReaderSubscriptionManagement.Subscribe(
+                            _currentSubscriptionId, checkpointTag, _projectionProcessingPhase.ReaderStrategy,
+                            _projectionProcessingPhase.GetSubscriptionOptions()), this);
+                    _subscribed = true;
+                    GoToState(State.Subscribed);
+                }
+                else
+                {
+                    _subscribed = true;
+                    if (_startOnLoad)
+                        GoToState(State.Running);
+                }
             }
             catch (Exception ex)
             {
