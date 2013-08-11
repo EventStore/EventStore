@@ -341,9 +341,6 @@ namespace EventStore.Projections.Core.Services.Processing
                         break;
                     case State.Faulted:
                     case State.FaultedStopping:
-                        if (!wasFaulted)
-                        {
-                        }
                         if (wasRunning)
                             _projectionProcessingPhase.SetProjectionState(PhaseState.Stopped);
                         break;

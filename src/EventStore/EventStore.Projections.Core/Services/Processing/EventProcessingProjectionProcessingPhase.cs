@@ -28,14 +28,20 @@
 using System;
 using System.Diagnostics.Contracts;
 using EventStore.Common.Log;
-using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EventProcessingProjectionProcessingPhase : ProjectionProcessingPhaseBase, IEventProcessingProjectionPhase, IProjectionProcessingPhase
+    public class EventProcessingProjectionProcessingPhase : ProjectionProcessingPhaseBase,
+        IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
+        IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
+        IHandle<EventReaderSubscriptionMessage.NotAuthorized>,
+        IHandle<EventReaderSubscriptionMessage.EofReached>,
+        IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
+        IEventProcessingProjectionPhase,
+        IProjectionProcessingPhase
     {
         private readonly IProjectionStateHandler _projectionStateHandler;
         private readonly CoreProjectionQueue _processingQueue;
@@ -178,7 +184,8 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var getStateWorkItem = new GetStateWorkItem(
-                    message.Envelope, message.CorrelationId, message.ProjectionId, this, _partitionStateCache, message.Partition);
+                    message.Envelope, message.CorrelationId, message.ProjectionId, this, _partitionStateCache,
+                    message.Partition);
                 _processingQueue.EnqueueOutOfOrderTask(getStateWorkItem);
                 ProcessEvent();
             }
@@ -197,7 +204,8 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var getResultWorkItem = new GetResultWorkItem(
-                    message.Envelope, message.CorrelationId, message.ProjectionId, this, message.Partition, _partitionStateCache);
+                    message.Envelope, message.CorrelationId, message.ProjectionId, this, message.Partition,
+                    _partitionStateCache);
                 _processingQueue.EnqueueOutOfOrderTask(getResultWorkItem);
                 ProcessEvent();
             }
@@ -229,8 +237,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     _subscriptionDispatcher.PublishSubscribe(
                         new ReaderSubscriptionManagement.Subscribe(
-                            _currentSubscriptionId, checkpointTag, readerStrategy,
-                            GetSubscriptionOptions()), this);
+                            _currentSubscriptionId, checkpointTag, readerStrategy, GetSubscriptionOptions()), this);
                     _subscribed = true;
                     _coreProjection.Subscribed();
                 }
@@ -309,7 +316,8 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
 
-        public EventProcessedResult ProcessCommittedEvent(EventReaderSubscriptionMessage.CommittedEventReceived message, string partition)
+        public EventProcessedResult ProcessCommittedEvent(
+            EventReaderSubscriptionMessage.CommittedEventReceived message, string partition)
         {
             switch (_state)
             {
@@ -324,7 +332,8 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private EventProcessedResult InternalProcessCommittedEvent(string partition, EventReaderSubscriptionMessage.CommittedEventReceived message)
+        private EventProcessedResult InternalProcessCommittedEvent(
+            string partition, EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
             string newState;
             string projectionResult;
@@ -348,7 +357,8 @@ namespace EventStore.Projections.Core.Services.Processing
             bool hasBeenProcessed;
             try
             {
-                hasBeenProcessed = ProcessEventByHandler(partition, message, out newState, out projectionResult, out emittedEvents);
+                hasBeenProcessed = ProcessEventByHandler(
+                    partition, message, out newState, out projectionResult, out emittedEvents);
             }
             catch (Exception ex)
             {
@@ -372,14 +382,13 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private bool ProcessEventByHandler(
-            string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, out string newState, out string projectionResult,
-            out EmittedEventEnvelope[] emittedEvents)
+            string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, out string newState,
+            out string projectionResult, out EmittedEventEnvelope[] emittedEvents)
         {
             projectionResult = null;
             SetHandlerState(partition);
             var result = _projectionStateHandler.ProcessEvent(
-                partition, message.CheckpointTag, message.EventCategory, message.Data,
-                out newState, out emittedEvents);
+                partition, message.CheckpointTag, message.EventCategory, message.Data, out newState, out emittedEvents);
             if (result)
             {
                 var oldState = _partitionStateCache.GetLockedPartitionState(partition);
@@ -464,8 +473,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void BeginGetPartitionStateAt(
-            string statePartition, CheckpointTag at, Action<PartitionState> loadCompleted,
-            bool lockLoaded)
+            string statePartition, CheckpointTag at, Action<PartitionState> loadCompleted, bool lockLoaded)
         {
             if (statePartition == "") // root is always cached
             {
@@ -475,8 +483,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                var s = lockLoaded ? _partitionStateCache.TryGetAndLockPartitionState(
-                    statePartition, at) : _partitionStateCache.TryGetPartitionState(statePartition);
+                var s = lockLoaded
+                    ? _partitionStateCache.TryGetAndLockPartitionState(statePartition, at)
+                    : _partitionStateCache.TryGetPartitionState(statePartition);
                 if (s != null)
                     loadCompleted(s);
                 else
@@ -540,11 +549,12 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (_state)
             {
                 case PhaseState.Running:
-                    _checkpointManager.RecordEventOrder(resolvedEvent, orderCheckpointTag, () =>
-                    {
-                        completed();
-                        EnsureTickPending();
-                    });
+                    _checkpointManager.RecordEventOrder(
+                        resolvedEvent, orderCheckpointTag, () =>
+                        {
+                            completed();
+                            EnsureTickPending();
+                        });
                     break;
                 case PhaseState.Stopped:
                     _logger.Error("Should not receive events in stopped state anymore");
@@ -558,7 +568,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _coreProjection.EnsureTickPending();
         }
 
-        public CheckpointTag LastProcessedEventPosition {
+        public CheckpointTag LastProcessedEventPosition
+        {
             get { return _coreProjection.LastProcessedEventPosition; }
         }
 
@@ -586,9 +597,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
                 catch (Exception ex)
                 {
-                    var faultedReason = String.Format(
-                        "The {0} projection failed to process a checkpoint start.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
-                        _projectionName, GetHandlerTypeName(), at, ex.Message);
+                    var faultedReason =
+                        String.Format(
+                            "The {0} projection failed to process a checkpoint start.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
+                            _projectionName, GetHandlerTypeName(), at, ex.Message);
                     SetFaulting(faultedReason, ex);
                     emittedEvents = null;
                 }
@@ -634,18 +646,17 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void SubscribeToPreRecordedOrderEvents()
         {
-            var coreProjection = (CoreProjection)_coreProjection;
+            var coreProjection = (CoreProjection) _coreProjection;
             // projectionCorrelationId is used as a subscription identifier for delivery
             // of pre-recorded order events recovered by checkpoint manager
             _expectedSubscriptionMessageSequenceNumber = 0;
             _currentSubscriptionId = coreProjection._projectionCorrelationId;
             _subscriptionDispatcher.Subscribed(coreProjection._projectionCorrelationId, coreProjection);
             _subscribed = true; // even if it is not a real subscription we need to unsubscribe 
-            
+
         }
 
-        private
-            bool IsOutOfOrderSubscriptionMessage(EventReaderSubscriptionMessage message)
+        private bool IsOutOfOrderSubscriptionMessage(EventReaderSubscriptionMessage message)
         {
             if (_currentSubscriptionId != message.SubscriptionId)
                 return true;
