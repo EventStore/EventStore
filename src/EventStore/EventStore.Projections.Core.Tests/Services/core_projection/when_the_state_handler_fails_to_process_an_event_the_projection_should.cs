@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void When()
         {
             //projection subscribes here
-            _coreProjection.Handle(
+            _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new TFPos(120, 110),

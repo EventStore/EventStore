@@ -35,23 +35,13 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EventProcessingProjectionProcessingPhase : IEventProcessingProjectionPhase, IProjectionProcessingPhase
+    public class EventProcessingProjectionProcessingPhase : ProjectionProcessingPhaseBase, IEventProcessingProjectionPhase, IProjectionProcessingPhase
     {
-        private readonly IPublisher _publisher;
-        private readonly ICoreProjectionForProcessingPhase _coreProjection;
-        private readonly Guid _projectionCorrelationId;
-        private readonly ProjectionProcessingStrategy _projectionProcessingStrategy;
         private readonly IProjectionStateHandler _projectionStateHandler;
         private readonly CoreProjectionQueue _processingQueue;
-        private PhaseState _state;
-        private readonly ICoreProjectionCheckpointManager _checkpointManager;
         private readonly PartitionStateCache _partitionStateCache;
         private readonly bool _definesStateTransform;
         private string _handlerPartition;
-        private readonly ProjectionConfig _projectionConfig;
-        private readonly string _projectionName;
-        private readonly ILogger _logger;
-        private readonly CheckpointTag _zeroCheckpointTag;
         private readonly IResultEmitter _resultEmitter;
         private readonly StatePartitionSelector _statePartitionSelector;
         private readonly CheckpointStrategy _checkpointStrategy;
@@ -61,38 +51,33 @@ namespace EventStore.Projections.Core.Services.Processing
         private long _expectedSubscriptionMessageSequenceNumber = -1;
         private Guid _currentSubscriptionId;
         private bool _subscribed;
-        private readonly int _phase;
+
+        protected PhaseState _state;
 
 
         public EventProcessingProjectionProcessingPhase(
-            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher, ProjectionProcessingStrategy projectionProcessingStrategy,
-            ProjectionConfig projectionConfig, Action updateStatistics, IProjectionStateHandler projectionStateHandler,
+            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
+            ProjectionProcessingStrategy projectionProcessingStrategy, ProjectionConfig projectionConfig,
+            Action updateStatistics, IProjectionStateHandler projectionStateHandler,
             PartitionStateCache partitionStateCache, bool definesStateTransform, string projectionName, ILogger logger,
             CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
             ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
-            StatePartitionSelector statePartitionSelector, CheckpointStrategy checkpointStrategy, ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, int phase)
+            StatePartitionSelector statePartitionSelector, CheckpointStrategy checkpointStrategy,
+            ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, int phase)
+            : base(
+                publisher, coreProjection, projectionCorrelationId, projectionProcessingStrategy,
+                coreProjectionCheckpointManager, projectionConfig, projectionName, logger, zeroCheckpointTag, phase)
         {
-            _coreProjection = coreProjection;
-            _projectionCorrelationId = projectionCorrelationId;
-            _projectionProcessingStrategy = projectionProcessingStrategy;
             _projectionStateHandler = projectionStateHandler;
             _partitionStateCache = partitionStateCache;
             _definesStateTransform = definesStateTransform;
-            _projectionName = projectionName;
-            _logger = logger;
-            _zeroCheckpointTag = zeroCheckpointTag;
             _resultEmitter = resultEmitter;
-            _projectionConfig = projectionConfig;
-            var projectionQueue = new CoreProjectionQueue(
+            _processingQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, updateStatistics);
-            _processingQueue = projectionQueue;
-            _checkpointManager = coreProjectionCheckpointManager;
             _statePartitionSelector = statePartitionSelector;
             _checkpointStrategy = checkpointStrategy;
             _timeProvider = timeProvider;
             _subscriptionDispatcher = subscriptionDispatcher;
-            _phase = phase;
-            _publisher = publisher;
         }
 
         public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
@@ -106,6 +91,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 CheckpointTag eventTag = message.CheckpointTag;
                 var committedEventWorkItem = new CommittedEventWorkItem(this, message, _statePartitionSelector);
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
+                if (_state == PhaseState.Running) // prevent processing mostly one projection
+                    EnsureTickPending();
             }
             catch (Exception ex)
             {
@@ -243,7 +230,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _subscriptionDispatcher.PublishSubscribe(
                         new ReaderSubscriptionManagement.Subscribe(
                             _currentSubscriptionId, checkpointTag, readerStrategy,
-                            GetSubscriptionOptions()), _coreProjection);
+                            GetSubscriptionOptions()), this);
                     _subscribed = true;
                     _coreProjection.Subscribed();
                 }
@@ -278,7 +265,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Subscribe(CheckpointTag from, bool fromCheckpoint)
         {
             Contract.Assert(_checkpointManager.LastProcessedEventPosition == from);
-            _expectedSubscriptionMessageSequenceNumber = -1;
             if (fromCheckpoint)
             {
                 SubscribeToPreRecordedOrderEvents();
@@ -631,15 +617,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public CheckpointTag MakeZeroCheckpointTag()
         {
-            var readerStrategy = _checkpointStrategy.ReaderStrategy;
-            return readerStrategy != null
-                ? readerStrategy.PositionTagger.MakeZeroCheckpointTag()
-                : CheckpointTag.FromPhase(_phase);
-        }
-
-        public IReaderStrategy ReaderStrategy
-        {
-            get { return _checkpointStrategy.ReaderStrategy; }
+            return _zeroCheckpointTag;
         }
 
         public ICoreProjectionCheckpointManager CheckpointManager
@@ -659,6 +637,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var coreProjection = (CoreProjection)_coreProjection;
             // projectionCorrelationId is used as a subscription identifier for delivery
             // of pre-recorded order events recovered by checkpoint manager
+            _expectedSubscriptionMessageSequenceNumber = 0;
             _currentSubscriptionId = coreProjection._projectionCorrelationId;
             _subscriptionDispatcher.Subscribed(coreProjection._projectionCorrelationId, coreProjection);
             _subscribed = true; // even if it is not a real subscription we need to unsubscribe 

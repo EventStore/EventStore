@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
         protected override void When()
         {
             _coreProjection.Start();
-            _coreProjection.Handle(
+            _bus.Publish(
                 new EventReaderSubscriptionMessage.EofReached(
                     Phase1.SubscriptionId, CheckpointTag.FromPosition(0, 500, 450), 0));
         }

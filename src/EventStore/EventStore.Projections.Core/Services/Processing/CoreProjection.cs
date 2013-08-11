@@ -69,8 +69,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         internal readonly Guid _projectionCorrelationId;
 
-        private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
-
         private readonly ILogger _logger;
 
         private State _state;
@@ -107,7 +105,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _name = name;
             _version = version;
             _stopOnEof = stopOnEof;
-            _subscriptionDispatcher = subscriptionDispatcher;
             _logger = logger;
             _publisher = publisher;
 
@@ -188,54 +185,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (_projectionProcessingPhase != null)
                 _projectionProcessingPhase.GetStatistics(info);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
-        {
-            EnsureState(
-                /* load state restores already ordered events by sending committed events back to the projection */
-                State.StateLoaded | State.Running | State.Stopping | State.Stopped | State.FaultedStopping
-                | State.Faulted | State.CompletingPhase | State.PhaseCompleted);
-            //TODO: should we allow stopped states here? 
-            _projectionProcessingPhase.Handle(message);
-            if (_state != State.StateLoaded)
-                EnsureTickPending();
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
-        {
-            EnsureState(
-                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
-                | State.CompletingPhase | State.PhaseCompleted);
-
-            _projectionProcessingPhase.Handle(message);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
-        {
-            EnsureState(
-                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
-                | State.CompletingPhase | State.PhaseCompleted);
-
-            _projectionProcessingPhase.Handle(message);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.EofReached message)
-        {
-            EnsureState(
-                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
-                | State.CompletingPhase | State.PhaseCompleted);
-
-            _projectionProcessingPhase.Handle(message);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
-        {
-            EnsureState(
-                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
-                | State.CompletingPhase | State.PhaseCompleted);
-
-            _projectionProcessingPhase.Handle(message);
         }
 
         public void CompletePhase()

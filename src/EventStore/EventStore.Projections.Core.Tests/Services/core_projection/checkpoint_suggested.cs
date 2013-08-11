@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             protected override void When()
             {
                 //projection subscribes here
-                _coreProjection.Handle(
+                _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId, CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, int>{{"non-existing", -1}}), 55.5f, 0));
             }
@@ -104,11 +104,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             protected override void When()
             {
                 //projection subscribes here
-                _coreProjection.Handle(
+                _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
                         CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, int> {{"non-existing", -1}}), 55.5f, 0));
-                _coreProjection.Handle(
+                _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
                         CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(160, 150), new Dictionary<string, int> {{"non-existing", -1}}), 55.6f, 1));
@@ -147,11 +147,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             protected override void When()
             {
                 //projection subscribes here
-                _coreProjection.Handle(
+                _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
                         CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, int> {{"non-existing", -1}}), 55.5f, 0));
-                _coreProjection.Handle(
+                _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
                         CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(160, 150), new Dictionary<string, int> {{"non-existing", -1}}), 55.6f, 1));

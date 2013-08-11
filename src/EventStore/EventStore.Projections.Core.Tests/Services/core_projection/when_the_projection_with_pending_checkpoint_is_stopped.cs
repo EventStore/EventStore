@@ -54,25 +54,25 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void When()
         {
             //projection subscribes here
-            _coreProjection.Handle(
+            _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new TFPos(120, 110),
                         Guid.NewGuid(), "handle_this_type", false, "data1",
                         "metadata"), _subscriptionId, 0));
-            _coreProjection.Handle(
+            _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new TFPos(140, 130),
                         Guid.NewGuid(), "handle_this_type", false, "data2",
                         "metadata"), _subscriptionId, 1));
-            _coreProjection.Handle(
+            _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new TFPos(160, 150),
                         Guid.NewGuid(), "handle_this_type", false, "data3",
                         "metadata"), _subscriptionId, 2));
-            _coreProjection.Handle(
+            _bus.Publish(
                 new EventReaderSubscriptionMessage.CheckpointSuggested(
                     _subscriptionId, CheckpointTag.FromPosition(0, 160, 150), 77.7f, 3));
             _coreProjection.Stop();

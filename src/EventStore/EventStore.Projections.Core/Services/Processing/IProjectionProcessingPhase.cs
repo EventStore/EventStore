@@ -1,4 +1,5 @@
 using System;
+using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -12,18 +13,15 @@ namespace EventStore.Projections.Core.Services.Processing
     }
 
 
-    public interface IProjectionProcessingPhase : IDisposable
+    public interface IProjectionProcessingPhase : IDisposable, IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>, 
+        IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
+        IHandle<EventReaderSubscriptionMessage.NotAuthorized>,
+        IHandle<EventReaderSubscriptionMessage.EofReached>,
+        IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
+        IHandle<CoreProjectionManagementMessage.GetState>,
+        IHandle<CoreProjectionManagementMessage.GetResult>,
+        IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>
     {
-        void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message);
-        void Handle(EventReaderSubscriptionMessage.ProgressChanged message);
-        void Handle(EventReaderSubscriptionMessage.NotAuthorized message);
-        void Handle(EventReaderSubscriptionMessage.EofReached message);
-        void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message);
-
-        void Handle(CoreProjectionManagementMessage.GetState message);
-        void Handle(CoreProjectionManagementMessage.GetResult message);
-        void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message);
-
         void InitializeFromCheckpoint(CheckpointTag checkpointTag);
 
         void ProcessEvent();
