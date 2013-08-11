@@ -30,6 +30,12 @@ using System;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
+    public interface ICoreProjectionCheckpointReader
+    {
+        void BeginLoadState();
+    }
+
+
     public interface ICoreProjectionCheckpointManager
     {
         void Initialize();
@@ -53,7 +59,6 @@ namespace EventStore.Projections.Core.Services.Processing
         bool CheckpointSuggested(CheckpointTag checkpointTag, float progress);
         void Progress(float progress);
 
-        void BeginLoadState();
         void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
 
         void BeginLoadPartitionStateAt(

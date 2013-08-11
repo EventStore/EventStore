@@ -78,6 +78,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 return true;
             }
 
+            public override bool GetUseCheckpoints()
+            {
+                return false;
+            }
+
             public override IProjectionProcessingPhase[] CreateProcessingPhases(
                 IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
                 Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,

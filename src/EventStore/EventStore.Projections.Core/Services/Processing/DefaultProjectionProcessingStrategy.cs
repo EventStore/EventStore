@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _sourceDefinition = sourceDefinition;
         }
 
-        public override IProjectionProcessingPhase[] CreateProcessingPhases(
+        public sealed override IProjectionProcessingPhase[] CreateProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
             Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
             ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher )
@@ -67,13 +67,19 @@ namespace EventStore.Projections.Core.Services.Processing
                 namingBuilder, checkpointStrategy.ReaderStrategy.IsReadingOrderRepeatable, checkpointStrategy._runAs);
 
 
-            var projectionProcessingPhase = new EventProcessingProjectionProcessingPhase(
+            var firstPhase = new EventProcessingProjectionProcessingPhase(
                 coreProjection, projectionCorrelationId, publisher, this, _projectionConfig, updateStatistics,
                 _stateHandler, partitionStateCache, checkpointStrategy._definesStateTransform, _name, _logger,
                 zeroCheckpointTag, resultEmitter, checkpointManager, statePartitionSelector, checkpointStrategy,
                 timeProvider, subscriptionDispatcher, 0);
-            return new IProjectionProcessingPhase[] {projectionProcessingPhase};
+
+            return CreateProjectionProcessingPhases(
+                publisher, projectionCorrelationId, namingBuilder, partitionStateCache, updateStatistics, coreProjection,
+                timeProvider, subscriptionDispatcher, checkpointStrategy, zeroCheckpointTag, resultEmitter,
+                checkpointManager, statePartitionSelector, ioDispatcher, firstPhase);
         }
+
+        protected abstract IProjectionProcessingPhase[] CreateProjectionProcessingPhases(IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder, PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection, ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, CheckpointStrategy checkpointStrategy, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter, ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector, IODispatcher ioDispatcher, EventProcessingProjectionProcessingPhase firstPhase);
 
         protected override IQuerySources GetSourceDefinition()
         {

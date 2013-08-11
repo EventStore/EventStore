@@ -63,7 +63,6 @@ namespace EventStore.Projections.Core.Messages
             public CheckpointLoaded(Guid projectionId, CheckpointTag checkpointTag, string checkpointData)
                 : base(projectionId)
             {
-                if (checkpointTag == null) throw new ArgumentNullException("checkpointTag");
                 _checkpointTag = checkpointTag;
                 _checkpointData = checkpointData;
             }

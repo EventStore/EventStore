@@ -26,7 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Common.Log;
+using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
+using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -45,5 +50,21 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
+        public override bool GetUseCheckpoints()
+        {
+            return false;
+        }
+
+        protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder, PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection, ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, CheckpointStrategy checkpointStrategy, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter, ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector, IODispatcher ioDispatcher, EventProcessingProjectionProcessingPhase firstPhase)
+        {
+            var checkpointManager2 = new DefaultCheckpointManager(
+                publisher, projectionCorrelationId, _projectionVersion, checkpointStrategy._runAs, ioDispatcher,
+                _projectionConfig, _name, null, namingBuilder, checkpointStrategy.UseCheckpoints);
+
+            var writeResultsPhase = new WriteQueryResultProjectionProcessingPhase(
+                1, namingBuilder.GetResultStreamName(), partitionStateCache, checkpointManager2);
+
+            return new IProjectionProcessingPhase[] {firstPhase, writeResultsPhase};
+        }
     }
 }

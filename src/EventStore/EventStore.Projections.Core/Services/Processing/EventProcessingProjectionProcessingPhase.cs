@@ -283,8 +283,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
         {
-            _processingQueue.InitializeQueue(checkpointTag);
-            NewCheckpointStarted(checkpointTag);
+            // this can be old checkpoint
+            var adjustedCheckpointTag = _checkpointStrategy.ReaderStrategy.PositionTagger.AdjustTag(checkpointTag);
+            _processingQueue.InitializeQueue(adjustedCheckpointTag);
+            NewCheckpointStarted(adjustedCheckpointTag);
         }
 
         public void Subscribed(Guid subscriptionId)

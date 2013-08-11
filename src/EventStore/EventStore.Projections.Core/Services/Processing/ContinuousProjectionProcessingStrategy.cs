@@ -26,7 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Common.Log;
+using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -43,6 +47,16 @@ namespace EventStore.Projections.Core.Services.Processing
         public override bool GetStopOnEof()
         {
             return false;
+        }
+
+        public override bool GetUseCheckpoints()
+        {
+            return true;
+        }
+
+        protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder, PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection, ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, CheckpointStrategy checkpointStrategy, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter, ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector, IODispatcher ioDispatcher, EventProcessingProjectionProcessingPhase firstPhase)
+        {
+            return new IProjectionProcessingPhase[] {firstPhase};
         }
     }
 }
