@@ -30,14 +30,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         //TODO: remove from - it is passed for validation purpose only
         void Subscribe(CheckpointTag from, bool fromCheckpoint);
-        void Unsubscribed();
 
         void SetProjectionState(PhaseState state);
 
         void GetStatistics(ProjectionStatistics info);
-        IReaderStrategy ReaderStrategy { get; }
+        CheckpointTag MakeZeroCheckpointTag();
         ICoreProjectionCheckpointManager CheckpointManager { get; }
-        ReaderSubscriptionOptions GetSubscriptionOptions();
+
         void EnsureUnsubscribed();
     }
 }

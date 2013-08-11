@@ -196,6 +196,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 throw new NotImplementedException();
             }
 
+            public CheckpointTag MakeZeroCheckpointTag()
+            {
+                throw new NotImplementedException();
+            }
+
             public ICoreProjectionCheckpointManager CheckpointManager
             {
                 get { return _checkpointManager; }

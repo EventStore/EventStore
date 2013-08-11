@@ -32,7 +32,6 @@ namespace EventStore.Projections.Core.Services.Processing
     public interface ICoreProjectionForProcessingPhase
     {
         void CompletePhase();
-        void EnsureUnsubscribed();
         void SetFaulted(string reason);
         void SetFaulted(Exception ex);
         void SetFaulting(string reason);

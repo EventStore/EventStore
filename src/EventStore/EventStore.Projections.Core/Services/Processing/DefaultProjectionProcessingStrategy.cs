@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 coreProjection, projectionCorrelationId, publisher, this, _projectionConfig, updateStatistics,
                 _stateHandler, partitionStateCache, checkpointStrategy._definesStateTransform, _name, _logger,
                 zeroCheckpointTag, resultEmitter, checkpointManager, statePartitionSelector, checkpointStrategy,
-                timeProvider, subscriptionDispatcher);
+                timeProvider, subscriptionDispatcher, 0);
             return new IProjectionProcessingPhase[] {projectionProcessingPhase};
         }
 

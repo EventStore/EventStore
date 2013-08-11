@@ -111,6 +111,11 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotImplementedException();
         }
 
+        public CheckpointTag MakeZeroCheckpointTag()
+        {
+            throw new NotImplementedException();
+        }
+
         public IReaderStrategy ReaderStrategy
         {
             get { throw new NotImplementedException(); }

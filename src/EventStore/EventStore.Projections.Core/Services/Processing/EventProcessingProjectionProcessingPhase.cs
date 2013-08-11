@@ -28,6 +28,7 @@
 using System;
 using System.Diagnostics.Contracts;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
@@ -60,6 +61,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private long _expectedSubscriptionMessageSequenceNumber = -1;
         private Guid _currentSubscriptionId;
         private bool _subscribed;
+        private readonly int _phase;
 
 
         public EventProcessingProjectionProcessingPhase(
@@ -68,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
             PartitionStateCache partitionStateCache, bool definesStateTransform, string projectionName, ILogger logger,
             CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
             ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
-            StatePartitionSelector statePartitionSelector, CheckpointStrategy checkpointStrategy, ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher)
+            StatePartitionSelector statePartitionSelector, CheckpointStrategy checkpointStrategy, ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, int phase)
         {
             _coreProjection = coreProjection;
             _projectionCorrelationId = projectionCorrelationId;
@@ -89,6 +91,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointStrategy = checkpointStrategy;
             _timeProvider = timeProvider;
             _subscriptionDispatcher = subscriptionDispatcher;
+            _phase = phase;
             _publisher = publisher;
         }
 
@@ -151,6 +154,7 @@ namespace EventStore.Projections.Core.Services.Processing
             RegisterSubscriptionMessage(message);
             try
             {
+                Unsubscribed();
                 var progressWorkItem = new CompletedWorkItem(this);
                 _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 ProcessEvent();
@@ -233,11 +237,12 @@ namespace EventStore.Projections.Core.Services.Processing
             Subscribed(_currentSubscriptionId);
             try
             {
-                if (ReaderStrategy != null)
+                var readerStrategy = _checkpointStrategy.ReaderStrategy;
+                if (readerStrategy != null)
                 {
                     _subscriptionDispatcher.PublishSubscribe(
                         new ReaderSubscriptionManagement.Subscribe(
-                            _currentSubscriptionId, checkpointTag, ReaderStrategy,
+                            _currentSubscriptionId, checkpointTag, readerStrategy,
                             GetSubscriptionOptions()), _coreProjection);
                     _subscribed = true;
                     _coreProjection.Subscribed();
@@ -573,6 +578,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Complete()
         {
+            //NOTE: no need for EnsureUnsubscribed  as EOF
+            Unsubscribed();
             _coreProjection.CompletePhase();
         }
 
@@ -620,6 +627,14 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             info.Status = info.Status + GetStatus();
             info.BufferedEvents += GetBufferedEventCount();
+        }
+
+        public CheckpointTag MakeZeroCheckpointTag()
+        {
+            var readerStrategy = _checkpointStrategy.ReaderStrategy;
+            return readerStrategy != null
+                ? readerStrategy.PositionTagger.MakeZeroCheckpointTag()
+                : CheckpointTag.FromPhase(_phase);
         }
 
         public IReaderStrategy ReaderStrategy

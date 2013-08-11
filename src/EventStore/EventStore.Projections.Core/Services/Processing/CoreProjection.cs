@@ -226,7 +226,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
                 | State.CompletingPhase | State.PhaseCompleted);
 
-            Unsubscribed();
             _projectionProcessingPhase.Handle(message);
         }
 
@@ -239,11 +238,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionProcessingPhase.Handle(message);
         }
 
-        private void Unsubscribed()
-        {
-            _projectionProcessingPhase.Unsubscribed();
-        }
-
         public void CompletePhase()
         {
             if (_state != State.Running)
@@ -252,7 +246,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("!_projectionConfig.StopOnEof");
             _completed = true;
             _checkpointManager.Progress(100.0f);
-            Unsubscribed(); // NOTE:  stopOnEof subscriptions automatically unsubscribe when handling this message
             GoToState(State.CompletingPhase);
         }
 
@@ -539,9 +532,7 @@ namespace EventStore.Projections.Core.Services.Processing
             else
             {
                 var nextPhase = _projectionProcessingPhases[completedPhaseIndex + 1];
-                var nextPhaseZeroPosition = nextPhase.ReaderStrategy != null
-                    ? nextPhase.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag()
-                    : CheckpointTag.FromPhase(completedPhaseIndex + 1);
+                var nextPhaseZeroPosition = nextPhase.MakeZeroCheckpointTag();
                 BeginPhase(nextPhase, nextPhaseZeroPosition);
                 _projectionProcessingPhase.Subscribe(nextPhaseZeroPosition, fromCheckpoint: false);
             }
