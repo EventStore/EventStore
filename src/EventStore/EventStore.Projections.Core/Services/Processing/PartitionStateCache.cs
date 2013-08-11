@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -179,6 +180,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     string.Format(
                         "Attempt to lock the '{0}' partition state at the position '{1}' before the unlocked position '{2}'",
                         partition, at, _unlockedBefore));
+        }
+
+        public IEnumerable<Tuple<string, PartitionState>> Enumerate()
+        {
+            return _partitionStates.Select(v => Tuple.Create(v.Key, v.Value.Item1)).ToList();
         }
     }
 }

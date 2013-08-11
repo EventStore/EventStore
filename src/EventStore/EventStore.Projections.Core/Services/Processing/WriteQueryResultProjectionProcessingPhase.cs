@@ -27,39 +27,35 @@
 // 
 
 using System;
+using System.Linq;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public sealed class WriteQueryResultProjectionProcessingPhase : IProjectionProcessingPhase
     {
+        private readonly int _phase;
+        private readonly string _resultStream;
+        private readonly PartitionStateCache _stateCache;
+        private readonly ICoreProjectionCheckpointManager _checkpointManager;
+
+        public WriteQueryResultProjectionProcessingPhase(
+            int phase, string resultStream, PartitionStateCache stateCache,
+            ICoreProjectionCheckpointManager checkpointManager)
+        {
+            if (resultStream == null) throw new ArgumentNullException("resultStream");
+            if (stateCache == null) throw new ArgumentNullException("stateCache");
+            if (checkpointManager == null) throw new ArgumentNullException("checkpointManager");
+            if (string.IsNullOrEmpty(resultStream)) throw new ArgumentException("resultStream");
+
+            _phase = phase;
+            _resultStream = resultStream;
+            _stateCache = stateCache;
+            _checkpointManager = checkpointManager;
+        }
+
         public void Dispose()
         {
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.EofReached message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
-        {
-            throw new NotImplementedException();
         }
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
@@ -83,22 +79,22 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void ProcessEvent()
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
 
         public void Subscribe(CheckpointTag from, bool fromCheckpoint)
         {
-            throw new NotImplementedException();
-        }
-
-        public void Subscribed(Guid subscriptionId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Unsubscribed()
-        {
-            throw new NotImplementedException();
+            var items = _stateCache.Enumerate();
+            var lastCausedBy = items.Max(v => v.Item2.CausedBy);
+            EmittedStream.WriterConfiguration.StreamMetadata streamMetadata = null;
+            _checkpointManager.EventsEmitted(
+                (from item in items
+                    let partitionState = item.Item2
+                    select
+                        new EmittedEventEnvelope(new EmittedDataEvent(
+                            _resultStream, Guid.NewGuid(), "Result", partitionState.Result, null, partitionState.CausedBy,
+                            CheckpointTag.FromPhase(_phase)), streamMetadata)).ToArray(), Guid.Empty, null);
+            _checkpointManager.EventProcessed(CheckpointTag.FromPhase(_phase), 100.0f);
         }
 
         public void SetProjectionState(PhaseState state)
@@ -116,19 +112,9 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotImplementedException();
         }
 
-        public IReaderStrategy ReaderStrategy
-        {
-            get { throw new NotImplementedException(); }
-        }
-
         public ICoreProjectionCheckpointManager CheckpointManager
         {
             get { throw new NotImplementedException(); }
-        }
-
-        public ReaderSubscriptionOptions GetSubscriptionOptions()
-        {
-            throw new NotImplementedException();
         }
 
         public void EnsureUnsubscribed()

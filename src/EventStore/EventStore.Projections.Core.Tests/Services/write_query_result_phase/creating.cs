@@ -26,7 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using EventStore.Core.Bus;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.core_projection.multi_phase;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
@@ -40,24 +43,43 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
             [Test]
             public void it_can_be_created()
             {
-                var it = new WriteQueryResultProjectionProcessingPhase();
+                var stateCache = new PartitionStateCache();
+                var bus = new InMemoryBus("test");
+                var it = new WriteQueryResultProjectionProcessingPhase(
+                    1, "result-stream", stateCache,
+                    new specification_with_multi_phase_core_projection.FakeCheckpointManager(bus, Guid.NewGuid()));
             }
         }
 
         abstract class specification_with_write_query_result_projection_processing_phase
         {
-            private WriteQueryResultProjectionProcessingPhase _phase;
-
-            public WriteQueryResultProjectionProcessingPhase Phase
-            {
-                get { return _phase; }
-            }
+            protected WriteQueryResultProjectionProcessingPhase _phase;
+            protected specification_with_multi_phase_core_projection.FakeCheckpointManager _checkpointManager;
+            protected InMemoryBus _publisher;
+            protected PartitionStateCache _stateCache;
+            protected string _resultStreamName;
 
             [SetUp]
             public void SetUp()
             {
-                _phase = new WriteQueryResultProjectionProcessingPhase();
+                _stateCache = GivenStateCache();
+                _publisher = new InMemoryBus("test");
+                _checkpointManager = new specification_with_multi_phase_core_projection.FakeCheckpointManager(
+                    _publisher, Guid.NewGuid());
+                _resultStreamName = "result-stream";
+                _phase = new WriteQueryResultProjectionProcessingPhase(
+                    1, _resultStreamName, _stateCache, _checkpointManager);
                 When();
+            }
+
+            protected virtual PartitionStateCache GivenStateCache()
+            {
+                var stateCache = new PartitionStateCache();
+
+                stateCache.CachePartitionState("a", new PartitionState("{}", null, CheckpointTag.FromPhase(0)));
+                stateCache.CachePartitionState("b", new PartitionState("{}", null, CheckpointTag.FromPhase(0)));
+                stateCache.CachePartitionState("c", new PartitionState("{}", null, CheckpointTag.FromPhase(0)));
+                return stateCache;
             }
 
             protected abstract void When();
@@ -70,7 +92,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
         }
 
         [TestFixture]
-        class when_created: specification_with_write_query_result_projection_processing_phase
+        class when_created : specification_with_write_query_result_projection_processing_phase
         {
             protected override void When()
             {
@@ -79,28 +101,28 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
             [Test]
             public void can_be_initialized_from_phase_checkpoint()
             {
-                Phase.InitializeFromCheckpoint(CheckpointTag.FromPhase(1));
+                _phase.InitializeFromCheckpoint(CheckpointTag.FromPhase(1));
             }
 
-            [Test]
-            public void can_process_event()
+            [Test, ExpectedException(typeof (InvalidOperationException))]
+            public void process_event_throws_invalid_operation_exception()
             {
-                Phase.ProcessEvent();
+                _phase.ProcessEvent();
             }
         }
 
         [TestFixture]
-        class when_process_event : specification_with_write_query_result_projection_processing_phase
+        class when_subscribing : specification_with_write_query_result_projection_processing_phase
         {
             protected override void When()
             {
-                Phase.ProcessEvent();
+                _phase.Subscribe(CheckpointTag.FromPhase(10), false);
             }
 
             [Test]
             public void writes_query_results()
             {
-                Assert.Inconclusive();
+                Assert.AreEqual(3, _checkpointManager.EmittedEvents.Count);
             }
         }
     }

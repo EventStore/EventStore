@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
@@ -34,6 +35,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 {
@@ -259,6 +261,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             private float _progress;
             private bool _stopped;
             private bool _stopping;
+            private readonly List<EmittedEventEnvelope> _emittedEvents = new List<EmittedEventEnvelope>();
 
             public FakeCheckpointManager(IPublisher publisher, Guid projectionCorrelationId)
             {
@@ -300,7 +303,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
             {
-                throw new NotImplementedException();
+                EmittedEvents.AddRange(scheduledWrites);
             }
 
             public void StateUpdated(string partition, PartitionState oldState, PartitionState newState)
@@ -310,7 +313,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public void EventProcessed(CheckpointTag checkpointTag, float progress)
             {
-                throw new NotImplementedException();
+                _lastEvent = checkpointTag;
             }
 
             public bool CheckpointSuggested(CheckpointTag checkpointTag, float progress)
@@ -374,6 +377,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             public bool Stopping_
             {
                 get { return _stopping; }
+            }
+
+            public List<EmittedEventEnvelope> EmittedEvents
+            {
+                get { return _emittedEvents; }
             }
         }
 
