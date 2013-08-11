@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly IPublisher _publisher;
 
-        private readonly Guid _projectionCorrelationId;
+        internal readonly Guid _projectionCorrelationId;
 
         private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
@@ -81,10 +81,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private ICoreProjectionCheckpointManager _checkpointManager;
 
         private bool _tickPending;
-        private long _expectedSubscriptionMessageSequenceNumber = -1;
-        private Guid _currentSubscriptionId;
 
-        private bool _subscribed;
         private bool _startOnLoad;
         private bool _completed;
 
@@ -118,7 +115,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _projectionProcessingPhases = projectionProcessingStrategy.CreateProcessingPhases(
                 publisher, projectionCorrelationId, _partitionStateCache, UpdateStatistics, this, namingBuilder,
-                timeProvider, ioDispatcher);
+                timeProvider, ioDispatcher, subscriptionDispatcher);
             //NOTE: currently assuming the first checkpoint manager to be able to load any state
             _checkpointManager = _projectionProcessingPhases[0].CheckpointManager;
             GoToState(State.Initial);
@@ -195,12 +192,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
-            if (_state != State.StateLoaded)
-            {
-                if (IsOutOfOrderSubscriptionMessage(message))
-                    return;
-                RegisterSubscriptionMessage(message);
-            }
             EnsureState(
                 /* load state restores already ordered events by sending committed events back to the projection */
                 State.StateLoaded | State.Running | State.Stopping | State.Stopped | State.FaultedStopping
@@ -213,10 +204,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
         {
-            if (IsOutOfOrderSubscriptionMessage(message))
-                return;
-            RegisterSubscriptionMessage(message);
-
             EnsureState(
                 State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
                 | State.CompletingPhase | State.PhaseCompleted);
@@ -226,10 +213,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
         {
-            if (IsOutOfOrderSubscriptionMessage(message))
-                return;
-            RegisterSubscriptionMessage(message);
-
             EnsureState(
                 State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
                 | State.CompletingPhase | State.PhaseCompleted);
@@ -239,10 +222,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(EventReaderSubscriptionMessage.EofReached message)
         {
-            if (IsOutOfOrderSubscriptionMessage(message))
-                return;
-            RegisterSubscriptionMessage(message);
-
             EnsureState(
                 State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
                 | State.CompletingPhase | State.PhaseCompleted);
@@ -253,10 +232,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
         {
-            if (IsOutOfOrderSubscriptionMessage(message))
-                return;
-            RegisterSubscriptionMessage(message);
-
             EnsureState(
                 State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
                 | State.CompletingPhase | State.PhaseCompleted);
@@ -266,8 +241,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void Unsubscribed()
         {
-            _subscriptionDispatcher.Cancel(_projectionCorrelationId);
-            _subscribed = false;
             _projectionProcessingPhase.Unsubscribed();
         }
 
@@ -331,8 +304,10 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 InitializeProjectionFromCheckpoint(message.CheckpointData, message.CheckpointTag);
                 if (_startOnLoad)
-                    _checkpointManager.BeginLoadPrerecordedEvents(message.CheckpointTag);
-                else 
+                {
+                    _projectionProcessingPhase.Subscribe(message.CheckpointTag, fromCheckpoint: true);
+                }
+                else
                     GoToState(State.Stopped);
             }
             catch (Exception ex)
@@ -346,20 +321,12 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureState(State.StateLoaded);
             try
             {
-                UnsubscribeFromPreRecordedOrderEvents();
-                Subscribe(message.CheckpointTag);
+                _projectionProcessingPhase.Handle(message);
             }
             catch (Exception ex)
             {
                 SetFaulted(ex);
             }
-        }
-
-        private void UnsubscribeFromPreRecordedOrderEvents()
-        {
-            // projectionCorrelationId is used as a subscription identifier for delivery
-            // of pre-recorded order events recovered by checkpoint manager
-            _subscriptionDispatcher.Cancel(_projectionCorrelationId);
         }
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
@@ -390,13 +357,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void EnsureUnsubscribed()
         {
-            if (_subscribed)
-            {
-                Unsubscribed();
-                // this was we distinguish pre-recorded events subscription
-                if (_currentSubscriptionId != _projectionCorrelationId) 
-                    _publisher.Publish(new ReaderSubscriptionManagement.Unsubscribe(_currentSubscriptionId));
-            }
+
+            if (_projectionProcessingPhase != null)
+                _projectionProcessingPhase.EnsureUnsubscribed();
         }
 
         private void GoToState(State state)
@@ -498,32 +461,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterInitial()
         {
             _completed = false;
-            _subscribed = false;
             _partitionStateCache.Initialize();
             _projectionProcessingPhase = null;
             _checkpointManager = _projectionProcessingPhases[0].CheckpointManager;
             _checkpointManager.Initialize();
             _tickPending = false;
             _partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, CheckpointTag.Empty), null);
-            _expectedSubscriptionMessageSequenceNumber = -1; // this is to be overridden when subscribing
-            _currentSubscriptionId = Guid.Empty;
             // NOTE: this is to workaround exception in GetState requests submitted by client
         }
 
         private void EnterLoadStateRequested()
         {
-            SubscribeToPreRecordedOrderEvents();
             _checkpointManager.BeginLoadState();
-        }
-
-        private void SubscribeToPreRecordedOrderEvents()
-        {
-            // projectionCorrelationId is used as a subscription identifier for delivery
-            // of pre-recorded order events recovered by checkpoint manager
-            _currentSubscriptionId = _projectionCorrelationId;
-            _subscriptionDispatcher.Subscribed(_projectionCorrelationId, this);
-            _subscribed = true; // even if it is not a real subscription we need to unsubscribe 
-            
         }
 
         private void EnterStateLoaded()
@@ -594,23 +543,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     ? nextPhase.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag()
                     : CheckpointTag.FromPhase(completedPhaseIndex + 1);
                 BeginPhase(nextPhase, nextPhaseZeroPosition);
-                Subscribe(nextPhaseZeroPosition);
+                _projectionProcessingPhase.Subscribe(nextPhaseZeroPosition, fromCheckpoint: false);
             }
-        }
-
-        private
-            bool IsOutOfOrderSubscriptionMessage(EventReaderSubscriptionMessage message)
-        {
-            if (_currentSubscriptionId != message.SubscriptionId)
-                return true;
-            if (_expectedSubscriptionMessageSequenceNumber != message.SubscriptionMessageSequenceNumber)
-                throw new InvalidOperationException("Out of order message detected");
-            return false;
-        }
-
-        private void RegisterSubscriptionMessage(EventReaderSubscriptionMessage message)
-        {
-            _expectedSubscriptionMessageSequenceNumber = message.SubscriptionMessageSequenceNumber + 1;
         }
 
         private void EnsureState(State expectedStates)
@@ -655,35 +589,6 @@ namespace EventStore.Projections.Core.Services.Processing
             GoToState(State.StateLoaded);
         }
 
-        private void Subscribe(CheckpointTag checkpointTag)
-        {
-            _expectedSubscriptionMessageSequenceNumber = 0;
-            _currentSubscriptionId = Guid.NewGuid();
-            _projectionProcessingPhase.Subscribed(_currentSubscriptionId);
-            try
-            {
-                if (_projectionProcessingPhase.ReaderStrategy != null)
-                {
-                    _subscriptionDispatcher.PublishSubscribe(
-                        new ReaderSubscriptionManagement.Subscribe(
-                            _currentSubscriptionId, checkpointTag, _projectionProcessingPhase.ReaderStrategy,
-                            _projectionProcessingPhase.GetSubscriptionOptions()), this);
-                    _subscribed = true;
-                    GoToState(State.Subscribed);
-                }
-                else
-                {
-                    _subscribed = true;
-                    if (_startOnLoad)
-                        GoToState(State.Running);
-                }
-            }
-            catch (Exception ex)
-            {
-                SetFaulted(ex);
-                return;
-            }
-        }
 
         public void Dispose()
         {
@@ -772,5 +677,9 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _checkpointManager.LastProcessedEventPosition; }
         }
 
+        public void Subscribed()
+        {
+            GoToState(State.Subscribed);
+        }
     }
 }

@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public override IProjectionProcessingPhase[] CreateProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
             Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
-            ITimeProvider timeProvider, IODispatcher ioDispatcher)
+            ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher )
         {
             var checkpointStrategy = CheckpointStrategy.Create(0, _sourceDefinition, _projectionConfig, timeProvider);
 
@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 coreProjection, projectionCorrelationId, publisher, this, _projectionConfig, updateStatistics,
                 _stateHandler, partitionStateCache, checkpointStrategy._definesStateTransform, _name, _logger,
                 zeroCheckpointTag, resultEmitter, checkpointManager, statePartitionSelector, checkpointStrategy,
-                timeProvider);
+                timeProvider, subscriptionDispatcher);
             return new IProjectionProcessingPhase[] {projectionProcessingPhase};
         }
 

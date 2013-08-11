@@ -44,5 +44,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return true;
         }
+
     }
 }

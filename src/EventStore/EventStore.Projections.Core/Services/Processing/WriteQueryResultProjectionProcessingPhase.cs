@@ -72,11 +72,21 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotImplementedException();
         }
 
+        public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
+        {
+            throw new NotImplementedException();
+        }
+
         public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
         {
         }
 
         public void ProcessEvent()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Subscribe(CheckpointTag from, bool fromCheckpoint)
         {
             throw new NotImplementedException();
         }
@@ -112,6 +122,11 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public ReaderSubscriptionOptions GetSubscriptionOptions()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void EnsureUnsubscribed()
         {
             throw new NotImplementedException();
         }

@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             public override IProjectionProcessingPhase[] CreateProcessingPhases(
                 IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
                 Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
-                ITimeProvider timeProvider, IODispatcher ioDispatcher)
+                ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher)
             {
                 return new[]
                 {
@@ -150,6 +150,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 throw new NotImplementedException();
             }
 
+            public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
+            {
+                throw new NotImplementedException();
+            }
+
             public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
             {
                 _initializedFromCheckpoint = true;
@@ -171,6 +176,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 ProcessEventInvoked++;
             }
 
+            public void Subscribe(CheckpointTag from, bool fromCheckpoint)
+            {
+                throw new NotImplementedException();
+            }
+
             public void Subscribed(Guid subscriptionId)
             {
                 _subscriptionId = subscriptionId;
@@ -179,6 +189,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             public ReaderSubscriptionOptions GetSubscriptionOptions()
             {
                 return new ReaderSubscriptionOptions(10000, 100, true, null);
+            }
+
+            public void EnsureUnsubscribed()
+            {
+                throw new NotImplementedException();
             }
 
             public ICoreProjectionCheckpointManager CheckpointManager

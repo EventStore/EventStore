@@ -71,6 +71,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public abstract IProjectionProcessingPhase[] CreateProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
             Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
-            ITimeProvider timeProvider, IODispatcher ioDispatcher);
+            ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher);
     }
 }

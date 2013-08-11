@@ -57,6 +57,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("CheckpointTag has not been initialized");
             _complete = readyForStage;
             _onStage = onStage;
+            //TODO: 
             if (_requiresRunning && !Queue.IsRunning)
                 NextStage();
             else

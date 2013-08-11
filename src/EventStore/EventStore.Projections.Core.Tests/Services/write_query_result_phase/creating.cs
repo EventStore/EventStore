@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
             }
         }
 
-        class specification_with_write_query_result_projection_processing_phase
+        abstract class specification_with_write_query_result_projection_processing_phase
         {
             private WriteQueryResultProjectionProcessingPhase _phase;
 
@@ -57,7 +57,10 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
             public void SetUp()
             {
                 _phase = new WriteQueryResultProjectionProcessingPhase();
+                When();
             }
+
+            protected abstract void When();
 
             [TearDown]
             public void TearDown()
@@ -69,10 +72,35 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
         [TestFixture]
         class when_created: specification_with_write_query_result_projection_processing_phase
         {
+            protected override void When()
+            {
+            }
+
             [Test]
             public void can_be_initialized_from_phase_checkpoint()
             {
                 Phase.InitializeFromCheckpoint(CheckpointTag.FromPhase(1));
+            }
+
+            [Test]
+            public void can_process_event()
+            {
+                Phase.ProcessEvent();
+            }
+        }
+
+        [TestFixture]
+        class when_process_event : specification_with_write_query_result_projection_processing_phase
+        {
+            protected override void When()
+            {
+                Phase.ProcessEvent();
+            }
+
+            [Test]
+            public void writes_query_results()
+            {
+                Assert.Inconclusive();
             }
         }
     }

@@ -39,5 +39,6 @@ namespace EventStore.Projections.Core.Services.Processing
         void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem);
         void EnsureTickPending();
         CheckpointTag LastProcessedEventPosition { get; }
+        void Subscribed();
     }
 }

@@ -22,12 +22,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         void Handle(CoreProjectionManagementMessage.GetState message);
         void Handle(CoreProjectionManagementMessage.GetResult message);
+        void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message);
 
         void InitializeFromCheckpoint(CheckpointTag checkpointTag);
 
         void ProcessEvent();
 
-        void Subscribed(Guid subscriptionId);
+        //TODO: remove from - it is passed for validation purpose only
+        void Subscribe(CheckpointTag from, bool fromCheckpoint);
         void Unsubscribed();
 
         void SetProjectionState(PhaseState state);
@@ -36,5 +38,6 @@ namespace EventStore.Projections.Core.Services.Processing
         IReaderStrategy ReaderStrategy { get; }
         ICoreProjectionCheckpointManager CheckpointManager { get; }
         ReaderSubscriptionOptions GetSubscriptionOptions();
+        void EnsureUnsubscribed();
     }
 }
