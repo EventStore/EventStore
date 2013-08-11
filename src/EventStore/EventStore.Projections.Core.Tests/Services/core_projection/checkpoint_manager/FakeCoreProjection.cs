@@ -33,12 +33,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 {
     public class FakeCoreProjection : ICoreProjection
     {
-        public readonly List<EventReaderSubscriptionMessage.CommittedEventReceived> _committedEventReceivedMessages =
-            new List<EventReaderSubscriptionMessage.CommittedEventReceived>();
-
-        public readonly List<EventReaderSubscriptionMessage.CheckpointSuggested> _checkpointSuggestedMessages =
-            new List<EventReaderSubscriptionMessage.CheckpointSuggested>();
-
         public readonly List<CoreProjectionProcessingMessage.CheckpointCompleted> _checkpointCompletedMessages =
             new List<CoreProjectionProcessingMessage.CheckpointCompleted>();
 
@@ -48,25 +42,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public readonly List<CoreProjectionProcessingMessage.PrerecordedEventsLoaded> _prerecordedEventsLoadedMessages =
             new List<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>();
 
-        public readonly List<EventReaderSubscriptionMessage.ProgressChanged> _progresschangedMessages =
-            new List<EventReaderSubscriptionMessage.ProgressChanged>();
-
-        public readonly List<EventReaderSubscriptionMessage.NotAuthorized> _notAuthorizedMessages =
-            new List<EventReaderSubscriptionMessage.NotAuthorized>();
-
-        public readonly List<EventReaderSubscriptionMessage.EofReached> _eofReachedMessages =
-            new List<EventReaderSubscriptionMessage.EofReached>();
-
-        public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
-        {
-            _committedEventReceivedMessages.Add(message);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
-        {
-            _checkpointSuggestedMessages.Add(message);
-        }
-
         public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
         {
             _checkpointCompletedMessages.Add(message);
@@ -75,21 +50,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
         {
             _checkpointLoadedMessages.Add(message);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
-        {
-            _progresschangedMessages.Add(message);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
-        {
-            _notAuthorizedMessages.Add(message);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.EofReached message)
-        {
-            _eofReachedMessages.Add(message);
         }
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)

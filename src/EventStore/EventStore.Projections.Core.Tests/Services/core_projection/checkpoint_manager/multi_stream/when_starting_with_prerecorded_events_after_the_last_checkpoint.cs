@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void sends_commited_event_received_messages_in_correct_order()
         {
-            var messages = _projection._committedEventReceivedMessages;
+            var messages = HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().ToList();
             Assert.AreEqual(3, messages.Count);
 
             var message1 = messages[0];
@@ -122,7 +122,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void sends_correct_commited_event_received_messages()
         {
-            var messages = _projection._committedEventReceivedMessages;
+            var messages = HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().ToList();
             Assert.AreEqual(3, messages.Count);
 
             var message1 = messages[0];

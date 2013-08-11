@@ -39,9 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
         protected override void When()
         {
             _coreProjection.Start();
-            _bus.Publish(
-                new EventReaderSubscriptionMessage.EofReached(
-                    Phase1.SubscriptionId, CheckpointTag.FromPosition(0, 500, 450), 0));
+            Phase1.Complete();
         }
 
         [Test]
@@ -65,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
         [Test]
         public void publishes_subscribe_message()
         {
-            Assert.AreEqual(2, HandledMessages.OfType<ReaderSubscriptionManagement.Subscribe>().Count());
+            Assert.AreEqual(1, Phase2.SubscribeInvoked);
         }
     }
 }
