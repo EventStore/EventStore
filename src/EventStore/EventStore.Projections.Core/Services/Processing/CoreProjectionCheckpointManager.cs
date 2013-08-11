@@ -258,22 +258,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastProcessedEventProgress = progress;
         }
 
-        public void BeginLoadState()
-        {
-            if (_stateRequested)
-                throw new InvalidOperationException("State has been already requested");
-            BeforeBeginLoadState();
-            _stateRequested = true;
-            if (_useCheckpoints)
-            {
-                RequestLoadState();
-            }
-            else
-            {
-                CheckpointLoaded(null, null);
-            }
-        }
-
         public abstract void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action committed);
         public CheckpointTag LastProcessedEventPosition {
             get { return _lastProcessedEventPosition.LastTag;  }
@@ -285,9 +269,6 @@ namespace EventStore.Projections.Core.Services.Processing
         protected abstract ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition);
         protected abstract EmittedEventEnvelope[] RegisterNewPartition(string partition, CheckpointTag at);
         public abstract void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
-        protected abstract void BeforeBeginLoadState();
-        protected abstract void RequestLoadState();
-
         protected abstract void BeginWriteCheckpoint(
             CheckpointTag requestedCheckpointPosition, string requestedCheckpointState);
 
@@ -369,19 +350,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 _partitionStateUpdateManager.EmitEvents(_currentCheckpoint);
                 _partitionStateUpdateManager = null;
             }
-        }
-
-        protected void CheckpointLoaded(CheckpointTag checkpointTag, string checkpointData)
-        {
-            if (checkpointTag == null) // no checkpoint data found
-            {
-                checkpointTag = _zeroTag;
-                checkpointData = null;
-            }
-            _stateLoaded = true;
-            _publisher.Publish(
-                new CoreProjectionProcessingMessage.CheckpointLoaded(
-                    _projectionCorrelationId, checkpointTag, checkpointData));
         }
 
         protected void SendPrerecordedEvent(

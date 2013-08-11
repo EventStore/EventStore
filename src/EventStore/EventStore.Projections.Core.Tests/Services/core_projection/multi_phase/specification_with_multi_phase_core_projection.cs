@@ -335,7 +335,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             {
                 _publisher.Publish(
                     new CoreProjectionProcessingMessage.CheckpointLoaded(
-                        _projectionCorrelationId, CheckpointTag.FromPosition(0, 0, -1), ""));
+                        _projectionCorrelationId, CheckpointTag.FromPosition(0, 0, -1), "", 0));
             }
 
             public void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag)

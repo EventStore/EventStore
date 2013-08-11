@@ -33,6 +33,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public interface ICoreProjectionCheckpointReader
     {
         void BeginLoadState();
+        void Initialize();
     }
 
 

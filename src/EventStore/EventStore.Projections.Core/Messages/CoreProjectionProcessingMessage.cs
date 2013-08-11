@@ -55,16 +55,23 @@ namespace EventStore.Projections.Core.Messages
         public class CheckpointLoaded : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             private readonly CheckpointTag _checkpointTag;
             private readonly string _checkpointData;
+            private readonly int _checkpointEventNumber;
 
-            public CheckpointLoaded(Guid projectionId, CheckpointTag checkpointTag, string checkpointData)
+            public CheckpointLoaded(
+                Guid projectionId, CheckpointTag checkpointTag, string checkpointData, int checkpointEventNumber)
                 : base(projectionId)
             {
                 _checkpointTag = checkpointTag;
                 _checkpointData = checkpointData;
+                _checkpointEventNumber = checkpointEventNumber;
             }
 
             public CheckpointTag CheckpointTag
@@ -75,6 +82,11 @@ namespace EventStore.Projections.Core.Messages
             public string CheckpointData
             {
                 get { return _checkpointData; }
+            }
+
+            public int CheckpointEventNumber
+            {
+                get { return _checkpointEventNumber; }
             }
         }
 

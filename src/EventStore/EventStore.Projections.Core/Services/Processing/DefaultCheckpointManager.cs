@@ -226,58 +226,6 @@ namespace EventStore.Projections.Core.Services.Processing
             };
         }
 
-        protected override void BeforeBeginLoadState()
-        {
-            _lastWrittenCheckpointEventNumber = ExpectedVersion.NoStream;
-            _nextStateIndexToRequest = -1; // from the end
-        }
-
-        protected override void RequestLoadState()
-        {
-            const int recordsToRequest = 10;
-            _readRequestId = _ioDispatcher.ReadBackward(
-                _projectionCheckpointStreamId, _nextStateIndexToRequest, recordsToRequest, false,
-                SystemAccount.Principal, OnLoadStateReadRequestCompleted);
-        }
-
-        private void OnLoadStateReadRequestCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message)
-        {
-            if (message.Events.Length > 0)
-            {
-                var checkpoint =
-                    message.Events.FirstOrDefault(
-                        v => v.Event.EventType == ProjectionNamesBuilder.EventType_ProjectionCheckpoint).Event;
-                if (checkpoint != null)
-                {
-                    var parsed = checkpoint.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
-                    if (parsed.Version.ProjectionId != _projectionVersion.ProjectionId
-                        || _projectionVersion.Epoch > parsed.Version.Version)
-                    {
-                        _lastWrittenCheckpointEventNumber = checkpoint.EventNumber;
-                        CheckpointLoaded(null, null);
-                    }
-                    else
-                    {
-                        //TODO: check epoch and correctly set _lastWrittenCheckpointEventNumber
-                        var checkpointData = Helper.UTF8NoBom.GetString(checkpoint.Data);
-                        _lastWrittenCheckpointEventNumber = checkpoint.EventNumber;
-                        var adjustedTag = parsed.AdjustBy(_positionTagger, _projectionVersion);
-                        CheckpointLoaded(adjustedTag, checkpointData);
-                    }
-                    return;
-                }
-            }
-
-            if (message.NextEventNumber != -1)
-            {
-                _nextStateIndexToRequest = message.NextEventNumber;
-                RequestLoadState();
-                return;
-            }
-            _lastWrittenCheckpointEventNumber = ExpectedVersion.NoStream;
-            CheckpointLoaded(null, null);
-        }
-
         public override void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag)
         {
             PrerecordedEventsLoaded(checkpointTag);

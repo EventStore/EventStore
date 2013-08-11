@@ -18,15 +18,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly IPublisher _publisher;
         private readonly Guid _projectionCorrelationId;
+        private readonly IODispatcher _ioDispatcher;
+        private readonly string _projectionCheckpointStreamId;
+        private readonly bool _useCheckpoints;
 
 
         private bool _stateRequested;
 
         private int _nextStateIndexToRequest;
-        private IODispatcher _ioDispatcher;
-        private string _projectionCheckpointStreamId;
         private ProjectionVersion _projectionVersion;
-        private bool _useCheckpoints;
         private Guid _readRequestId;
         private int _lastWrittenCheckpointEventNumber;
         private bool _stateLoaded;
@@ -58,6 +58,12 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 CheckpointLoaded(null, null);
             }
+        }
+
+        public void Initialize()
+        {
+            _ioDispatcher.BackwardReader.Cancel(_readRequestId);
+            _readRequestId = Guid.Empty;
         }
 
         protected void BeforeBeginLoadState()
@@ -123,7 +129,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _stateLoaded = true;
             _publisher.Publish(
                 new CoreProjectionProcessingMessage.CheckpointLoaded(
-                    _projectionCorrelationId, checkpointTag, checkpointData));
+                    _projectionCorrelationId, checkpointTag, checkpointData, _lastWrittenCheckpointEventNumber));
         }
 
 
