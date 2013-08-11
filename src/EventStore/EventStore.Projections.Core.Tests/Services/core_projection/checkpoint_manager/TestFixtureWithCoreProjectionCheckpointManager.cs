@@ -51,6 +51,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         protected bool _stopOnEof;
         protected ProjectionNamesBuilder _namingBuilder;
         protected ResultEmitter _resultEmitter;
+        protected CoreProjectionCheckpointWriter _checkpointWriter;
+        protected CoreProjectionCheckpointReader _checkpointReader;
+        protected string _projectionName;
+        protected ProjectionVersion _projectionVersion;
 
         [SetUp]
         public void setup()
@@ -66,11 +70,22 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 
         protected new virtual void When()
         {
-            _manager = new DefaultCheckpointManager(
-                _bus, _projectionCorrelationId, new ProjectionVersion(1, 0, 0), null, _ioDispatcher,
-                _config, "projection", new StreamPositionTagger(0, "stream"), _namingBuilder,
-                _checkpointsEnabled);
+            _projectionVersion = new ProjectionVersion(1, 0, 0);
+            _projectionName = "projection";
+            _checkpointWriter = new CoreProjectionCheckpointWriter(
+                _namingBuilder.MakeCheckpointStreamName(), _ioDispatcher, _projectionVersion, _projectionName);
+            _checkpointReader = new CoreProjectionCheckpointReader(
+                GetInputQueue(), _projectionCorrelationId, _ioDispatcher, _projectionCheckpointStreamId,
+                _projectionVersion, _checkpointsEnabled);
+            _manager = GivenCheckpointManager();
+        }
 
+        protected virtual DefaultCheckpointManager GivenCheckpointManager()
+        {
+            return new DefaultCheckpointManager(
+                _bus, _projectionCorrelationId, _projectionVersion, null, _ioDispatcher,
+                _config, _projectionName, new StreamPositionTagger(0, "stream"), _namingBuilder,
+                _checkpointsEnabled, _checkpointWriter);
         }
 
         protected new virtual void Given()

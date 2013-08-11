@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -77,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void can_begin_load_state()
         {
-            _manager.BeginLoadState();
+            _checkpointWriter.StartFrom(CheckpointTag.FromPosition(0, 0, -1), ExpectedVersion.NoStream);
         }
 
     }

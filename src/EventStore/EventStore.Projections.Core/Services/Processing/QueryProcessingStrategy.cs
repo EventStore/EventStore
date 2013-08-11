@@ -57,9 +57,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder, PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection, ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, CheckpointStrategy checkpointStrategy, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter, ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector, IODispatcher ioDispatcher, EventProcessingProjectionProcessingPhase firstPhase)
         {
+            var coreProjectionCheckpointWriter =
+                new CoreProjectionCheckpointWriter(
+                    namingBuilder.MakeCheckpointStreamName(), ioDispatcher, _projectionVersion, _name);
             var checkpointManager2 = new DefaultCheckpointManager(
                 publisher, projectionCorrelationId, _projectionVersion, checkpointStrategy._runAs, ioDispatcher,
-                _projectionConfig, _name, null, namingBuilder, checkpointStrategy.UseCheckpoints);
+                _projectionConfig, _name, new PhasePositionTagger(1), namingBuilder, checkpointStrategy.UseCheckpoints,
+                coreProjectionCheckpointWriter);
 
             var writeResultsPhase = new WriteQueryResultProjectionProcessingPhase(
                 1, namingBuilder.GetResultStreamName(), partitionStateCache, checkpointManager2);

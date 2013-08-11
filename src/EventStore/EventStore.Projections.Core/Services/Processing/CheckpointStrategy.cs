@@ -87,7 +87,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
             Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPublisher publisher,
             IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name,
-            ProjectionNamesBuilder namingBuilder, bool isReadingOrderRepeatable, IPrincipal runAs)
+            ProjectionNamesBuilder namingBuilder, bool isReadingOrderRepeatable, IPrincipal runAs, CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
         {
             var emitAny = projectionConfig.EmitEventEnabled;
 
@@ -97,13 +97,15 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 return new MultiStreamMultiOutputCheckpointManager(
                     publisher, projectionCorrelationId, projectionVersion, runAs, ioDispatcher, projectionConfig, name,
-                    ReaderStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled);
+                    ReaderStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled,
+                    coreProjectionCheckpointWriter);
             }
             else
             {
                 return new DefaultCheckpointManager(
                     publisher, projectionCorrelationId, projectionVersion, runAs, ioDispatcher, projectionConfig, name,
-                    ReaderStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled);
+                    ReaderStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled,
+                    coreProjectionCheckpointWriter);
             }
         }
 

@@ -37,7 +37,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 {
-    public class a_running_projection
+    namespace a_running_projection
     {
         public abstract class Base : a_new_posted_projection.Base
         {

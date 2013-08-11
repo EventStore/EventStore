@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public sealed override IProjectionProcessingPhase[] CreateProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
             Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
-            ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher )
+            ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher, CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
         {
             var checkpointStrategy = CheckpointStrategy.Create(0, _sourceDefinition, _projectionConfig, timeProvider);
 
@@ -64,7 +64,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var checkpointManager = checkpointStrategy.CreateCheckpointManager(
                 projectionCorrelationId, _projectionVersion, publisher, ioDispatcher, _projectionConfig, _name,
-                namingBuilder, checkpointStrategy.ReaderStrategy.IsReadingOrderRepeatable, checkpointStrategy._runAs);
+                namingBuilder, checkpointStrategy.ReaderStrategy.IsReadingOrderRepeatable, checkpointStrategy._runAs,
+                coreProjectionCheckpointWriter);
 
 
             var firstPhase = new EventProcessingProjectionProcessingPhase(

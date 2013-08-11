@@ -73,6 +73,11 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotImplementedException();
         }
 
+        public CheckpointTag AdjustTag(CheckpointTag tag)
+        {
+            return tag;
+        }
+
         public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
         {
         }

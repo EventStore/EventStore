@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _exception = null;
             try
             {
-                _manager.BeginLoadState();
+                _checkpointReader.BeginLoadState();
             }
             catch (Exception ex)
             {
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void start_throws_invalid_operation_exception()
         {
-            _manager.BeginLoadState();
+            _checkpointReader.BeginLoadState();
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]

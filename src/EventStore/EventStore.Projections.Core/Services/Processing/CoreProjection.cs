@@ -89,6 +89,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private IProjectionProcessingPhase _projectionProcessingPhase;
         private readonly bool _stopOnEof;
         private readonly IProjectionProcessingPhase[] _projectionProcessingPhases;
+        private CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
 
 
         public CoreProjection(
@@ -112,9 +113,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _partitionStateCache = new PartitionStateCache();
 
+            _coreProjectionCheckpointWriter = new CoreProjectionCheckpointWriter(
+                namingBuilder.MakeCheckpointStreamName(), ioDispatcher, version, name);
+
             _projectionProcessingPhases = projectionProcessingStrategy.CreateProcessingPhases(
                 publisher, projectionCorrelationId, _partitionStateCache, UpdateStatistics, this, namingBuilder,
-                timeProvider, ioDispatcher, subscriptionDispatcher);
+                timeProvider, ioDispatcher, subscriptionDispatcher, _coreProjectionCheckpointWriter);
+
             //NOTE: currently assuming the first checkpoint manager to be able to load any state
             _checkpointReader = new CoreProjectionCheckpointReader(
                 publisher, _projectionCorrelationId, ioDispatcher, namingBuilder.MakeCheckpointStreamName(), _version,
@@ -122,7 +127,7 @@ namespace EventStore.Projections.Core.Services.Processing
             GoToState(State.Initial);
         }
 
-        private void BeginPhase(IProjectionProcessingPhase processingPhase, CheckpointTag startFrom, int checkpointEventNumber)
+        private void BeginPhase(IProjectionProcessingPhase processingPhase, CheckpointTag startFrom)
         {
             _projectionProcessingPhase = processingPhase;
             _checkpointManager = processingPhase.CheckpointManager;
@@ -248,11 +253,22 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureState(State.LoadStateRequested);
             try
             {
-                InitializeProjectionFromCheckpoint(
-                    message.CheckpointData, message.CheckpointTag, message.CheckpointEventNumber);
+                var checkpointTag = message.CheckpointTag;
+                var phase = checkpointTag == null ? 0 : checkpointTag.Phase;
+                var projectionProcessingPhase = _projectionProcessingPhases[phase];
+                if (checkpointTag == null)
+                    checkpointTag = projectionProcessingPhase.MakeZeroCheckpointTag();
+                checkpointTag = projectionProcessingPhase.AdjustTag(checkpointTag);
+                //TODO: initialize projection state here (test it)
+                //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
+                //TODO: handle errors
+                _coreProjectionCheckpointWriter.StartFrom(checkpointTag, message.CheckpointEventNumber);
+                _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(message.CheckpointData, checkpointTag), null);
+                BeginPhase(projectionProcessingPhase, checkpointTag);
+                GoToState(State.StateLoaded);
                 if (_startOnLoad)
                 {
-                    _projectionProcessingPhase.Subscribe(message.CheckpointTag, fromCheckpoint: true);
+                    _projectionProcessingPhase.Subscribe(checkpointTag, fromCheckpoint: true);
                 }
                 else
                     GoToState(State.Stopped);
@@ -485,7 +501,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var nextPhase = _projectionProcessingPhases[completedPhaseIndex + 1];
                 var nextPhaseZeroPosition = nextPhase.MakeZeroCheckpointTag();
-                BeginPhase(nextPhase, nextPhaseZeroPosition, * /* last checkpoint eventy number */ /* introduce checkpoint writer */);
+                BeginPhase(nextPhase, nextPhaseZeroPosition);
                 _projectionProcessingPhase.Subscribe(nextPhaseZeroPosition, fromCheckpoint: false);
             }
         }
@@ -519,21 +535,6 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 SetFaulted(ex);
             }
-        }
-
-        private void InitializeProjectionFromCheckpoint(string state, CheckpointTag checkpointTag, int checkpointEventNumber)
-        {
-            //TODO: initialize projection state here (test it)
-            //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
-            //TODO: handle errors
-            var phase = checkpointTag == null ? 0 : checkpointTag.Phase;
-            var projectionProcessingPhase = _projectionProcessingPhases[phase];
-            if (checkpointTag == null)
-                checkpointTag = projectionProcessingPhase.MakeZeroCheckpointTag();
-
-            _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(state, checkpointTag), null);
-            BeginPhase(projectionProcessingPhase, checkpointTag, checkpointEventNumber);
-            GoToState(State.StateLoaded);
         }
 
 

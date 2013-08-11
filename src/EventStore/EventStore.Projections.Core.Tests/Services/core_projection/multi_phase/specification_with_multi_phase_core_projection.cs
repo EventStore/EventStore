@@ -86,13 +86,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             public override IProjectionProcessingPhase[] CreateProcessingPhases(
                 IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
                 Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
-                ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher)
+                ITimeProvider timeProvider, IODispatcher ioDispatcher,
+                ReaderSubscriptionDispatcher subscriptionDispatcher,
+                CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
             {
-                return new[]
-                {
-                    _phase1,
-                    _phase2
-                };
+                return new[] {_phase1, _phase2};
             }
         }
 
@@ -163,6 +161,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
             {
                 throw new NotImplementedException();
+            }
+
+            public CheckpointTag AdjustTag(CheckpointTag tag)
+            {
+                return tag;
             }
 
             public void InitializeFromCheckpoint(CheckpointTag checkpointTag)

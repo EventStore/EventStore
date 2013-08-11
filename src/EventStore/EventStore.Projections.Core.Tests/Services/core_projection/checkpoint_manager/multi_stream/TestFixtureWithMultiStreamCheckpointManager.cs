@@ -42,12 +42,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _streams = new[] { "a", "b", "c" };
         }
 
-        protected override void When()
+        protected override DefaultCheckpointManager GivenCheckpointManager()
         {
-            _manager = new MultiStreamMultiOutputCheckpointManager(
-                _bus, _projectionCorrelationId, _projectionVersion, null, _ioDispatcher, _config,
-                "projection", new MultiStreamPositionTagger(0, _streams), _namingBuilder,
-                _checkpointsEnabled);
+            return new MultiStreamMultiOutputCheckpointManager(
+                _bus, _projectionCorrelationId, _projectionVersion, null, _ioDispatcher, _config, _projectionName,
+                new MultiStreamPositionTagger(0, _streams), _namingBuilder, _checkpointsEnabled, _checkpointWriter);
         }
     }
 }

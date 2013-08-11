@@ -64,6 +64,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _ioDispatcher.BackwardReader.Cancel(_readRequestId);
             _readRequestId = Guid.Empty;
+            _stateRequested = false;
+            _stateLoaded = false;
         }
 
         protected void BeforeBeginLoadState()

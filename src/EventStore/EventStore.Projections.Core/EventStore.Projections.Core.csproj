@@ -189,6 +189,7 @@
     <Compile Include="Services\Processing\ContinuousProjectionProcessingStrategy.cs" />
     <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\CoreProjectionCheckpointReader.cs" />
+    <Compile Include="Services\Processing\CoreProjectionCheckpointWriter.cs" />
     <Compile Include="Services\Processing\DefaultCheckpointManager.cs" />
     <Compile Include="Services\Processing\DefaultProjectionProcessingStrategy.cs" />
     <Compile Include="Services\Processing\EmittedDataEvent.cs" />
@@ -226,6 +227,7 @@
     <Compile Include="Services\Processing\PartitionState.cs" />
     <Compile Include="Services\Processing\PartitionStateCache.cs" />
     <Compile Include="Services\Processing\PartitionStateUpdateManager.cs" />
+    <Compile Include="Services\Processing\PhasePositionTagger.cs" />
     <Compile Include="Services\Processing\PositionTracker.cs" />
     <Compile Include="Services\Processing\PreparePositionTagger.cs" />
     <Compile Include="Services\Processing\ProgressWorkItem.cs" />

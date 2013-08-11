@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -78,11 +79,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         protected override void When()
         {
             base.When();
-            _manager.BeginLoadState();
-            _manager.BeginLoadPrerecordedEvents(
-                _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.CheckpointLoaded>()
-                    .First()
-                    .CheckpointTag);
+            _checkpointReader.BeginLoadState();
+            var checkpointLoaded =
+                _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.CheckpointLoaded>().First();
+            _checkpointWriter.StartFrom(checkpointLoaded.CheckpointTag, checkpointLoaded.CheckpointEventNumber);
+            _manager.BeginLoadPrerecordedEvents(checkpointLoaded.CheckpointTag);
+
         }
 
         [Test]

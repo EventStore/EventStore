@@ -281,6 +281,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 Subscribe2(from);
         }
 
+        public CheckpointTag AdjustTag(CheckpointTag tag)
+        {
+            return _checkpointStrategy.ReaderStrategy.PositionTagger.AdjustTag(tag);
+        }
+
         public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
         {
             // this can be old checkpoint

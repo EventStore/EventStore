@@ -18,6 +18,8 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<CoreProjectionManagementMessage.GetResult>,
         IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>
     {
+        CheckpointTag AdjustTag(CheckpointTag tag);
+
         void InitializeFromCheckpoint(CheckpointTag checkpointTag);
         //TODO: remove from - it is passed for validation purpose only
         void Subscribe(CheckpointTag from, bool fromCheckpoint);
