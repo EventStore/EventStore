@@ -100,7 +100,6 @@ namespace EventStore.Projections.Core.Services.Processing
                             _resultStream, Guid.NewGuid(), "Result", partitionState.Result, null, phaseCheckpointTag,
                             phaseCheckpointTag), streamMetadata)).ToArray(), Guid.Empty, null);
             _checkpointManager.EventProcessed(phaseCheckpointTag, 100.0f);
-            _checkpointManager.CheckpointSuggested(phaseCheckpointTag, 100.0f);
         }
 
         public void SetProjectionState(PhaseState state)
@@ -110,7 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void GetStatistics(ProjectionStatistics info)
         {
-            throw new NotImplementedException();
+            info.Status = info.Status + "/Writing results";
         }
 
         public CheckpointTag MakeZeroCheckpointTag()
@@ -125,7 +124,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void EnsureUnsubscribed()
         {
-            throw new NotImplementedException();
         }
     }
 }
