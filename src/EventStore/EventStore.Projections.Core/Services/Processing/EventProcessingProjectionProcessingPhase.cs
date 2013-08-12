@@ -222,11 +222,12 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
         {
             UnsubscribeFromPreRecordedOrderEvents();
-            Subscribe2(message.CheckpointTag);
+            SubscribeReaders(message.CheckpointTag);
         }
 
-        private void Subscribe2(CheckpointTag checkpointTag)
+        private void SubscribeReaders(CheckpointTag checkpointTag)
         {
+            //TODO: should we report subscribed state even if subscribing to 
             _expectedSubscriptionMessageSequenceNumber = 0;
             _currentSubscriptionId = Guid.NewGuid();
             Subscribed(_currentSubscriptionId);
@@ -278,7 +279,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _checkpointManager.BeginLoadPrerecordedEvents(from);
             }
             else
-                Subscribe2(from);
+                SubscribeReaders(from);
         }
 
         public CheckpointTag AdjustTag(CheckpointTag tag)

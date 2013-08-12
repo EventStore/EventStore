@@ -26,12 +26,14 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager
 {
-    public class FakeCoreProjection : ICoreProjection
+    public class FakeCoreProjection : ICoreProjection, ICoreProjectionForProcessingPhase
     {
         public readonly List<CoreProjectionProcessingMessage.CheckpointCompleted> _checkpointCompletedMessages =
             new List<CoreProjectionProcessingMessage.CheckpointCompleted>();
@@ -65,6 +67,49 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
         {
             _prerecordedEventsLoadedMessages.Add(message);
+        }
+
+        public void CompletePhase()
+        {
+            CompletePhaseInvoked++;
+        }
+
+        public void SetFaulted(string reason)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetFaulted(Exception ex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetFaulting(string reason)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void EnsureTickPending()
+        {
+            throw new NotImplementedException();
+        }
+
+        public CheckpointTag LastProcessedEventPosition
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public int SubscribedInvoked { get; set; }
+        public int CompletePhaseInvoked { get; set; }
+
+        public void Subscribed()
+        {
+            SubscribedInvoked ++;
         }
     }
 }

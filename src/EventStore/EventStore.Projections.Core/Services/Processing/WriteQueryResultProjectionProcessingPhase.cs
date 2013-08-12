@@ -36,20 +36,26 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly int _phase;
         private readonly string _resultStream;
+        private readonly ICoreProjectionForProcessingPhase _coreProjection;
         private readonly PartitionStateCache _stateCache;
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
 
+        private bool _subscribed;
+        private PhaseState _projectionState;
+
         public WriteQueryResultProjectionProcessingPhase(
-            int phase, string resultStream, PartitionStateCache stateCache,
-            ICoreProjectionCheckpointManager checkpointManager)
+            int phase, string resultStream, ICoreProjectionForProcessingPhase coreProjection,
+            PartitionStateCache stateCache, ICoreProjectionCheckpointManager checkpointManager)
         {
             if (resultStream == null) throw new ArgumentNullException("resultStream");
+            if (coreProjection == null) throw new ArgumentNullException("coreProjection");
             if (stateCache == null) throw new ArgumentNullException("stateCache");
             if (checkpointManager == null) throw new ArgumentNullException("checkpointManager");
             if (string.IsNullOrEmpty(resultStream)) throw new ArgumentException("resultStream");
 
             _phase = phase;
             _resultStream = resultStream;
+            _coreProjection = coreProjection;
             _stateCache = stateCache;
             _checkpointManager = checkpointManager;
         }
@@ -80,31 +86,37 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
         {
+            _subscribed = false;
         }
 
         public void ProcessEvent()
         {
-            throw new InvalidOperationException();
-        }
+            if (!_subscribed)
+                throw new InvalidOperationException();
 
-        public void Subscribe(CheckpointTag from, bool fromCheckpoint)
-        {
             var items = _stateCache.Enumerate();
             EmittedStream.WriterConfiguration.StreamMetadata streamMetadata = null;
             var phaseCheckpointTag = CheckpointTag.FromPhase(_phase, completed: true);
             _checkpointManager.EventsEmitted(
                 (from item in items
-                    let partitionState = item.Item2
-                    select
-                        new EmittedEventEnvelope(new EmittedDataEvent(
-                            _resultStream, Guid.NewGuid(), "Result", partitionState.Result, null, phaseCheckpointTag,
-                            phaseCheckpointTag), streamMetadata)).ToArray(), Guid.Empty, null);
+                 let partitionState = item.Item2
+                 select
+                     new EmittedEventEnvelope(new EmittedDataEvent(
+                         _resultStream, Guid.NewGuid(), "Result", partitionState.Result, null, phaseCheckpointTag,
+                         phaseCheckpointTag), streamMetadata)).ToArray(), Guid.Empty, null);
             _checkpointManager.EventProcessed(phaseCheckpointTag, 100.0f);
+            _coreProjection.CompletePhase();
+        }
+
+        public void Subscribe(CheckpointTag from, bool fromCheckpoint)
+        {
+            _subscribed = true;
+            _coreProjection.Subscribed();
         }
 
         public void SetProjectionState(PhaseState state)
         {
-            throw new NotImplementedException();
+            _projectionState = state;
         }
 
         public void GetStatistics(ProjectionStatistics info)
