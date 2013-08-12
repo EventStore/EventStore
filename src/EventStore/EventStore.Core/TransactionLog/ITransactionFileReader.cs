@@ -26,6 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
+using System;
+using EventStore.Core.DataStructures;
+
 namespace EventStore.Core.TransactionLog
 {
     public interface ITransactionFileReader
@@ -36,5 +39,42 @@ namespace EventStore.Core.TransactionLog
         SeqReadResult TryReadPrev();
 
         RecordReadResult TryReadAt(long position);
+    }
+
+    public struct TFReaderLease : IDisposable
+    {
+        public readonly ITransactionFileReader Reader;
+        private readonly ObjectPool<ITransactionFileReader> _pool;
+
+        public TFReaderLease(ObjectPool<ITransactionFileReader> pool)
+        {
+            _pool = pool;
+            Reader = pool.Get();
+        }
+
+        void IDisposable.Dispose()
+        {
+            _pool.Return(Reader);
+        }
+
+        public void Reposition(long position)
+        {
+            Reader.Reposition(position);
+        }
+
+        public SeqReadResult TryReadNext()
+        {
+            return Reader.TryReadNext();
+        }
+
+        public SeqReadResult TryReadPrev()
+        {
+            return Reader.TryReadPrev();
+        }
+
+        public RecordReadResult TryReadAt(long position)
+        {
+            return Reader.TryReadAt(position);
+        }
     }
 }

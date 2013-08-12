@@ -33,7 +33,14 @@ namespace EventStore.Core.DataStructures
     public interface ILRUCache<TKey, TValue>
     {
         bool TryGet(TKey key, out TValue value);
-        void Put(TKey key, TValue value);
-        void Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory);
+        TValue Put(TKey key, TValue value);
+        TValue Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory);
+    }
+
+    public interface IStickyLRUCache<TKey, TValue>
+    {
+        bool TryGet(TKey key, out TValue value);
+        TValue Put(TKey key, TValue value, int stickiness);
+        TValue Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory, int stickiness);
     }
 }

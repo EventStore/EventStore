@@ -10,12 +10,14 @@ namespace EventStore.Core.DataStructures
             return false;
         }
 
-        public void Put(TKey key, TValue value)
+        public TValue Put(TKey key, TValue value)
         {
+            return value;
         }
 
-        public void Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory)
+        public TValue Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory)
         {
+            return addFactory(key);
         }
     }
 }

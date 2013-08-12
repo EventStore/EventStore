@@ -191,14 +191,17 @@ namespace EventStore.Core.Services.Storage
                 if (!access.Granted)
                     return NoData(msg, ReadAllResult.AccessDenied, pos);
 
+                var lastCommitPosition = _readIndex.LastCommitPosition;
+
                 var res = _readIndex.ReadAllEventsForward(pos, msg.MaxCount);
                 var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
                 if (resolved == null)
                     return NoData(msg, ReadAllResult.AccessDenied, pos);
 
+                var metadata = _readIndex.GetStreamMetadata(SystemStreams.AllStream);
                 return new ClientMessage.ReadAllEventsForwardCompleted(
-                    msg.CorrelationId, ReadAllResult.Success, null, resolved, res.Metadata, access.Public, msg.MaxCount,
-                    res.CurrentPos, res.NextPos, res.PrevPos, res.TfEofPosition);
+                    msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, access.Public, msg.MaxCount,
+                    res.CurrentPos, res.NextPos, res.PrevPos, lastCommitPosition);
             }
             catch (Exception exc)
             {
@@ -221,18 +224,22 @@ namespace EventStore.Core.Services.Storage
                     return NoData(msg, ReadAllResult.Error, pos, "Invalid position.");
                 if (msg.ValidationTfEofPosition.HasValue && _readIndex.LastCommitPosition == msg.ValidationTfEofPosition.Value)
                     return NoData(msg, ReadAllResult.NotModified, pos);
+
                 var access = _readIndex.CheckStreamAccess(SystemStreams.AllStream, StreamAccessType.Read, msg.User);
                 if (!access.Granted)
                     return NoData(msg, ReadAllResult.AccessDenied, pos);
+
+                var lastCommitPosition = _readIndex.LastCommitPosition;
 
                 var res = _readIndex.ReadAllEventsBackward(pos, msg.MaxCount);
                 var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
                 if (resolved == null)
                     return NoData(msg, ReadAllResult.AccessDenied, pos);
 
+                var metadata = _readIndex.GetStreamMetadata(SystemStreams.AllStream);
                 return new ClientMessage.ReadAllEventsBackwardCompleted(
-                    msg.CorrelationId, ReadAllResult.Success, null, resolved, res.Metadata, access.Public, msg.MaxCount,
-                    res.CurrentPos, res.NextPos, res.PrevPos, res.TfEofPosition);
+                    msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, access.Public, msg.MaxCount,
+                    res.CurrentPos, res.NextPos, res.PrevPos, lastCommitPosition);
             }
             catch (Exception exc)
             {

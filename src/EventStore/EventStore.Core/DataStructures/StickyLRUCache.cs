@@ -31,12 +31,13 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Core.DataStructures
 {
-    public class LRUCache<TKey, TValue>: ILRUCache<TKey, TValue>
+    public class StickyLRUCache<TKey, TValue>: IStickyLRUCache<TKey, TValue>, ILRUCache<TKey, TValue>
     {
         private class LRUItem
         {
             public TKey Key;
             public TValue Value;
+            public int Stickiness;
         }
 
         private readonly LinkedList<LRUItem> _orderList = new LinkedList<LRUItem>();
@@ -46,7 +47,7 @@ namespace EventStore.Core.DataStructures
         private readonly int _maxCount;
         private readonly object _lock = new object();
 
-        public LRUCache(int maxCount)
+        public StickyLRUCache(int maxCount)
         {
             if (maxCount <= 0)
                 throw new ArgumentOutOfRangeException("maxCount");
@@ -72,7 +73,17 @@ namespace EventStore.Core.DataStructures
             }
         }
 
-        public TValue Put(TKey key, TValue value)
+        TValue ILRUCache<TKey, TValue>.Put(TKey key, TValue value)
+        {
+            return Put(key, value, 0);
+        }
+
+        TValue ILRUCache<TKey, TValue>.Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory)
+        {
+            return Put(key, addFactory, updateFactory, 0);
+        }
+
+        public TValue Put(TKey key, TValue value, int stickiness)
         {
             lock (_lock)
             {
@@ -82,6 +93,7 @@ namespace EventStore.Core.DataStructures
                     node = GetNode();
                     node.Value.Key = key;
                     node.Value.Value = value;
+                    node.Value.Stickiness = stickiness;
 
                     EnsureCapacity();
 
@@ -90,6 +102,7 @@ namespace EventStore.Core.DataStructures
                 else
                 {
                     node.Value.Value = value;
+                    node.Value.Stickiness += stickiness;
                     _orderList.Remove(node);
                 }
                 _orderList.AddLast(node);
@@ -110,7 +123,7 @@ namespace EventStore.Core.DataStructures
             }
         }
 
-        public TValue Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory)
+        public TValue Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory, int stickiness)
         {
             Ensure.NotNull(addFactory, "addFactory");
             Ensure.NotNull(updateFactory, "updateFactory");
@@ -123,6 +136,7 @@ namespace EventStore.Core.DataStructures
                     node = GetNode();
                     node.Value.Key = key;
                     node.Value.Value = addFactory(key);
+                    node.Value.Stickiness = stickiness;
 
                     EnsureCapacity();
 
@@ -131,6 +145,7 @@ namespace EventStore.Core.DataStructures
                 else
                 {
                     node.Value.Value = updateFactory(key, node.Value.Value);
+                    node.Value.Stickiness += stickiness;
                     _orderList.Remove(node);
                 }
                 _orderList.AddLast(node);
@@ -140,13 +155,22 @@ namespace EventStore.Core.DataStructures
 
         private void EnsureCapacity()
         {
-            while (_items.Count >= _maxCount)
+            int maxTries = 5;
+            while (_items.Count >= _maxCount && maxTries > 0)
             {
                 var node = _orderList.First;
                 _orderList.Remove(node);
-                _items.Remove(node.Value.Key);
 
-                ReturnNode(node);
+                if (node.Value.Stickiness == 0)
+                {
+                    _items.Remove(node.Value.Key);
+                    ReturnNode(node);
+                }
+                else
+                {
+                    _orderList.AddLast(node);
+                    maxTries -= 1;
+                }
             }
         }
 
