@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override CheckpointTag MakeZeroCheckpointTag()
         {
-            return CheckpointTag.FromPhase(Phase);
+            return CheckpointTag.FromPhase(Phase, completed: false);
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
@@ -43,7 +43,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 return tag;
             }
-            return CheckpointTag.FromPhase(tag.Phase);
+            throw new NotSupportedException("Conversion to phase based checkpoint tag is not supported");
+
         }
     }
 }

@@ -90,16 +90,17 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Subscribe(CheckpointTag from, bool fromCheckpoint)
         {
             var items = _stateCache.Enumerate();
-            var lastCausedBy = items.Max(v => v.Item2.CausedBy);
             EmittedStream.WriterConfiguration.StreamMetadata streamMetadata = null;
+            var phaseCheckpointTag = CheckpointTag.FromPhase(_phase, completed: true);
             _checkpointManager.EventsEmitted(
                 (from item in items
                     let partitionState = item.Item2
                     select
                         new EmittedEventEnvelope(new EmittedDataEvent(
-                            _resultStream, Guid.NewGuid(), "Result", partitionState.Result, null, partitionState.CausedBy,
-                            CheckpointTag.FromPhase(_phase)), streamMetadata)).ToArray(), Guid.Empty, null);
-            _checkpointManager.EventProcessed(CheckpointTag.FromPhase(_phase), 100.0f);
+                            _resultStream, Guid.NewGuid(), "Result", partitionState.Result, null, phaseCheckpointTag,
+                            phaseCheckpointTag), streamMetadata)).ToArray(), Guid.Empty, null);
+            _checkpointManager.EventProcessed(phaseCheckpointTag, 100.0f);
+            _checkpointManager.CheckpointSuggested(phaseCheckpointTag, 100.0f);
         }
 
         public void SetProjectionState(PhaseState state)
@@ -114,12 +115,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public CheckpointTag MakeZeroCheckpointTag()
         {
-            throw new NotImplementedException();
+            return CheckpointTag.FromPhase(_phase, completed: false);
         }
 
         public ICoreProjectionCheckpointManager CheckpointManager
         {
-            get { throw new NotImplementedException(); }
+            get { return _checkpointManager; }
         }
 
         public void EnsureUnsubscribed()

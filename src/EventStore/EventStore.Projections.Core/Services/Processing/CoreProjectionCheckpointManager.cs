@@ -39,10 +39,10 @@ namespace EventStore.Projections.Core.Services.Processing
     public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointManager,
                                                             ICoreProjectionCheckpointManager
     {
-        protected internal readonly string _name;
+        private readonly string _name;
         protected readonly ProjectionNamesBuilder _namingBuilder;
         protected readonly ProjectionConfig _projectionConfig;
-        protected internal readonly ILogger _logger;
+        protected readonly ILogger _logger;
 
         private readonly bool _useCheckpoints;
 
@@ -370,13 +370,13 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
 
-        protected internal void RequestRestart(string reason)
+        protected void RequestRestart(string reason)
         {
             _stopped = true; // ignore messages
             _publisher.Publish(new CoreProjectionProcessingMessage.RestartRequested(_projectionCorrelationId, reason));
         }
 
-        protected void Failed(string reason)
+        private void Failed(string reason)
         {
             _stopped = true; // ignore messages
             _publisher.Publish(new CoreProjectionProcessingMessage.Failed(_projectionCorrelationId, reason));
@@ -395,7 +395,7 @@ namespace EventStore.Projections.Core.Services.Processing
             BeginWriteCheckpoint(_requestedCheckpointPosition, _requestedCheckpointState.Serialize());
         }
 
-        protected internal void CheckpointWritten(CheckpointTag lastCompletedCheckpointPosition)
+        protected void CheckpointWritten(CheckpointTag lastCompletedCheckpointPosition)
         {
             Contract.Requires(_closingCheckpoint != null);
             _lastCompletedCheckpointPosition = lastCompletedCheckpointPosition;

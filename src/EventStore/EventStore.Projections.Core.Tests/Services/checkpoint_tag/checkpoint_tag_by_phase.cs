@@ -9,8 +9,8 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
     public class checkpoint_tag_by_phase
     {
         private readonly CheckpointTag _p0 = CheckpointTag.FromPosition(0, 1000, 9);
-        private readonly CheckpointTag _p1a = CheckpointTag.FromPhase(1);
-        private readonly CheckpointTag _p1b = CheckpointTag.FromPhase(1);
+        private readonly CheckpointTag _p1a = CheckpointTag.FromPhase(1, completed: false);
+        private readonly CheckpointTag _p1b = CheckpointTag.FromPhase(1, completed: true);
         private readonly CheckpointTag _p2 = CheckpointTag.FromPosition(2, 30, 29);
         private readonly CheckpointTag _p3 = CheckpointTag.FromPosition(3, 30, 29);
 
@@ -23,7 +23,7 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsTrue(_p0.Equals(_p0));
             Assert.IsTrue(_p1a.Equals(_p1a));
             Assert.IsTrue(_p1b.Equals(_p1b));
-            Assert.IsTrue(_p1a.Equals(_p1b));
+            Assert.IsFalse(_p1a.Equals(_p1b));
             Assert.IsTrue(_p2.Equals(_p2));
             Assert.IsTrue(_p3.Equals(_p3));
             Assert.IsFalse(_p2.Equals(_p3));
@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
         public void equal_operator()
         {
             Assert.IsTrue(_p1a == _p1a);
-            Assert.IsTrue(_p1a == _p1b);
+            Assert.IsTrue(_p1a != _p1b);
         }
 
         [Test]
@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsTrue(_p0 < _p1a);
             Assert.IsTrue(_p2 < _p3);
             Assert.IsTrue(_p3 < _p4);
+            Assert.IsTrue(_p1a < _p1b);
         }
 
         [Test]
@@ -56,13 +57,14 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
         public void greater_operator()
         {
             Assert.IsTrue(_p4 > _p1a);
-            Assert.IsFalse(_p1b > _p1a);
+            Assert.IsTrue(_p1b > _p1a);
         }
 
         [Test]
         public void greater_or_equal_operator()
         {
-            Assert.IsTrue(_p1a >= _p1b);
+            Assert.IsFalse(_p1a >= _p1b);
+            Assert.IsTrue(_p1a >= _p1a);
             Assert.IsTrue(_p1a >= _p0);
             Assert.IsTrue(_p4 >= _p3);
             Assert.IsTrue(_p3 >= _p1a);

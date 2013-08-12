@@ -55,10 +55,10 @@ namespace EventStore.Projections.Core.Services.Processing
             PreparePosition
         }
 
-        private CheckpointTag(int phase)
+        private CheckpointTag(int phase, bool completed)
         {
             Phase = phase;
-            Position = new TFPos(long.MinValue, long.MinValue);
+            Position = completed ? new TFPos(long.MaxValue, long.MaxValue) : new TFPos(long.MinValue, long.MinValue);
             Streams = null;
             Mode_ = CalculateMode();
         }
@@ -127,6 +127,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (Streams == null || Streams.Count == 0)
                 if (Position.CommitPosition == Int64.MinValue && Position.PreparePosition == Int64.MinValue)
                     return Mode.Phase;
+                else if (Position.CommitPosition == Int64.MaxValue && Position.PreparePosition == Int64.MaxValue)
+                    return Mode.Phase;
                 else if (Position.CommitPosition == Int64.MinValue && Position.PreparePosition != Int64.MinValue)
                     return Mode.PreparePosition;
                 else
@@ -158,7 +160,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (leftMode)
             {
                 case Mode.Phase:
-                    return false;
+                    return left.Position > right.Position;
                 case Mode.Position:
                 case Mode.EventTypeIndex:
                     return left.Position > right.Position;
@@ -210,7 +212,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (leftMode)
             {
                 case Mode.Phase:
-                    return true;
+                    return left.Position >= right.Position;
                 case Mode.Position:
                 case Mode.EventTypeIndex:
                     return left.Position >= right.Position;
@@ -268,7 +270,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (leftMode)
             {
                 case Mode.Phase:
-                    return true;
+                    return Position == other.Position;
                 case Mode.EventTypeIndex: 
                     // NOTE: we ignore stream positions as they are only suggestion on 
                     //       where to start to gain better performance
@@ -341,11 +343,11 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         internal readonly Mode Mode_;
-        private static readonly CheckpointTag _empty = new CheckpointTag(-1);
+        private static readonly CheckpointTag _empty = new CheckpointTag(-1, false);
 
-        public static CheckpointTag FromPhase(int phase)
+        public static CheckpointTag FromPhase(int phase, bool completed)
         {
-            return new CheckpointTag(phase);
+            return new CheckpointTag(phase, completed);
         }
 
         public static CheckpointTag FromPosition(int phase, long commitPosition, long preparePosition)
@@ -391,7 +393,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (Mode_)
             {
                 case Mode.Phase:
-                    return "Phase: " + Phase;
+                    return "Phase: " + Phase + (Completed ? " (completed)" : "");
                 case Mode.Position:
                     result = Position.ToString();
                     break;
@@ -424,6 +426,11 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 return "(" + Phase + ") " + result;
             }
+        }
+
+        public bool Completed
+        {
+            get { return Position.CommitPosition == Int64.MaxValue; }
         }
 
         private static void UpgradeModes(ref Mode leftMode, ref Mode rightMode)
@@ -562,12 +569,14 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             if (Phase != 0)
             {
-                jsonWriter.WritePropertyName("$pp");
+                jsonWriter.WritePropertyName("$ph");
                 jsonWriter.WriteValue(Phase);
             }
             switch (Mode_)
             {
                 case Mode.Phase:
+                    jsonWriter.WritePropertyName("$cp");
+                    jsonWriter.WriteValue(Completed);
                     break;
                 case Mode.Position:
                 case Mode.EventTypeIndex:
@@ -634,6 +643,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 var name = (string) reader.Value;
                 switch (name)
                 {
+                    case "$cp":
+                        Check(reader.Read(), reader);
+                        var completed = (bool)reader.Value;
+                        commitPosition = completed ? Int64.MaxValue : Int64.MinValue;
+                        preparePosition = completed ? Int64.MaxValue : Int64.MinValue;
+                        break;
                     case "$v":
                     case "v":
                         Check(reader.Read(), reader);
@@ -692,7 +707,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             streams.Add(streamName, position);
                         }
                         break;
-                    case "$pp":
+                    case "$ph":
                         Check(reader.Read(), reader);
                         projectionPhase = (int)(long) reader.Value;
                         break;

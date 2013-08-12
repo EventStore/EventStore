@@ -198,7 +198,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public CheckpointTag MakeZeroCheckpointTag()
             {
-                return CheckpointTag.FromPhase(_phase);
+                return CheckpointTag.FromPhase(_phase, completed: false);
             }
 
             public ICoreProjectionCheckpointManager CheckpointManager

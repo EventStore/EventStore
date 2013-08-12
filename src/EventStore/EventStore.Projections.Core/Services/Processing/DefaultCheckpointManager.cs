@@ -47,14 +47,12 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<CoreProjectionCheckpointWriterMessage.RestartRequested>
     {
         private readonly IPrincipal _runAs;
-        private int _nextStateIndexToRequest;
-        private Guid _readRequestId;
         private readonly CheckpointTag _zeroTag;
         private int _readRequestsInProgress;
         private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
 
-        protected internal readonly ProjectionVersion _projectionVersion;
-        protected internal readonly IODispatcher _ioDispatcher;
+        protected readonly ProjectionVersion _projectionVersion;
+        protected readonly IODispatcher _ioDispatcher;
         private readonly PositionTagger _positionTagger;
 
         public DefaultCheckpointManager(
@@ -91,11 +89,9 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void Initialize()
         {
             base.Initialize();
-            _ioDispatcher.BackwardReader.Cancel(_readRequestId);
             foreach (var requestId in _loadStateRequests)
                 _ioDispatcher.BackwardReader.Cancel(requestId);
             _loadStateRequests.Clear();
-            _nextStateIndexToRequest = 0;
             _coreProjectionCheckpointWriter.Initialize();
             _requestedCheckpointPosition = null;
             _readRequestsInProgress = 0;

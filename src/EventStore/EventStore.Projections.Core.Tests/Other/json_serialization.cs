@@ -135,6 +135,30 @@ namespace EventStore.Projections.Core.Tests.Other
         }
 
         [Test]
+        public void phase_based_checkpoint_tag_completed()
+        {
+            CheckpointTag tag = CheckpointTag.FromPhase(2, completed: false);
+            byte[] bytes = tag.ToJsonBytes(_version);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
+            Console.WriteLine(instring);
+
+            CheckpointTag back = instring.ParseCheckpointTagJson();
+            Assert.AreEqual(tag, back);
+        }
+
+        [Test]
+        public void phase_based_checkpoint_tag_incomplete()
+        {
+            CheckpointTag tag = CheckpointTag.FromPhase(0, completed: true);
+            byte[] bytes = tag.ToJsonBytes(_version);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
+            Console.WriteLine(instring);
+
+            CheckpointTag back = instring.ParseCheckpointTagJson();
+            Assert.AreEqual(tag, back);
+        }
+
+        [Test]
         public void extra_metadata_are_preserved()
         {
             CheckpointTag tag = CheckpointTag.FromPosition(0, -1, 0);

@@ -76,9 +76,12 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
             {
                 var stateCache = new PartitionStateCache();
 
-                stateCache.CachePartitionState("a", new PartitionState("{}", null, CheckpointTag.FromPhase(0)));
-                stateCache.CachePartitionState("b", new PartitionState("{}", null, CheckpointTag.FromPhase(0)));
-                stateCache.CachePartitionState("c", new PartitionState("{}", null, CheckpointTag.FromPhase(0)));
+                stateCache.CachePartitionState(
+                    "a", new PartitionState("{}", null, CheckpointTag.FromPhase(0, completed: false)));
+                stateCache.CachePartitionState(
+                    "b", new PartitionState("{}", null, CheckpointTag.FromPhase(0, completed: false)));
+                stateCache.CachePartitionState(
+                    "c", new PartitionState("{}", null, CheckpointTag.FromPhase(0, completed: false)));
                 return stateCache;
             }
 
@@ -101,7 +104,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
             [Test]
             public void can_be_initialized_from_phase_checkpoint()
             {
-                _phase.InitializeFromCheckpoint(CheckpointTag.FromPhase(1));
+                _phase.InitializeFromCheckpoint(CheckpointTag.FromPhase(1, completed: false));
             }
 
             [Test, ExpectedException(typeof (InvalidOperationException))]
@@ -116,7 +119,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
         {
             protected override void When()
             {
-                _phase.Subscribe(CheckpointTag.FromPhase(10), false);
+                _phase.Subscribe(CheckpointTag.FromPhase(1, completed: false), false);
             }
 
             [Test]
