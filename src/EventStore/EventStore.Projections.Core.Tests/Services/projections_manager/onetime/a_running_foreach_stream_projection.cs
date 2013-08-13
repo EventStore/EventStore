@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             }
 
             [Test]
-            public void the_projection_status_remains_running()
+            public void the_projection_status_becomes_completed_enabled()
             {
                 _manager.Handle(
                     new ProjectionManagementMessage.GetStatistics(
@@ -110,6 +110,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                              .Single()
                              .Projections.Single()
                              .MasterStatus);
+                Assert.AreEqual(
+                    true,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Enabled);
             }
         }
     }
