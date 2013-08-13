@@ -101,11 +101,12 @@ namespace EventStore.Projections.Core.Services.Processing
             var phaseCheckpointTag = CheckpointTag.FromPhase(_phase, completed: true);
             _checkpointManager.EventsEmitted(
                 (from item in items
-                 let partitionState = item.Item2
-                 select
-                     new EmittedEventEnvelope(new EmittedDataEvent(
-                         _resultStream, Guid.NewGuid(), "Result", partitionState.Result, null, phaseCheckpointTag,
-                         phaseCheckpointTag), streamMetadata)).ToArray(), Guid.Empty, null);
+                    let partitionState = item.Item2
+                    select
+                        new EmittedEventEnvelope(
+                            new EmittedDataEvent(
+                                _resultStream, Guid.NewGuid(), "Result", partitionState.Result, null, phaseCheckpointTag,
+                                null), streamMetadata)).ToArray(), Guid.Empty, null);
             _checkpointManager.EventProcessed(phaseCheckpointTag, 100.0f);
             _coreProjection.CompletePhase();
         }

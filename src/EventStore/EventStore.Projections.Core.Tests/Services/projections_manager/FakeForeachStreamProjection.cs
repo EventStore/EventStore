@@ -55,6 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             builder.FromAll();
             builder.AllEvents();
             builder.SetByStream();
+            builder.SetDefinesStateTransform();
         }
 
         public void Load(string state)
@@ -91,7 +92,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         public string TransformStateToResult()
         {
-            throw new NotImplementedException(); 
+            return _state;
         }
 
         public IQuerySources GetSourceDefinition()

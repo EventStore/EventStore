@@ -55,6 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 _emitEnabled = true;
                 AllWritesSucceed();
                 NoStream("$projections-test-projection-checkpoint");
+                NoOtherStreams();
                 //NOTE: do not respond to reads from the following stream
                 //NoStream("$projections-test-projection-stream-checkpoint");
             }
@@ -104,7 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                              .Projections.Single()
                              .Name);
                 Assert.AreEqual(
-                    ManagedProjectionState.Running,
+                    ManagedProjectionState.Completed,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
                              .Projections.Single()
