@@ -64,8 +64,8 @@ Properties {
         $managedBuildParameters.Add("platform", "Any CPU")
         $nativeBuildParameters.Add("platform", "x64")
     } else {
-        Write-Host "Platform: set to $platform"
-        $managedBuildParameters.Add("platform", $platform)
+        Write-Host "Platform: set to $platform for native code"
+        $managedBuildParameters.Add("platform", "Any CPU")
         $nativeBuildParameters.Add("platform", $platform)
     }
  
@@ -114,7 +114,6 @@ Task Clean-Output {
  
 Task Build-Quick -Depends Clean-Output {
     $hasDependencies = (Test-Path (Join-Path $libsDirectory (Join-Path $platform "js1.dll")))
- 
     if ($hasDependencies) {
         Write-Host "Re-using JS1.dll from a previous build - it is likely to have the wrong commit hash!" -ForegroundColor Yellow
         Invoke-psake .\eventstore.ps1 Build-EventStore -parameters $managedBuildParameters -properties $managedBuildProperties -Verbose
@@ -144,7 +143,7 @@ Task Build-Full -Depends Clean-Output {
     Invoke-psake .\native-code.ps1 Build-NativeFull -parameters $nativeBuildParameters -properties $nativeBuildProperties -Verbose
     Invoke-psake .\eventstore.ps1 Build-EventStore -parameters $managedBuildParameters  -properties $managedBuildProperties -Verbose
 }
- 
+
 #--------------------------------------------------------------------------
  
 # Helper Functions
