@@ -93,6 +93,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_subscribed)
                 throw new InvalidOperationException();
+            if (_projectionState != PhaseState.Running)
+                return;
 
             var items = _stateCache.Enumerate();
             EmittedStream.WriterConfiguration.StreamMetadata streamMetadata = null;

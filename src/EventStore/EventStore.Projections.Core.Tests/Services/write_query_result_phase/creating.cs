@@ -139,6 +139,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
             protected override void When()
             {
                 _phase.Subscribe(CheckpointTag.FromPhase(1, completed: false), false);
+                _phase.SetProjectionState(PhaseState.Running);
                 _phase.ProcessEvent();
             }
 
@@ -149,5 +150,23 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
             }
         }
 
+        [TestFixture]
+        class when_completed_query_processing_event : specification_with_write_query_result_projection_processing_phase
+        {
+            protected override void When()
+            {
+                _phase.Subscribe(CheckpointTag.FromPhase(1, completed: false), false);
+                _phase.SetProjectionState(PhaseState.Running);
+                _phase.ProcessEvent();
+                _phase.SetProjectionState(PhaseState.Stopped);
+                _phase.ProcessEvent();
+            }
+
+            [Test]
+            public void writes_query_results()
+            {
+                Assert.AreEqual(3, _checkpointManager.EmittedEvents.Count);
+            }
+        }
     }
 }
