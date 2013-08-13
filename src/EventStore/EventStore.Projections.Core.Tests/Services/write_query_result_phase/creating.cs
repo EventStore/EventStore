@@ -163,7 +163,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
             }
 
             [Test]
-            public void writes_query_results()
+            public void writes_query_results_only_once()
             {
                 Assert.AreEqual(3, _checkpointManager.EmittedEvents.Count);
             }
