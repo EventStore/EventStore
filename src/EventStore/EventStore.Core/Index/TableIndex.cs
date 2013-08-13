@@ -89,9 +89,9 @@ namespace EventStore.Core.Index
             _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
         }
 
-        public void Initialize(long writerCheckpoint)
+        public void Initialize(long chaserCheckpoint)
         {
-            Ensure.Nonnegative(writerCheckpoint, "writerCheckpoint");
+            Ensure.Nonnegative(chaserCheckpoint, "chaserCheckpoint");
 
             //NOT THREAD SAFE (assumes one thread)
             if (_initialized)
@@ -110,7 +110,7 @@ namespace EventStore.Core.Index
                 if (IsCorrupt(_directory))
                     throw new CorruptIndexException("IndexMap is in unsafe state.");
                 _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
-                if (_indexMap.CommitCheckpoint >= writerCheckpoint)
+                if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
                     throw new CorruptIndexException("IndexMap's CommitCheckpoint is greater than WriterCheckpoint.");
@@ -130,7 +130,7 @@ namespace EventStore.Core.Index
                     try
                     {
                         _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
-                        if (_indexMap.CommitCheckpoint >= writerCheckpoint)
+                        if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                         {
                             _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
                             throw new CorruptIndexException("Back-up IndexMap's CommitCheckpoint is still greater than WriterCheckpoint.");

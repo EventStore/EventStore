@@ -42,7 +42,6 @@ namespace EventStore.Core.Tests.ClientAPI
         private readonly TcpType _tcpType = TcpType.Normal;
         private MiniNode _node;
 
-
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
@@ -61,7 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning"), Category("Network")]
         public void should_allow_appending_zero_events_to_stream_with_no_problems()
         {
-            const string stream = "should_create_stream_with_no_stream_exp_ver_on_first_write_if_does_not_exist";
+            const string stream = "should_allow_appending_zero_events_to_stream_with_no_problems";
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
@@ -250,7 +249,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning"), Category("Network")]
         public void should_allow_appending_zero_events_to_stream_with_no_problems()
         {
-            const string stream = "should_create_stream_with_no_stream_exp_ver_on_first_write_if_does_not_exist";
+            const string stream = "should_allow_appending_zero_events_to_stream_with_no_problems";
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();

@@ -63,7 +63,7 @@ namespace EventStore.Core.Services.Storage
 
         protected readonly TFChunkDb Db;
         protected readonly TFChunkWriter Writer;
-        protected readonly IReadIndex ReadIndex;
+        protected readonly IIndexWriter IndexWriter;
         protected readonly IEpochManager EpochManager;
 
         protected readonly IPublisher Bus;
@@ -96,7 +96,7 @@ namespace EventStore.Core.Services.Storage
                                     int minFlushDelayMs,
                                     TFChunkDb db,
                                     TFChunkWriter writer, 
-                                    IReadIndex readIndex,
+                                    IIndexWriter indexWriter,
                                     IEpochManager epochManager)
         {
             Ensure.NotNull(bus, "bus");
@@ -104,13 +104,13 @@ namespace EventStore.Core.Services.Storage
             Ensure.Nonnegative(minFlushDelayMs, "minFlushDelayMs");
             Ensure.NotNull(db, "db");
             Ensure.NotNull(writer, "writer");
-            Ensure.NotNull(readIndex, "readIndex");
+            Ensure.NotNull(indexWriter, "indexWriter");
             Ensure.NotNull(epochManager, "epochManager");
 
             Bus = bus;
             _subscribeToBus = subscribeToBus;
             Db = db;
-            ReadIndex = readIndex;
+            IndexWriter = indexWriter;
             EpochManager = epochManager;
 
             _minFlushDelay = minFlushDelayMs * TicksPerMs;
@@ -194,9 +194,8 @@ namespace EventStore.Core.Services.Storage
             // everything else will be done by chaser as during replication
             // with no concurrency issues with writer, as writer before jumping 
             // into master-mode and accepting writes will wait till chaser caught up.
-            var writerCheckpoint = Db.Config.WriterCheckpoint.Read();
             var chaserCheckpoint = Db.Config.ChaserCheckpoint.Read();
-            ReadIndex.Init(writerCheckpoint, chaserCheckpoint);
+            IndexWriter.Init(chaserCheckpoint);
             Bus.Publish(new SystemMessage.StorageWriterInitializationDone());
         }
 
@@ -209,6 +208,7 @@ namespace EventStore.Core.Services.Storage
                 case VNodeState.Master:
                 {
                     EpochManager.WriteNewEpoch(); // forces flush
+                    PurgeNotProcessedInfo();
                     break;
                 }
                 case VNodeState.ShuttingDown:
@@ -224,6 +224,7 @@ namespace EventStore.Core.Services.Storage
             if (_vnodeState != VNodeState.Master)
                 throw new Exception(string.Format("New Epoch request came not in master state!!! State: {0}.", _vnodeState));
             EpochManager.WriteNewEpoch();
+            PurgeNotProcessedInfo();
         }
 
         void IHandle<SystemMessage.WaitForChaserToCatchUp>.Handle(SystemMessage.WaitForChaserToCatchUp message)
@@ -261,7 +262,7 @@ namespace EventStore.Core.Services.Storage
                 if (message.LiveUntil < DateTime.UtcNow)
                     return;
 
-                var commitCheck = ReadIndex.CheckCommit(message.EventStreamId, message.ExpectedVersion, message.Events.Select(x => x.EventId));
+                var commitCheck = IndexWriter.CheckCommit(message.EventStreamId, message.ExpectedVersion, message.Events.Select(x => x.EventId));
                 if (commitCheck.Decision != CommitDecision.Ok)
                 {
                     ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
@@ -304,7 +305,7 @@ namespace EventStore.Core.Services.Storage
                                           null, Empty.ByteArray, Empty.ByteArray));
                     prepares.Add(res.Prepare);
                 }
-                ReadIndex.Commit(prepares);
+                IndexWriter.PreCommit(prepares);
             }
             catch (Exception exc)
             {
@@ -327,7 +328,7 @@ namespace EventStore.Core.Services.Storage
 
                 var eventId = Guid.NewGuid();
                 
-                var commitCheck = ReadIndex.CheckCommit(message.EventStreamId, message.ExpectedVersion, new[]{eventId});
+                var commitCheck = IndexWriter.CheckCommit(message.EventStreamId, message.ExpectedVersion, new[]{eventId});
                 if (commitCheck.Decision != CommitDecision.Ok)
                 {
                     ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
@@ -338,7 +339,7 @@ namespace EventStore.Core.Services.Storage
                 var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(), message.CorrelationId,
                                                        eventId, message.EventStreamId, expectedVersion, PrepareFlags.IsCommitted); 
                 var res = WritePrepareWithRetry(record);
-                ReadIndex.Commit(new[] {res.Prepare});
+                IndexWriter.PreCommit(new[] {res.Prepare});
             }
             catch (Exception exc)
             {
@@ -359,12 +360,14 @@ namespace EventStore.Core.Services.Storage
                 if (message.LiveUntil < DateTime.UtcNow)
                     return;
 
-                var logPosition = Writer.Checkpoint.ReadNonFlushed();
-                var record = LogRecord.TransactionBegin(logPosition, message.CorrelationId, message.EventStreamId, message.ExpectedVersion);
+                var record = LogRecord.TransactionBegin(Writer.Checkpoint.ReadNonFlushed(),
+                                                        message.CorrelationId,
+                                                        message.EventStreamId,
+                                                        message.ExpectedVersion);
                 var res = WritePrepareWithRetry(record);
 
                 // we update cache to avoid non-cached look-up on next TransactionWrite
-                ReadIndex.UpdateTransactionInfo(res.WrittenPos, new TransactionInfo(-1, message.EventStreamId)); 
+                IndexWriter.UpdateTransactionInfo(res.WrittenPos, res.WrittenPos, new TransactionInfo(-1, message.EventStreamId)); 
             }
             catch (Exception exc)
             {
@@ -383,12 +386,13 @@ namespace EventStore.Core.Services.Storage
             try
             {
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
-                var transactionInfo = ReadIndex.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
+                var transactionInfo = IndexWriter.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
                 if (!CheckTransactionInfo(message.TransactionId, transactionInfo))
                     return;
 
                 if (message.Events.Length > 0)
                 {
+                    long lastLogPosition = -1;
                     for (int i = 0; i < message.Events.Length; ++i)
                     {
                         var evnt = message.Events[i];
@@ -404,10 +408,11 @@ namespace EventStore.Core.Services.Storage
                                                                 evnt.IsJson);
                         var res = WritePrepareWithRetry(record);
                         logPosition = res.NewPos;
+                        lastLogPosition = res.WrittenPos;
                     }
-                    ReadIndex.UpdateTransactionInfo(message.TransactionId,
-                                                    new TransactionInfo(transactionInfo.TransactionOffset + message.Events.Length,
-                                                                        transactionInfo.EventStreamId));
+                    var info = new TransactionInfo(transactionInfo.TransactionOffset + message.Events.Length,
+                                                   transactionInfo.EventStreamId);
+                    IndexWriter.UpdateTransactionInfo(message.TransactionId, lastLogPosition, info);
                 }
             }
             catch (Exception exc)
@@ -429,7 +434,7 @@ namespace EventStore.Core.Services.Storage
                 if (message.LiveUntil < DateTime.UtcNow)
                     return;
 
-                var transactionInfo = ReadIndex.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
+                var transactionInfo = IndexWriter.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
                 if (!CheckTransactionInfo(message.TransactionId, transactionInfo))
                     return;
 
@@ -471,14 +476,14 @@ namespace EventStore.Core.Services.Storage
             try
             {
                 var commitPos = Writer.Checkpoint.ReadNonFlushed();
-                var result = ReadIndex.CheckCommitStartingAt(message.TransactionPosition, commitPos);
+                var result = IndexWriter.CheckCommitStartingAt(message.TransactionPosition, commitPos);
                 if (result.Decision == CommitDecision.Ok)
                 {
                     var commit = WriteCommitWithRetry(LogRecord.Commit(commitPos,
                                                                        message.CorrelationId,
                                                                        message.TransactionPosition,
                                                                        result.CurrentVersion + 1));
-                    ReadIndex.Commit(commit);
+                    IndexWriter.PreCommit(commit);
                 }
                 else ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, result);
             }
@@ -608,9 +613,17 @@ namespace EventStore.Core.Services.Storage
                 Interlocked.Exchange(ref _maxFlushDelay, Math.Max(Interlocked.Read(ref _maxFlushDelay), flushDelay));
                 _statIndex = (_statIndex + 1) & (LastStatsCount - 1);
 
+                PurgeNotProcessedInfo();
+
                 return true;
             }
             return false;
+        }
+
+        private void PurgeNotProcessedInfo()
+        {
+            IndexWriter.PurgeNotProcessedCommitsTill(Db.Config.ChaserCheckpoint.Read());
+            IndexWriter.PurgeNotProcessedTransactions(Db.Config.WriterCheckpoint.Read());
         }
 
         private struct WriteResult

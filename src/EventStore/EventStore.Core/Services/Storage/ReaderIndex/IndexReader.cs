@@ -49,6 +49,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
         bool IsStreamDeleted(string streamId);
         int GetLastStreamEventNumber(string streamId);
+        string GetEventStreamIdByTransactionId(long transactionId); 
         StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
         StreamMetadata GetStreamMetadata(string streamId);
     }
@@ -278,6 +279,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             using (var reader = _backend.BorrowReader())
             {
                 return GetLastStreamEventNumberCached(reader, streamId);
+            }
+        }
+
+        public string GetEventStreamIdByTransactionId(long transactionId)
+        {
+            Ensure.Nonnegative(transactionId, "transactionId");
+            using (var reader = _backend.BorrowReader())
+            {
+                var res = GetPrepare(reader, transactionId);
+                return res == null ? null : res.EventStreamId;
             }
         }
 

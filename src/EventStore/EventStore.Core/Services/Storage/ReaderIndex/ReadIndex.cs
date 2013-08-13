@@ -44,6 +44,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     public class ReadIndex : IDisposable, IReadIndex
     {
         public long LastCommitPosition { get { return _indexWriter.LastCommitPosition; } }
+        public IIndexWriter IndexWriter { get { return _indexWriter; } }
 
         private readonly IIndexBackend _backend;
         private readonly IIndexReader _indexReader;
@@ -83,9 +84,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         }
 
-        void IReadIndex.Init(long writerCheckpoint, long buildToPosition)
+        void IReadIndex.Init(long buildToPosition)
         {
-            _indexWriter.Init(writerCheckpoint, buildToPosition);
+            _indexWriter.Init(buildToPosition);
         }
 
         void IReadIndex.Commit(CommitLogRecord commit)
@@ -123,6 +124,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return _indexReader.GetLastStreamEventNumber(streamId);
         }
 
+        public string GetEventStreamIdByTransactionId(long transactionId)
+        {
+            return _indexReader.GetEventStreamIdByTransactionId(transactionId);
+        }
+
         StreamAccess IReadIndex.CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
         {
             return _indexReader.CheckStreamAccess(streamId, streamAccessType, user);
@@ -141,26 +147,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         IndexReadAllResult IReadIndex.ReadAllEventsBackward(TFPos pos, int maxCount)
         {
             return _allReader.ReadAllEventsBackward(pos, maxCount);
-        }
-
-        CommitCheckResult IReadIndex.CheckCommitStartingAt(long transactionPosition, long commitPosition)
-        {
-            return _indexWriter.CheckCommitStartingAt(transactionPosition, commitPosition);
-        }
-
-        CommitCheckResult IReadIndex.CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds)
-        {
-            return _indexWriter.CheckCommit(streamId, expectedVersion, eventIds);
-        }
-
-        void IReadIndex.UpdateTransactionInfo(long transactionId, TransactionInfo transactionInfo)
-        {
-            _indexWriter.UpdateTransactionInfo(transactionId, transactionInfo);
-        }
-
-        TransactionInfo IReadIndex.GetTransactionInfo(long writerCheckpoint, long transactionId)
-        {
-            return _indexWriter.GetTransactionInfo(writerCheckpoint, transactionId);
         }
 
         ReadIndexStats IReadIndex.GetStatistics()

@@ -63,16 +63,20 @@ namespace EventStore.ClientAPI.ClientOperations
             switch (response.Result)
             {
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.Success:
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation, "Success");
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.StreamDeleted:
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation, "StreamDeleted");
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.NoStream:
                     Succeed();
-                    return new InspectionResult(InspectionDecision.EndOperation);
+                    return new InspectionResult(InspectionDecision.EndOperation, "NoStream");
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.Error:
                     Fail(new ServerErrorException(string.IsNullOrEmpty(response.Error) ? "<no message>" : response.Error));
-                    return new InspectionResult(InspectionDecision.EndOperation);
+                    return new InspectionResult(InspectionDecision.EndOperation, "Error");
                 case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.AccessDenied:
                     Fail(new AccessDeniedException(string.Format("Read access denied for stream '{0}'.", _stream)));
-                    return new InspectionResult(InspectionDecision.EndOperation);
+                    return new InspectionResult(InspectionDecision.EndOperation, "AccessDenied");
                 default:
                     throw new Exception(string.Format("Unexpected ReadStreamResult: {0}.", response.Result));
             }

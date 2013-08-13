@@ -109,7 +109,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: MetastreamMaxCount);
 
-            ReadIndex.Init(WriterCheckpoint.Read(), ChaserCheckpoint.Read());
+            ReadIndex.Init(ChaserCheckpoint.Read());
 
             // scavenge must run after readIndex is built
             if (_scavenge)

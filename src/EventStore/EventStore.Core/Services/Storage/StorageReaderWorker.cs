@@ -256,18 +256,10 @@ namespace EventStore.Core.Services.Storage
                 if (msg.EventStreamId == null)
                 {
                     if (msg.TransactionId == null) throw new Exception("No transaction ID specified.");
-                    var transInfo = _readIndex.GetTransactionInfo(_writerCheckpoint.Read(), msg.TransactionId.Value);
-                    if (transInfo.TransactionOffset < -1 || transInfo.EventStreamId.IsEmptyString())
-                    {
-                        throw new Exception(
-                            string.Format("Invalid transaction info found for transaction ID {0}. "
-                                            + "Possibly wrong transaction ID provided. TransactionOffset: {1}, EventStreamId: {2}",
-                                            msg.TransactionId, transInfo.TransactionOffset,
-                                            transInfo.EventStreamId.IsEmptyString() ? "<null>" : transInfo.EventStreamId));
-                    }
-                    streamId = transInfo.EventStreamId;
+                    streamId = _readIndex.GetEventStreamIdByTransactionId(msg.TransactionId.Value);
+                    if (streamId == null)
+                        throw new Exception(string.Format("No transaction with ID {0} found.", msg.TransactionId));
                 }
-
                 var result = _readIndex.CheckStreamAccess(streamId, msg.AccessType, msg.User);
                 return new StorageMessage.CheckStreamAccessCompleted(msg.CorrelationId, streamId, msg.TransactionId, msg.AccessType, result);
             }

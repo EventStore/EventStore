@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Log;
@@ -67,6 +68,8 @@ namespace EventStore.Core.Services.Storage
         private readonly Stopwatch _watch = Stopwatch.StartNew();
         private long _flushDelay;
         private long _lastFlush;
+
+        private readonly List<PrepareLogRecord> _transaction = new List<PrepareLogRecord>();
 
         public StorageChaser(IPublisher masterBus, 
                              ICheckpoint writerCheckpoint, 
@@ -175,25 +178,35 @@ namespace EventStore.Core.Services.Storage
                 case LogRecordType.Prepare:
                 {
                     var record = (PrepareLogRecord) result.LogRecord;
-                    if (record.Flags.HasAllOf(PrepareFlags.IsCommitted | PrepareFlags.TransactionEnd))
+                    if (record.Flags.HasAnyOf(PrepareFlags.IsCommitted))
                     {
-                        _masterBus.Publish(new StorageMessage.CommitAck(
-                            record.CorrelationId, record.LogPosition, record.TransactionPosition,
-                            record.ExpectedVersion + 1 - record.TransactionOffset));
+                        _transaction.Add(record);
+                        
+                        if (record.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
+                        {
+                            _readIndex.Commit(_transaction);
+                            _transaction.Clear();
+
+                            _masterBus.Publish(new StorageMessage.CommitAck(
+                                record.CorrelationId, record.LogPosition, record.TransactionPosition,
+                                record.ExpectedVersion + 1 - record.TransactionOffset));
+                            
+                        }
                     }
                     else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd))
-                        _masterBus.Publish(new StorageMessage.PrepareAck(
-                            record.CorrelationId, record.LogPosition, record.Flags));
+                    {
+                        _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
+                    }
                     break;
                 }
                 case LogRecordType.Commit:
                 {
                     var record = (CommitLogRecord) result.LogRecord;
+                    _readIndex.Commit(record);
                     _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
                                                                     record.LogPosition,
                                                                     record.TransactionPosition,
                                                                     record.FirstEventNumber));
-                    _readIndex.Commit(record);
                     break;
                 }
                 case LogRecordType.System:

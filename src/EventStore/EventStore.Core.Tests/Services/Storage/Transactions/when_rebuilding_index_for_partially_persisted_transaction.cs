@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
                                       new NoLRUCache<string, StreamCacheInfo>(),
                                       additionalCommitChecks: true, 
                                       metastreamMaxCount: 1);
-            ReadIndex.Init(WriterCheckpoint.Read(), ChaserCheckpoint.Read());
+            ReadIndex.Init(ChaserCheckpoint.Read());
         }
 
         protected override void WriteTestScenario()

@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: _metastreamMaxCount);
 
-            ReadIndex.Init(DbRes.Db.Config.WriterCheckpoint.Read(), DbRes.Db.Config.ChaserCheckpoint.Read());
+            ReadIndex.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
         }
 
         public override void TestFixtureTearDown()

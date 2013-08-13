@@ -267,6 +267,7 @@ namespace EventStore.Core.Services.Monitoring
             {
                 // ok, no problem if already disposed
             }
+            
         }
 
         public void Handle(MonitoringMessage.GetFreshStats message)

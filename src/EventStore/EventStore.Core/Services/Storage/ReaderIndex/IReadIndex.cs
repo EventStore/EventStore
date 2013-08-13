@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Core.Data;
@@ -37,8 +36,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     public interface IReadIndex
     {
         long LastCommitPosition { get; }
+        IIndexWriter IndexWriter { get; }
 
-        void Init(long writerCheckpoint, long buildToPosition);
+        void Init(long buildToPosition);
         void Commit(CommitLogRecord record);
         void Commit(IList<PrepareLogRecord> commitedPrepares);
         ReadIndexStats GetStatistics();
@@ -59,15 +59,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         bool IsStreamDeleted(string streamId);
         int GetLastStreamEventNumber(string streamId);
+        string GetEventStreamIdByTransactionId(long transactionId);
+
         StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
         StreamMetadata GetStreamMetadata(string streamId);
 
-        CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition);
-        CommitCheckResult CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds);
-
-        void UpdateTransactionInfo(long transactionId, TransactionInfo transactionInfo);
-        TransactionInfo GetTransactionInfo(long writerCheckpoint, long transactionId);
-       
         void Close();
         void Dispose();
     }

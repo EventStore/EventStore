@@ -159,7 +159,7 @@ namespace EventStore.Core
             epochManager.Init();
 
             var storageWriter = new StorageWriterService(_mainQueue, _mainBus, _settings.MinFlushDelayMs,
-                                                         db, writer, readIndex, epochManager); // subscribes internally
+                                                         db, writer, readIndex.IndexWriter, epochManager); // subscribes internally
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
             var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderThreadCount, db.Config.WriterCheckpoint);

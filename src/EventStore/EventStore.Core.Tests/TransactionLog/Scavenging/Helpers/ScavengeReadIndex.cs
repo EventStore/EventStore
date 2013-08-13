@@ -11,6 +11,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
     public class ScavengeReadIndex : IReadIndex
     {
         public long LastCommitPosition { get { throw new NotImplementedException(); } }
+        public IIndexWriter IndexWriter { get { throw new NotImplementedException(); } }
 
         private readonly Dictionary<string, StreamInfo> _streams;
         private readonly int _metastreamMaxCount;
@@ -21,13 +22,13 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             _metastreamMaxCount = metastreamMaxCount;
         }
 
-        public void Init(long writerCheckpoint, long buildToPosition)
+        public void Init(long buildToPosition)
         {
         }
 
         public void Commit(CommitLogRecord record)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public void Commit(IList<PrepareLogRecord> commitedPrepares)
@@ -37,32 +38,32 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
         public ReadIndexStats GetStatistics()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public IndexReadEventResult ReadEvent(string streamId, int eventNumber)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public IndexReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public bool IsStreamDeleted(string streamId)
@@ -82,6 +83,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             return -1;
         }
 
+        public string GetEventStreamIdByTransactionId(long transactionId)
+        {
+            throw new NotImplementedException();
+        }
+
         public StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
         {
             throw new NotImplementedException();
@@ -96,26 +102,6 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             if (_streams.TryGetValue(streamId, out streamInfo))
                 return streamInfo.StreamMetadata ?? StreamMetadata.Empty;
             return new StreamMetadata(null, null, null, null);
-        }
-
-        public CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public CommitCheckResult CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void UpdateTransactionInfo(long transactionId, Core.Services.Storage.ReaderIndex.TransactionInfo transactionInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Core.Services.Storage.ReaderIndex.TransactionInfo GetTransactionInfo(long writerCheckpoint, long transactionId)
-        {
-            throw new System.NotImplementedException();
         }
 
         public void Close()

@@ -39,6 +39,7 @@ namespace EventStore.Core.Tests.TransactionLog
     internal class FakeReadIndex: IReadIndex
     {
         public long LastCommitPosition { get { throw new NotImplementedException(); } }
+        public IIndexWriter IndexWriter { get { throw new NotImplementedException(); } }
 
         private readonly Func<string, bool> _isStreamDeleted;
 
@@ -48,7 +49,7 @@ namespace EventStore.Core.Tests.TransactionLog
             _isStreamDeleted = isStreamDeleted;
         }
         
-        public void Init(long writerCheckpoint, long buildToPosition)
+        public void Init(long buildToPosition)
         {
             throw new NotImplementedException();
         }
@@ -103,32 +104,17 @@ namespace EventStore.Core.Tests.TransactionLog
             throw new NotImplementedException();
         }
 
+        public string GetEventStreamIdByTransactionId(long transactionId)
+        {
+            throw new NotImplementedException();
+        }
+
         public StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
         {
             throw new NotImplementedException();
         }
 
         public StreamMetadata GetStreamMetadata(string streamId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition)
-        {
-            throw new NotImplementedException();
-        }
-
-        public CommitCheckResult CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void UpdateTransactionInfo(long transactionId, TransactionInfo transactionInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        TransactionInfo IReadIndex.GetTransactionInfo(long writerCheckpoint, long transactionId)
         {
             throw new NotImplementedException();
         }

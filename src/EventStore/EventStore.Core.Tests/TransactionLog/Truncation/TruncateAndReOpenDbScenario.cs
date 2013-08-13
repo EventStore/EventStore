@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
                                       new NoLRUCache<string, StreamCacheInfo>(),
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: MetastreamMaxCount);
-            ReadIndex.Init(WriterCheckpoint.Read(), ChaserCheckpoint.Read());
+            ReadIndex.Init(ChaserCheckpoint.Read());
         }
     }
 }
