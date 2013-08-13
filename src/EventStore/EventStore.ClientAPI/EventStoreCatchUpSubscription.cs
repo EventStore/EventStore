@@ -308,13 +308,12 @@ namespace EventStore.ClientAPI
                 }
                 _nextReadPosition = slice.NextPosition;
 
-                done = slice.IsEndOfStream;
-//                done = lastCommitPosition == null
-//                               ? slice.IsEndOfStream
-//                               : slice.NextPosition >= new Position(lastCommitPosition.Value, lastCommitPosition.Value);
-//
-//                if (!done && slice.IsEndOfStream)
-//                    Thread.Sleep(1); // we are waiting for server to flush its data
+                done = lastCommitPosition == null
+                               ? slice.IsEndOfStream
+                               : slice.NextPosition >= new Position(lastCommitPosition.Value, lastCommitPosition.Value);
+
+                if (!done && slice.IsEndOfStream)
+                    Thread.Sleep(1); // we are waiting for server to flush its data
             } while (!done);
 
             if (Verbose) 
@@ -380,8 +379,7 @@ namespace EventStore.ClientAPI
                             TryProcess(e);
                         }
                         _nextReadEventNumber = slice.NextEventNumber;
-                        //done = lastEventNumber == null ? slice.IsEndOfStream : slice.NextEventNumber > lastEventNumber;
-                        done = slice.IsEndOfStream;
+                        done = lastEventNumber == null ? slice.IsEndOfStream : slice.NextEventNumber > lastEventNumber;
                         break;
                     }
                     case SliceReadStatus.StreamNotFound:
@@ -397,8 +395,8 @@ namespace EventStore.ClientAPI
                         throw new ArgumentOutOfRangeException(string.Format("Unexpected StreamEventsSlice.Status: {0}.", slice.Status));
                 }
 
-//                if (!done && slice.IsEndOfStream)
-//                    Thread.Sleep(1); // we are waiting for server to flush its data
+                if (!done && slice.IsEndOfStream)
+                    Thread.Sleep(1); // we are waiting for server to flush its data
             } while (!done);
 
             if (Verbose)
