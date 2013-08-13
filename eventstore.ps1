@@ -33,9 +33,13 @@ Properties {
 
 # Fallback platform/configuration (should be overriden by invoke-psake)
 Properties {
-    $platform = "Any CPU"
-    $configuration = "Release"
+    if ($platform -eq $null) {
+        $platform = "Any CPU" #
+    }
 
+    if ($configuration -eq $null) {
+        $configuration = "Release"
+    }
     
     if ($defines -eq $null) {
         $definesCommandLine = ""
