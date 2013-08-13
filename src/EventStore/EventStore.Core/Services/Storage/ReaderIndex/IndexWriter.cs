@@ -490,18 +490,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (expectedVersion < curVersion)
             {
                 var eventNumber = expectedVersion;
-                var first = true;
                 foreach (var eventId in eventIds)
                 {
                     eventNumber += 1;
 
+                    Tuple<string, int> prepInfo;
+                    if (_committedEvents.TryGetRecord(eventId, out prepInfo) && prepInfo.Item1 == streamId && prepInfo.Item2 == eventNumber)
+                        continue;
+
                     var res = _indexReader.ReadEvent(streamId, eventNumber);
-                    if (res.Result != ReadEventResult.Success || res.Record.EventId != eventId)
-                        return new CommitCheckResult(first ? CommitDecision.WrongExpectedVersion : CommitDecision.CorruptedIdempotency,
-                                                     streamId, curVersion, -1, -1);
-                    first = false;
+                    if (res.Result == ReadEventResult.Success && res.Record.EventId == eventId)
+                        continue;
+
+                    var first = eventNumber == expectedVersion + 1;
+                    return new CommitCheckResult(first ? CommitDecision.WrongExpectedVersion : CommitDecision.CorruptedIdempotency,
+                                                 streamId, curVersion, -1, -1);
                 }
-                return first /* no data in transaction */
+                return eventNumber == expectedVersion /* no data in transaction */
                     ? new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1)
                     : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber);
             }
