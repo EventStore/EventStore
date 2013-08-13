@@ -55,6 +55,20 @@ namespace EventStore.Core.DataStructures
             _maxCount = maxCount;
         }
 
+        public void Clear()
+        {
+            lock (_lock)
+            {
+                while (_orderList.Count > 0)
+                {
+                    var node = _orderList.First;
+                    _orderList.RemoveFirst();
+                    ReturnNode(node);
+                }
+                _items.Clear();
+            }
+        }
+
         public bool TryGet(TKey key, out TValue value)
         {
             lock (_lock)

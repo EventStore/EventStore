@@ -82,7 +82,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         void Dispose();
         void Commit(CommitLogRecord commit);
         void Commit(IList<PrepareLogRecord> commitedPrepares);
-        
+
+        void Reset();
         CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition);
         CommitCheckResult CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds);
         void PreCommit(CommitLogRecord commit);
@@ -461,6 +462,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private readonly IStickyLRUCache<string, int> _streamVersions = new StickyLRUCache<string, int>(ESConsts.StreamMetadataCacheCapacity);
         private readonly Queue<CommitInfo> _notProcessedCommits = new Queue<CommitInfo>();
+
+        public void Reset()
+        {
+            _streamVersions.Clear();
+        }
 
         public CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition)
         {

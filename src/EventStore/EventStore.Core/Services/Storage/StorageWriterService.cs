@@ -196,7 +196,7 @@ namespace EventStore.Core.Services.Storage
             // into master-mode and accepting writes will wait till chaser caught up.
             var chaserCheckpoint = Db.Config.ChaserCheckpoint.Read();
             IndexWriter.Init(chaserCheckpoint);
-            Bus.Publish(new SystemMessage.StorageWriterInitializationDone());
+            Bus.Publish(new SystemMessage.StorageWriterInitializationDone());   
         }
 
         public virtual void Handle(SystemMessage.StateChangeMessage message)
@@ -207,6 +207,7 @@ namespace EventStore.Core.Services.Storage
             {
                 case VNodeState.Master:
                 {
+                    IndexWriter.Reset();
                     EpochManager.WriteNewEpoch(); // forces flush
                     PurgeNotProcessedInfo();
                     break;
