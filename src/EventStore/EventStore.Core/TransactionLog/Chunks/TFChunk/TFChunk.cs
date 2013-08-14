@@ -557,6 +557,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             }
         }
 
+        public bool ExistsAt(long logicalPosition)
+        {
+            return _readSide.ExistsAt(logicalPosition);
+        }
+
         public RecordReadResult TryReadAt(long logicalPosition)
         {
             return _readSide.TryReadAt(logicalPosition);

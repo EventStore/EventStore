@@ -27,13 +27,13 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Index
@@ -50,29 +50,21 @@ namespace EventStore.Core.Index
         public readonly long CommitCheckpoint;
 
         private readonly List<List<PTable>> _map;
-        private readonly Func<IndexEntry, bool> _isHashCollision;
         private readonly int _maxTablesPerLevel;
 
-        private IndexMap(int version,
-                         List<List<PTable>> tables, 
-                         long prepareCheckpoint,
-                         long commitCheckpoint,
-                         Func<IndexEntry, bool> isHashCollision, 
-                         int maxTablesPerLevel)
+        private IndexMap(int version, List<List<PTable>> tables, long prepareCheckpoint, long commitCheckpoint, int maxTablesPerLevel)
         {
             Ensure.Nonnegative(version, "version");
             if (prepareCheckpoint < -1) throw new ArgumentOutOfRangeException("prepareCheckpoint");
             if (commitCheckpoint < -1) throw new ArgumentOutOfRangeException("commitCheckpoint");
-            Ensure.NotNull(isHashCollision, "isHashCollision");
             if (maxTablesPerLevel <= 1) throw new ArgumentOutOfRangeException("maxTablesPerLevel");
 
             Version = version;
 
             PrepareCheckpoint = prepareCheckpoint;
             CommitCheckpoint = commitCheckpoint;
-            
+
             _map = CopyFrom(tables);
-            _isHashCollision = isHashCollision;
             _maxTablesPerLevel = maxTablesPerLevel;
             
             VerifyStructure();
@@ -91,7 +83,7 @@ namespace EventStore.Core.Index
         private void VerifyStructure()
         {
             if (_map.SelectMany(level => level).Any(item => item == null))
-                throw new CorruptIndexException();
+                throw new CorruptIndexException("Internal indexmap structure corruption.");
         }
 
         private static void CreateIfNeeded(int level, List<List<PTable>> tables)
@@ -125,10 +117,10 @@ namespace EventStore.Core.Index
                    select table.Filename;
         }
 
-        public static IndexMap FromFile(string filename, Func<IndexEntry, bool> isHashCollision, int maxTablesPerLevel = 4, bool loadPTables = true)
+        public static IndexMap FromFile(string filename, int maxTablesPerLevel = 4, bool loadPTables = true)
         {
             if (!File.Exists(filename))
-                return new IndexMap(IndexMapVersion, new List<List<PTable>>(), -1, -1, isHashCollision, maxTablesPerLevel);
+                return new IndexMap(IndexMapVersion, new List<List<PTable>>(), -1, -1, maxTablesPerLevel);
 
             using (var f = File.OpenRead(filename))
             {
@@ -153,7 +145,7 @@ namespace EventStore.Core.Index
                         throw new CorruptIndexException(
                             string.Format("Negative prepare/commit checkpoint in non-empty IndexMap: {0}.", checkpoints));
 
-                    return new IndexMap(version, tables, prepareCheckpoint, commitCheckpoint, isHashCollision, maxTablesPerLevel);
+                    return new IndexMap(version, tables, prepareCheckpoint, commitCheckpoint, maxTablesPerLevel);
                 }
             }
         }
@@ -329,10 +321,11 @@ namespace EventStore.Core.Index
             }
         }
 
-        public MergeResult AddFile(PTable tableToAdd, 
-                                   long prepareCheckpoint, 
-                                   long commitCheckpoint, 
-                                   IIndexFilenameProvider filenameProvider)
+        public MergeResult AddPTable(PTable tableToAdd, 
+                                     long prepareCheckpoint, 
+                                     long commitCheckpoint, 
+                                     Func<IndexEntry, bool> recordExistsAt,
+                                     IIndexFilenameProvider filenameProvider)
         {
             Ensure.Nonnegative(prepareCheckpoint, "prepareCheckpoint");
             Ensure.Nonnegative(commitCheckpoint, "commitCheckpoint");
@@ -347,8 +340,7 @@ namespace EventStore.Core.Index
                 if (tables[level].Count >= _maxTablesPerLevel)
                 {
                     var filename = filenameProvider.GetFilenameNewTable();
-                    var table = PTable.MergeTo(tables[level], filename, _isHashCollision);
-
+                    PTable table = PTable.MergeTo(tables[level], filename, recordExistsAt);
                     CreateIfNeeded(level + 1, tables);
                     tables[level + 1].Add(table);
                     toDelete.AddRange(tables[level]);
@@ -356,7 +348,7 @@ namespace EventStore.Core.Index
                 }
             }
 
-            var indexMap = new IndexMap(Version, tables, prepareCheckpoint, commitCheckpoint, _isHashCollision, _maxTablesPerLevel);
+            var indexMap = new IndexMap(Version, tables, prepareCheckpoint, commitCheckpoint, _maxTablesPerLevel);
             return new MergeResult(indexMap, toDelete);
         }
 

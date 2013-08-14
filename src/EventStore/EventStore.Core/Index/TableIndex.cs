@@ -34,6 +34,7 @@ using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Index
@@ -55,6 +56,7 @@ namespace EventStore.Core.Index
         private readonly bool _additionalReclaim;
         private readonly string _directory;
         private readonly Func<IMemTable> _memTableFactory;
+        private readonly Func<TFReaderLease> _tfReaderFactory;
         private readonly IIndexFilenameProvider _fileNameProvider;
 
         private readonly object _awaitingTablesLock = new object();
@@ -70,18 +72,21 @@ namespace EventStore.Core.Index
         private bool _initialized;
 
         public TableIndex(string directory, 
-                          Func<IMemTable> memTableFactory, 
+                          Func<IMemTable> memTableFactory,
+                          Func<TFReaderLease> tfReaderFactory,
                           int maxSizeForMemory = 1000000,
                           int maxTablesPerLevel = 4,
                           bool additionalReclaim = false)
         {
             Ensure.NotNullOrEmpty(directory, "directory");
             Ensure.NotNull(memTableFactory, "memTableFactory");
+            Ensure.NotNull(tfReaderFactory, "tfReaderFactory");
             if (maxTablesPerLevel <= 1)
                 throw new ArgumentOutOfRangeException("maxTablesPerLevel");
 
             _directory = directory;
             _memTableFactory = memTableFactory;
+            _tfReaderFactory = tfReaderFactory;
             _fileNameProvider = new GuidFilenameProvider(directory);
             _maxSizeForMemory = maxSizeForMemory;
             _maxTablesPerLevel = maxTablesPerLevel;
@@ -109,7 +114,7 @@ namespace EventStore.Core.Index
             {
                 if (IsCorrupt(_directory))
                     throw new CorruptIndexException("IndexMap is in unsafe state.");
-                _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
+                _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel);
                 if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -129,7 +134,7 @@ namespace EventStore.Core.Index
                     File.Copy(backupFile, indexmapFile);
                     try
                     {
-                        _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
+                        _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel);
                         if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                         {
                             _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -148,7 +153,7 @@ namespace EventStore.Core.Index
                 }
 
                 if (createEmptyIndexMap)
-                    _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
+                    _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel);
                 if (IsCorrupt(_directory))
                     LeaveUnsafeState(_directory);
             }
@@ -197,15 +202,6 @@ namespace EventStore.Core.Index
             catch (Exception exc)
             {
                 Log.ErrorException(exc, "Unexpected error while copying index to backup dir '{0}'", dumpPath);
-            }
-        }
-
-        private bool IsHashCollision(IndexEntry entry)
-        {
-            // TODO AN fails on case where one stream is already deleted, and another is present, but both have same hash
-            using (var enumerator = GetRange(entry.Stream, 0, 0).GetEnumerator())
-            {
-                return enumerator.MoveNext() && enumerator.MoveNext(); // at least two entries -- hash collision
             }
         }
 
@@ -317,7 +313,12 @@ namespace EventStore.Core.Index
 
                     EnterUnsafeState(_directory);
 
-                    var mergeResult = _indexMap.AddFile(ptable, tableItem.PrepareCheckpoint, tableItem.CommitCheckpoint, _fileNameProvider);
+                    MergeResult mergeResult;
+                    using (var reader = _tfReaderFactory())
+                    {
+                        mergeResult = _indexMap.AddPTable(ptable, tableItem.PrepareCheckpoint, tableItem.CommitCheckpoint,
+                                                          entry => reader.ExistsAt(entry.Position), _fileNameProvider);
+                    }
                     _indexMap = mergeResult.MergedMap;
                     _indexMap.SaveToFile(indexmapFile);
 

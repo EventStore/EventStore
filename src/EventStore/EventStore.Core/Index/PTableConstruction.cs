@@ -33,7 +33,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
 
 namespace EventStore.Core.Index
 {
@@ -85,19 +84,15 @@ namespace EventStore.Core.Index
             return new PTable(filename, table.Id, depth: cacheDepth);
         }
 
-        public static PTable MergeTo(IList<PTable> tables,
-                                     string outputFile,
-                                     Func<IndexEntry, bool> isHashCollision,
-                                     int cacheDepth = 16)
+        public static PTable MergeTo(IList<PTable> tables, string outputFile, Func<IndexEntry, bool> recordExistsAt, int cacheDepth = 16)
         {
             Ensure.NotNull(tables, "tables");
             Ensure.NotNullOrEmpty(outputFile, "outputFile");
-            Ensure.NotNull(isHashCollision, "isHashCollision");
             Ensure.Nonnegative(cacheDepth, "cacheDepth");
 
             var fileSize = GetFileSize(tables); // approximate file size
             if (tables.Count == 2)
-                return MergeTo2(tables, fileSize, outputFile, isHashCollision, cacheDepth); // special case
+                return MergeTo2(tables, fileSize, outputFile, recordExistsAt, cacheDepth); // special case
 
             Log.Trace("PTables merge started.");
             var watch = Stopwatch.StartNew();
@@ -128,26 +123,16 @@ namespace EventStore.Core.Index
                     var headerBytes = new PTableHeader(Version).AsByteArray();
                     cs.Write(headerBytes, 0, headerBytes.Length);
 
-                    uint lastDeleted = uint.MaxValue;
                     var buffer = new byte[IndexEntrySize];
                     // WRITE INDEX ENTRIES
                     while (enumerators.Count > 0)
                     {
                         var idx = GetMaxOf(enumerators);
                         var current = enumerators[idx].Current;
-                        if (current.Version == EventNumber.DeletedStream && !isHashCollision(current))
+                        if (recordExistsAt(current))
                         {
-                            lastDeleted = current.Stream;
                             AppendRecordTo(bs, current.Bytes, buffer);
                             dumpedEntryCount += 1;
-                        }
-                        else
-                        {
-                            if (lastDeleted != current.Stream || current.Version == 0) // we keep 0th event for hash collision detection
-                            {
-                                AppendRecordTo(bs, current.Bytes, buffer);
-                                dumpedEntryCount += 1;
-                            }
                         }
                         if (!enumerators[idx].MoveNext())
                         {
@@ -172,11 +157,8 @@ namespace EventStore.Core.Index
             return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);
         }
 
-        private static PTable MergeTo2(IList<PTable> tables,
-                                       long fileSize,
-                                       string outputFile,
-                                       Func<IndexEntry, bool> isHashCollision,
-                                       int cacheDepth)
+        private static PTable MergeTo2(IList<PTable> tables, long fileSize, string outputFile,
+                                       Func<IndexEntry, bool> recordExistsAt, int cacheDepth)
         {
             Log.Trace("PTables merge started (specialized for <= 2 tables).");
             var watch = Stopwatch.StartNew();
@@ -198,7 +180,6 @@ namespace EventStore.Core.Index
                     cs.Write(headerBytes, 0, headerBytes.Length);
 
                     // WRITE INDEX ENTRIES
-                    uint lastDeleted = uint.MaxValue;
                     var buffer = new byte[IndexEntrySize];
                     var enum1 = enumerators[0];
                     var enum2 = enumerators[1];
@@ -218,19 +199,10 @@ namespace EventStore.Core.Index
                             available2 = enum2.MoveNext();
                         }
 
-                        if (current.Version == EventNumber.DeletedStream && !isHashCollision(current))
+                        if (recordExistsAt(current))
                         {
-                            lastDeleted = current.Stream;
                             AppendRecordTo(bs, current.Bytes, buffer);
                             dumpedEntryCount += 1;
-                        }
-                        else
-                        {
-                            if (lastDeleted != current.Stream || current.Version == 0) // we keep 0th event for hash collision detection
-                            {
-                                AppendRecordTo(bs, current.Bytes, buffer);
-                                dumpedEntryCount += 1;
-                            }
                         }
                     }
                     bs.Flush();

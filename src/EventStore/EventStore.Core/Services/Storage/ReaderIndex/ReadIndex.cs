@@ -52,9 +52,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly IAllReader _allReader;
 
         public ReadIndex(IPublisher bus,
-                         int initialReaderCount,
-                         int maxReaderCount,
-                         Func<ITransactionFileReader> readerFactory,
+                         ObjectPool<ITransactionFileReader> readerPool,
                          ITableIndex tableIndex,
                          IHasher hasher,
                          ILRUCache<string, StreamCacheInfo> streamInfoCache,
@@ -62,18 +60,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                          int metastreamMaxCount)
         {
             Ensure.NotNull(bus, "bus");
-            Ensure.Positive(initialReaderCount, "initialReaderCount");
-            Ensure.Positive(maxReaderCount, "maxReaderCount");
-            if (initialReaderCount > maxReaderCount)
-                throw new ArgumentOutOfRangeException("initialReaderCount", "initialReaderCount is greater than maxReaderCount.");
-            Ensure.NotNull(readerFactory, "readerFactory");
+            Ensure.NotNull(readerPool, "readerPool");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(hasher, "hasher");
             Ensure.NotNull(streamInfoCache, "streamInfoCache");
             Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
 
-            var readers = new ObjectPool<ITransactionFileReader>("ReadIndex readers pool", initialReaderCount, maxReaderCount, readerFactory);
-            _backend = new IndexBackend(readers, streamInfoCache);
+            _backend = new IndexBackend(readerPool, streamInfoCache);
 
             var metastreamMetadata = new StreamMetadata(metastreamMaxCount, null, null, null);
             _indexReader = new IndexReader(_backend, hasher, tableIndex, metastreamMetadata);
@@ -81,7 +74,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _indexWriter = new IndexWriter(bus, _backend, _indexReader, tableIndex, hasher, additionalCommitChecks);
             
             _allReader = new AllReader(_backend);
-
         }
 
         void IReadIndex.Init(long buildToPosition)

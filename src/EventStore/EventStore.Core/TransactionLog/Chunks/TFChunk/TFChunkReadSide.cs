@@ -41,6 +41,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             void Cache();
             void Uncache();
 
+            bool ExistsAt(long logicalPosition);
             RecordReadResult TryReadAt(long logicalPosition);
             RecordReadResult TryReadFirst();
             RecordReadResult TryReadClosestForward(long logicalPosition);
@@ -64,6 +65,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             public void Uncache()
             {
                 // do nothing
+            }
+
+            public bool ExistsAt(long logicalPosition)
+            {
+                return logicalPosition >= 0 && logicalPosition < Chunk.LogicalDataSize;
             }
 
             public RecordReadResult TryReadAt(long logicalPosition)
@@ -227,6 +233,20 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index*PosMap.DeprecatedSize;
                     workItem.Stream.Seek(pos, SeekOrigin.Begin);
                     return PosMap.FromOldFormat(workItem.Reader);
+                }
+            }
+
+            public bool ExistsAt(long logicalPosition)
+            {
+                var workItem = Chunk.GetReaderWorkItem();
+                try
+                {
+                    var actualPosition = TranslateExactPosition(workItem, logicalPosition);
+                    return actualPosition >= 0 && actualPosition < Chunk.PhysicalDataSize;
+                }
+                finally
+                {
+                    Chunk.ReturnReaderWorkItem(workItem);
                 }
             }
 

@@ -39,6 +39,7 @@ namespace EventStore.Core.TransactionLog
         SeqReadResult TryReadPrev();
 
         RecordReadResult TryReadAt(long position);
+        bool ExistsAt(long position);
     }
 
     public struct TFReaderLease : IDisposable
@@ -52,9 +53,16 @@ namespace EventStore.Core.TransactionLog
             Reader = pool.Get();
         }
 
+        public TFReaderLease(ITransactionFileReader reader)
+        {
+            _pool = null;
+            Reader = reader;
+        }
+
         void IDisposable.Dispose()
         {
-            _pool.Return(Reader);
+            if (_pool != null)
+                _pool.Return(Reader);
         }
 
         public void Reposition(long position)
@@ -70,6 +78,11 @@ namespace EventStore.Core.TransactionLog
         public SeqReadResult TryReadPrev()
         {
             return Reader.TryReadPrev();
+        }
+
+        public bool ExistsAt(long position)
+        {
+            return Reader.ExistsAt(position);
         }
 
         public RecordReadResult TryReadAt(long position)

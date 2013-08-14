@@ -53,6 +53,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Services.VNode;
 using EventStore.Common.Utils;
 using EventStore.Core.Settings;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core
@@ -135,15 +136,17 @@ namespace EventStore.Core
 
             // STORAGE SUBSYSTEM
             var indexPath = Path.Combine(db.Config.Path, "index");
+            var readerPool = new ObjectPool<ITransactionFileReader>(
+                "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
+                () => new TFChunkReader(db, db.Config.WriterCheckpoint));
             var tableIndex = new TableIndex(indexPath,
                                             () => new HashListMemTable(maxSize: memTableEntryCount * 2),
+                                            () => new TFReaderLease(readerPool),
                                             maxSizeForMemory: memTableEntryCount,
                                             maxTablesPerLevel: 2);
 
             var readIndex = new ReadIndex(_mainQueue,
-                                          ESConsts.PTableInitialReaderCount,
-                                          ESConsts.PTableMaxReaderCount,
-                                          () => new TFChunkReader(db, db.Config.WriterCheckpoint),
+                                          readerPool,
                                           tableIndex,
                                           new XXHashUnsafe(),
                                           new LRUCache<string, StreamCacheInfo>(ESConsts.StreamMetadataCacheCapacity),

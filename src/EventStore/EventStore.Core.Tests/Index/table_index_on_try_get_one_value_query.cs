@@ -28,6 +28,8 @@
 
 using System.Linq;
 using EventStore.Core.Index;
+using EventStore.Core.Tests.Fakes;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
@@ -44,7 +46,11 @@ namespace EventStore.Core.Tests.Index
             base.TestFixtureSetUp();
 
             _indexDir = PathName;
-            _tableIndex = new TableIndex(_indexDir, () => new HashListMemTable(maxSize: 10), maxSizeForMemory: 5);
+            var fakeReader = new TFReaderLease(new FakeTfReader());
+            _tableIndex = new TableIndex(_indexDir,
+                                         () => new HashListMemTable(maxSize: 10),
+                                         () => fakeReader,
+                                         maxSizeForMemory: 5);
             _tableIndex.Initialize(long.MaxValue);
 
             _tableIndex.Add(0, 0xDEAD, 0, 0xFF00);

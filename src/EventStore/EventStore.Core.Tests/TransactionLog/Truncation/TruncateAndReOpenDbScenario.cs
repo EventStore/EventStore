@@ -4,6 +4,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Storage;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -37,13 +38,13 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
 
             Db.Open();
 
+            var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5, () => new TFChunkReader(Db, Db.Config.WriterCheckpoint));
             TableIndex = new TableIndex(Path.Combine(PathName, "index"),
                                         () => new HashListMemTable(MaxEntriesInMemTable * 2),
+                                        () => new TFReaderLease(readers),
                                         MaxEntriesInMemTable);
             ReadIndex = new ReadIndex(new NoopPublisher(),
-                                      2,
-                                      5,
-                                      () => new TFChunkReader(Db, Db.Config.WriterCheckpoint),
+                                      readers,
                                       TableIndex,
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamCacheInfo>(),

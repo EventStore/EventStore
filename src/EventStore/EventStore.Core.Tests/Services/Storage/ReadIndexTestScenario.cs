@@ -27,7 +27,6 @@
 // 
 
 using System;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
@@ -35,6 +34,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -95,14 +95,14 @@ namespace EventStore.Core.Tests.Services.Storage
             ChaserCheckpoint.Write(WriterCheckpoint.Read());
             ChaserCheckpoint.Flush();
 
+            var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 2, () => new TFChunkReader(Db, Db.Config.WriterCheckpoint));
             TableIndex = new TableIndex(GetFilePathFor("index"),
                                         () => new HashListMemTable(MaxEntriesInMemTable * 2),
+                                        () => new TFReaderLease(readers),
                                         MaxEntriesInMemTable);
 
             ReadIndex = new ReadIndex(new NoopPublisher(),
-                                      2,
-                                      2,
-                                      () => new TFChunkReader(Db, Db.Config.WriterCheckpoint),
+                                      readers,
                                       TableIndex,
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamCacheInfo>(),
