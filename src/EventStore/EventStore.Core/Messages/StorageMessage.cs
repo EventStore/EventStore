@@ -361,36 +361,29 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class CheckStreamAccess: Message
+        public class CheckStreamAccess: ClientMessage.ReadRequestMessage
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public readonly IEnvelope Envelope;
-            public readonly Guid CorrelationId;
-
             public readonly string EventStreamId;
             public readonly long? TransactionId;
-
             public readonly StreamAccessType AccessType;
-            public readonly IPrincipal User;
 
             public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, long? transactionId, 
                                      StreamAccessType accessType, IPrincipal user)
+                : base(correlationId, correlationId, envelope, user)
             {
                 if (eventStreamId == null && transactionId == null)
                     throw new ArgumentException("Neither eventStreamId nor transactionId is specified.");
 
-                Envelope = envelope;
-                CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
                 TransactionId = transactionId;
                 AccessType = accessType;
-                User = user;
             }
         }
 
-        public class CheckStreamAccessCompleted: Message
+        public class CheckStreamAccessCompleted: ClientMessage.ReadResponseMessage
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
