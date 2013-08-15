@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (zero == null) throw new ArgumentNullException("zero");
-            if (from.CommitPosition <= from.PreparePosition) throw new ArgumentException("from");
+            if (from.CommitPosition < from.PreparePosition) throw new ArgumentException("from");
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
             _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
