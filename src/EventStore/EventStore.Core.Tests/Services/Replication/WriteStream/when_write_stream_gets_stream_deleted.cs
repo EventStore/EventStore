@@ -36,6 +36,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.WriteStream
 {
+    [TestFixture]
     public class when_write_stream_gets_stream_deleted : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)

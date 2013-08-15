@@ -36,7 +36,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
     public class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
                                                            IHandle<ClientMessage.TransactionCommit>
     {
-        private ClientMessage.TransactionCommit _request;
+        private long _transactionId;
 
         public TransactionCommitTwoPhaseRequestManager(IPublisher publisher, 
                                                        int prepareCount, 
@@ -49,30 +49,29 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(ClientMessage.TransactionCommit request)
         {
-            _request = request;
-            Init(request.Envelope, request.InternalCorrId, request.CorrelationId, null,
-                 request.User, request.TransactionId, StreamAccessType.Write);
+            _transactionId = request.TransactionId;
+            InitTwoPhase(request.Envelope, request.InternalCorrId, request.CorrelationId,
+                         request.TransactionId, request.User, StreamAccessType.Write);
         }
 
         protected override void OnSecurityAccessGranted(Guid internalCorrId)
         {
             Publisher.Publish(
                 new StorageMessage.WriteTransactionPrepare(
-                    internalCorrId, PublishEnvelope, _request.TransactionId, liveUntil: NextTimeoutTime - TimeoutOffset));
-            _request = null;
+                    internalCorrId, PublishEnvelope, _transactionId, liveUntil: NextTimeoutTime - TimeoutOffset));
         }
 
         protected override void CompleteSuccessRequest(int firstEventNumber)
         {
             base.CompleteSuccessRequest(firstEventNumber);
-            var responseMsg = new ClientMessage.TransactionCommitCompleted(ClientCorrId, TransactionPosition, OperationResult.Success, null);
+            var responseMsg = new ClientMessage.TransactionCommitCompleted(ClientCorrId, _transactionId, OperationResult.Success, null);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
 
         protected override void CompleteFailedRequest(OperationResult result, string error)
         {
             base.CompleteFailedRequest(result, error);
-            var responseMsg = new ClientMessage.TransactionCommitCompleted(ClientCorrId, TransactionPosition, result, error);
+            var responseMsg = new ClientMessage.TransactionCommitCompleted(ClientCorrId, _transactionId, result, error);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
 

@@ -50,7 +50,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
         public void Handle(ClientMessage.WriteEvents request)
         {
             _request = request;
-            Init(request.Envelope, request.InternalCorrId, request.CorrelationId, request.EventStreamId, request.User, null, StreamAccessType.Write);
+            InitNoPreparePhase(request.Envelope, request.InternalCorrId, request.CorrelationId,
+                               request.EventStreamId, request.User, StreamAccessType.Write);
         }
 
         protected override void OnSecurityAccessGranted(Guid internalCorrId)

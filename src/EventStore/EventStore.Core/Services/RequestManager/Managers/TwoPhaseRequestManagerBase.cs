@@ -48,28 +48,25 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                        IHandle<StorageMessage.RequestManagerTimerTick>
     {
         internal static readonly TimeSpan TimeoutOffset = TimeSpan.FromMilliseconds(30);
+        private static readonly ILogger Log = LogManager.GetLoggerFor<TwoPhaseRequestManagerBase>();
 
-        protected IEnvelope PublishEnvelope { get { return _publishEnvelope; } }
+        protected readonly IPublisher Publisher;
+        protected readonly IEnvelope PublishEnvelope;
         protected IEnvelope ResponseEnvelope { get { return _responseEnvelope; } }
         protected Guid ClientCorrId { get { return _clientCorrId; } }
-        protected long TransactionPosition { get { return _transactionPos; } }
-        protected readonly IPublisher Publisher;
         protected DateTime NextTimeoutTime { get { return _nextTimeoutTime; } }
 
-        private readonly IEnvelope _publishEnvelope;
-        
         protected readonly TimeSpan PrepareTimeout;
         protected readonly TimeSpan CommitTimeout;
 
         private IEnvelope _responseEnvelope;
         private Guid _internalCorrId;
         private Guid _clientCorrId;
+        private long _transactionId = -1;
 
         private int _awaitingPrepare;
         private int _awaitingCommit;
         private DateTime _nextTimeoutTime;
-
-        private long _transactionPos = -1;
 
         private bool _completed;
         private bool _initialized;
@@ -81,7 +78,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             Ensure.Positive(commitCount, "commitCount");
 
             Publisher = publisher;
-            _publishEnvelope = new PublishEnvelope(publisher);
+            PublishEnvelope = new PublishEnvelope(publisher);
 
             PrepareTimeout = prepareTimeout;
             CommitTimeout = commitTimeout;
@@ -92,8 +89,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         protected abstract void OnSecurityAccessGranted(Guid internalCorrId);
 
-        protected void Init(IEnvelope responseEnvelope, Guid internalCorrId, Guid clientCorrId, string eventStreamId,
-                            IPrincipal user, long? transactionId, StreamAccessType accessType)
+        protected void InitNoPreparePhase(IEnvelope responseEnvelope, Guid internalCorrId, Guid clientCorrId,
+                                          string eventStreamId, IPrincipal user, StreamAccessType accessType)
         {
             if (_initialized)
                 throw new InvalidOperationException();
@@ -103,12 +100,31 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _responseEnvelope = responseEnvelope;
             _internalCorrId = internalCorrId;
             _clientCorrId = clientCorrId;
-            _transactionPos = transactionId ?? -1;
-        
+
+            _nextTimeoutTime = DateTime.UtcNow + CommitTimeout;
+            _awaitingPrepare = 0;
+
+            Publisher.Publish(new StorageMessage.CheckStreamAccess(
+                PublishEnvelope, internalCorrId, eventStreamId, null, accessType, user));
+        }
+
+        protected void InitTwoPhase(IEnvelope responseEnvelope, Guid internalCorrId, Guid clientCorrId,
+                                    long transactionId, IPrincipal user, StreamAccessType accessType)
+        {
+            if (_initialized)
+                throw new InvalidOperationException();
+
+            _initialized = true;
+
+            _responseEnvelope = responseEnvelope;
+            _internalCorrId = internalCorrId;
+            _clientCorrId = clientCorrId;
+            _transactionId = transactionId;
+
             _nextTimeoutTime = DateTime.UtcNow + PrepareTimeout;
 
             Publisher.Publish(new StorageMessage.CheckStreamAccess(
-                PublishEnvelope, internalCorrId, eventStreamId, transactionId, accessType, user));
+                PublishEnvelope, internalCorrId, null, transactionId, accessType, user));
         }
 
         public void Handle(StorageMessage.CheckStreamAccessCompleted message)
@@ -146,28 +162,26 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 CompleteFailedRequest(OperationResult.CommitTimeout, "Commit phase timeout.");
         }
 
-        private static readonly ILogger Log = LogManager.GetLoggerFor<TwoPhaseRequestManagerBase>();
         public void Handle(StorageMessage.AlreadyCommitted message)
         {
-            Log.Debug("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {0}, {1}.", _clientCorrId, message);
+            Log.Trace("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {0}, {1}.", _clientCorrId, message);
             CompleteSuccessRequest(message.FirstEventNumber);
         }
 
         public void Handle(StorageMessage.PrepareAck message)
         {
-            if (_completed)
+            if (_completed) 
                 return;
 
-            if ((message.Flags & PrepareFlags.TransactionBegin) != 0)
-                _transactionPos = message.LogPosition;
+            if (_transactionId == -1)
+                throw new Exception("Something is wrong, transactionId was not set, transactionId = -1.");
 
-            if ((message.Flags & PrepareFlags.TransactionEnd) != 0)
+            if (message.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
             {
                 _awaitingPrepare -= 1;
                 if (_awaitingPrepare == 0)
                 {
-                    if (_transactionPos < 0) throw new Exception("PreparePos is not assigned.");
-                    Publisher.Publish(new StorageMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _transactionPos));
+                    Publisher.Publish(new StorageMessage.WriteCommit(message.CorrelationId, PublishEnvelope, _transactionId));
                     _nextTimeoutTime = DateTime.UtcNow + CommitTimeout;
                 }
             }

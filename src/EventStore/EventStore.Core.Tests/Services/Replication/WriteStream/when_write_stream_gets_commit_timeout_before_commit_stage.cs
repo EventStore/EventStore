@@ -37,7 +37,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.WriteStream
 {
-    [Ignore("There is no specialized prepare/commit timeout messages, so not possible to test this.")]
+    [TestFixture, Ignore("There is no specialized prepare/commit timeout messages, so not possible to test this.")]
     public class when_write_stream_gets_commit_timeout_before_commit_stage : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)

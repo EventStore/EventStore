@@ -37,6 +37,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.DeleteStream
 {
+    [Ignore("DeleteStream operation is not 2-phase now, it doesn't expect PrepareAck anymore.")]
     public class when_delete_stream_gets_prepare_timeout_before_prepares : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)

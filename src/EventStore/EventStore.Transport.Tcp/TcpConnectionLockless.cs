@@ -347,13 +347,13 @@ namespace EventStore.Transport.Tcp
             NotifyClosed();
             if (_verbose)
             {
-                Log.Info("[{0:HH:mm:ss.fff}: N{1}, L{2}, {3:B}]:\nReceived bytes: {4}, Sent bytes: {5}\n"
+                Log.Info("ES {12} closed [{0:HH:mm:ss.fff}: N{1}, L{2}, {3:B}]:\nReceived bytes: {4}, Sent bytes: {5}\n"
                          + "Send calls: {6}, callbacks: {7}\nReceive calls: {8}, callbacks: {9}\nClose reason: [{10}] {11}\n",
                          DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
                          TotalBytesReceived, TotalBytesSent,
                          SendCalls, SendCallbacks,
                          ReceiveCalls, ReceiveCallbacks,
-                         socketError, reason);
+                         socketError, reason, GetType().Name);
             }
             CloseSocket();
             if (Interlocked.CompareExchange(ref _sending, 1, 0) == 0)

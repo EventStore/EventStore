@@ -38,6 +38,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
 {
+    [TestFixture]
     public class when_transaction_commit_gets_commit_timeout_before_final_commit : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)

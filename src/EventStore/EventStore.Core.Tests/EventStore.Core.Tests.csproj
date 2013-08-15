@@ -214,6 +214,7 @@
     <Compile Include="Infrastructure\RandomTestRunner.cs" />
     <Compile Include="Services\Authentication\when_handling_multiple_requests_with_reset_password_cache_in_between.cs" />
     <Compile Include="Services\Authentication\when_handling_multiple_requests_with_the_same_correct_user_name_and_password.cs" />
+    <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_commit_timeout_after_commit.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_prepare_timeout_after_prepares.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_completes_successfully.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_creating_delete_stream_request_manager.cs" />
@@ -232,6 +233,7 @@
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_prepare_timeout_after_prepares.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_prepare_timeout_before_prepares.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_stream_deleted.cs" />
+    <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_after_commit.cs" />
     <Compile Include="Services\Replication\WriteStream\when_creating_write_stream_request_manager.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_stream_deleted.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_already_committed.cs" />

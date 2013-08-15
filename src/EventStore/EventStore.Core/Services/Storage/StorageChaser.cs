@@ -110,24 +110,24 @@ namespace EventStore.Core.Services.Storage
             QueueMonitor.Default.Register(this);
 
             _chaser.Open();
-            while (!_stop)
+            try
             {
-                try
+                while (!_stop)
                 {
-                    ChaserIteration();
+                        ChaserIteration();
                 }
-                catch (Exception exc)
+            }
+            catch (Exception exc)
+            {
+                Log.FatalException(exc, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...");
+                _queueStats.EnterIdle();
+                _queueStats.ProcessingStarted<FaultedChaserState>(0);
+                Application.Exit(ExitCode.Error, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...\nError: " + exc.Message);
+                while (!_stop)
                 {
-                    Log.FatalException(exc, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...");
-                    _queueStats.EnterIdle();
-                    _queueStats.ProcessingStarted<FaultedChaserState>(0);
-                    Application.Exit(ExitCode.Error, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...\nError: " + exc.Message);
-                    while (!_stop)
-                    {
-                        Thread.Sleep(100);
-                    }
-                    _queueStats.ProcessingEnded(0);
+                    Thread.Sleep(100);
                 }
+                _queueStats.ProcessingEnded(0);
             }
             _chaser.Close();
             _masterBus.Publish(new SystemMessage.ServiceShutdown(Name));
@@ -178,53 +178,84 @@ namespace EventStore.Core.Services.Storage
                 case LogRecordType.Prepare:
                 {
                     var record = (PrepareLogRecord) result.LogRecord;
-                    if (record.Flags.HasAnyOf(PrepareFlags.IsCommitted))
-                    {
-                        _transaction.Add(record);
-                        
-                        if (record.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
-                        {
-                            _readIndex.Commit(_transaction);
-                            _transaction.Clear();
-
-                            _masterBus.Publish(new StorageMessage.CommitAck(
-                                record.CorrelationId, record.LogPosition, record.TransactionPosition,
-                                record.ExpectedVersion + 1 - record.TransactionOffset));
-                            
-                        }
-                    }
-                    else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd))
-                    {
-                        _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
-                    }
+                    ProcessPrepareRecord(record);
                     break;
                 }
                 case LogRecordType.Commit:
                 {
                     var record = (CommitLogRecord) result.LogRecord;
-                    _readIndex.Commit(record);
-                    _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
-                                                                    record.LogPosition,
-                                                                    record.TransactionPosition,
-                                                                    record.FirstEventNumber));
+                    ProcessCommitRecord(record);
                     break;
                 }
                 case LogRecordType.System:
                 {
                     var record = (SystemLogRecord) result.LogRecord;
-                    if (record.SystemRecordType == SystemRecordType.Epoch)
-                    {
-                        // Epoch record is written to TF, but possibly is not added to EpochManager 
-                        // as we could be in Slave\Clone mode. We try to add epoch to EpochManager 
-                        // every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent, 
-                        // but does integrity checks.
-                        var epoch = record.GetEpochRecord();
-                        _epochManager.SetLastEpoch(epoch);
-                    }
+                    ProcessSystemRecord(record);
                     break;
                 }
                 default:
                     throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private void ProcessPrepareRecord(PrepareLogRecord record)
+        {
+            if (_transaction.Count > 0 && _transaction[0].TransactionPosition != record.TransactionPosition)
+                CommitPendingTransaction(_transaction);
+
+            if (record.Flags.HasAnyOf(PrepareFlags.IsCommitted))
+            {
+                _transaction.Add(record);
+
+                if (record.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
+                {
+                    CommitPendingTransaction(_transaction);
+
+                    var firstEventNumber = record.ExpectedVersion + 1 - record.TransactionOffset;
+                    _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
+                                                                    record.LogPosition,
+                                                                    record.TransactionPosition,
+                                                                    firstEventNumber));
+                }
+            }
+            else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd))
+            {
+                _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
+            }
+        }
+
+        private void ProcessCommitRecord(CommitLogRecord record)
+        {
+            CommitPendingTransaction(_transaction);
+
+            _readIndex.Commit(record);
+            _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
+                                                            record.LogPosition,
+                                                            record.TransactionPosition,
+                                                            record.FirstEventNumber));
+        }
+
+        private void ProcessSystemRecord(SystemLogRecord record)
+        {
+            CommitPendingTransaction(_transaction);
+
+            if (record.SystemRecordType == SystemRecordType.Epoch)
+            {
+                // Epoch record is written to TF, but possibly is not added to EpochManager 
+                // as we could be in Slave\Clone mode. We try to add epoch to EpochManager 
+                // every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent, 
+                // but does integrity checks.
+                var epoch = record.GetEpochRecord();
+                _epochManager.SetLastEpoch(epoch);
+            }
+        }
+
+        private void CommitPendingTransaction(List<PrepareLogRecord> transaction)
+        {
+            if (transaction.Count > 0)
+            {
+                _readIndex.Commit(_transaction);
+                _transaction.Clear();
             }
         }
 

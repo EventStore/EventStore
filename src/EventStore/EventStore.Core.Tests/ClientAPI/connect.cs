@@ -105,17 +105,18 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_close_connection_after_configured_amount_of_failed_reconnections()
         {
             var closed = new ManualResetEventSlim();
-            var settings = ConnectionSettings.Create()
-                                             .EnableVerboseLogging()
-                                             .UseCustomLogger(ClientApiLoggerBridge.Default)
-                                             .LimitReconnectionsTo(1)
-                                             .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
-                                             .OnClosed((x, r) => closed.Set())
-                                             .OnConnected((x, ep) => Console.WriteLine("Connected to [{0}]...", ep))
-                                             .OnReconnecting(x => Console.WriteLine("Reconnecting..."))
-                                             .OnDisconnected((x, ep) => Console.WriteLine("Disconnected from [{0}]...", ep))
-                                             .OnErrorOccurred((x, exc) => Console.WriteLine("Error: {0}", exc))
-                                             .FailOnNoServerResponse();
+            var settings =
+                ConnectionSettings.Create()
+                                  .EnableVerboseLogging()
+                                  .UseCustomLogger(ClientApiLoggerBridge.Default)
+                                  .LimitReconnectionsTo(1)
+                                  .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
+                                  .OnClosed((x, r) => closed.Set())
+                                  .OnConnected((x, ep) => Console.WriteLine("EventStoreConnection '{0}': connected to [{1}]...", x.ConnectionName, ep))
+                                  .OnReconnecting(x => Console.WriteLine("EventStoreConnection '{0}': reconnecting...", x.ConnectionName))
+                                  .OnDisconnected((x, ep) => Console.WriteLine("EventStoreConnection '{0}': disconnected from [{1}]...", x.ConnectionName, ep))
+                                  .OnErrorOccurred((x, exc) => Console.WriteLine("EventStoreConnection '{0}': error = {1}", x.ConnectionName, exc))
+                                  .FailOnNoServerResponse();
             if (_tcpType == TcpType.Ssl)
                 settings.UseSslConnection("ES", false);
 
@@ -153,18 +154,19 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_timeout_connection_after_configured_amount_time_on_conenct()
         {
             var closed = new ManualResetEventSlim();
-            var settings =
+            var settings = 
                 ConnectionSettings.Create()
-                    .EnableVerboseLogging()
-                    .UseCustomLogger(ClientApiLoggerBridge.Default)
-                    .LimitReconnectionsTo(0)
-                    .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
-                    .OnClosed((x, r) => closed.Set())
-                    .OnConnected((x, ep) => Console.WriteLine("Connected to [{0}]...", ep))
-                    .OnReconnecting(x => Console.WriteLine("Reconnecting..."))
-                    .OnDisconnected((x, ep) => Console.WriteLine("Disconnected from [{0}]...", ep))
-                    .OnErrorOccurred((x, exc) => Console.WriteLine("Error: {0}", exc)).FailOnNoServerResponse()
-                    .WithConnectionTimeoutOf(TimeSpan.FromMilliseconds(1000));
+                                  .EnableVerboseLogging()
+                                  .UseCustomLogger(ClientApiLoggerBridge.Default)
+                                  .LimitReconnectionsTo(0)
+                                  .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
+                                  .OnClosed((x, r) => closed.Set())
+                                  .OnConnected((x, ep) => Console.WriteLine("EventStoreConnection '{0}': connected to [{1}]...", x.ConnectionName, ep))
+                                  .OnReconnecting(x => Console.WriteLine("EventStoreConnection '{0}': reconnecting...", x.ConnectionName))
+                                  .OnDisconnected((x, ep) => Console.WriteLine("EventStoreConnection '{0}': disconnected from [{1}]...", x.ConnectionName, ep))
+                                  .OnErrorOccurred((x, exc) => Console.WriteLine("EventStoreConnection '{0}': error = {1}", x.ConnectionName, exc))
+                                  .FailOnNoServerResponse()
+                                  .WithConnectionTimeoutOf(TimeSpan.FromMilliseconds(1000));
             if (_tcpType == TcpType.Ssl)
                 settings.UseSslConnection("ES", false);
 
