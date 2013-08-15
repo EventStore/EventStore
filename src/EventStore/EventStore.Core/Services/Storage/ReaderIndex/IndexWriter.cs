@@ -465,7 +465,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public void Reset()
         {
+            _notProcessedCommits.Clear();
             _streamVersions.Clear();
+            _notProcessedTrans.Clear();
+            _transactionInfoCache.Clear();
         }
 
         public CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition)
@@ -699,7 +702,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 // decrease stickiness
                 _streamVersions.Put(
                     commitInfo.StreamId,
-                    x => { throw new Exception(string.Format("CommitInfo for stream '{0}' is not present!", x)); },
+                    x =>
+                    {
+                        if (!Debugger.IsAttached) Debugger.Launch(); else Debugger.Break();
+                        throw new Exception(string.Format("CommitInfo for stream '{0}' is not present!", x));
+                    },
                     (streamId, oldVersion) => oldVersion,
                     stickiness: -1);
             }

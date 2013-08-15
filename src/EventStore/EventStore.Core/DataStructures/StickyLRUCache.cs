@@ -27,12 +27,15 @@
 //  
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.DataStructures
 {
     public class StickyLRUCache<TKey, TValue>: IStickyLRUCache<TKey, TValue>, ILRUCache<TKey, TValue>
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<StickyLRUCache<TKey, TValue>>();
+
         private class LRUItem
         {
             public TKey Key;
@@ -182,6 +185,7 @@ namespace EventStore.Core.DataStructures
                 }
                 else
                 {
+                    Log.Trace("StickyLRU: stickiness: {0}, key: {1}, value: {2}.", node.Value.Stickiness, node.Value.Key, node.Value.Value);
                     _orderList.AddLast(node);
                     maxTries -= 1;
                 }
