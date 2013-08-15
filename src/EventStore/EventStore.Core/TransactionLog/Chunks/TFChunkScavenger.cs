@@ -32,6 +32,7 @@ using System.IO;
 using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -239,86 +240,18 @@ namespace EventStore.Core.TransactionLog.Chunks
         private bool ShouldKeepPrepare(PrepareLogRecord prepare, Dictionary<long, CommitInfo> commits)
         {
             CommitInfo commitInfo;
-            if (commits.TryGetValue(prepare.TransactionPosition, out commitInfo))
+            bool isCommitted = commits.TryGetValue(prepare.TransactionPosition, out commitInfo)
+                               || prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted);
+
+            if (prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete))
             {
-                if (prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete)) // we always keep delete tombstones
-                {
-                    commitInfo.KeepCommit = true; // see notes below
-                    return true;
-                }
-                
-                if (_readIndex.IsStreamDeleted(prepare.EventStreamId))
-                {
-                    // When all prepares and commit of transaction belong to single chunk and the stream is deleted,
-                    // we can safely delete both prepares and commit.
-
-                    // If someone decided definitely to keep corresponding commit then we shouldn't interfere.
-                    // Otherwise we should point that yes, you can remove commit for this prepare.
-                    commitInfo.KeepCommit = commitInfo.KeepCommit ?? false; 
-                    return false;
-                }
-
-                if (prepare.Flags.HasNoneOf(PrepareFlags.Data))
-                {
-                    // We encountered system prepare with no data. As of now it can appear only in explicit
-                    // transactions so we can safely remove it. The performance shouldn't hurt, because
-                    // TransactionBegin prepare is never needed either way and TransactionEnd should be in most
-                    // circumstances close to commit, so shouldn't hurt performance too much.
-                    // The advantage of getting rid of system prepares is ability to completely eliminate transaction 
-                    // prepares and commit, if transaction events are completely ruled out by $maxAge/$maxCount.
-                    // Otherwise we'd have to either keep prepare not requiring to keep commit, which could leave 
-                    // this prepare as never discoverable garbage, or we could insist on keeping commit forever
-                    // even if all events in transaction are scavenged.
-                    commitInfo.KeepCommit = commitInfo.KeepCommit ?? false;
-                    return false;
-                }
-
-                var lastEventNumber = _readIndex.GetLastStreamEventNumber(prepare.EventStreamId);
-                var streamMetadata = _readIndex.GetStreamMetadata(prepare.EventStreamId);
-                var eventNumber = commitInfo.EventNumber + prepare.TransactionOffset;
-
-                // We should always physically keep the very last prepare in the stream.
-                // Otherwise we get into trouble when trying to resolve LastStreamEventNumber, for instance.
-                // That is because our TableIndex doesn't keep EventStreamId, only hash of it, so on doing some operations
-                // that needs TableIndex, we have to make sure we have prepare records in TFChunks when we need them.
-                if (eventNumber >= lastEventNumber)
-                {
-                    // Definitely keep commit, otherwise current prepare wouldn't be discoverable.
-                    // TODO AN I should think more carefully about this stuff with prepare/commits relations
-                    // TODO AN and whether we can keep prepare without keeping commit (problems on index rebuild).
-                    // TODO AN What can save us -- some effective and clever way to mark prepare as committed, 
-                    // TODO AN but place updated prepares in the place of commit, so they are discoverable during 
-                    // TODO AN index rebuild or ReadAllForward/Backward queries EXACTLY in the same order as they 
-                    // TODO AN were originally written to TF
-                    commitInfo.KeepCommit = true; 
-                    return true;
-                }
-
-                bool keep = true;
-                if (streamMetadata.MaxCount.HasValue)
-                {
-                    int maxKeptEventNumber = lastEventNumber - streamMetadata.MaxCount.Value + 1;
-                    if (eventNumber < maxKeptEventNumber)
-                        keep = false;
-                }
-
-                if (streamMetadata.MaxAge.HasValue)
-                {
-                    if (prepare.TimeStamp < DateTime.UtcNow - streamMetadata.MaxAge.Value)
-                        keep = false;
-                }
-
-                if (keep)
-                    commitInfo.KeepCommit = true;
-                else
-                    commitInfo.KeepCommit = commitInfo.KeepCommit ?? false;
-                return keep;
+                // We should always keep delete tombstone.
+                commitInfo.ForciblyKeep();
+                return true;
             }
-            else
-            {
-                if (prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete)) // we always keep delete tombstones
-                    return true;
 
+            if (!isCommitted && prepare.Flags.HasAnyOf(PrepareFlags.TransactionBegin))
+            {
                 // So here we have prepare which commit is in the following chunks or prepare is not committed at all.
                 // Now, whatever heuristic on prepare scavenge we use, we should never delete the very first prepare
                 // in transaction, as in some circumstances we need it.
@@ -326,36 +259,81 @@ namespace EventStore.Core.TransactionLog.Chunks
                 // that prepare wouldn't ever be needed (e.g., stream was deleted, $maxAge or $maxCount rule it out)
                 // we still need the first prepare to find out StreamId for possible commit in StorageWriterService.WriteCommit method. 
                 // There could be other reasons where it is needed, so we just safely filter it out to not bother further.
-                if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionBegin))
-                    return true;
-
-                // If stream of this prepare is deleted, then we can safely delete this prepare.
-                if (_readIndex.IsStreamDeleted(prepare.EventStreamId))
-                    return false;
-
-                // TODO AN we can try to figure out if this prepare is committed, and if yes, what is its event number.
-                // TODO AN only then we can actually do something here, unfortunately.
                 return true;
-
-                // We should always physically keep the very last prepare in the stream.
-                // Otherwise we get into trouble when trying to resolve LastStreamEventNumber, for instance.
-                // That is because our TableIndex doesn't keep EventStreamId, only hash of it, so on doing some operations
-                // that needs TableIndex, we have to make sure we have prepare records in TFChunks when we need them.
-
-                /*
-                var lastEventNumber = _readIndex.GetLastStreamEventNumber(prepare.EventStreamId);
-                var streamMetadata = _readIndex.GetStreamMetadata(prepare.EventStreamId);
-                if (streamMetadata.MaxCount.HasValue)
-                {
-                    // nothing to do here until we know prepare's event number
-                }
-                if (streamMetadata.MaxAge.HasValue)
-                {
-                    // nothing to do here until we know prepare's event number
-                }
-                return false;
-                */
             }
+
+            var lastEventNumber = _readIndex.GetLastStreamEventNumber(prepare.EventStreamId);
+            var isStreamDeleted = lastEventNumber == EventNumber.DeletedStream;
+
+            if (isStreamDeleted)
+            {
+                // When all prepares and commit of transaction belong to single chunk and the stream is deleted,
+                // we can safely delete both prepares and commit.
+                // Even if this prepare is not committed, but its stream is deleted, then as long as it is
+                // not TransactionBegin prepare we can remove it, because any transaction should fail either way on commit stage.
+                commitInfo.TryNotToKeep();
+                return false;
+            }
+
+            if (isCommitted && prepare.Flags.HasNoneOf(PrepareFlags.Data))
+            {
+                // We encountered system prepare with no data. As of now it can appear only in explicit
+                // transactions so we can safely remove it. The performance shouldn't hurt, because
+                // TransactionBegin prepare is never needed either way and TransactionEnd should be in most
+                // circumstances close to commit, so shouldn't hurt performance too much.
+                // The advantage of getting rid of system prepares is ability to completely eliminate transaction 
+                // prepares and commit, if transaction events are completely ruled out by $maxAge/$maxCount.
+                // Otherwise we'd have to either keep prepare not requiring to keep commit, which could leave 
+                // this prepare as never discoverable garbage, or we could insist on keeping commit forever
+                // even if all events in transaction are scavenged.
+                commitInfo.TryNotToKeep();
+                return false;
+            }
+
+            if (!isCommitted)
+            {
+                // If we could somehow figure out (from read index) the event number of this prepare
+                // (if it is actually committed, but commit is in another chunk) then we can apply same scavenging logic.
+                // Unfortunately, if it is not committed prepare we can say nothing for now, so should conservatively keep it.
+                return true;
+            }
+
+            var eventNumber = prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)
+                                      ? prepare.ExpectedVersion + 1 // IsCommitted prepares always have explicit expected version
+                                      : commitInfo.EventNumber + prepare.TransactionOffset;
+
+            // We should always physically keep the very last prepare in the stream.
+            // Otherwise we get into trouble when trying to resolve LastStreamEventNumber, for instance.
+            // That is because our TableIndex doesn't keep EventStreamId, only hash of it, so on doing some operations
+            // that needs TableIndex, we have to make sure we have prepare records in TFChunks when we need them.
+            if (eventNumber >= lastEventNumber)
+            {
+                // Definitely keep commit, otherwise current prepare wouldn't be discoverable.
+                commitInfo.ForciblyKeep();
+                return true;
+            }
+
+            var streamMetadata = _readIndex.GetStreamMetadata(prepare.EventStreamId);
+
+            bool keep = true;
+            if (streamMetadata.MaxCount.HasValue)
+            {
+                int maxKeptEventNumber = lastEventNumber - streamMetadata.MaxCount.Value + 1;
+                if (eventNumber < maxKeptEventNumber)
+                    keep = false;
+            }
+
+            if (streamMetadata.MaxAge.HasValue)
+            {
+                if (prepare.TimeStamp < DateTime.UtcNow - streamMetadata.MaxAge.Value)
+                    keep = false;
+            }
+
+            if (keep)
+                commitInfo.ForciblyKeep();
+            else
+                commitInfo.TryNotToKeep();
+            return keep;
         }
 
         private bool ShouldKeepCommit(CommitLogRecord commit, Dictionary<long, CommitInfo> commits)
@@ -417,7 +395,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             return new PosMap(logPos, actualPos);
         }
 
-        private class CommitInfo
+        internal class CommitInfo
         {
             public readonly int EventNumber;
 
@@ -433,6 +411,23 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 return string.Format("EventNumber: {0}, KeepCommit: {1}", EventNumber, KeepCommit);
             }
+        }
+    }
+
+    internal static class CommitInfoExtensions
+    {
+        public static void ForciblyKeep(this TFChunkScavenger.CommitInfo commitInfo)
+        {
+            if (commitInfo != null)
+                commitInfo.KeepCommit = true;
+        }
+
+        public static void TryNotToKeep(this TFChunkScavenger.CommitInfo commitInfo)
+        {
+            // If someone decided definitely to keep corresponding commit then we shouldn't interfere.
+            // Otherwise we should point that yes, you can remove commit for this prepare.
+            if (commitInfo != null)
+                commitInfo.KeepCommit = commitInfo.KeepCommit ?? false;
         }
     }
 }

@@ -82,6 +82,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _metastreamMetadata = metastreamMetadata;
         }
 
+
         IndexReadEventResult IIndexReader.ReadEvent(string streamId, int eventNumber)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
@@ -96,30 +97,30 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         {
             var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
             if (lastEventNumber == EventNumber.DeletedStream)
-                return new IndexReadEventResult(ReadEventResult.StreamDeleted, null);
+                return new IndexReadEventResult(ReadEventResult.StreamDeleted, StreamMetadata.Empty, lastEventNumber);
+            var metadata = GetStreamMetadataCached(reader, streamId);
             if (lastEventNumber == ExpectedVersion.NoStream)
-                return new IndexReadEventResult(ReadEventResult.NoStream, null);
+                return new IndexReadEventResult(ReadEventResult.NoStream, metadata, lastEventNumber);
 
             if (eventNumber == -1)
                 eventNumber = lastEventNumber;
 
-            var metadata = GetStreamMetadataCached(reader, streamId);
             if (metadata.MaxCount.HasValue)
             {
                 var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
                 if (eventNumber < minEventNumber || eventNumber > lastEventNumber)
-                    return new IndexReadEventResult(ReadEventResult.NotFound, metadata);
+                    return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber);
             }
 
             PrepareLogRecord prepare = GetPrepare(reader, streamId, eventNumber);
             if (prepare != null)
             {
                 if (metadata.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)
-                    return new IndexReadEventResult(ReadEventResult.NotFound, metadata);
-                return new IndexReadEventResult(ReadEventResult.Success, new EventRecord(eventNumber, prepare), metadata);
+                    return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber);
+                return new IndexReadEventResult(ReadEventResult.Success, new EventRecord(eventNumber, prepare), metadata, lastEventNumber);
             }
 
-            return new IndexReadEventResult(ReadEventResult.NotFound, metadata);
+            return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber);
         }
 
         private PrepareLogRecord GetPrepare(TFReaderLease reader, string streamId, int eventNumber)
@@ -171,14 +172,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
                 if (lastEventNumber == EventNumber.DeletedStream)
-                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted);
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted, StreamMetadata.Empty, lastEventNumber);
+                var metadata = GetStreamMetadataCached(reader, streamId);
                 if (lastEventNumber == ExpectedVersion.NoStream)
-                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream);
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata, lastEventNumber);
 
                 int startEventNumber = fromEventNumber;
                 int endEventNumber = (int) Math.Min(int.MaxValue, (long) fromEventNumber + maxCount - 1);
 
-                var metadata = GetStreamMetadataCached(reader, streamId);
                 if (metadata.MaxCount.HasValue)
                 {
                     var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
@@ -219,15 +220,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
                 if (lastEventNumber == EventNumber.DeletedStream)
-                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted);
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted, StreamMetadata.Empty, lastEventNumber);
+                var metadata = GetStreamMetadataCached(reader, streamId);
                 if (lastEventNumber == ExpectedVersion.NoStream)
-                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream);
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata, lastEventNumber);
 
                 int endEventNumber = fromEventNumber < 0 ? lastEventNumber : fromEventNumber;
                 int startEventNumber = (int)Math.Max(0L, (long)endEventNumber - maxCount + 1);
                 bool isEndOfStream = false;
 
-                var metadata = GetStreamMetadataCached(reader, streamId);
                 if (metadata.MaxCount.HasValue)
                 {
                     var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;

@@ -46,7 +46,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public readonly EventRecord[] Records;
         public readonly StreamMetadata Metadata;
 
-        public IndexReadStreamResult(int fromEventNumber, int maxCount, ReadStreamResult result)
+        public IndexReadStreamResult(int fromEventNumber, int maxCount, ReadStreamResult result, StreamMetadata metadata, int lastEventNumber)
         {
             if (result == ReadStreamResult.Success)
                 throw new ArgumentException(String.Format("Wrong ReadStreamResult provided for failure constructor: {0}.", result), "result");
@@ -56,10 +56,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             Result = result;
             NextEventNumber = -1;
-            LastEventNumber = -1;
+            LastEventNumber = lastEventNumber;
             IsEndOfStream = true;
             Records = EmptyRecords;
-            Metadata = null;
+            Metadata = metadata;
         }
 
         public IndexReadStreamResult(int fromEventNumber, 

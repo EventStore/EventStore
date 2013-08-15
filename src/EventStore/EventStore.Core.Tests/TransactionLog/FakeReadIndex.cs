@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Principal;
+using EventStore.ClientAPI.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -101,7 +102,9 @@ namespace EventStore.Core.Tests.TransactionLog
 
         public int GetLastStreamEventNumber(string streamId)
         {
-            throw new NotImplementedException();
+            if (SystemStreams.IsMetastream(streamId))
+                return GetLastStreamEventNumber(SystemStreams.OriginalStreamOf(streamId));
+            return _isStreamDeleted(streamId) ? EventNumber.DeletedStream : 1000000;
         }
 
         public string GetEventStreamIdByTransactionId(long transactionId)

@@ -77,6 +77,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
         public int GetLastStreamEventNumber(string streamId)
         {
+            if (IsStreamDeleted(streamId))
+                return EventNumber.DeletedStream;
+
             StreamInfo streamInfo;
             if (_streams.TryGetValue(streamId, out streamInfo))
                 return streamInfo.StreamVersion;
