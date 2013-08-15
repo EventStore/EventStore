@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
@@ -46,6 +47,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             protected override void Given()
             {
                 base.Given();
+                AllWritesSucceed();
+                NoOtherStreams();
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -111,6 +114,24 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
                              .Single()
                              .Projections.Single()
                              .Enabled);
+            }
+
+            [Test]
+            public void writes_result_stream()
+            {
+                List<EventRecord> resultsStream;
+                Assert.IsTrue((_lastMessageReplies.TryGetValue("$projections-test-projection-result", out resultsStream)));
+                Assert.AreEqual(1, resultsStream.Count);
+            }
+
+            [Test]
+            public void does_not_write_to_any_other_streams()
+            {
+                Assert.IsEmpty(
+                    HandledMessages.OfType<ClientMessage.WriteEvents>()
+                        .Where(v => v.EventStreamId != "$projections-test-projection-result")
+                        .Where(v => v.EventStreamId != "$$$projections-test-projection-result")
+                        .Select(v => v.EventStreamId));
             }
         }
 
