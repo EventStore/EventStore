@@ -508,7 +508,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public byte[] ToJsonBytes(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, JToken>> extraMetaData = null)
         {
-            if (projectionVersion.ProjectionId <= 0) throw new ArgumentException("projectionId is required", "projectionVersion");
+            if (projectionVersion.ProjectionId == -1) throw new ArgumentException("projectionId is required", "projectionVersion");
 
             using (var memoryStream = new MemoryStream())
             {
@@ -523,7 +523,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public string ToJsonString(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, JToken>> extraMetaData = null)
         {
-            if (projectionVersion.ProjectionId <= 0) throw new ArgumentException("projectionId is required", "projectionVersion");
+            if (projectionVersion.ProjectionId == -1) throw new ArgumentException("projectionId is required", "projectionVersion");
 
             using (var textWriter = new StringWriter())
             {

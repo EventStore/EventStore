@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using EventStore.Common.Log;
@@ -41,6 +42,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
@@ -73,6 +75,9 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<CoreProjectionManagementMessage.StatisticsReport>, 
                                      IHandle<ProjectionManagementMessage.RegisterSystemProjection>
     {
+
+        public const int ProjectionQueryId = -2;
+
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
 
         private readonly IPublisher _inputQueue;
@@ -669,7 +674,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
             else
             {
-                var projection = CreateManagedProjectionInstance(message.Name, -1);
+                var projection = CreateManagedProjectionInstance(message.Name, ProjectionQueryId);
                 projection.InitializeNew(message, () => completed(projection));
             }
         }

@@ -31,7 +31,6 @@ using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing

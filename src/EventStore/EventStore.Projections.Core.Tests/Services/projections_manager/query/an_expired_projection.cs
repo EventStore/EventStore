@@ -36,7 +36,7 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
+namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
 {
     public class an_expired_projection
     {

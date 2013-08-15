@@ -61,13 +61,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
             return new CoreProjection(
                 _projectionVersion, projectionCorrelationId, publisher, ioDispatcher, subscriptionDispatcher, _logger,
-                namingBuilder, this, timeProvider, GetStopOnEof(), GetUseCheckpoints());
+                namingBuilder, this, timeProvider, GetStopOnEof(), GetUseCheckpoints(), GetIsPartitioned());
         }
 
         protected abstract IQuerySources GetSourceDefinition();
 
         public abstract bool GetStopOnEof();
         public abstract bool GetUseCheckpoints();
+        public abstract bool GetIsPartitioned();
 
         public abstract IProjectionProcessingPhase[] CreateProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,

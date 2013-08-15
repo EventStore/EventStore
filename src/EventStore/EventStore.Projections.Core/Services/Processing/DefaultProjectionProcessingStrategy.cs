@@ -86,5 +86,11 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return _sourceDefinition;
         }
+
+        public override bool GetIsPartitioned()
+        {
+            return _sourceDefinition.ByStreams || _sourceDefinition.ByCustomPartitions;
+        }
+
     }
 }

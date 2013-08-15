@@ -29,18 +29,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
+namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
 {
-    public class a_running_foreach_stream_projection
+    namespace a_completed_projection
     {
         public abstract class Base : a_new_posted_projection.Base
         {
@@ -49,44 +46,39 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             protected override void Given()
             {
                 base.Given();
-                _fakeProjectionType = typeof (FakeForeachStreamProjection);
-                _projectionMode = ProjectionMode.OneTime;
-                _checkpointsEnabled = true;
-                _emitEnabled = true;
-                AllWritesSucceed();
-                NoStream("$projections-test-projection-checkpoint");
-                NoOtherStreams();
-                //NOTE: do not respond to reads from the following stream
-                //NoStream("$projections-test-projection-stream-checkpoint");
             }
 
             protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
+
                 var readerAssignedMessage =
                     _consumer.HandledMessages.OfType<ReaderSubscriptionManagement.ReaderAssignedReader>().LastOrDefault();
                 Assert.IsNotNull(readerAssignedMessage);
                 _reader = readerAssignedMessage.ReaderId;
 
-                yield return
-                    (ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                        _reader, new TFPos(100, 50), new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(),
-                        "type", false, Helper.UTF8NoBom.GetBytes("1"), new byte[0], 100, 33.3f));
+                yield return (
+                    ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                        _reader, new TFPos(100, 50), new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
+                        false, new byte[0], new byte[0], 100, 33.3f));
+                yield return (new ReaderSubscriptionMessage.EventReaderEof(_reader));
             }
         }
 
         [TestFixture]
-        public class when_receiving_eof : Base
+        public class when_stopping : Base
         {
             protected override IEnumerable<WhenStep> When()
             {
                 foreach (var m in base.When()) yield return m;
 
-                yield return(new ReaderSubscriptionMessage.EventReaderEof(_reader));
+                yield return
+                    (new ProjectionManagementMessage.Disable(
+                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
             }
 
             [Test]
-            public void the_projection_status_becomes_completed_enabled()
+            public void the_projection_status_becomes_completed_disabled()
             {
                 _manager.Handle(
                     new ProjectionManagementMessage.GetStatistics(
@@ -106,6 +98,51 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                              .Name);
                 Assert.AreEqual(
                     ManagedProjectionState.Completed,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .MasterStatus);
+                Assert.AreEqual(
+                    false,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Enabled);
+            }
+        }
+
+        [TestFixture]
+        public class when_starting : Base
+        {
+            protected override IEnumerable<WhenStep> When()
+            {
+                foreach (var m in base.When()) yield return m;
+                yield return
+                    (new ProjectionManagementMessage.Enable(
+                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+            }
+
+            [Test]
+            public void the_projection_status_becomes_running_enabled()
+            {
+                _manager.Handle(
+                    new ProjectionManagementMessage.GetStatistics(
+                        new PublishEnvelope(_bus), null, _projectionName, false));
+
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
+                Assert.AreEqual(
+                    1,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Length);
+                Assert.AreEqual(
+                    _projectionName,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Name);
+                Assert.AreEqual(
+                    ManagedProjectionState.Running,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
                              .Projections.Single()

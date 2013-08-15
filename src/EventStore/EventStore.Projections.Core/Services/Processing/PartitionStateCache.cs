@@ -29,7 +29,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Projections.Core.Services.Processing
 {

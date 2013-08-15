@@ -37,7 +37,7 @@ using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
+namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
 {
     public static class a_new_posted_projection
     {

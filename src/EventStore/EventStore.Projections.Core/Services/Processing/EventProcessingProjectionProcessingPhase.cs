@@ -519,7 +519,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_state == PhaseState.Running)
             {
                 //TODO: move to separate projection method and cache result in work item
-                if (result != null)
+                if (_projectionConfig.EmitEventEnabled && result != null)
                 {
                     if (result.Partition != "" && result.OldState.CausedBy == _zeroCheckpointTag)
                         _checkpointManager.NewPartition(result.Partition, eventCheckpointTag);

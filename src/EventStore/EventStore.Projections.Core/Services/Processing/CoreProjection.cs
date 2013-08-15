@@ -30,9 +30,7 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Utils;
 
@@ -89,14 +87,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private IProjectionProcessingPhase _projectionProcessingPhase;
         private readonly bool _stopOnEof;
         private readonly IProjectionProcessingPhase[] _projectionProcessingPhases;
-        private CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
+        private readonly CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
+        private readonly bool _partitionedStateState;
 
 
         public CoreProjection(
             ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
-            ReaderSubscriptionDispatcher
-                subscriptionDispatcher, ILogger logger, ProjectionNamesBuilder namingBuilder,
-            ProjectionProcessingStrategy projectionProcessingStrategy, ITimeProvider timeProvider, bool stopOnEof, bool useCheckpoints)
+            ReaderSubscriptionDispatcher subscriptionDispatcher, ILogger logger, ProjectionNamesBuilder namingBuilder,
+            ProjectionProcessingStrategy projectionProcessingStrategy, ITimeProvider timeProvider, bool stopOnEof,
+            bool useCheckpoints, bool partitionedState)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
@@ -110,11 +109,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopOnEof = stopOnEof;
             _logger = logger;
             _publisher = publisher;
-
             _partitionStateCache = new PartitionStateCache();
-
-            _coreProjectionCheckpointWriter = new CoreProjectionCheckpointWriter(
-                namingBuilder.MakeCheckpointStreamName(), ioDispatcher, version, name);
+            _partitionedStateState = partitionedState;
+            
+            _coreProjectionCheckpointWriter =
+                new CoreProjectionCheckpointWriter(
+                    namingBuilder.MakeCheckpointStreamName(), ioDispatcher, version, name);
 
             _projectionProcessingPhases = projectionProcessingStrategy.CreateProcessingPhases(
                 publisher, projectionCorrelationId, _partitionStateCache, UpdateStatistics, this, namingBuilder,
@@ -263,7 +263,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
                 //TODO: handle errors
                 _coreProjectionCheckpointWriter.StartFrom(checkpointTag, message.CheckpointEventNumber);
-                _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(message.CheckpointData, checkpointTag), null);
+                if (!_partitionedStateState)
+                    _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(message.CheckpointData, checkpointTag), null);
                 BeginPhase(projectionProcessingPhase, checkpointTag);
                 GoToState(State.StateLoaded);
                 if (_startOnLoad)
@@ -427,7 +428,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointManager.Initialize();
             _checkpointReader.Initialize();
             _tickPending = false;
-            _partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, CheckpointTag.Empty), null);
+            if (!_partitionedStateState)
+                _partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, CheckpointTag.Empty), null);
             // NOTE: this is to workaround exception in GetState requests submitted by client
         }
 
