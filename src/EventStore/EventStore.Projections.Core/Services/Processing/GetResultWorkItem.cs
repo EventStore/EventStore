@@ -42,9 +42,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void Reply(PartitionState state, CheckpointTag checkpointTag)
         {
-            _envelope.ReplyWith(
-                new CoreProjectionManagementMessage.ResultReport(
-                    _correlationId, _projectionId, _partition, state.Result, checkpointTag));
+            if (state == null)
+                _envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.ResultReport(
+                        _correlationId, _projectionId, _partition, null, checkpointTag));
+            else
+                _envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.ResultReport(
+                        _correlationId, _projectionId, _partition, state.Result, checkpointTag));
         }
     }
 }
