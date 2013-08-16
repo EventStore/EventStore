@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Log;
@@ -68,6 +69,8 @@ namespace EventStore.Core.Services.Storage
         private long _flushDelay;
         private long _lastFlush;
 
+        private readonly List<PrepareLogRecord> _transaction = new List<PrepareLogRecord>();
+
         public StorageChaser(IPublisher masterBus, 
                              ICheckpoint writerCheckpoint, 
                              ITransactionFileChaser chaser, 
@@ -107,91 +110,24 @@ namespace EventStore.Core.Services.Storage
             QueueMonitor.Default.Register(this);
 
             _chaser.Open();
-            while (!_stop)
+            try
             {
-                try
+                while (!_stop)
                 {
-                    _queueStats.EnterBusy();
-                    _queueStats.ProcessingStarted<ChaserTryReadNext>(0);
-                    var result = _chaser.TryReadNext();
-                    _queueStats.ProcessingEnded(1);
-
-                    if (result.Success)
-                    {
-                        _queueStats.ProcessingStarted(result.LogRecord.GetType(), 0);
-                        switch (result.LogRecord.RecordType)
-                        {
-                            case LogRecordType.Prepare:
-                            {
-                                var record = (PrepareLogRecord) result.LogRecord;
-                                if ((record.Flags & (PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd)) != 0)
-                                {
-                                    _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
-                                }
-
-                                break;
-                            }
-                            case LogRecordType.Commit:
-                            {
-                                var record = (CommitLogRecord) result.LogRecord;
-                                _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, 
-                                                                                record.LogPosition,
-                                                                                record.TransactionPosition,
-                                                                                record.FirstEventNumber));
-                                _readIndex.Commit(record);
-                                break;
-                            }
-                            case LogRecordType.System:
-                            {
-                                var record = (SystemLogRecord) result.LogRecord;
-                                if (record.SystemRecordType == SystemRecordType.Epoch)
-                                {
-                                    // Epoch record is written to TF, but possibly is not added to EpochManager 
-                                    // as we could be in Slave\Clone mode. We try to add epoch to EpochManager 
-                                    // every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent, 
-                                    // but does integrity checks.
-                                    var epoch = record.GetEpochRecord();
-                                    _epochManager.SetLastEpoch(epoch);
-                                }
-                                break;
-                            }
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
-                        _queueStats.ProcessingEnded(1);
-                    }
-
-                    var start = _watch.ElapsedTicks;
-                    if (!result.Success || start - _lastFlush >= _flushDelay + MinFlushDelay)
-                    {
-                        _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
-                        _chaser.Flush();
-                        _queueStats.ProcessingEnded(1);
-
-                        var end = _watch.ElapsedTicks;
-                        _flushDelay = end - start;
-                        _lastFlush = end;
-                    }
-
-                    if (!result.Success)
-                    {
-                        _queueStats.EnterIdle();
-                        //Thread.Sleep(1);
-                        _writerCheckpoint.WaitForFlush(FlushWaitTimeout);
-                    }
+                        ChaserIteration();
                 }
-                catch (Exception exc)
+            }
+            catch (Exception exc)
+            {
+                Log.FatalException(exc, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...");
+                _queueStats.EnterIdle();
+                _queueStats.ProcessingStarted<FaultedChaserState>(0);
+                Application.Exit(ExitCode.Error, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...\nError: " + exc.Message);
+                while (!_stop)
                 {
-                    Log.FatalException(exc, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...");
-                    _queueStats.EnterIdle();
-                    _queueStats.ProcessingStarted<FaultedChaserState>(0);
-                    Application.Exit(ExitCode.Error, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...\nError: " + exc.Message);
-                    while (!_stop)
-                    {
-                        Thread.Sleep(100);
-                    }
-                    _queueStats.ProcessingEnded(0);
+                    Thread.Sleep(100);
                 }
+                _queueStats.ProcessingEnded(0);
             }
             _chaser.Close();
             _masterBus.Publish(new SystemMessage.ServiceShutdown(Name));
@@ -199,6 +135,128 @@ namespace EventStore.Core.Services.Storage
             _queueStats.EnterIdle();
             _queueStats.Stop();
             QueueMonitor.Default.Unregister(this);
+        }
+
+        private void ChaserIteration()
+        {
+            _queueStats.EnterBusy();
+            _queueStats.ProcessingStarted<ChaserTryReadNext>(0);
+            var result = _chaser.TryReadNext();
+            _queueStats.ProcessingEnded(1);
+
+            if (result.Success)
+            {
+                _queueStats.ProcessingStarted(result.LogRecord.GetType(), 0);
+                ProcessLogRecord(result);
+                _queueStats.ProcessingEnded(1);
+            }
+
+            var start = _watch.ElapsedTicks;
+            if (!result.Success || start - _lastFlush >= _flushDelay + MinFlushDelay)
+            {
+                _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
+                _chaser.Flush();
+                _queueStats.ProcessingEnded(1);
+
+                var end = _watch.ElapsedTicks;
+                _flushDelay = end - start;
+                _lastFlush = end;
+            }
+
+            if (!result.Success)
+            {
+                _queueStats.EnterIdle();
+                //Thread.Sleep(1);
+                _writerCheckpoint.WaitForFlush(FlushWaitTimeout);
+            }
+        }
+
+        private void ProcessLogRecord(SeqReadResult result)
+        {
+            switch (result.LogRecord.RecordType)
+            {
+                case LogRecordType.Prepare:
+                {
+                    var record = (PrepareLogRecord) result.LogRecord;
+                    ProcessPrepareRecord(record);
+                    break;
+                }
+                case LogRecordType.Commit:
+                {
+                    var record = (CommitLogRecord) result.LogRecord;
+                    ProcessCommitRecord(record);
+                    break;
+                }
+                case LogRecordType.System:
+                {
+                    var record = (SystemLogRecord) result.LogRecord;
+                    ProcessSystemRecord(record);
+                    break;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private void ProcessPrepareRecord(PrepareLogRecord record)
+        {
+            if (_transaction.Count > 0 && _transaction[0].TransactionPosition != record.TransactionPosition)
+                CommitPendingTransaction(_transaction);
+
+            if (record.Flags.HasAnyOf(PrepareFlags.IsCommitted))
+            {
+                _transaction.Add(record);
+
+                if (record.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
+                {
+                    CommitPendingTransaction(_transaction);
+
+                    var firstEventNumber = record.ExpectedVersion + 1 - record.TransactionOffset;
+                    _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
+                                                                    record.LogPosition,
+                                                                    record.TransactionPosition,
+                                                                    firstEventNumber));
+                }
+            }
+            else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd))
+            {
+                _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
+            }
+        }
+
+        private void ProcessCommitRecord(CommitLogRecord record)
+        {
+            CommitPendingTransaction(_transaction);
+
+            _readIndex.Commit(record);
+            _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
+                                                            record.LogPosition,
+                                                            record.TransactionPosition,
+                                                            record.FirstEventNumber));
+        }
+
+        private void ProcessSystemRecord(SystemLogRecord record)
+        {
+            CommitPendingTransaction(_transaction);
+
+            if (record.SystemRecordType == SystemRecordType.Epoch)
+            {
+                // Epoch record is written to TF, but possibly is not added to EpochManager 
+                // as we could be in Slave\Clone mode. We try to add epoch to EpochManager 
+                // every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent, 
+                // but does integrity checks.
+                var epoch = record.GetEpochRecord();
+                _epochManager.SetLastEpoch(epoch);
+            }
+        }
+
+        private void CommitPendingTransaction(List<PrepareLogRecord> transaction)
+        {
+            if (transaction.Count > 0)
+            {
+                _readIndex.Commit(_transaction);
+                _transaction.Clear();
+            }
         }
 
         public void Handle(SystemMessage.BecomeShuttingDown message)

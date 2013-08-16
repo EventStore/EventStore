@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -37,6 +36,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
 {
+    [TestFixture]
     public class when_transaction_commit_gets_stream_deleted : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)

@@ -124,14 +124,14 @@ namespace EventStore.ClientAPI.ClientOperations
                     {
                         var dto = package.Data.Deserialize<ClientMessage.SubscriptionConfirmation>();
                         ConfirmSubscription(dto.LastCommitPosition, dto.LastEventNumber);
-                        return new InspectionResult(InspectionDecision.Subscribed);
+                        return new InspectionResult(InspectionDecision.Subscribed, "SubscriptionConfirmation");
                     }
 
                     case TcpCommand.StreamEventAppeared:
                     {
                         var dto = package.Data.Deserialize<ClientMessage.StreamEventAppeared>();
                         EventAppeared(new ResolvedEvent(dto.Event));
-                        return new InspectionResult(InspectionDecision.DoNothing);
+                        return new InspectionResult(InspectionDecision.DoNothing, "StreamEventAppeared");
                     }
 
                     case TcpCommand.SubscriptionDropped:
@@ -152,7 +152,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                                  new CommandNotExpectedException(string.Format("Unsubscribe reason: '{0}'.", dto.Reason)));
                                 break;
                         }
-                        return new InspectionResult(InspectionDecision.EndOperation);
+                        return new InspectionResult(InspectionDecision.EndOperation, string.Format("SubscriptionDropped: {0}", dto.Reason));
                     }
 
                     case TcpCommand.NotAuthenticated:
@@ -160,7 +160,7 @@ namespace EventStore.ClientAPI.ClientOperations
                         string message = Helper.EatException(() => Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
                         DropSubscription(SubscriptionDropReason.NotAuthenticated,
                                          new NotAuthenticatedException(string.IsNullOrEmpty(message) ? "Authentication error" : message));
-                        return new InspectionResult(InspectionDecision.EndOperation);
+                        return new InspectionResult(InspectionDecision.EndOperation, "NotAuthenticated");
                     }
 
                     case TcpCommand.BadRequest:
@@ -168,7 +168,7 @@ namespace EventStore.ClientAPI.ClientOperations
                         string message = Helper.EatException(() => Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
                         DropSubscription(SubscriptionDropReason.ServerError, 
                                          new ServerErrorException(string.IsNullOrEmpty(message) ? "<no message>" : message));
-                        return new InspectionResult(InspectionDecision.EndOperation);
+                        return new InspectionResult(InspectionDecision.EndOperation, string.Format("BadRequest: {0}", message));
                     }
 
                     case TcpCommand.NotHandled:
@@ -180,16 +180,19 @@ namespace EventStore.ClientAPI.ClientOperations
                         switch (message.Reason)
                         {
                             case ClientMessage.NotHandled.NotHandledReason.NotReady:
+                                return new InspectionResult(InspectionDecision.Retry, "NotHandled - NotReady");
+
                             case ClientMessage.NotHandled.NotHandledReason.TooBusy:
-                                return new InspectionResult(InspectionDecision.Retry);
+                                return new InspectionResult(InspectionDecision.Retry, "NotHandled - TooBusy");
 
                             case ClientMessage.NotHandled.NotHandledReason.NotMaster:
                                 var masterInfo = message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.MasterInfo>();
-                                return new InspectionResult(InspectionDecision.Reconnect, masterInfo.ExternalTcpEndPoint, masterInfo.ExternalSecureTcpEndPoint);
+                                return new InspectionResult(InspectionDecision.Reconnect, "NotHandled - NotMaster",
+                                                            masterInfo.ExternalTcpEndPoint, masterInfo.ExternalSecureTcpEndPoint);
 
                             default:
-                                _log.Info("Unknown NotHandledReason: {0}.", message.Reason);
-                                return new InspectionResult(InspectionDecision.Retry);
+                                _log.Error("Unknown NotHandledReason: {0}.", message.Reason);
+                                return new InspectionResult(InspectionDecision.Retry, "NotHandled - <unknown>");
                         }
                     }
 
@@ -197,14 +200,14 @@ namespace EventStore.ClientAPI.ClientOperations
                     {
                         DropSubscription(SubscriptionDropReason.ServerError, 
                                          new CommandNotExpectedException(package.Command.ToString()));
-                        return new InspectionResult(InspectionDecision.EndOperation);
+                        return new InspectionResult(InspectionDecision.EndOperation, package.Command.ToString());
                     }
                 }
             }
             catch (Exception e)
             {
                 DropSubscription(SubscriptionDropReason.Unknown, e);
-                return new InspectionResult(InspectionDecision.EndOperation);
+                return new InspectionResult(InspectionDecision.EndOperation, string.Format("Exception - {0}", e.Message));
             }
         }
 

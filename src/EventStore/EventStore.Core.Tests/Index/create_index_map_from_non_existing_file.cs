@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System.Linq;
 using EventStore.Core.Index;
 using NUnit.Framework;
@@ -39,7 +40,7 @@ namespace EventStore.Core.Tests.Index
         [SetUp]
         public void Setup()
         {
-            _map = IndexMap.FromFile("shitbird", x => false);
+            _map = IndexMap.FromFile("shitbird");
         }
 
         [Test]

@@ -329,13 +329,13 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             NotifyClosed();
 
-            _log.Info("[{0:HH:mm:ss.fff}: N{1}, L{2}, {3:B}]:\nReceived bytes: {4}, Sent bytes: {5}\n"
+            _log.Info("ClientAPI {12} closed [{0:HH:mm:ss.fff}: N{1}, L{2}, {3:B}]:\nReceived bytes: {4}, Sent bytes: {5}\n"
                       + "Send calls: {6}, callbacks: {7}\nReceive calls: {8}, callbacks: {9}\nClose reason: [{10}] {11}\n",
                       DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
                       TotalBytesReceived, TotalBytesSent,
                       SendCalls, SendCallbacks,
                       ReceiveCalls, ReceiveCallbacks,
-                      socketError, reason);
+                      socketError, reason, GetType().Name);
 
             if (_socket != null)
             {

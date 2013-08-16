@@ -484,7 +484,7 @@ namespace EventStore.ClientAPI.Core
             if (_operations.TryGetActiveOperation(package.CorrelationId, out operation))
             {
                 var result = operation.Operation.InspectPackage(package);
-                LogDebug("HandleTcpPackage OPERATION DECISION {0}, {1}", result.Decision, operation);
+                LogDebug("HandleTcpPackage OPERATION DECISION {0} ({1}), {2}", result.Decision, result.Description, operation);
                 switch (result.Decision)
                 {
                     case InspectionDecision.DoNothing: break; 
@@ -506,7 +506,7 @@ namespace EventStore.ClientAPI.Core
             else if (_subscriptions.TryGetActiveSubscription(package.CorrelationId, out subscription))
             {
                 var result = subscription.Operation.InspectPackage(package);
-                LogDebug("HandleTcpPackage SUBSCRIPTION DECISION {0}, {1}", result.Decision, subscription);
+                LogDebug("HandleTcpPackage SUBSCRIPTION DECISION {0} ({1}), {2}", result.Decision, result.Description, subscription);
                 switch (result.Decision)
                 {
                     case InspectionDecision.DoNothing: break;

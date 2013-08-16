@@ -164,7 +164,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private RecordReadResult TryReadAtInternal(long position, int retries)
         {
             var writerChk = _writerCheckpoint.Read();
-            if (position + 2 * sizeof(int) > writerChk)
+            if (position >= writerChk)
                 return RecordReadResult.Failure;
 
             var chunk = _db.Manager.GetChunkFor(position);
@@ -178,6 +178,31 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (retries > MaxRetries)
                     throw new InvalidOperationException("Been told the file was deleted > MaxRetries times. Probably a problem in db.");
                 return TryReadAtInternal(position, retries + 1);
+            }
+        }
+
+        public bool ExistsAt(long position)
+        {
+            return ExistsAtInternal(position, 0);
+        }
+
+        private bool ExistsAtInternal(long position, int retries)
+        {
+            var writerChk = _writerCheckpoint.Read();
+            if (position >= writerChk)
+                return false;
+
+            var chunk = _db.Manager.GetChunkFor(position);
+            try
+            {
+                CountRead(chunk.IsCached);
+                return chunk.ExistsAt(chunk.ChunkHeader.GetLocalLogPosition(position));
+            }
+            catch (FileBeingDeletedException)
+            {
+                if (retries > MaxRetries)
+                    throw new InvalidOperationException("Been told the file was deleted > MaxRetries times. Probably a problem in db.");
+                return ExistsAtInternal(position, retries + 1);
             }
         }
 

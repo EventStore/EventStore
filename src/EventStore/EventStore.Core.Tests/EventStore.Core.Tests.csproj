@@ -93,7 +93,7 @@
     <Compile Include="ClientAPI\Security\overriden_system_stream_security_for_all.cs" />
     <Compile Include="ClientAPI\Security\overriden_user_stream_security.cs" />
     <Compile Include="ClientAPI\Security\overriden_system_stream_security.cs" />
-    <Compile Include="ClientAPI\ssl_append_to_stream.cs" />
+    <Compile Include="ClientAPI\append_to_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />
     <Compile Include="ClientAPI\read_event_should.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
@@ -141,6 +141,7 @@
     <Compile Include="Common\Options\opts_helper_for_int_should.cs" />
     <Compile Include="Common\Options\opts_helper_for_bool_flag_should.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_flag.cs" />
+    <Compile Include="Fakes\FakeTfReader.cs" />
     <Compile Include="Helpers\CollectionsExtensions.cs" />
     <Compile Include="Helpers\HelperExtensions.cs" />
     <Compile Include="DataStructures\pairing_heap_should.cs" />
@@ -199,18 +200,13 @@
     <Compile Include="Index\when_a_ptable_is_corrupt_on_disk.cs" />
     <Compile Include="Index\when_creating_ptable_from_memtable.cs" />
     <Compile Include="Index\when_marking_an_index_map_as_corrupt_then_ok.cs" />
-    <Compile Include="Index\when_merging_four_ptables_with_hash_collisions_and_wrong_log_position_natural_order.cs" />
     <Compile Include="Index\when_merging_four_ptables.cs" />
-    <Compile Include="Index\when_merging_four_ptables_with_deletes.cs" />
     <Compile Include="Index\ReverseComparerTests.cs" />
     <Compile Include="Index\saving_index_with_single_item_to_a_file.cs" />
     <Compile Include="Index\when_merging_two_ptables.cs" />
-    <Compile Include="Index\when_merging_two_ptables_with_deletes.cs" />
-    <Compile Include="Index\when_merging_two_ptables_with_deletes_and_hash_collisions.cs" />
-    <Compile Include="Index\when_merging_two_ptables_with_hash_collisions_and_wrong_log_position_natural_order.cs" />
     <Compile Include="Index\when_trying_to_get_latest_entry.cs" />
     <Compile Include="Index\table_index_on_range_query.cs" />
-    <Compile Include="Index\when_merging_four_ptables_with_deletes_and_hash_collisions.cs" />
+    <Compile Include="Index\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
     <Compile Include="Index\when_opening_ptable_without_right_flag_in_header.cs" />
     <Compile Include="Infrastructure\RandTestQueueItem.cs" />
     <Compile Include="Infrastructure\IRandTestFinishCondition.cs" />
@@ -218,6 +214,7 @@
     <Compile Include="Infrastructure\RandomTestRunner.cs" />
     <Compile Include="Services\Authentication\when_handling_multiple_requests_with_reset_password_cache_in_between.cs" />
     <Compile Include="Services\Authentication\when_handling_multiple_requests_with_the_same_correct_user_name_and_password.cs" />
+    <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_commit_timeout_after_commit.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_prepare_timeout_after_prepares.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_completes_successfully.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_creating_delete_stream_request_manager.cs" />
@@ -236,6 +233,7 @@
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_prepare_timeout_after_prepares.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_prepare_timeout_before_prepares.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_stream_deleted.cs" />
+    <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_after_commit.cs" />
     <Compile Include="Services\Replication\WriteStream\when_creating_write_stream_request_manager.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_stream_deleted.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_already_committed.cs" />

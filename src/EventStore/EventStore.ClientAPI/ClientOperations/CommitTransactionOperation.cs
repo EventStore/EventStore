@@ -58,24 +58,26 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 case ClientMessage.OperationResult.Success:
                     Succeed();
-                    return new InspectionResult(InspectionDecision.EndOperation);
+                    return new InspectionResult(InspectionDecision.EndOperation, "Success");
                 case ClientMessage.OperationResult.PrepareTimeout:
+                    return new InspectionResult(InspectionDecision.Retry, "PrepareTimeout");
                 case ClientMessage.OperationResult.CommitTimeout:
+                    return new InspectionResult(InspectionDecision.Retry, "CommitTimeout");
                 case ClientMessage.OperationResult.ForwardTimeout:
-                    return new InspectionResult(InspectionDecision.Retry);
+                    return new InspectionResult(InspectionDecision.Retry, "ForwardTimeout");
                 case ClientMessage.OperationResult.WrongExpectedVersion:
                     var err = string.Format("Commit transaction failed due to WrongExpectedVersion. TransactionID: {0}.", _transactionId);
                     Fail(new WrongExpectedVersionException(err));
-                    return new InspectionResult(InspectionDecision.EndOperation);
+                    return new InspectionResult(InspectionDecision.EndOperation, "WrongExpectedVersion");
                 case ClientMessage.OperationResult.StreamDeleted:
                     Fail(new StreamDeletedException());
-                    return new InspectionResult(InspectionDecision.EndOperation);
+                    return new InspectionResult(InspectionDecision.EndOperation, "StreamDeleted");
                 case ClientMessage.OperationResult.InvalidTransaction:
                     Fail(new InvalidTransactionException());
-                    return new InspectionResult(InspectionDecision.EndOperation);
+                    return new InspectionResult(InspectionDecision.EndOperation, "InvalidTransaction");
                 case ClientMessage.OperationResult.AccessDenied:
                     Fail(new AccessDeniedException("Write access denied."));
-                    return new InspectionResult(InspectionDecision.EndOperation);
+                    return new InspectionResult(InspectionDecision.EndOperation, "AccessDenied");
                 default:
                     throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }

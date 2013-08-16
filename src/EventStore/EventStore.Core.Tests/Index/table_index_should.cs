@@ -40,7 +40,10 @@ namespace EventStore.Core.Tests.Index
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _tableIndex = new TableIndex(PathName, () => new HashListMemTable(maxSize: 20), maxSizeForMemory: 10);
+            _tableIndex = new TableIndex(PathName,
+                                         () => new HashListMemTable(maxSize: 20),
+                                         () => { throw new InvalidOperationException(); },
+                                         maxSizeForMemory: 10);
             _tableIndex.Initialize(long.MaxValue);
         }
 

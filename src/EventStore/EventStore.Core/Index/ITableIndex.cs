@@ -34,7 +34,7 @@ namespace EventStore.Core.Index
         long CommitCheckpoint { get; }
         long PrepareCheckpoint { get; }
 
-        void Initialize(long writerCheckpoint);
+        void Initialize(long chaserCheckpoint);
         void Close(bool removeFiles = true);
 
         void Add(long commitPos, uint stream, int version, long position);

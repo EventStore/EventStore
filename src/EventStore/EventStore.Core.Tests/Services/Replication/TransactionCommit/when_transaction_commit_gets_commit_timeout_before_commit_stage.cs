@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -37,7 +36,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
 {
-    [Ignore("There is no specialized prepare/commit timeout messages, so not possible to test this.")]
+    [TestFixture, Ignore("There is no specialized prepare/commit timeout messages, so not possible to test this.")]
     public class when_transaction_commit_gets_commit_timeout_before_commit_stage : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)

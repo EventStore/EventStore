@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
@@ -98,7 +97,7 @@ namespace EventStore.ClientAPI.ClientOperations
             catch (Exception e)
             {
                 Fail(e);
-                return new InspectionResult(InspectionDecision.EndOperation, null);
+                return new InspectionResult(InspectionDecision.EndOperation, string.Format("Exception - {0}", e.Message));
             }
         }
 
@@ -125,37 +124,35 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             string message = Helper.EatException(() => Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
             Fail(new NotAuthenticatedException(string.IsNullOrEmpty(message) ? "Authentication error" : message));
-            return new InspectionResult(InspectionDecision.EndOperation, null);
+            return new InspectionResult(InspectionDecision.EndOperation, "NotAuthenticated");
         }
 
         public InspectionResult InspectBadRequest(TcpPackage package)
         {
-            if (package.Command != TcpCommand.BadRequest)
-                throw new ArgumentException(string.Format("Wrong command: {0}, expected: {1}.", package.Command, TcpCommand.BadRequest));
             string message = Helper.EatException(() => Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
             Fail(new ServerErrorException(string.IsNullOrEmpty(message) ? "<no message>" : message));
-            return new InspectionResult(InspectionDecision.EndOperation, null);
+            return new InspectionResult(InspectionDecision.EndOperation, string.Format("BadRequest - {0}", message));
         }
 
         public InspectionResult InspectNotHandled(TcpPackage package)
         {
-            if (package.Command != TcpCommand.NotHandled)
-                throw new ArgumentException(string.Format("Wrong command: {0}, expected: {1}.", package.Command, TcpCommand.NotHandled));
             var message = package.Data.Deserialize<ClientMessage.NotHandled>();
-
             switch (message.Reason)
             {
                 case ClientMessage.NotHandled.NotHandledReason.NotReady:
+                    return new InspectionResult(InspectionDecision.Retry, "NotHandled - NotReady");
+
                 case ClientMessage.NotHandled.NotHandledReason.TooBusy:
-                    return new InspectionResult(InspectionDecision.Retry, null);
+                    return new InspectionResult(InspectionDecision.Retry, "NotHandled - TooBusy");
 
                 case ClientMessage.NotHandled.NotHandledReason.NotMaster:
                     var masterInfo = message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.MasterInfo>();
-                    return new InspectionResult(InspectionDecision.Reconnect, masterInfo.ExternalTcpEndPoint, masterInfo.ExternalSecureTcpEndPoint);
+                    return new InspectionResult(InspectionDecision.Reconnect, "NotHandled - NotMaster",
+                                                masterInfo.ExternalTcpEndPoint, masterInfo.ExternalSecureTcpEndPoint);
 
                 default:
                     Log.Error("Unknown NotHandledReason: {0}.", message.Reason);
-                    return new InspectionResult(InspectionDecision.Retry, null);
+                    return new InspectionResult(InspectionDecision.Retry, "NotHandled - <unknown>");
             }
         }
 
@@ -172,7 +169,7 @@ namespace EventStore.ClientAPI.ClientOperations
                       GetType().Name, this, Helper.FormatBinaryDump(package.Data));
 
             Fail(new CommandNotExpectedException(expectedCommand.ToString(), package.Command.ToString()));
-            return new InspectionResult(InspectionDecision.EndOperation, null);
+            return new InspectionResult(InspectionDecision.EndOperation, string.Format("Unexpected command - {0}", package.Command.ToString()));
         }
     }
 }

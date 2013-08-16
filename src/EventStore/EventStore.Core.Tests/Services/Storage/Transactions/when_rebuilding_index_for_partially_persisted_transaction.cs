@@ -35,6 +35,7 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -56,20 +57,19 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             ReadIndex.Dispose();
             TableIndex.Close(removeFiles: false);
 
+            var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 2, () => new TFChunkReader(Db, WriterCheckpoint));
             TableIndex = new TableIndex(GetFilePathFor("index"),
                                         () => new HashListMemTable(maxSize: MaxEntriesInMemTable*2),
+                                        () => new TFReaderLease(readers),
                                         maxSizeForMemory: MaxEntriesInMemTable);
-
             ReadIndex = new ReadIndex(new NoopPublisher(),
-                                      2,
-                                      2,
-                                      () => new TFChunkReader(Db, WriterCheckpoint, 0),
+                                      readers,
                                       TableIndex,
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamCacheInfo>(),
                                       additionalCommitChecks: true, 
                                       metastreamMaxCount: 1);
-            ReadIndex.Init(WriterCheckpoint.Read(), ChaserCheckpoint.Read());
+            ReadIndex.Init(ChaserCheckpoint.Read());
         }
 
         protected override void WriteTestScenario()

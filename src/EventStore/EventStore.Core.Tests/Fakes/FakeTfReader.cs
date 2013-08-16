@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,48 +25,36 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+using System;
+using EventStore.Core.TransactionLog;
 
-using System.Collections.Generic;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Helpers;
-using NUnit.Framework;
-
-namespace EventStore.Core.Tests.Services.Replication.WriteStream
+namespace EventStore.Core.Tests.Fakes
 {
-    [TestFixture]
-    public class when_write_stream_gets_already_committed : RequestManagerSpecification
+    public class FakeTfReader: ITransactionFileReader
     {
-        protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
+        public void Reposition(long position)
         {
-            return new WriteStreamTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout);
+            throw new NotImplementedException();
         }
 
-        protected override IEnumerable<Message> WithInitialMessages()
+        public SeqReadResult TryReadNext()
         {
-            yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, true, "test123", ExpectedVersion.Any, new[] { DummyEvent() }, null);
+            throw new NotImplementedException();
         }
 
-        protected override Message When()
+        public SeqReadResult TryReadPrev()
         {
-            return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1);
+            throw new NotImplementedException();
         }
 
-        [Test]
-        public void successful_request_message_is_publised()
+        public RecordReadResult TryReadAt(long position)
         {
-            Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
-                x => x.CorrelationId == InternalCorrId && x.Success));
+            throw new NotImplementedException();
         }
 
-        [Test]
-        public void the_envelope_is_replied_to_with_success()
+        public bool ExistsAt(long position)
         {
-            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.WriteEventsCompleted>(
-                x => x.CorrelationId == ClientCorrId && x.Result == OperationResult.Success));
+            return true;
         }
     }
 }

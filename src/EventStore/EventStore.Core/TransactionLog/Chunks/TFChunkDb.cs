@@ -155,15 +155,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                         }
                         catch (FileBeingDeletedException exc)
                         {
-                            Log.Trace("{0} exception was thrown while doing background validation of chunk #{1}-{2} ({3}).\n"
-                                      + "That's probably OK, especially if truncation was request at the same time: {4}.",
-                                      exc.GetType().Name, chunk.ChunkHeader.ChunkStartNumber, chunk.ChunkHeader.ChunkEndNumber,
-                                      chunk.FileName, exc.Message);
+                            Log.Trace("{0} exception was thrown while doing background validation of chunk {1}.\n"
+                                      + "That's probably OK, especially if truncation was request at the same time: {2}.",
+                                      exc.GetType().Name, chunk, exc.Message);
                         }
                         catch (Exception exc)
                         {
-                            var msg = string.Format("Verification of chunk #{0}-{1} ({2}) failed, terminating server...",
-                                                    chunk.ChunkHeader.ChunkStartNumber, chunk.ChunkHeader.ChunkEndNumber, chunk.FileName);
+                            var msg = string.Format("Verification of chunk {0} failed, terminating server...", chunk);
                             Log.FatalException(exc, msg);
                             Application.Exit(ExitCode.Error, msg);
                             return;

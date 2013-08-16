@@ -25,17 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
+
 using System.Collections.Generic;
-using System.Linq;
-using EventStore.Core.Data;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class when_merging_two_ptables_with_deletes_and_hash_collisions: SpecificationWithDirectoryPerTestFixture
+    public class when_merging_ptables_with_entries_to_nonexisting_record: SpecificationWithDirectoryPerTestFixture
     {
         private readonly List<string> _files = new List<string>();
         private readonly List<PTable> _tables = new List<PTable>();
@@ -45,26 +43,19 @@ namespace EventStore.Core.Tests.Index
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 4; i++)
             {
                 _files.Add(GetTempFilePath());
 
                 var table = new HashListMemTable(maxSize: 30);
                 for (int j = 0; j < 10; j++)
                 {
-                    table.Add((UInt32)j % 8, i, i * j * 100 + i + j); // 0 collisions with 8, 1 collisions with 9
-                }
-                if (i == 1)
-                {
-                    table.Add(0, int.MaxValue, 45);
-                    table.Add(1, int.MaxValue, 45);
-                    table.Add(2, int.MaxValue, 45);
-                    table.Add(3, int.MaxValue, 45);
+                    table.Add((uint)i, j, i*10 + j);
                 }
                 _tables.Add(PTable.FromMemtable(table, _files[i]));
             }
             _files.Add(GetTempFilePath());
-            _newtable = PTable.MergeTo(_tables, _files[2], x => x.Stream <= 1);
+            _newtable = PTable.MergeTo(_tables, _files[4], x => x.Position % 2 == 0);
         }
 
         [TestFixtureTearDown]
@@ -79,10 +70,9 @@ namespace EventStore.Core.Tests.Index
         }
 
         [Test]
-        public void there_are_thirty_six_records_in_merged_index_because_collisions_are_not_deleted()
+        public void there_are_only_twenty_entries_left()
         {
-            // 20 data records + 4 delete records - 2 deleted records (with 2 and 3 as a hash, but not those for 0th event)
-            Assert.AreEqual(22, _newtable.Count);
+            Assert.AreEqual(20, _newtable.Count);
         }
 
         [Test]
@@ -105,22 +95,19 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void the_right_items_are_deleted()
         {
-            for (uint i = 2; i <= 3; i++)
+            for (int i = 0; i < 4; i++)
             {
-                long position;
-                Assert.IsTrue(_newtable.TryGetOneValue(i, 0, out position));    // 0th events are left
-                Assert.IsFalse(_newtable.TryGetOneValue(i, 1, out position));   
-                Assert.IsTrue(_newtable.TryGetOneValue(i, EventNumber.DeletedStream, out position));    // delete tombstones are left
-            }
-        }
-
-        [Test]
-        public void the_items_with_hash_collision_are_preserved()
-        {
-            for (uint i = 0; i <= 1; i++)
-            {
-                var entries = _newtable.GetRange(i, 0, 0).ToArray();
-                Assert.AreEqual(2, entries.Length);
+                for (int j = 0; j < 10; j++)
+                {
+                    long position;
+                    if ((i*10 + j)%2 == 0)
+                    {
+                        Assert.IsTrue(_newtable.TryGetOneValue((uint)i, j, out position));
+                        Assert.AreEqual(i*10+j, position);
+                    }
+                    else
+                        Assert.IsFalse(_newtable.TryGetOneValue((uint)i, j, out position));
+                }
             }
         }
     }

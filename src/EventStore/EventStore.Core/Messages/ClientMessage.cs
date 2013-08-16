@@ -547,7 +547,6 @@ namespace EventStore.Core.Messages
                 if (result != ReadStreamResult.Success)
                 {
                     Ensure.Equal(nextEventNumber, -1, "nextEventNumber");
-                    Ensure.Equal(lastEventNumber, -1, "lastEventNumber");
                     Ensure.Equal(isEndOfStream, true, "isEndOfStream");
                 }
 
@@ -653,7 +652,6 @@ namespace EventStore.Core.Messages
                 if (result != ReadStreamResult.Success)
                 {
                     Ensure.Equal(nextEventNumber, -1, "nextEventNumber");
-                    Ensure.Equal(lastEventNumber, -1, "lastEventNumber");
                     Ensure.Equal(isEndOfStream, true, "isEndOfStream");
                 }
 

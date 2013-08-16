@@ -94,21 +94,21 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 tcpConnection =>
                 {
                     connectionCreated.Wait();
-                    log.Debug("Connected to [{0}, L{1}, {2:B}].", tcpConnection.RemoteEndPoint, tcpConnection.LocalEndPoint, connectionId);
+                    log.Debug("TcpPackageConnection: connected to [{0}, L{1}, {2:B}].", tcpConnection.RemoteEndPoint, tcpConnection.LocalEndPoint, connectionId);
                     if (connectionEstablished != null)
                         connectionEstablished(this);
                 },
                 (conn, error) =>
                 {
                     connectionCreated.Wait();
-                    log.Debug("Connection to [{0}, L{1}, {2:B}] failed. Error: {3}.", conn.RemoteEndPoint, conn.LocalEndPoint, connectionId, error);
+                    log.Debug("TcpPackageConnection: connection to [{0}, L{1}, {2:B}] failed. Error: {3}.", conn.RemoteEndPoint, conn.LocalEndPoint, connectionId, error);
                     if (connectionClosed != null)
                         connectionClosed(this, error);
                 },
                 (conn, error) =>
                 {
                     connectionCreated.Wait();
-                    log.Debug("Connection [{0}, L{1}, {2:B}] was closed {3}", conn.RemoteEndPoint, conn.LocalEndPoint,
+                    log.Debug("TcpPackageConnection: connection [{0}, L{1}, {2:B}] was closed {3}", conn.RemoteEndPoint, conn.LocalEndPoint,
                               ConnectionId, error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
 
                     if (connectionClosed != null)
@@ -127,7 +127,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
             catch (PackageFramingException exc)
             {
-                _log.Error(exc, "Invalid TCP frame received.");
+                _log.Error(exc, "TcpPackageConnection: [{0}, L{1}, {2:B}]. Invalid TCP frame received.", RemoteEndPoint, LocalEndPoint, ConnectionId);
                 Close("Invalid TCP frame received.");
                 return;
             }
@@ -151,8 +151,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 _connection.Close(string.Format("Error when processing TcpPackage {0}: {1}", 
                                                 valid ? package.Command.ToString() : "<invalid package>", e.Message));
 
-                var message = string.Format("[{0}, L{1}] ERROR for {2}. Connection will be closed.",
-                                            RemoteEndPoint, LocalEndPoint, valid ? package.Command.ToString() : "<invalid package>");
+                var message = string.Format("TcpPackageConnection: [{0}, L{1}, {2}] ERROR for {3}. Connection will be closed.",
+                                            RemoteEndPoint, LocalEndPoint, ConnectionId,
+                                            valid ? package.Command.ToString() : "<invalid package>");
                 if (_onError != null)
                     _onError(this, e);
                 _log.Debug(e, message);

@@ -52,16 +52,16 @@ namespace EventStore.Core.Tests.Index
             _tablename = GetTempFilePath();
             _mergeFile = GetFilePathFor("outfile");
 
-            _map = IndexMap.FromFile(_filename, x => false, maxTablesPerLevel: 4);
+            _map = IndexMap.FromFile(_filename, maxTablesPerLevel: 4);
             var memtable = new HashListMemTable(maxSize: 10);
             memtable.Add(0, 2, 123);
             var table = PTable.FromMemtable(memtable, _tablename);
-            _result = _map.AddFile(table, 0, 0, new FakeFilenameProvider(_mergeFile));
-            _result = _result.MergedMap.AddFile(table, 0, 0, new FakeFilenameProvider(_mergeFile));
-            _result = _result.MergedMap.AddFile(table, 0, 0, new FakeFilenameProvider(_mergeFile));
-            var merged = _result.MergedMap.AddFile(table, 0, 0, new FakeFilenameProvider(_mergeFile));
-            _result = merged.MergedMap.AddFile(table, 0, 0, new FakeFilenameProvider(_mergeFile));
-            _result = _result.MergedMap.AddFile(table, 7, 11, new FakeFilenameProvider(_mergeFile));
+            _result = _map.AddPTable(table, 0, 0, _ => true, new FakeFilenameProvider(_mergeFile));
+            _result = _result.MergedMap.AddPTable(table, 0, 0, _ => true, new FakeFilenameProvider(_mergeFile));
+            _result = _result.MergedMap.AddPTable(table, 0, 0, _ => true, new FakeFilenameProvider(_mergeFile));
+            var merged = _result.MergedMap.AddPTable(table, 0, 0, _ => true, new FakeFilenameProvider(_mergeFile));
+            _result = merged.MergedMap.AddPTable(table, 0, 0, _ => true, new FakeFilenameProvider(_mergeFile));
+            _result = _result.MergedMap.AddPTable(table, 7, 11, _ => true, new FakeFilenameProvider(_mergeFile));
             _result.MergedMap.SaveToFile(_filename);
 
             table.Dispose();
@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void saved_file_could_be_read_correctly_and_without_errors()
         {
-            var map = IndexMap.FromFile(_filename, x => false);
+            var map = IndexMap.FromFile(_filename);
             map.InOrder().ToList().ForEach(x => x.Dispose());
 
             Assert.AreEqual(7, map.PrepareCheckpoint);

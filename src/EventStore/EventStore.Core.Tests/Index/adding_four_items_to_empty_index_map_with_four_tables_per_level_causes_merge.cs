@@ -25,7 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
+
 using System.IO;
 using System.Linq;
 using EventStore.Core.Index;
@@ -49,20 +49,24 @@ namespace EventStore.Core.Tests.Index
             _mergeFile = GetTempFilePath();
             _filename = GetTempFilePath();
 
-            _map = IndexMap.FromFile(_filename, x => false, maxTablesPerLevel: 4);
+            _map = IndexMap.FromFile(_filename, maxTablesPerLevel: 4);
             var memtable = new HashListMemTable(maxSize: 10);
             memtable.Add(0, 1, 0);
 
-            _result = _map.AddFile(PTable.FromMemtable(memtable, GetTempFilePath()), 1, 2, new GuidFilenameProvider(PathName));
+            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 1, 2,
+                                     _ => true, new GuidFilenameProvider(PathName));
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
 
-            _result = _result.MergedMap.AddFile(PTable.FromMemtable(memtable, GetTempFilePath()), 3, 4, new GuidFilenameProvider(PathName));
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 3, 4,
+                                                  _ => true, new GuidFilenameProvider(PathName));
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
 
-            _result = _result.MergedMap.AddFile(PTable.FromMemtable(memtable, GetTempFilePath()), 4, 5, new GuidFilenameProvider(PathName));
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 4, 5,
+                                                  _ => true, new GuidFilenameProvider(PathName));
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
 
-            _result = _result.MergedMap.AddFile(PTable.FromMemtable(memtable, GetTempFilePath()), 0, 1, new FakeFilenameProvider(_mergeFile));
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 0, 1,
+                                                  _ => true, new FakeFilenameProvider(_mergeFile));
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
         }
 

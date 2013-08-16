@@ -63,13 +63,13 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 case ClientMessage.ReadAllEventsCompleted.ReadAllResult.Success:
                     Succeed();
-                    return new InspectionResult(InspectionDecision.EndOperation);
+                    return new InspectionResult(InspectionDecision.EndOperation, "Success");
                 case ClientMessage.ReadAllEventsCompleted.ReadAllResult.Error:
                     Fail(new ServerErrorException(string.IsNullOrEmpty(response.Error) ? "<no message>" : response.Error));
-                    return new InspectionResult(InspectionDecision.EndOperation);
+                    return new InspectionResult(InspectionDecision.EndOperation, "Error");
                 case ClientMessage.ReadAllEventsCompleted.ReadAllResult.AccessDenied:
                     Fail(new AccessDeniedException("Read access denied for $all."));
-                    return new InspectionResult(InspectionDecision.EndOperation);
+                    return new InspectionResult(InspectionDecision.EndOperation, "AccessDenied");
                 default:
                     throw new Exception(string.Format("Unexpected ReadAllResult: {0}.", response.Result));
             }

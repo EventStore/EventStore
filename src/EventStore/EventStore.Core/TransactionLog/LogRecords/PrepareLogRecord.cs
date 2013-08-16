@@ -41,7 +41,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
         TransactionEnd = 0x04,            // prepare ends transaction
         StreamDelete = 0x08,              // prepare deletes stream
 
-        //IsCommited = 0x20,              // prepare should be considered committed immediately, no commit will follow in TF
+        IsCommitted = 0x20,              // prepare should be considered committed immediately, no commit will follow in TF
         //Update = 0x30,                  // prepare updates previous instance of the same event, DANGEROUS!
 
         IsJson = 0x100,                   // indicates data & metadata are valid json
@@ -51,6 +51,24 @@ namespace EventStore.Core.TransactionLog.LogRecords
         SingleWrite = Data | TransactionBegin | TransactionEnd
     }
 
+    public static class PrepareFlagsExtensions
+    {
+        public static bool HasAllOf(this PrepareFlags flags, PrepareFlags flagSet)
+        {
+            return (flags & flagSet) == flagSet;
+        }
+
+        public static bool HasAnyOf(this PrepareFlags flags, PrepareFlags flagSet)
+        {
+            return (flags & flagSet) != 0;
+        }
+
+        public static bool HasNoneOf(this PrepareFlags flags, PrepareFlags flagSet)
+        {
+            return (flags & flagSet) == 0;
+        }
+    }
+
     public class PrepareLogRecord: LogRecord, IEquatable<PrepareLogRecord>
     {
         public const byte PrepareRecordVersion = 0;
@@ -58,7 +76,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
         public readonly PrepareFlags Flags;
         public readonly long TransactionPosition;
         public readonly int TransactionOffset;
-        public readonly int ExpectedVersion;
+        public readonly int ExpectedVersion;            // if IsCommitted is set, this is final EventNumber
         public readonly string EventStreamId;
 
         public readonly Guid EventId;

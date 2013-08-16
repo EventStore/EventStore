@@ -224,7 +224,7 @@ namespace EventStore.Core.Tests.Helpers
                 message.Envelope.ReplyWith(
                     new ClientMessage.ReadStreamEventsBackwardCompleted(
                         message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
-                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], null, false, string.Empty, -1, -1, true, _fakePosition));
+                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], null, false, string.Empty, -1, EventNumber.DeletedStream, true, _fakePosition));
                             
             }
             else if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || _noOtherStreams)
@@ -289,7 +289,7 @@ namespace EventStore.Core.Tests.Helpers
                 message.Envelope.ReplyWith(
                     new ClientMessage.ReadStreamEventsBackwardCompleted(
                         message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
-                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], null, false, string.Empty, -1, -1, true, _fakePosition));
+                        ReadStreamResult.StreamDeleted, new ResolvedEvent[0], null, false, string.Empty, -1, EventNumber.DeletedStream, true, _fakePosition));
                             
             }
             else if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || _noOtherStreams)

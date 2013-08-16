@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
@@ -131,6 +132,9 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
             if (_completed)
                 return;
+            if (message.Flags.HasNoneOf(PrepareFlags.TransactionBegin))
+                throw new Exception(string.Format("Unexpected PrepareAck with flags [{0}] arrived (LogPosition: {1}, InternalCorrId: {2:B}, ClientCorrId: {3:B}).",
+                                                  message.Flags, message.LogPosition, message.CorrelationId, _clientCorrId));
             _transactionId = message.LogPosition;
             CompleteSuccessRequest();
         }

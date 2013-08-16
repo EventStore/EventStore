@@ -28,6 +28,7 @@
 
 using System;
 using System.Net;
+using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Helpers;
@@ -36,17 +37,20 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
     public static class TestConnection
     {
-        //private static bool _running;
+        private static int _nextConnId = -1;
 
         public static IEventStoreConnection Create(IPEndPoint endPoint, TcpType tcpType = TcpType.Normal, UserCredentials userCredentials = null)
         {
-            return EventStoreConnection.Create(Settings(tcpType, userCredentials), endPoint);
+            return EventStoreConnection.Create(Settings(tcpType, userCredentials),
+                                               endPoint,
+                                               string.Format("ESC-{0}", Interlocked.Increment(ref _nextConnId)));
         }
 
         public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType, UserCredentials userCredentials = null)
         {
             return EventStoreConnection.Create(Settings(tcpType, userCredentials),
-                                               tcpType == TcpType.Ssl ? miniNode.TcpSecEndPoint : miniNode.TcpEndPoint);
+                                               tcpType == TcpType.Ssl ? miniNode.TcpSecEndPoint : miniNode.TcpEndPoint,
+                                               string.Format("ESC-{0}", Interlocked.Increment(ref _nextConnId)));
         }
 
         private static ConnectionSettingsBuilder Settings(TcpType tcpType, UserCredentials userCredentials)

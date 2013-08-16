@@ -69,9 +69,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
 
 
             var deletePrepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(), // delete prepare
-                                                          Guid.NewGuid(),
-                                                          "ES",
-                                                          -1);
+                                                          Guid.NewGuid(), Guid.NewGuid(), "ES", -1);
             _deleteTombstone = new EventRecord(EventNumber.DeletedStream, deletePrepare);
             Assert.IsTrue(Writer.Write(deletePrepare, out pos));
 

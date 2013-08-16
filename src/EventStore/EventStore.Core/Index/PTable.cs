@@ -86,7 +86,7 @@ namespace EventStore.Core.Index
             _id = id;
             _filename = filename;
 
-            Log.Trace("Loading PTable '{0}' started...", Filename);
+            Log.Trace("Loading PTable '{0}' started...", Path.GetFileName(Filename));
             var sw = Stopwatch.StartNew();
             
             _count = (int)((new FileInfo(_filename).Length - PTableHeader.Size - MD5Size) / IndexEntrySize);
@@ -135,9 +135,10 @@ namespace EventStore.Core.Index
             catch (PossibleToHandleOutOfMemoryException)
             {
                 Log.Error("Was unable to create midpoints for PTable '{0}' ({1} entries, depth {2} requested). "
-                          + "Performance hit possible. OOM Exception.", Filename, Count, depth);
+                          + "Performance hit possible. OOM Exception.", Path.GetFileName(Filename), Count, depth);
             }
-            Log.Trace("Loading PTable '{0}' ({1} entries, cache depth {2}) done in {3}.", Filename, Count, depth, sw.Elapsed);
+            Log.Trace("Loading PTable '{0}' ({1} entries, cache depth {2}) done in {3}.",
+                      Path.GetFileName(Filename), Count, depth, sw.Elapsed);
         }
 
         internal Midpoint[] CacheMidpoints(int depth)
@@ -199,7 +200,7 @@ namespace EventStore.Core.Index
         public void VerifyFileHash()
         {
             var sw = Stopwatch.StartNew();
-            Log.Trace("Verifying file hash of PTable '{0}' started...", Filename);
+            Log.Trace("Verifying file hash of PTable '{0}' started...", Path.GetFileName(Filename));
 
             var workItem = GetWorkItem();
             try
@@ -231,7 +232,7 @@ namespace EventStore.Core.Index
                 ReturnWorkItem(workItem);
             }
 
-            Log.Trace("Verifying file hash of PTable '{0}' ({1} entries) done in {2}.", Filename, Count, sw.Elapsed);
+            Log.Trace("Verifying file hash of PTable '{0}' ({1} entries) done in {2}.", Path.GetFileName(Filename), Count, sw.Elapsed);
         }
 
         public IEnumerable<IndexEntry> IterateAllInOrder()

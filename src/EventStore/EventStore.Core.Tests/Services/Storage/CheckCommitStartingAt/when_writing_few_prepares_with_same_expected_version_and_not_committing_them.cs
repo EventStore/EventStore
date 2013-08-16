@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt
         [Test]
         public void every_prepare_can_be_commited()
         {
-            var res = ReadIndex.CheckCommitStartingAt(_prepare0.LogPosition, WriterCheckpoint.ReadNonFlushed());
+            var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare0.LogPosition, WriterCheckpoint.ReadNonFlushed());
 
             Assert.AreEqual(CommitDecision.Ok, res.Decision);
             Assert.AreEqual("ES", res.EventStreamId);
@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt
             Assert.AreEqual(-1, res.StartEventNumber);
             Assert.AreEqual(-1, res.EndEventNumber);
 
-            res = ReadIndex.CheckCommitStartingAt(_prepare1.LogPosition, WriterCheckpoint.ReadNonFlushed());
+            res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare1.LogPosition, WriterCheckpoint.ReadNonFlushed());
 
             Assert.AreEqual(CommitDecision.Ok, res.Decision);
             Assert.AreEqual("ES", res.EventStreamId);
@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt
             Assert.AreEqual(-1, res.StartEventNumber);
             Assert.AreEqual(-1, res.EndEventNumber);
 
-            res = ReadIndex.CheckCommitStartingAt(_prepare2.LogPosition, WriterCheckpoint.ReadNonFlushed());
+            res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare2.LogPosition, WriterCheckpoint.ReadNonFlushed());
 
             Assert.AreEqual(CommitDecision.Ok, res.Decision);
             Assert.AreEqual("ES", res.EventStreamId);

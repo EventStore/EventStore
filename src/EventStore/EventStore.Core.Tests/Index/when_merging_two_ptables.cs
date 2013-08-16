@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Index
                 _tables.Add(PTable.FromMemtable(table, _files[i]));
             }
             _files.Add(GetTempFilePath());
-            _newtable = PTable.MergeTo(_tables, _files[2], x => false);
+            _newtable = PTable.MergeTo(_tables, _files[2], x => true);
         }
 
         [TestFixtureTearDown]
