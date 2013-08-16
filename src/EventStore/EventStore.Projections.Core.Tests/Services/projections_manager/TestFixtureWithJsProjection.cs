@@ -64,6 +64,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 _stateHandler.Load(_state);
             else
                 _stateHandler.Initialize();
+            When();
+        }
+
+        protected virtual void When()
+        {
         }
 
         protected abstract void Given();

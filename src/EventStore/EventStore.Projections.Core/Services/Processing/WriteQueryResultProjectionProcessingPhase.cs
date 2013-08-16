@@ -66,12 +66,22 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
-            throw new NotImplementedException();
+            var state = _stateCache.TryGetPartitionState(message.Partition);
+            var stateString = state != null ? state.State : null;
+            message.Envelope.ReplyWith(
+                new CoreProjectionManagementMessage.StateReport(
+                    message.CorrelationId, message.CorrelationId, message.Partition, state: stateString, position: null));
         }
 
         public void Handle(CoreProjectionManagementMessage.GetResult message)
         {
-            throw new NotImplementedException();
+            var state = _stateCache.TryGetPartitionState(message.Partition);
+            var resultString = state != null ? state.Result : null;
+            message.Envelope.ReplyWith(
+                new CoreProjectionManagementMessage.ResultReport(
+                    message.CorrelationId, message.CorrelationId, message.Partition, result: resultString,
+                    position: null));
+
         }
 
         public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
