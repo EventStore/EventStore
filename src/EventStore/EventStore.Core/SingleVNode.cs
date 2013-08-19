@@ -182,7 +182,7 @@ namespace EventStore.Core
                                                         Application.IsDefined(Application.AlwaysKeepScavenged),
                                                         mergeChunks: false /*!Application.IsDefined(Application.DisableMergeChunks)*/);
             // ReSharper disable RedundantTypeArgumentsOfMethod
-            _mainBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
+            _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
             // ReSharper restore RedundantTypeArgumentsOfMethod
 
             // MISC WORKERS

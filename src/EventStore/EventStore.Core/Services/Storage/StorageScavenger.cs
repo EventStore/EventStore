@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -36,7 +37,7 @@ using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage
 {
-    public class StorageScavenger: IHandle<SystemMessage.ScavengeDatabase>
+    public class StorageScavenger: IHandle<ClientMessage.ScavengeDatabase>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageScavenger>();
 
@@ -57,27 +58,45 @@ namespace EventStore.Core.Services.Storage
             _mergeChunks = mergeChunks;
         }
 
-        public void Handle(SystemMessage.ScavengeDatabase message)
+        public void Handle(ClientMessage.ScavengeDatabase message)
         {
             if (Interlocked.CompareExchange(ref _isScavengingRunning, 1, 0) == 0)
             {
-                ThreadPool.QueueUserWorkItem(_ => Scavenge());
+                ThreadPool.QueueUserWorkItem(_ => Scavenge(message));
             }
         }
 
-        private void Scavenge()
+        private void Scavenge(ClientMessage.ScavengeDatabase message)
         {
+            var sw = Stopwatch.StartNew();
+            ClientMessage.ScavengeDatabase.ScavengeResult result;
+            string error = null;
+            long spaceSaved = 0;
             try
             {
-                var scavenger = new TFChunkScavenger(_db, _readIndex);
-                scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks);
+                if (message.User == null || !message.User.IsInRole(SystemRoles.Admins))
+                {
+                    result = ClientMessage.ScavengeDatabase.ScavengeResult.Failed;
+                    error = "Access denied.";
+                }
+                else
+                {
+                    var scavenger = new TFChunkScavenger(_db, _readIndex);
+                    spaceSaved = scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks);
+                    result = ClientMessage.ScavengeDatabase.ScavengeResult.Success;
+                }
             }
             catch (Exception exc)
             {
                 Log.ErrorException(exc, "SCAVENGING: error while scavenging DB.");
+                result = ClientMessage.ScavengeDatabase.ScavengeResult.Failed;
+                error = string.Format("Error while scavenging DB: {0}.", exc.Message);
             }
 
             Interlocked.Exchange(ref _isScavengingRunning, 0);
+
+            message.Envelope.ReplyWith(
+                new ClientMessage.ScavengeDatabaseCompleted(message.CorrelationId, result, error, sw.Elapsed, spaceSaved));
         }
     }
 }

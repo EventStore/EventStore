@@ -248,12 +248,6 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ScavengeDatabase: Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
-
         public class WaitForChaserToCatchUp : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

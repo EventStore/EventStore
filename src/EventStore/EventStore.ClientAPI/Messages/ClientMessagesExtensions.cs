@@ -29,7 +29,7 @@ using System.Net;
 
 namespace EventStore.ClientAPI.Messages
 {
-    internal static partial class ClientMessage
+    public static partial class ClientMessage
     {
         public partial class NotHandled
         {

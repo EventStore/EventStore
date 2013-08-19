@@ -73,7 +73,8 @@ namespace EventStore.Core.Tests.Helpers
         public MiniNode(string pathname, 
                         int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null, 
                         ISubsystem[] subsystems = null,
-                        int? chunkSize = null, int? cachedChunkSize = null, bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true)
+                        int? chunkSize = null, int? cachedChunkSize = null, bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true,
+                        int memTableSize = 1000)
         {
             if (_running) throw new Exception("Previous MiniNode is still running!!!");
             _running = true;
@@ -126,7 +127,7 @@ namespace EventStore.Core.Tests.Helpers
                      "TCP SECURE ENDPOINT:", TcpSecEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
 
-            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: 1000, subsystems: subsystems);
+            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: memTableSize, subsystems: subsystems);
             Node.HttpService.SetupController(new TestController(Node.MainQueue, Node.NetworkSendService));
         }
 

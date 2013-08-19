@@ -58,10 +58,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             _maxChunkDataSize = maxChunkDataSize ?? db.Config.ChunkSize;
         }
 
-        public void Scavenge(bool alwaysKeepScavenged, bool mergeChunks)
+        public long Scavenge(bool alwaysKeepScavenged, bool mergeChunks)
         {
             var totalSw = Stopwatch.StartNew();
             var sw = Stopwatch.StartNew();
+            long spaceSaved = 0;
 
             Log.Trace("SCAVENGING: started scavenging of DB. Chunks count at start: {0}. Options: alwaysKeepScavenged = {1}, mergeChunks = {2}", 
                       _db.Manager.ChunksCount, alwaysKeepScavenged, mergeChunks);
@@ -74,7 +75,11 @@ namespace EventStore.Core.TransactionLog.Chunks
                     Log.Trace("SCAVENGING: stopping scavenging pass due to non-completed TFChunk for position {0}.", scavengePos);
                     break;
                 }
-                ScavengeChunks(alwaysKeepScavenged, new[] {chunk});
+                
+                long saved;
+                ScavengeChunks(alwaysKeepScavenged, new[] {chunk}, out saved);
+                spaceSaved += saved;
+
                 scavengePos = chunk.ChunkHeader.ChunkEndPosition;
             }
             Log.Trace("SCAVENGING: initial pass completed in {0}.", sw.Elapsed);
@@ -103,8 +108,12 @@ namespace EventStore.Core.TransactionLog.Chunks
                         {
                             if (chunks.Count == 0)
                                 throw new Exception("SCAVENGING: no chunks to merge, unexpectedly...");
-                            if (chunks.Count > 1 && ScavengeChunks(alwaysKeepScavenged, chunks))
+                            long saved;
+                            if (chunks.Count > 1 && ScavengeChunks(alwaysKeepScavenged, chunks, out saved))
+                            {
+                                spaceSaved += saved;
                                 mergedSomething = true;
+                            }
                             chunks.Clear();
                             totalDataSize = 0;
                         }
@@ -114,18 +123,25 @@ namespace EventStore.Core.TransactionLog.Chunks
                     }
                     if (chunks.Count > 1)
                     {
-                        if (ScavengeChunks(alwaysKeepScavenged, chunks))
+                        long saved;
+                        if (ScavengeChunks(alwaysKeepScavenged, chunks, out saved))
+                        {
+                            spaceSaved += saved;
                             mergedSomething = true;
+                        }
                     }
                     Log.Trace("SCAVENGING: merge pass #{0} completed in {1}. {2} merged.",
                               passNum, sw.Elapsed, mergedSomething ? "Some chunks" : "Nothing");
                 } while (mergedSomething);
             }
-            Log.Trace("SCAVENGING: total time taken: {0}.", totalSw.Elapsed);
+            Log.Trace("SCAVENGING: total time taken: {0}, total space saved: {1}.", totalSw.Elapsed, spaceSaved);
+            return spaceSaved;
         }
 
-        private bool ScavengeChunks(bool alwaysKeepScavenged, IList<TFChunk.TFChunk> oldChunks)
+        private bool ScavengeChunks(bool alwaysKeepScavenged, IList<TFChunk.TFChunk> oldChunks, out long spaceSaved)
         {
+            spaceSaved = 0;
+
             if (oldChunks.IsEmpty()) throw new ArgumentException("Provided list of chunks to scavenge and merge is empty.");
             
             var sw = Stopwatch.StartNew();
@@ -209,6 +225,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                               + "Old chunks total size: {6}, scavenged chunk size: {7}.",
                               oldChunksList, sw.Elapsed, Path.GetFileName(tmpChunkPath),
                               chunkStartNumber, chunkEndNumber, Path.GetFileName(chunk.FileName), oldSize, newSize);
+                    spaceSaved = oldSize - newSize;
                     return true;
                 }
                 else

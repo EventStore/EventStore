@@ -29,6 +29,7 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
@@ -85,7 +86,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
             {
                 Log.Info("Request scavenging because /admin/scavenge request has been received.");
-                Publish(new SystemMessage.ScavengeDatabase());
+                Publish(new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.Empty, entity.User));
                 entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
             }
             else

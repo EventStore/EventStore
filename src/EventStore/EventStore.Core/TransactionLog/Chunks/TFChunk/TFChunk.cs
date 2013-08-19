@@ -806,7 +806,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             if (_deleteFile)
             {
-                Log.Info("File {0} has been marked for delete and will be deleted in TryDestructFileStreams.", _filename);
+                Log.Info("File {0} has been marked for delete and will be deleted in TryDestructFileStreams.", Path.GetFileName(_filename));
                 Helper.EatException(() => File.Delete(_filename));
             }
 

@@ -230,3 +230,20 @@ message NotHandled {
 		optional int32 external_secure_tcp_port = 6;
 	}
 }
+
+message ScavengeDatabase {
+}
+
+message ScavengeDatabaseCompleted {
+	
+	enum ScavengeResult {
+		Success = 0;
+		InProgress = 1;
+		Failed = 2;
+	}
+	
+	required ScavengeResult result = 1;
+	optional string error = 2;
+	required int32 total_time_ms = 3;
+	required int64 total_space_saved = 4;
+}

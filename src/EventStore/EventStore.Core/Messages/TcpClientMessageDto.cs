@@ -749,6 +749,54 @@ namespace EventStore.Core.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"ScavengeDatabase")]
+  public partial class ScavengeDatabase
+  {
+    public ScavengeDatabase()
+    {
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"ScavengeDatabaseCompleted")]
+  public partial class ScavengeDatabaseCompleted
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
+    public readonly ScavengeDatabaseCompleted.ScavengeResult Result;
+  
+    [ProtoMember(2, IsRequired = false, Name=@"error", DataFormat = DataFormat.Default)]
+    public readonly string Error;
+  
+    [ProtoMember(3, IsRequired = true, Name=@"total_time_ms", DataFormat = DataFormat.TwosComplement)]
+    public readonly int TotalTimeMs;
+  
+    [ProtoMember(4, IsRequired = true, Name=@"total_space_saved", DataFormat = DataFormat.TwosComplement)]
+    public readonly long TotalSpaceSaved;
+  
+    [ProtoContract(Name=@"ScavengeResult")]
+    public enum ScavengeResult
+    {
+            
+      [ProtoEnum(Name=@"Success", Value=0)]
+      Success = 0,
+            
+      [ProtoEnum(Name=@"InProgress", Value=1)]
+      InProgress = 1,
+            
+      [ProtoEnum(Name=@"Failed", Value=2)]
+      Failed = 2
+    }
+  
+    private ScavengeDatabaseCompleted() {}
+  
+    public ScavengeDatabaseCompleted(ScavengeDatabaseCompleted.ScavengeResult result, string error, int totalTimeMs, long totalSpaceSaved)
+    {
+        Result = result;
+        Error = error;
+        TotalTimeMs = totalTimeMs;
+        TotalSpaceSaved = totalSpaceSaved;
+    }
+  }
+  
     [ProtoContract(Name=@"OperationResult")]
     public enum OperationResult
     {

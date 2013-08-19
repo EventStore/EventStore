@@ -87,6 +87,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             AddWrapper<ClientMessage.SubscriptionDropped>(WrapSubscriptionDropped);
 
             AddUnwrapper(TcpCommand.ScavengeDatabase, UnwrapScavengeDatabase);
+            AddWrapper<ClientMessage.ScavengeDatabaseCompleted>(WrapScavengeDatabaseResponse);
             
             AddWrapper<ClientMessage.NotHandled>(WrapNotHandled);
             AddUnwrapper(TcpCommand.NotHandled, UnwrapNotHandled);
@@ -437,9 +438,17 @@ namespace EventStore.Core.Services.Transport.Tcp
             return new TcpPackage(TcpCommand.SubscriptionDropped, msg.CorrelationId, dto.Serialize());
         }
 
-        private SystemMessage.ScavengeDatabase UnwrapScavengeDatabase(TcpPackage package, IEnvelope envelope)
+        private ClientMessage.ScavengeDatabase UnwrapScavengeDatabase(TcpPackage package, IEnvelope envelope, IPrincipal user)
         {
-            return new SystemMessage.ScavengeDatabase();
+            return new ClientMessage.ScavengeDatabase(envelope, package.CorrelationId, user);
+        }
+
+        private TcpPackage WrapScavengeDatabaseResponse(ClientMessage.ScavengeDatabaseCompleted msg)
+        {
+            var dto = new TcpClientMessageDto.ScavengeDatabaseCompleted(
+                (TcpClientMessageDto.ScavengeDatabaseCompleted.ScavengeResult)msg.Result, msg.Error,
+                (int) msg.TotalTime.TotalMilliseconds, msg.TotalSpaceSaved);
+            return new TcpPackage(TcpCommand.ScavengeDatabaseCompleted, msg.CorrelationId, dto.Serialize());
         }
 
         private ClientMessage.NotHandled UnwrapNotHandled(TcpPackage package, IEnvelope envelope)

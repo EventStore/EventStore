@@ -84,6 +84,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         SubscriptionDropped = 0xC4,
 
         ScavengeDatabase = 0xD0,
+        ScavengeDatabaseCompleted = 0xD1,
 
         BadRequest = 0xF0,
         NotHandled = 0xF1,

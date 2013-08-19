@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Security.Principal;
+using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
@@ -51,7 +52,7 @@ namespace EventStore.Core.Messages
     {
         public class RequestShutdown: Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly bool ExitProcess;
@@ -64,7 +65,7 @@ namespace EventStore.Core.Messages
 
         public abstract class WriteRequestMessage : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid InternalCorrId;
@@ -97,7 +98,7 @@ namespace EventStore.Core.Messages
 
         public abstract class ReadRequestMessage: Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid InternalCorrId;
@@ -122,7 +123,7 @@ namespace EventStore.Core.Messages
 
         public abstract class ReadResponseMessage : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             internal static readonly ResolvedEvent[] EmptyRecords = new ResolvedEvent[0];
@@ -130,7 +131,7 @@ namespace EventStore.Core.Messages
 
         public class TcpForwardMessage: Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Message Message;
@@ -145,7 +146,7 @@ namespace EventStore.Core.Messages
 
         public class NotHandled : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -164,7 +165,7 @@ namespace EventStore.Core.Messages
 
         public class WriteEvents : WriteRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly string EventStreamId;
@@ -195,14 +196,14 @@ namespace EventStore.Core.Messages
 
             public override string ToString()
             {
-                return string.Format("WRITE: InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, ExpectedVersion: {3}, Events: {4}",
+                return String.Format("WRITE: InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, ExpectedVersion: {3}, Events: {4}",
                                      InternalCorrId, CorrelationId, EventStreamId, ExpectedVersion, Events.Length);
             }
         }
 
         public class WriteEventsCompleted : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -246,14 +247,14 @@ namespace EventStore.Core.Messages
 
             public override string ToString()
             {
-                return string.Format("WRITE COMPLETED: CorrelationId: {0}, Result: {1}, Message: {2}, FirstEventNumber: {3}",
+                return String.Format("WRITE COMPLETED: CorrelationId: {0}, Result: {1}, Message: {2}, FirstEventNumber: {3}",
                                      CorrelationId, Result, Message, FirstEventNumber);
             }
         }
 
         public class TransactionStart : WriteRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly string EventStreamId;
@@ -274,7 +275,7 @@ namespace EventStore.Core.Messages
 
         public class TransactionStartCompleted : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -298,7 +299,7 @@ namespace EventStore.Core.Messages
 
         public class TransactionWrite : WriteRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly long TransactionId;
@@ -319,7 +320,7 @@ namespace EventStore.Core.Messages
 
         public class TransactionWriteCompleted : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -343,7 +344,7 @@ namespace EventStore.Core.Messages
 
         public class TransactionCommit : WriteRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly long TransactionId;
@@ -359,7 +360,7 @@ namespace EventStore.Core.Messages
 
         public class TransactionCommitCompleted : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -383,7 +384,7 @@ namespace EventStore.Core.Messages
 
         public class DeleteStream : WriteRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly string EventStreamId;
@@ -404,7 +405,7 @@ namespace EventStore.Core.Messages
 
         public class DeleteStreamCompleted : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -426,7 +427,7 @@ namespace EventStore.Core.Messages
 
         public class ReadEvent : ReadRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly string EventStreamId;
@@ -450,7 +451,7 @@ namespace EventStore.Core.Messages
 
         public class ReadEventCompleted : ReadResponseMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -480,7 +481,7 @@ namespace EventStore.Core.Messages
 
         public class ReadStreamEventsForward : ReadRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly string EventStreamId;
@@ -509,7 +510,7 @@ namespace EventStore.Core.Messages
 
             public override string ToString()
             {
-                return string.Format(GetType().Name + " InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, "
+                return String.Format(GetType().Name + " InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, "
                                      + "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireMaster: {6}, ValidationStreamVersion: {7}",
                                      InternalCorrId, CorrelationId, EventStreamId,
                                      FromEventNumber, MaxCount, ResolveLinkTos, RequireMaster, ValidationStreamVersion);
@@ -518,7 +519,7 @@ namespace EventStore.Core.Messages
 
         public class ReadStreamEventsForwardCompleted : ReadResponseMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -570,14 +571,14 @@ namespace EventStore.Core.Messages
                                                                   int fromEventNumber, int maxCount, long lastCommitPosition, string message = null)
             {
                 return new ReadStreamEventsForwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount, 
-                                                            result, EmptyRecords, null, false, message ?? string.Empty, 
+                                                            result, EmptyRecords, null, false, message ?? String.Empty, 
                                                             -1, -1, true, lastCommitPosition);
             }
         }
 
         public class ReadStreamEventsBackward : ReadRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly string EventStreamId;
@@ -606,7 +607,7 @@ namespace EventStore.Core.Messages
 
             public override string ToString()
             {
-                return string.Format(GetType().Name + " InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, "
+                return String.Format(GetType().Name + " InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, "
                                      + "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireMaster: {6}, ValidationStreamVersion: {7}",
                                      InternalCorrId, CorrelationId, EventStreamId, FromEventNumber, MaxCount,
                                      ResolveLinkTos, RequireMaster, ValidationStreamVersion);
@@ -615,7 +616,7 @@ namespace EventStore.Core.Messages
 
         public class ReadStreamEventsBackwardCompleted : ReadResponseMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -675,14 +676,14 @@ namespace EventStore.Core.Messages
                                                                    int fromEventNumber, int maxCount, long lastCommitPosition, string message = null)
             {
                 return new ReadStreamEventsBackwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
-                                                             result, EmptyRecords, null, false, message ?? string.Empty,
+                                                             result, EmptyRecords, null, false, message ?? String.Empty,
                                                              -1, -1, true, lastCommitPosition);
             }
         }
 
         public class ReadAllEventsForward : ReadRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly long CommitPosition;
@@ -709,7 +710,7 @@ namespace EventStore.Core.Messages
 
         public class ReadAllEventsForwardCompleted : ReadResponseMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -750,7 +751,7 @@ namespace EventStore.Core.Messages
 
         public class ReadAllEventsBackward : ReadRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly long CommitPosition;
@@ -777,7 +778,7 @@ namespace EventStore.Core.Messages
 
         public class ReadAllEventsBackwardCompleted : ReadResponseMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -818,7 +819,7 @@ namespace EventStore.Core.Messages
 
         public class SubscribeToStream : ReadRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid ConnectionId;
@@ -838,7 +839,7 @@ namespace EventStore.Core.Messages
 
         public class UnsubscribeFromStream : ReadRequestMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public UnsubscribeFromStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope, IPrincipal user)
@@ -849,7 +850,7 @@ namespace EventStore.Core.Messages
 
         public class SubscriptionConfirmation : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -866,7 +867,7 @@ namespace EventStore.Core.Messages
 
         public class StreamEventAppeared : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -881,7 +882,7 @@ namespace EventStore.Core.Messages
 
         public class SubscriptionDropped: Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -891,6 +892,61 @@ namespace EventStore.Core.Messages
             {
                 CorrelationId = correlationId;
                 Reason = reason;
+            }
+        }
+
+        public class ScavengeDatabase: Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly IEnvelope Envelope;
+            public readonly Guid CorrelationId;
+            public readonly IPrincipal User;
+
+            public ScavengeDatabase(IEnvelope envelope, Guid correlationId, IPrincipal user)
+            {
+                Ensure.NotNull(envelope, "envelope");
+                Envelope = envelope;
+                CorrelationId = correlationId;
+                User = user;
+            }
+
+            public enum ScavengeResult
+            {
+                Success,
+                InProgress,
+                Failed
+            }
+        }
+
+        public class ScavengeDatabaseCompleted: Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+            public readonly ScavengeDatabase.ScavengeResult Result;
+            public readonly string Error;
+            public readonly TimeSpan TotalTime;
+            public readonly long TotalSpaceSaved;
+
+            public ScavengeDatabaseCompleted(Guid correlationId,
+                                             ScavengeDatabase.ScavengeResult result,
+                                             string error,
+                                             TimeSpan totalTime,
+                                             long totalSpaceSaved)
+            {
+                CorrelationId = correlationId;
+                Result = result;
+                Error = error;
+                TotalTime = totalTime;
+                TotalSpaceSaved = totalSpaceSaved;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("Result: {0}, Error: {1}, TotalTime: {2}, TotalSpaceSaved: {3}", Result, Error, TotalTime, TotalSpaceSaved);
             }
         }
     }

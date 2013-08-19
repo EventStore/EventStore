@@ -101,6 +101,7 @@ namespace EventStore.Core.Services.VNode
                     .When<SystemMessage.BecomePreMaster>().Do(Handle)
                     .When<SystemMessage.StorageReaderInitializationDone>().Do(Handle)
                     .When<SystemMessage.StorageWriterInitializationDone>().Do(Handle)
+                    .When<ClientMessage.ScavengeDatabase>().Ignore()
                     .WhenOther().ForwardTo(_outputBus)
 
                 .InStates(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)

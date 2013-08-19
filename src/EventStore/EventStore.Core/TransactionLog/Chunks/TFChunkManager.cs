@@ -185,7 +185,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var chunkHeader = chunk.ChunkHeader;
             var oldFileName = chunk.FileName;
 
-            Log.Info("Switching chunk #{0}-{1} ({2})...", chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, oldFileName);
+            Log.Info("Switching chunk #{0}-{1} ({2})...", chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, Path.GetFileName(oldFileName));
 
             chunk.Dispose();
             try
@@ -199,7 +199,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             var newFileName = _config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber);
             
-            Log.Info("File {0} will be moved to file {1}", oldFileName, newFileName);
+            Log.Info("File {0} will be moved to file {1}", Path.GetFileName(oldFileName), Path.GetFileName(newFileName));
             
             File.Move(oldFileName, newFileName);
             var newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash);
