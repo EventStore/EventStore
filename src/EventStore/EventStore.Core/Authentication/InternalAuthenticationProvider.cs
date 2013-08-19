@@ -24,7 +24,6 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
 using System;
 using System.Security.Principal;
@@ -36,26 +35,10 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 
-namespace EventStore.Core.Services.Transport.Http.Authentication
+namespace EventStore.Core.Authentication
 {
-    public class InternalAuthenticationProvider: IHandle<InternalAuthenticationProviderMessages.ResetPasswordCache>
-    {
-        public abstract class AuthenticationRequest
-        {
-            public readonly string Name;
-            public readonly string SuppliedPassword;
-
-            protected AuthenticationRequest(string name, string suppliedPassword)
-            {
-                Name = name;
-                SuppliedPassword = suppliedPassword;
-            }
-
-            public abstract void Unauthorized();
-            public abstract void Authenticated(IPrincipal principal);
-            public abstract void Error();
-        }
-
+	public class InternalAuthenticationProvider : IAuthenticationProvider, IHandle<InternalAuthenticationProviderMessages.ResetPasswordCache>
+	{
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
         private readonly LRUCache<string, Tuple<string, IPrincipal>> _userPasswordsCache;

@@ -34,9 +34,9 @@ namespace EventStore.Core.Services.Transport.Http
 {
     class IncomingHttpRequestAuthenticationManager : IHandle<IncomingHttpRequestMessage>
     {
-        private readonly AuthenticationProvider[] _providers;
+        private readonly HttpAuthenticationProvider[] _providers;
 
-        public IncomingHttpRequestAuthenticationManager(AuthenticationProvider[] providers)
+        public IncomingHttpRequestAuthenticationManager(HttpAuthenticationProvider[] providers)
         {
             _providers = providers;
         }
@@ -58,7 +58,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
             catch 
             {
-                AuthenticationProvider.ReplyUnauthorized(message.Entity);
+                HttpAuthenticationProvider.ReplyUnauthorized(message.Entity);
             }
         }
 

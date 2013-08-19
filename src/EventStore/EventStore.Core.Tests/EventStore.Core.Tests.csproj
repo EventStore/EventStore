@@ -68,6 +68,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Authentication\StubPasswordHashAlgorithm.cs" />
     <Compile Include="Bus\FSMSpeedTest.cs" />
     <Compile Include="Bus\Helpers\BusTestMessages.cs" />
     <Compile Include="Bus\Helpers\NoopConsumer.cs" />
@@ -212,9 +213,9 @@
     <Compile Include="Infrastructure\IRandTestFinishCondition.cs" />
     <Compile Include="Infrastructure\IRandTestItemProcessor.cs" />
     <Compile Include="Infrastructure\RandomTestRunner.cs" />
-    <Compile Include="Services\Authentication\when_handling_multiple_requests_with_reset_password_cache_in_between.cs" />
-    <Compile Include="Services\Authentication\when_handling_multiple_requests_with_the_same_correct_user_name_and_password.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_commit_timeout_after_commit.cs" />
+    <Compile Include="Authentication\when_handling_multiple_requests_with_reset_password_cache_in_between.cs" />
+    <Compile Include="Authentication\when_handling_multiple_requests_with_the_same_correct_user_name_and_password.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_prepare_timeout_after_prepares.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_completes_successfully.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_creating_delete_stream_request_manager.cs" />
@@ -321,7 +322,7 @@
     <Compile Include="Services\Storage\HashCollisions\with_three_collisioned_streams_one_event_each_read_index_should.cs" />
     <Compile Include="Services\Transport\Http\Authentication\basic_http_authentication_provider.cs" />
     <Compile Include="Services\Transport\Http\Authentication\rfc_2898_password_hash_algorithm.cs" />
-    <Compile Include="Services\Authentication\with_internal_authentication_provider.cs" />
+    <Compile Include="Authentication\with_internal_authentication_provider.cs" />
     <Compile Include="Services\Transport\Http\media_type.cs" />
     <Compile Include="Services\Transport\Http\atom_specs.cs" />
     <Compile Include="Services\Transport\Http\auto_convertion.cs" />

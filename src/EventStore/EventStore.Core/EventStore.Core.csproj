@@ -64,6 +64,8 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Authentication\AuthenticationRequest.cs" />
+    <Compile Include="Authentication\IAuthenticationProvider.cs" />
     <Compile Include="Bus\AdHocHandler.cs" />
     <Compile Include="Bus\QueueStatsCollector.cs" />
     <Compile Include="Bus\IQueuedHandler.cs" />
@@ -179,16 +181,16 @@
     <Compile Include="Services\SystemNames.cs" />
     <Compile Include="Services\RequestManager\Managers\TransactionCommitTwoPhaseRequestManager.cs" />
     <Compile Include="Services\TcpSendService.cs" />
-    <Compile Include="Services\Transport\Http\Authentication\AuthenticationProvider.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\HttpAuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Authentication\BasicHttpAuthenticationProvider.cs" />
-    <Compile Include="Services\Transport\Http\Authentication\AnonymousAuthenticationProvider.cs" />
-    <Compile Include="Services\Transport\Http\Authentication\InternalAuthenticationProvider.cs" />
-    <Compile Include="Services\Transport\Http\Authentication\OpenGenericPrincipal.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\AnonymousHttpAuthenticationProvider.cs" />
+    <Compile Include="Authentication\InternalAuthenticationProvider.cs" />
+    <Compile Include="Authentication\OpenGenericPrincipal.cs" />
     <Compile Include="Services\Transport\Http\Authentication\PasswordChangeNotificationReader.cs" />
-    <Compile Include="Services\Transport\Http\Authentication\PasswordHashAlgorithm.cs" />
+    <Compile Include="Authentication\PasswordHashAlgorithm.cs" />
     <Compile Include="Services\Transport\Http\Authentication\Rfc2898PasswordHashAlgorithm.cs" />
     <Compile Include="Data\UserData.cs" />
-    <Compile Include="Services\Transport\Http\Authentication\TrustedAuthenticationProvider.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\TrustedHttpAuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Controllers\GuidController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\UsersController.cs" />
@@ -336,6 +338,7 @@
       <Name>EventStore.Transport.Tcp</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

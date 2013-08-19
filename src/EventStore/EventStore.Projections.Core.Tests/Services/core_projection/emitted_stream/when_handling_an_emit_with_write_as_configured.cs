@@ -24,17 +24,13 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Http.Authentication;
-using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {

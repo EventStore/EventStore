@@ -24,19 +24,19 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
 using System.Net;
 using System.Security.Principal;
+using EventStore.Core.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    public class BasicHttpAuthenticationProvider : AuthenticationProvider
+    public class BasicHttpAuthenticationProvider : HttpAuthenticationProvider
     {
-        private readonly InternalAuthenticationProvider _internalAuthenticationProvider;
+        private readonly IAuthenticationProvider _internalAuthenticationProvider;
 
-        public BasicHttpAuthenticationProvider(InternalAuthenticationProvider internalAuthenticationProvider)
+        public BasicHttpAuthenticationProvider(IAuthenticationProvider internalAuthenticationProvider)
         {
             _internalAuthenticationProvider = internalAuthenticationProvider;
         }
@@ -58,7 +58,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             return false;
         }
 
-        private class HttpBasicAuthenticationRequest : InternalAuthenticationProvider.AuthenticationRequest
+        private class HttpBasicAuthenticationRequest : AuthenticationRequest
         {
             private readonly BasicHttpAuthenticationProvider _basicHttpAuthenticationProvider;
             private readonly IncomingHttpRequestMessage _message;
