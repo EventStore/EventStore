@@ -31,8 +31,15 @@ namespace EventStore.Projections.Core.Services.Processing
         [DataMember]
         public QuerySourceOptions Options { get; set; }
 
-        [DataMember]
-        public bool DefinesStateTransform { get; set; }
+        bool IQuerySources.DefinesStateTransform
+        {
+            get { return Options != null && Options.DefinesStateTransform; }
+        }
+
+        bool IQuerySources.OutputState 
+        {
+            get { return Options != null && Options.OutputState; }
+        }
 
         bool IQuerySources.IncludeLinksOption
         {
@@ -95,9 +102,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 Categories = (sources.Categories ?? new string[0]).ToArray(),
                 Events = (sources.Events ?? new string[0]).ToArray(),
                 Streams = (sources.Streams ?? new string[0]).ToArray(),
-                DefinesStateTransform = sources.DefinesStateTransform,
-                Options = new QuerySourceOptions{
+                Options = new QuerySourceOptions
+                {
                     DefinesStateTransform = sources.DefinesStateTransform,
+                    OutputState = sources.OutputState,
                     ForceProjectionName = sources.ForceProjectionNameOption,
                     IncludeLinks = sources.IncludeLinksOption,
                     PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,

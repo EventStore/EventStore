@@ -54,7 +54,18 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder, PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection, ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, CheckpointStrategy checkpointStrategy, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter, ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector, IODispatcher ioDispatcher, EventProcessingProjectionProcessingPhase firstPhase)
+        public override bool GetOutputState()
+        {
+            return _sourceDefinition.OutputState;
+        }
+
+        protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
+            IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
+            PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection,
+            ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher,
+            CheckpointStrategy checkpointStrategy, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
+            ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector,
+            IODispatcher ioDispatcher, EventProcessingProjectionProcessingPhase firstPhase)
         {
             return new IProjectionProcessingPhase[] {firstPhase};
         }

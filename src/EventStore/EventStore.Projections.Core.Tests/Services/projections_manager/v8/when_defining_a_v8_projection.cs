@@ -287,6 +287,23 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             }
         }
 
+        public class with_output_state : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    var z = fromAll().outputState();
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.OutputState);
+            }
+        }
+
         [TestFixture]
         public class with_state_stream_name_option : TestFixtureWithJsProjection
         {
@@ -433,4 +450,5 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.IsTrue(_emittedEventEnvelopes == null || !_emittedEventEnvelopes.Any());
         }
     }
+
 }

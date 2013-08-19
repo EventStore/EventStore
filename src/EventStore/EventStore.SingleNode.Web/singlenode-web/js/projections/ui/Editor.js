@@ -100,7 +100,7 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
             var anyResults = false;
             if (controls.result_stream) {
                 var resultStreamName = source.definition.resultStreamName;
-                if (source.definition.definesStateTransform && resultStreamName) {
+                if (source.definition.options.definesStateTransform && resultStreamName) {
                     controls.result_stream.attr("href", "/streams/" + resultStreamName);
                     controls.result_stream.show();
                     anyResults = true;
@@ -110,7 +110,7 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
             }
 
             if (controls.result) {
-                if (source.definition.definesStateTransform && !source.definition.byStream && !source.definition.byCustomPartitions) {
+                if (source.definition.options.definesStateTransform && !source.definition.byStream && !source.definition.byCustomPartitions) {
                     controls.result.show();
                     anyResults = true;
                 } else {

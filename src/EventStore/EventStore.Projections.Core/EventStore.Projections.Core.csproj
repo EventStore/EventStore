@@ -321,7 +321,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Prelude\1Prelude.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Prelude\Modules.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

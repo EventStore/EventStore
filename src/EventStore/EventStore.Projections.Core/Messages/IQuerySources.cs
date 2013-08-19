@@ -46,6 +46,8 @@ namespace EventStore.Projections.Core.Messages
 
         bool DefinesStateTransform { get; }
 
+        bool OutputState { get; }
+
         bool IncludeLinksOption { get; }
 
         string ResultStreamNameOption { get; }

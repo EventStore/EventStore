@@ -56,8 +56,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _stateHandler = _stateHandlerFactory.Create(
                 "JS", _projection, logger: s =>
                     {
-                        if (!s.StartsWith("P:")) _logged.Add(s);
-                        else Console.WriteLine(s);
+                        if (s.StartsWith("P:"))
+                            Console.WriteLine(s);
+                        else
+                            _logged.Add(s);
                     }); // skip prelude debug output
             _source = _stateHandler.GetSourceDefinition();
             if (_state != null)

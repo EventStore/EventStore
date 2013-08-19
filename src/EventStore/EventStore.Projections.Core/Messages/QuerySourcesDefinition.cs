@@ -55,8 +55,15 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "byCustomPartitions")]
         public bool ByCustomPartitions { get; set; }
 
-        [DataMember(Name = "definesStateTransform")]
-        public bool DefinesStateTransform { get; set; }
+        bool IQuerySources.DefinesStateTransform
+        {
+            get { return Options != null && Options.DefinesStateTransform; }
+        }
+
+        bool IQuerySources.OutputState
+        {
+            get { return Options != null && Options.OutputState; }
+        }
 
         bool IQuerySources.IncludeLinksOption
         {
@@ -105,10 +112,11 @@ namespace EventStore.Projections.Core.Messages
                 Categories = (sources.Categories ?? new string[0]).ToArray(),
                 Events = (sources.Events ?? new string[0]).ToArray(),
                 Streams = (sources.Streams ?? new string[0]).ToArray(),
-                DefinesStateTransform = sources.DefinesStateTransform,
                 Options =
                     new QuerySourcesDefinitionOptions
                     {
+                        DefinesStateTransform = sources.DefinesStateTransform,
+                        OutputState = sources.OutputState,
                         ForceProjectionName = sources.ForceProjectionNameOption,
                         IncludeLinks = sources.IncludeLinksOption,
                         PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,

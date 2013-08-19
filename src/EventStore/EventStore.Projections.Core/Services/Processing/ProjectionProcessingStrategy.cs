@@ -69,6 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public abstract bool GetStopOnEof();
         public abstract bool GetUseCheckpoints();
         public abstract bool GetIsPartitioned();
+        public abstract bool GetOutputState();
 
         public abstract IProjectionProcessingPhase[] CreateProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,

@@ -43,7 +43,6 @@ namespace EventStore.Projections.Core.Services.Processing
         protected List<string> _events;
         protected bool _byStream;
         protected bool _byCustomPartitions;
-        protected bool _definesStateTransform;
 
         public void FromAll()
         {
@@ -93,7 +92,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void SetDefinesStateTransform()
         {
-            _definesStateTransform = true;
+            _options.DefinesStateTransform = true;
+            _options.OutputState = true;
+        }
+
+        public void SetOutputState()
+        {
+            _options.OutputState = true;
         }
 
         public void SetResultStreamNameOption(string resultStreamName)
@@ -163,7 +168,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public bool DefinesStateTransform
         {
-            get { return _definesStateTransform; }
+            get { return _options.DefinesStateTransform; }
+        }
+
+        public bool OutputState
+        {
+            get { return _options.OutputState; }
         }
 
         public bool IncludeLinksOption
@@ -232,6 +242,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         [DataMember]
         public bool DefinesStateTransform { get; set; }
+
+        [DataMember]
+        public bool OutputState { get; set; }
 
         [DataMember]
         public bool IncludeLinks { get; set; }

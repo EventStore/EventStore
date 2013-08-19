@@ -88,6 +88,7 @@ function scope($on, $notify) {
         return {
             transformBy: transformBy,
             filterBy: filterBy,
+            outputState: outputState,
             outputTo: outputTo,
         };
     }
@@ -100,6 +101,7 @@ function scope($on, $notify) {
         return {
             transformBy: transformBy,
             filterBy: filterBy,
+            outputState: outputState,
             outputTo: outputTo,
         };
     }
@@ -110,6 +112,15 @@ function scope($on, $notify) {
             resultStreamName: resultStream,
             partitionResultStreamNamePattern: partitionResultStreamPattern,
         });
+    }
+
+    function outputState() {
+        eventProcessor.$outputState();
+        return {
+            transformBy: transformBy,
+            filterBy: filterBy,
+            outputTo: outputTo,
+        };
     }
 
     function when(handlers) {
@@ -128,6 +139,7 @@ function scope($on, $notify) {
             $defines_state_transform: $defines_state_transform,
             transformBy: transformBy,
             filterBy: filterBy,
+            outputState: outputState,
             outputTo: outputTo,
         };
     }
@@ -155,6 +167,7 @@ function scope($on, $notify) {
             foreachStream: foreachStream,
             when: when,
             whenAny: whenAny,
+            outputState: outputState,
         };
     }
 
@@ -165,6 +178,7 @@ function scope($on, $notify) {
             when: when,
             whenAny: whenAny,
             foreachStream: foreachStream,
+            outputState: outputState,
         };
     }
 
@@ -174,6 +188,7 @@ function scope($on, $notify) {
             partitionBy: partitionBy,
             when: when,
             whenAny: whenAny,
+            outputState: outputState,
         };
     }
 
@@ -186,6 +201,7 @@ function scope($on, $notify) {
             partitionBy: partitionBy,
             when: when,
             whenAny: whenAny,
+            outputState: outputState,
         };
     }
 

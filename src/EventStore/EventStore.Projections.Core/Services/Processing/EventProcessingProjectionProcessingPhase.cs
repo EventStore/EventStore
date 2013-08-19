@@ -47,6 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CoreProjectionQueue _processingQueue;
         private readonly PartitionStateCache _partitionStateCache;
         private readonly bool _definesStateTransform;
+        private readonly bool _outputState;
         private string _handlerPartition;
         private readonly IResultEmitter _resultEmitter;
         private readonly StatePartitionSelector _statePartitionSelector;
@@ -65,8 +66,8 @@ namespace EventStore.Projections.Core.Services.Processing
             CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
             ProjectionProcessingStrategy projectionProcessingStrategy, ProjectionConfig projectionConfig,
             Action updateStatistics, IProjectionStateHandler projectionStateHandler,
-            PartitionStateCache partitionStateCache, bool definesStateTransform, string projectionName, ILogger logger,
-            CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
+            PartitionStateCache partitionStateCache, bool definesStateTransform, bool outputState, string projectionName,
+            ILogger logger, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
             ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
             StatePartitionSelector statePartitionSelector, CheckpointStrategy checkpointStrategy,
             ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, int phase)
@@ -77,6 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionStateHandler = projectionStateHandler;
             _partitionStateCache = partitionStateCache;
             _definesStateTransform = definesStateTransform;
+            _outputState = outputState;
             _resultEmitter = resultEmitter;
             _processingQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, updateStatistics);
@@ -525,7 +527,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         _checkpointManager.NewPartition(result.Partition, eventCheckpointTag);
                     if (result.EmittedEvents != null)
                         _checkpointManager.EventsEmitted(result.EmittedEvents, result.CausedBy, result.CorrelationId);
-                    if (result.NewState != null)
+                    if (_outputState && result.NewState != null)
                     {
                         EmitRunningResults(result);
                         _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState);

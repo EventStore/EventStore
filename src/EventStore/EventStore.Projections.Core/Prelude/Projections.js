@@ -48,9 +48,11 @@ var $projections = {
             categories: [], 
             streams: [], 
             events: [],
-            definesStateTransform: false,
-            options: { 
-                resultStreamName: null, 
+
+            options: {
+                definesStateTransform: false,
+                outputState: false,
+                resultStreamName: null,
                 partitionResultStreamNamePattern: null, 
                 $forceProjectionName: null,
                 $includeLinks: false,
@@ -274,12 +276,18 @@ var $projections = {
         }
 
         function $defines_state_transform() {
-            sources.definesStateTransform = true;
+            sources.options.definesStateTransform = true;
+            sources.options.outputState = true;
+        }
+
+        function $outputState() {
+            sources.options.outputState = true;
         }
 
         function chainTransformBy(by) {
             transformers.push(by);
-            sources.definesStateTransform = true;
+            sources.options.definesStateTransform = true;
+            sources.options.outputState = true;
         }
 
         function fromAll() {
@@ -311,6 +319,7 @@ var $projections = {
             byStream: byStream,
             partitionBy: partitionBy,
             $defines_state_transform: $defines_state_transform,
+            $outputState: $outputState,
             chainTransformBy: chainTransformBy,
 
             emit: emit,

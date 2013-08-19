@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class DefaultProjectionProcessingStrategy : ProjectionProcessingStrategy
     {
-        protected readonly IProjectionStateHandler _stateHandler;
+        private readonly IProjectionStateHandler _stateHandler;
         protected readonly ProjectionConfig _projectionConfig;
         protected readonly IQuerySources _sourceDefinition;
 
@@ -51,10 +51,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _sourceDefinition = sourceDefinition;
         }
 
-        public sealed override IProjectionProcessingPhase[] CreateProcessingPhases(
+        public override sealed IProjectionProcessingPhase[] CreateProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
             Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
-            ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher, CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
+            ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher,
+            CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
         {
             var checkpointStrategy = CheckpointStrategy.Create(0, _sourceDefinition, _projectionConfig, timeProvider);
 
@@ -70,8 +71,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var firstPhase = new EventProcessingProjectionProcessingPhase(
                 coreProjection, projectionCorrelationId, publisher, this, _projectionConfig, updateStatistics,
-                _stateHandler, partitionStateCache, checkpointStrategy._definesStateTransform, _name, _logger,
-                zeroCheckpointTag, resultEmitter, checkpointManager, statePartitionSelector, checkpointStrategy,
+                _stateHandler, partitionStateCache, checkpointStrategy._definesStateTransform, GetOutputState(), _name,
+                _logger, zeroCheckpointTag, resultEmitter, checkpointManager, statePartitionSelector, checkpointStrategy,
                 timeProvider, subscriptionDispatcher, 0);
 
             return CreateProjectionProcessingPhases(
