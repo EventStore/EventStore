@@ -24,15 +24,15 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
 using System;
 using System.Security.Principal;
+using EventStore.Core.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    public class TrustedAuthenticationProvider : AuthenticationProvider
+    public class TrustedHttpAuthenticationProvider : HttpAuthenticationProvider
     {
         public override bool Authenticate(IncomingHttpRequestMessage message)
         {

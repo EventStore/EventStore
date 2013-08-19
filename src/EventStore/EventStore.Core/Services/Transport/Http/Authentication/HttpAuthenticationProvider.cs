@@ -24,23 +24,34 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
+using System.Security.Principal;
 using EventStore.Core.Services.Transport.Http.Messages;
+using EventStore.Transport.Http;
+using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication
 {
-    public class AnonymousAuthenticationProvider : AuthenticationProvider
+    public abstract class HttpAuthenticationProvider
     {
-        public override bool Authenticate(IncomingHttpRequestMessage message)
+        public abstract bool Authenticate(IncomingHttpRequestMessage message);
+
+        protected void Authenticated(IncomingHttpRequestMessage message, IPrincipal user)
         {
-            var entity = message.Entity;
-            if (entity.User == null)
-            {
-                Authenticated(message, user: null);
-                return true;
-            }
-            return false;
+            var authenticatedEntity = message.Entity.SetUser(user);
+            message.NextStagePublisher.Publish(new AuthenticatedHttpRequestMessage(message.HttpService, authenticatedEntity));
+        }
+
+        public static void ReplyUnauthorized(HttpEntity entity)
+        {
+            var manager = entity.CreateManager();
+            manager.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", exception => { });
+        }
+
+        public static void ReplyInternalServerError(HttpEntity entity)
+        {
+            var manager = entity.CreateManager();
+            manager.ReplyStatus(HttpStatusCode.InternalServerError, "Internal Server Error", exception => { });
         }
     }
 }

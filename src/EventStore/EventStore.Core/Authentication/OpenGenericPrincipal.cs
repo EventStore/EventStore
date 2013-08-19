@@ -24,58 +24,41 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
-using System.Linq;
 using System.Security.Principal;
-using EventStore.Core.Messages;
-using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Authentication
+namespace EventStore.Core.Authentication
 {
-    [TestFixture]
-    public class when_handling_multiple_requests_with_the_same_correct_user_name_and_password :
-        with_internal_authentication_provider
+    public class OpenGenericPrincipal : IPrincipal
     {
-        private bool _unauthorized;
-        private IPrincipal _authenticatedAs;
-        private bool _error;
+        private readonly GenericPrincipal _base;
+        private readonly string[] _roles;
 
-        protected override void Given()
+        public OpenGenericPrincipal(IIdentity identity, string[] roles)
         {
-            base.Given();
-            ExistingEvent("$user-user", "$user", null, "{LoginName:'user', Salt:'drowssap',Hash:'password'}");
+            _roles = roles;
+            _base = new GenericPrincipal(identity, roles);
         }
 
-        [SetUp]
-        public void SetUp()
+        public OpenGenericPrincipal(string identity, params string[] roles)
         {
-            SetUpProvider();
-
-            _internalAuthenticationProvider.Authenticate(
-                new TestAuthenticationRequest("user", "password", () => { }, p => { }, () => { }));
-
-            _consumer.HandledMessages.Clear();
-
-            _internalAuthenticationProvider.Authenticate(
-                new TestAuthenticationRequest(
-                    "user", "password", () => _unauthorized = true, p => _authenticatedAs = p, () => _error = true));
+            _roles = roles;
+            _base = new GenericPrincipal(new GenericIdentity(identity), roles);
         }
 
-        [Test]
-        public void authenticates_user()
+        public bool IsInRole(string role)
         {
-            Assert.IsFalse(_unauthorized);
-            Assert.IsFalse(_error);
-            Assert.NotNull(_authenticatedAs);
-            Assert.IsTrue(_authenticatedAs.IsInRole("user"));
+            return _base.IsInRole(role);
         }
 
-        [Test]
-        public void does_not_publish_any_read_requests()
+        public IIdentity Identity
         {
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>().Count());
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
+            get { return _base.Identity; }
+        }
+
+        public string[] Roles
+        {
+            get { return _roles; }
         }
     }
 }

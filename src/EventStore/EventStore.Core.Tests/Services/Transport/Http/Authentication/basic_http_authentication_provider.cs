@@ -24,18 +24,13 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
-using System;
 using System.Net;
 using System.Security.Principal;
-using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
-using EventStore.Core.Tests.Helpers;
-using EventStore.Core.Tests.Services.Authentication;
+using EventStore.Core.Tests.Authentication;
 using EventStore.Transport.Http.EntityManagement;
 using NUnit.Framework;
 using System.Linq;
@@ -202,23 +197,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
         }
     }
 
-    public class StubPasswordHashAlgorithm : PasswordHashAlgorithm
-    {
-        public override void Hash(string password, out string hash, out string salt)
-        {
-            hash = password;
-            salt = ReverseString(password);
-        }
-
-        public override bool Verify(string password, string hash, string salt)
-        {
-            return password == hash && ReverseString(password) == salt;
-        }
-
-        private static string ReverseString(string s)
-        {
-            return new String(s.Reverse().ToArray());
-        }
-    }
+    
 }
 

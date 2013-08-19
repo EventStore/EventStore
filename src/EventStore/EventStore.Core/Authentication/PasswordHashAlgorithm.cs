@@ -24,42 +24,12 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
-using System.Security.Principal;
-
-namespace EventStore.Core.Services.Transport.Http.Authentication
+namespace EventStore.Core.Authentication
 {
-    public class OpenGenericPrincipal: IPrincipal
+    public abstract class PasswordHashAlgorithm
     {
-        private readonly GenericPrincipal _base;
-        private readonly string[] _roles;
-
-        public OpenGenericPrincipal(IIdentity identity, string[] roles)
-        {
-            _roles = roles;
-            _base = new GenericPrincipal(identity, roles);
-        }
-
-        public OpenGenericPrincipal(string identity, params string[] roles)
-        {
-            _roles = roles;
-            _base = new GenericPrincipal(new GenericIdentity(identity), roles);
-        }
-
-        public bool IsInRole(string role)
-        {
-            return _base.IsInRole(role);
-        }
-
-        public IIdentity Identity
-        {
-            get { return _base.Identity; }
-        }
-
-        public string[] Roles
-        {
-            get { return _roles; }
-        }
+        public abstract void Hash(string password, out string hash, out string salt);
+        public abstract bool Verify(string password, string hash, string salt);
     }
 }

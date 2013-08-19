@@ -24,19 +24,17 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
 using System;
-using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
