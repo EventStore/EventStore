@@ -172,7 +172,7 @@ namespace EventStore.TestClient.Commands
                                 {
                                     context.Log.Info("Successfully committed transaction [{0}]!", dto.TransactionId);
                                     context.Log.Info("Transaction took: {0}.", sw.Elapsed);
-                                    PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
+                                    PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)Math.Round(sw.Elapsed.TotalMilliseconds));
                                     context.Success();
                                 }
                                 conn.Close();

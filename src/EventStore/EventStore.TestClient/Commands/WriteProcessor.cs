@@ -111,7 +111,7 @@ namespace EventStore.TestClient.Commands
                     if (dto.Result == TcpClientMessageDto.OperationResult.Success)
                     {
                         context.Log.Info("Successfully written.");
-                        PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
+                        PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)Math.Round(sw.Elapsed.TotalMilliseconds));
                         context.Success();
                     }
                     else

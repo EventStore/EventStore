@@ -158,7 +158,7 @@ namespace EventStore.TestClient.Commands
                               PerfUtils.Row(PerfUtils.Col("successes", succ), PerfUtils.Col("failures", fail)));
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt), (int)reqPerSec);
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt), (int)(100.0 * fail / (fail + succ)));
-            PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)(sw.ElapsedMilliseconds / requestsCnt));
+            PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)Math.Round(sw.Elapsed.TotalMilliseconds / requestsCnt));
 
             if (succ != requestsCnt)
                 context.Fail(reason: "There were errors or not all requests completed.");

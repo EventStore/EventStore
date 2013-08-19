@@ -115,7 +115,7 @@ namespace EventStore.TestClient.Commands
                                             PerfUtils.Col("requestsCnt", requestsCnt),
                                             PerfUtils.Col("ElapsedMilliseconds", sw.ElapsedMilliseconds)));
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt), (int) reqPerSec);
-            PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int) (sw.ElapsedMilliseconds/all));
+            PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int) Math.Round(sw.Elapsed.TotalMilliseconds/all));
 
             if (Interlocked.Read(ref all) == requestsCnt)
                 context.Success();

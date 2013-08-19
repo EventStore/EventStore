@@ -151,7 +151,7 @@ namespace EventStore.TestClient.Commands
             var reqPerSec = (all + 0.0)/sw.ElapsedMilliseconds*1000;
             context.Log.Info("Completed. Successes: {0}, failures: {1}", succ, fail);
             context.Log.Info("{0} requests completed in {1}ms ({2:0.00} reqs per sec, latency: {3:0.00} ms).",
-                             all, sw.ElapsedMilliseconds, reqPerSec, (sw.ElapsedMilliseconds + 0.0) / requestsCnt);
+                             all, sw.ElapsedMilliseconds, reqPerSec, (sw.Elapsed.TotalMilliseconds + 0.0) / requestsCnt);
             PerfUtils.LogData(Keyword,
                               PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
                                             PerfUtils.Col("requestsCnt", requestsCnt),
@@ -159,7 +159,7 @@ namespace EventStore.TestClient.Commands
                               PerfUtils.Row(PerfUtils.Col("successes", succ), PerfUtils.Col("failures", fail)));
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt), (int) reqPerSec);
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt), (int)(100.0 * fail / (fail + succ)));
-            PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int) (sw.ElapsedMilliseconds/requestsCnt));
+            PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int) Math.Round(sw.Elapsed.TotalMilliseconds/requestsCnt));
 
             if (succ != requestsCnt)
                 context.Fail(reason: "There were errors or not all requests completed.");
