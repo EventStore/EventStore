@@ -114,7 +114,7 @@ namespace EventStore.Core.Services.Storage
             {
                 while (!_stop)
                 {
-                        ChaserIteration();
+                    ChaserIteration();
                 }
             }
             catch (Exception exc)
