@@ -176,7 +176,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             catch (FileBeingDeletedException)
             {
                 if (retries > MaxRetries)
-                    throw new InvalidOperationException("Been told the file was deleted > MaxRetries times. Probably a problem in db.");
+                    throw new FileBeingDeletedException("Been told the file was deleted > MaxRetries times. Probably a problem in db.");
                 return TryReadAtInternal(position, retries + 1);
             }
         }
@@ -201,7 +201,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             catch (FileBeingDeletedException)
             {
                 if (retries > MaxRetries)
-                    throw new InvalidOperationException("Been told the file was deleted > MaxRetries times. Probably a problem in db.");
+                    throw new FileBeingDeletedException("Been told the file was deleted > MaxRetries times. Probably a problem in db.");
                 return ExistsAtInternal(position, retries + 1);
             }
         }

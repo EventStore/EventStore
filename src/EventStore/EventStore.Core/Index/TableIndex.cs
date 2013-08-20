@@ -275,12 +275,12 @@ namespace EventStore.Core.Index
                         if (_awaitingMemTables.Count == 1)
                         {
                             _backgroundRunning = false;
-                            _backgroundRunningEvent.Set(); 
+                            _backgroundRunningEvent.Set();
                             return;
                         }
                         tableItem = _awaitingMemTables[_awaitingMemTables.Count - 1];
                     }
-                    
+
                     PTable ptable;
                     var memtable = tableItem.Table as IMemTable;
                     if (memtable != null)
@@ -335,7 +335,7 @@ namespace EventStore.Core.Index
                         // so if we have another PTable instance with same ID,
                         // we need to kill that instance as we added ours already
                         if (!ReferenceEquals(corrTable.Table, ptable) && corrTable.Table is PTable)
-                            ((PTable)corrTable.Table).MarkForDestruction(); 
+                            ((PTable)corrTable.Table).MarkForDestruction();
 
                         Log.Trace("There are now {0} awaiting tables.", memTables.Count);
                         _awaitingMemTables = memTables;
@@ -346,6 +346,10 @@ namespace EventStore.Core.Index
                     // from last step, not to do full rebuild.
                     mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
                 }
+            }
+            catch (FileBeingDeletedException exc)
+            {
+                Log.ErrorException(exc, "Couldn't acquire chunk in TableIndex.ReadOffQueue. It is ok if node is shutting down.");
             }
             catch (Exception exc)
             {
