@@ -177,7 +177,7 @@ namespace EventStore.Web.Playground
 
             // TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
-            Bus.Subscribe(TimerService);
+            Bus.Subscribe<TimerMessage.Schedule>(TimerService);
 
             monitoringQueue.Start();
             MainQueue.Start();

@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Diagnostics;
 using System.Net;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -211,6 +210,7 @@ namespace EventStore.Core.Services.VNode
             if (_exitProcessOnShutdown)
             {
                 _node.WorkersHandler.Stop();
+                _mainQueue.RequestStop();
                 Application.Exit(ExitCode.Success, "Shutdown with exiting from process was requested.");
             }
         }

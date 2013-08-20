@@ -43,7 +43,8 @@ namespace EventStore.Core.Services
         AccessDenied = 1
     }
 
-    public class SubscriptionsService : IHandle<TcpMessage.ConnectionClosed>,
+    public class SubscriptionsService : IHandle<SystemMessage.BecomeShuttingDown>,
+                                        IHandle<TcpMessage.ConnectionClosed>,
                                         IHandle<ClientMessage.SubscribeToStream>,
                                         IHandle<ClientMessage.UnsubscribeFromStream>,
                                         IHandle<StorageMessage.EventCommited>
@@ -54,15 +55,27 @@ namespace EventStore.Core.Services
 
         private readonly Dictionary<string, List<Subscription>> _subscriptionGroupsByStream = new Dictionary<string, List<Subscription>>();
         private readonly Dictionary<Guid, Subscription> _subscriptionsByCorrelationId = new Dictionary<Guid, Subscription>();
+        private readonly IQueuedHandler _queuedHandler;
         private readonly IReadIndex _readIndex;
 
         private ResolvedEvent? _lastResolvedPair;
 
-        public SubscriptionsService(IReadIndex readIndex)
+        public SubscriptionsService(IQueuedHandler queuedHandler, IReadIndex readIndex)
         {
+            Ensure.NotNull(queuedHandler, "queudHandler");
             Ensure.NotNull(readIndex, "readIndex");
 
+            _queuedHandler = queuedHandler;
             _readIndex = readIndex;
+        }
+
+        public void Handle(SystemMessage.BecomeShuttingDown message)
+        {
+            foreach (var subscription in _subscriptionsByCorrelationId.Values)
+            {
+                DropSubscription(subscription, sendDropNotification: true);
+            }
+            _queuedHandler.RequestStop();
         }
 
         public void Handle(TcpMessage.ConnectionClosed message)

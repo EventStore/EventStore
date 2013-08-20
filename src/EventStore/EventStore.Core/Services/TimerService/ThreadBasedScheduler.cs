@@ -59,6 +59,11 @@ namespace EventStore.Core.Services.TimerService
             _timerThread.Start();
         }
 
+        public void Stop()
+        {
+            Dispose();
+        }
+
         public void Schedule(TimeSpan after, Action<IScheduler, object> callback, object state)
         {
             _pending.Enqueue(new ScheduledTask(_timeProvider.Now.Add(after), callback, state));

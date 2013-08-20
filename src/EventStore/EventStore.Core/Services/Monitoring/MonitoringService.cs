@@ -54,6 +54,7 @@ namespace EventStore.Core.Services.Monitoring
     public class MonitoringService : IHandle<SystemMessage.SystemInit>,
                                      IHandle<SystemMessage.StateChangeMessage>,
                                      IHandle<SystemMessage.BecomeShuttingDown>,
+                                     IHandle<SystemMessage.BecomeShutdown>,
                                      IHandle<ClientMessage.WriteEventsCompleted>,
                                      IHandle<MonitoringMessage.GetFreshStats>
     {
@@ -64,7 +65,7 @@ namespace EventStore.Core.Services.Monitoring
         public static readonly TimeSpan MemoizePeriod = TimeSpan.FromSeconds(1);
         private static readonly IEnvelope NoopEnvelope = new NoopEnvelope();
 
-        private readonly IPublisher _monitoringBus;
+        private readonly IQueuedHandler _monitoringQueue;
         private readonly IPublisher _statsCollectionBus;
         private readonly IPublisher _mainBus;
         private readonly ICheckpoint _writerCheckpoint;
@@ -81,7 +82,7 @@ namespace EventStore.Core.Services.Monitoring
         private bool _statsStreamCreated;
         private Guid _streamMetadataWriteCorrId;
 
-        public MonitoringService(IPublisher monitoringBus,
+        public MonitoringService(IQueuedHandler monitoringQueue,
                                  IPublisher statsCollectionBus,
                                  IPublisher mainBus,
                                  ICheckpoint writerCheckpoint,
@@ -90,14 +91,14 @@ namespace EventStore.Core.Services.Monitoring
                                  IPEndPoint nodeEndpoint,
                                  StatsStorage statsStorage)
         {
-            Ensure.NotNull(monitoringBus, "monitoringBus");
+            Ensure.NotNull(monitoringQueue, "monitoringQueue");
             Ensure.NotNull(statsCollectionBus, "statsCollectionBus");
             Ensure.NotNull(mainBus, "mainBus");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.NotNullOrEmpty(dbPath, "dbPath");
             Ensure.NotNull(nodeEndpoint, "nodeEndpoint");
 
-            _monitoringBus = monitoringBus;
+            _monitoringQueue = monitoringQueue;
             _statsCollectionBus = statsCollectionBus;
             _mainBus = mainBus;
             _writerCheckpoint = writerCheckpoint;
@@ -207,13 +208,32 @@ namespace EventStore.Core.Services.Monitoring
             }
         }
 
+        public void Handle(SystemMessage.BecomeShuttingDown message)
+        {
+            try
+            {
+                _timer.Dispose();
+                _systemStats.Dispose();
+            }
+            catch (ObjectDisposedException)
+            {
+                // ok, no problem if already disposed
+            }
+            
+        }
+
+        public void Handle(SystemMessage.BecomeShutdown message)
+        {
+            _monitoringQueue.RequestStop();
+        }
+
         private void SetStatsStreamMetadata()
         {
             var metadata = Helper.UTF8NoBom.GetBytes(StreamMetadata);
             _streamMetadataWriteCorrId = Guid.NewGuid();
             _mainBus.Publish(
                 new ClientMessage.WriteEvents(
-                    _streamMetadataWriteCorrId, _streamMetadataWriteCorrId, new PublishEnvelope(_monitoringBus),
+                    _streamMetadataWriteCorrId, _streamMetadataWriteCorrId, new PublishEnvelope(_monitoringQueue),
                     false, SystemStreams.MetastreamOf(_nodeStatsStream), ExpectedVersion.NoStream,
                     new[]{new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata, null)},
                     SystemAccount.Principal));
@@ -254,20 +274,6 @@ namespace EventStore.Core.Services.Monitoring
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-        }
-
-        public void Handle(SystemMessage.BecomeShuttingDown message)
-        {
-            try
-            {
-                _timer.Dispose();
-                _systemStats.Dispose();
-            }
-            catch (ObjectDisposedException)
-            {
-                // ok, no problem if already disposed
-            }
-            
         }
 
         public void Handle(MonitoringMessage.GetFreshStats message)

@@ -27,6 +27,7 @@
 // 
 using System;
 using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.TimerService
 {
@@ -36,13 +37,20 @@ namespace EventStore.Core.Services.TimerService
     /// make sure that we can handle timeouts and callbacks any time
     /// (even during system shutdowns and initialization)
     /// </summary>
-    public class TimerService: IDisposable, IHandle<TimerMessage.Schedule>
+    public class TimerService: IDisposable, 
+                               IHandle<SystemMessage.BecomeShutdown>,
+                               IHandle<TimerMessage.Schedule>
     {
         private readonly IScheduler _scheduler;
 
         public TimerService(IScheduler scheduler)
         {
             _scheduler = scheduler;
+        }
+
+        public void Handle(SystemMessage.BecomeShutdown message)
+        {
+            _scheduler.Stop();
         }
 
         public void Handle(TimerMessage.Schedule message)

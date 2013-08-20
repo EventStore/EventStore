@@ -40,7 +40,7 @@ namespace EventStore.Core.Bus
     /// to the consumer. It also tracks statistics about the message processing to help
     /// in identifying bottlenecks
     /// </summary>
-    public class QueuedHandlerThreadPool : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue, IThreadSafePublisher
+    public class QueuedHandlerThreadPool : IQueuedHandler, IMonitoredQueue, IThreadSafePublisher
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandlerThreadPool>();
 
@@ -95,7 +95,12 @@ namespace EventStore.Core.Bus
             _stop = true;
             if (!_stopped.Wait(_threadStopWaitTimeout))
                 throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
-            _queueStats.Stop();
+            _queueMonitor.Unregister(this);
+        }
+
+        public void RequestStop()
+        {
+            _stop = true;
             _queueMonitor.Unregister(this);
         }
 

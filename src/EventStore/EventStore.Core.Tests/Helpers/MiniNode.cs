@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.Helpers
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}-{2}", extTcpPort, extSecTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
             Db = new TFChunkDb(CreateDbConfig(chunkSize ?? ChunkSize, _dbPath, cachedChunkSize ?? CachedChunkSize));
-
+            
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
             HttpEndPoint = new IPEndPoint(ip, extHttpPort);

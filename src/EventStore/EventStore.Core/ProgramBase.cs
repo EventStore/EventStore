@@ -43,7 +43,9 @@ namespace EventStore.Core
 {
     public abstract class ProgramBase<TOptions> where TOptions : IOptions, new()
     {
-        protected readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
+// ReSharper disable StaticFieldInGenericType
+        protected static readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
+// ReSharper restore StaticFieldInGenericType
 
         private int _exitCode;
         private readonly ManualResetEventSlim _exitEvent = new ManualResetEventSlim(false);
@@ -130,6 +132,8 @@ namespace EventStore.Core
 
         private void Exit(int exitCode)
         {
+            LogManager.Finish();
+
             _exitCode = exitCode;
             _exitEvent.Set();
         }

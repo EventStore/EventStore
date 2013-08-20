@@ -104,7 +104,7 @@ namespace EventStore.Core
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
-            var monitoringQueue = new QueuedHandler(monitoringInnerBus, "MonitoringQueue", true, TimeSpan.FromMilliseconds(100));
+            var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", true, TimeSpan.FromMilliseconds(100));
             var monitoring = new MonitoringService(monitoringQueue,
                                                    monitoringRequestBus,
                                                    _mainQueue,
@@ -116,10 +116,12 @@ namespace EventStore.Core
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
+            _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShutdown, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.WriteEventsCompleted, Message>());
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
+            monitoringInnerBus.Subscribe<SystemMessage.BecomeShutdown>(monitoring);
             monitoringInnerBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 
@@ -306,17 +308,19 @@ namespace EventStore.Core
 
             // SUBSCRIPTIONS
             var subscrBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
-            var subscription = new SubscriptionsService(readIndex);
-            subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);
-            subscrBus.Subscribe<ClientMessage.SubscribeToStream>(subscription);
-            subscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(subscription);
-            subscrBus.Subscribe<StorageMessage.EventCommited>(subscription);
-
             var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", false);
+            _mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.SubscribeToStream, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommited, Message>());
+
+            var subscription = new SubscriptionsService(subscrQueue, readIndex);
+            subscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscription);
+            subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);
+            subscrBus.Subscribe<ClientMessage.SubscribeToStream>(subscription);
+            subscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(subscription);
+            subscrBus.Subscribe<StorageMessage.EventCommited>(subscription);
 
             // USER MANAGEMENT
             var ioDispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_mainQueue));
@@ -342,9 +346,8 @@ namespace EventStore.Core
             // TIMER
             _timeProvider = new RealTimeProvider();
             _timerService = new TimerService(new ThreadBasedScheduler(_timeProvider));
-            // ReSharper disable RedundantTypeArgumentsOfMethod
+            _mainBus.Subscribe<SystemMessage.BecomeShutdown>(_timerService);
             _mainBus.Subscribe<TimerMessage.Schedule>(_timerService);
-            // ReSharper restore RedundantTypeArgumentsOfMethod
 
             _workersHandler.Start();
             _mainQueue.Start();

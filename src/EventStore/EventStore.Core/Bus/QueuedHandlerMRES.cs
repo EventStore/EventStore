@@ -102,7 +102,11 @@ namespace EventStore.Core.Bus
             _stop = true;
             if (!_stopped.Wait(_threadStopWaitTimeout))
                 throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
-            _queueMonitor.Unregister(this);
+        }
+
+        public void RequestStop()
+        {
+            _stop = true;
         }
 
         private void ReadFromQueue(object o)
@@ -164,6 +168,7 @@ namespace EventStore.Core.Bus
             _queueStats.Stop();
 
             _stopped.Set();
+            _queueMonitor.Unregister(this);
             Thread.EndThreadAffinity();
         }
 

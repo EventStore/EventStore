@@ -109,7 +109,7 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<SystemMessage.BecomeShutdown>.Handle(SystemMessage.BecomeShutdown message)
         {
-            // by now (in case of successful shutdown process, all readers and writers should not be using ReadIndex
+            // by now (in case of successful shutdown process), all readers and writers should not be using ReadIndex
             _readIndex.Close();
         }
 

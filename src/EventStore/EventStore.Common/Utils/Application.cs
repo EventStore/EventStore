@@ -93,8 +93,6 @@ namespace EventStore.Common.Utils
                     Log.Info(message);
             }
 
-            LogManager.Finish();
-
             var exit = _exit;
             if (exit != null)
                 exit(exitCode);

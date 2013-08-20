@@ -145,7 +145,7 @@ namespace EventStore.Projections.Core
                         Forwarder.Create<CoreProjectionManagementMessage.Prepared>(_managerInputQueue));
 
                 }
-                projectionNode.CoreOutput.Subscribe(timerService);
+                projectionNode.CoreOutput.Subscribe<TimerMessage.Schedule>(timerService);
 
 
                 projectionNode.CoreOutput.Subscribe(Forwarder.Create<Message>(coreQueue)); // forward all
@@ -173,7 +173,7 @@ namespace EventStore.Projections.Core
                     Forwarder.Create<ProjectionManagementMessage.RequestSystemProjections>(mainQueue));
                 _projectionManagerNode.Output.Subscribe(Forwarder.Create<Message>(_managerInputQueue));
 
-                _projectionManagerNode.Output.Subscribe(timerService);
+                _projectionManagerNode.Output.Subscribe<TimerMessage.Schedule>(timerService);
 
                 // self forward all
 
