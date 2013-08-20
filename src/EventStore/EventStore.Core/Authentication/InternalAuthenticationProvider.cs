@@ -41,21 +41,21 @@ namespace EventStore.Core.Authentication
 	{
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
-        private readonly LRUCache<string, Tuple<string, IPrincipal>> _userPasswordsCache;
+        private readonly LRUCache<string, CachedPrincipal> _userPasswordsCache;
 
         public InternalAuthenticationProvider(IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm, int cacheSize)
         {
             _ioDispatcher = ioDispatcher;
             _passwordHashAlgorithm = passwordHashAlgorithm;
-            _userPasswordsCache = new LRUCache<string, Tuple<string, IPrincipal>>(cacheSize);
+            _userPasswordsCache = new LRUCache<string, CachedPrincipal>(cacheSize);
         }
 
         public void Authenticate(AuthenticationRequest authenticationRequest)
         {
-            Tuple<string, IPrincipal> cached;
+	        CachedPrincipal cached;
             if (_userPasswordsCache.TryGet(authenticationRequest.Name, out cached))
             {
-                AuthenticateWithPassword(authenticationRequest, cached.Item1, cached.Item2);
+                AuthenticateCachedPrincipal(authenticationRequest, cached);
             }
             else
             {
@@ -100,7 +100,11 @@ namespace EventStore.Core.Authentication
                 return;
             }
             var principal = CreatePrincipal(userData);
-            CachePassword(authenticationRequest.Name, authenticationRequest.SuppliedPassword, principal);
+
+			string hashedPassword, salt;
+	        _passwordHashAlgorithm.Hash(authenticationRequest.SuppliedPassword, out hashedPassword, out salt);
+
+			CachePassword(authenticationRequest.Name, hashedPassword, salt, principal);
             authenticationRequest.Authenticated(principal);
         }
 
@@ -114,21 +118,22 @@ namespace EventStore.Core.Authentication
             return principal;
         }
 
-        private void CachePassword(string loginName, string password, IPrincipal principal)
+        private void CachePassword(string loginName, string hashedPassword, string salt, IPrincipal principal)
         {
-            _userPasswordsCache.Put(loginName, Tuple.Create(password, principal));
+	        var cachedPrincipal = new CachedPrincipal(hashedPassword, salt, principal);
+	        _userPasswordsCache.Put(loginName, cachedPrincipal);
         }
 
-        private void AuthenticateWithPassword(
-            AuthenticationRequest authenticationRequest, string correctPassword, IPrincipal principal)
+        private void AuthenticateCachedPrincipal(AuthenticationRequest authenticationRequest, CachedPrincipal cached)
         {
-            if (authenticationRequest.SuppliedPassword != correctPassword)
-            {
-                authenticationRequest.Unauthorized();
-                return;
-            }
+			if (!_passwordHashAlgorithm.Verify(authenticationRequest.SuppliedPassword, cached.HashedPassword, cached.PasswordSalt))
+			{
+				authenticationRequest.Unauthorized();
+				_userPasswordsCache.Remove(authenticationRequest.Name);
+				return;
+			}
 
-            authenticationRequest.Authenticated(principal);
+            authenticationRequest.Authenticated(cached.Principal);
         }
 
         public void Handle(InternalAuthenticationProviderMessages.ResetPasswordCache message)
