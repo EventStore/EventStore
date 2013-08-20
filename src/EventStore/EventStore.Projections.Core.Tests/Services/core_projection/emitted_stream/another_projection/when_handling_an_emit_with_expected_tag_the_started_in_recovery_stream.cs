@@ -63,8 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                 {
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(0, 100, 50),
-                        CheckpointTag.FromPosition(0, 40, 20))
+                        "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 100, 50), CheckpointTag.FromPosition(0, 40, 20))
                 });
             Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
             Assert.AreEqual(1, _readyHandler.HandledFailedMessages.Count());

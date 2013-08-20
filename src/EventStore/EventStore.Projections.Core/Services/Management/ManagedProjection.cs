@@ -737,7 +737,7 @@ namespace EventStore.Projections.Core.Services.Management
                             try
                             {
                                 stateHandler = handlerFactory.Create(
-                                    HandlerType, Query, logger: Console.WriteLine,
+                                    HandlerType, Query, logger: s => _logger.Trace(s),
                                     cancelCallbackFactory:
                                         _timeoutScheduler == null
                                             ? (Action<int, Action>) null

@@ -100,9 +100,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _loadedState = "";
         }
 
-        public string GetStatePartition(
-            CheckpointTag position, string streamId, string eventType, string category, Guid eventid, int sequenceNumber,
-            string metadata, string data)
+        public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             if (_failOnGetPartition)
                 throw new Exception("GetStatePartition FAILED");
@@ -144,7 +142,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     {
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, null, eventPosition, null)),
+                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, true, _emit1Data, null, eventPosition, null)),
                     };
                     return true;
                 case "emit1_type":
@@ -153,7 +151,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     {
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, null, eventPosition, null)),
+                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, true, _emit1Data, null, eventPosition, null)),
                     };
                     return true;
                 case "emit22_type":
@@ -162,10 +160,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     {
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit1Data, null, eventPosition, null)),
+                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, true, _emit1Data, null, eventPosition, null)),
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit2Data, null, eventPosition, null)),
+                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, true, _emit2Data, null, eventPosition, null)),
                     };
                     return true;
                 case "emit212_type":
@@ -174,13 +172,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     {
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit1Data, null, eventPosition, null)),
+                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, true, _emit1Data, null, eventPosition, null)),
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit2Data, null, eventPosition, null)),
+                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, true, _emit2Data, null, eventPosition, null)),
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit3Data, null, eventPosition, null)),
+                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, true, _emit3Data, null, eventPosition, null)),
                     };
                     return true;
                 case "emit12_type":
@@ -189,10 +187,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     {
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, null, eventPosition, null)),
+                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, true, _emit1Data, null, eventPosition, null)),
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit2Data, null, eventPosition, null)),
+                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, true, _emit2Data, null, eventPosition, null)),
                     };
                     return true;
                 case "just_emit":
@@ -201,7 +199,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     {
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, null, eventPosition, null)),
+                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, true, _emit1Data, null, eventPosition, null)),
                     };
                     return true;
                 default:

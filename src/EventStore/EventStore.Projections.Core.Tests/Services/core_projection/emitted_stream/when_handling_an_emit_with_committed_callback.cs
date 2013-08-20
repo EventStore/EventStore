@@ -63,8 +63,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                 {
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(0, 100, 50), null,
-                        v => invoked = true)
+                        (string) "test_stream", Guid.NewGuid(), (string) "type", (bool) true,
+                        (string) "data", (ExtraMetaData) null, CheckpointTag.FromPosition(0, 100, 50), (CheckpointTag) null, v => invoked = true)
                 });
             Assert.IsTrue(invoked);
         }
@@ -77,8 +77,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                 {
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(0, 200, 150), null,
-                        v => invoked = true)
+                        (string) "test_stream", Guid.NewGuid(), (string) "type", (bool) true,
+                        (string) "data", (ExtraMetaData) null, CheckpointTag.FromPosition(0, 200, 150), (CheckpointTag) null, v => invoked = true)
                 });
             Assert.IsTrue(invoked);
         }

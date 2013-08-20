@@ -408,6 +408,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         projectionResult = _projectionStateHandler.TransformStateToResult();
                     }
+                    else
+                    {
+                        projectionResult = newState;
+                    }
                 }
             }
             return result;

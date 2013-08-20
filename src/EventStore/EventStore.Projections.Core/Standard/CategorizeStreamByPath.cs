@@ -66,9 +66,7 @@ namespace EventStore.Projections.Core.Standard
         {
         }
 
-        public string GetStatePartition(
-            CheckpointTag position, string streamId, string eventType, string category, Guid eventid, int sequenceNumber,
-            string metadata, string data)
+        public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             throw new NotImplementedException();
         }
@@ -93,8 +91,8 @@ namespace EventStore.Projections.Core.Standard
             {
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        "$category" + _separator + category, Guid.NewGuid(), "StreamCreated", data.EventStreamId, null,
-                        eventPosition, expectedTag: null))
+                        "$category" + _separator + category, Guid.NewGuid(), "StreamCreated", false, data.EventStreamId,
+                        null, eventPosition, expectedTag: null))
             };
 
             return true;

@@ -510,7 +510,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _lastCommittedOrSubmittedEventPosition = causedByTag;
                 events.Add(
                     new Event(
-                        e.EventId, e.EventType, true, e.Data != null ? Helper.UTF8NoBom.GetBytes(e.Data) : null,
+                        e.EventId, e.EventType, e.IsJson, e.Data != null ? Helper.UTF8NoBom.GetBytes(e.Data) : null,
                         e.CausedByTag.ToJsonBytes(_projectionVersion, MetadataWithCausedByAndCorrelationId(e))));
                 emittedEvents.Add(e);
             }

@@ -65,9 +65,7 @@ namespace EventStore.Web.Users
         {
         }
 
-        public string GetStatePartition(
-            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data)
+        public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             throw new NotImplementedException();
         }
@@ -95,7 +93,7 @@ namespace EventStore.Web.Users
             {
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        UsersStream, Guid.NewGuid(), UserEventType, loginName, null, eventPosition, null))
+                        UsersStream, Guid.NewGuid(), UserEventType, false, loginName, null, eventPosition, null))
             };
             newState = "";
             return true;

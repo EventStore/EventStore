@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _correlationId = "correlation_id";
 
             _emittedDataEvent = new EmittedDataEvent(
-                "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(0, 200, 150), null);
+                "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null);
 
             _emittedDataEvent.SetCausedBy(_causedBy);
             _emittedDataEvent.SetCorrelationId(_correlationId);

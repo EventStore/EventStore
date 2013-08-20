@@ -82,6 +82,8 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _correlationId; }
         }
 
+        public abstract bool IsJson { get; }
+
         public abstract bool IsReady();
 
         public virtual IEnumerable<KeyValuePair<string, string>> ExtraMetaData()

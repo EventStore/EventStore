@@ -54,8 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                     {
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(0, 40, 30),
-                                null))
+                                "stream1", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 40, 30), null))
                     });
             }
             catch (Exception ex)

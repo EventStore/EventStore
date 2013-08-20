@@ -64,9 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                 {
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type", "data",
-                        new ExtraMetaData(new Dictionary<string, string> {{"a", "1"}, {"b", "{}"}}),
-                        CheckpointTag.FromPosition(0, 200, 150), null)
+                        "test_stream", Guid.NewGuid(), "type", true, "data", new ExtraMetaData(new Dictionary<string, string> {{"a", "1"}, {"b", "{}"}}), CheckpointTag.FromPosition(0, 200, 150), null)
                 });
         }
 

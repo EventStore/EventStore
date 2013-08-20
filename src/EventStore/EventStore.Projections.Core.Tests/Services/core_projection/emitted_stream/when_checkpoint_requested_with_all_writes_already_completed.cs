@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                 {
                     new EmittedDataEvent(
-                        "test", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(0, 10, 5), null)
+                        "test", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 10, 5), null)
                 });
             var msg = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First();
             _bus.Publish(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, 0));

@@ -50,8 +50,7 @@ namespace EventStore.Projections.Core.Services
         /// </summary>
         /// <returns>partition name</returns>
         string GetStatePartition(
-            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data);
+            CheckpointTag eventPosition, string category, ResolvedEvent data);
 
         /// <summary>
         /// Processes event and updates internal state if necessary.  

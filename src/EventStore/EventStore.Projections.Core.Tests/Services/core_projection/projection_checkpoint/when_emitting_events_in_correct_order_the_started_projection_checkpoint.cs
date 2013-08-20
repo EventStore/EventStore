@@ -64,23 +64,20 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                 {
                     new EmittedEventEnvelope(
                         new EmittedDataEvent(
-                            "stream2", Guid.NewGuid(), "type1", "data2", null, CheckpointTag.FromPosition(0, 120, 110),
-                            null)),
+                            "stream2", Guid.NewGuid(), "type1", true, "data2", null, CheckpointTag.FromPosition(0, 120, 110), null)),
                     new EmittedEventEnvelope(
                         new EmittedDataEvent(
-                            "stream3", Guid.NewGuid(), "type2", "data3", null, CheckpointTag.FromPosition(0, 120, 110),
-                            null)),
+                            "stream3", Guid.NewGuid(), "type2", true, "data3", null, CheckpointTag.FromPosition(0, 120, 110), null)),
                     new EmittedEventEnvelope(
                         new EmittedDataEvent(
-                            "stream2", Guid.NewGuid(), "type3", "data4", null, CheckpointTag.FromPosition(0, 120, 110),
-                            null)),
+                            "stream2", Guid.NewGuid(), "type3", true, "data4", null, CheckpointTag.FromPosition(0, 120, 110), null)),
                 });
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[]
                 {
                     new EmittedEventEnvelope(
                         new EmittedDataEvent(
-                            "stream1", Guid.NewGuid(), "type4", "data", null, CheckpointTag.FromPosition(0, 140, 130), null))
+                            "stream1", Guid.NewGuid(), "type4", true, "data", null, CheckpointTag.FromPosition(0, 140, 130), null))
                 });
         }
 
@@ -124,7 +121,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                 {
                     new EmittedEventEnvelope(
                         new EmittedDataEvent(
-                            "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(0, 170, 160), null))
+                            "stream1", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 170, 160), null))
                 });
             var writeRequests =
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(v => v.EventStreamId == "stream1");

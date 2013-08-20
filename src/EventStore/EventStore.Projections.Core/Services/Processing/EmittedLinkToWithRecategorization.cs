@@ -51,6 +51,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _target; }
         }
 
+        public override bool IsJson
+        {
+            get { return false; }
+        }
+
         public override bool IsReady()
         {
             return true;

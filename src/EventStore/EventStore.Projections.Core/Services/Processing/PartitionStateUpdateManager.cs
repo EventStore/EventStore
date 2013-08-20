@@ -80,8 +80,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     list.Add(
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                streamId, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint, data,
-                                null, causedBy, expectedTag), _partitionCheckpointStreamMetadata));
+                                streamId, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint, true,
+                                data, null, causedBy, expectedTag), _partitionCheckpointStreamMetadata));
                 }
                 //NOTE: order yb is required to satisfy internal emit events validation
                 // which ensures that events are ordered by causedBy tag.  

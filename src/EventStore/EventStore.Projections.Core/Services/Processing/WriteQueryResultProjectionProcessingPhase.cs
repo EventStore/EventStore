@@ -115,8 +115,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     select
                         new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _resultStream, Guid.NewGuid(), "Result", partitionState.Result, null, phaseCheckpointTag,
-                                null), streamMetadata)).ToArray(), Guid.Empty, null);
+                                _resultStream, Guid.NewGuid(), "Result", true, partitionState.Result, null,
+                                phaseCheckpointTag, null), streamMetadata)).ToArray(), Guid.Empty, null);
             _checkpointManager.EventProcessed(phaseCheckpointTag, 100.0f);
             _coreProjection.CompletePhase();
         }

@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 new[]
                 {
                     new EmittedDataEvent(
-                        "test", Guid.NewGuid(), "type2", "data2", null, CheckpointTag.FromPosition(0, -1, -1), null)
+                        "test", Guid.NewGuid(), "type2", true, "data2", null, CheckpointTag.FromPosition(0, -1, -1), null)
                 });
         }
 

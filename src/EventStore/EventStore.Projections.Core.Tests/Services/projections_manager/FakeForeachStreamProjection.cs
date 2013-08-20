@@ -70,12 +70,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _state = "";
         }
 
-        public string GetStatePartition(
-            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data)
+        public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             _logger("GetStatePartition(" + "..." + ")");
-            return streamId;
+            return @data.EventStreamId;
         }
 
         public bool ProcessEvent(

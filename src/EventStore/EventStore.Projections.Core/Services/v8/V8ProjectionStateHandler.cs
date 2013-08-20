@@ -77,6 +77,8 @@ namespace EventStore.Projections.Core.Services.v8
 
             [DataMember] public string eventName;
 
+            [DataMember] public bool isJson;
+
             [DataMember] public string body;
 
             [DataMember] public Dictionary<string, JRaw> metadata;
@@ -106,7 +108,7 @@ namespace EventStore.Projections.Core.Services.v8
             _emittedEvents.Add(
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body,
+                        emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.isJson, emittedEvent.body,
                         emittedEvent.GetExtraMetadata(), _eventPosition, expectedTag: null)));
         }
 
@@ -132,17 +134,17 @@ namespace EventStore.Projections.Core.Services.v8
         }
 
         public string GetStatePartition(
-            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data)
+            CheckpointTag eventPosition, string category, ResolvedEvent @event)
         {
             CheckDisposed();
-            if (eventType == null)
-                throw new ArgumentNullException("eventType");
-            if (streamId == null)
-                throw new ArgumentNullException("streamId");
+            if (@event == null) throw new ArgumentNullException("event");
             var partition = _query.GetPartition(
-                data.Trim(), // trimming data passed to a JS 
-                new string[] { streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture), metadata ?? "" });
+                @event.Data.Trim(), // trimming data passed to a JS 
+                new string[]
+                {
+                    @event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
+                    @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? ""
+                });
             if (partition == "")
                 return null;
             else 

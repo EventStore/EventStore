@@ -110,8 +110,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        _namingBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "$partition", partition, null,
-                        at, null))
+                        _namingBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "$partition", false, partition,
+                        null, at, null))
             };
         }
 

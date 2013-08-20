@@ -57,9 +57,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 var result =
                     new EmittedEventEnvelope(
                         projectionResult == null
-                            ? new EmittedDataEvent(streamId, Guid.NewGuid(), "ResultRemoved", null, null, at, null)
-                            : new EmittedDataEvent(streamId, Guid.NewGuid(), "Result", projectionResult, null, at, null),
+                            ? new EmittedDataEvent(
+                                streamId, Guid.NewGuid(), "ResultRemoved", true, null, null, at, null)
+                            : new EmittedDataEvent(
+                                streamId, Guid.NewGuid(), "Result", true, projectionResult, null, at, null),
                         _resultStreamMetadata);
+                
                 return new[] {result};
             }
             else
@@ -70,10 +73,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     new EmittedEventEnvelope(
                         projectionResult == null
                             ? new EmittedDataEvent(
-                                streamId, Guid.NewGuid(), "ResultRemoved", null, null, at, null,
+                                streamId, Guid.NewGuid(), "ResultRemoved", true, null, null, at, null,
                                 linkTo.SetTargetEventNumber)
                             : new EmittedDataEvent(
-                                streamId, Guid.NewGuid(), "Result", projectionResult, null, at, null,
+                                streamId, Guid.NewGuid(), "Result", true, projectionResult, null, at, null,
                                 linkTo.SetTargetEventNumber), _resultStreamMetadata);
                 return new[] {result, linkToEnvelope};
             }

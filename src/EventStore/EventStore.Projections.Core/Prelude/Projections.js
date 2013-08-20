@@ -28,7 +28,7 @@
 "use strict";
 
 var $projections = {
-    createEventProcessor: function(_log, _notify) {
+    createEventProcessor: function (_log, _notify) {
         var debugging = false;
         var runDefaultHandler = true;
         var eventHandlers = {};
@@ -41,19 +41,19 @@ var $projections = {
 
         var sources = {
             /* TODO: comment out default falses to reduce message size */
-            allStreams: false, 
+            allStreams: false,
             allEvents: true,
             byStreams: false,
             byCustomPartitions: false,
-            categories: [], 
-            streams: [], 
+            categories: [],
+            streams: [],
             events: [],
 
             options: {
                 definesStateTransform: false,
                 outputState: false,
                 resultStreamName: null,
-                partitionResultStreamNamePattern: null, 
+                partitionResultStreamNamePattern: null,
                 $forceProjectionName: null,
                 $includeLinks: false,
                 reorderEvents: false,
@@ -62,7 +62,7 @@ var $projections = {
             version: 4
         };
 
-        var initStateHandler = function() { return { }; };
+        var initStateHandler = function () { return {}; };
 
         var projectionState = null;
 
@@ -71,12 +71,12 @@ var $projections = {
                 debugging = true;
             },
 
-            initialize: function() {
+            initialize: function () {
                 projectionState = initStateHandler();
                 return "OK";
             },
 
-            get_state_partition: function (event, streamId, eventType, category, sequenceNumber, metadata) {
+            get_state_partition: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata) {
                 return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata);
             },
 
@@ -97,17 +97,17 @@ var $projections = {
                 return result !== null ? JSON.stringify(result) : null;
             },
 
-            set_state: function(jsonState) {
+            set_state: function (jsonState) {
                 var parsedState = JSON.parse(jsonState);
                 projectionState = parsedState;
                 return "OK";
             },
 
-            debugging_get_state: function() {
+            debugging_get_state: function () {
                 return JSON.stringify(projectionState);
             },
 
-            get_sources: function() {
+            get_sources: function () {
                 return JSON.stringify(sources);
             }
         };
@@ -144,27 +144,27 @@ var $projections = {
         }
 
         function callHandler(handler, state, envelope) {
-             if (debugging)
-                 debugger;
-             var newState = handler(state, envelope);
-             if (newState === undefined)
-                 newState = state;
-             return newState;
-         };
+            if (debugging)
+                debugger;
+            var newState = handler(state, envelope);
+            if (newState === undefined)
+                newState = state;
+            return newState;
+        };
 
-         function tryDeserializeBody(eventEnvelope) {
+        function tryDeserializeBody(eventEnvelope) {
             var eventRaw = eventEnvelope.bodyRaw;
-             try {
-                 if (eventRaw == '') {
-                     eventEnvelope.body = {};
-                 } else if (typeof eventRaw === "object") { //TODO: why do we need this?
-                     eventEnvelope.body = eventRaw;
-                     eventEnvelope.isJson = true;
-                 } else {
-                     eventEnvelope.body = JSON.parse(eventRaw);
-                     eventEnvelope.isJson = true;
-                 }
-                 eventEnvelope.data = eventEnvelope.body;
+            try {
+                if (eventRaw == '') {
+                    eventEnvelope.body = {};
+                } else if (typeof eventRaw === "object") { //TODO: why do we need this?
+                    eventEnvelope.body = eventRaw;
+                    eventEnvelope.isJson = true;
+                } else {
+                    eventEnvelope.body = JSON.parse(eventRaw);
+                    eventEnvelope.isJson = true;
+                }
+                eventEnvelope.data = eventEnvelope.body;
 
             } catch (ex) {
                 _log("JSON Parsing error: " + ex);
@@ -174,7 +174,7 @@ var $projections = {
             }
         }
 
-         function envelope(body, bodyRaw, eventType, streamId, sequenceNumber, metadataRaw, partition) {
+        function envelope(body, bodyRaw, eventType, streamId, sequenceNumber, metadataRaw, partition) {
             this.isJson = false;
             this.data = body;
             this.body = body;
@@ -196,13 +196,14 @@ var $projections = {
             }
         });
 
-        function getStatePartition(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw) {
+        function getStatePartition(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw) {
 
-             var eventHandler = getStatePartitionHandler;
+            var eventHandler = getStatePartitionHandler;
 
-             var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, null);
+            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, null);
 
-             tryDeserializeBody(eventEnvelope);
+            if (isJson)
+                tryDeserializeBody(eventEnvelope);
 
             var partition = eventHandler(eventEnvelope);
 
@@ -230,13 +231,13 @@ var $projections = {
             var index;
 
             var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, partition);
-             // debug only
+            // debug only
             for (index = 0; index < rawEventHandlers.length; index++) {
                 eventHandler = rawEventHandlers[index];
                 state = callHandler(eventHandler, state, eventEnvelope);
             }
 
-             eventHandler = eventHandlers[eventName];
+            eventHandler = eventHandlers[eventName];
             if (isJson && (runDefaultHandler || eventHandler !== undefined || anyEventHandlers.length > 0)) {
                 tryDeserializeBody(eventEnvelope);
             }
