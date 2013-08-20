@@ -101,10 +101,7 @@ namespace EventStore.Core.Authentication
             }
             var principal = CreatePrincipal(userData);
 
-			string hashedPassword, salt;
-	        _passwordHashAlgorithm.Hash(authenticationRequest.SuppliedPassword, out hashedPassword, out salt);
-
-			CachePassword(authenticationRequest.Name, hashedPassword, salt, principal);
+			CachePassword(authenticationRequest.Name, userData.Hash, userData.Salt, principal);
             authenticationRequest.Authenticated(principal);
         }
 
