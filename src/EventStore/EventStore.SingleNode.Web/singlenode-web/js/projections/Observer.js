@@ -11,7 +11,7 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
             var sourceMonitor = null;
             var commandErrorHandler = [];
             var pendingSubscribe = [];
-            var subscribed = { statusChanged: [], stateChanged: [], resultChanged: [], sourceChanged: [], error: []};
+            var subscribed = { urlChanged: [], statusChanged: [], stateChanged: [], resultChanged: [], sourceChanged: [], error: [] };
 
             function enrichStatus(status) {
                 var startUpdateAvailable =
@@ -19,20 +19,24 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                         status.status.indexOf("Stopped") === 0 ||
                         status.status.indexOf("Completed") === 0 ||
                         status.status.indexOf("Faulted") === 0;
-                var stopAvailable = status.status.indexOf("Running") === 0 
-                    || status.status.indexOf("Faulted") === 0 
+                var stopAvailable = status.status.indexOf("Running") === 0
+                    || status.status.indexOf("Faulted") === 0
                     || (status.status.indexOf("Stopped") === 0 && status.status.indexOf("Enabled") > 0);
                 status.availableCommands = {
                     stop: stopAvailable,
-                    start:startUpdateAvailable,
+                    start: startUpdateAvailable,
                     update: startUpdateAvailable,
-                    debug: status.status.indexOf("Faulted") === 0,
+                    debug:
+                        status.status.indexOf("Loaded") === 0 ||
+                        status.status.indexOf("Stopped") === 0 ||
+                        status.status.indexOf("Completed") === 0 ||
+                        status.status.indexOf("Faulted") === 0,
                 };
                 return status;
             }
 
             function dispatch(handlers, arg1, arg2) {
-                for (var i = 0; i < handlers.length; i++) 
+                for (var i = 0; i < handlers.length; i++)
                     handlers[i](arg1, arg2);
             }
 
@@ -43,9 +47,13 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                 statusMonitor = resourceMonitor.create(baseUrl + "/statistics", { accept: "application/json", autoRefresh: autoRefresh });
                 sourceMonitor = resourceMonitor.create(baseUrl + "/query?config=yes", { accept: "application/json", autoRefresh: autoRefresh });
 
+                if (handlers.urlChanged) {
+                    subscribed.urlChanged.push(handlers.urlChanged);
+                }
+
                 if (handlers.statusChanged) {
-                    if (subscribed.statusChanged.length == 0) 
-                        statusMonitor.start(function(rawStatus) {
+                    if (subscribed.statusChanged.length == 0)
+                        statusMonitor.start(function (rawStatus) {
                             var status = rawStatus.projections[0];
                             var enriched = enrichStatus(status);
                             dispatch(subscribed.statusChanged, enriched);
@@ -96,9 +104,10 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                 configureUrl: function (url) {
                     baseUrl = url;
                     if (pendingSubscribe)
-                        for (var i = 0; i < pendingSubscribe.length; i++) 
+                        for (var i = 0; i < pendingSubscribe.length; i++)
                             internalSubscribe(pendingSubscribe[i]);
                     pendingSubscribe = [];
+                    dispatch(subscribed.urlChanged, url);
                 }
 
             };

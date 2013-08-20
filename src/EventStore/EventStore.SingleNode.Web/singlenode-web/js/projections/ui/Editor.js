@@ -76,12 +76,19 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
             lastName = status.name;
         }
 
+        function urlChanged(url) {
+            lastStatusUrl = url;
+            lastName = "unknown";
+        }
+
         function stateChanged(state) {
-            controls.state.text(state);
+            if (controls.state) 
+                controls.state.text(state);
         }
 
         function resultChanged(state) {
-            controls.result.text(state);
+            if (controls.result)
+                controls.result.text(state);
         }
 
         function sourceChanged(source) {
@@ -128,14 +135,19 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
             lastEmitEnabled = source.emitEnabled;
         }
 
-        function updateAndStart() {
+        function updateIfChanged(success) {
             var current = sourceEditor.getValue();
             var emitEnabled = controls.emit && controls.emit.attr("checked");
             if (options.readonly || (lastSource === current && lastEmitEnabled === emitEnabled)) {
-                controller.start();
+                success();
             } else {
-                controller.update(current, emitEnabled, controller.start.bind(controller));
+                controller.update(current, emitEnabled, success);
             }
+        }
+
+        function updateAndStart() {
+            var success = controller.start.bind(controller);
+            updateIfChanged(success);
         }
 
         function save() {
@@ -145,7 +157,10 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
         }
 
         function debug() {
-            window.open("/web/debug-projection.htm#" + lastStatusUrl, "debug-" + lastName);
+            updateIfChanged(function () {
+                debugger;
+                window.open("/web/debug-projection.htm#" + lastStatusUrl, "debug-" + lastName);
+            });
         }
 
         function reset() {
@@ -183,7 +198,8 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
                     statusChanged: statusChanged,
                     stateChanged: stateChanged,
                     resultChanged: resultChanged,
-                    sourceChanged: sourceChanged
+                    sourceChanged: sourceChanged,
+                    urlChanged: urlChanged,
                 });
                 bindClick(controls.start, updateAndStart);
                 bindClick(controls.stop, stop);
