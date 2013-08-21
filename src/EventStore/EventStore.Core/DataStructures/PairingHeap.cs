@@ -36,7 +36,7 @@ namespace EventStore.Core.DataStructures
     public class PairingHeap<T>
     {
 #if USE_POOL
-        private static readonly ObjectPool<HeapNode> NodePool = new ObjectPool<HeapNode>(50000, () => new HeapNode());
+        private readonly ObjectPool<HeapNode> _nodePool = new ObjectPool<HeapNode>(100, () => new HeapNode());
 #endif
         public int Count { get { return _count; } }
 
@@ -102,7 +102,7 @@ namespace EventStore.Core.DataStructures
         public void Add(T x)
         {
 #if USE_POOL
-            var newNode = NodePool.Get();
+            var newNode = _nodePool.Get();
 #else
             var newNode = new HeapNode();
 #endif
@@ -130,7 +130,7 @@ namespace EventStore.Core.DataStructures
 #if USE_POOL
             oldRoot.Next = null;
             oldRoot.SubHeaps = null;
-            NodePool.Return(oldRoot);
+            _nodePool.Return(oldRoot);
 #endif
             return res;
         }
