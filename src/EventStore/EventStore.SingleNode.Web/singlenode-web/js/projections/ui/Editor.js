@@ -92,6 +92,33 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
         }
 
         function sourceChanged(source) {
+
+            function reRenderData(data) {
+                renderHtmlBy(data, templateJs, controls.result_stream_container);
+            }
+
+
+
+            function schedule(dataUrl) {
+                setTimeout(function () {
+                    $.ajax(dataUrl, {
+                        headers: {
+                            'Accept': 'application/vnd.eventstore.atom+json',
+                        },
+                        success: function (d, statusText, jqXHR) {
+                            if (jqXHR.status == 200) {
+                                reRenderData(d);
+                            } else {
+                                schedule();
+                            }
+                        },
+                        error: function (jqXhr, status, error) {
+                            schedule(dataUrl);
+                        }
+                    });
+                }, 1000);
+            }
+
             var current = sourceEditor.getValue();
             if (current !== source.query) {
                 if (lastSource === current) {
@@ -107,7 +134,7 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
             var anyResults = false;
             if (controls.result_stream) {
                 var resultStreamName = source.definition.resultStreamName;
-                if (source.definition.options.definesStateTransform && resultStreamName) {
+                if (resultStreamName) {
                     controls.result_stream.attr("href", "/streams/" + resultStreamName);
                     controls.result_stream.show();
                     anyResults = true;
@@ -116,8 +143,25 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
                 }
             }
 
+            if (controls.result_stream_container) {
+
+                var resultStreamName = source.definition.resultStreamName;
+                if (resultStreamName) {
+                    var templateJs = '/web/es/js/atom/FeedElement.html';
+
+                    var dataUrl = '/streams/' + encodeURIComponent(resultStreamName) + "?embed=tryharder";
+
+                    schedule(dataUrl);
+
+                    controls.result_stream_container.show();
+                }
+                else {
+                    controls.result_stream_container.hide();
+                }
+            }
+
             if (controls.result) {
-                if (source.definition.options.definesStateTransform && !source.definition.byStream && !source.definition.byCustomPartitions) {
+                if (!source.definition.byStream && !source.definition.byCustomPartitions) {
                     controls.result.show();
                     anyResults = true;
                 } else {

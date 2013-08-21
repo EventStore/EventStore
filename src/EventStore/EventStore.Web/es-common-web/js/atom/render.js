@@ -1,4 +1,7 @@
-﻿function renderHtmlBy(data, templateJs) {
+﻿function renderHtmlBy(data, templateJs, targetElement) {
+
+    if (!targetElement)
+        targetElement = '#data';
 
     $.when($.get(templateJs))
         .done(function(template) {
@@ -20,7 +23,7 @@
                     }
                 }
             );
-            $('#data').html(html);
+            $(targetElement).html(html);
 
         });
 }
