@@ -139,6 +139,7 @@
     <Compile Include="Index\PTableHeader.cs" />
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="ISubsystem.cs" />
+    <Compile Include="Messages\SubscriptionMessage.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />
     <Compile Include="Messages\InternalAuthenticationProviderMessages.cs" />
     <Compile Include="Messages\IQueueAffineMessage.cs" />

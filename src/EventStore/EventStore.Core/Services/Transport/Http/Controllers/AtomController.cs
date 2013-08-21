@@ -296,8 +296,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
                 return;
             }
+            bool longPoll;
+            if (!GetLongPoll(manager, out longPoll))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.LongPoll));
+                return;
+            }
 
-            GetStreamEventsForward(manager, stream, eventNumber, count, resolveLinkTos, requireMaster, embed);
+            GetStreamEventsForward(manager, stream, eventNumber, count, resolveLinkTos, requireMaster, longPoll, embed);
         }
 
         // METASTREAMS
@@ -440,8 +446,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
                 return;
             }
+            bool longPoll;
+            if (!GetLongPoll(manager, out longPoll))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.LongPoll));
+                return;
+            }
 
-            GetStreamEventsForward(manager, SystemStreams.MetastreamOf(stream), eventNumber, count, resolveLinkTos, requireMaster, embed);
+            GetStreamEventsForward(manager, SystemStreams.MetastreamOf(stream), eventNumber, count, resolveLinkTos, requireMaster, longPoll, embed);
         }
 
         // $ALL
@@ -546,6 +558,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             return false;
         }
 
+        private bool GetLongPoll(HttpEntityManager manager, out bool longPoll)
+        {
+            longPoll = false;
+            var longPollHeader = manager.HttpEntity.Request.Headers[SystemHeaders.LongPoll];
+            if (longPollHeader == null)
+                return true;
+            if (string.Equals(longPollHeader, "True", StringComparison.OrdinalIgnoreCase))
+            {
+                longPoll = true;
+                return true;
+            }
+            if (string.Equals(longPollHeader, "False", StringComparison.OrdinalIgnoreCase))
+                return true;
+            return false;
+        }
+
         private bool GetResolveLinkTos(HttpEntityManager manager, out bool resolveLinkTos)
         {
             resolveLinkTos = true;
@@ -611,15 +639,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         }
 
         private void GetStreamEventsForward(HttpEntityManager manager, string stream, int eventNumber, int count,
-                                            bool resolveLinkTos, bool requireMaster, EmbedLevel embed)
+                                            bool resolveLinkTos, bool requireMaster, bool longPoll, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
                                                   (ent, msg) => Format.GetStreamEventsForward(ent, msg, embed),
                                                   Configure.GetStreamEventsForward);
             var corrId = Guid.NewGuid();
-            Publish(new ClientMessage.ReadStreamEventsForward(corrId, corrId, envelope, stream, eventNumber, count,
-                                                              resolveLinkTos, requireMaster, GetETagStreamVersion(manager), manager.User));
+            Publish(new ClientMessage.ReadStreamEventsForward(
+                corrId, corrId, envelope, stream, eventNumber, count, resolveLinkTos, requireMaster,
+                GetETagStreamVersion(manager), manager.User, longPoll));
         }
 
         private int? GetETagStreamVersion(HttpEntityManager manager)

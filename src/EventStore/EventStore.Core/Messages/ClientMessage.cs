@@ -491,10 +491,11 @@ namespace EventStore.Core.Messages
             public readonly bool RequireMaster;
 
             public readonly int? ValidationStreamVersion;
+            public readonly bool LongPoll;
 
             public ReadStreamEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                                            string eventStreamId, int fromEventNumber, int maxCount, bool resolveLinkTos,
-                                           bool requireMaster, int? validationStreamVersion, IPrincipal user)
+                                           bool requireMaster, int? validationStreamVersion, IPrincipal user, bool longPoll = false)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
@@ -506,6 +507,7 @@ namespace EventStore.Core.Messages
                 ResolveLinkTos = resolveLinkTos;
                 RequireMaster = requireMaster;
                 ValidationStreamVersion = validationStreamVersion;
+                LongPoll = longPoll;
             }
 
             public override string ToString()
@@ -693,10 +695,11 @@ namespace EventStore.Core.Messages
             public readonly bool RequireMaster;
 
             public readonly long? ValidationTfEofPosition;
+            public readonly bool LongPoll;
 
             public ReadAllEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                                         long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
-                                        bool requireMaster, long? validationTfEofPosition, IPrincipal user)
+                                        bool requireMaster, long? validationTfEofPosition, IPrincipal user, bool longPoll = false)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 CommitPosition = commitPosition;
@@ -705,6 +708,7 @@ namespace EventStore.Core.Messages
                 ResolveLinkTos = resolveLinkTos;
                 RequireMaster = requireMaster;
                 ValidationTfEofPosition = validationTfEofPosition;
+                LongPoll = longPoll;
             }
         }
 

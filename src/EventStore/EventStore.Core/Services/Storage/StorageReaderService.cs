@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Storage
             _readIndex = readIndex;
             _threadCount = threadCount;
 
-            var readerWorker = new StorageReaderWorker(readIndex, writerCheckpoint);
+            var readerWorker = new StorageReaderWorker(bus, readIndex, writerCheckpoint);
             var storageReaderBus = new InMemoryBus("StorageReaderBus", watchSlowMsg: false);
             storageReaderBus.Subscribe<ClientMessage.ReadEvent>(readerWorker);
             storageReaderBus.Subscribe<ClientMessage.ReadStreamEventsBackward>(readerWorker);

@@ -102,7 +102,8 @@ es.projection = function (settings) {
                 nextPageUrl + "?embed=content",
                 {
                     headers: {
-                        Accept: 'application/vnd.eventstore.atom+json'
+                        Accept: 'application/vnd.eventstore.atom+json',
+                        'ES-LongPoll': 'True'
                     },
                     success: function (pageStr) {
                         var page = jQuery.parseJSON(pageStr);

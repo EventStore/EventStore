@@ -48,14 +48,17 @@ namespace EventStore.Core.Services.Storage
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageReaderWorker>();
 
+        private readonly IPublisher _publisher;
         private readonly IReadIndex _readIndex;
         private readonly ICheckpoint _writerCheckpoint;
 
-        public StorageReaderWorker(IReadIndex readIndex, ICheckpoint writerCheckpoint)
+        public StorageReaderWorker(IPublisher publisher, IReadIndex readIndex, ICheckpoint writerCheckpoint)
         {
+            Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(readIndex, "readIndex");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 
+            _publisher = publisher;
             _readIndex = readIndex;
             _writerCheckpoint = writerCheckpoint;
         }
@@ -67,7 +70,47 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward msg)
         {
-            msg.Envelope.ReplyWith(ReadStreamEventsForward(msg));
+            var res = ReadStreamEventsForward(msg);
+            switch (res.Result)
+            {
+                case ReadStreamResult.Success:
+                    if (msg.LongPoll && res.IsEndOfStream && res.Events.Length == 0)
+                    {
+                        _publisher.Publish(new SubscriptionMessage.PollStream(
+                            msg.EventStreamId, res.LastCommitPosition, res.LastEventNumber,
+                            DateTime.UtcNow + TimeSpan.FromSeconds(7), msg));
+                    }
+                    else
+                        msg.Envelope.ReplyWith(res);
+                    break;
+                case ReadStreamResult.NoStream:
+                    if (msg.LongPoll)
+                    {
+                        _publisher.Publish(new SubscriptionMessage.PollStream(
+                            msg.EventStreamId, res.LastCommitPosition, res.LastEventNumber,
+                            DateTime.UtcNow + TimeSpan.FromSeconds(7), msg));
+                    }
+                    else
+                        msg.Envelope.ReplyWith(res);
+                    break;
+                case ReadStreamResult.NotModified:
+                    if (msg.LongPoll)
+                    {
+                        _publisher.Publish(new SubscriptionMessage.PollStream(
+                            msg.EventStreamId, res.LastCommitPosition, msg.ValidationStreamVersion.Value,
+                            DateTime.UtcNow + TimeSpan.FromSeconds(7), msg));
+                    }
+                    else
+                        msg.Envelope.ReplyWith(res);
+                    break;
+                case ReadStreamResult.StreamDeleted:
+                case ReadStreamResult.Error:
+                case ReadStreamResult.AccessDenied:
+                    msg.Envelope.ReplyWith(res);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(string.Format("Unknown ReadStreamResult: {0}", res.Result));
+            }
         }
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward msg)

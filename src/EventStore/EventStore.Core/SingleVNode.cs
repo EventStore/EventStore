@@ -202,7 +202,7 @@ namespace EventStore.Core
 
             // AUTHENTICATION INFRASTRUCTURE
             var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
-            var dispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_workersHandler, crossThread: true));
+            var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
             var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
             var passwordChangeNotificationReader = new PasswordChangeNotificationReader(_mainQueue, dispatcher);
             _mainBus.Subscribe<SystemMessage.SystemStart>(passwordChangeNotificationReader);
@@ -309,21 +309,27 @@ namespace EventStore.Core
             // SUBSCRIPTIONS
             var subscrBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
             var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", false);
+            _mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.SystemStart, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.SubscribeToStream, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
+            _mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.PollStream, Message>());
+            _mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.CheckPollTimeout, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommited, Message>());
 
-            var subscription = new SubscriptionsService(subscrQueue, readIndex);
+            var subscription = new SubscriptionsService(_mainQueue, subscrQueue, readIndex);
+            subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
             subscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscription);
             subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);
             subscrBus.Subscribe<ClientMessage.SubscribeToStream>(subscription);
             subscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(subscription);
+            subscrBus.Subscribe<SubscriptionMessage.PollStream>(subscription);
+            subscrBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscription);
             subscrBus.Subscribe<StorageMessage.EventCommited>(subscription);
 
             // USER MANAGEMENT
-            var ioDispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_mainQueue));
+            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
             _mainBus.Subscribe(ioDispatcher.BackwardReader);
             _mainBus.Subscribe(ioDispatcher.ForwardReader);
             _mainBus.Subscribe(ioDispatcher.Writer);
