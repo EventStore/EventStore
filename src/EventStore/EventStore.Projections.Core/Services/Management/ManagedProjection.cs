@@ -706,12 +706,12 @@ namespace EventStore.Projections.Core.Services.Management
             ProjectionStateHandlerFactory handlerFactory, ProjectionConfig config, Action onPrepared)
         {
             _onPrepared = _onStopped = () =>
-                {
-                    _onStopped = null;
-                    _onPrepared = null;
-                    if (onPrepared != null) 
-                        onPrepared();
-                };
+            {
+                _onStopped = null;
+                _onPrepared = null;
+                if (onPrepared != null)
+                    onPrepared();
+            };
             if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
             if (config == null) throw new ArgumentNullException("config");
 
