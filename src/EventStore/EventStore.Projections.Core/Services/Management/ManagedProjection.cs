@@ -478,7 +478,7 @@ namespace EventStore.Projections.Core.Services.Management
                 new ClientMessage.ReadStreamEventsBackward(
                     corrId, corrId, _readDispatcher.Envelope, "$projections-" + name, -1, 1, 
                     resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal), 
-                completed => LoadCompleted(completed));
+                LoadCompleted);
         }
 
         private void LoadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed)

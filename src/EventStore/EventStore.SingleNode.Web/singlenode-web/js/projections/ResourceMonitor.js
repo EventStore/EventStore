@@ -5,7 +5,9 @@ define([], function () {
         create: function createResourceMonitor(baseUrl, options) {
 
             var _lastDataJson = null;
-            var _handler = null;
+            var _successHandler = null;
+            var _transientErrorHandler = null;
+            var _goneHandler = null;
             var _current = null;
             var _timeout = null;
 
@@ -18,7 +20,7 @@ define([], function () {
                 var dataJson = JSON.stringify(data);
                 if (dataJson !== _lastDataJson) {
                     _lastDataJson = dataJson;
-                    _handler(data, xhr);
+                    _successHandler(data, xhr);
                 }
                 if (options.autoRefresh)
                     schedule();
@@ -26,11 +28,22 @@ define([], function () {
 
             function error(xhr, status) {
                 _current = null;
+                switch (xhr.status) {
+                    case 404:
+                        if (_goneHandler)
+                            _goneHandler();
+                        stop();
+                        return;
+                    default:
+                        if (_transientErrorHandler)
+                            _transientErrorHandler();
+                        break;
+                }
                 schedule();
             }
 
             function requestData() {
-                if (_handler !== null) {
+                if (_successHandler !== null) {
                     _current = $.ajax(baseUrl, {
                         headers: {
                             Accept: options.accept,
@@ -42,17 +55,24 @@ define([], function () {
                 }
             }
 
+            function stop() {
+                _successHandler = null;
+                _transientErrorHandler = null;
+                _goneHandler = null;
+                if (_current)
+                    _current.abort();
+                _current = null;
+            }
+
             return {
-                start: function(handler) {
-                    _handler = handler;
+                start: function(successHandler, transientErrorHandler, goneHandler) {
+                    _successHandler = successHandler;
+                    _transientErrorHandler = transientErrorHandler;
+                    _goneHandler = goneHandler;
                     requestData();
                 },
 
-                stop: function() {
-                    _handler = null;
-                    _current.abort();
-                    _current = null;
-                },
+                stop: stop,
 
                 poll: function () {
                     if (_current !== null) {

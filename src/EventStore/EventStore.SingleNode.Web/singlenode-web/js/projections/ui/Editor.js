@@ -202,7 +202,6 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
 
         function debug() {
             updateIfChanged(function () {
-                debugger;
                 window.open("/web/debug-projection.htm#" + lastStatusUrl, "debug-" + lastName);
             });
         }
