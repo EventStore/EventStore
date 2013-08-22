@@ -328,17 +328,22 @@ namespace EventStore.Projections.Core.Services.Management
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             Stop(
                 () =>
-                    {
-                        UpdateProjectionVersion();
-                        _persistedState.Epoch = _persistedState.Version;
-                        Prepare(
+                {
+                    ResetProjection();
+                    Prepare(
                             () =>
                             BeginWrite(
                                 () =>
                                 StartOrLoadStopped(
                                     () =>
                                         message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)))));
-                    });
+                });
+        }
+
+        private void ResetProjection()
+        {
+            UpdateProjectionVersion(force: true);
+            _persistedState.Epoch = _persistedState.Version;
         }
 
         public void Handle(ProjectionManagementMessage.Delete message)
@@ -588,6 +593,8 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (Mode == ProjectionMode.Transient)
             {
+                //TODO: move to common completion procedure
+                _lastWrittenVersion = _persistedState.Version ?? -1;
                 completed();
                 return;
             }
@@ -693,13 +700,6 @@ namespace EventStore.Projections.Core.Services.Management
         private void Delete()
         {
             Deleted = true;
-        }
-
-        private void UpdateQuery(string handlerType, string query, bool? emitEnabled)
-        {
-            _persistedState.HandlerType = handlerType;
-            _persistedState.Query = query;
-            _persistedState.EmitEnabled = emitEnabled ?? _persistedState.EmitEnabled;
         }
 
         private void BeginCreateAndPrepare(
@@ -862,7 +862,13 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void DoUpdateQuery(ProjectionManagementMessage.UpdateQuery message)
         {
-            UpdateQuery(message.HandlerType ?? HandlerType, message.Query, message.EmitEnabled);
+            _persistedState.HandlerType = message.HandlerType ?? HandlerType;
+            _persistedState.Query = message.Query;
+            _persistedState.EmitEnabled = message.EmitEnabled ?? _persistedState.EmitEnabled;
+            if (_state == ManagedProjectionState.Completed)
+            {
+                ResetProjection();
+            }
             Action completed = () =>
                 {
                     StartOrLoadStopped(() => { });
@@ -906,10 +912,12 @@ namespace EventStore.Projections.Core.Services.Management
                 BeginWrite(completed);
         }
 
-        private void UpdateProjectionVersion()
+        private void UpdateProjectionVersion(bool force = false)
         {
             if (_lastWrittenVersion == _persistedState.Version)
                 _persistedState.Version++;
+            else if (force)
+                throw new ApplicationException("Internal error: projection definition must be saved before forced updating version");
         }
 
         public void Handle(ProjectionManagementMessage.GetState message)

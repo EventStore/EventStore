@@ -42,7 +42,10 @@
                         <li><a id="command-disable-all" class='btn'>
                             Disable All</a></li>
                         <li><a id="command-enable-all" class='btn'>
-                            Enable All</a>
+                                Enable All</a>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="include-queries"/> Include Queries
                         </li>
                     </ul>
                 </div>
@@ -185,7 +188,11 @@
             var lastRequest = {};
 
             function requestList() {
-                $.ajax("/projections/all-non-transient", {
+                var includeQueries = $("#include-queries").attr("checked");
+
+                var requestUrl = includeQueries ? "/projections/any" : "/projections/all-non-transient";
+
+                $.ajax(requestUrl, {
                     headers: {
                         Accept: "application/json",
                     },

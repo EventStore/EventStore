@@ -28,6 +28,7 @@
 
 using System;
 using System.Linq;
+using EventStore.Core.Authentication;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Projections.Core.Services.Processing;
