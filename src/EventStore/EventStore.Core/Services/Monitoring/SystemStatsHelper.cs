@@ -137,7 +137,7 @@ namespace EventStore.Core.Services.Monitoring
 
         private void GetPerfCounterInformation(Dictionary<string, object> stats, int count)
         {
-            if(count > 5)
+            if(count > 3)
             {
                 _log.Info("Reached max count of trying to recreate counters on error.");
             }
