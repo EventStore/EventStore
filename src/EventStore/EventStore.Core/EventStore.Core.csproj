@@ -65,7 +65,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Authentication\AuthenticationRequest.cs" />
-    <Compile Include="Authentication\CachedPrincipal.cs" />
     <Compile Include="Authentication\IAuthenticationProvider.cs" />
     <Compile Include="Bus\AdHocHandler.cs" />
     <Compile Include="Bus\QueueStatsCollector.cs" />
