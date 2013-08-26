@@ -60,9 +60,9 @@ namespace EventStore.Projections.Core.Messages
             get { return Options != null && Options.DefinesStateTransform; }
         }
 
-        bool IQuerySources.OutputState
+        bool IQuerySources.OutputRunningResults
         {
-            get { return Options != null && Options.OutputState; }
+            get { return Options != null && Options.OutputRunningResults; }
         }
 
         bool IQuerySources.IncludeLinksOption
@@ -116,7 +116,7 @@ namespace EventStore.Projections.Core.Messages
                     new QuerySourcesDefinitionOptions
                     {
                         DefinesStateTransform = sources.DefinesStateTransform,
-                        OutputState = sources.OutputState,
+                        OutputRunningResults = sources.OutputRunningResults,
                         ForceProjectionName = sources.ForceProjectionNameOption,
                         IncludeLinks = sources.IncludeLinksOption,
                         PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,

@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        public override bool GetOutputState()
+        public override bool GetOutputRunningResults()
         {
             return false;
         }
@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var checkpointManager2 = new DefaultCheckpointManager(
                 publisher, projectionCorrelationId, _projectionVersion, checkpointStrategy._runAs, ioDispatcher,
                 _projectionConfig, _name, new PhasePositionTagger(1), namingBuilder, checkpointStrategy.UseCheckpoints,
-                coreProjectionCheckpointWriter);
+                false, coreProjectionCheckpointWriter);
 
             var writeResultsPhase = new WriteQueryResultProjectionProcessingPhase(
                 1, namingBuilder.GetResultStreamName(), coreProjection, partitionStateCache, checkpointManager2);

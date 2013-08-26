@@ -47,7 +47,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CoreProjectionQueue _processingQueue;
         private readonly PartitionStateCache _partitionStateCache;
         private readonly bool _definesStateTransform;
-        private readonly bool _outputState;
         private string _handlerPartition;
         private readonly IResultEmitter _resultEmitter;
         private readonly StatePartitionSelector _statePartitionSelector;
@@ -60,13 +59,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _subscribed;
 
         protected PhaseState _state;
+        private readonly bool _outputRunningResults;
 
 
         public EventProcessingProjectionProcessingPhase(
             CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
             ProjectionProcessingStrategy projectionProcessingStrategy, ProjectionConfig projectionConfig,
             Action updateStatistics, IProjectionStateHandler projectionStateHandler,
-            PartitionStateCache partitionStateCache, bool definesStateTransform, bool outputState, string projectionName,
+            PartitionStateCache partitionStateCache, bool definesStateTransform, bool outputRunningResults, string projectionName,
             ILogger logger, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
             ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
             StatePartitionSelector statePartitionSelector, CheckpointStrategy checkpointStrategy,
@@ -78,8 +78,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionStateHandler = projectionStateHandler;
             _partitionStateCache = partitionStateCache;
             _definesStateTransform = definesStateTransform;
-            _outputState = outputState;
             _resultEmitter = resultEmitter;
+            _outputRunningResults = outputRunningResults;
             _processingQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, updateStatistics);
             _statePartitionSelector = statePartitionSelector;
@@ -402,7 +402,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (result)
             {
                 var oldState = _partitionStateCache.GetLockedPartitionState(partition);
-                if (oldState.State != newState)
+                if (_outputRunningResults && oldState.State != newState)
                 {
                     if (_definesStateTransform)
                     {
@@ -531,9 +531,10 @@ namespace EventStore.Projections.Core.Services.Processing
                         _checkpointManager.NewPartition(result.Partition, eventCheckpointTag);
                     if (result.EmittedEvents != null)
                         _checkpointManager.EventsEmitted(result.EmittedEvents, result.CausedBy, result.CorrelationId);
-                    if (_outputState && result.NewState != null)
+                    if (result.NewState != null)
                     {
-                        EmitRunningResults(result);
+                        if (_outputRunningResults)
+                            EmitRunningResults(result);
                         _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState);
                     }
                 }

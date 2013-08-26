@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 return true;
             }
 
-            public override bool GetOutputState()
+            public override bool GetOutputRunningResults()
             {
                 return true;
             }

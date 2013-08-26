@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using Newtonsoft.Json;
@@ -45,6 +46,11 @@ namespace EventStore.Projections.Core.Services.Processing
         //TODO: rename to StreamsOrEventTypes or just Positions
         public readonly Dictionary<string, int> Streams;
 
+        public readonly string CatalogStream;
+        public readonly string DataStream;
+        public readonly int CatalogPosition;
+        public readonly int DataPosition;
+
         internal enum Mode
         {
             Phase,
@@ -52,7 +58,8 @@ namespace EventStore.Projections.Core.Services.Processing
             Stream,
             MultiStream,
             EventTypeIndex,
-            PreparePosition
+            PreparePosition,
+            ByStream
         }
 
         private CheckpointTag(int phase, bool completed)
@@ -120,6 +127,15 @@ namespace EventStore.Projections.Core.Services.Processing
             Position = new TFPos(Int64.MinValue, Int64.MinValue);
             Streams = new Dictionary<string, int> {{stream, sequenceNumber}};
             Mode_ = CalculateMode();
+        }
+
+        private CheckpointTag(string catalogStream, int catalogPosition, string dataStream, int dataPosition)
+        {
+            CatalogStream = catalogStream;
+            CatalogPosition = catalogPosition;
+            DataStream = dataStream;
+            DataPosition = dataPosition;
+            Mode_ = Mode.ByStream;
         }
 
         private Mode CalculateMode()

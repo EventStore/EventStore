@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _byStream;
         private readonly bool _byCustomPartitions;
         private readonly bool _useCheckpoints;
-        internal readonly bool _definesStateTransform;
+        private readonly bool _outputRunningResults;
         private readonly IReaderStrategy _readerStrategy;
         internal readonly IPrincipal _runAs;
 
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
             int phase, IQuerySources sources, ProjectionConfig config, ITimeProvider timeProvider)
         {
             return new CheckpointStrategy(
-                sources.ByStreams, sources.ByCustomPartitions, config.CheckpointsEnabled, sources.DefinesStateTransform,
+                sources.ByStreams, sources.ByCustomPartitions, config.CheckpointsEnabled, sources.OutputRunningResults,
                 config.RunAs, Processing.ReaderStrategy.Create(phase, sources, timeProvider, config.RunAs));
         }
 
@@ -64,30 +64,31 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private CheckpointStrategy(
-            bool byStream, bool byCustomPartitions, bool useCheckpoints, bool definesStateTransform, IPrincipal runAs,
+            bool byStream, bool byCustomPartitions, bool useCheckpoints, bool outputRunningResults, IPrincipal runAs,
             IReaderStrategy readerStrategy)
         {
             _readerStrategy = readerStrategy;
             _byStream = byStream;
             _byCustomPartitions = byCustomPartitions;
             _useCheckpoints = useCheckpoints;
-            _definesStateTransform = definesStateTransform;
+            _outputRunningResults = outputRunningResults;
             _runAs = runAs;
         }
 
         public StatePartitionSelector CreateStatePartitionSelector(IProjectionStateHandler projectionStateHandler)
         {
             return _byCustomPartitions
-                       ? new ByHandleStatePartitionSelector(projectionStateHandler)
-                       : (_byStream
-                              ? (StatePartitionSelector) new ByStreamStatePartitionSelector()
-                              : new NoopStatePartitionSelector());
+                ? new ByHandleStatePartitionSelector(projectionStateHandler)
+                : (_byStream
+                    ? (StatePartitionSelector) new ByStreamStatePartitionSelector()
+                    : new NoopStatePartitionSelector());
         }
 
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
             Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPublisher publisher,
             IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name,
-            ProjectionNamesBuilder namingBuilder, bool isReadingOrderRepeatable, IPrincipal runAs, CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
+            ProjectionNamesBuilder namingBuilder, bool isReadingOrderRepeatable, IPrincipal runAs,
+            CoreProjectionCheckpointWriter coreProjectionCheckpointWriter, bool outputRunningResults)
         {
             var emitAny = projectionConfig.EmitEventEnabled;
 
@@ -98,20 +99,20 @@ namespace EventStore.Projections.Core.Services.Processing
                 return new MultiStreamMultiOutputCheckpointManager(
                     publisher, projectionCorrelationId, projectionVersion, runAs, ioDispatcher, projectionConfig, name,
                     ReaderStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled,
-                    coreProjectionCheckpointWriter);
+                    outputRunningResults, coreProjectionCheckpointWriter);
             }
             else
             {
                 return new DefaultCheckpointManager(
                     publisher, projectionCorrelationId, projectionVersion, runAs, ioDispatcher, projectionConfig, name,
                     ReaderStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled,
-                    coreProjectionCheckpointWriter);
+                    outputRunningResults, coreProjectionCheckpointWriter);
             }
         }
 
         public IResultEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
         {
-            var resultEmitter = _definesStateTransform
+            var resultEmitter = _outputRunningResults
                 ? new ResultEmitter(namingBuilder)
                 : (IResultEmitter) new NoopResultEmitter();
             return resultEmitter;

@@ -93,12 +93,12 @@ namespace EventStore.Projections.Core.Services.Processing
         public void SetDefinesStateTransform()
         {
             _options.DefinesStateTransform = true;
-            _options.OutputState = true;
+            _options.OutputRunningResults = true;
         }
 
         public void SetOutputState()
         {
-            _options.OutputState = true;
+            _options.OutputRunningResults = true;
         }
 
         public void SetResultStreamNameOption(string resultStreamName)
@@ -171,9 +171,9 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _options.DefinesStateTransform; }
         }
 
-        public bool OutputState
+        public bool OutputRunningResults
         {
-            get { return _options.OutputState; }
+            get { return _options.OutputRunningResults; }
         }
 
         public bool IncludeLinksOption
@@ -244,7 +244,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public bool DefinesStateTransform { get; set; }
 
         [DataMember]
-        public bool OutputState { get; set; }
+        public bool OutputRunningResults { get; set; }
 
         [DataMember]
         public bool IncludeLinks { get; set; }

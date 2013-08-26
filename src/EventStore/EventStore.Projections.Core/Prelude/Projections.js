@@ -51,7 +51,7 @@ var $projections = {
 
             options: {
                 definesStateTransform: false,
-                outputState: false,
+                outputRunningResults: false,
                 resultStreamName: null,
                 partitionResultStreamNamePattern: null,
                 $forceProjectionName: null,
@@ -278,17 +278,17 @@ var $projections = {
 
         function $defines_state_transform() {
             sources.options.definesStateTransform = true;
-            sources.options.outputState = true;
+            sources.options.outputRunningResults = true;
         }
 
         function $outputState() {
-            sources.options.outputState = true;
+            sources.options.outputRunningResults = true;
         }
 
         function chainTransformBy(by) {
             transformers.push(by);
             sources.options.definesStateTransform = true;
-            sources.options.outputState = true;
+            sources.options.outputRunningResults = true;
         }
 
         function fromAll() {

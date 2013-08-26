@@ -62,18 +62,19 @@ namespace EventStore.Projections.Core.Services.Processing
             var resultEmitter = checkpointStrategy.CreateResultEmitter(namingBuilder);
             var zeroCheckpointTag = checkpointStrategy.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag();
             var statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(_stateHandler);
+            var outputRunningResults = _sourceDefinition.OutputRunningResults;
 
             var checkpointManager = checkpointStrategy.CreateCheckpointManager(
                 projectionCorrelationId, _projectionVersion, publisher, ioDispatcher, _projectionConfig, _name,
                 namingBuilder, checkpointStrategy.ReaderStrategy.IsReadingOrderRepeatable, checkpointStrategy._runAs,
-                coreProjectionCheckpointWriter);
+                coreProjectionCheckpointWriter, outputRunningResults);
 
 
             var firstPhase = new EventProcessingProjectionProcessingPhase(
                 coreProjection, projectionCorrelationId, publisher, this, _projectionConfig, updateStatistics,
-                _stateHandler, partitionStateCache, checkpointStrategy._definesStateTransform, GetOutputState(), _name,
-                _logger, zeroCheckpointTag, resultEmitter, checkpointManager, statePartitionSelector, checkpointStrategy,
-                timeProvider, subscriptionDispatcher, 0);
+                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, GetOutputRunningResults(),
+                _name, _logger, zeroCheckpointTag, resultEmitter, checkpointManager, statePartitionSelector,
+                checkpointStrategy, timeProvider, subscriptionDispatcher, 0);
 
             return CreateProjectionProcessingPhases(
                 publisher, projectionCorrelationId, namingBuilder, partitionStateCache, updateStatistics, coreProjection,

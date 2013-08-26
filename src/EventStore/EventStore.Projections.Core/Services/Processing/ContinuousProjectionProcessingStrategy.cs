@@ -54,9 +54,9 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        public override bool GetOutputState()
+        public override bool GetOutputRunningResults()
         {
-            return _sourceDefinition.OutputState;
+            return _sourceDefinition.OutputRunningResults;
         }
 
         protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(

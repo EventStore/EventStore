@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             return new MultiStreamMultiOutputCheckpointManager(
                 _bus, _projectionCorrelationId, _projectionVersion, null, _ioDispatcher, _config, _projectionName,
-                new MultiStreamPositionTagger(0, _streams), _namingBuilder, _checkpointsEnabled, _checkpointWriter);
+                new MultiStreamPositionTagger(0, _streams), _namingBuilder, _checkpointsEnabled, true, _checkpointWriter);
         }
     }
 }
