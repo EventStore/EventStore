@@ -366,5 +366,20 @@ namespace EventStore.Core.Util
         public const string WatchdogFailureCountJson = "watchdogFailureCount";
         public const string WatchdogFailureCountDescr = "The maximum allowed supervised node failures within specified time window.";
         public static readonly int WatchdogFailureCountDefault = -1;
+
+		/*
+		 * Authentication Options
+		 */
+	    public const string UseLdapsAuthenticationCmd = "ldaps-authentication";
+	    public const string UseLdapsAuthenticationEnv = "LDAPS_AUTHENTICATION";
+	    public const string UseLdapsAuthenticationJson = "ldapsAuthentication";
+	    public const string UseLdapsAuthenticationDescr = "Use LDAPS authentication, disable Event Store internal authentication";
+	    public static readonly bool UseLdapsAuthenticationDefault = false;
+
+	    public const string LdapsConfigurationFileCmd = "ldaps-config=";
+	    public const string LdapsConfigurationFileEnv = "LDAPS_CONFIG";
+	    public const string LdapsConfigurationFileJson = "ldapsConfigFile";
+	    public const string LdapsConfigurationFileDescr = "Path to the configuration file for LDAPS authentication";
+	    public static readonly string LdapsConfigurationFileDefault = string.Empty;
     }
 }
