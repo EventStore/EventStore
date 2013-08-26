@@ -34,11 +34,11 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
 {
     [TestFixture]
-    public class checkpoint_tag_by_catalog_stream
+    public class checkpoint_tag_by_stream_position
     {
-        private readonly CheckpointTag _a = CheckpointTag.FromByStreamPosition("catalog", 1, "data", 10, 12345);
-        private readonly CheckpointTag _b = CheckpointTag.FromByStreamPosition("catalog", 1, "data", 20, 12345);
-        private readonly CheckpointTag _c = CheckpointTag.FromByStreamPosition("catalog", 2, "data2", 20, 12345);
+        private readonly CheckpointTag _a = CheckpointTag.FromStreamPosition(1, "stream", 9);
+        private readonly CheckpointTag _b = CheckpointTag.FromStreamPosition(1, "stream", 15);
+        private readonly CheckpointTag _c = CheckpointTag.FromStreamPosition(1, "stream", 29);
 
         [Test]
         public void equal_equals()
