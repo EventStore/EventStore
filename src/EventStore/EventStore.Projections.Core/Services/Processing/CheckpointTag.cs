@@ -663,10 +663,13 @@ namespace EventStore.Projections.Core.Services.Processing
                     jsonWriter.WritePropertyName(CatalogStream);
                     jsonWriter.WriteValue(CatalogPosition);
                     jsonWriter.WriteEndObject();
-                    jsonWriter.WriteStartObject();
-                    jsonWriter.WritePropertyName(DataStream);
-                    jsonWriter.WriteValue(DataPosition);
-                    jsonWriter.WriteEndObject();
+                    if (!string.IsNullOrEmpty(DataStream))
+                    {
+                        jsonWriter.WriteStartObject();
+                        jsonWriter.WritePropertyName(DataStream);
+                        jsonWriter.WriteValue(DataPosition);
+                        jsonWriter.WriteEndObject();
+                    }
                     jsonWriter.WriteEndArray();
                     break;
             }
@@ -778,15 +781,17 @@ namespace EventStore.Projections.Core.Services.Processing
                             Check(JsonToken.EndObject, reader);
 
                             Check(reader.Read(), reader);
-                            Check(JsonToken.StartObject, reader);
-                            Check(reader.Read(), reader);
-                            Check(JsonToken.PropertyName, reader);
-                            dataStream = (string)reader.Value;
-                            Check(reader.Read(), reader);
-                            dataPosition = (int)(long)reader.Value;
-                            Check(reader.Read(), reader);
-                            Check(JsonToken.EndObject, reader);
-                            Check(reader.Read(), reader);
+                            if (reader.TokenType == JsonToken.StartObject)
+                            {
+                                Check(reader.Read(), reader);
+                                Check(JsonToken.PropertyName, reader);
+                                dataStream = (string) reader.Value;
+                                Check(reader.Read(), reader);
+                                dataPosition = (int) (long) reader.Value;
+                                Check(reader.Read(), reader);
+                                Check(JsonToken.EndObject, reader);
+                                Check(reader.Read(), reader);
+                            }
                             Check(JsonToken.EndArray, reader);
                         }
                         else
@@ -829,10 +834,13 @@ namespace EventStore.Projections.Core.Services.Processing
             return new CheckpointTagVersion
             {
                 Tag =
-                    byStreamMode ? new CheckpointTag(catalogStream, catalogPosition.GetValueOrDefault(), dataStream, dataPosition.GetValueOrDefault(), commitPosition.GetValueOrDefault()) :
-                    new CheckpointTag(
-                        projectionPhase, new TFPos(commitPosition ?? Int64.MinValue, preparePosition ?? Int64.MinValue),
-                        streams),
+                    byStreamMode
+                        ? new CheckpointTag(
+                            catalogStream, catalogPosition.GetValueOrDefault(), dataStream, dataPosition ?? -1,
+                            commitPosition.GetValueOrDefault())
+                        : new CheckpointTag(
+                            projectionPhase,
+                            new TFPos(commitPosition ?? Int64.MinValue, preparePosition ?? Int64.MinValue), streams),
                 Version = new ProjectionVersion(projectionId, projectionEpoch, projectionVersion),
                 SystemVersion = projectionSystemVersion,
                 ExtraMetadata = extra,

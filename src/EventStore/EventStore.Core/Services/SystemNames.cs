@@ -87,6 +87,7 @@ namespace EventStore.Core.Services
         public const string StreamDeleted = "$streamDeleted";
         public const string StatsCollection = "$statsCollected";
         public const string LinkTo = "$>";
+        public const string StreamReference = "$@";
         public const string StreamMetadata = "$metadata";
         public const string Settings = "$settings";
 

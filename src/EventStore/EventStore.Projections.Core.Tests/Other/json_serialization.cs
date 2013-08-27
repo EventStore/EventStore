@@ -171,6 +171,18 @@ namespace EventStore.Projections.Core.Tests.Other
         }
 
         [Test]
+        public void by_stream_based_checkpoint_tag_zero()
+        {
+            CheckpointTag tag = CheckpointTag.FromByStreamPosition("catalog", -1, null, -1, 12345);
+            byte[] bytes = tag.ToJsonBytes(_version);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
+            Console.WriteLine(instring);
+
+            CheckpointTag back = instring.ParseCheckpointTagJson();
+            Assert.AreEqual(tag, back);
+        }
+
+        [Test]
         public void extra_metadata_are_preserved()
         {
             CheckpointTag tag = CheckpointTag.FromPosition(0, -1, 0);
