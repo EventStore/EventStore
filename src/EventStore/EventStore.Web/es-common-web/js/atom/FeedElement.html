@@ -128,13 +128,15 @@
                 autoResize: true,
                 open: function (event, ui) {
                     $.getJSON("/streams/$$" + data.streamId + "/head", null, function (d) {
-                        if (d && d.$acl) {
+                        if (d) {
                             loadedMetaData = d;
-                            $('#r-group').val(d.$acl.$r);
-                            $('#w-group').val(d.$acl.$w);
-                            $('#d-group').val(d.$acl.$d);
-                            $('#mr-group').val(d.$acl.$mr);
-                            $('mw-group').val(d.$acl.$mw);
+                            if (d.$acl) {
+                                $('#r-group').val(d.$acl.$r);
+                                $('#w-group').val(d.$acl.$w);
+                                $('#d-group').val(d.$acl.$d);
+                                $('#mr-group').val(d.$acl.$mr);
+                                $('mw-group').val(d.$acl.$mw);
+                            }
                         }
                     });
                 }
