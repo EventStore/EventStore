@@ -47,7 +47,7 @@ namespace EventStore.Core.Services.Monitoring
         private readonly ILogger _log;
         private readonly ICheckpoint _writerCheckpoint;
         private readonly string _dbPath;
-        private readonly PerfCounterHelper _perfCounter;
+        private PerfCounterHelper _perfCounter;
 
         public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath)
         {
@@ -63,18 +63,8 @@ namespace EventStore.Core.Services.Monitoring
         public IDictionary<string, object> GetSystemStats()
         {
             var stats = new Dictionary<string, object>();
+            GetPerfCounterInformation(stats, 0);
             var process = Process.GetCurrentProcess();
-
-            stats["proc-startTime"] = process.StartTime.ToUniversalTime().ToString("O");
-            stats["proc-id"] = process.Id;
-            stats["proc-mem"] = new StatMetadata(process.WorkingSet64, "Process", "Process Virtual Memory");
-            stats["proc-cpu"] = new StatMetadata(_perfCounter.GetProcCpuUsage(), "Process", "Process Cpu Usage");
-            stats["proc-threadsCount"] = _perfCounter.GetProcThreadsCount();
-            stats["proc-contentionsRate"] = _perfCounter.GetContentionsRateCount();
-            stats["proc-thrownExceptionsRate"] = _perfCounter.GetThrownExceptionsRate();
-
-            stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
-            stats["sys-freeMem"] = GetFreeMem();
 
             var diskIo = DiskIo.GetDiskIo(process.Id, _log);
             if (diskIo != null)
@@ -143,6 +133,34 @@ namespace EventStore.Core.Services.Monitoring
             }
 
             return stats;
+        }
+
+        private void GetPerfCounterInformation(Dictionary<string, object> stats, int count)
+        {
+            if(count > 3)
+            {
+                _log.Info("Reached max count of trying to recreate counters on error.");
+            }
+            var process = Process.GetCurrentProcess();
+            try
+            {
+                stats["proc-startTime"] = process.StartTime.ToUniversalTime().ToString("O");
+                stats["proc-id"] = process.Id;
+                stats["proc-mem"] = new StatMetadata(process.WorkingSet64, "Process", "Process Virtual Memory");
+                stats["proc-cpu"] = new StatMetadata(_perfCounter.GetProcCpuUsage(), "Process", "Process Cpu Usage");
+                stats["proc-threadsCount"] = _perfCounter.GetProcThreadsCount();
+                stats["proc-contentionsRate"] = _perfCounter.GetContentionsRateCount();
+                stats["proc-thrownExceptionsRate"] = _perfCounter.GetThrownExceptionsRate();
+
+                stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
+                stats["sys-freeMem"] = GetFreeMem();
+            }
+            catch (InvalidOperationException)
+            {
+                _log.Info("Received error reading counters. Attempting to rebuild.");
+                _perfCounter = new PerfCounterHelper(_log);
+                GetPerfCounterInformation(stats, count + 1);
+            }
         }
 
         private long GetFreeMem()
