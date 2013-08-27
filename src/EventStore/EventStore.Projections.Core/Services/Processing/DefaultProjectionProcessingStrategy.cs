@@ -94,5 +94,10 @@ namespace EventStore.Projections.Core.Services.Processing
             return _sourceDefinition.ByStreams || _sourceDefinition.ByCustomPartitions;
         }
 
+        public override void EnrichStatistics(ProjectionStatistics info)
+        {
+            //TODO: get rid of this cast
+            info.Definition = _sourceDefinition as ProjectionSourceDefinition;
+        }
     }
 }

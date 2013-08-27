@@ -70,6 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public abstract bool GetUseCheckpoints();
         public abstract bool GetIsPartitioned();
         public abstract bool GetOutputRunningResults();
+        public abstract void EnrichStatistics(ProjectionStatistics info);
 
         public abstract IProjectionProcessingPhase[] CreateProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,

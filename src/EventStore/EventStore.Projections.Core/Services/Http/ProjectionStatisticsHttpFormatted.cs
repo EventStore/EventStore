@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Security.Policy;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services.Http
 {
@@ -55,6 +57,10 @@ namespace EventStore.Projections.Core.Services.Http
             this.StatusUrl = makeAbsoluteUrl(statusLocalUrl);
             this.StateUrl = makeAbsoluteUrl(statusLocalUrl + "/state");
             this.ResultUrl = makeAbsoluteUrl(statusLocalUrl + "/result");
+            this.QueryUrl = makeAbsoluteUrl(statusLocalUrl + "/query?config=yes");
+            if (!string.IsNullOrEmpty(source.Definition.ResultStreamName))
+                this.ResultStreamUrl =
+                    makeAbsoluteUrl("/streams/" + Uri.EscapeDataString(source.Definition.ResultStreamName));
         }
 
         public int Version { get; set; }
@@ -90,6 +96,10 @@ namespace EventStore.Projections.Core.Services.Http
         public string StateUrl { get; set; }
 
         public string ResultUrl { get; set; }
+
+        public string QueryUrl { get; set; }
+
+        public string ResultStreamUrl { get; set; }
 
         public string CheckpointStatus { get; set; }
 

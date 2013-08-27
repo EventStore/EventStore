@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -75,6 +77,8 @@ namespace EventStore.Projections.Core.Services
         public int WritesInProgress { get; set; }
 
         public string EffectiveName { get; set; }
+
+        public ProjectionSourceDefinition Definition { get; set; }
 
         public ProjectionStatistics Clone()
         {

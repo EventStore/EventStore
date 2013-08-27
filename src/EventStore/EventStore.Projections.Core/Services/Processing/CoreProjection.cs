@@ -69,6 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
         internal readonly Guid _projectionCorrelationId;
 
         private readonly ILogger _logger;
+        private readonly ProjectionProcessingStrategy _projectionProcessingStrategy;
 
         private State _state;
 
@@ -108,6 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _version = version;
             _stopOnEof = stopOnEof;
             _logger = logger;
+            _projectionProcessingStrategy = projectionProcessingStrategy;
             _publisher = publisher;
             _partitionStateCache = new PartitionStateCache();
             _partitionedStateState = partitionedState;
@@ -191,7 +193,7 @@ namespace EventStore.Projections.Core.Services.Processing
             info.StateReason = "";
             info.BufferedEvents = 0; 
             info.PartitionsCached = _partitionStateCache.CachedItemCount;
-
+            _projectionProcessingStrategy.EnrichStatistics(info);
             if (_projectionProcessingPhase != null)
                 _projectionProcessingPhase.GetStatistics(info);
         }
