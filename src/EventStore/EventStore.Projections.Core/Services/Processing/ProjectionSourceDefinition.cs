@@ -29,6 +29,9 @@ namespace EventStore.Projections.Core.Services.Processing
         public string[] Streams { get; set; }
 
         [DataMember]
+        public string CatalogStream { get; set; }
+
+        [DataMember]
         public QuerySourceOptions Options { get; set; }
 
         bool IQuerySources.DefinesStateTransform

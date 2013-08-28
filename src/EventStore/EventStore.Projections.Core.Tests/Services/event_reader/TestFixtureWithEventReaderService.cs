@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
 
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
             _readerService = new EventReaderCoreService(
-                GetInputQueue(), 10, writerCheckpoint, runHeadingReader: GivenHeadingReaderRunning());
+                GetInputQueue(), _ioDispatcher, 10, writerCheckpoint, runHeadingReader: GivenHeadingReaderRunning());
             _subscriptionDispatcher =
                 new ReaderSubscriptionDispatcher(GetInputQueue(), v => v.SubscriptionId, v => v.SubscriptionId);
 

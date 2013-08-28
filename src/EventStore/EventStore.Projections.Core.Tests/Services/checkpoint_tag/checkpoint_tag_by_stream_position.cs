@@ -36,9 +36,9 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
     [TestFixture]
     public class checkpoint_tag_by_catalog_stream
     {
-        private readonly CheckpointTag _a = CheckpointTag.FromByStreamPosition("catalog", 1, "data", 10, 12345);
-        private readonly CheckpointTag _b = CheckpointTag.FromByStreamPosition("catalog", 1, "data", 20, 12345);
-        private readonly CheckpointTag _c = CheckpointTag.FromByStreamPosition("catalog", 2, "data2", 20, 12345);
+        private readonly CheckpointTag _a = CheckpointTag.FromByStreamPosition(0, "catalog", 1, "data", 10, 12345);
+        private readonly CheckpointTag _b = CheckpointTag.FromByStreamPosition(0, "catalog", 1, "data", 20, 12345);
+        private readonly CheckpointTag _c = CheckpointTag.FromByStreamPosition(0, "catalog", 2, "data2", 20, 12345);
 
         [Test]
         public void equal_equals()

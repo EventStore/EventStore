@@ -179,6 +179,7 @@
     <Compile Include="Services\Management\ProjectionStateHandlerFactory.cs" />
     <Compile Include="Services\Management\TimeoutScheduler.cs" />
     <Compile Include="Services\Processing\ByHandleStatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\BypassingEventFilter.cs" />
     <Compile Include="Services\Processing\ByStreamCatalogEventReader.cs" />
     <Compile Include="Services\Processing\ByStreamStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\CategoryEventFilter.cs" />
@@ -231,6 +232,7 @@
     <Compile Include="Services\Processing\PhasePositionTagger.cs" />
     <Compile Include="Services\Processing\PositionTracker.cs" />
     <Compile Include="Services\Processing\PreparePositionTagger.cs" />
+    <Compile Include="Services\Processing\PreTaggedPositionTagger.cs" />
     <Compile Include="Services\Processing\ProgressWorkItem.cs" />
     <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
     <Compile Include="Services\Processing\EventReaderCoreService.cs" />

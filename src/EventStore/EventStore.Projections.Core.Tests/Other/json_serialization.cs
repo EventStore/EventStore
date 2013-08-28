@@ -161,7 +161,7 @@ namespace EventStore.Projections.Core.Tests.Other
         [Test]
         public void by_stream_based_checkpoint_tag()
         {
-            CheckpointTag tag = CheckpointTag.FromByStreamPosition("catalog", 1, "data", 2, 12345);
+            CheckpointTag tag = CheckpointTag.FromByStreamPosition(0, "catalog", 1, "data", 2, 12345);
             byte[] bytes = tag.ToJsonBytes(_version);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
@@ -173,7 +173,7 @@ namespace EventStore.Projections.Core.Tests.Other
         [Test]
         public void by_stream_based_checkpoint_tag_zero()
         {
-            CheckpointTag tag = CheckpointTag.FromByStreamPosition("catalog", -1, null, -1, 12345);
+            CheckpointTag tag = CheckpointTag.FromByStreamPosition(0, "catalog", -1, null, -1, 12345);
             byte[] bytes = tag.ToJsonBytes(_version);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);

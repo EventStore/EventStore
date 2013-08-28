@@ -43,6 +43,9 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "streams")]
         public string[] Streams { get; set; }
 
+        [DataMember(Name = "catalogStream")]
+        public string CatalogStream { get; set; }
+
         [DataMember(Name = "allEvents")]
         public bool AllEvents { get; set; }
 

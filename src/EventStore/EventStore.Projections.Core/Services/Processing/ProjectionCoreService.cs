@@ -51,8 +51,6 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<CoreProjectionManagementMessage.GetState>,
                                         IHandle<CoreProjectionManagementMessage.GetResult>,
                                          IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
-                                         IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
-                                         IHandle<ClientMessage.WriteEventsCompleted>, 
                                         IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>, 
                                         IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>, 
                                         IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>, 
@@ -78,11 +76,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public ProjectionCoreService(
             IPublisher inputQueue, IPublisher publisher,
             ReaderSubscriptionDispatcher
-                subscriptionDispatcher, ITimeProvider timeProvider)
+                subscriptionDispatcher, ITimeProvider timeProvider, IODispatcher ioDispatcher)
         {
             _inputQueue = inputQueue;
             _publisher = publisher;
-            _ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue));
+            _ioDispatcher = ioDispatcher;
             _subscriptionDispatcher = subscriptionDispatcher;
             _timeProvider = timeProvider;
         }
@@ -221,16 +219,6 @@ namespace EventStore.Projections.Core.Services.Processing
             CoreProjection projection;
             if (_projections.TryGetValue(message.ProjectionId, out projection))
                 projection.UpdateStatistics();
-        }
-
-        public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
-        {
-            _ioDispatcher.BackwardReader.Handle(message);
-        }
-
-        public void Handle(ClientMessage.WriteEventsCompleted message)
-        {
-            _ioDispatcher.Writer.Handle(message);
         }
 
         public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)

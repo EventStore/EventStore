@@ -29,6 +29,7 @@
 using System;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Projections.Core.Services.Processing;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Messages
@@ -140,7 +141,7 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private readonly ResolvedEvent _data;
-
+            private readonly CheckpointTag _preTagged;
             private readonly long? _safeTransactionFileReaderJoinPosition;
             private readonly float _progress;
 
@@ -150,16 +151,17 @@ namespace EventStore.Projections.Core.Messages
 
             public CommittedEventDistributed(
                 Guid correlationId, ResolvedEvent data, long? safeTransactionFileReaderJoinPosition, float progress,
-                object source = null)
+                object source = null, CheckpointTag preTagged = null)
                 : base(correlationId, source)
             {
                 _data = data;
                 _safeTransactionFileReaderJoinPosition = safeTransactionFileReaderJoinPosition;
                 _progress = progress;
+                _preTagged = preTagged;
             }
 
-            public CommittedEventDistributed(Guid correlationId, ResolvedEvent data)
-                : this(correlationId, data, data.Position.PreparePosition, 11.1f)
+            public CommittedEventDistributed(Guid correlationId, ResolvedEvent data, CheckpointTag preTagged = null)
+                : this(correlationId, data, data.Position.PreparePosition, 11.1f, preTagged)
             {
             }
 
@@ -176,6 +178,11 @@ namespace EventStore.Projections.Core.Messages
             public float Progress
             {
                 get { return _progress; }
+            }
+
+            public CheckpointTag PreTagged
+            {
+                get { return _preTagged; }
             }
         }
     }

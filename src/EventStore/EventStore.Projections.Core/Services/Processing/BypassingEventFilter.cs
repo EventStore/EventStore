@@ -26,18 +26,23 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Core.Bus;
-using EventStore.Core.Helpers;
-using EventStore.Projections.Core.Messages;
-
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IReaderSubscription : IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderEof>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>
+    public class BypassingEventFilter : EventFilter
     {
-        IEventReader CreatePausedEventReader(IPublisher publisher, IODispatcher ioDispatcher, Guid forkedEventReaderId);
+        public BypassingEventFilter()
+            : base(true, null)
+        {
+        }
+
+        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
+        {
+            return true;
+        }
+
+        public override string GetCategory(string positionStreamId)
+        {
+            return null;
+        }
     }
 }

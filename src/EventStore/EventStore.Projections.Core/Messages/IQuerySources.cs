@@ -36,6 +36,8 @@ namespace EventStore.Projections.Core.Messages
 
         string[] Streams { get; }
 
+        string CatalogStream { get; }
+
         bool AllEvents { get; }
 
         string[] Events { get; }

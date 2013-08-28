@@ -164,6 +164,11 @@ namespace EventStore.Projections.Core.Messages
                     subscriptionId, checkpointTag, eventCategory, message.Data, message.Progress,
                     subscriptionMessageSequenceNumber, message.Source);
             }
+
+            public override string ToString()
+            {
+                return CheckpointTag.ToString();
+            }
         }
 
         public CheckpointTag CheckpointTag

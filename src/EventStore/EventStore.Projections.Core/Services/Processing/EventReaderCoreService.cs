@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -53,6 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<ReaderCoreServiceMessage.ReaderTick>
     {
         private readonly IPublisher _publisher;
+        private readonly IODispatcher _ioDispatcher;
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionCoreService>();
         private bool _stopped = true;
 
@@ -70,10 +72,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public EventReaderCoreService(
-            IPublisher publisher, int eventCacheSize,
+            IPublisher publisher, IODispatcher ioDispatcher, int eventCacheSize,
             ICheckpoint writerCheckpoint, bool runHeadingReader)
         {
             _publisher = publisher;
+            _ioDispatcher = ioDispatcher;
             if (runHeadingReader)
                 _headingEventReader = new HeadingEventReader(eventCacheSize);
             _writerCheckpoint = writerCheckpoint;
@@ -91,7 +94,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 _subscriptionEventReaders.Remove(message.SubscriptionId);
                 _headingEventReader.Unsubscribe(message.SubscriptionId);
                 var forkedEventReaderId = Guid.NewGuid();
-                var forkedEventReader = projectionSubscription.CreatePausedEventReader(_publisher, forkedEventReaderId);
+                var forkedEventReader = projectionSubscription.CreatePausedEventReader(
+                    _publisher, _ioDispatcher, forkedEventReaderId);
                 _subscriptionEventReaders.Add(message.SubscriptionId, forkedEventReaderId);
                 _eventReaderSubscriptions.Add(forkedEventReaderId, message.SubscriptionId);
                 _eventReaders.Add(forkedEventReaderId, forkedEventReader);
@@ -124,7 +128,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptions.Add(subscriptionId, projectionSubscription);
 
             var distibutionPointCorrelationId = Guid.NewGuid();
-            var eventReader = projectionSubscription.CreatePausedEventReader(_publisher, distibutionPointCorrelationId);
+            var eventReader = projectionSubscription.CreatePausedEventReader(
+                _publisher, _ioDispatcher, distibutionPointCorrelationId);
             _logger.Trace(
                 "The '{0}' projection subscribed to the '{1}' distribution point", subscriptionId,
                 distibutionPointCorrelationId);

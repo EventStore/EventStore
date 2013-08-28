@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -129,10 +130,11 @@ namespace EventStore.Projections.Core.Tests.Services
             _bus = new InMemoryBus("temp");
             _bus.Subscribe(_consumer);
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
-            _readerService = new EventReaderCoreService(_bus, 10, writerCheckpoint, runHeadingReader: true);
+            var ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+            _readerService = new EventReaderCoreService(_bus, ioDispatcher, 10, writerCheckpoint, runHeadingReader: true);
             _subscriptionDispatcher =
                 new ReaderSubscriptionDispatcher(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
-            _service = new ProjectionCoreService(_bus, _bus, _subscriptionDispatcher, new RealTimeProvider());
+            _service = new ProjectionCoreService(_bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher);
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());

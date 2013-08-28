@@ -29,6 +29,7 @@
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Common.Utils;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -51,7 +52,8 @@ namespace EventStore.Projections.Core
         private readonly ReaderSubscriptionDispatcher
             _subscriptionDispatcher;
 
-        private FeedReaderService _feedReaderService;
+        private readonly FeedReaderService _feedReaderService;
+        private readonly IODispatcher _ioDispatcher;
 
         public ProjectionWorkerNode(TFChunkDb db, QueuedHandler inputQueue, ITimeProvider timeProvider, RunProjections runProjections)
         {
@@ -63,13 +65,14 @@ namespace EventStore.Projections.Core
             IPublisher publisher = CoreOutput;
             _subscriptionDispatcher =
                 new ReaderSubscriptionDispatcher(publisher, v => v.SubscriptionId, v => v.SubscriptionId);
-            ;
+
+            _ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue));
             _eventReaderCoreService = new EventReaderCoreService(
-                publisher, 10, db.Config.WriterCheckpoint, runHeadingReader: runProjections >= RunProjections.System);
+                publisher, _ioDispatcher, 10, db.Config.WriterCheckpoint, runHeadingReader: runProjections >= RunProjections.System);
             _feedReaderService = new FeedReaderService(_subscriptionDispatcher, timeProvider);
             if (runProjections >= RunProjections.System)
             {
-                _projectionCoreService = new ProjectionCoreService(inputQueue, publisher, _subscriptionDispatcher, timeProvider);
+                _projectionCoreService = new ProjectionCoreService(inputQueue, publisher, _subscriptionDispatcher, timeProvider, _ioDispatcher);
             }
         }
 
@@ -104,8 +107,11 @@ namespace EventStore.Projections.Core
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.GetState>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.GetResult>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.UpdateStatistics>(_projectionCoreService);
-                coreInputBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionCoreService);
-                coreInputBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionCoreService);
+                coreInputBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_ioDispatcher.ForwardReader);
+                coreInputBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_ioDispatcher.BackwardReader);
+                coreInputBus.Subscribe<ClientMessage.WriteEventsCompleted>(_ioDispatcher.Writer);
+                coreInputBus.Subscribe<ClientMessage.DeleteStreamCompleted>(_ioDispatcher.StreamDeleter);
+                coreInputBus.Subscribe<IODispatcherDelayedMessage>(_ioDispatcher);
                 coreInputBus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_projectionCoreService);

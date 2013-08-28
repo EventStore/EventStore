@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -88,7 +89,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             _receivedNotAuthorizedNotifications.Add(message);
         }
 
-        public IEventReader CreatePausedEventReader(IPublisher publisher, Guid forkedEventReaderId)
+        public IEventReader CreatePausedEventReader(
+            IPublisher publisher, IODispatcher ioDispatcher, Guid forkedEventReaderId)
         {
             throw new NotImplementedException();
         }

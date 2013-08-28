@@ -39,6 +39,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected bool _allStreams;
         protected List<string> _categories;
         protected List<string> _streams;
+        protected string _catalogStream;
         protected bool _allEvents;
         protected List<string> _events;
         protected bool _byStream;
@@ -139,6 +140,10 @@ namespace EventStore.Projections.Core.Services.Processing
         public string[] Streams
         {
             get { return _streams != null ? _streams.ToArray() : null; }
+        }
+
+        public string CatalogStream {
+            get { return _catalogStream; }
         }
 
         bool IQuerySources.AllEvents

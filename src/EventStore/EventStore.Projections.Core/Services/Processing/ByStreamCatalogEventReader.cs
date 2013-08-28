@@ -45,8 +45,9 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly IODispatcher _ioDispatcher;
         private readonly string _catalogStreamName;
+        private int _catalogCurrentSequenceNumber;
         private int _catalogNextSequenceNumber;
-        private readonly long _commitPosition;
+        private long? _limitingCommitPosition;
         private readonly ITimeProvider _timeProvider;
         private readonly bool _resolveLinkTos;
 
@@ -65,17 +66,18 @@ namespace EventStore.Projections.Core.Services.Processing
         public ByStreamCatalogEventReader(
             IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, IODispatcher ioDispatcher,
             string catalogCatalogStreamName, int catalogNextSequenceNumber, string dataStreamName,
-            int dataNextSequenceNumber, long commitPosition, ITimeProvider timeProvider, bool resolveLinkTos,
+            int dataNextSequenceNumber, long? limitingCommitPosition, ITimeProvider timeProvider, bool resolveLinkTos,
             int? stopAfterNEvents = null)
             : base(publisher, eventReaderCorrelationId, readAs, true, stopAfterNEvents)
         {
 
             _ioDispatcher = ioDispatcher;
             _catalogStreamName = catalogCatalogStreamName;
+            _catalogCurrentSequenceNumber = catalogNextSequenceNumber - 1;
             _catalogNextSequenceNumber = catalogNextSequenceNumber;
             _dataStreamName = dataStreamName;
             _dataNextSequenceNumber = dataNextSequenceNumber;
-            _commitPosition = commitPosition;
+            _limitingCommitPosition = limitingCommitPosition;
             _timeProvider = timeProvider;
             _resolveLinkTos = resolveLinkTos;
         }
@@ -130,22 +132,20 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_dataNextSequenceNumber == int.MaxValue || _dataStreamName == null)
             {
-                if (_catalogEof)
+                if (_catalogEof && _pendingStreams.Count == 0)
                 {
                     SendEof();
                     return;
                 }
                 _dataStreamName = _pendingStreams.Dequeue();
-                _dataNextSequenceNumber = -1;
+                _catalogCurrentSequenceNumber++;
+                _dataNextSequenceNumber = 0;
 
             }
         }
 
         private void ReadDataStreamCompleted(ClientMessage.ReadStreamEventsForwardCompleted completed)
         {
-            if (_dataReadRequestId == Guid.Empty)
-                throw new InvalidOperationException();
-
             _dataReadRequestId = Guid.Empty;
 
             if (Paused)
@@ -179,9 +179,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ReadCatalogCompleted(ClientMessage.ReadStreamEventsForwardCompleted completed)
         {
-            if (_catalogReadRequestId == Guid.Empty)
-                throw new InvalidOperationException();
-
             _catalogReadRequestId = Guid.Empty;
 
             if (Paused)
@@ -198,6 +195,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendEof();
                     return;
                 case ReadStreamResult.Success:
+                    _limitingCommitPosition = _limitingCommitPosition ?? completed.LastCommitPosition;
                     foreach (var e in completed.Events)
                         EnqueueStreamForProcessing(e);
                     if (completed.IsEndOfStream)
@@ -249,7 +247,12 @@ namespace EventStore.Projections.Core.Services.Processing
                         resolvedLinkTo, new TFPos(-1, positionEvent.LogPosition), new TFPos(-1, @event.LogPosition),
                         @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
                         @event.Metadata, link == null ? null : link.Metadata, positionEvent.TimeStamp),
-                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: GetType()));
+                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: GetType(),
+                    preTagged:
+                        CheckpointTag.FromByStreamPosition(
+                            0, _catalogStreamName, _catalogCurrentSequenceNumber, positionEvent.EventStreamId,
+                            positionEvent.EventNumber, _limitingCommitPosition.Value)));
+            //TODO: consider passing phase from outside instead of using 0 (above)
         }
     }
 }

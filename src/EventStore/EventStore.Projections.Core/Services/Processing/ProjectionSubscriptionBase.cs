@@ -29,6 +29,7 @@
 using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -167,13 +168,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsSinceLastCheckpointSuggested = 0;
         }
 
-        public IEventReader CreatePausedEventReader(IPublisher publisher, Guid eventReaderId)
+        public IEventReader CreatePausedEventReader(IPublisher publisher, IODispatcher ioDispatcher, Guid eventReaderId)
         {
             if (_eofReached)
                 throw new InvalidOperationException("Onetime projection has already reached the eof position");
             _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
             return _readerStrategy.CreatePausedEventReader(
-                eventReaderId, publisher, _positionTracker.LastTag, _stopOnEof, _stopAfterNEvents);
+                eventReaderId, publisher, ioDispatcher, _positionTracker.LastTag, _stopOnEof, _stopAfterNEvents);
         }
 
         public void Handle(ReaderSubscriptionMessage.EventReaderEof message)

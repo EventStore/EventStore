@@ -444,7 +444,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             }
 
             public IEventReader CreatePausedEventReader(
-                Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents)
+                Guid eventReaderId, IPublisher publisher, IODispatcher ioDispatcher, CheckpointTag checkpointTag,
+                bool stopOnEof, int? stopAfterNEvents)
             {
                 throw new NotImplementedException();
             }

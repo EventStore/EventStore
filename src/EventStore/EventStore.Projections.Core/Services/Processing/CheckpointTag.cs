@@ -130,8 +130,10 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private CheckpointTag(
-            string catalogStream, int catalogPosition, string dataStream, int dataPosition, long commitPosition)
+            int phase, string catalogStream, int catalogPosition, string dataStream, int dataPosition,
+            long commitPosition)
         {
+            Phase = phase;
             CatalogStream = catalogStream;
             CatalogPosition = catalogPosition;
             DataStream = dataStream;
@@ -423,9 +425,10 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public static CheckpointTag FromByStreamPosition(
-            string catalogStream, int catalogPosition, string dataStream, int dataPosition, long commitPosition)
+            int phase, string catalogStream, int catalogPosition, string dataStream, int dataPosition,
+            long commitPosition)
         {
-            return new CheckpointTag(catalogStream, catalogPosition, dataStream, dataPosition, commitPosition);
+            return new CheckpointTag(phase, catalogStream, catalogPosition, dataStream, dataPosition, commitPosition);
         }
 
         public int CompareTo(CheckpointTag other)
@@ -836,8 +839,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 Tag =
                     byStreamMode
                         ? new CheckpointTag(
-                            catalogStream, catalogPosition.GetValueOrDefault(), dataStream, dataPosition ?? -1,
-                            commitPosition.GetValueOrDefault())
+                            projectionPhase, catalogStream, catalogPosition.GetValueOrDefault(), dataStream,
+                            dataPosition ?? -1, commitPosition.GetValueOrDefault())
                         : new CheckpointTag(
                             projectionPhase,
                             new TFPos(commitPosition ?? Int64.MinValue, preparePosition ?? Int64.MinValue), streams),
