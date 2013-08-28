@@ -48,6 +48,7 @@ namespace EventStore.Core.Services.Monitoring
         private readonly ICheckpoint _writerCheckpoint;
         private readonly string _dbPath;
         private PerfCounterHelper _perfCounter;
+        private bool _giveup;
 
         public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath)
         {
@@ -137,10 +138,7 @@ namespace EventStore.Core.Services.Monitoring
 
         private void GetPerfCounterInformation(Dictionary<string, object> stats, int count)
         {
-            if(count > 3)
-            {
-                _log.Info("Reached max count of trying to recreate counters on error.");
-            }
+            if (_giveup) return;
             var process = Process.GetCurrentProcess();
             try
             {
@@ -160,6 +158,8 @@ namespace EventStore.Core.Services.Monitoring
                 _log.Info("Received error reading counters. Attempting to rebuild.");
                 _perfCounter = new PerfCounterHelper(_log);
                 GetPerfCounterInformation(stats, count + 1);
+                _giveup = count > 10;
+                if(_giveup) _log.Error("Maximum rebuild attempts reached. Giving up on rebuilds.");
             }
         }
 
