@@ -28,23 +28,25 @@ namespace esquery
                 return true;
             }
         }
-        static Tuple<object, State> Eval(Tuple<string, State> data)
+        static State Eval(State state)
         {
-            var str = data.Item1;
-            if(str == null) { data.Item2.Exit = true;}
-            var builder = data.Item2.Current;
+            var str = state.Read;
+            if(state.Read == null) { state.Exit = true;}
+            var builder = state.Current;
             if (!string.IsNullOrEmpty(str))
             {
                 builder.AppendLine(str);
-                return new Tuple<object, State>(null, data.Item2);
+                state.Evaled = null;
+                return state;
             }
             
             var command = builder.ToString();
             builder.Clear();
-            return new Tuple<object, State>(CommandProcessor.Process(command, data.Item2), data.Item2);
+            state.Evaled = CommandProcessor.Process(command, state);
+            return state;
         }
 
-        static Tuple<string, State> Read(State state)
+        static State Read(State state)
         {
             var piped = IsPiped();
             if(state.Current.Length == 0)
@@ -52,15 +54,15 @@ namespace esquery
             var read = Console.ReadLine();
             if(piped && read != null)
                 Console.WriteLine(read);
-            if (read == null && piped) return new Tuple<string, State>(null, state);
-            return new Tuple<string, State>(read, state);
+            state.Read = read; 
+            return state;
         }
 
-        static Tuple<object, State> Print(Tuple<object,State> data)
+        static State Print(State state)
         {
-            if(data.Item1 != null)
-                  Console.WriteLine("\n" + data.Item1);
-            return data;
+            if(state.Evaled != null)
+                  Console.WriteLine("\n" + state.Evaled);
+            return state;
         }
         
         private static Args ReadArgs(string[] args)
@@ -76,7 +78,7 @@ namespace esquery
 
         static void Main(string[] args)
         {
-            Loop(s =>Print(Eval(Read(s))).Item2, new State() { Args = ReadArgs(args) });
+            Loop(s =>Print(Eval(Read(s))), new State() { Args = ReadArgs(args) });
         }
     }
 
@@ -85,6 +87,8 @@ namespace esquery
         public StringBuilder Current = new StringBuilder();
         public Args Args;
         public bool Exit;
+        public string Read;
+        public object Evaled;
     }
 
     class Args
