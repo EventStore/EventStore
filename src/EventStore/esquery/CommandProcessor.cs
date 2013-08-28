@@ -271,7 +271,7 @@ namespace esquery
         public override string ToString()
         {
             return "esquery help:\n" + 
-                   "\th/help: prints help" + 
+                   "\th/help: prints help\n" + 
                    "\tq/query {js query} executes a query.\n" + 
                    "\ta/append {stream} {js object}: appends to a stream.\n";
         }
