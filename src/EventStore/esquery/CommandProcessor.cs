@@ -6,8 +6,6 @@ using System.Linq;
 using System.Net;
 using System.ServiceModel.Syndication;
 using System.Threading;
-using System.Xml;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace esquery
@@ -17,8 +15,9 @@ namespace esquery
         static string GetFirst(string s)
         {
             if (string.IsNullOrEmpty(s)) return null;
-            if (s.IndexOf(' ') < 0) return null;
-            return s.Substring(0, s.IndexOf(' '));
+            var next = s.IndexOf(char.IsWhiteSpace);
+            if (next < 0) return null;
+            return s.Substring(0, next);
         }
 
         static List<string> EatFirstN(int n, string s)
@@ -27,7 +26,7 @@ namespace esquery
             var current = 0;
             for (int i = 0; i < n;i++)
             {
-                var next = s.IndexOf(' ', current);
+                var next = s.IndexOfAfter(current, char.IsWhiteSpace);
                 if(next < 0) { return null; }
                 ret.Add(s.Substring(current, next - current));
                 current = next + 1;
@@ -128,14 +127,9 @@ namespace esquery
             JToken token;
             var links = feed["links"];
             if (links == null) return null;
-            foreach (var item in links)
-            {
-                if (item["relation"].Value<string>() == name)
-                {
-                    return new Uri(item["uri"].Value<string>());
-                }
-            }
-            return null;
+            return (from item in links
+                    where item["relation"].Value<string>() == name
+                    select new Uri(item["uri"].Value<string>())).FirstOrDefault();
         }
 
         private static Uri GetLast(Uri head, NetworkCredential credential)
@@ -295,6 +289,37 @@ namespace esquery
         public override string ToString()
         {
             return "Invalid command: '" + _command + "'";
+        }
+    }
+
+    static class IEnumerableExtensions
+    {
+        public static int IndexOf<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
+        {
+            int i = 0;
+
+            foreach (var element in source)
+            {
+                if (predicate(element))
+                    return i;
+
+                i++;
+            }
+            return i;
+        }
+
+        public static int IndexOfAfter<TSource>(this IEnumerable<TSource> source, int start, Func<TSource, bool> predicate)
+        {
+            int i = 0;
+
+            foreach (var element in source)
+            {
+                if (predicate(element) && i >= start)
+                    return i;
+
+                i++;
+            }
+            return i;
         }
     }
 }
