@@ -56,7 +56,7 @@ namespace esquery
                     case "query":
                         var query = EatFirstN(1, command);
                         if (query.Count != 2) return new InvalidCommandResult(command);
-                        return CreateAndRunQuery(new Uri("http://127.0.0.1:2113"), query[1], state.Args.Credentials);
+                        return CreateAndRunQuery(new Uri("http://127.0.0.1:2113"), query[1], state.Args.Credentials, state.Piped);
                     default:
                         return new InvalidCommandResult(command);
                 }
@@ -165,13 +165,7 @@ namespace esquery
             }
         }
 
-        private static void WriteItem(SyndicationItem item)
-        {
-            //TODO Print Result
-            Console.WriteLine(item.Content);
-        }
-
-        private static object CreateAndRunQuery(Uri baseUri, string query, NetworkCredential credential)
+        private static object CreateAndRunQuery(Uri baseUri, string query, NetworkCredential credential, bool piped)
         {
             try
             {
@@ -179,7 +173,7 @@ namespace esquery
                 watch.Start();
                 var toCheck = PostQuery(baseUri, query, credential);
                 var queryInformation = new QueryInformation();
-                if(!ConsoleHelper.IsPiped())
+                if(!piped)
                     Console.WriteLine("Query started. Press esc to cancel.");
                 while (!queryInformation.Completed)
                 {
@@ -190,7 +184,7 @@ namespace esquery
                     }
                     Console.Write("\r{0}", queryInformation.Progress.ToString("f2") + "%");
 
-                    if (!ConsoleHelper.IsPiped() && Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape)
+                    if (!piped && Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape)
                     {
                         Console.WriteLine("\nCancelling query.");
                         Cancel(queryInformation);

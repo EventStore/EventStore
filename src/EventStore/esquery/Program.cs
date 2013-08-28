@@ -36,15 +36,14 @@ namespace esquery
 
         static State Read(State state)
         {
-            var piped = ConsoleHelper.IsPiped();
             if(state.Current.Length == 0)
                 Console.Write("es:> ");
             string read = null;
-            if (!piped || Console.In.Peek() != -1)
+            if (!state.Piped || Console.In.Peek() != -1)
             {
                 read = Console.ReadLine();
             }
-            if(piped && read != null)
+            if(state.Piped && read != null)
                 Console.WriteLine(read);
             state.Read = read; 
             return state;
@@ -70,7 +69,7 @@ namespace esquery
 
         static void Main(string[] args)
         {
-            Loop(s =>Print(Eval(Read(s))), new State() { Args = ReadArgs(args) });
+            Loop(s =>Print(Eval(Read(s))), new State() { Args = ReadArgs(args), Piped = ConsoleHelper.IsPiped() });
         }
     }
 
@@ -81,6 +80,7 @@ namespace esquery
         public bool Exit;
         public string Read;
         public object Evaled;
+        public bool Piped;
     }
 
     class Args
