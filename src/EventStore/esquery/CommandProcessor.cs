@@ -69,7 +69,8 @@ namespace esquery
 
         private static Uri PostQuery(Uri baseUri, string query, NetworkCredential credential)
         {
-            var request = WebRequest.Create("http://127.0.0.1:2113/projections/transient?enabled=yes");
+            
+            var request = WebRequest.Create(baseUri.AbsoluteUri +"projections/transient?enabled=yes");
             request.Method = "POST";
             request.ContentType = "application/json";
             request.ContentLength = query.Length;
@@ -178,6 +179,8 @@ namespace esquery
                 watch.Start();
                 var toCheck = PostQuery(baseUri, query, credential);
                 var queryInformation = new QueryInformation();
+                if(!ConsoleHelper.IsPiped())
+                    Console.WriteLine("Query started. Press esc to cancel.");
                 while (!queryInformation.Completed)
                 {
                     queryInformation = CheckQueryStatus(toCheck, credential);
@@ -186,6 +189,13 @@ namespace esquery
                         throw new Exception("Query Faulted.\n" + queryInformation.FaultReason);
                     }
                     Console.Write("\r{0}", queryInformation.Progress.ToString("f2") + "%");
+
+                    if (!ConsoleHelper.IsPiped() && Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape)
+                    {
+                        Console.WriteLine("\nCancelling query.");
+                        Cancel(queryInformation);
+                        return new QueryCancelledResult();
+                    }
                     Thread.Sleep(500);
                 }
                 Console.WriteLine("\rQuery Completed in: " + watch.Elapsed);
@@ -198,6 +208,10 @@ namespace esquery
             {
                 return new ErrorResult(ex);
             }
+        }
+
+        private static void Cancel(QueryInformation queryInformation)
+        {
         }
 
         private static AppendResult Append(string stream, string eventType, string data)
@@ -239,6 +253,14 @@ namespace esquery
             {
                 return "Query Completed";
             }
+        }
+    }
+
+    class QueryCancelledResult
+    {
+        public override string ToString()
+        {
+            return "Query Cancelled";
         }
     }
 

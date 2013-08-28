@@ -16,18 +16,6 @@ namespace esquery
             }
         }
 
-        static bool IsPiped()
-        {
-            try
-            {
-                var nothing = Console.KeyAvailable;
-                return false;
-            }
-            catch (InvalidOperationException expected)
-            {
-                return true;
-            }
-        }
         static State Eval(State state)
         {
             var str = state.Read;
@@ -48,7 +36,7 @@ namespace esquery
 
         static State Read(State state)
         {
-            var piped = IsPiped();
+            var piped = ConsoleHelper.IsPiped();
             if(state.Current.Length == 0)
                 Console.Write("es:> ");
             string read = null;
@@ -106,5 +94,20 @@ namespace esquery
             Credentials = credentials;
         }
     }
+    class ConsoleHelper
+    {
 
+        public static bool IsPiped()
+        {
+            try
+            {
+                var nothing = Console.KeyAvailable;
+                return false;
+            }
+            catch (InvalidOperationException expected)
+            {
+                return true;
+            }
+        }
+    }
 }
