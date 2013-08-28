@@ -51,7 +51,11 @@ namespace esquery
             var piped = IsPiped();
             if(state.Current.Length == 0)
                 Console.Write("es:> ");
-            var read = Console.ReadLine();
+            string read = null;
+            if (!piped || Console.In.Peek() != -1)
+            {
+                read = Console.ReadLine();
+            }
             if(piped && read != null)
                 Console.WriteLine(read);
             state.Read = read; 
