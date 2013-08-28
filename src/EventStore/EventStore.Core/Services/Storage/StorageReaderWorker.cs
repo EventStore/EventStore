@@ -34,6 +34,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Checkpoint;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
@@ -47,6 +48,7 @@ namespace EventStore.Core.Services.Storage
                                       IHandle<StorageMessage.CheckStreamAccess>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageReaderWorker>();
+        private static readonly ResolvedEvent[] EmptyRecords = new ResolvedEvent[0];
 
         private readonly IPublisher _publisher;
         private readonly IReadIndex _readIndex;
@@ -74,34 +76,18 @@ namespace EventStore.Core.Services.Storage
             switch (res.Result)
             {
                 case ReadStreamResult.Success:
-                    if (msg.LongPoll && res.IsEndOfStream && res.Events.Length == 0)
-                    {
-                        _publisher.Publish(new SubscriptionMessage.PollStream(
-                            msg.EventStreamId, res.LastCommitPosition, res.LastEventNumber,
-                            DateTime.UtcNow + TimeSpan.FromSeconds(7), msg));
-                    }
-                    else
-                        msg.Envelope.ReplyWith(res);
-                    break;
                 case ReadStreamResult.NoStream:
-                    if (msg.LongPoll)
-                    {
-                        _publisher.Publish(new SubscriptionMessage.PollStream(
-                            msg.EventStreamId, res.LastCommitPosition, res.LastEventNumber,
-                            DateTime.UtcNow + TimeSpan.FromSeconds(7), msg));
-                    }
-                    else
-                        msg.Envelope.ReplyWith(res);
-                    break;
                 case ReadStreamResult.NotModified:
-                    if (msg.LongPoll)
+                    if (msg.LongPollTimeout.HasValue && res.FromEventNumber > res.LastEventNumber)
                     {
                         _publisher.Publish(new SubscriptionMessage.PollStream(
-                            msg.EventStreamId, res.LastCommitPosition, msg.ValidationStreamVersion.Value,
-                            DateTime.UtcNow + TimeSpan.FromSeconds(7), msg));
+                            msg.EventStreamId, res.TfLastCommitPosition, res.LastEventNumber,
+                            DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
                     }
                     else
+                    {
                         msg.Envelope.ReplyWith(res);
+                    }
                     break;
                 case ReadStreamResult.StreamDeleted:
                 case ReadStreamResult.Error:
@@ -120,7 +106,36 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward msg)
         {
-            msg.Envelope.ReplyWith(ReadAllEventsForward(msg));
+            var res = ReadAllEventsForward(msg);
+            switch (res.Result)
+            {
+                case ReadAllResult.Success:
+                    if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.Events.Length == 0)
+                    {
+                        _publisher.Publish(new SubscriptionMessage.PollStream(
+                            SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
+                            DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
+                    }
+                    else
+                        msg.Envelope.ReplyWith(res);
+                    break;
+                case ReadAllResult.NotModified:
+                    if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.CurrentPos.CommitPosition > res.TfLastCommitPosition)
+                    {
+                        _publisher.Publish(new SubscriptionMessage.PollStream(
+                            SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null, 
+                            DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
+                    }
+                    else
+                        msg.Envelope.ReplyWith(res);
+                break;
+                case ReadAllResult.Error:
+                case ReadAllResult.AccessDenied:
+                    msg.Envelope.ReplyWith(res);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(string.Format("Unknown ReadAllResult: {0}", res.Result));
+            }
         }
 
         void IHandle<ClientMessage.ReadAllEventsBackward>.Handle(ClientMessage.ReadAllEventsBackward msg)
@@ -164,7 +179,8 @@ namespace EventStore.Core.Services.Storage
             try
             {
                 if (msg.ValidationStreamVersion.HasValue && _readIndex.GetLastStreamEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
-                    return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition);
+                    return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition, msg.ValidationStreamVersion.Value);
+
                 var access = _readIndex.CheckStreamAccess(msg.EventStreamId, StreamAccessType.Read, msg.User);
                 if (!access.Granted)
                     return NoData(msg, ReadStreamResult.AccessDenied, lastCommitPosition);
@@ -183,7 +199,7 @@ namespace EventStore.Core.Services.Storage
             catch (Exception exc)
             {
                 Log.ErrorException(exc, "Error during processing ReadStreamEventsForward request.");
-                return NoData(msg, ReadStreamResult.Error, lastCommitPosition, exc.Message);
+                return NoData(msg, ReadStreamResult.Error, lastCommitPosition, error: exc.Message);
             }
         }
 
@@ -193,7 +209,8 @@ namespace EventStore.Core.Services.Storage
             try
             {
                 if (msg.ValidationStreamVersion.HasValue && _readIndex.GetLastStreamEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
-                    return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition);
+                    return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition, msg.ValidationStreamVersion.Value);
+
                 var access = _readIndex.CheckStreamAccess(msg.EventStreamId, StreamAccessType.Read, msg.User);
                 if (!access.Granted)
                     return NoData(msg, ReadStreamResult.AccessDenied, lastCommitPosition);
@@ -212,13 +229,14 @@ namespace EventStore.Core.Services.Storage
             catch (Exception exc)
             {
                 Log.ErrorException(exc, "Error during processing ReadStreamEventsBackward request.");
-                return NoData(msg, ReadStreamResult.Error, lastCommitPosition, exc.Message);
+                return NoData(msg, ReadStreamResult.Error, lastCommitPosition, error: exc.Message);
             }
         }
 
         private ClientMessage.ReadAllEventsForwardCompleted ReadAllEventsForward(ClientMessage.ReadAllEventsForward msg)
         {
             var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
+            var lastCommitPosition = _readIndex.LastCommitPosition;
             try
             {
                 if (pos == TFPos.HeadOfTf)
@@ -227,19 +245,18 @@ namespace EventStore.Core.Services.Storage
                     pos = new TFPos(checkpoint, checkpoint);
                 }
                 if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
-                    return NoData(msg, ReadAllResult.Error, pos, "Invalid position.");
-                if (msg.ValidationTfEofPosition.HasValue && _readIndex.LastCommitPosition == msg.ValidationTfEofPosition.Value)
-                    return NoData(msg, ReadAllResult.NotModified, pos);
+                    return NoData(msg, ReadAllResult.Error, pos, lastCommitPosition, "Invalid position.");
+                if (msg.ValidationTfLastCommitPosition == lastCommitPosition)
+                    return NoData(msg, ReadAllResult.NotModified, pos, lastCommitPosition);
                 var access = _readIndex.CheckStreamAccess(SystemStreams.AllStream, StreamAccessType.Read, msg.User);
                 if (!access.Granted)
-                    return NoData(msg, ReadAllResult.AccessDenied, pos);
+                    return NoData(msg, ReadAllResult.AccessDenied, pos, lastCommitPosition);
 
-                var lastCommitPosition = _readIndex.LastCommitPosition;
 
                 var res = _readIndex.ReadAllEventsForward(pos, msg.MaxCount);
                 var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
                 if (resolved == null)
-                    return NoData(msg, ReadAllResult.AccessDenied, pos);
+                    return NoData(msg, ReadAllResult.AccessDenied, pos, lastCommitPosition);
 
                 var metadata = _readIndex.GetStreamMetadata(SystemStreams.AllStream);
                 return new ClientMessage.ReadAllEventsForwardCompleted(
@@ -249,13 +266,14 @@ namespace EventStore.Core.Services.Storage
             catch (Exception exc)
             {
                 Log.ErrorException(exc, "Error during processing ReadAllEventsForward request.");
-                return NoData(msg, ReadAllResult.Error, pos, exc.Message);
+                return NoData(msg, ReadAllResult.Error, pos, lastCommitPosition, exc.Message);
             }
         }
 
         private ClientMessage.ReadAllEventsBackwardCompleted ReadAllEventsBackward(ClientMessage.ReadAllEventsBackward msg)
         {
             var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
+            var lastCommitPosition = _readIndex.LastCommitPosition;
             try
             {
                 if (pos == TFPos.HeadOfTf)
@@ -264,20 +282,18 @@ namespace EventStore.Core.Services.Storage
                     pos = new TFPos(checkpoint, checkpoint);
                 }
                 if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
-                    return NoData(msg, ReadAllResult.Error, pos, "Invalid position.");
-                if (msg.ValidationTfEofPosition.HasValue && _readIndex.LastCommitPosition == msg.ValidationTfEofPosition.Value)
-                    return NoData(msg, ReadAllResult.NotModified, pos);
+                    return NoData(msg, ReadAllResult.Error, pos, lastCommitPosition, "Invalid position.");
+                if (msg.ValidationTfLastCommitPosition == lastCommitPosition)
+                    return NoData(msg, ReadAllResult.NotModified, pos, lastCommitPosition);
 
                 var access = _readIndex.CheckStreamAccess(SystemStreams.AllStream, StreamAccessType.Read, msg.User);
                 if (!access.Granted)
-                    return NoData(msg, ReadAllResult.AccessDenied, pos);
-
-                var lastCommitPosition = _readIndex.LastCommitPosition;
+                    return NoData(msg, ReadAllResult.AccessDenied, pos, lastCommitPosition);
 
                 var res = _readIndex.ReadAllEventsBackward(pos, msg.MaxCount);
                 var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
                 if (resolved == null)
-                    return NoData(msg, ReadAllResult.AccessDenied, pos);
+                    return NoData(msg, ReadAllResult.AccessDenied, pos, lastCommitPosition);
 
                 var metadata = _readIndex.GetStreamMetadata(SystemStreams.AllStream);
                 return new ClientMessage.ReadAllEventsBackwardCompleted(
@@ -287,7 +303,7 @@ namespace EventStore.Core.Services.Storage
             catch (Exception exc)
             {
                 Log.ErrorException(exc, "Error during processing ReadAllEventsBackward request.");
-                return NoData(msg, ReadAllResult.Error, pos, exc.Message);
+                return NoData(msg, ReadAllResult.Error, pos, lastCommitPosition, exc.Message);
             }
         }
 
@@ -319,30 +335,32 @@ namespace EventStore.Core.Services.Storage
             return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result, new ResolvedEvent(null), null, false, error);
         }
 
-        private static ClientMessage.ReadStreamEventsForwardCompleted NoData(ClientMessage.ReadStreamEventsForward msg, ReadStreamResult result, long lastCommitPosition, string error = null)
+        private static ClientMessage.ReadStreamEventsForwardCompleted NoData(ClientMessage.ReadStreamEventsForward msg, ReadStreamResult result, long lastCommitPosition, int lastEventNumber = -1, string error = null)
         {
-            return ClientMessage.ReadStreamEventsForwardCompleted.NoData(
-                result, msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, lastCommitPosition, error);
+            return new ClientMessage.ReadStreamEventsForwardCompleted(
+                msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, result, 
+                EmptyRecords, null, false, error ?? string.Empty, -1, lastEventNumber, true, lastCommitPosition);
         }
 
-        private static ClientMessage.ReadStreamEventsBackwardCompleted NoData(ClientMessage.ReadStreamEventsBackward msg, ReadStreamResult result, long lastCommitPosition, string error = null)
+        private static ClientMessage.ReadStreamEventsBackwardCompleted NoData(ClientMessage.ReadStreamEventsBackward msg, ReadStreamResult result, long lastCommitPosition, int lastEventNumber = -1, string error = null)
         {
-            return ClientMessage.ReadStreamEventsBackwardCompleted.NoData(
-                result, msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, lastCommitPosition, error);
+            return new ClientMessage.ReadStreamEventsBackwardCompleted(
+                msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, result,
+                EmptyRecords, null, false, error ?? string.Empty, -1, lastEventNumber, true, lastCommitPosition);
         }
 
-        private ClientMessage.ReadAllEventsForwardCompleted NoData(ClientMessage.ReadAllEventsForward msg, ReadAllResult result, TFPos pos, string error = null)
+        private ClientMessage.ReadAllEventsForwardCompleted NoData(ClientMessage.ReadAllEventsForward msg, ReadAllResult result, TFPos pos, long lastCommitPosition, string error = null)
         {
             return new ClientMessage.ReadAllEventsForwardCompleted(
                 msg.CorrelationId, result, error, ResolvedEvent.EmptyArray, null, false,
-                msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, lastCommitPosition);
         }
 
-        private ClientMessage.ReadAllEventsBackwardCompleted NoData(ClientMessage.ReadAllEventsBackward msg, ReadAllResult result, TFPos pos, string error = null)
+        private ClientMessage.ReadAllEventsBackwardCompleted NoData(ClientMessage.ReadAllEventsBackward msg, ReadAllResult result, TFPos pos, long lastCommitPosition, string error = null)
         {
             return new ClientMessage.ReadAllEventsBackwardCompleted(
                 msg.CorrelationId, result, error, ResolvedEvent.EmptyArray, null, false,
-                msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, lastCommitPosition);
         }
 
         private static void CheckEventsOrder(ClientMessage.ReadStreamEventsForward msg, IndexReadStreamResult result)

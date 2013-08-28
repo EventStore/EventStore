@@ -590,13 +590,13 @@ namespace EventStore.Projections.Core.Services.Processing
                                     _reader.UpdateNextStreamPosition(
                                         @event.Link.EventStreamId, @event.Link.EventNumber + 1);
                                     DeliverEventRetrievedFromTf(
-                                        @event.Link, 100.0f*@event.Link.LogPosition/message.TfEofPosition,
+                                        @event.Link, 100.0f*@event.Link.LogPosition/message.TfLastCommitPosition,
                                         @event.OriginalPosition.Value);
                                 }
                                 else if (byEvent)
                                 {
                                     DeliverEventRetrievedFromTf(
-                                        @event.Event, 100.0f*@event.Event.LogPosition/message.TfEofPosition,
+                                        @event.Event, 100.0f*@event.Event.LogPosition/message.TfLastCommitPosition,
                                         @event.OriginalPosition.Value);
                                 }
                                 if (_reader.CheckEnough())

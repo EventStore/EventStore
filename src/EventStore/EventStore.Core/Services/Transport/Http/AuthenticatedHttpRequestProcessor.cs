@@ -33,6 +33,7 @@ using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.DataStructures;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Transport.Http;
@@ -42,12 +43,12 @@ using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
 namespace EventStore.Core.Services.Transport.Http
 {
-    class AuthenticatedHttpRequestProcessor : IHandle<HttpMessage.PurgeTimedOutRequests>, IHandle<AuthenticatedHttpRequestMessage>
+    internal class AuthenticatedHttpRequestProcessor : IHandle<HttpMessage.PurgeTimedOutRequests>, IHandle<AuthenticatedHttpRequestMessage>
     {
-        private static readonly TimeSpan MaxRequestDuration = TimeSpan.FromSeconds(10);
         private static readonly ILogger Log = LogManager.GetLoggerFor<AuthenticatedHttpRequestProcessor>();
 
-        private readonly Queue<HttpEntityManager> _pending = new Queue<HttpEntityManager>();
+        private readonly PairingHeap<Tuple<DateTime, HttpEntityManager>> _pending = new PairingHeap<Tuple<DateTime, HttpEntityManager>>((x, y) => x.Item1 < y.Item1);
+        private readonly bool _doNotTimeout = Application.IsDefined(Application.DoNotTimeoutRequests);
 
         public void Handle(HttpMessage.PurgeTimedOutRequests message)
         {
@@ -56,23 +57,21 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void PurgeTimedOutRequests()
         {
+            if (_doNotTimeout)
+                return;
             try
             {
-                var now = DateTime.UtcNow;
-                // pending request are almost perfectly sorted by DateTime.UtcNow, no need to use SortedSet
-                while (_pending.Count > 0 && now - _pending.Peek().TimeStamp > MaxRequestDuration)
+                while (_pending.Count > 0)
                 {
-                    var request = _pending.Dequeue();
-
-                    if (Application.IsDefined(Application.DoNotTimeoutRequests))
-                        continue;
-
-                    if (!request.IsProcessing)
+                    var req = _pending.FindMin();
+                    if (req.Item1 <= DateTime.UtcNow || req.Item2.IsProcessing)
                     {
-                        request.ReplyStatus(
-                            HttpStatusCode.RequestTimeout, "Server was unable to handle request in time",
-                            e => Log.Debug("Error occurred while closing timed out connection (http service core): {0}.", e.Message));
+                        req = _pending.DeleteMin();
+                        req.Item2.ReplyStatus(HttpStatusCode.RequestTimeout, "Server was unable to handle request in time",
+                                              e => Log.Debug("Error occurred while closing timed out connection (http service core): {0}.", e.Message));
                     }
+                    else 
+                        break;
                 }
             }
             catch (Exception exc)
@@ -135,9 +134,20 @@ namespace EventStore.Core.Services.Transport.Http
                     return;
                 }
 
-                var manager = httpEntity.CreateManager(requestCodec, responseCodec, allowedMethods, satisfied => { });
-                _pending.Enqueue(manager);
-                match.RequestHandler(manager, match.TemplateMatch);
+
+                try
+                {
+                    var manager = httpEntity.CreateManager(requestCodec, responseCodec, allowedMethods, satisfied => { });
+                    var reqParams = match.RequestHandler(manager, match.TemplateMatch);
+                    if (!reqParams.IsDone)
+                        _pending.Add(Tuple.Create(DateTime.UtcNow + reqParams.Timeout, manager));
+                }
+                catch (Exception exc)
+                {
+                    Log.ErrorException(exc, "Error while handling HTTP request '{0}'.", request.Url);
+                    InternalServerError(httpEntity);
+                }
+                
             }
             catch (Exception exc)
             {
@@ -165,42 +175,42 @@ namespace EventStore.Core.Services.Transport.Http
         {
             var entity = httpEntity.CreateManager(Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
             entity.ReplyStatus(HttpStatusCode.OK, "OK",
-                               e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
+                               e => Log.Debug("Error while closing http connection (http service core): {0}.", e.Message));
         }
 
         private void MethodNotAllowed(HttpEntity httpEntity, string[] allowed)
         {
             var entity = httpEntity.CreateManager(Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
             entity.ReplyStatus(HttpStatusCode.MethodNotAllowed, "Method Not Allowed",
-                               e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
+                               e => Log.Debug("Error while closing http connection (http service core): {0}.", e.Message));
         }
 
         private void NotFound(HttpEntity httpEntity)
         {
             var entity = httpEntity.CreateManager();
             entity.ReplyStatus(HttpStatusCode.NotFound, "Not Found",
-                               e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
+                               e => Log.Debug("Error while closing http connection (http service core): {0}.", e.Message));
         }
 
         private void InternalServerError(HttpEntity httpEntity)
         {
             var entity = httpEntity.CreateManager();
             entity.ReplyStatus(HttpStatusCode.InternalServerError, "Internal Server Error",
-                               e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
+                               e => Log.Debug("Error while closing http connection (http service core): {0}.", e.Message));
         }
 
         private void BadCodec(HttpEntity httpEntity, string reason)
         {
             var entity = httpEntity.CreateManager();
             entity.ReplyStatus(HttpStatusCode.NotAcceptable, reason,
-                               e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
+                               e => Log.Debug("Error while closing http connection (http service core): {0}.", e.Message));
         }
 
         private void BadContentType(HttpEntity httpEntity, string reason)
         {
             var entity = httpEntity.CreateManager();
             entity.ReplyStatus(HttpStatusCode.UnsupportedMediaType, reason,
-                               e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
+                               e => Log.Debug("Error while closing http connection (http service core): {0}.", e.Message));
         }
 
         private ICodec SelectRequestCodec(string method, string contentType, ICodec[] supportedCodecs)

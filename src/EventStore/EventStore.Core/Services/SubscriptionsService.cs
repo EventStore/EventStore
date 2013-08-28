@@ -56,11 +56,13 @@ namespace EventStore.Core.Services
         public const string AllStreamsSubscriptionId = ""; // empty stream id means subscription to all streams
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<SubscriptionsService>();
+        private static readonly TimeSpan TimeoutPeriod = TimeSpan.FromSeconds(1);
 
-        private readonly Dictionary<string, List<Subscription>> _subscriptionGroupsByStream = new Dictionary<string, List<Subscription>>();
+        private readonly Dictionary<string, List<Subscription>> _subscriptionTopics = new Dictionary<string, List<Subscription>>();
         private readonly Dictionary<Guid, Subscription> _subscriptionsById = new Dictionary<Guid, Subscription>();
 
-        private readonly Dictionary<string, List<PollSubscription>> _pollerByStream = new Dictionary<string, List<PollSubscription>>();
+        private readonly Dictionary<string, List<PollSubscription>> _pollTopics = new Dictionary<string, List<PollSubscription>>();
+        private long _lastSeenCommitPosition = -1;
 
         private readonly IPublisher _bus;
         private readonly IEnvelope _busEnvelope;
@@ -81,9 +83,10 @@ namespace EventStore.Core.Services
 
         public void Handle(SystemMessage.SystemStart message)
         {
-            _bus.Publish(TimerMessage.Schedule.Create(TimeSpan.FromSeconds(1), _busEnvelope, new SubscriptionMessage.CheckPollTimeout()));
+            _bus.Publish(TimerMessage.Schedule.Create(TimeoutPeriod, _busEnvelope, new SubscriptionMessage.CheckPollTimeout()));
         }
 
+        /* SUBSCRIPTION SECTION */
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
             foreach (var subscription in _subscriptionsById.Values)
@@ -96,7 +99,7 @@ namespace EventStore.Core.Services
         public void Handle(TcpMessage.ConnectionClosed message)
         {
             List<string> subscriptionGroupsToRemove = null;
-            foreach (var subscriptionGroup in _subscriptionGroupsByStream)
+            foreach (var subscriptionGroup in _subscriptionTopics)
             {
                 var subscriptions = subscriptionGroup.Value;
                 for (int i = 0, n = subscriptions.Count; i < n; ++i)
@@ -117,7 +120,7 @@ namespace EventStore.Core.Services
             {
                 for (int i = 0, n = subscriptionGroupsToRemove.Count; i < n; ++i)
                 {
-                    _subscriptionGroupsByStream.Remove(subscriptionGroupsToRemove[i]);
+                    _subscriptionTopics.Remove(subscriptionGroupsToRemove[i]);
                 }
             }
         }
@@ -153,10 +156,10 @@ namespace EventStore.Core.Services
                                        string eventStreamId, bool resolveLinkTos, long lastCommitPosition, int? lastEventNumber)
         {
             List<Subscription> subscribers;
-            if (!_subscriptionGroupsByStream.TryGetValue(eventStreamId, out subscribers))
+            if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscribers))
             {
                 subscribers = new List<Subscription>();
-                _subscriptionGroupsByStream.Add(eventStreamId, subscribers);
+                _subscriptionTopics.Add(eventStreamId, subscribers);
             }
 
             // if eventStreamId is null or empty -- subscription is to all streams
@@ -185,33 +188,39 @@ namespace EventStore.Core.Services
                     new ClientMessage.SubscriptionDropped(subscription.CorrelationId, SubscriptionDropReason.Unsubscribed));
 
             List<Subscription> subscriptions;
-            if (_subscriptionGroupsByStream.TryGetValue(subscription.EventStreamId, out subscriptions))
+            if (_subscriptionTopics.TryGetValue(subscription.EventStreamId, out subscriptions))
             {
                 subscriptions.Remove(subscription);
                 if (subscriptions.Count == 0)
-                    _subscriptionGroupsByStream.Remove(subscription.EventStreamId);
+                    _subscriptionTopics.Remove(subscription.EventStreamId);
             }
             _subscriptionsById.Remove(subscription.CorrelationId);
         }
 
+        /* LONG POLL SECTION */
         public void Handle(SubscriptionMessage.PollStream message)
         {
-//            if (MissedEvents(message.StreamId, message.LastCommitPosition, message.LastEventNumber))
-//            {
-//                _bus.Publish(CloneReadRequestWithNoPollFlag(message.OriginalRequest));
-//                return;
-//            }
+            if (MissedEvents(message.StreamId, message.LastCommitPosition, message.LastEventNumber))
+            {
+                _bus.Publish(CloneReadRequestWithNoPollFlag(message.OriginalRequest));
+                return;
+            }
 
             SubscribePoller(message.StreamId, message.ExpireAt, message.LastCommitPosition, message.LastEventNumber, message.OriginalRequest);
+        }
+
+        private bool MissedEvents(string streamId, long lastCommitPosition, int? lastEventNumber)
+        {
+            return _lastSeenCommitPosition > lastCommitPosition;
         }
 
         private void SubscribePoller(string streamId, DateTime expireAt, long lastCommitPosition, int? lastEventNumber, Message originalRequest)
         {
             List<PollSubscription> pollTopic;
-            if (!_pollerByStream.TryGetValue(streamId, out pollTopic))
+            if (!_pollTopics.TryGetValue(streamId, out pollTopic))
             {
                 pollTopic = new List<PollSubscription>();
-                _pollerByStream.Add(streamId, pollTopic);
+                _pollTopics.Add(streamId, pollTopic);
             }
             pollTopic.Add(new PollSubscription(expireAt, lastCommitPosition, lastEventNumber ?? -1, originalRequest));
         }
@@ -220,7 +229,7 @@ namespace EventStore.Core.Services
         {
             List<string> pollTopicsToRemove = null;
             var now = DateTime.UtcNow;
-            foreach (var pollTopicKeyVal in _pollerByStream)
+            foreach (var pollTopicKeyVal in _pollTopics)
             {
                 var pollTopic = pollTopicKeyVal.Value;
                 for (int i = pollTopic.Count - 1; i >= 0; --i)
@@ -244,7 +253,7 @@ namespace EventStore.Core.Services
             {
                 for (int i = 0, n = pollTopicsToRemove.Count; i < n; ++i)
                 {
-                    _pollerByStream.Remove(pollTopicsToRemove[i]);
+                    _pollTopics.Remove(pollTopicsToRemove[i]);
                 }
             }
             _bus.Publish(TimerMessage.Schedule.Create(TimeSpan.FromSeconds(1), _busEnvelope, message));
@@ -257,14 +266,14 @@ namespace EventStore.Core.Services
                 return new ClientMessage.ReadStreamEventsForward(
                     streamReq.InternalCorrId, streamReq.CorrelationId, streamReq.Envelope,
                     streamReq.EventStreamId, streamReq.FromEventNumber, streamReq.MaxCount, streamReq.ResolveLinkTos,
-                    streamReq.RequireMaster, streamReq.ValidationStreamVersion, streamReq.User, longPoll: false);
+                    streamReq.RequireMaster, streamReq.ValidationStreamVersion, streamReq.User);
 
             var allReq = originalRequest as ClientMessage.ReadAllEventsForward;
             if (allReq != null)
                 return new ClientMessage.ReadAllEventsForward(
                     allReq.InternalCorrId, allReq.CorrelationId, allReq.Envelope, 
                     allReq.CommitPosition, allReq.PreparePosition, allReq.MaxCount, allReq.ResolveLinkTos,
-                    allReq.RequireMaster, allReq.ValidationTfEofPosition, allReq.User, longPoll: false);
+                    allReq.RequireMaster, allReq.ValidationTfLastCommitPosition, allReq.User);
 
             throw new Exception(string.Format("Unexpected read request of type {0} for long polling: {1}.",
                                               originalRequest.GetType(), originalRequest));
@@ -272,6 +281,8 @@ namespace EventStore.Core.Services
 
         public void Handle(StorageMessage.EventCommited message)
         {
+            _lastSeenCommitPosition = message.CommitPosition;
+ 
             var resolvedEvent = ProcessEventCommited(AllStreamsSubscriptionId, message.CommitPosition, message.Event, null);
             ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, resolvedEvent);
 
@@ -279,35 +290,10 @@ namespace EventStore.Core.Services
             ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
         }
 
-        private void ReissueReadsFor(string streamId, long commitPosition, int eventNumber)
-        {
-            List<PollSubscription> pollTopic;
-            if (_pollerByStream.TryGetValue(streamId, out pollTopic))
-            {
-                List<PollSubscription> survivors = null;
-                foreach (var poller in pollTopic)
-                {
-                    if (commitPosition <= poller.LastCommitPosition || eventNumber <= poller.LastEventNumber)
-                    {
-                        if (survivors == null)
-                            survivors = new List<PollSubscription>();
-                        survivors.Add(poller);
-                    }
-                    else
-                    {
-                        _bus.Publish(CloneReadRequestWithNoPollFlag(poller.OriginalRequest));    
-                    }
-                }
-                _pollerByStream.Remove(streamId);
-                if (survivors != null)
-                    _pollerByStream.Add(streamId, survivors);
-            }
-        }
-
         private ResolvedEvent? ProcessEventCommited(string eventStreamId, long commitPosition, EventRecord evnt, ResolvedEvent? resolvedEvent)
         {
             List<Subscription> subscriptions;
-            if (!_subscriptionGroupsByStream.TryGetValue(eventStreamId, out subscriptions)) 
+            if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscriptions)) 
                 return resolvedEvent;
             for (int i = 0, n = subscriptions.Count; i < n; i++)
             {
@@ -344,6 +330,31 @@ namespace EventStore.Core.Services
                 }
             }
             return new ResolvedEvent(eventRecord, null, commitPosition);
+        }
+
+        private void ReissueReadsFor(string streamId, long commitPosition, int eventNumber)
+        {
+            List<PollSubscription> pollTopic;
+            if (_pollTopics.TryGetValue(streamId, out pollTopic))
+            {
+                List<PollSubscription> survivors = null;
+                foreach (var poller in pollTopic)
+                {
+                    if (commitPosition <= poller.LastCommitPosition || eventNumber <= poller.LastEventNumber)
+                    {
+                        if (survivors == null)
+                            survivors = new List<PollSubscription>();
+                        survivors.Add(poller);
+                    }
+                    else
+                    {
+                        _bus.Publish(CloneReadRequestWithNoPollFlag(poller.OriginalRequest));    
+                    }
+                }
+                _pollTopics.Remove(streamId);
+                if (survivors != null)
+                    _pollTopics.Add(streamId, survivors);
+            }
         }
 
         private class Subscription

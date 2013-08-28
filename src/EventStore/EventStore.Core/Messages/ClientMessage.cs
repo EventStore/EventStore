@@ -125,8 +125,6 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
-
-            internal static readonly ResolvedEvent[] EmptyRecords = new ResolvedEvent[0];
         }
 
         public class TcpForwardMessage: Message
@@ -491,11 +489,12 @@ namespace EventStore.Core.Messages
             public readonly bool RequireMaster;
 
             public readonly int? ValidationStreamVersion;
-            public readonly bool LongPoll;
+            public readonly TimeSpan? LongPollTimeout;
 
             public ReadStreamEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                                            string eventStreamId, int fromEventNumber, int maxCount, bool resolveLinkTos,
-                                           bool requireMaster, int? validationStreamVersion, IPrincipal user, bool longPoll = false)
+                                           bool requireMaster, int? validationStreamVersion, IPrincipal user,
+                                           TimeSpan? longPollTimeout = null)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
@@ -507,7 +506,7 @@ namespace EventStore.Core.Messages
                 ResolveLinkTos = resolveLinkTos;
                 RequireMaster = requireMaster;
                 ValidationStreamVersion = validationStreamVersion;
-                LongPoll = longPoll;
+                LongPollTimeout = longPollTimeout;
             }
 
             public override string ToString()
@@ -537,13 +536,13 @@ namespace EventStore.Core.Messages
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
             public readonly bool IsEndOfStream;
-            public readonly long LastCommitPosition;
+            public readonly long TfLastCommitPosition;
 
             public ReadStreamEventsForwardCompleted(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount,
                                                     ReadStreamResult result, ResolvedEvent[] events,
                                                     StreamMetadata streamMetadata, bool isCachePublic,
                                                     string error, int nextEventNumber, int lastEventNumber, bool isEndOfStream,
-                                                    long lastCommitPosition)
+                                                    long tfLastCommitPosition)
             {
                 Ensure.NotNull(events, "events");
 
@@ -566,15 +565,7 @@ namespace EventStore.Core.Messages
                 NextEventNumber = nextEventNumber;
                 LastEventNumber = lastEventNumber;
                 IsEndOfStream = isEndOfStream;
-                LastCommitPosition = lastCommitPosition;
-            }
-
-            public static ReadStreamEventsForwardCompleted NoData(ReadStreamResult result, Guid correlationId,  string eventStreamId,
-                                                                  int fromEventNumber, int maxCount, long lastCommitPosition, string message = null)
-            {
-                return new ReadStreamEventsForwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount, 
-                                                            result, EmptyRecords, null, false, message ?? String.Empty, 
-                                                            -1, -1, true, lastCommitPosition);
+                TfLastCommitPosition = tfLastCommitPosition;
             }
         }
 
@@ -634,7 +625,7 @@ namespace EventStore.Core.Messages
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
             public readonly bool IsEndOfStream;
-            public readonly long LastCommitPosition;
+            public readonly long TfLastCommitPosition;
 
             public ReadStreamEventsBackwardCompleted(Guid correlationId,
                                                      string eventStreamId,
@@ -648,7 +639,7 @@ namespace EventStore.Core.Messages
                                                      int nextEventNumber,
                                                      int lastEventNumber,
                                                      bool isEndOfStream,
-                                                     long lastCommitPosition)
+                                                     long tfLastCommitPosition)
             {
                 Ensure.NotNull(events, "events");
 
@@ -671,15 +662,7 @@ namespace EventStore.Core.Messages
                 NextEventNumber = nextEventNumber;
                 LastEventNumber = lastEventNumber;
                 IsEndOfStream = isEndOfStream;
-                LastCommitPosition = lastCommitPosition;
-            }
-
-            public static ReadStreamEventsBackwardCompleted NoData(ReadStreamResult result, Guid correlationId, string eventStreamId,
-                                                                   int fromEventNumber, int maxCount, long lastCommitPosition, string message = null)
-            {
-                return new ReadStreamEventsBackwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
-                                                             result, EmptyRecords, null, false, message ?? String.Empty,
-                                                             -1, -1, true, lastCommitPosition);
+                TfLastCommitPosition = tfLastCommitPosition;
             }
         }
 
@@ -694,12 +677,13 @@ namespace EventStore.Core.Messages
             public readonly bool ResolveLinkTos;
             public readonly bool RequireMaster;
 
-            public readonly long? ValidationTfEofPosition;
-            public readonly bool LongPoll;
+            public readonly long? ValidationTfLastCommitPosition;
+            public readonly TimeSpan? LongPollTimeout;
 
             public ReadAllEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                                         long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
-                                        bool requireMaster, long? validationTfEofPosition, IPrincipal user, bool longPoll = false)
+                                        bool requireMaster, long? validationTfLastCommitPosition, IPrincipal user,
+                                        TimeSpan? longPollTimeout = null)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 CommitPosition = commitPosition;
@@ -707,8 +691,8 @@ namespace EventStore.Core.Messages
                 MaxCount = maxCount;
                 ResolveLinkTos = resolveLinkTos;
                 RequireMaster = requireMaster;
-                ValidationTfEofPosition = validationTfEofPosition;
-                LongPoll = longPoll;
+                ValidationTfLastCommitPosition = validationTfLastCommitPosition;
+                LongPollTimeout = longPollTimeout;
             }
         }
 
@@ -729,13 +713,13 @@ namespace EventStore.Core.Messages
             public readonly TFPos CurrentPos;
             public readonly TFPos NextPos;
             public readonly TFPos PrevPos;
-            public readonly long TfEofPosition;
+            public readonly long TfLastCommitPosition;
 
             public bool IsEndOfStream { get { return Events == null || Events.Length < MaxCount; } }
 
             public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events,
                                                  StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
-                                                 TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
+                                                 TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition)
             {
                 Ensure.NotNull(events, "events");
 
@@ -749,7 +733,7 @@ namespace EventStore.Core.Messages
                 CurrentPos = currentPos;
                 NextPos = nextPos;
                 PrevPos = prevPos;
-                TfEofPosition = tfEofPosition;
+                TfLastCommitPosition = tfLastCommitPosition;
             }
         }
 
@@ -764,11 +748,11 @@ namespace EventStore.Core.Messages
             public readonly bool ResolveLinkTos;
             public readonly bool RequireMaster;
 
-            public readonly long? ValidationTfEofPosition;
+            public readonly long? ValidationTfLastCommitPosition;
 
             public ReadAllEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                                          long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
-                                         bool requireMaster, long? validationTfEofPosition, IPrincipal user)
+                                         bool requireMaster, long? validationTfLastCommitPosition, IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 CommitPosition = commitPosition;
@@ -776,7 +760,7 @@ namespace EventStore.Core.Messages
                 MaxCount = maxCount;
                 ResolveLinkTos = resolveLinkTos;
                 RequireMaster = requireMaster;
-                ValidationTfEofPosition = validationTfEofPosition;
+                ValidationTfLastCommitPosition = validationTfLastCommitPosition;
             }
         }
 
@@ -797,13 +781,13 @@ namespace EventStore.Core.Messages
             public readonly TFPos CurrentPos;
             public readonly TFPos NextPos;
             public readonly TFPos PrevPos;
-            public readonly long TfEofPosition;
+            public readonly long TfLastCommitPosition;
 
             public bool IsEndOfStream { get { return Events == null || Events.Length < MaxCount; } }
 
             public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events, 
                                                   StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
-                                                  TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
+                                                  TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition)
             {
                 Ensure.NotNull(events, "events");
 
@@ -817,7 +801,7 @@ namespace EventStore.Core.Messages
                 CurrentPos = currentPos;
                 NextPos = nextPos;
                 PrevPos = prevPos;
-                TfEofPosition = tfEofPosition;
+                TfLastCommitPosition = tfLastCommitPosition;
             }
         }
 

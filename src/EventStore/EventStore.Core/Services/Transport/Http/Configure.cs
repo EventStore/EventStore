@@ -249,9 +249,9 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     case ReadAllResult.Success:
                         var codec = entity.ResponseCodec;
-                        if (!headOfTf && msg.CurrentPos.CommitPosition <= msg.TfEofPosition)
+                        if (!headOfTf && msg.CurrentPos.CommitPosition <= msg.TfLastCommitPosition)
                             return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
-                        var etag = GetPositionETag(msg.TfEofPosition, codec.ContentType);
+                        var etag = GetPositionETag(msg.TfLastCommitPosition, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
                         return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
                     case ReadAllResult.NotModified:
@@ -281,7 +281,7 @@ namespace EventStore.Core.Services.Transport.Http
                         var codec = entity.ResponseCodec;
                         if (!headOfTf && msg.Events.Length == msg.MaxCount)
                             return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
-                        var etag = GetPositionETag(msg.TfEofPosition, codec.ContentType);
+                        var etag = GetPositionETag(msg.TfLastCommitPosition, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
                         //if (!headOfTf && msg.Events.Length == 0)
                         //    return NotFound(etag, cacheSeconds, isPublic, "text/plain");

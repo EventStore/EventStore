@@ -106,7 +106,8 @@
             function initProjection(userName, chatRoomName) {
                 return es.projection({
                     body: function () {
-                        fromStream('chat-' + chatRoomName).when({
+                        var stream = chatRoomName == '$all' ? fromAll() : fromStream('chat-' + chatRoomName);
+                        stream.when({
                             'ChatMessage': function (state, event) {
                                 var body = event.body;
                                 return { "text": (body.time + "> " + body.sender + ": " + body.message) };
@@ -114,6 +115,9 @@
                             'UserJoinedChat': function (state, event) {
                                 var body = event.body;
                                 return { "text": (body.time + "> user " + body.user + " has joined the chat!") };
+                            },
+                            $any: function(state, event) {
+                                return { "text": ('GENERIC EVENT: ' + JSON.stringify(event)) };
                             }
                         });
                     },

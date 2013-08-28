@@ -249,7 +249,7 @@ namespace EventStore.Core.Tests.Helpers
                             nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber - 1 : -1,
                             lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
                             isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == 0,
-                            lastCommitPosition: _fakePosition));
+                            tfLastCommitPosition: _fakePosition));
                 }
                 else
                 {
@@ -260,7 +260,7 @@ namespace EventStore.Core.Tests.Helpers
                                 message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
                                 ReadStreamResult.NoStream, new ResolvedEvent[0], null, false, "", nextEventNumber: -1, lastEventNumber: -1,
                                 isEndOfStream: true, 
-                                lastCommitPosition: _fakePosition));
+                                tfLastCommitPosition: _fakePosition));
                         return;
                     }
                     throw new NotImplementedException();
@@ -311,7 +311,7 @@ namespace EventStore.Core.Tests.Helpers
                             nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber + 1 : lastEventNumber + 1,
                             lastEventNumber: lastEventNumber,
                             isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == list.Last().EventNumber,
-                            lastCommitPosition: _fakePosition));
+                            tfLastCommitPosition: _fakePosition));
                 }
                 else
                 {
@@ -322,7 +322,7 @@ namespace EventStore.Core.Tests.Helpers
                                 message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
                                 ReadStreamResult.NoStream, new ResolvedEvent[0], null, false, "", nextEventNumber: -1, lastEventNumber: -1,
                                 isEndOfStream: true, 
-                                lastCommitPosition: _fakePosition));
+                                tfLastCommitPosition: _fakePosition));
                         return;
                     }
                     throw new NotImplementedException();

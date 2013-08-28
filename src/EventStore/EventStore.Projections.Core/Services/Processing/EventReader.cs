@@ -133,7 +133,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return (msg.IsEndOfStream 
                    || msg.Result == ReadStreamResult.NoStream 
                    || msg.Result == ReadStreamResult.StreamDeleted)
-                   ? (msg.LastCommitPosition == -1 ? (long?) null : msg.LastCommitPosition)
+                   ? (msg.TfLastCommitPosition == -1 ? (long?) null : msg.TfLastCommitPosition)
                         : (long?) null;
         }
 

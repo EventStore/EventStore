@@ -26,23 +26,30 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http
 {
-    public class UriToActionMatch
+    public struct RequestParams
     {
-        public readonly UriTemplateMatch TemplateMatch;
-        public readonly ControllerAction ControllerAction;
-        public readonly Func<HttpEntityManager, UriTemplateMatch, RequestParams> RequestHandler;
+        public readonly bool IsDone;
+        public readonly TimeSpan Timeout;
 
-        public UriToActionMatch(UriTemplateMatch templateMatch, 
-                                ControllerAction controllerAction, 
-                                Func<HttpEntityManager, UriTemplateMatch, RequestParams> requestHandler)
+        public RequestParams(bool done)
         {
-            TemplateMatch = templateMatch;
-            ControllerAction = controllerAction;
-            RequestHandler = requestHandler;
+            IsDone = done;
+            Timeout = TimeSpan.Zero;
+        }
+
+        public RequestParams(TimeSpan timeout)
+        {
+            IsDone = false;
+            Timeout = timeout;
+        }
+
+        public RequestParams(bool done, TimeSpan timeout)
+        {
+            IsDone = done;
+            Timeout = timeout;
         }
     }
 }
