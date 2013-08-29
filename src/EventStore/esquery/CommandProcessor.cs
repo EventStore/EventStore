@@ -109,7 +109,10 @@ namespace esquery
                 var faulted = json["status"].Value<string>().StartsWith( "Faulted");
                 var completed = json["status"].Value<string>().StartsWith("Completed");   
                 var faultReason = json["stateReason"].Value<string>();
-                var resulturi = new Uri(json["resultStreamUrl"].Value<string>());
+                var streamurl = json["resultStreamUrl"];
+                Uri resulturi = null;
+                if(streamurl != null)
+                    resulturi = new Uri(streamurl.Value<string>());
                 var progress = json["progress"].Value<decimal>();
                
                 return new QueryInformation() {
@@ -158,6 +161,7 @@ namespace esquery
 
                 foreach (var item in json["entries"])
                 {
+                    Console.WriteLine("Result");
                     Console.WriteLine(item["data"].ToString());
                 }
                 return GetNamedLink(json, "previous") ?? uri;
