@@ -118,6 +118,11 @@ namespace EventStore.Core.Tests.Helpers
         {
             _queue.Process();
             var steps = PreWhen().Concat(When());
+            WhenLoop(steps);
+        }
+
+        protected void WhenLoop(IEnumerable<WhenStep> steps)
+        {
             foreach (var step in steps)
             {
                 foreach (var message in step)
