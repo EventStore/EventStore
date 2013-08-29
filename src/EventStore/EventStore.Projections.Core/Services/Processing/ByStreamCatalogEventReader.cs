@@ -209,6 +209,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnqueueStreamForProcessing(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
+            if (resolvedEvent.OriginalEvent.LogPosition > _limitingCommitPosition)
+                return;
             switch (resolvedEvent.Event.EventType)
             {
                 case SystemEventTypes.LinkTo:
@@ -235,6 +237,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _deliveredEvents++;
 
             EventRecord positionEvent = (link ?? @event);
+            if (positionEvent.LogPosition > _limitingCommitPosition)
+                return;
 
             var resolvedLinkTo = positionEvent.EventStreamId != @event.EventStreamId
                                  || positionEvent.EventNumber != @event.EventNumber;

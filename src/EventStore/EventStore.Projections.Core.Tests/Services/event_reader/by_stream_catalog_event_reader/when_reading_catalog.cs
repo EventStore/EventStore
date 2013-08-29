@@ -133,5 +133,19 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.by_stream_cata
             }
         }
 
+        [TestFixture]
+        class when_new_streams_appear_after_subscribing : with_catalog_stream
+        {
+            protected override IEnumerable<WhenStep> When()
+            {
+                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "catalog", -1, null, -1, 1000);
+                yield return
+                    new WhenStep(
+                        new ReaderSubscriptionManagement.Subscribe(
+                            _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions),
+                        CreateWriteEvent("test-stream4", "type1", "{Data: 8}"),
+                        CreateWriteEvent("catalog", "$>", "0@test-stream4"));
+            }
+        }
     }
 }
