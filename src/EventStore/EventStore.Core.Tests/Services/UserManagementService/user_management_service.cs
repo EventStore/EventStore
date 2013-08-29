@@ -71,10 +71,14 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 _bus.Subscribe<SystemMessage.BecomeMaster>(_users);
             }
 
+            protected override ManualQueue GiveInputQueue()
+            {
+                return new ManualQueue(_bus);
+            }
+
             [SetUp]
             public void SetUp()
             {
-                SetUpManualQueue();
                 GivenCommands();
                 _queue.Process();
                 HandledMessages.Clear();

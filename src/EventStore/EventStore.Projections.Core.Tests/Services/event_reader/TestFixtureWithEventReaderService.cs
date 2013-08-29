@@ -27,12 +27,13 @@
 // 
 
 using EventStore.Core.Bus;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
+using TestFixtureWithExistingEvents = EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader
 {
@@ -46,10 +47,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             EnableReadAll();
         }
 
+        protected override ManualQueue GiveInputQueue()
+        {
+            return new ManualQueue(_bus);
+        }
+
         [SetUp]
         public void Setup()
         {
-            SetUpManualQueue();
             _bus.Subscribe(_consumer);
 
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
@@ -97,9 +102,5 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
         {
         }
 
-        protected override IPublisher GetInputQueue()
-        {
-            return (IPublisher) _queue ?? _bus;
-        }
     }
 }

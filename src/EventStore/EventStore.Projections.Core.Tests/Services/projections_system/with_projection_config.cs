@@ -61,9 +61,5 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
             AllWritesSucceed();
         }
 
-        protected override IEnumerable<WhenStep> PreWhen()
-        {
-            yield return base.PreWhen().ToSteps();
-        }
     }
 }

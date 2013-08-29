@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
         {
             protected override IEnumerable<WhenStep> When()
             {
-                yield return base.When().ToSteps();
+                foreach (var s in base.When()) yield return s;
                 yield return (
                     new ProjectionManagementMessage.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));

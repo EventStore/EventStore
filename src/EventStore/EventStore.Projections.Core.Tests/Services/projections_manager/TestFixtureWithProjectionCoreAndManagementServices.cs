@@ -31,14 +31,15 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
+using TestFixtureWithExistingEvents = EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -64,10 +65,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             return false;
         }
 
+        protected override ManualQueue GiveInputQueue()
+        {
+            return new ManualQueue(_bus);
+        }
+
         [SetUp]
         public void Setup()
         {
-            SetUpManualQueue();
             //TODO: this became an integration test - proper ProjectionCoreService and ProjectionManager testing is required as well
             _bus.Subscribe(_consumer);
 

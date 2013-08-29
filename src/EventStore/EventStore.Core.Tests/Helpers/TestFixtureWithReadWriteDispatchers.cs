@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Helpers
             _envelope = null;
             _timeProvider = new FakeTimeProvider();
             _bus = new InMemoryBus("bus");
-            _queue = null;
+            _queue = GiveInputQueue();
             _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(GetInputQueue()));
             _readDispatcher = _ioDispatcher.BackwardReader;
             _writeDispatcher = _ioDispatcher.Writer;
@@ -94,14 +94,14 @@ namespace EventStore.Core.Tests.Helpers
             _bus.Subscribe(_consumer);
         }
 
-        protected virtual IPublisher GetInputQueue()
+        protected virtual ManualQueue GiveInputQueue()
         {
-            return (IPublisher) _queue ?? _bus;
+            return null;
         }
 
-        protected void SetUpManualQueue()
+        protected IPublisher GetInputQueue()
         {
-            _queue = new ManualQueue(_bus);
+            return (IPublisher) _queue ?? _bus;
         }
 
         protected void DisableTimer()
@@ -117,15 +117,17 @@ namespace EventStore.Core.Tests.Helpers
         protected void WhenLoop()
         {
             _queue.Process();
-            foreach (var message in (from steps in PreWhen().Concat(When())
-                                    from m in steps
-                                    select m))
+            var steps = PreWhen().Concat(When());
+            foreach (var step in steps)
             {
-                if (message != null)
-                    _queue.Publish(message);
+                foreach (var message in step)
+                {
+                    if (message != null)
+                        _queue.Publish(message);
+                }
                 _queue.Process();
+                // process final timer messages
             }
-            // process final timer messages
             _queue.Process();
         }
 
@@ -156,6 +158,10 @@ namespace EventStore.Core.Tests.Helpers
                 Messages = messages;
             }
 
+            public WhenStep(params Message[] messages)
+            {
+                Messages = messages;
+            }
             internal WhenStep()
             {
             }

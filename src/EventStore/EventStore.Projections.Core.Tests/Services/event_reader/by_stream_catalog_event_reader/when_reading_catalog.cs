@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.by_stream_cata
         }
 
         [TestFixture]
-        class when_index_checkpoint_multiple_events_behind : with_catalog_stream
+        class when_starting_from_the_beginning : with_catalog_stream
         {
             protected override IEnumerable<WhenStep> When()
             {
@@ -117,5 +117,21 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.by_stream_cata
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
             }
         }
+
+        [TestFixture]
+        class when_new_events_appear_after_subscribing : with_catalog_stream
+        {
+            protected override IEnumerable<WhenStep> When()
+            {
+                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "catalog", -1, null, -1, 1000);
+                yield return
+                    new WhenStep(
+                        new ReaderSubscriptionManagement.Subscribe(
+                            _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions),
+                        CreateWriteEvent("test-stream2", "type1", "{Data: 8}"),
+                        CreateWriteEvent("catalog", "$>", "2@test-stream2"));
+            }
+        }
+
     }
 }
