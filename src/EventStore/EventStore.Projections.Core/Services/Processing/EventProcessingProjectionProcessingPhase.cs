@@ -402,7 +402,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (result)
             {
                 var oldState = _partitionStateCache.GetLockedPartitionState(partition);
-                if (_outputRunningResults && oldState.State != newState)
+                //TODO: depending on query processing final state to result transformation should happen either here (if EOF) on while writing results
+                if (/*_outputRunningResults && */oldState.State != newState)
                 {
                     if (_definesStateTransform)
                     {

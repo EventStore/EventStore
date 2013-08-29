@@ -121,12 +121,13 @@ namespace EventStore.Projections.Core.Services.Processing
                         _subscriptionId, _subscriptionMessageSequenceNumber++);
                 _publisher.Publish(convertedMessage);
                 _eventsSinceLastCheckpointSuggested++;
-                if (_eventsSinceLastCheckpointSuggested >= _checkpointProcessedEventsThreshold)
+                if (_checkpointProcessedEventsThreshold > 0
+                    && _eventsSinceLastCheckpointSuggested >= _checkpointProcessedEventsThreshold)
                     SuggestCheckpoint(message);
             }
             else
             {
-                if (_checkpointUnhandledBytesThreshold != null
+                if (_checkpointUnhandledBytesThreshold > 0
                     && (_lastPassedOrCheckpointedEventPosition != null
                         && message.Data.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
                         > _checkpointUnhandledBytesThreshold))

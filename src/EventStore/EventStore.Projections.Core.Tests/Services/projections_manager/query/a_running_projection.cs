@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -122,6 +123,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
                 List<EventRecord> resultsStream;
                 Assert.IsTrue((_lastMessageReplies.TryGetValue("$projections-test-projection-result", out resultsStream)));
                 Assert.AreEqual(1, resultsStream.Count);
+                Assert.AreEqual("{\"data\": 1}", Encoding.UTF8.GetString(resultsStream[0].Data));
             }
 
             [Test]

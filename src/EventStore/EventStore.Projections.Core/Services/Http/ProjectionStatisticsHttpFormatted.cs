@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Services.Http
             this.StateUrl = makeAbsoluteUrl(statusLocalUrl + "/state");
             this.ResultUrl = makeAbsoluteUrl(statusLocalUrl + "/result");
             this.QueryUrl = makeAbsoluteUrl(statusLocalUrl + "/query?config=yes");
-            if (!string.IsNullOrEmpty(source.Definition.ResultStreamName))
+            if (source.Definition != null && !string.IsNullOrEmpty(source.Definition.ResultStreamName))
                 this.ResultStreamUrl =
                     makeAbsoluteUrl("/streams/" + Uri.EscapeDataString(source.Definition.ResultStreamName));
         }
