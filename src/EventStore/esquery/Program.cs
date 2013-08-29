@@ -61,10 +61,10 @@ namespace esquery
             if (args.Length == 1)
             {
                 Console.WriteLine("Server set to: " + args[0]);
-                return new Args(false, args[0], new NetworkCredential("admin", "changeit"));
+                return new Args(false, new Uri(args[0]), new NetworkCredential("admin", "changeit"));
             }
             Console.WriteLine("No server set defaulting to http://127.0.0.1:2113/");
-            return new Args(true, "http://127.0.0.1:2113/", new NetworkCredential("admin", "changeit"));
+            return new Args(true, new Uri("http://127.0.0.1:2113/"), new NetworkCredential("admin", "changeit"));
         }
 
         static void Main(string[] args)
@@ -87,9 +87,11 @@ namespace esquery
     {
         public readonly bool KeepRunning;
         public NetworkCredential Credentials;
+        public Uri BaseUri;
 
-        public Args(bool keepRunning, string http, NetworkCredential credentials)
+        public Args(bool keepRunning, Uri baseUri, NetworkCredential credentials)
         {
+            BaseUri = baseUri;
             KeepRunning = keepRunning;
             Credentials = credentials;
         }

@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.ServiceModel.Syndication;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 
@@ -56,7 +55,7 @@ namespace esquery
                     case "query":
                         var query = EatFirstN(1, command);
                         if (query.Count != 2) return new InvalidCommandResult(command);
-                        return CreateAndRunQuery(new Uri("http://127.0.0.1:2113"), query[1], state.Args.Credentials, state.Piped);
+                        return CreateAndRunQuery(state.Args.BaseUri, query[1], state.Args.Credentials, state.Piped);
                     default:
                         return new InvalidCommandResult(command);
                 }
