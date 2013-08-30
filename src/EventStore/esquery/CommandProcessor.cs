@@ -56,6 +56,11 @@ namespace esquery
                         var query = EatFirstN(1, command);
                         if (query.Count != 2) return new InvalidCommandResult(command);
                         return CreateAndRunQuery(state.Args.BaseUri, query[1], state.Args.Credentials, state.Piped);
+                    case "s":
+                    case "subscribe":
+                        var sub = EatFirstN(2, command);
+                        if (sub.Count != 3) return new InvalidCommandResult(command);
+                        return Subscribe(state.Args.BaseUri, sub[1], state.Args.Credentials, state.Piped);
                     default:
                         return new InvalidCommandResult(command);
                 }
@@ -150,22 +155,40 @@ namespace esquery
             }
         }
 
-        static Uri ReadResults(Uri uri, NetworkCredential credential)
+        private static Uri GetPrevFromHead(Uri head, NetworkCredential credential)
         {
-            var request = (HttpWebRequest) WebRequest.Create(uri);
+            var request = (HttpWebRequest)WebRequest.Create(head);
             request.Credentials = credential;
             request.Accept = "application/vnd.eventstore.atom+json";
+
+            using (var response = (HttpWebResponse)request.GetResponse())
+            {
+
+                var json = JObject.Parse(new StreamReader(response.GetResponseStream()).ReadToEnd());
+                return GetNamedLink(json, "previous");
+            }
+        }
+
+        static Uri ReadResults(Uri uri, NetworkCredential credential)
+        {
+            var request = (HttpWebRequest) WebRequest.Create(new Uri(uri.AbsoluteUri + "?embed=body"));
+            request.Credentials = credential;
+            request.Accept = "application/vnd.eventstore.atom+json";
+            request.Headers.Add("ES-LongPoll", "30"); //add long polling
             using (var response = request.GetResponse())
             {
                 var json = JObject.Parse(new StreamReader(response.GetResponseStream()).ReadToEnd());
-
-                foreach (var item in json["entries"])
+                if (json["entries"] != null)
                 {
-                    Console.WriteLine("Result");
-                    Console.WriteLine(item["data"].ToString());
+                    foreach (var item in json["entries"])
+                    {
+                        Console.WriteLine(item["title"].ToString());
+                        Console.WriteLine(item["data"].ToString());
+                    }
+                    return GetNamedLink(json, "previous") ?? uri;
                 }
-                return GetNamedLink(json, "previous") ?? uri;
             }
+            return uri;
         }
 
         private static object CreateAndRunQuery(Uri baseUri, string query, NetworkCredential credential, bool piped)
@@ -200,6 +223,32 @@ namespace esquery
                 last = new Uri(last.OriginalString + "?embed=body");
                 var next = ReadResults(last, credential);
                 return new QueryResult() {Query = query};
+            }
+            catch(Exception ex)
+            {
+                return new ErrorResult(ex);
+            }
+        }
+
+        private static object Subscribe(Uri baseUri, string stream, NetworkCredential credential, bool piped)
+        {
+            try
+            {
+
+                var previous = GetPrevFromHead(new Uri(baseUri.AbsoluteUri + "streams/" + stream + "?embed=body"), credential);
+                if (!piped)
+                    Console.WriteLine("Beginning Subscription. Press esc to cancel.");
+                var uri = previous;
+                while (true)
+                {
+                    uri = ReadResults(uri, credential);
+                    if (!piped && Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape)
+                    {
+                        Console.WriteLine("\nCancelling query.");
+                        return new SubscriptionCancelledResult();
+                    }
+                    Thread.Sleep(500);
+                }
             }
             catch(Exception ex)
             {
@@ -253,6 +302,14 @@ namespace esquery
         }
     }
 
+    class SubscriptionCancelledResult
+    {
+        public override string ToString()
+        {
+            return "Subscription Cancelled";
+        }
+    }
+
     class QueryCancelledResult
     {
         public override string ToString()
@@ -289,10 +346,9 @@ namespace esquery
     {
         public override string ToString()
         {
-            return "esquery help:\n" + 
-                   "\th/help: prints help\n" + 
-                   "\tq/query {js query} executes a query.\n" + 
-                   "\ta/append {stream} {js object}: appends to a stream.\n";
+            return "esquery help:\n" + "\th/help: prints help\n" + "\tq/query {js query} executes a query.\n"
+                   + "\ta/append {stream} {js object}: appends to a stream.\n"
+                   + "\ts/subscribe {stream}: subscribes to a stream.\n";
         }
     }
 
