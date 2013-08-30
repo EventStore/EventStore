@@ -51,28 +51,6 @@ namespace EventStore.Projections.Core.Tests.Services
             public List<EventReaderSubscriptionMessage.CommittedEventReceived> HandledMessages =
                 new List<EventReaderSubscriptionMessage.CommittedEventReceived>();
 
-            public List<EventReaderSubscriptionMessage.CheckpointSuggested> HandledCheckpoints =
-                new List<EventReaderSubscriptionMessage.CheckpointSuggested>();
-
-            public List<EventReaderSubscriptionMessage.ProgressChanged> HandledProgress =
-                new List<EventReaderSubscriptionMessage.ProgressChanged>();
-
-            public List<EventReaderSubscriptionMessage.NotAuthorized> HandledNotAuthorized =
-                new List<EventReaderSubscriptionMessage.NotAuthorized>();
-
-            public List<EventReaderSubscriptionMessage.EofReached> HandledEof =
-                new List<EventReaderSubscriptionMessage.EofReached>();
-
-            public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
-            {
-                HandledMessages.Add(message);
-            }
-
-            public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
-            {
-                HandledCheckpoints.Add(message);
-            }
-
             public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
             {
                 throw new NotImplementedException();
@@ -83,20 +61,6 @@ namespace EventStore.Projections.Core.Tests.Services
                 throw new NotImplementedException();
             }
 
-            public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
-            {
-                HandledProgress.Add(message);
-            }
-
-            public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
-            {
-                HandledNotAuthorized.Add(message);
-            }
-
-            public void Handle(EventReaderSubscriptionMessage.EofReached message)
-            {
-                HandledEof.Add(message);
-            }
 
             public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
             {
@@ -138,6 +102,7 @@ namespace EventStore.Projections.Core.Tests.Services
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
             _readerService.Handle(new Messages.ReaderCoreServiceMessage.StartReader());

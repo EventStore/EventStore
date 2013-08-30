@@ -27,18 +27,25 @@
 // 
 
 using System;
-using EventStore.Core.Bus;
-using EventStore.Core.Helpers;
-using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IReaderSubscription : IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderEof>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>
+    class PartitionCompletedWorkItem : CheckpointWorkItemBase
     {
-        IEventReader CreatePausedEventReader(IPublisher publisher, IODispatcher ioDispatcher, Guid forkedEventReaderId);
+        private readonly IEventProcessingProjectionPhase _projection;
+        private readonly string _partition;
+
+        public PartitionCompletedWorkItem(IEventProcessingProjectionPhase projection, string partition)
+            : base()
+        {
+            _projection = projection;
+            _partition = partition;
+        }
+
+        protected override void WriteOutput()
+        {
+            throw new NotImplementedException();
+            NextStage();
+        }
     }
 }

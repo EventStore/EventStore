@@ -39,6 +39,7 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
         IHandle<EventReaderSubscriptionMessage.NotAuthorized>,
         IHandle<EventReaderSubscriptionMessage.EofReached>,
+        IHandle<EventReaderSubscriptionMessage.PartitionEofReached>,
         IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
         IEventProcessingProjectionPhase,
         IProjectionProcessingPhase
@@ -150,8 +151,25 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 Unsubscribed();
-                var progressWorkItem = new CompletedWorkItem(this);
-                _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
+                var completedWorkItem = new CompletedWorkItem(this);
+                _processingQueue.EnqueueTask(completedWorkItem, message.CheckpointTag, allowCurrentPosition: true);
+                ProcessEvent();
+            }
+            catch (Exception ex)
+            {
+                _coreProjection.SetFaulted(ex);
+            }
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.PartitionEofReached message)
+        {
+            if (IsOutOfOrderSubscriptionMessage(message))
+                return;
+            RegisterSubscriptionMessage(message);
+            try
+            {
+                var partitionCompletedWorkItem = new PartitionCompletedWorkItem(this, message.Partition);
+                _processingQueue.EnqueueTask(partitionCompletedWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 ProcessEvent();
             }
             catch (Exception ex)

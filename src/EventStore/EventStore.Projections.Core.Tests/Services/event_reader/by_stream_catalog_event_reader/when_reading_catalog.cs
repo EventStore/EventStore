@@ -104,6 +104,24 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.by_stream_cata
                         .SequenceEqual(from e in receivedEvents select e.Data.Position),
                     "Incorrect event order received");
             }
+
+            [Test]
+            public void publishes_partition_eof_on_each_stream_eof()
+            {
+                var messages =
+                    HandledMessages.Where(
+                        v =>
+                            v is EventReaderSubscriptionMessage.CommittedEventReceived
+                            || v is EventReaderSubscriptionMessage.PartitionEofReached).ToList();
+
+                Assert.AreEqual(9, messages.Count);
+                Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(messages[2]);
+                Assert.AreEqual("test-stream", ((EventReaderSubscriptionMessage.PartitionEofReached)messages[2]).Partition);
+                Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(messages[5]);
+                Assert.AreEqual("test-stream2", ((EventReaderSubscriptionMessage.PartitionEofReached)messages[5]).Partition);
+                Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(messages[8]);
+                Assert.AreEqual("test-stream3", ((EventReaderSubscriptionMessage.PartitionEofReached)messages[8]).Partition);
+            }
         }
 
         [TestFixture]

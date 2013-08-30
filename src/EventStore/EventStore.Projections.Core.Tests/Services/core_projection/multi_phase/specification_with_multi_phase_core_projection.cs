@@ -136,32 +136,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             {
                 throw new NotImplementedException();
             }
-
-            public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void Handle(EventReaderSubscriptionMessage.EofReached message)
-            {
-                _specification._coreProjection.CompletePhase();
-            }
-
-            public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
-            {
-                throw new NotImplementedException();
-            }
-
             public void Handle(CoreProjectionManagementMessage.GetState message)
             {
                 throw new NotImplementedException();

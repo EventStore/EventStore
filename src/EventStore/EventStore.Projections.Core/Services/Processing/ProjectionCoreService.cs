@@ -256,35 +256,5 @@ namespace EventStore.Projections.Core.Services.Processing
                 projection.Handle(message);
         }
 
-        public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
-        {
-            if (_subscriptionDispatcher.Handle(message))
-                return;
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
-        {
-            if (_subscriptionDispatcher.Handle(message))
-                return;
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.EofReached message)
-        {
-            if (_subscriptionDispatcher.Handle(message))
-                return;
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
-        {
-            if (_subscriptionDispatcher.Handle(message))
-                return;
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
-        {
-            if (_subscriptionDispatcher.Handle(message))
-                return;
-        }
-
     }
 }

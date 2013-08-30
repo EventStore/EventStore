@@ -50,7 +50,8 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>, 
         IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
         IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>,
-        IHandle<ReaderSubscriptionMessage.EventReaderEof>, 
+        IHandle<ReaderSubscriptionMessage.EventReaderEof>,
+        IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
         IHandle<ReaderCoreServiceMessage.ReaderTick>
     {
         private readonly IPublisher _publisher;
@@ -202,6 +203,16 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _pausedSubscriptions.Add(projectionId); // it is actually disposed -- workaround
             Handle(new ReaderSubscriptionManagement.Unsubscribe(projectionId));
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message)
+        {
+            Guid projectionId;
+            if (_stopped)
+                return;
+            if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+                return; // unsubscribed
+            _subscriptions[projectionId].Handle(message);
         }
 
         public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message)

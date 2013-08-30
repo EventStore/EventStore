@@ -88,6 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
 
@@ -148,6 +149,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_readerService);
+            _bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Pause>(_readerService);

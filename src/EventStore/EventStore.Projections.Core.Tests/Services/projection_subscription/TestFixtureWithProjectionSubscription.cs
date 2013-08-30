@@ -45,6 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected TestHandler<EventReaderSubscriptionMessage.ProgressChanged> _progressHandler;
         protected TestHandler<EventReaderSubscriptionMessage.NotAuthorized> _notAuthorizedHandler;
         protected TestHandler<EventReaderSubscriptionMessage.EofReached> _eofHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.PartitionEofReached> _partitionEofHandler;
         protected IReaderSubscription _subscription;
         protected IEventReader ForkedReader;
         protected InMemoryBus _bus;
@@ -66,6 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             _progressHandler = new TestHandler<EventReaderSubscriptionMessage.ProgressChanged>();
             _notAuthorizedHandler = new TestHandler<EventReaderSubscriptionMessage.NotAuthorized>();
             _eofHandler = new TestHandler<EventReaderSubscriptionMessage.EofReached>();
+            _partitionEofHandler = new TestHandler<EventReaderSubscriptionMessage.PartitionEofReached>();
 
             _bus.Subscribe(_eventHandler);
             _bus.Subscribe(_checkpointHandler);

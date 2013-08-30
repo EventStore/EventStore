@@ -87,16 +87,6 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        public bool Handle(ReaderSubscriptionMessage.EventReaderEof message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message)
-        {
-            throw new NotImplementedException();
-        }
-
         private void ValidateEventOrder(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             if (_lastEventPosition >= message.Data.Position)
