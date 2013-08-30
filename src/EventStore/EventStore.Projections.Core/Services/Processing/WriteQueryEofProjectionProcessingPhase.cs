@@ -26,117 +26,20 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Projections.Core.Messages;
-
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public sealed class WriteQueryEofProjectionProcessingPhase : IProjectionProcessingPhase
+    public sealed class WriteQueryEofProjectionProcessingPhase : WriteQueryResultProjectionProcessingPhaseBase
     {
-        private readonly int _phase;
-        private readonly string _resultStream;
-        private readonly ICoreProjectionForProcessingPhase _coreProjection;
-        private readonly PartitionStateCache _stateCache;
-        private readonly ICoreProjectionCheckpointManager _checkpointManager;
-
-        private bool _subscribed;
-        private PhaseState _projectionState;
-
         public WriteQueryEofProjectionProcessingPhase(
             int phase, string resultStream, ICoreProjectionForProcessingPhase coreProjection,
             PartitionStateCache stateCache, ICoreProjectionCheckpointManager checkpointManager)
-        {
-            if (resultStream == null) throw new ArgumentNullException("resultStream");
-            if (coreProjection == null) throw new ArgumentNullException("coreProjection");
-            if (stateCache == null) throw new ArgumentNullException("stateCache");
-            if (checkpointManager == null) throw new ArgumentNullException("checkpointManager");
-            if (string.IsNullOrEmpty(resultStream)) throw new ArgumentException("resultStream");
-
-            _phase = phase;
-            _resultStream = resultStream;
-            _coreProjection = coreProjection;
-            _stateCache = stateCache;
-            _checkpointManager = checkpointManager;
-        }
-
-        public void Dispose()
+            : base(phase, resultStream, coreProjection, stateCache, checkpointManager)
         {
         }
 
-        public void Handle(CoreProjectionManagementMessage.GetState message)
+        protected override void WriteResults(CheckpointTag phaseCheckpointTag)
         {
-            var state = _stateCache.TryGetPartitionState(message.Partition);
-            var stateString = state != null ? state.State : null;
-            message.Envelope.ReplyWith(
-                new CoreProjectionManagementMessage.StateReport(
-                    message.CorrelationId, message.CorrelationId, message.Partition, state: stateString, position: null));
-        }
-
-        public void Handle(CoreProjectionManagementMessage.GetResult message)
-        {
-            var state = _stateCache.TryGetPartitionState(message.Partition);
-            var resultString = state != null ? state.Result : null;
-            message.Envelope.ReplyWith(
-                new CoreProjectionManagementMessage.ResultReport(
-                    message.CorrelationId, message.CorrelationId, message.Partition, result: resultString,
-                    position: null));
-        }
-
-        public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public CheckpointTag AdjustTag(CheckpointTag tag)
-        {
-            return tag;
-        }
-
-        public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
-        {
-            _subscribed = false;
-        }
-
-        public void ProcessEvent()
-        {
-            if (!_subscribed)
-                throw new InvalidOperationException();
-            if (_projectionState != PhaseState.Running)
-                return;
-
-            var phaseCheckpointTag = CheckpointTag.FromPhase(_phase, completed: true);
-            _checkpointManager.EventProcessed(phaseCheckpointTag, 100.0f);
-            _coreProjection.CompletePhase();
-        }
-
-        public void Subscribe(CheckpointTag from, bool fromCheckpoint)
-        {
-            _subscribed = true;
-            _coreProjection.Subscribed();
-        }
-
-        public void SetProjectionState(PhaseState state)
-        {
-            _projectionState = state;
-        }
-
-        public void GetStatistics(ProjectionStatistics info)
-        {
-            info.Status = info.Status + "/Writing results";
-        }
-
-        public CheckpointTag MakeZeroCheckpointTag()
-        {
-            return CheckpointTag.FromPhase(_phase, completed: false);
-        }
-
-        public ICoreProjectionCheckpointManager CheckpointManager
-        {
-            get { return _checkpointManager; }
-        }
-
-        public void EnsureUnsubscribed()
-        {
+            // do nothing
         }
     }
 }
