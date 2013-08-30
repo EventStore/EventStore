@@ -27,18 +27,43 @@
 // 
 
 using System;
-using EventStore.Core.Bus;
-using EventStore.Core.Helpers;
-using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IReaderSubscription : IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderEof>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>
+    class PartitionCompletedWorkItem : CheckpointWorkItemBase
     {
-        IEventReader CreatePausedEventReader(IPublisher publisher, IODispatcher ioDispatcher, Guid forkedEventReaderId);
+        private readonly IEventProcessingProjectionPhase _projection;
+        private readonly string _partition;
+        private readonly CheckpointTag _checkpointTag;
+        private PartitionState _state;
+
+        public PartitionCompletedWorkItem(
+            IEventProcessingProjectionPhase projection, string partition, CheckpointTag checkpointTag)
+            : base()
+        {
+            _projection = projection;
+            _partition = partition;
+            _checkpointTag = checkpointTag;
+        }
+
+        protected override void Load(CheckpointTag checkpointTag)
+        {
+            if (_partition == null)
+                throw new NotSupportedException();
+            _projection.BeginGetPartitionStateAt(_partition, _checkpointTag, LoadCompleted, lockLoaded: false);
+        }
+
+        private void LoadCompleted(PartitionState obj)
+        {
+            _state = obj;
+            NextStage();
+        }
+
+        protected override void WriteOutput()
+        {
+            if (_state.Result != null)
+                _projection.EmitResult(_partition, _state.Result, _checkpointTag, Guid.Empty, null);
+            NextStage();
+        }
     }
 }

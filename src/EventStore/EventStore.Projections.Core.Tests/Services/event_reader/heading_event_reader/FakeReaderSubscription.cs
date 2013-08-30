@@ -46,6 +46,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         private readonly List<ReaderSubscriptionMessage.EventReaderEof> _receivedEofNotifications =
             new List<ReaderSubscriptionMessage.EventReaderEof>();
 
+        private readonly List<ReaderSubscriptionMessage.EventReaderPartitionEof> _receivedPartitionEofNotifications =
+            new List<ReaderSubscriptionMessage.EventReaderPartitionEof>();
+
         private readonly List<ReaderSubscriptionMessage.EventReaderNotAuthorized> _receivedNotAuthorizedNotifications =
             new List<ReaderSubscriptionMessage.EventReaderNotAuthorized>();
 
@@ -69,6 +72,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             get { return _receivedEofNotifications; }
         }
 
+        public List<ReaderSubscriptionMessage.EventReaderPartitionEof> ReceivedPartitionEofNotifications
+        {
+            get { return _receivedPartitionEofNotifications; }
+        }
+
         public List<ReaderSubscriptionMessage.EventReaderNotAuthorized> ReceivedNotAuthorizedNotifications
         {
             get { return _receivedNotAuthorizedNotifications; }
@@ -82,6 +90,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         public void Handle(ReaderSubscriptionMessage.EventReaderEof message)
         {
             _receivedEofNotifications.Add(message);
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message)
+        {
+            _receivedPartitionEofNotifications.Add(message);
         }
 
         public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message)

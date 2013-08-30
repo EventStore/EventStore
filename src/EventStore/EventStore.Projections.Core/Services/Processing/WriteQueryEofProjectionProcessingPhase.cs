@@ -26,19 +26,20 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Core.Bus;
-using EventStore.Core.Helpers;
-using EventStore.Projections.Core.Messages;
-
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IReaderSubscription : IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderEof>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
-                                               IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>
+    public sealed class WriteQueryEofProjectionProcessingPhase : WriteQueryResultProjectionProcessingPhaseBase
     {
-        IEventReader CreatePausedEventReader(IPublisher publisher, IODispatcher ioDispatcher, Guid forkedEventReaderId);
+        public WriteQueryEofProjectionProcessingPhase(
+            int phase, string resultStream, ICoreProjectionForProcessingPhase coreProjection,
+            PartitionStateCache stateCache, ICoreProjectionCheckpointManager checkpointManager)
+            : base(phase, resultStream, coreProjection, stateCache, checkpointManager)
+        {
+        }
+
+        protected override void WriteResults(CheckpointTag phaseCheckpointTag)
+        {
+            // do nothing
+        }
     }
 }

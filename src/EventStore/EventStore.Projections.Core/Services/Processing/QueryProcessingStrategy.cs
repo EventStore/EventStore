@@ -69,10 +69,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projectionConfig, _name, new PhasePositionTagger(1), namingBuilder, checkpointStrategy.UseCheckpoints,
                 false, coreProjectionCheckpointWriter);
 
-            var writeResultsPhase = new WriteQueryResultProjectionProcessingPhase(
+            IProjectionProcessingPhase writeResultsPhase;
+            if (!string.IsNullOrEmpty(_sourceDefinition.CatalogStream) && _sourceDefinition.ByStreams)
+                writeResultsPhase = new WriteQueryEofProjectionProcessingPhase(
+                    1, namingBuilder.GetResultStreamName(), coreProjection, partitionStateCache, checkpointManager2);
+            else
+                writeResultsPhase = new WriteQueryResultProjectionProcessingPhase(
                 1, namingBuilder.GetResultStreamName(), coreProjection, partitionStateCache, checkpointManager2);
 
-            return new IProjectionProcessingPhase[] {firstPhase, writeResultsPhase};
+            return new [] {firstPhase, writeResultsPhase};
         }
     }
 }

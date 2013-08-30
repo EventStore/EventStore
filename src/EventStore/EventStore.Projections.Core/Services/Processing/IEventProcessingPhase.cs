@@ -47,5 +47,8 @@ namespace EventStore.Projections.Core.Services.Processing
         void Complete();
         void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem);
         void NewCheckpointStarted(CheckpointTag checkpointTag);
+
+        void EmitResult(
+            string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId);
     }
 }

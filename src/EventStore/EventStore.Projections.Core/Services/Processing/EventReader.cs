@@ -122,8 +122,18 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        protected void SendPartitionEof(string partition)
+        {
+            if (_disposed)
+                return;
+            _publisher.Publish(
+                new ReaderSubscriptionMessage.EventReaderPartitionEof(EventReaderCorrelationId, partition));
+        }
+
         public void SendNotAuthorized()
         {
+            if (_disposed)
+                return;
             _publisher.Publish(new ReaderSubscriptionMessage.EventReaderNotAuthorized(EventReaderCorrelationId));
             Dispose();
         }

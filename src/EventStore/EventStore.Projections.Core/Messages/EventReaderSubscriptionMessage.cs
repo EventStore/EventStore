@@ -110,6 +110,26 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class PartitionEofReached : EventReaderSubscriptionMessage
+        {
+            private readonly string _partition;
+            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public string Partition
+            {
+                get { return _partition; }
+            }
+
+            public PartitionEofReached(
+                Guid subscriptionId, CheckpointTag checkpointTag, string partition,
+                long subscriptionMessageSequenceNumber, object source = null)
+                : base(subscriptionId, checkpointTag, 100.0f, subscriptionMessageSequenceNumber, source)
+            {
+                _partition = partition;
+            }
+        }
+
         public class CommittedEventReceived : EventReaderSubscriptionMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
@@ -120,6 +140,13 @@ namespace EventStore.Projections.Core.Messages
             {
                 return new CommittedEventReceived(
                     subscriptionId, 0, null, data, 77.7f, subscriptionMessageSequenceNumber);
+            }
+
+            public static CommittedEventReceived Sample(
+                ResolvedEvent data, CheckpointTag checkpointTag, Guid subscriptionId, long subscriptionMessageSequenceNumber)
+            {
+                return new CommittedEventReceived(
+                    subscriptionId, checkpointTag, null, data, 77.7f, subscriptionMessageSequenceNumber, null);
             }
 
             private readonly ResolvedEvent _data;

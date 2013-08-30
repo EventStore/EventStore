@@ -132,6 +132,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_dataNextSequenceNumber == int.MaxValue || _dataStreamName == null)
             {
+                if (_dataStreamName != null)
+                    SendPartitionEof(_dataStreamName);
                 if (_catalogEof && _pendingStreams.Count == 0)
                 {
                     SendEof();

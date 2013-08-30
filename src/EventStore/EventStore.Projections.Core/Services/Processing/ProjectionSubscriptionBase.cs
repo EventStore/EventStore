@@ -191,6 +191,14 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message)
+        {
+            _publisher.Publish(
+                new EventReaderSubscriptionMessage.PartitionEofReached(
+                    _subscriptionId, _positionTracker.LastTag, message.Partition,
+                    _subscriptionMessageSequenceNumber++));
+        }
+
         public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message)
         {
             if (_stopOnEof)

@@ -50,7 +50,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected Action<SourceDefinitionBuilder> _configureBuilderByQuerySource = null;
         protected Guid _projectionCorrelationId;
         private bool _createTempStreams = false;
-        private bool _stopOnEof = false;
         private ProjectionConfig _projectionConfig;
         protected ProjectionVersion _version;
         protected string _projectionName;
@@ -95,15 +94,52 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         protected virtual ProjectionProcessingStrategy GivenProjectionProcessingStrategy()
         {
+            return CreateProjectionProcessingStrategy();
+        }
+
+        protected ProjectionProcessingStrategy CreateProjectionProcessingStrategy()
+        {
             return new ContinuousProjectionProcessingStrategy(
+                _projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null);
+        }
+
+        protected ProjectionProcessingStrategy CreateQueryProcessingStrategy()
+        {
+            return new QueryProcessingStrategy(
                 _projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null);
         }
 
         protected virtual ProjectionConfig GivenProjectionConfig()
         {
-            return new ProjectionConfig(null, 
-                _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
-                _createTempStreams, _stopOnEof);
+            return new ProjectionConfig(
+                null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, GivenPendingEventsThreshold(),
+                GivenMaxWriteBatchLength(), GivenEmitEventEnabled(), GivenCheckpointsEnabled(), _createTempStreams,
+                GivenStopOnEof());
+        }
+
+        protected virtual int GivenMaxWriteBatchLength()
+        {
+            return 250;
+        }
+
+        protected virtual int GivenPendingEventsThreshold()
+        {
+            return 1000;
+        }
+
+        protected virtual bool GivenStopOnEof()
+        {
+            return false;
+        }
+
+        protected virtual bool GivenCheckpointsEnabled()
+        {
+            return true;
+        }
+
+        protected virtual bool GivenEmitEventEnabled()
+        {
+            return true;
         }
 
         protected virtual FakeProjectionStateHandler GivenProjectionStateHandler()
