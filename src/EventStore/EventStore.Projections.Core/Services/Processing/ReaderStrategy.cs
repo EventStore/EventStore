@@ -80,6 +80,9 @@ namespace EventStore.Projections.Core.Services.Processing
             if ((sources.HasStreams() || sources.AllStreams) && !string.IsNullOrEmpty(sources.CatalogStream))
                 throw new InvalidOperationException("catalogStream cannot be used with streams or allStreams");
 
+            if (!string.IsNullOrEmpty(sources.CatalogStream) && !sources.ByStreams)
+                throw new InvalidOperationException("catalogStream is only supported in the byStream mode");
+
             if (sources.ReorderEventsOption)
             {
                 if (sources.AllStreams)

@@ -168,7 +168,8 @@ namespace EventStore.Projections.Core.Services.Processing
             RegisterSubscriptionMessage(message);
             try
             {
-                var partitionCompletedWorkItem = new PartitionCompletedWorkItem(this, message.Partition);
+                var partitionCompletedWorkItem = new PartitionCompletedWorkItem(
+                    this, message.Partition, message.CheckpointTag);
                 _processingQueue.EnqueueTask(partitionCompletedWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 ProcessEvent();
             }
@@ -532,7 +533,15 @@ namespace EventStore.Projections.Core.Services.Processing
                         loadCompleted(state);
                         EnsureTickPending();
                     };
-                    _checkpointManager.BeginLoadPartitionStateAt(statePartition, at, completed);
+                    if (_projectionConfig.CheckpointsEnabled)
+                    {
+                        _checkpointManager.BeginLoadPartitionStateAt(statePartition, at, completed);
+                    }
+                    else
+                    {
+                        var state = new PartitionState(statePartition, null, _zeroCheckpointTag);
+                        completed(state);
+                    }
                 }
             }
         }
@@ -565,17 +574,26 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var oldState = result.OldState;
             var newState = result.NewState;
-            if (oldState.Result != newState.Result)
+            var resultBody = newState.Result;
+            if (oldState.Result != resultBody)
             {
-                var resultEvents = ResultUpdated(result.Partition, newState);
-                if (resultEvents != null)
-                    _checkpointManager.EventsEmitted(resultEvents, result.CausedBy, result.CorrelationId);
+                var partition = result.Partition;
+                var causedBy = newState.CausedBy;
+                EmitResult(partition, resultBody, causedBy, result.CausedBy, result.CorrelationId);
             }
         }
 
-        private EmittedEventEnvelope[] ResultUpdated(string partition, PartitionState newState)
+        public void EmitResult(
+            string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId)
         {
-            return _resultEmitter.ResultUpdated(partition, newState.Result, newState.CausedBy);
+            var resultEvents = ResultUpdated(partition, resultBody, causedBy);
+            if (resultEvents != null)
+                _checkpointManager.EventsEmitted(resultEvents, causedByGuid, correlationId);
+        }
+
+        private EmittedEventEnvelope[] ResultUpdated(string partition, string result, CheckpointTag causedBy)
+        {
+            return _resultEmitter.ResultUpdated(partition, result, causedBy);
         }
 
         public void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action completed)

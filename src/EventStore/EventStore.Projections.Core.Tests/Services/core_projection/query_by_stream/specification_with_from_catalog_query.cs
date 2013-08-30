@@ -27,43 +27,60 @@
 // 
 
 using System;
+using EventStore.Projections.Core.Services.Processing;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.core_projection.query_by_stream
 {
-    class PartitionCompletedWorkItem : CheckpointWorkItemBase
+    public abstract class specification_with_from_catalog_query : TestFixtureWithCoreProjectionStarted
     {
-        private readonly IEventProcessingProjectionPhase _projection;
-        private readonly string _partition;
-        private readonly CheckpointTag _checkpointTag;
-        private PartitionState _state;
+        protected Guid _eventId;
 
-        public PartitionCompletedWorkItem(
-            IEventProcessingProjectionPhase projection, string partition, CheckpointTag checkpointTag)
-            : base()
+        protected override bool GivenCheckpointsEnabled()
         {
-            _projection = projection;
-            _partition = partition;
-            _checkpointTag = checkpointTag;
+            return false;
         }
 
-        protected override void Load(CheckpointTag checkpointTag)
+        protected override bool GivenEmitEventEnabled()
         {
-            if (_partition == null)
-                throw new NotSupportedException();
-            _projection.BeginGetPartitionStateAt(_partition, _checkpointTag, LoadCompleted, lockLoaded: false);
+            return false;
         }
 
-        private void LoadCompleted(PartitionState obj)
+        protected override bool GivenStopOnEof()
         {
-            _state = obj;
-            NextStage();
+            return true;
         }
 
-        protected override void WriteOutput()
+        protected override int GivenPendingEventsThreshold()
         {
-            if (_state.Result != null)
-                _projection.EmitResult(_partition, _state.Result, _checkpointTag, Guid.Empty, null);
-            NextStage();
+            return 0;
+        }
+
+        protected override ProjectionProcessingStrategy GivenProjectionProcessingStrategy()
+        {
+            return CreateQueryProcessingStrategy();
+        }
+
+        protected override void Given()
+        {
+            _checkpointHandledThreshold = 0;
+            _checkpointUnhandledBytesThreshold = 0;
+
+            _configureBuilderByQuerySource = source =>
+            {
+                source.FromCatalogStream("catalog");
+                source.AllEvents();
+                source.SetOutputState();
+                source.SetByStream();
+            };
+            TicksAreHandledImmediately();
+            AllWritesSucceed();
+            NoOtherStreams();
+        }
+
+        protected override FakeProjectionStateHandler GivenProjectionStateHandler()
+        {
+            return new FakeProjectionStateHandler(
+                configureBuilder: _configureBuilderByQuerySource, failOnGetPartition: false);
         }
     }
 }

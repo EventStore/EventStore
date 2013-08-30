@@ -142,6 +142,13 @@ namespace EventStore.Projections.Core.Messages
                     subscriptionId, 0, null, data, 77.7f, subscriptionMessageSequenceNumber);
             }
 
+            public static CommittedEventReceived Sample(
+                ResolvedEvent data, CheckpointTag checkpointTag, Guid subscriptionId, long subscriptionMessageSequenceNumber)
+            {
+                return new CommittedEventReceived(
+                    subscriptionId, checkpointTag, null, data, 77.7f, subscriptionMessageSequenceNumber, null);
+            }
+
             private readonly ResolvedEvent _data;
 
             private readonly string _eventCategory;
