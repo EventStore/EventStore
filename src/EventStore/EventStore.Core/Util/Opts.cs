@@ -370,16 +370,10 @@ namespace EventStore.Core.Util
 		/*
 		 * Authentication Options
 		 */
-	    public const string UseLdapsAuthenticationCmd = "ldaps-authentication";
-	    public const string UseLdapsAuthenticationEnv = "LDAPS_AUTHENTICATION";
-	    public const string UseLdapsAuthenticationJson = "ldapsAuthentication";
-	    public const string UseLdapsAuthenticationDescr = "Use LDAPS authentication, disable Event Store internal authentication";
-	    public static readonly bool UseLdapsAuthenticationDefault = false;
-
 	    public const string LdapsConfigurationFileCmd = "ldaps-config=";
 	    public const string LdapsConfigurationFileEnv = "LDAPS_CONFIG";
 	    public const string LdapsConfigurationFileJson = "ldapsConfigFile";
-	    public const string LdapsConfigurationFileDescr = "Path to the configuration file for LDAPS authentication";
+	    public const string LdapsConfigurationFileDescr = "Path to the configuration file for LDAPS authentication. If this is specified, Event Store internal authentication will be disabled.";
 	    public static readonly string LdapsConfigurationFileDefault = string.Empty;
     }
 }
