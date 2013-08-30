@@ -115,6 +115,7 @@ namespace EventStore.Projections.Core.Messages
                 Categories = (sources.Categories ?? new string[0]).ToArray(),
                 Events = (sources.Events ?? new string[0]).ToArray(),
                 Streams = (sources.Streams ?? new string[0]).ToArray(),
+                CatalogStream = sources.CatalogStream,
                 Options =
                     new QuerySourcesDefinitionOptions
                     {

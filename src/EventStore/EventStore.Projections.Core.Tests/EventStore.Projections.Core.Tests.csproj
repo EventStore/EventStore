@@ -151,6 +151,7 @@
     <Compile Include="Services\core_projection\multi_phase\when_starting_a_multi_phase_projection.cs" />
     <Compile Include="Services\core_projection\multi_phase\when_starting_phase2_without_a_reader_strategy.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_handling_stream_awaiting_message.cs" />
+    <Compile Include="Services\core_projection\query_by_stream\when_receiving_a_committed_event_the_projection_with_partitioned_state_by_custom_rule_should.cs" />
     <Compile Include="Services\core_projection\TestFixtureUtils.cs" />
     <Compile Include="Services\core_projection\TestFixtureWithReadWriteDispatchers.cs" />
     <Compile Include="Services\core_projection\when_receiving_committed_event_the_projection_with_existing_partitioned_state_should.cs" />

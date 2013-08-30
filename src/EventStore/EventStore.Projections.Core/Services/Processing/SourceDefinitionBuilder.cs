@@ -64,6 +64,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _streams.Add(streamName);
         }
 
+        public void FromCatalogStream(string catalogStream)
+        {
+            _catalogStream = catalogStream;
+        }
+
         public void AllEvents()
         {
             _allEvents = true;
@@ -142,7 +147,8 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _streams != null ? _streams.ToArray() : null; }
         }
 
-        public string CatalogStream {
+        public string CatalogStream
+        {
             get { return _catalogStream; }
         }
 
