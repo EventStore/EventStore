@@ -39,9 +39,10 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_strategy
         [Test]
         public void it_can_be_created()
         {
-            CheckpointStrategy.Create(
-                0, new QuerySourcesDefinition {AllStreams = true, AllEvents = true}, ProjectionConfig.GetTest(),
-                new RealTimeProvider());
+            IQuerySources sources = new QuerySourcesDefinition {AllStreams = true, AllEvents = true};
+            ProjectionConfig config = ProjectionConfig.GetTest();
+            ITimeProvider timeProvider = new RealTimeProvider();
+            CheckpointStrategy.Create(sources, config);
         }
     }
 }

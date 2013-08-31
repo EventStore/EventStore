@@ -45,6 +45,11 @@ namespace EventStore.Projections.Core.Services.Processing
         protected bool _byStream;
         protected bool _byCustomPartitions;
 
+        public SourceDefinitionBuilder()
+        {
+            _options.DefinesFold = true;
+        }
+
         public void FromAll()
         {
             _allStreams = true;
@@ -99,12 +104,12 @@ namespace EventStore.Projections.Core.Services.Processing
         public void SetDefinesStateTransform()
         {
             _options.DefinesStateTransform = true;
-            _options.OutputRunningResults = true;
+            _options.ProducesResults = true;
         }
 
         public void SetOutputState()
         {
-            _options.OutputRunningResults = true;
+            _options.ProducesResults = true;
         }
 
         public void SetResultStreamNameOption(string resultStreamName)
@@ -182,9 +187,14 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _options.DefinesStateTransform; }
         }
 
-        public bool OutputRunningResults
+        public bool ProducesResults
         {
-            get { return _options.OutputRunningResults; }
+            get { return _options.ProducesResults; }
+        }
+
+        public bool DefinesFold
+        {
+            get { return _options.DefinesFold; }
         }
 
         public bool IncludeLinksOption
@@ -255,7 +265,10 @@ namespace EventStore.Projections.Core.Services.Processing
         public bool DefinesStateTransform { get; set; }
 
         [DataMember]
-        public bool OutputRunningResults { get; set; }
+        public bool ProducesResults { get; set; }
+
+        [DataMember]
+        public bool DefinesFold { get; set; }
 
         [DataMember]
         public bool IncludeLinks { get; set; }

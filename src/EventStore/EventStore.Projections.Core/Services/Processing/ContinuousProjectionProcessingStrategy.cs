@@ -54,9 +54,14 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        public override bool GetOutputRunningResults()
+        public override bool GetProducesRunningResults()
         {
-            return _sourceDefinition.OutputRunningResults;
+            return _sourceDefinition.ProducesResults;
+        }
+
+        public override bool GetDefinesFold()
+        {
+            return _sourceDefinition.DefinesFold;
         }
 
         protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
@@ -68,6 +73,13 @@ namespace EventStore.Projections.Core.Services.Processing
             IODispatcher ioDispatcher, EventProcessingProjectionProcessingPhase firstPhase)
         {
             return new IProjectionProcessingPhase[] {firstPhase};
+        }
+
+        protected override IResultEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
+        {
+            return _sourceDefinition.ProducesResults
+                ? new ResultEmitter(namingBuilder)
+                : (IResultEmitter) new NoopResultEmitter();
         }
     }
 }

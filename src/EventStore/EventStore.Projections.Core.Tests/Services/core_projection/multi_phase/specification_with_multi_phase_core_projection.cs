@@ -88,7 +88,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 return true;
             }
 
-            public override bool GetOutputRunningResults()
+            public override bool GetProducesRunningResults()
+            {
+                return true;
+            }
+
+            public override bool GetDefinesFold()
             {
                 return true;
             }

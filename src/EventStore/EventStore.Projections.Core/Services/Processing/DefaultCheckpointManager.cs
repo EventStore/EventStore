@@ -58,11 +58,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public DefaultCheckpointManager(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
             IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
-            ProjectionNamesBuilder namingBuilder, bool useCheckpoints, bool outputRunningResults,
+            ProjectionNamesBuilder namingBuilder, bool useCheckpoints, bool producesRunningResults, bool definesFold,
             CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
             : base(
                 publisher, projectionCorrelationId, projectionConfig, name, positionTagger, namingBuilder,
-                useCheckpoints, outputRunningResults, coreProjectionCheckpointWriter)
+                useCheckpoints, producesRunningResults, definesFold, coreProjectionCheckpointWriter)
         {
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             _projectionVersion = projectionVersion;

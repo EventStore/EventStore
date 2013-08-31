@@ -51,7 +51,8 @@ var $projections = {
 
             options: {
                 definesStateTransform: false,
-                outputRunningResults: false,
+                producesResults: false,
+                definesFold: false,
                 resultStreamName: null,
                 partitionResultStreamNamePattern: null,
                 $forceProjectionName: null,
@@ -125,22 +126,26 @@ var $projections = {
             eventHandlers[eventName] = eventHandler;
             sources.allEvents = false;
             sources.events.push(eventName);
+            sources.options.definesFold = true;
         }
 
         function on_init_state(initHandler) {
             initStateHandler = initHandler;
+            sources.options.definesFold = true;
         }
 
         function on_any(eventHandler) {
             runDefaultHandler = false;
             sources.allEvents = true;
             anyEventHandlers.push(eventHandler);
+            sources.options.definesFold = true;
         }
 
         function on_raw(eventHandler) {
             runDefaultHandler = false;
             sources.allEvents = true;
             rawEventHandlers.push(eventHandler);
+            sources.options.definesFold = true;
         }
 
         function callHandler(handler, state, envelope) {
@@ -278,17 +283,17 @@ var $projections = {
 
         function $defines_state_transform() {
             sources.options.definesStateTransform = true;
-            sources.options.outputRunningResults = true;
+            sources.options.producesResults = true;
         }
 
         function $outputState() {
-            sources.options.outputRunningResults = true;
+            sources.options.producesResults = true;
         }
 
         function chainTransformBy(by) {
             transformers.push(by);
             sources.options.definesStateTransform = true;
-            sources.options.outputRunningResults = true;
+            sources.options.producesResults = true;
         }
 
         function fromAll() {

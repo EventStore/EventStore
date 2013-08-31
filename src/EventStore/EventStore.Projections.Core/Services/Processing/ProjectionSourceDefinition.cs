@@ -39,9 +39,14 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return Options != null && Options.DefinesStateTransform; }
         }
 
-        bool IQuerySources.OutputRunningResults 
+        bool IQuerySources.ProducesResults 
         {
-            get { return Options != null && Options.OutputRunningResults; }
+            get { return Options != null && Options.ProducesResults; }
+        }
+
+        bool IQuerySources.DefinesFold
+        {
+            get { return Options != null && Options.DefinesFold; }
         }
 
         bool IQuerySources.IncludeLinksOption
@@ -108,7 +113,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 Options = new QuerySourceOptions
                 {
                     DefinesStateTransform = sources.DefinesStateTransform,
-                    OutputRunningResults = sources.OutputRunningResults,
+                    ProducesResults = sources.ProducesResults,
+                    DefinesFold = sources.DefinesFold,
                     ForceProjectionName = sources.ForceProjectionNameOption,
                     IncludeLinks = sources.IncludeLinksOption,
                     PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,

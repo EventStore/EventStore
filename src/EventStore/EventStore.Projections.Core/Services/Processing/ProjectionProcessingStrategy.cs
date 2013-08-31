@@ -69,7 +69,8 @@ namespace EventStore.Projections.Core.Services.Processing
         public abstract bool GetStopOnEof();
         public abstract bool GetUseCheckpoints();
         public abstract bool GetIsPartitioned();
-        public abstract bool GetOutputRunningResults();
+        public abstract bool GetProducesRunningResults();
+        public abstract bool GetDefinesFold();
         public abstract void EnrichStatistics(ProjectionStatistics info);
 
         public abstract IProjectionProcessingPhase[] CreateProcessingPhases(

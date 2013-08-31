@@ -45,7 +45,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         protected int _maxWriteBatchLength;
         protected bool _emitEventEnabled;
         protected bool _checkpointsEnabled;
-        protected bool _outputRunningResults;
+        protected bool _producesResults;
+        protected bool _definesFold = true;
         protected Guid _projectionCorrelationId;
         private string _projectionCheckpointStreamId;
         protected bool _createTempStreams;
@@ -85,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             return new DefaultCheckpointManager(
                 _bus, _projectionCorrelationId, _projectionVersion, null, _ioDispatcher, _config, _projectionName,
-                new StreamPositionTagger(0, "stream"), _namingBuilder, _checkpointsEnabled, _outputRunningResults,
+                new StreamPositionTagger(0, "stream"), _namingBuilder, _checkpointsEnabled, _producesResults, _definesFold,
                 _checkpointWriter);
         }
 
@@ -111,7 +112,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _maxWriteBatchLength = 5;
             _emitEventEnabled = true;
             _checkpointsEnabled = true;
-            _outputRunningResults = true;
+            _producesResults = true;
+            _definesFold = true;
             _createTempStreams = false;
             _stopOnEof = false;
             NoStream(_projectionCheckpointStreamId);

@@ -31,7 +31,6 @@ using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
-using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -41,16 +40,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _byStream;
         private readonly bool _byCustomPartitions;
         private readonly bool _useCheckpoints;
-        private readonly bool _outputRunningResults;
-        private readonly IReaderStrategy _readerStrategy;
         internal readonly IPrincipal _runAs;
 
-        public static CheckpointStrategy Create(
-            int phase, IQuerySources sources, ProjectionConfig config, ITimeProvider timeProvider)
+        public static CheckpointStrategy Create(IQuerySources sources, ProjectionConfig config)
         {
             return new CheckpointStrategy(
-                sources.ByStreams, sources.ByCustomPartitions, config.CheckpointsEnabled, sources.OutputRunningResults,
-                config.RunAs, Processing.ReaderStrategy.Create(phase, sources, timeProvider, config.RunAs));
+                sources.ByStreams, sources.ByCustomPartitions, config.CheckpointsEnabled, config.RunAs);
         }
 
         public bool UseCheckpoints
@@ -58,20 +53,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _useCheckpoints; }
         }
 
-        public IReaderStrategy ReaderStrategy
+        private CheckpointStrategy(bool byStream, bool byCustomPartitions, bool useCheckpoints, IPrincipal runAs)
         {
-            get { return _readerStrategy; }
-        }
-
-        private CheckpointStrategy(
-            bool byStream, bool byCustomPartitions, bool useCheckpoints, bool outputRunningResults, IPrincipal runAs,
-            IReaderStrategy readerStrategy)
-        {
-            _readerStrategy = readerStrategy;
             _byStream = byStream;
             _byCustomPartitions = byCustomPartitions;
             _useCheckpoints = useCheckpoints;
-            _outputRunningResults = outputRunningResults;
             _runAs = runAs;
         }
 
@@ -88,7 +74,8 @@ namespace EventStore.Projections.Core.Services.Processing
             Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPublisher publisher,
             IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name,
             ProjectionNamesBuilder namingBuilder, bool isReadingOrderRepeatable, IPrincipal runAs,
-            CoreProjectionCheckpointWriter coreProjectionCheckpointWriter, bool outputRunningResults)
+            CoreProjectionCheckpointWriter coreProjectionCheckpointWriter, bool producesRunningResults, bool definesFold,
+            IReaderStrategy readerStrategy)
         {
             var emitAny = projectionConfig.EmitEventEnabled;
 
@@ -98,24 +85,16 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 return new MultiStreamMultiOutputCheckpointManager(
                     publisher, projectionCorrelationId, projectionVersion, runAs, ioDispatcher, projectionConfig, name,
-                    ReaderStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled,
-                    outputRunningResults, coreProjectionCheckpointWriter);
+                    readerStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled, producesRunningResults,
+                    definesFold, coreProjectionCheckpointWriter);
             }
             else
             {
                 return new DefaultCheckpointManager(
                     publisher, projectionCorrelationId, projectionVersion, runAs, ioDispatcher, projectionConfig, name,
-                    ReaderStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled,
-                    outputRunningResults, coreProjectionCheckpointWriter);
+                    readerStrategy.PositionTagger, namingBuilder, projectionConfig.CheckpointsEnabled, producesRunningResults,
+                    definesFold, coreProjectionCheckpointWriter);
             }
-        }
-
-        public IResultEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
-        {
-            var resultEmitter = _outputRunningResults
-                ? new ResultEmitter(namingBuilder)
-                : (IResultEmitter) new NoopResultEmitter();
-            return resultEmitter;
         }
     }
 }

@@ -300,7 +300,41 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             [Test, Category("v8")]
             public void source_definition_is_correct()
             {
-                Assert.AreEqual(true, _source.OutputRunningResults);
+                Assert.AreEqual(true, _source.ProducesResults);
+            }
+        }
+
+        public class without_when : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    var z = fromAll();
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(false, _source.DefinesFold);
+            }
+        }
+
+        public class with_when : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    var z = fromAll().when({a: function(s,e) {}});
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.DefinesFold);
             }
         }
 

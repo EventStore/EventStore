@@ -60,18 +60,21 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _subscribed;
 
         protected PhaseState _state;
-        private readonly bool _outputRunningResults;
+        private readonly bool _producesRunningResults;
+        private readonly bool _definesFold;
+        private readonly IReaderStrategy _readerStrategy;
 
 
         public EventProcessingProjectionProcessingPhase(
             CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
             ProjectionProcessingStrategy projectionProcessingStrategy, ProjectionConfig projectionConfig,
             Action updateStatistics, IProjectionStateHandler projectionStateHandler,
-            PartitionStateCache partitionStateCache, bool definesStateTransform, bool outputRunningResults, string projectionName,
-            ILogger logger, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
+            PartitionStateCache partitionStateCache, bool definesStateTransform, bool producesRunningResults, bool definesFold,
+            string projectionName, ILogger logger, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
             ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
             StatePartitionSelector statePartitionSelector, CheckpointStrategy checkpointStrategy,
-            ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, int phase)
+            ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, int phase,
+            IReaderStrategy readerStrategy)
             : base(
                 publisher, coreProjection, projectionCorrelationId, projectionProcessingStrategy,
                 coreProjectionCheckpointManager, projectionConfig, projectionName, logger, zeroCheckpointTag, phase)
@@ -80,13 +83,15 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStateCache = partitionStateCache;
             _definesStateTransform = definesStateTransform;
             _resultEmitter = resultEmitter;
-            _outputRunningResults = outputRunningResults;
+            _producesRunningResults = producesRunningResults;
+            _definesFold = definesFold;
             _processingQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, updateStatistics);
             _statePartitionSelector = statePartitionSelector;
             _checkpointStrategy = checkpointStrategy;
             _timeProvider = timeProvider;
             _subscriptionDispatcher = subscriptionDispatcher;
+            _readerStrategy = readerStrategy;
         }
 
         public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
@@ -254,7 +259,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Subscribed(_currentSubscriptionId);
             try
             {
-                var readerStrategy = _checkpointStrategy.ReaderStrategy;
+                var readerStrategy = _readerStrategy;
                 if (readerStrategy != null)
                 {
                     _subscriptionDispatcher.PublishSubscribe(
@@ -305,13 +310,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public CheckpointTag AdjustTag(CheckpointTag tag)
         {
-            return _checkpointStrategy.ReaderStrategy.PositionTagger.AdjustTag(tag);
+            return _readerStrategy.PositionTagger.AdjustTag(tag);
         }
 
         public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
         {
             // this can be old checkpoint
-            var adjustedCheckpointTag = _checkpointStrategy.ReaderStrategy.PositionTagger.AdjustTag(checkpointTag);
+            var adjustedCheckpointTag = _readerStrategy.PositionTagger.AdjustTag(checkpointTag);
             _processingQueue.InitializeQueue(adjustedCheckpointTag);
             NewCheckpointStarted(adjustedCheckpointTag);
         }
@@ -422,7 +427,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var oldState = _partitionStateCache.GetLockedPartitionState(partition);
                 //TODO: depending on query processing final state to result transformation should happen either here (if EOF) on while writing results
-                if (/*_outputRunningResults && */oldState.State != newState)
+                if (/*_producesRunningResults && */oldState.State != newState)
                 {
                     if (_definesStateTransform)
                     {
@@ -553,15 +558,16 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_state == PhaseState.Running)
             {
                 //TODO: move to separate projection method and cache result in work item
-                if (_projectionConfig.EmitEventEnabled && result != null)
+                if (result != null)
                 {
-                    if (result.Partition != "" && result.OldState.CausedBy == _zeroCheckpointTag)
-                        _checkpointManager.NewPartition(result.Partition, eventCheckpointTag);
-                    if (result.EmittedEvents != null)
+                    if (_producesRunningResults)
+                        if (result.Partition != "" && result.OldState.CausedBy == _zeroCheckpointTag)
+                            _checkpointManager.NewPartition(result.Partition, eventCheckpointTag);
+                    if (_projectionConfig.EmitEventEnabled && result.EmittedEvents != null)
                         _checkpointManager.EventsEmitted(result.EmittedEvents, result.CausedBy, result.CorrelationId);
                     if (result.NewState != null)
                     {
-                        if (_outputRunningResults)
+                        if (_producesRunningResults)
                             EmitRunningResults(result);
                         _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState);
                     }

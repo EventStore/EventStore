@@ -33,8 +33,11 @@ namespace EventStore.Projections.Core.Messages
     [DataContract]
     public class QuerySourcesDefinitionOptions
     {
-        [DataMember(Name = "outputRunningResults")]
-        public bool OutputRunningResults { get; set; }
+        [DataMember(Name = "producesResults")]
+        public bool ProducesResults { get; set; }
+
+        [DataMember(Name = "definesFold")]
+        public bool DefinesFold { get; set; }
 
         [DataMember(Name = "definesStateTransform")]
         public bool DefinesStateTransform { get; set;}
