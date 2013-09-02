@@ -112,6 +112,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.ProducesResults = true;
         }
 
+        public void NoWhen()
+        {
+            _options.DefinesFold = false;
+        }
+
         public void SetResultStreamNameOption(string resultStreamName)
         {
             _options.ResultStreamName = String.IsNullOrWhiteSpace(resultStreamName) ? null : resultStreamName;

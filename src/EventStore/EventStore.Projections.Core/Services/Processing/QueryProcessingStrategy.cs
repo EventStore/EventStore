@@ -72,8 +72,6 @@ namespace EventStore.Projections.Core.Services.Processing
             ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector,
             IODispatcher ioDispatcher, EventProcessingProjectionProcessingPhase firstPhase)
         {
-            if (GetProducesRunningResults())
-                return new[] {firstPhase};
 
             var coreProjectionCheckpointWriter =
                 new CoreProjectionCheckpointWriter(
@@ -84,7 +82,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 false, _sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
 
             IProjectionProcessingPhase writeResultsPhase;
-            if (!string.IsNullOrEmpty(_sourceDefinition.CatalogStream) && _sourceDefinition.ByStreams)
+            if (GetProducesRunningResults()
+                || !string.IsNullOrEmpty(_sourceDefinition.CatalogStream) && _sourceDefinition.ByStreams)
                 writeResultsPhase = new WriteQueryEofProjectionProcessingPhase(
                     1, namingBuilder.GetResultStreamName(), coreProjection, partitionStateCache, checkpointManager2);
             else
