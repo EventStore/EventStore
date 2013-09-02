@@ -192,6 +192,13 @@ function scope($on, $notify) {
         };
     }
 
+    function fromStreamCatalog(streamCatalog) {
+        eventProcessor.fromStreamCatalog(streamCatalog);
+        return {
+            foreachStream: foreachStream,
+        };
+    }
+
     function fromStreams(streams) {
         var arr = Array.isArray(streams) ? streams : arguments;
         for (var i = 0; i < arr.length; i++) 
@@ -247,6 +254,8 @@ function scope($on, $notify) {
         fromCategory: fromCategory,
         fromStream: fromStream,
         fromStreams: fromStreams,
+        fromStreamCatalog: fromStreamCatalog,
+
         options: options,
         emit: emit, 
         linkTo: linkTo,

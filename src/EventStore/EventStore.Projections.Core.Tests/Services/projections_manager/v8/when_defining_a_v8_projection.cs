@@ -197,6 +197,31 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
+        public class with_from_stream_catalog : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromStreamCatalog1('catalog1').whenAny(
+                        function(state, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(false, _source.AllStreams);
+                Assert.IsNull(_source.Categories);
+                Assert.AreEqual("catalog1", _source.CatalogStream);
+                Assert.That(_source.Streams == null || _source.Streams.Length == 0);
+                Assert.AreEqual(false, _source.ByStreams);
+            }
+        }
+
+        [TestFixture]
         public class with_from_all_by_custom_partitions : TestFixtureWithJsProjection
         {
             protected override void Given()

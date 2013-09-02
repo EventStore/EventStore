@@ -47,6 +47,7 @@ var $projections = {
             byCustomPartitions: false,
             categories: [],
             streams: [],
+            catalogStream: null,
             events: [],
 
             options: {
@@ -272,6 +273,10 @@ var $projections = {
             sources.categories.push(sourceCategory);
         }
 
+        function fromStreamCatalog(streamCatalog) {
+            sources.catalogStream = streamCatalog;
+        }
+
         function byStream() {
             sources.byStreams = true;
         }
@@ -321,6 +326,7 @@ var $projections = {
             fromAll: fromAll,
             fromCategory: fromCategory,
             fromStream: fromStream,
+            fromStreamCatalog: fromStreamCatalog,
 
             byStream: byStream,
             partitionBy: partitionBy,
