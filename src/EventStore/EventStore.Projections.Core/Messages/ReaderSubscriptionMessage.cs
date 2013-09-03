@@ -42,17 +42,24 @@ namespace EventStore.Projections.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             private readonly Guid _correlationId;
+            private readonly CheckpointTag _preTagged;
             private readonly object _source;
 
-            public SubscriptionMessage(Guid correlationId, object source)
+            public SubscriptionMessage(Guid correlationId, CheckpointTag preTagged, object source)
             {
                 _correlationId = correlationId;
+                _preTagged = preTagged;
                 _source = source;
             }
 
             public Guid CorrelationId
             {
                 get { return _correlationId; }
+            }
+
+            public CheckpointTag PreTagged
+            {
+                get { return _preTagged; }
             }
 
             public object Source
@@ -68,7 +75,8 @@ namespace EventStore.Projections.Core.Messages
 
             private readonly DateTime _idleTimestampUtc;
 
-            public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc, object source = null): base(correlationId, source)
+            public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc, object source = null)
+                : base(correlationId, null, source)
             {
                 _idleTimestampUtc = idleTimestampUtc;
             }
@@ -87,7 +95,7 @@ namespace EventStore.Projections.Core.Messages
             private readonly bool _maxEventsReached;
 
             public EventReaderEof(Guid correlationId, bool maxEventsReached = false, object source = null)
-                : base(correlationId, source)
+                : base(correlationId, null, source)
             {
                 _maxEventsReached = maxEventsReached;
             }
@@ -101,12 +109,17 @@ namespace EventStore.Projections.Core.Messages
         public class EventReaderPartitionEof : SubscriptionMessage
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             private readonly string _partition;
 
-            public EventReaderPartitionEof(Guid correlationId, string partition, object source = null)
-                : base(correlationId, source)
+            public EventReaderPartitionEof(
+                Guid correlationId, string partition, CheckpointTag preTagged, object source = null)
+                : base(correlationId, preTagged, source)
             {
                 _partition = partition;
             }
@@ -123,7 +136,7 @@ namespace EventStore.Projections.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             public EventReaderNotAuthorized(Guid correlationId, object source = null)
-                : base(correlationId, source)
+                : base(correlationId, null, source)
             {
             }
         }
@@ -160,7 +173,6 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private readonly ResolvedEvent _data;
-            private readonly CheckpointTag _preTagged;
             private readonly long? _safeTransactionFileReaderJoinPosition;
             private readonly float _progress;
 
@@ -171,12 +183,11 @@ namespace EventStore.Projections.Core.Messages
             public CommittedEventDistributed(
                 Guid correlationId, ResolvedEvent data, long? safeTransactionFileReaderJoinPosition, float progress,
                 object source = null, CheckpointTag preTagged = null)
-                : base(correlationId, source)
+                : base(correlationId, preTagged, source)
             {
                 _data = data;
                 _safeTransactionFileReaderJoinPosition = safeTransactionFileReaderJoinPosition;
                 _progress = progress;
-                _preTagged = preTagged;
             }
 
             public CommittedEventDistributed(Guid correlationId, ResolvedEvent data, CheckpointTag preTagged = null)
@@ -199,10 +210,6 @@ namespace EventStore.Projections.Core.Messages
                 get { return _progress; }
             }
 
-            public CheckpointTag PreTagged
-            {
-                get { return _preTagged; }
-            }
         }
     }
 }

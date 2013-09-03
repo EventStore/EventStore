@@ -202,7 +202,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             protected override void Given()
             {
                 _projection = @"
-                    fromStreamCatalog1('catalog1').whenAny(
+                    fromStreamCatalog('catalog1').whenAny(
                         function(state, event) {
                             return state;
                         });

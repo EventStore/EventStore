@@ -83,6 +83,11 @@ namespace EventStore.Projections.Core.Services.Processing
                        : previous.UpdateEventTypeIndexPosition(committedEvent.Data.OriginalPosition);
         }
 
+        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof)
+        {
+            throw new NotImplementedException();
+        }
+
         public override CheckpointTag MakeZeroCheckpointTag()
         {
             return CheckpointTag.FromEventTypeIndexPositions(

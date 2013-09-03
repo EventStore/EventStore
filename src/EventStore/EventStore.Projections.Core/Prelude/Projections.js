@@ -224,7 +224,7 @@ var $projections = {
         }
 
         function defaultEventHandler(state, envelope) {
-            return envelope.isJson ? envelope.body : envelope.bodyRaw;
+            return envelope.isJson ? envelope.body : { $e: envelope.bodyRaw };
         }
 
         function processEvent(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, partition) {

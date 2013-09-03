@@ -34,6 +34,7 @@ using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.v8;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 
@@ -168,6 +169,18 @@ namespace EventStore.Projections.Core.Services.v8
                         data.EventStreamId, data.EventType, category ?? "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
                         data.Metadata, partition
                     });
+            try
+            {
+                if (!string.IsNullOrEmpty(newState))
+                {
+                    var jo = newState.ParseJson<JObject>();
+                }
+
+            }
+            catch (JsonException jex)
+            {
+                Console.Error.WriteLine(newState);
+            }
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
         }

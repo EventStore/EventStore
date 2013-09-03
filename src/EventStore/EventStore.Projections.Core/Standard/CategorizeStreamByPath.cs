@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -91,8 +92,8 @@ namespace EventStore.Projections.Core.Standard
             {
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        "$category" + _separator + category, Guid.NewGuid(), "StreamCreated", false, data.EventStreamId,
-                        null, eventPosition, expectedTag: null))
+                        "$category" + _separator + category, Guid.NewGuid(), SystemEventTypes.StreamReference, false,
+                        data.EventStreamId, null, eventPosition, expectedTag: null))
             };
 
             return true;

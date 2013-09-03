@@ -70,6 +70,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 committedEvent.Data.PositionStreamId, committedEvent.Data.PositionSequenceNumber);
         }
 
+        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof)
+        {
+            throw new NotImplementedException();
+        }
+
         public override CheckpointTag MakeZeroCheckpointTag()
         {
             return CheckpointTag.FromStreamPositions(Phase, _streams.ToDictionary(v => v, v => ExpectedVersion.NoStream));

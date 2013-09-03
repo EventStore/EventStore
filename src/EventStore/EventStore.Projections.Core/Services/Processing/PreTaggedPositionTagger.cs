@@ -68,6 +68,18 @@ namespace EventStore.Projections.Core.Services.Processing
             return committedEvent.PreTagged;
         }
 
+        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof)
+        {
+            if (partitionEof.PreTagged == null)
+                throw new ArgumentException("committedEvent.PreTagged == null", "committedEvent");
+
+            if (previous.Phase != Phase)
+                throw new ArgumentException(
+                    string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
+
+            return partitionEof.PreTagged;
+        }
+
         public override CheckpointTag MakeZeroCheckpointTag()
         {
             return _zeroCheckpointTag;

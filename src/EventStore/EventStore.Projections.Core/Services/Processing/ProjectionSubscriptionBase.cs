@@ -193,9 +193,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message)
         {
+            var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
+            
             _publisher.Publish(
                 new EventReaderSubscriptionMessage.PartitionEofReached(
-                    _subscriptionId, _positionTracker.LastTag, message.Partition,
+                    _subscriptionId, eventCheckpointTag, message.Partition,
                     _subscriptionMessageSequenceNumber++));
         }
 

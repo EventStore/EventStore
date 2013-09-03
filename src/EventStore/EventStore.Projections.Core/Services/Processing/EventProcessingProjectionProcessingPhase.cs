@@ -544,7 +544,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     }
                     else
                     {
-                        var state = new PartitionState(statePartition, null, _zeroCheckpointTag);
+                        var state = new PartitionState("", null, _zeroCheckpointTag);
                         completed(state);
                     }
                 }

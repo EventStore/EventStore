@@ -23,6 +23,11 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotSupportedException();
         }
 
+        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof)
+        {
+            throw new NotImplementedException();
+        }
+
         public override CheckpointTag MakeZeroCheckpointTag()
         {
             return CheckpointTag.FromPhase(Phase, completed: false);

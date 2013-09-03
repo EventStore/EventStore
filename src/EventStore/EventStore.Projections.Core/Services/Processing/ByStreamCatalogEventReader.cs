@@ -133,7 +133,12 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_dataNextSequenceNumber == int.MaxValue || _dataStreamName == null)
             {
                 if (_dataStreamName != null)
-                    SendPartitionEof(_dataStreamName);
+                    SendPartitionEof(
+                        _dataStreamName,
+                        CheckpointTag.FromByStreamPosition(
+                            0, _catalogStreamName, _catalogCurrentSequenceNumber, _dataStreamName, int.MaxValue,
+                            _limitingCommitPosition.Value));
+                
                 if (_catalogEof && _pendingStreams.Count == 0)
                 {
                     SendEof();
@@ -223,6 +228,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 }
                 case SystemEventTypes.StreamReference:
+                case SystemEventTypes.V1__StreamCreated__:
+                case SystemEventTypes.V2__StreamCreated_InIndex:
                 {
                     string streamId = Helper.UTF8NoBom.GetString(resolvedEvent.Event.Data);
                     _pendingStreams.Enqueue(streamId);

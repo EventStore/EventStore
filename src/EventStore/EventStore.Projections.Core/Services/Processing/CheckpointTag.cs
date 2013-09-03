@@ -352,12 +352,14 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             get
             {
+                var commitPosition = Position.CommitPosition;
                 switch (Mode_)
                 {
                     case Mode.ByStream:
+                        return commitPosition == long.MinValue ? (long?) null : commitPosition;
                     case Mode.Position:
                     case Mode.EventTypeIndex:
-                        return Position.CommitPosition;
+                        return commitPosition;
                     default:
                         return null;
                 }

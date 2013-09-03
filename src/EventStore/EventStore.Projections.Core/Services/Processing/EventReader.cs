@@ -122,12 +122,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        protected void SendPartitionEof(string partition)
+        protected void SendPartitionEof(string partition, CheckpointTag preTagged)
         {
             if (_disposed)
                 return;
             _publisher.Publish(
-                new ReaderSubscriptionMessage.EventReaderPartitionEof(EventReaderCorrelationId, partition));
+                new ReaderSubscriptionMessage.EventReaderPartitionEof(EventReaderCorrelationId, partition, preTagged));
         }
 
         public void SendNotAuthorized()
