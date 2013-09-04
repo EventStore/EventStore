@@ -48,12 +48,13 @@ namespace EventStore.Core.Services.Monitoring
         private readonly ICheckpoint _writerCheckpoint;
         private readonly string _dbPath;
         private PerfCounterHelper _perfCounter;
+        private bool _doStats;
 
         public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
-
+            _doStats = true;
             _log = log;
             _writerCheckpoint = writerCheckpoint;
             _perfCounter = new PerfCounterHelper(_log);
@@ -137,9 +138,11 @@ namespace EventStore.Core.Services.Monitoring
 
         private void GetPerfCounterInformation(Dictionary<string, object> stats, int count)
         {
+            if (!_doStats) return;
             if(count > 3)
             {
                 _log.Info("Reached max count of trying to recreate counters on error.");
+                _doStats = false;
             }
             var process = Process.GetCurrentProcess();
             try

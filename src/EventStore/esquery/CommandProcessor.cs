@@ -183,12 +183,43 @@ namespace esquery
                     foreach (var item in json["entries"])
                     {
                         Console.WriteLine(item["title"].ToString());
-                        Console.WriteLine(item["data"].ToString());
+                        if (item["data"] != null)
+                        {
+                            Console.WriteLine(item["data"].ToString());
+                        }
+                        else
+                        {
+                            Console.WriteLine(GetData(item, credential));
+                        }
                     }
                     return GetNamedLink(json, "previous") ?? uri;
                 }
             }
             return uri;
+        }
+
+        private static string GetData(JToken item, NetworkCredential credential)
+        {
+            var links = item["links"];
+            if (links == null) return "unable to get link.";
+            foreach(var c in links)
+            {
+                var rel = c["relation"];
+                if (rel == null) continue;
+                var r = rel.Value<string>();
+                if (r.ToLower() == "alternate")
+                {
+                    var request = (HttpWebRequest) WebRequest.Create(new Uri(c["uri"].Value<string>()));
+                    request.Credentials = credential;
+                    request.Accept = "application/json";
+                    request.Headers.Add("ES-LongPoll", "30"); //add long polling
+                    using (var response = request.GetResponse())
+                    {
+                        return new StreamReader(response.GetResponseStream()).ReadToEnd();
+                    }
+                }
+            }
+            return "relation link not found";
         }
 
         private static object CreateAndRunQuery(Uri baseUri, string query, NetworkCredential credential, bool piped)
