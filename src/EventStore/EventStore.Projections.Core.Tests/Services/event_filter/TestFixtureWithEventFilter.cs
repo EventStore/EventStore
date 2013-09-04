@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_filter
             try
             {
                 var sources = _builder.Build();
-                _ef = ReaderStrategy.Create(0, sources, new RealTimeProvider(), runAs: null).EventFilter;
+                _ef = ReaderStrategy.Create(0, sources, new RealTimeProvider(), stopOnEof: false, runAs: null).EventFilter;
             }
             catch (Exception ex)
             {

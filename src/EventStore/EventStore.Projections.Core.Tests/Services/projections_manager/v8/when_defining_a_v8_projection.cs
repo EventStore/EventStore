@@ -202,10 +202,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             protected override void Given()
             {
                 _projection = @"
-                    fromStreamCatalog('catalog1').whenAny(
-                        function(state, event) {
-                            return state;
-                        });
+                    fromStreamCatalog('catalog1')
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -214,13 +211,34 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             public void source_definition_is_correct()
             {
                 Assert.AreEqual(false, _source.AllStreams);
-                Assert.IsNull(_source.Categories);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
                 Assert.AreEqual("catalog1", _source.CatalogStream);
                 Assert.That(_source.Streams == null || _source.Streams.Length == 0);
                 Assert.AreEqual(false, _source.ByStreams);
             }
         }
 
+        [TestFixture]
+        public class with_from_stream_catalog_by_stream : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromStreamCatalog('catalog1').foreachStream().when({$any: function(s,e){return e;}})
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(false, _source.AllStreams);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
+                Assert.AreEqual("catalog1", _source.CatalogStream);
+                Assert.That(_source.Streams == null || _source.Streams.Length == 0);
+                Assert.AreEqual(true, _source.ByStreams);
+            }
+        }
         [TestFixture]
         public class with_from_all_by_custom_partitions : TestFixtureWithJsProjection
         {

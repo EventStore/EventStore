@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var result = new SourceDefinitionBuilder();
             result.FromAll();
             result.AllEvents();
-            return ReaderStrategy.Create(0, result.Build(), new RealTimeProvider(), runAs: null);
+            return ReaderStrategy.Create(0, result.Build(), new RealTimeProvider(), stopOnEof: false, runAs: null);
         }
     }
 }

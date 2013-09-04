@@ -108,7 +108,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var config = ProjectionConfig.GetTest();
             IQuerySources sources = readerBuilder.Build();
             ITimeProvider timeProvider = new RealTimeProvider();
-            var readerStrategy = Core.Services.Processing.ReaderStrategy.Create(0, sources, timeProvider, config.RunAs);
+            var readerStrategy = Core.Services.Processing.ReaderStrategy.Create(0, sources, timeProvider, stopOnEof: false, runAs: config.RunAs);
             var checkpointStrategy = CheckpointStrategy.Create(sources, config);
             return Tuple.Create(readerStrategy, checkpointStrategy);
         }

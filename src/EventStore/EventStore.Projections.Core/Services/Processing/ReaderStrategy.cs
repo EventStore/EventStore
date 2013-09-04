@@ -58,8 +58,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly int _phase;
 
-        public static IReaderStrategy Create(
-            int phase, IQuerySources sources, ITimeProvider timeProvider, IPrincipal runAs)
+        public static IReaderStrategy Create(int phase, IQuerySources sources, ITimeProvider timeProvider, bool stopOnEof, IPrincipal runAs)
         {
             if (!sources.AllStreams && !sources.HasCategories() && !sources.HasStreams()
                 && string.IsNullOrEmpty(sources.CatalogStream))

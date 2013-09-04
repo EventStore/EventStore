@@ -60,7 +60,8 @@ namespace EventStore.Projections.Core.Services.Processing
             var producesResults = _sourceDefinition.ProducesResults;
             var definesFold = _sourceDefinition.DefinesFold;
 
-            var readerStrategy = Processing.ReaderStrategy.Create(0, _sourceDefinition, timeProvider, _projectionConfig.RunAs);
+            var readerStrategy = Processing.ReaderStrategy.Create(
+                0, _sourceDefinition, timeProvider, _projectionConfig.StopOnEof, _projectionConfig.RunAs);
             var checkpointStrategy = CheckpointStrategy.Create(_sourceDefinition, _projectionConfig);
 
             var resultEmitter = CreateResultEmitter(namingBuilder);
