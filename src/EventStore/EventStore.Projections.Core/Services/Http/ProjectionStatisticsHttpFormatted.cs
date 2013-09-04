@@ -61,6 +61,9 @@ namespace EventStore.Projections.Core.Services.Http
             if (source.Definition != null && !string.IsNullOrEmpty(source.Definition.ResultStreamName))
                 this.ResultStreamUrl =
                     makeAbsoluteUrl("/streams/" + Uri.EscapeDataString(source.Definition.ResultStreamName));
+
+            this.DisableCommandUrl = makeAbsoluteUrl(statusLocalUrl + "/command/disable");
+            this.EnableCommandUrl = makeAbsoluteUrl(statusLocalUrl + "/command/enable");
         }
 
         public int Version { get; set; }
@@ -100,6 +103,10 @@ namespace EventStore.Projections.Core.Services.Http
         public string QueryUrl { get; set; }
 
         public string ResultStreamUrl { get; set; }
+
+        public string EnableCommandUrl { get; set; }
+
+        public string DisableCommandUrl { get; set; }
 
         public string CheckpointStatus { get; set; }
 
