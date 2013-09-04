@@ -427,7 +427,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var oldState = _partitionStateCache.GetLockedPartitionState(partition);
                 //TODO: depending on query processing final state to result transformation should happen either here (if EOF) on while writing results
-                if (/*_producesRunningResults && */oldState.State != newState)
+                if ( /*_producesRunningResults && */oldState.State != newState)
                 {
                     if (_definesStateTransform)
                     {
@@ -437,6 +437,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         projectionResult = newState;
                     }
+                }
+                else
+                {
+                    projectionResult = oldState.Result;
                 }
             }
             return result;
