@@ -37,10 +37,9 @@ using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEv
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
-    [TestFixture]
-    public class when_receiving_committed_events_the_projection_without_when : TestFixtureWithCoreProjectionStarted
+    public abstract class specification_with_query_without_when : TestFixtureWithCoreProjectionStarted
     {
-        private Guid _eventId;
+        protected Guid _eventId;
 
         protected override bool GivenCheckpointsEnabled()
         {
@@ -81,7 +80,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             NoOtherStreams();
             AllWritesSucceed();
         }
+    }
 
+    [TestFixture]
+    public class when_receiving_committed_events_the_projection_without_when : specification_with_query_without_when
+    {
         protected override void When()
         {
             //projection subscribes here
@@ -112,4 +115,48 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
     }
+
+
+    [TestFixture]
+    public class when_handling_event_does_not_change_state_the_projection_without_when : specification_with_query_without_when
+    {
+        protected override void When()
+        {
+            //projection subscribes here
+            _eventId = Guid.NewGuid();
+            _consumer.HandledMessages.Clear();
+            _bus.Publish(
+                EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
+                    new ResolvedEvent(
+                        "account-01", 1, "account-01", 1, false, new TFPos(120, 110), _eventId, "handle_this_type",
+                        false, "data1", "metadata"), _subscriptionId, 0));
+            _bus.Publish(
+                EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
+                    new ResolvedEvent(
+                        "account-01", 2, "account-01", 2, false, new TFPos(140, 130), _eventId, "handle_this_type",
+                        false, "data1", "metadata"), _subscriptionId, 1));
+        }
+
+        [Test]
+        public void result_events_are_produced_for_each_received_event()
+        {
+            var writeEvents =
+                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "Result")).ToList();
+            Assert.AreEqual(2, writeEvents.Count);
+            Assert.AreEqual("$projections-projection-result", writeEvents[0].EventStreamId);
+            Assert.AreEqual("$projections-projection-result", writeEvents[1].EventStreamId);
+            Assert.AreEqual("data1", Encoding.UTF8.GetString(writeEvents[0].Events[0].Data));
+            Assert.AreEqual("data1", Encoding.UTF8.GetString(writeEvents[1].Events[0].Data));
+        }
+
+        [Test]
+        public void no_result_removed_events_are_producedt()
+        {
+            var writeEvents =
+                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "ResultRemoved")).ToList();
+            Assert.AreEqual(0, writeEvents.Count);
+        }
+
+    }
+
 }
