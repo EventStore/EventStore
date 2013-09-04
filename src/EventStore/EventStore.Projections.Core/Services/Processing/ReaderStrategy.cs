@@ -84,6 +84,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (sources.ReorderEventsOption)
             {
+                if (!string.IsNullOrEmpty(sources.CatalogStream))
+                    throw new InvalidOperationException("Event reordering cannot be used with stream catalogs");
                 if (sources.AllStreams)
                     throw new InvalidOperationException("Event reordering cannot be used with fromAll()");
                 if (!(sources.HasStreams() && sources.Streams.Length > 1))
