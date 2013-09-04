@@ -77,9 +77,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var firstPhase = new EventProcessingProjectionProcessingPhase(
                 coreProjection, projectionCorrelationId, publisher, this, _projectionConfig, updateStatistics,
-                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, GetProducesRunningResults(), GetDefinesFold(),
-                _name, _logger, zeroCheckpointTag, resultEmitter, checkpointManager, statePartitionSelector,
-                checkpointStrategy, timeProvider, subscriptionDispatcher, 0, readerStrategy);
+                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, GetProducesRunningResults(),
+                GetDefinesFold(), _name, _logger, zeroCheckpointTag, resultEmitter, checkpointManager,
+                statePartitionSelector, checkpointStrategy, timeProvider, subscriptionDispatcher, 0, readerStrategy);
 
             return CreateProjectionProcessingPhases(
                 publisher, projectionCorrelationId, namingBuilder, partitionStateCache, updateStatistics, coreProjection,
