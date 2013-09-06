@@ -86,6 +86,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             _bus.Subscribe<ReaderSubscriptionManagement.Resume>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Unsubscribe>(_readerService);
+            _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_readerService);
+
 
             GivenAdditionalServices();
 

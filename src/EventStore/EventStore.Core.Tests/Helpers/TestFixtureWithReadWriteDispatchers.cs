@@ -125,6 +125,10 @@ namespace EventStore.Core.Tests.Helpers
         {
             foreach (var step in steps)
             {
+                if (step.Action != null)
+                {
+                    step.Action();
+                }
                 foreach (var message in step)
                 {
                     if (message != null)
@@ -150,6 +154,7 @@ namespace EventStore.Core.Tests.Helpers
 
         public sealed class WhenStep: IEnumerable<Message>
         {
+            public readonly Action Action;
             public readonly Message Message;
             public readonly IEnumerable<Message> Messages;
 
@@ -167,6 +172,12 @@ namespace EventStore.Core.Tests.Helpers
             {
                 Messages = messages;
             }
+
+            public WhenStep(Action action)
+            {
+                Action = action;
+            }
+
             internal WhenStep()
             {
             }

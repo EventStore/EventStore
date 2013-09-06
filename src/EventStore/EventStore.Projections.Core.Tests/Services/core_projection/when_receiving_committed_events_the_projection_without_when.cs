@@ -150,7 +150,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         [Test]
-        public void no_result_removed_events_are_producedt()
+        public void no_result_removed_events_are_produced()
         {
             var writeEvents =
                 _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "ResultRemoved")).ToList();

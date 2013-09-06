@@ -46,7 +46,8 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<ReaderSubscriptionManagement.Subscribe>, 
         IHandle<ReaderSubscriptionManagement.Unsubscribe>, 
         IHandle<ReaderSubscriptionManagement.Pause>, 
-        IHandle<ReaderSubscriptionManagement.Resume>, 
+        IHandle<ReaderSubscriptionManagement.Resume>,
+        IHandle<ReaderSubscriptionManagement.SpoolStreamReading>,
         IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>, 
         IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
         IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>,
@@ -323,6 +324,13 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ReaderCoreServiceMessage.ReaderTick message)
         {
             message.Action();
+        }
+
+        public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
+        {
+            var eventReader = _subscriptionEventReaders[message.CorrelationId];
+            var handler = (IHandle<ReaderSubscriptionManagement.SpoolStreamReading>)_eventReaders[eventReader];
+            handler.Handle(message);
         }
     }
 }

@@ -34,6 +34,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -57,6 +58,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ITimeProvider _timeProvider;
 
         private readonly int _phase;
+
+        public static IReaderStrategy CreateExternallyFedReaderStrategy(int phase, ITimeProvider timeProvider, IPrincipal runAs)
+        {
+            var readerStrategy = new ExternallyFedReaderStrategy(phase, runAs, timeProvider);
+            return readerStrategy;
+        }
 
         public static IReaderStrategy Create(int phase, IQuerySources sources, ITimeProvider timeProvider, bool stopOnEof, IPrincipal runAs)
         {
@@ -257,11 +264,6 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
 
-        private string[] GetEventIndexStreams()
-        {
-            return _events.Select(v => "$et-" + v).ToArray();
-        }
-
         private IEventReader CreatePausedStreamEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, string streamName, bool stopOnEof,
             int? stopAfterNEvents, bool resolveLinkTos)
@@ -317,5 +319,59 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
 
+    }
+
+    public class ExternallyFedReaderStrategy : IReaderStrategy
+    {
+        private readonly int _phase;
+        private readonly IPrincipal _runAs;
+        private readonly ITimeProvider _timeProvider;
+        private readonly EventFilter _eventFilter;
+        private readonly PositionTagger _positionTagger;
+
+        public ExternallyFedReaderStrategy(int phase, IPrincipal runAs, ITimeProvider timeProvider)
+        {
+            _phase = phase;
+            _runAs = runAs;
+            _timeProvider = timeProvider;
+            _eventFilter = new BypassingEventFilter();
+            _positionTagger = new PreTaggedPositionTagger(
+                phase, CheckpointTag.FromByStreamPosition(phase, "", -1, null, -1, long.MinValue));
+        }
+
+        public bool IsReadingOrderRepeatable
+        {
+            get { return true; }
+        }
+
+        public EventFilter EventFilter
+        {
+            get { return _eventFilter; }
+        }
+
+        public PositionTagger PositionTagger
+        {
+            get { return _positionTagger; }
+        }
+
+        public IReaderSubscription CreateReaderSubscription(
+            IPublisher publisher, CheckpointTag fromCheckpointTag, Guid subscriptionId,
+            ReaderSubscriptionOptions readerSubscriptionOptions)
+        {
+            return new ReaderSubscription(
+                publisher, subscriptionId, fromCheckpointTag, this,
+                readerSubscriptionOptions.CheckpointUnhandledBytesThreshold,
+                readerSubscriptionOptions.CheckpointProcessedEventsThreshold, readerSubscriptionOptions.StopOnEof,
+                readerSubscriptionOptions.StopAfterNEvents);
+        }
+
+        public IEventReader CreatePausedEventReader(
+            Guid eventReaderId, IPublisher publisher, IODispatcher ioDispatcher, CheckpointTag checkpointTag, bool stopOnEof,
+            int? stopAfterNEvents)
+        {
+            return new ExternallyFedByStreamEventReader(
+                publisher, eventReaderId, SystemAccount.Principal, ioDispatcher, checkpointTag.CommitPosition,
+                _timeProvider, resolveLinkTos: true);
+        }
     }
 }
