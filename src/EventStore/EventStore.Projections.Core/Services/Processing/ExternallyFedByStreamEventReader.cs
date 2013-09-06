@@ -39,7 +39,9 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ExternallyFedByStreamEventReader : EventReader, IHandle<ReaderSubscriptionManagement.SpoolStreamReading>
+    public class ExternallyFedByStreamEventReader : EventReader,
+        IHandle<ReaderSubscriptionManagement.SpoolStreamReading>,
+        IHandle<ReaderSubscriptionManagement.CompleteSpooledStreamReading>
     {
         private readonly IODispatcher _ioDispatcher;
         private long? _limitingCommitPosition;
@@ -181,6 +183,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 RequestEvents(delay: false);
         }
 
+        private void CompleteStreamProcessing()
+        {
+            _catalogEof = true;
+        }
+
         private void DeliverEvent(EventRecord @event, EventRecord link, float progress)
         {
             _deliveredEvents++;
@@ -203,8 +210,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: GetType(),
                     preTagged:
                         CheckpointTag.FromByStreamPosition(
-                            0, "", _catalogCurrentSequenceNumber, positionEvent.EventStreamId,
-                            positionEvent.EventNumber, _limitingCommitPosition.Value)));
+                            0, "", _catalogCurrentSequenceNumber, positionEvent.EventStreamId, positionEvent.EventNumber,
+                            _limitingCommitPosition.Value)));
             //TODO: consider passing phase from outside instead of using 0 (above)
         }
 
@@ -212,5 +219,11 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             EnqueueStreamForProcessing(message.StreamId, message.CatalogSequenceNumber);
         }
+
+        public void Handle(ReaderSubscriptionManagement.CompleteSpooledStreamReading message)
+        {
+            CompleteStreamProcessing();
+        }
+
     }
 }

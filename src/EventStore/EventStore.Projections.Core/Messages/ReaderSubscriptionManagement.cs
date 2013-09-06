@@ -154,15 +154,28 @@ namespace EventStore.Projections.Core.Messages
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public readonly Guid CorrelationId;
+            public readonly Guid SubscriptionId;
             public readonly string StreamId;
             public readonly int CatalogSequenceNumber;
 
-            public SpoolStreamReading(Guid correlationId, string streamId, int catalogSequenceNumber)
+            public SpoolStreamReading(Guid subscriptionId, string streamId, int catalogSequenceNumber)
             {
-                CorrelationId = correlationId;
+                SubscriptionId = subscriptionId;
                 StreamId = streamId;
                 CatalogSequenceNumber = catalogSequenceNumber;
+            }
+        }
+
+        public sealed class CompleteSpooledStreamReading : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid SubscriptionId;
+
+            public CompleteSpooledStreamReading(Guid subscriptionId)
+            {
+                SubscriptionId = subscriptionId;
             }
         }
 

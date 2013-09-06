@@ -160,5 +160,86 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
 
         }
 
+        [TestFixture]
+        class when_handling_sequence_of_spool_stream_reading_messages_with_delays : with_externally_fed_reader
+        {
+            protected override IEnumerable<WhenStep> When()
+            {
+                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 1000);
+                yield return
+                    new ReaderSubscriptionManagement.Subscribe(
+                        _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
+                yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream", 0);
+                yield return Yield;
+
+                Assert.AreEqual(
+                    2, HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().Count());
+
+                yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream2", 1);
+            }
+
+            [Test]
+            public void publishes_all_events_from_the_stream()
+            {
+                var events = HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
+                Assert.AreEqual(4, events.Length);
+                Assert.That(
+                    events.Select(v => v.Data.PositionStreamId)
+                        .SequenceEqual(new[] { "test-stream", "test-stream", "test-stream2", "test-stream2" }));
+            }
+
+            [Test]
+            public void publishes_partition_eof_message_at_the_end_of_each_stream()
+            {
+                var events = HandledMessages.OfType<EventReaderSubscriptionMessage>().ToArray();
+                Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[2]);
+                Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[5]);
+            }
+
+        }
+
+        [TestFixture]
+        class when_handling_sequence_of_spool_stream_reading_messages_followed_by_completed_spooled_reading : with_externally_fed_reader
+        {
+            protected override IEnumerable<WhenStep> When()
+            {
+                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 1000);
+                yield return
+                    new ReaderSubscriptionManagement.Subscribe(
+                        _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
+                yield return
+                    new WhenStep(
+                        new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream", 0),
+                        new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream2", 1),
+                        new ReaderSubscriptionManagement.CompleteSpooledStreamReading(_subscriptionId));
+            }
+
+            [Test]
+            public void publishes_all_events_from_the_stream()
+            {
+                var events = HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
+                Assert.AreEqual(4, events.Length);
+                Assert.That(
+                    events.Select(v => v.Data.PositionStreamId)
+                        .SequenceEqual(new[] { "test-stream", "test-stream", "test-stream2", "test-stream2" }));
+            }
+
+            [Test]
+            public void publishes_partition_eof_message_at_the_end_of_each_stream()
+            {
+                var events = HandledMessages.OfType<EventReaderSubscriptionMessage>().ToArray();
+                Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[2]);
+                Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[5]);
+            }
+
+            [Test]
+            public void publishes_eof_message()
+            {
+                var lastEvent = HandledMessages.OfType<EventReaderSubscriptionMessage>().LastOrDefault();
+                Assert.IsNotNull(lastEvent);
+                Assert.IsAssignableFrom<EventReaderSubscriptionMessage.EofReached>(lastEvent);
+            }
+
+        }
     }
 }

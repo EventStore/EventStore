@@ -157,6 +157,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Unsubscribe>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_readerService);
+            _bus.Subscribe<ReaderSubscriptionManagement.CompleteSpooledStreamReading>(_readerService);
             
             Given();
             WhenLoop();
