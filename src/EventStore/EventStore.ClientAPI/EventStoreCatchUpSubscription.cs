@@ -108,7 +108,7 @@ namespace EventStore.ClientAPI
             Verbose = verboseLogging;
         }
 
-        public void Start()
+        internal void Start()
         {
             ThreadPool.QueueUserWorkItem(_ =>
             {
