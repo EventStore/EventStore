@@ -66,6 +66,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             throw new NotImplementedException();
         }
 
+        public Core.Services.Storage.ReaderIndex.StreamInfo GetStreamInfo(string streamId)
+        {
+            return new Core.Services.Storage.ReaderIndex.StreamInfo(GetLastStreamEventNumber(streamId), GetStreamMetadata(streamId));
+        }
+
         public bool IsStreamDeleted(string streamId)
         {
             if (SystemStreams.IsMetastream(streamId))

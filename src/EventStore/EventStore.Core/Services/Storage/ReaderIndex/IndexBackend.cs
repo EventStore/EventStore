@@ -36,14 +36,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     {
         TFReaderLease BorrowReader();
 
-        bool TryGetStreamCacheInfo(string streamId, out StreamCacheInfo streamCacheInfo);
+        bool TryGetStreamInfo(string streamId, out StreamCacheInfo streamCacheInfo);
 
         /// <summary>
         /// Conditional stream cache info update.
         /// Before updating info check that previous stream info version is correct.
         /// If version differs (someone updated already) nothing is changed.
         /// </summary>
-        StreamCacheInfo UpdateStreamCacheInfo(int cacheVersion, string streamId, int? lastEventNumber, StreamMetadata streamMetadata);
+        StreamCacheInfo UpdateStreamInfo(int cacheVersion, string streamId, int? lastEventNumber, StreamMetadata streamMetadata);
 
         /// <summary>
         /// Unconditional stream metadata cache info update.
@@ -82,13 +82,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return new TFReaderLease(_readers);
         }
 
-        public bool TryGetStreamCacheInfo(string streamId, out StreamCacheInfo streamCacheInfo)
+        public bool TryGetStreamInfo(string streamId, out StreamCacheInfo streamCacheInfo)
         {
             return _streamInfoCache.TryGet(streamId, out streamCacheInfo);
         }
 
-        public StreamCacheInfo UpdateStreamCacheInfo(int cacheVersion, string streamId,
-                                                     int? lastEventNumber, StreamMetadata streamMetadata)
+        public StreamCacheInfo UpdateStreamInfo(int cacheVersion, string streamId,
+                                                int? lastEventNumber, StreamMetadata streamMetadata)
         {
             return _streamInfoCache.Put(
                 streamId,

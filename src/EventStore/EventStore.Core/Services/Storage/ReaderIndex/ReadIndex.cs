@@ -43,12 +43,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 {
     public class ReadIndex : IDisposable, IReadIndex
     {
-        public long LastCommitPosition { get { return _indexWriter.LastCommitPosition; } }
+        public long LastCommitPosition { get { return _indexCommitter.LastCommitPosition; } }
         public IIndexWriter IndexWriter { get { return _indexWriter; } }
+        public IIndexCommitter IndexCommitter { get { return _indexCommitter; } }
 
-        private readonly IIndexBackend _backend;
+        private readonly IIndexBackend _indexBackend;
         private readonly IIndexReader _indexReader;
         private readonly IIndexWriter _indexWriter;
+        private readonly IIndexCommitter _indexCommitter;
         private readonly IAllReader _allReader;
 
         public ReadIndex(IPublisher bus,
@@ -66,29 +68,28 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.NotNull(streamInfoCache, "streamInfoCache");
             Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
 
-            _backend = new IndexBackend(readerPool, streamInfoCache);
-
             var metastreamMetadata = new StreamMetadata(metastreamMaxCount, null, null, null, null);
-            _indexReader = new IndexReader(_backend, hasher, tableIndex, metastreamMetadata);
 
-            _indexWriter = new IndexWriter(bus, _backend, _indexReader, tableIndex, hasher, additionalCommitChecks);
-            
-            _allReader = new AllReader(_backend);
+            _indexBackend = new IndexBackend(readerPool, streamInfoCache);
+            _indexReader = new IndexReader(_indexBackend, hasher, tableIndex, metastreamMetadata);
+            _indexWriter = new IndexWriter(_indexBackend, _indexReader);
+            _indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, hasher, additionalCommitChecks);
+            _allReader = new AllReader(_indexBackend);
         }
 
         void IReadIndex.Init(long buildToPosition)
         {
-            _indexWriter.Init(buildToPosition);
+            _indexCommitter.Init(buildToPosition);
         }
 
         void IReadIndex.Commit(CommitLogRecord commit)
         {
-            _indexWriter.Commit(commit);
+            _indexCommitter.Commit(commit);
         }
 
         void IReadIndex.Commit(IList<PrepareLogRecord> prepares)
         {
-            _indexWriter.Commit(prepares);
+            _indexCommitter.Commit(prepares);
         }
 
         IndexReadEventResult IReadIndex.ReadEvent(string streamId, int eventNumber)
@@ -106,14 +107,24 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return _indexReader.ReadStreamEventsBackward(streamId, fromEventNumber, maxCount);
         }
 
+        StreamInfo IReadIndex.GetStreamInfo(string streamId)
+        {
+            return _indexReader.GetStreamInfo(streamId);
+        }
+
         bool IReadIndex.IsStreamDeleted(string streamId)
         {
-            return _indexReader.IsStreamDeleted(streamId);
+            return _indexReader.GetStreamInfo(streamId).LastEventNumber == EventNumber.DeletedStream;
         }
 
         int IReadIndex.GetLastStreamEventNumber(string streamId)
         {
-            return _indexReader.GetLastStreamEventNumber(streamId);
+            return _indexReader.GetStreamInfo(streamId).LastEventNumber;
+        }
+
+        StreamMetadata IReadIndex.GetStreamMetadata(string streamId)
+        {
+            return _indexReader.GetStreamInfo(streamId).Metadata;
         }
 
         public string GetEventStreamIdByTransactionId(long transactionId)
@@ -124,11 +135,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         StreamAccess IReadIndex.CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
         {
             return _indexReader.CheckStreamAccess(streamId, streamAccessType, user);
-        }
-
-        StreamMetadata IReadIndex.GetStreamMetadata(string streamId)
-        {
-            return _indexReader.GetStreamMetadata(streamId);
         }
 
         IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount)
@@ -159,7 +165,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public void Dispose()
         {
-            _indexWriter.Dispose();
+            _indexCommitter.Dispose();
         }
     }
 }

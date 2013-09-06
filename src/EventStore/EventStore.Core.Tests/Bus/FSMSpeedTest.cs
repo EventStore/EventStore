@@ -70,8 +70,7 @@ namespace EventStore.Core.Tests.Bus
                     .When<SystemMessage.SystemInit>().Do(msg => { })
                     .When<SystemMessage.SystemStart>().Do(msg => { })
                     .When<SystemMessage.BecomePreMaster>().Do(msg => { })
-                    .When<SystemMessage.StorageReaderInitializationDone>().Do(msg => { })
-                    .When<SystemMessage.StorageWriterInitializationDone>().Do(msg => { })
+                    .When<SystemMessage.ServiceInitialized>().Do(msg => { })
                     .WhenOther().ForwardTo(outputBus)
 
                 .InStates(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)

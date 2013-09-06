@@ -57,8 +57,7 @@ namespace EventStore.Web.Playground
         private QueuedHandler _mainQueue;
         private readonly VNodeFSM _fsm;
 
-        private bool _storageReaderInitialized;
-        private bool _storageWriterInitialized;
+        private int _serviceInitsToExpect = 3;
         private int _serviceShutdownsToExpect = 3;
         private bool _exitProcessOnShutdown;
 
@@ -98,9 +97,7 @@ namespace EventStore.Web.Playground
                                                  .Do(Handle)
                                                  .When<SystemMessage.BecomePreMaster>()
                                                  .Do(Handle)
-                                                 .When<SystemMessage.StorageReaderInitializationDone>()
-                                                 .Do(Handle)
-                                                 .When<SystemMessage.StorageWriterInitializationDone>()
+                                                 .When<SystemMessage.ServiceInitialized>()
                                                  .Do(Handle)
                                                  .WhenOther()
                                                  .ForwardTo(_outputBus)
@@ -243,25 +240,11 @@ namespace EventStore.Web.Playground
                 Application.Exit(ExitCode.Success, "Shutdown with exiting from process was requested.");
         }
 
-        private void Handle(SystemMessage.StorageReaderInitializationDone message)
+        private void Handle(SystemMessage.ServiceInitialized message)
         {
-            _storageReaderInitialized = true;
+            _serviceInitsToExpect -= 1;
             _outputBus.Publish(message);
-
-            CheckInitializationDone();
-        }
-
-        private void Handle(SystemMessage.StorageWriterInitializationDone message)
-        {
-            _storageWriterInitialized = true;
-            _outputBus.Publish(message);
-
-            CheckInitializationDone();
-        }
-
-        private void CheckInitializationDone()
-        {
-            if (_storageReaderInitialized && _storageWriterInitialized)
+            if (_serviceInitsToExpect == 0)
                 _mainQueue.Publish(new SystemMessage.SystemStart());
         }
 

@@ -95,6 +95,11 @@ namespace EventStore.Core.Tests.TransactionLog
             throw new NotImplementedException();
         }
 
+        public StreamInfo GetStreamInfo(string streamId)
+        {
+            return new StreamInfo(GetLastStreamEventNumber(streamId), null);
+        }
+
         public bool IsStreamDeleted(string streamId)
         {
             return _isStreamDeleted(streamId);

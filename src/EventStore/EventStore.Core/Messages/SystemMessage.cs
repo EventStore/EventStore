@@ -47,16 +47,18 @@ namespace EventStore.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
         }
 
-        public class StorageReaderInitializationDone: Message
+        public class ServiceInitialized: Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
-        }
 
-        public class StorageWriterInitializationDone : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+            public readonly string ServiceName;
+
+            public ServiceInitialized(string serviceName)
+            {
+                Ensure.NotNullOrEmpty(serviceName, "serviceName");
+                ServiceName = serviceName;
+            }
         }
 
         public class WriteEpoch: Message
