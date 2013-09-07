@@ -59,14 +59,13 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var definesFold = _sourceDefinition.DefinesFold;
 
-            var readerStrategy = ReaderStrategy.Create(
-                0, _sourceDefinition, timeProvider, _projectionConfig.StopOnEof, _projectionConfig.RunAs);
+            var readerStrategy = CreateReaderStrategy(timeProvider);
 
             var zeroCheckpointTag = readerStrategy.PositionTagger.MakeZeroCheckpointTag();
 
             var checkpointManager = CreateCheckpointManager(
-                projectionCorrelationId, publisher, ioDispatcher, namingBuilder, readerStrategy.IsReadingOrderRepeatable,
-                coreProjectionCheckpointWriter, definesFold, readerStrategy);
+                projectionCorrelationId, publisher, ioDispatcher, namingBuilder, coreProjectionCheckpointWriter,
+                definesFold, readerStrategy);
 
 
             var resultWriter = CreateResultWriter(checkpointManager, zeroCheckpointTag, namingBuilder);
@@ -81,6 +80,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
             return CreateProjectionProcessingPhases(
                 publisher, projectionCorrelationId, namingBuilder, partitionStateCache, coreProjection, ioDispatcher, firstPhase);
+        }
+
+        protected virtual IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
+        {
+            return ReaderStrategy.Create(
+                0, _sourceDefinition, timeProvider, _projectionConfig.StopOnEof, _projectionConfig.RunAs);
         }
 
         protected abstract IResultEventEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder);
@@ -108,7 +113,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
             Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
-            ProjectionNamesBuilder namingBuilder, bool isReadingOrderRepeatable,
+            ProjectionNamesBuilder namingBuilder,
             CoreProjectionCheckpointWriter coreProjectionCheckpointWriter, bool definesFold,
             IReaderStrategy readerStrategy)
         {
@@ -116,7 +121,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             //NOTE: not emitting one-time/transient projections are always handled by default checkpoint manager
             // as they don't depend on stable event order
-            if (emitAny && !isReadingOrderRepeatable)
+            if (emitAny && !readerStrategy.IsReadingOrderRepeatable)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
                     publisher, projectionCorrelationId, _projectionVersion, _projectionConfig.RunAs, ioDispatcher,

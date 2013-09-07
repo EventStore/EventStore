@@ -225,6 +225,7 @@
     <Compile Include="Services\Processing\IReaderSubscription.cs" />
     <Compile Include="Services\Processing\MultiStreamEventFilter.cs" />
     <Compile Include="Services\Processing\MultiStreamPositionTagger.cs" />
+    <Compile Include="Services\Processing\NoopCheckpointManager.cs" />
     <Compile Include="Services\Processing\NoopResultEventEmitter.cs" />
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\NotAuthorizedWorkItem.cs" />
@@ -247,6 +248,7 @@
     <Compile Include="Services\Processing\ProjectionVersion.cs" />
     <Compile Include="Services\Processing\QueryProcessingStrategy.cs" />
     <Compile Include="Services\Processing\ResultWriter.cs" />
+    <Compile Include="Services\Processing\SlaveQueryProcessingStrategy.cs" />
     <Compile Include="Services\Processing\SourceDefinitionBuilder.cs" />
     <Compile Include="Services\Processing\CheckpointTag.cs" />
     <Compile Include="Services\Processing\EmittedEvent.cs" />

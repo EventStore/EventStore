@@ -123,7 +123,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 IProjectionStateHandler stateHandler = message.HandlerFactory();
                 string name = message.Name;
                 var sourceDefinition = ProjectionSourceDefinition.From(name, stateHandler.GetSourceDefinition());
-                CreateCoreProjection(message.ProjectionId, name, message.Version, sourceDefinition, message.Config, stateHandler);
+                var projectionVersion = message.Version;
+                var projectionConfig = message.Config;
+                var projectionProcessingStrategy = CreateProjectionProcessingStrategy(
+                    name, projectionVersion, sourceDefinition, projectionConfig, stateHandler);
+                CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
             }
@@ -140,7 +144,11 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var name = message.Name;
                 var sourceDefinition = ProjectionSourceDefinition.From(name, message.SourceDefinition);
-                CreateCoreProjection(message.ProjectionId, name, message.Version, sourceDefinition, message.Config, null);
+                var projectionVersion = message.Version;
+                var projectionConfig = message.Config;
+                var projectionProcessingStrategy = CreateProjectionProcessingStrategy(
+                    name, projectionVersion, sourceDefinition, projectionConfig, null);
+                CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
             }
@@ -151,19 +159,20 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void CreateCoreProjection(
-            Guid projectionCorrelationId, string name, ProjectionVersion projectionVersion,
-            ProjectionSourceDefinition sourceDefinition, ProjectionConfig projectionConfig,
-            IProjectionStateHandler stateHandler)
+        private void CreateCoreProjection(Guid projectionCorrelationId, ProjectionProcessingStrategy processingStrategy)
         {
-            var projectionProcessingStrategy = projectionConfig.StopOnEof
+            var projection = processingStrategy.Create(
+                projectionCorrelationId, _publisher, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
+            _projections.Add(projectionCorrelationId, projection);
+        }
+
+        private ProjectionProcessingStrategy CreateProjectionProcessingStrategy(string name, ProjectionVersion projectionVersion, ProjectionSourceDefinition sourceDefinition, ProjectionConfig projectionConfig, IProjectionStateHandler stateHandler)
+        {
+            return projectionConfig.StopOnEof
                 ? (ProjectionProcessingStrategy) new QueryProcessingStrategy(
                     name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger)
                 : new ContinuousProjectionProcessingStrategy(
                     name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger);
-            var projection = projectionProcessingStrategy.Create(
-                projectionCorrelationId, _publisher, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
-            _projections.Add(projectionCorrelationId, projection);
         }
 
         public void Handle(CoreProjectionManagementMessage.Dispose message)

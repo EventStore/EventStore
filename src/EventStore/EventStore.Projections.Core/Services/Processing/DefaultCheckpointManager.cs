@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -36,7 +35,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 
@@ -54,6 +52,9 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly ProjectionVersion _projectionVersion;
         protected readonly IODispatcher _ioDispatcher;
         private readonly PositionTagger _positionTagger;
+        private readonly CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
+        private PartitionStateUpdateManager _partitionStateUpdateManager;
+
 
         public DefaultCheckpointManager(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
@@ -62,13 +63,14 @@ namespace EventStore.Projections.Core.Services.Processing
             CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
             : base(
                 publisher, projectionCorrelationId, projectionConfig, name, positionTagger, namingBuilder,
-                useCheckpoints, producesRunningResults, definesFold, coreProjectionCheckpointWriter)
+                useCheckpoints, producesRunningResults)
         {
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             _projectionVersion = projectionVersion;
             _runAs = runAs;
             _ioDispatcher = ioDispatcher;
             _positionTagger = positionTagger;
+            _coreProjectionCheckpointWriter = coreProjectionCheckpointWriter;
             _zeroTag = positionTagger.MakeZeroCheckpointTag();
         }
 
@@ -89,6 +91,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void Initialize()
         {
             base.Initialize();
+            _partitionStateUpdateManager = null;
             foreach (var requestId in _loadStateRequests)
                 _ioDispatcher.BackwardReader.Cancel(requestId);
             _loadStateRequests.Clear();
@@ -102,11 +105,6 @@ namespace EventStore.Projections.Core.Services.Processing
             base.GetStatistics(info);
             info.ReadsInProgress += _readRequestsInProgress;
             _coreProjectionCheckpointWriter.GetStatistics(info);
-        }
-
-        public override void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag)
-        {
-            PrerecordedEventsLoaded(checkpointTag);
         }
 
         public override void BeginLoadPartitionStateAt(
@@ -191,6 +189,22 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(CoreProjectionCheckpointWriterMessage.RestartRequested message)
         {
             RequestRestart(message.Reason);
+        }
+
+        protected override void CapturePartitionStateUpdated(string partition, PartitionState oldState, PartitionState newState)
+        {
+            if (_partitionStateUpdateManager == null)
+                _partitionStateUpdateManager = new PartitionStateUpdateManager(_namingBuilder);
+            _partitionStateUpdateManager.StateUpdated(partition, newState, oldState.CausedBy);
+        }
+
+        protected override void EmitPartitionCheckpoints()
+        {
+            if (_partitionStateUpdateManager != null)
+            {
+                _partitionStateUpdateManager.EmitEvents(_currentCheckpoint);
+                _partitionStateUpdateManager = null;
+            }
         }
     }
 }
