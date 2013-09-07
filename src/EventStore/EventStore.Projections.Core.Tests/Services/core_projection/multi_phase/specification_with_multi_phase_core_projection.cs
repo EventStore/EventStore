@@ -246,7 +246,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             }
         }
 
-        internal class FakeCheckpointManager : ICoreProjectionCheckpointManager
+        internal class FakeCheckpointManager : ICoreProjectionCheckpointManager, IEmittedEventWriter
         {
             private readonly IPublisher _publisher;
             private readonly Guid _projectionCorrelationId;

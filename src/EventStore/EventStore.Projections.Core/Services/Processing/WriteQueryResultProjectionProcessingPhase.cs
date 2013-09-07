@@ -33,18 +33,22 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public sealed class WriteQueryResultProjectionProcessingPhase : WriteQueryResultProjectionProcessingPhaseBase
     {
+        private readonly IEmittedEventWriter _emittedEventWriter;
+
         public WriteQueryResultProjectionProcessingPhase(
             int phase, string resultStream, ICoreProjectionForProcessingPhase coreProjection,
-            PartitionStateCache stateCache, ICoreProjectionCheckpointManager checkpointManager)
+            PartitionStateCache stateCache, ICoreProjectionCheckpointManager checkpointManager,
+            IEmittedEventWriter emittedEventWriter)
             : base(phase, resultStream, coreProjection, stateCache, checkpointManager)
         {
+            _emittedEventWriter = emittedEventWriter;
         }
 
         protected override void WriteResults(CheckpointTag phaseCheckpointTag)
         {
             var items = _stateCache.Enumerate();
             EmittedStream.WriterConfiguration.StreamMetadata streamMetadata = null;
-            _checkpointManager.EventsEmitted(
+            _emittedEventWriter.EventsEmitted(
                 (from item in items
                     let partitionState = item.Item2
                     select

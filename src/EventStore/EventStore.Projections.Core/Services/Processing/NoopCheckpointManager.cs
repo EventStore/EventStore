@@ -155,11 +155,6 @@ namespace EventStore.Projections.Core.Services.Processing
             // running state only
         }
 
-        public void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
-        {
-            throw new NotSupportedException();
-        }
-
         public bool CheckpointSuggested(CheckpointTag checkpointTag, float progress)
         {
             throw new InvalidOperationException("Checkpoints are not used");

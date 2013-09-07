@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected override ResultWriter CreateResultWriter(
-            ICoreProjectionCheckpointManager checkpointManager, CheckpointTag zeroCheckpointTag,
+            IEmittedEventWriter emittedEventWriter, CheckpointTag zeroCheckpointTag,
             ProjectionNamesBuilder namingBuilder)
         {
             throw new NotImplementedException();

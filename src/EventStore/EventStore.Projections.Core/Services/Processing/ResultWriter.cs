@@ -33,13 +33,13 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ResultWriter : IResultWriter
     {
         private readonly IResultEventEmitter _resultEventEmitter;
-        private readonly ICoreProjectionCheckpointManager _coreProjectionCheckpointManager;
+        private readonly IEmittedEventWriter _coreProjectionCheckpointManager;
         private readonly bool _producesRunningResults;
         private readonly CheckpointTag _zeroCheckpointTag;
         private readonly string _partitionCatalogStreamName;
 
         public ResultWriter(
-            IResultEventEmitter resultEventEmitter, ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
+            IResultEventEmitter resultEventEmitter, IEmittedEventWriter coreProjectionCheckpointManager,
             bool producesRunningResults, CheckpointTag zeroCheckpointTag, string partitionCatalogStreamName)
         {
             _resultEventEmitter = resultEventEmitter;

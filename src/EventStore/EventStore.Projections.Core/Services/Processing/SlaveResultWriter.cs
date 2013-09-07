@@ -25,9 +25,44 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.Runtime.Serialization;
 
-namespace EventStore.Projections.Core.Services
+using System;
+using EventStore.Core.Messaging;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
+
+namespace EventStore.Projections.Core.Services.Processing
 {
+    public class SlaveResultWriter : IResultWriter
+    {
+        private readonly IEnvelope _publishResultsEnvelope;
+
+        public SlaveResultWriter(IEnvelope publishResultsEnvelope)
+        {
+            if (publishResultsEnvelope == null) throw new ArgumentNullException("publishResultsEnvelope");
+
+            _publishResultsEnvelope = publishResultsEnvelope;
+        }
+
+        public void WriteEofResult(
+            string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId)
+        {
+            _publishResultsEnvelope.ReplyWith(
+                new PartitionProcessingResult(partition, causedByGuid, causedBy, resultBody));
+        }
+
+        public void WriteRunningResult(EventProcessedResult result)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void AccountPartition(EventProcessedResult result)
+        {
+            // intentionally does nothing            
+        }
+
+        public void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
+        {
+            throw new NotSupportedException();
+        }
+    }
 }

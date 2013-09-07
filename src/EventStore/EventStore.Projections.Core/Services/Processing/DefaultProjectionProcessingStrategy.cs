@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 definesFold, readerStrategy);
 
 
-            var resultWriter = CreateResultWriter(checkpointManager, zeroCheckpointTag, namingBuilder);
+            var resultWriter = CreateResultWriter(checkpointManager as IEmittedEventWriter, zeroCheckpointTag, namingBuilder);
 
             var statePartitionSelector = CreateStatePartitionSelector(
                 _stateHandler, _sourceDefinition.ByCustomPartitions, _sourceDefinition.ByStreams);
@@ -148,11 +148,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     : new NoopStatePartitionSelector());
         }
 
-        protected virtual ResultWriter CreateResultWriter(ICoreProjectionCheckpointManager checkpointManager,
+        protected virtual ResultWriter CreateResultWriter(IEmittedEventWriter emittedEventWriter,
             CheckpointTag zeroCheckpointTag, ProjectionNamesBuilder namingBuilder)
         {
             return new ResultWriter(
-                CreateResultEmitter(namingBuilder), checkpointManager, GetProducesRunningResults(), zeroCheckpointTag,
+                CreateResultEmitter(namingBuilder), emittedEventWriter, GetProducesRunningResults(), zeroCheckpointTag,
                 namingBuilder.GetPartitionCatalogStreamName());
         }
     }

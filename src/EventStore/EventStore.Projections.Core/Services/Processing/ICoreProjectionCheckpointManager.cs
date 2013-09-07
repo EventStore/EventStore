@@ -36,6 +36,10 @@ namespace EventStore.Projections.Core.Services.Processing
         void Initialize();
     }
 
+    public interface IEmittedEventWriter
+    {
+        void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId);
+    }
 
     public interface ICoreProjectionCheckpointManager
     {
@@ -45,7 +49,6 @@ namespace EventStore.Projections.Core.Services.Processing
         void Stopped();
         void GetStatistics(ProjectionStatistics info);
 
-        void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId);
 
         void StateUpdated(string partition, PartitionState oldState, PartitionState newState);
         void EventProcessed(CheckpointTag checkpointTag, float progress);

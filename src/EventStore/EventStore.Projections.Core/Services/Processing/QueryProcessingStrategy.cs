@@ -79,7 +79,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     1, namingBuilder.GetResultStreamName(), coreProjection, partitionStateCache, checkpointManager2);
             else
                 writeResultsPhase = new WriteQueryResultProjectionProcessingPhase(
-                    1, namingBuilder.GetResultStreamName(), coreProjection, partitionStateCache, checkpointManager2);
+                    1, namingBuilder.GetResultStreamName(), coreProjection, partitionStateCache, checkpointManager2,
+                    checkpointManager2);
 
             return new[] {firstPhase, writeResultsPhase};
         }

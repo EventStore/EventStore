@@ -37,7 +37,8 @@ using EventStore.Projections.Core.Messages;
 namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointManager,
-                                                            ICoreProjectionCheckpointManager
+                                                            ICoreProjectionCheckpointManager,
+                                                            IEmittedEventWriter
     {
         protected readonly ProjectionNamesBuilder _namingBuilder;
         protected readonly ProjectionConfig _projectionConfig;

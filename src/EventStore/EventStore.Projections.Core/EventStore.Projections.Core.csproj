@@ -160,6 +160,7 @@
     <Compile Include="Messages\ICoreProjection.cs" />
     <Compile Include="Messages\IProjectionCheckpointManager.cs" />
     <Compile Include="Messages\IQuerySources.cs" />
+    <Compile Include="Messages\ParallelQueryProcessingMessages.cs" />
     <Compile Include="Messages\ProjectionCoreServiceMessage.cs" />
     <Compile Include="Messages\QuerySourcesDefinition.cs" />
     <Compile Include="Messages\QuerySourcesDefinitionOptions.cs" />
@@ -249,6 +250,7 @@
     <Compile Include="Services\Processing\QueryProcessingStrategy.cs" />
     <Compile Include="Services\Processing\ResultWriter.cs" />
     <Compile Include="Services\Processing\SlaveQueryProcessingStrategy.cs" />
+    <Compile Include="Services\Processing\SlaveResultWriter.cs" />
     <Compile Include="Services\Processing\SourceDefinitionBuilder.cs" />
     <Compile Include="Services\Processing\CheckpointTag.cs" />
     <Compile Include="Services\Processing\EmittedEvent.cs" />
@@ -287,7 +289,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProjectionWorkerNode.cs" />
     <Compile Include="Services\Http\ProjectionsController.cs" />
-    <Compile Include="Services\ProjectionStateMetadata.cs" />
     <Compile Include="Services\Http\ProjectionStatisticsHttpFormatted.cs" />
     <Compile Include="Services\ProjectionStatistics.cs" />
     <Compile Include="Services\PublishSubscribeDispatcher.cs" />

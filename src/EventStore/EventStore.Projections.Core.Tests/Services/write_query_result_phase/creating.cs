@@ -47,9 +47,10 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
                 var coreProjection = new FakeCoreProjection();
                 var stateCache = new PartitionStateCache();
                 var bus = new InMemoryBus("test");
+                var fakeCheckpointManager = new specification_with_multi_phase_core_projection.FakeCheckpointManager(bus, Guid.NewGuid());
                 var it = new WriteQueryResultProjectionProcessingPhase(
                     1, "result-stream", coreProjection, stateCache,
-                    new specification_with_multi_phase_core_projection.FakeCheckpointManager(bus, Guid.NewGuid()));
+                    fakeCheckpointManager, fakeCheckpointManager);
             }
         }
 
@@ -72,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
                     _publisher, Guid.NewGuid());
                 _resultStreamName = "result-stream";
                 _phase = new WriteQueryResultProjectionProcessingPhase(
-                    1, _resultStreamName, _coreProjection, _stateCache, _checkpointManager);
+                    1, _resultStreamName, _coreProjection, _stateCache, _checkpointManager, _checkpointManager);
                 When();
             }
 
