@@ -26,15 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class NoopResultEmitter : IResultEmitter
+    public interface IResultEventEmitter
     {
-        public EmittedEventEnvelope[] ResultUpdated(string partition, string result, CheckpointTag at)
-        {
-            throw new NotSupportedException("No results are expected from the projection");
-        }
+        EmittedEventEnvelope[] ResultUpdated(string partition, string result, CheckpointTag at);
     }
 }

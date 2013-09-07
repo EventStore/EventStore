@@ -29,7 +29,6 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
-using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Projections.Core.Services.Processing
 {

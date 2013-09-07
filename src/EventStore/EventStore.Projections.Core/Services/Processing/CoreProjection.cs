@@ -69,7 +69,6 @@ namespace EventStore.Projections.Core.Services.Processing
         internal readonly Guid _projectionCorrelationId;
 
         private readonly ILogger _logger;
-        private readonly ProjectionProcessingStrategy _projectionProcessingStrategy;
 
         private State _state;
 
@@ -77,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly PartitionStateCache _partitionStateCache;
         private ICoreProjectionCheckpointManager _checkpointManager;
-        private ICoreProjectionCheckpointReader _checkpointReader;
+        private readonly ICoreProjectionCheckpointReader _checkpointReader;
 
         private bool _tickPending;
 
@@ -90,42 +89,41 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IProjectionProcessingPhase[] _projectionProcessingPhases;
         private readonly CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
         private readonly bool _partitionedStateState;
+        private readonly Action<ProjectionStatistics> _enrichStatistics;
 
 
         public CoreProjection(
-            ProjectionVersion version, Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
-            ReaderSubscriptionDispatcher subscriptionDispatcher, ILogger logger, ProjectionNamesBuilder namingBuilder,
-            ProjectionProcessingStrategy projectionProcessingStrategy, ITimeProvider timeProvider, bool stopOnEof,
-            bool useCheckpoints, bool partitionedState)
+            ProjectionProcessingStrategy projectionProcessingStrategy, ProjectionVersion version,
+            Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
+            ReaderSubscriptionDispatcher subscriptionDispatcher, ILogger logger, ProjectionNamesBuilder namingBuilder, CoreProjectionCheckpointWriter coreProjectionCheckpointWriter,
+            PartitionStateCache partitionStateCache, string effectiveProjectionName, ITimeProvider timeProvider)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
 
-            var name = namingBuilder.EffectiveProjectionName;
-
             _projectionCorrelationId = projectionCorrelationId;
-            _name = name;
+            _name = effectiveProjectionName;
             _version = version;
-            _stopOnEof = stopOnEof;
+            _stopOnEof = projectionProcessingStrategy.GetStopOnEof();
             _logger = logger;
-            _projectionProcessingStrategy = projectionProcessingStrategy;
             _publisher = publisher;
-            _partitionStateCache = new PartitionStateCache();
-            _partitionedStateState = partitionedState;
-            
-            _coreProjectionCheckpointWriter =
-                new CoreProjectionCheckpointWriter(
-                    namingBuilder.MakeCheckpointStreamName(), ioDispatcher, version, name);
+            _partitionStateCache = partitionStateCache;
+            _partitionedStateState = projectionProcessingStrategy.GetIsPartitioned();
+            var useCheckpoints = projectionProcessingStrategy.GetUseCheckpoints();
+
+            _coreProjectionCheckpointWriter = coreProjectionCheckpointWriter;
 
             _projectionProcessingPhases = projectionProcessingStrategy.CreateProcessingPhases(
-                publisher, projectionCorrelationId, _partitionStateCache, UpdateStatistics, this, namingBuilder,
-                timeProvider, ioDispatcher, subscriptionDispatcher, _coreProjectionCheckpointWriter);
+                publisher, projectionCorrelationId, partitionStateCache, UpdateStatistics, this, namingBuilder,
+                timeProvider, ioDispatcher, subscriptionDispatcher, coreProjectionCheckpointWriter);
+
 
             //NOTE: currently assuming the first checkpoint manager to be able to load any state
             _checkpointReader = new CoreProjectionCheckpointReader(
                 publisher, _projectionCorrelationId, ioDispatcher, namingBuilder.MakeCheckpointStreamName(), _version,
                 useCheckpoints);
+            _enrichStatistics = projectionProcessingStrategy.EnrichStatistics;
             GoToState(State.Initial);
         }
 
@@ -193,7 +191,7 @@ namespace EventStore.Projections.Core.Services.Processing
             info.StateReason = "";
             info.BufferedEvents = 0; 
             info.PartitionsCached = _partitionStateCache.CachedItemCount;
-            _projectionProcessingStrategy.EnrichStatistics(info);
+            _enrichStatistics(info);
             if (_projectionProcessingPhase != null)
                 _projectionProcessingPhase.GetStatistics(info);
         }

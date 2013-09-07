@@ -57,39 +57,38 @@ namespace EventStore.Projections.Core.Services.Processing
             ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher,
             CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
         {
-            var producesResults = _sourceDefinition.ProducesResults;
             var definesFold = _sourceDefinition.DefinesFold;
 
-            var readerStrategy = Processing.ReaderStrategy.Create(
+            var readerStrategy = ReaderStrategy.Create(
                 0, _sourceDefinition, timeProvider, _projectionConfig.StopOnEof, _projectionConfig.RunAs);
-            var checkpointStrategy = CheckpointStrategy.Create(_sourceDefinition, _projectionConfig);
-
-            var resultEmitter = CreateResultEmitter(namingBuilder);
 
             var zeroCheckpointTag = readerStrategy.PositionTagger.MakeZeroCheckpointTag();
-            var statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(_stateHandler);
 
-            var checkpointManager = checkpointStrategy.CreateCheckpointManager(
-                projectionCorrelationId, _projectionVersion, publisher, ioDispatcher, _projectionConfig, _name,
-                namingBuilder, readerStrategy.IsReadingOrderRepeatable, checkpointStrategy._runAs,
-                coreProjectionCheckpointWriter, GetProducesRunningResults(), definesFold, readerStrategy);
+            var checkpointManager = CreateCheckpointManager(
+                projectionCorrelationId, publisher, ioDispatcher, namingBuilder, readerStrategy.IsReadingOrderRepeatable,
+                coreProjectionCheckpointWriter, definesFold, readerStrategy);
 
 
+            var resultWriter = CreateResultWriter(checkpointManager, zeroCheckpointTag, namingBuilder);
+
+            var statePartitionSelector = CreateStatePartitionSelector(
+                _stateHandler, _sourceDefinition.ByCustomPartitions, _sourceDefinition.ByStreams);
             var firstPhase = new EventProcessingProjectionProcessingPhase(
                 coreProjection, projectionCorrelationId, publisher, this, _projectionConfig, updateStatistics,
-                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, GetProducesRunningResults(),
-                GetDefinesFold(), _name, _logger, zeroCheckpointTag, resultEmitter, checkpointManager,
-                statePartitionSelector, checkpointStrategy, timeProvider, subscriptionDispatcher, 0, readerStrategy);
+                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, _name, _logger,
+                zeroCheckpointTag, checkpointManager, statePartitionSelector, subscriptionDispatcher,
+                0, readerStrategy, resultWriter, _projectionConfig.CheckpointsEnabled);
 
             return CreateProjectionProcessingPhases(
-                publisher, projectionCorrelationId, namingBuilder, partitionStateCache, updateStatistics, coreProjection,
-                timeProvider, subscriptionDispatcher, checkpointStrategy, zeroCheckpointTag, resultEmitter,
-                checkpointManager, statePartitionSelector, ioDispatcher, firstPhase);
+                publisher, projectionCorrelationId, namingBuilder, partitionStateCache, coreProjection, ioDispatcher, firstPhase);
         }
 
-        protected abstract IResultEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder);
+        protected abstract IResultEventEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder);
 
-        protected abstract IProjectionProcessingPhase[] CreateProjectionProcessingPhases(IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder, PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection, ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher, CheckpointStrategy checkpointStrategy, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter, ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector, IODispatcher ioDispatcher, EventProcessingProjectionProcessingPhase firstPhase);
+        protected abstract IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
+            IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
+            PartitionStateCache partitionStateCache, CoreProjection coreProjection, IODispatcher ioDispatcher,
+            EventProcessingProjectionProcessingPhase firstPhase);
 
         protected override IQuerySources GetSourceDefinition()
         {
@@ -105,6 +104,51 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             //TODO: get rid of this cast
             info.Definition = _sourceDefinition as ProjectionSourceDefinition;
+        }
+
+        public ICoreProjectionCheckpointManager CreateCheckpointManager(
+            Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
+            ProjectionNamesBuilder namingBuilder, bool isReadingOrderRepeatable,
+            CoreProjectionCheckpointWriter coreProjectionCheckpointWriter, bool definesFold,
+            IReaderStrategy readerStrategy)
+        {
+            var emitAny = _projectionConfig.EmitEventEnabled;
+
+            //NOTE: not emitting one-time/transient projections are always handled by default checkpoint manager
+            // as they don't depend on stable event order
+            if (emitAny && !isReadingOrderRepeatable)
+            {
+                return new MultiStreamMultiOutputCheckpointManager(
+                    publisher, projectionCorrelationId, _projectionVersion, _projectionConfig.RunAs, ioDispatcher,
+                    _projectionConfig, _name, readerStrategy.PositionTagger, namingBuilder,
+                    _projectionConfig.CheckpointsEnabled, GetProducesRunningResults(), definesFold,
+                    coreProjectionCheckpointWriter);
+            }
+            else
+            {
+                return new DefaultCheckpointManager(
+                    publisher, projectionCorrelationId, _projectionVersion, _projectionConfig.RunAs, ioDispatcher,
+                    _projectionConfig, _name, readerStrategy.PositionTagger, namingBuilder,
+                    _projectionConfig.CheckpointsEnabled, GetProducesRunningResults(), definesFold,
+                    coreProjectionCheckpointWriter);
+            }
+        }
+
+        private static StatePartitionSelector CreateStatePartitionSelector(IProjectionStateHandler projectionStateHandler, bool byCustomPartitions, bool byStream)
+        {
+            return byCustomPartitions
+                ? new ByHandleStatePartitionSelector(projectionStateHandler)
+                : (byStream
+                    ? (StatePartitionSelector) new ByStreamStatePartitionSelector()
+                    : new NoopStatePartitionSelector());
+        }
+
+        protected virtual ResultWriter CreateResultWriter(ICoreProjectionCheckpointManager checkpointManager,
+            CheckpointTag zeroCheckpointTag, ProjectionNamesBuilder namingBuilder)
+        {
+            return new ResultWriter(
+                CreateResultEmitter(namingBuilder), checkpointManager, GetProducesRunningResults(), zeroCheckpointTag,
+                namingBuilder.GetPartitionCatalogStreamName());
         }
     }
 }

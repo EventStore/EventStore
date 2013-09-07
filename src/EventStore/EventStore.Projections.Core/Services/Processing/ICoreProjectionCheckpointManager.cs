@@ -45,7 +45,6 @@ namespace EventStore.Projections.Core.Services.Processing
         void Stopped();
         void GetStatistics(ProjectionStatistics info);
 
-        void NewPartition(string partition, CheckpointTag eventCheckpointTag);
         void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId);
 
         void StateUpdated(string partition, PartitionState oldState, PartitionState newState);

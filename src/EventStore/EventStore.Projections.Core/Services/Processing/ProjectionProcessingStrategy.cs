@@ -59,9 +59,17 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var namingBuilder = new ProjectionNamesBuilder(_name, GetSourceDefinition());
 
+            var coreProjectionCheckpointWriter =
+                new CoreProjectionCheckpointWriter(
+                    namingBuilder.MakeCheckpointStreamName(), ioDispatcher, _projectionVersion,
+                    namingBuilder.EffectiveProjectionName);
+
+            var partitionStateCache = new PartitionStateCache();
+
             return new CoreProjection(
-                _projectionVersion, projectionCorrelationId, publisher, ioDispatcher, subscriptionDispatcher, _logger,
-                namingBuilder, this, timeProvider, GetStopOnEof(), GetUseCheckpoints(), GetIsPartitioned());
+                this, _projectionVersion, projectionCorrelationId, publisher, ioDispatcher, subscriptionDispatcher,
+                _logger, namingBuilder, coreProjectionCheckpointWriter, partitionStateCache,
+                namingBuilder.EffectiveProjectionName, timeProvider);
         }
 
         protected abstract IQuerySources GetSourceDefinition();
@@ -70,7 +78,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public abstract bool GetUseCheckpoints();
         public abstract bool GetIsPartitioned();
         public abstract bool GetProducesRunningResults();
-        public abstract bool GetDefinesFold();
         public abstract void EnrichStatistics(ProjectionStatistics info);
 
         public abstract IProjectionProcessingPhase[] CreateProcessingPhases(

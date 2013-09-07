@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             _bus.Subscribe(_checkpointHandler);
             _bus.Subscribe(_progressHandler);
             _bus.Subscribe(_eofHandler);
-            _readerStrategy = CreateCheckpointStrategy().Item1;
+            _readerStrategy = CreateCheckpointStrategy();
             _subscription = CreateProjectionSubscription();
 
 
@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
 
         protected abstract void When();
 
-        protected virtual Tuple<IReaderStrategy, CheckpointStrategy> CreateCheckpointStrategy()
+        protected virtual IReaderStrategy CreateCheckpointStrategy()
         {
             var readerBuilder = new SourceDefinitionBuilder();
             if (_source != null)
@@ -108,9 +108,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var config = ProjectionConfig.GetTest();
             IQuerySources sources = readerBuilder.Build();
             ITimeProvider timeProvider = new RealTimeProvider();
-            var readerStrategy = Core.Services.Processing.ReaderStrategy.Create(0, sources, timeProvider, stopOnEof: false, runAs: config.RunAs);
-            var checkpointStrategy = CheckpointStrategy.Create(sources, config);
-            return Tuple.Create(readerStrategy, checkpointStrategy);
+            var readerStrategy = Core.Services.Processing.ReaderStrategy.Create(
+                0, sources, timeProvider, stopOnEof: false, runAs: config.RunAs);
+            return readerStrategy;
         }
     }
 }

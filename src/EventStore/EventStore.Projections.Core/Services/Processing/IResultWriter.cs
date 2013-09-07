@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,24 +25,21 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using EventStore.Core.Services.TimerService;
-using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.checkpoint_strategy
+using System;
+
+namespace EventStore.Projections.Core.Services.Processing
 {
-    [TestFixture]
-    public class when_creating_a_checkpoint_strategy
+    public interface IResultWriter
     {
-        [Test]
-        public void it_can_be_created()
-        {
-            IQuerySources sources = new QuerySourcesDefinition {AllStreams = true, AllEvents = true};
-            ProjectionConfig config = ProjectionConfig.GetTest();
-            ITimeProvider timeProvider = new RealTimeProvider();
-            CheckpointStrategy.Create(sources, config);
-        }
+        void WriteEofResult(
+            string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId);
+
+        void WriteRunningResult(EventProcessedResult result);
+
+        void AccountPartition(EventProcessedResult result);
+
+        void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId);
+
     }
 }

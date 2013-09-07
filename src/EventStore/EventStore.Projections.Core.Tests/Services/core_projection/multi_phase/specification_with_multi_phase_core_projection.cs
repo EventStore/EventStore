@@ -93,11 +93,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 return true;
             }
 
-            public override bool GetDefinesFold()
-            {
-                return true;
-            }
-
             public override void EnrichStatistics(ProjectionStatistics info)
             {
             }

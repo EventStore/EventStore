@@ -50,13 +50,13 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
             [Test]
             public void it_can_be_created()
             {
-                new ResultEmitter(_namesBuilder);
+                new ResultEventEmitter(_namesBuilder);
             }
 
             [Test, ExpectedException(typeof (ArgumentNullException))]
             public void null_names_builder_throws_argument_null_exception()
             {
-                new ResultEmitter(null);
+                new ResultEventEmitter(null);
             }
         }
 
@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
         public class when_result_updated
         {
             private ProjectionNamesBuilder _namesBuilder;
-            private ResultEmitter _re;
+            private ResultEventEmitter _re;
             private string _partition;
             private string _projection;
             private CheckpointTag _resultAt;
@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 _partition = "partition";
                 _result = "{\"result\":1}";
                 _namesBuilder = ProjectionNamesBuilder.CreateForTest(_projection);
-                _re = new ResultEmitter(_namesBuilder);
+                _re = new ResultEventEmitter(_namesBuilder);
             }
 
             private void When()
@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
         public class when_result_removed
         {
             private ProjectionNamesBuilder _namesBuilder;
-            private ResultEmitter _re;
+            private ResultEventEmitter _re;
             private string _partition;
             private string _projection;
             private CheckpointTag _resultAt;
@@ -142,7 +142,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 _resultAt = CheckpointTag.FromPosition(0, 100, 50);
                 _partition = "partition";
                 _namesBuilder = ProjectionNamesBuilder.CreateForTest(_projection);
-                _re = new ResultEmitter(_namesBuilder);
+                _re = new ResultEventEmitter(_namesBuilder);
             }
 
             private void When()
@@ -181,7 +181,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
         public class when_result_updated_on_root_partition
         {
             private ProjectionNamesBuilder _namesBuilder;
-            private ResultEmitter _re;
+            private ResultEventEmitter _re;
             private string _partition;
             private string _projection;
             private CheckpointTag _resultAt;
@@ -202,7 +202,7 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 _partition = "";
                 _result = "{\"result\":1}";
                 _namesBuilder = ProjectionNamesBuilder.CreateForTest(_projection);
-                _re = new ResultEmitter(_namesBuilder);
+                _re = new ResultEventEmitter(_namesBuilder);
             }
 
             private void When()

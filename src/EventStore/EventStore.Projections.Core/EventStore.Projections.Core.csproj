@@ -216,7 +216,8 @@
     <Compile Include="Services\Processing\IEventProcessingPhase.cs" />
     <Compile Include="Services\Processing\IProjectionProcessingPhase.cs" />
     <Compile Include="Services\Processing\IReaderStrategy.cs" />
-    <Compile Include="Services\Processing\IResultEmitter.cs" />
+    <Compile Include="Services\Processing\IResultEventEmitter.cs" />
+    <Compile Include="Services\Processing\IResultWriter.cs" />
     <Compile Include="Services\Processing\MultiStreamEventReader.cs" />
     <Compile Include="Services\Processing\MultiStreamMultiOutputCheckpointManager.cs" />
     <Compile Include="Services\Processing\CoreProjectionQueue.cs" />
@@ -224,7 +225,7 @@
     <Compile Include="Services\Processing\IReaderSubscription.cs" />
     <Compile Include="Services\Processing\MultiStreamEventFilter.cs" />
     <Compile Include="Services\Processing\MultiStreamPositionTagger.cs" />
-    <Compile Include="Services\Processing\NoopResultEmitter.cs" />
+    <Compile Include="Services\Processing\NoopResultEventEmitter.cs" />
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\NotAuthorizedWorkItem.cs" />
     <Compile Include="Services\Processing\PartitionCompletedWorkItem.cs" />
@@ -245,6 +246,7 @@
     <Compile Include="Services\Processing\ProjectionSubscriptionBase.cs" />
     <Compile Include="Services\Processing\ProjectionVersion.cs" />
     <Compile Include="Services\Processing\QueryProcessingStrategy.cs" />
+    <Compile Include="Services\Processing\ResultWriter.cs" />
     <Compile Include="Services\Processing\SourceDefinitionBuilder.cs" />
     <Compile Include="Services\Processing\CheckpointTag.cs" />
     <Compile Include="Services\Processing\EmittedEvent.cs" />
@@ -253,7 +255,7 @@
     <Compile Include="Services\Processing\ReaderStrategy.cs" />
     <Compile Include="Services\Processing\ReaderSubscriptionOptions.cs" />
     <Compile Include="Services\Processing\ResolvedEvent.cs" />
-    <Compile Include="Services\Processing\ResultEmitter.cs" />
+    <Compile Include="Services\Processing\ResultEventEmitter.cs" />
     <Compile Include="Services\Processing\EmittedLinkToWithRecategorization.cs" />
     <Compile Include="Services\Processing\StagedProcessingQueue.cs" />
     <Compile Include="Services\Processing\StatePartitionSelector.cs" />
@@ -267,7 +269,6 @@
     <Compile Include="Services\Processing\CoreProjection.cs" />
     <Compile Include="Services\Processing\ProjectionCheckpoint.cs" />
     <Compile Include="Services\Processing\ReaderSubscription.cs" />
-    <Compile Include="Services\Processing\CheckpointStrategy.cs" />
     <Compile Include="Services\Processing\TaggedResolvedEvent.cs" />
     <Compile Include="Services\Processing\TransactionFileEventFilter.cs" />
     <Compile Include="Services\Processing\TransactionFilePositionTagger.cs" />

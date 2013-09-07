@@ -30,7 +30,6 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
-using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -51,7 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override bool GetUseCheckpoints()
         {
-            return true;
+            return _projectionConfig.CheckpointsEnabled;
         }
 
         public override bool GetProducesRunningResults()
@@ -59,27 +58,19 @@ namespace EventStore.Projections.Core.Services.Processing
             return _sourceDefinition.ProducesResults;
         }
 
-        public override bool GetDefinesFold()
-        {
-            return _sourceDefinition.DefinesFold;
-        }
-
         protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
-            PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection,
-            ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            CheckpointStrategy checkpointStrategy, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
-            ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector,
-            IODispatcher ioDispatcher, EventProcessingProjectionProcessingPhase firstPhase)
+            PartitionStateCache partitionStateCache, CoreProjection coreProjection, IODispatcher ioDispatcher,
+            EventProcessingProjectionProcessingPhase firstPhase)
         {
             return new IProjectionProcessingPhase[] {firstPhase};
         }
 
-        protected override IResultEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
+        protected override IResultEventEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
         {
             return _sourceDefinition.ProducesResults
-                ? new ResultEmitter(namingBuilder)
-                : (IResultEmitter) new NoopResultEmitter();
+                ? new ResultEventEmitter(namingBuilder)
+                : (IResultEventEmitter) new NoopResultEventEmitter();
         }
     }
 }

@@ -179,13 +179,6 @@ namespace EventStore.Projections.Core.Services.Processing
             info.CheckpointStatus = _inCheckpoint ? "Requested" : "";
         }
 
-        public void NewPartition(string partition, CheckpointTag eventCheckpointTag)
-        {
-            var result = RegisterNewPartition(partition, eventCheckpointTag);
-            if (result != null)
-                EventsEmitted(result, Guid.Empty, correlationId: null);
-        }
-
         public void StateUpdated(
             string partition, PartitionState oldState, PartitionState newState)
         {
@@ -269,7 +262,6 @@ namespace EventStore.Projections.Core.Services.Processing
             string statePartition, CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted);
 
         protected abstract ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition);
-        protected abstract EmittedEventEnvelope[] RegisterNewPartition(string partition, CheckpointTag at);
         public abstract void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
         protected abstract void BeginWriteCheckpoint(
             CheckpointTag requestedCheckpointPosition, string requestedCheckpointState);

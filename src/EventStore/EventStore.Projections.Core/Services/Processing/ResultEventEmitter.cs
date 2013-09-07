@@ -30,14 +30,14 @@ using System;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ResultEmitter : IResultEmitter
+    public class ResultEventEmitter : IResultEventEmitter
     {
         private readonly ProjectionNamesBuilder _namesBuilder;
 
         private readonly EmittedStream.WriterConfiguration.StreamMetadata _resultStreamMetadata =
             new EmittedStream.WriterConfiguration.StreamMetadata(/* TBD */);
 
-        public ResultEmitter(ProjectionNamesBuilder namesBuilder)
+        public ResultEventEmitter(ProjectionNamesBuilder namesBuilder)
         {
             if (namesBuilder == null) throw new ArgumentNullException("namesBuilder");
             _namesBuilder = namesBuilder;

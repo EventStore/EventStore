@@ -104,17 +104,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _coreProjectionCheckpointWriter.GetStatistics(info);
         }
 
-        protected override EmittedEventEnvelope[] RegisterNewPartition(string partition, CheckpointTag at)
-        {
-            return new[]
-            {
-                new EmittedEventEnvelope(
-                    new EmittedDataEvent(
-                        _namingBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "$partition", false, partition,
-                        null, at, null))
-            };
-        }
-
         public override void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag)
         {
             PrerecordedEventsLoaded(checkpointTag);

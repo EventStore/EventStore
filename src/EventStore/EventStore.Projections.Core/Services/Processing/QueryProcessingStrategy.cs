@@ -30,7 +30,6 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
-using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -59,27 +58,19 @@ namespace EventStore.Projections.Core.Services.Processing
             return !_sourceDefinition.DefinesFold;
         }
 
-        public override bool GetDefinesFold()
-        {
-            return _sourceDefinition.DefinesFold;
-        }
-
         protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
-            PartitionStateCache partitionStateCache, Action updateStatistics, CoreProjection coreProjection,
-            ITimeProvider timeProvider, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            CheckpointStrategy checkpointStrategy, CheckpointTag zeroCheckpointTag, IResultEmitter resultEmitter,
-            ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector,
-            IODispatcher ioDispatcher, EventProcessingProjectionProcessingPhase firstPhase)
+            PartitionStateCache partitionStateCache, CoreProjection coreProjection, IODispatcher ioDispatcher,
+            EventProcessingProjectionProcessingPhase firstPhase)
         {
 
             var coreProjectionCheckpointWriter =
                 new CoreProjectionCheckpointWriter(
                     namingBuilder.MakeCheckpointStreamName(), ioDispatcher, _projectionVersion, _name);
             var checkpointManager2 = new DefaultCheckpointManager(
-                publisher, projectionCorrelationId, _projectionVersion, checkpointStrategy._runAs, ioDispatcher,
-                _projectionConfig, _name, new PhasePositionTagger(1), namingBuilder, checkpointStrategy.UseCheckpoints,
-                false, _sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
+                publisher, projectionCorrelationId, _projectionVersion, _projectionConfig.RunAs, ioDispatcher,
+                _projectionConfig, _name, new PhasePositionTagger(1), namingBuilder, GetUseCheckpoints(), false,
+                _sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
 
             IProjectionProcessingPhase writeResultsPhase;
             if (GetProducesRunningResults()
@@ -93,9 +84,10 @@ namespace EventStore.Projections.Core.Services.Processing
             return new[] {firstPhase, writeResultsPhase};
         }
 
-        protected override IResultEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
+        protected override IResultEventEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
         {
-            return new ResultEmitter(namingBuilder);
+            return new ResultEventEmitter(namingBuilder);
         }
+
     }
 }
