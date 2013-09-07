@@ -111,7 +111,7 @@ namespace EventStore.Projections.Core.Services.Processing
             info.Definition = _sourceDefinition as ProjectionSourceDefinition;
         }
 
-        public ICoreProjectionCheckpointManager CreateCheckpointManager(
+        protected virtual ICoreProjectionCheckpointManager CreateCheckpointManager(
             Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
             ProjectionNamesBuilder namingBuilder,
             CoreProjectionCheckpointWriter coreProjectionCheckpointWriter, bool definesFold,
