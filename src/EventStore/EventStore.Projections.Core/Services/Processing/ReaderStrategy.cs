@@ -59,9 +59,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly int _phase;
 
-        public static IReaderStrategy CreateExternallyFedReaderStrategy(int phase, ITimeProvider timeProvider, IPrincipal runAs)
+        public static IReaderStrategy CreateExternallyFedReaderStrategy(
+            int phase, ITimeProvider timeProvider, IPrincipal runAs, long limitingCommitPosition)
         {
-            var readerStrategy = new ExternallyFedReaderStrategy(phase, runAs, timeProvider);
+            var readerStrategy = new ExternallyFedReaderStrategy(phase, runAs, timeProvider, limitingCommitPosition);
             return readerStrategy;
         }
 
@@ -329,14 +330,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
 
-        public ExternallyFedReaderStrategy(int phase, IPrincipal runAs, ITimeProvider timeProvider)
+        public ExternallyFedReaderStrategy(
+            int phase, IPrincipal runAs, ITimeProvider timeProvider, long limitingCommitPosition)
         {
             _phase = phase;
             _runAs = runAs;
             _timeProvider = timeProvider;
             _eventFilter = new BypassingEventFilter();
             _positionTagger = new PreTaggedPositionTagger(
-                phase, CheckpointTag.FromByStreamPosition(phase, "", -1, null, -1, long.MinValue));
+                phase, CheckpointTag.FromByStreamPosition(phase, "", -1, null, -1, limitingCommitPosition));
         }
 
         public bool IsReadingOrderRepeatable

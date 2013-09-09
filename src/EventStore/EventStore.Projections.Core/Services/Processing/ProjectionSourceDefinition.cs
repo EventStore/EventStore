@@ -32,6 +32,9 @@ namespace EventStore.Projections.Core.Services.Processing
         public string CatalogStream { get; set; }
 
         [DataMember]
+        public long? LimitingCommitPosition { get; set; }
+
+        [DataMember]
         public QuerySourceOptions Options { get; set; }
 
         bool IQuerySources.DefinesStateTransform
@@ -111,6 +114,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 Events = (sources.Events ?? new string[0]).ToArray(),
                 Streams = (sources.Streams ?? new string[0]).ToArray(),
                 CatalogStream = sources.CatalogStream,
+                LimitingCommitPosition = sources.LimitingCommitPosition,
                 Options = new QuerySourceOptions
                 {
                     DefinesStateTransform = sources.DefinesStateTransform,

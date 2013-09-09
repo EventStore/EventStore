@@ -40,6 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<EventReaderSubscriptionMessage.EofReached>,
         IHandle<EventReaderSubscriptionMessage.PartitionEofReached>,
         IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
+        IHandle<EventReaderSubscriptionMessage.ReaderAssignedReader>,
         IEventProcessingProjectionPhase,
         IProjectionProcessingPhase
     {
@@ -710,6 +711,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_currentSubscriptionId != _projectionCorrelationId)
                     _publisher.Publish(new ReaderSubscriptionManagement.Unsubscribe(_currentSubscriptionId));
             }
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.ReaderAssignedReader message)
+        {
+            if (_projectionConfig.IsSlaveProjection)
+                _publisher.Publish(
+                    new CoreProjectionManagementMessage.SlaveProjectionReaderAssigned(
+                        _projectionCorrelationId, message.SubscriptionId, message.ReaderId));
         }
     }
 }

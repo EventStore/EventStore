@@ -58,6 +58,9 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "byCustomPartitions")]
         public bool ByCustomPartitions { get; set; }
 
+        [DataMember(Name = "limitingCommitPosition")]
+        public long? LimitingCommitPosition { get; set; }
+
         bool IQuerySources.DefinesStateTransform
         {
             get { return Options != null && Options.DefinesStateTransform; }
@@ -121,6 +124,7 @@ namespace EventStore.Projections.Core.Messages
                 Events = (sources.Events ?? new string[0]).ToArray(),
                 Streams = (sources.Streams ?? new string[0]).ToArray(),
                 CatalogStream = sources.CatalogStream,
+                LimitingCommitPosition = sources.LimitingCommitPosition,
                 Options =
                     new QuerySourcesDefinitionOptions
                     {

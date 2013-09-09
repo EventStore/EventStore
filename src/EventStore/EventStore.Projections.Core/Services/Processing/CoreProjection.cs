@@ -43,8 +43,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                   ICoreProjection,
                                   ICoreProjectionForProcessingPhase,
                                   IHandle<CoreProjectionManagementMessage.GetState>,
-                                  IHandle<CoreProjectionManagementMessage.GetResult>,
-                                  IHandle<EventReaderSubscriptionMessage.ReaderAssignedReader>  
+                                  IHandle<CoreProjectionManagementMessage.GetResult>
+                                  
     {
         [Flags]
         private enum State : uint
@@ -93,7 +93,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _partitionedStateState;
         private readonly Action<ProjectionStatistics> _enrichStatistics;
         //NOTE: this is only for slave projections (TBD)
-        private Guid _slaveProjectionReaderId;
 
 
         public CoreProjection(
@@ -462,7 +461,7 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.Started(_projectionCorrelationId, _slaveProjectionReaderId));
+                    new CoreProjectionManagementMessage.Started(_projectionCorrelationId));
                 _projectionProcessingPhase.ProcessEvent();
             }
             catch (Exception ex)
@@ -636,13 +635,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Subscribed()
         {
             GoToState(State.Subscribed);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.ReaderAssignedReader message)
-        {
-            if (!_isSlaveProjection)
-                return;
-            _slaveProjectionReaderId = message.ReaderId;
         }
     }
 }

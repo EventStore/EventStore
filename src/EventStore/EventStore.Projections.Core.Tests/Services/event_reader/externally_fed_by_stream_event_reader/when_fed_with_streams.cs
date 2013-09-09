@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
 
                 _subscriptionId = Guid.NewGuid();
                 _readerStrategy = ReaderStrategy.CreateExternallyFedReaderStrategy(
-                    0, _timeProvider, SystemAccount.Principal);
+                    0, _timeProvider, SystemAccount.Principal, limitingCommitPosition: 10000);
                 _readerSubscriptionOptions = new ReaderSubscriptionOptions(
                     checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, stopOnEof: true,
                     stopAfterNEvents: null);

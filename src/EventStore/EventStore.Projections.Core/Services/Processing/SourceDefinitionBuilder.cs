@@ -44,6 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected List<string> _events;
         protected bool _byStream;
         protected bool _byCustomPartitions;
+        protected long? _limitingCommitPosotion;
 
         public SourceDefinitionBuilder()
         {
@@ -187,6 +188,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _byCustomPartitions; }
         }
 
+        public long? LimitingCommitPosition
+        {
+            get { return _limitingCommitPosotion; }
+        }
+
         public bool DefinesStateTransform
         {
             get { return _options.DefinesStateTransform; }
@@ -245,6 +251,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public IQuerySources Build()
         {
             return QuerySourcesDefinition.From(this);
+        }
+
+        public void SetLimitingCommitPosition(long limitingCommitPosition)
+        {
+            _limitingCommitPosotion = limitingCommitPosition;
         }
     }
 

@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -72,6 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
 
 
             _bus.Subscribe<ReaderCoreServiceMessage.StartReader>(_readerService);
@@ -107,5 +110,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
         {
         }
 
+        protected Guid GetReaderId()
+        {
+            var readerAssignedMessage =
+                _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.ReaderAssignedReader>().LastOrDefault();
+            Assert.IsNotNull(readerAssignedMessage);
+            var reader = readerAssignedMessage.ReaderId;
+            return reader;
+        }
     }
 }

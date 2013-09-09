@@ -105,6 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
             _readerService.Handle(new Messages.ReaderCoreServiceMessage.StartReader());
             _service.Handle(new ProjectionCoreServiceMessage.StartCore());
         }

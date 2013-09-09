@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
@@ -58,7 +59,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
                     Envelope, _coreProjectionCorrelationId, "projection", new ProjectionVersion(1, 0, 0),
                     new ProjectionConfig(
                         SystemAccount.Principal, 0, 0, 1000, 1000, false, false, false, true, isSlaveProjection: true),
-                    Envelope, () => new FakeProjectionStateHandler());
+                    Envelope, () => new FakeProjectionStateHandler(
+                        configureBuilder: builder =>
+                        {
+                            builder.FromCatalogStream("catalog");
+                            builder.AllEvents();
+                            builder.SetByStream();
+                            builder.SetLimitingCommitPosition(10000);
+                        }));
             yield return Yield;
         }
     }
@@ -70,6 +78,33 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
         {
             foreach (var m in base.When()) yield return m;
             yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId);
+        }
+
+        [Test]
+        public void replies_with_slave_projection_reader_id_on_started_message()
+        {
+            var readerAssigned =
+                HandledMessages.OfType<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>().LastOrDefault();
+
+            Assert.IsNotNull(readerAssigned);
+            Assert.AreNotEqual(Guid.Empty, readerAssigned.SubscriptionId);
+        }
+    }
+
+    [TestFixture]
+    public class when_processing_a_stream : specification_with_slave_projection
+    {
+        private Guid _subscriptionId;
+
+        protected override IEnumerable<WhenStep> When()
+        {
+            foreach (var m in base.When()) yield return m;
+            yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId);
+            var readerAssigned =
+                HandledMessages.OfType<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>().LastOrDefault();
+            Assert.IsNotNull(readerAssigned);
+            _subscriptionId = readerAssigned.SubscriptionId;
+            yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream", 0);
         }
 
         [Test]
