@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected Action<SourceDefinitionBuilder> _configureBuilderByQuerySource = null;
         protected Guid _projectionCorrelationId;
         private bool _createTempStreams = false;
-        private ProjectionConfig _projectionConfig;
+        protected ProjectionConfig _projectionConfig;
         protected ProjectionVersion _version;
         protected string _projectionName;
 

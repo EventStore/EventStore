@@ -41,8 +41,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly ProjectionVersion _projectionVersion;
         protected readonly ILogger _logger;
 
-        protected ProjectionProcessingStrategy(
-            string name, ProjectionVersion projectionVersion, ILogger logger)
+        protected ProjectionProcessingStrategy(string name, ProjectionVersion projectionVersion, ILogger logger)
         {
             _name = name;
             _projectionVersion = projectionVersion;

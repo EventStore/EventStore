@@ -30,6 +30,7 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
@@ -38,11 +39,15 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class SlaveQueryProcessingStrategy : DefaultProjectionProcessingStrategy
     {
+        private readonly IEnvelope _publishResultsEnvelope;
+
         public SlaveQueryProcessingStrategy(
             string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
-            ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger)
+            ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger,
+            IEnvelope publishResultsEnvelope)
             : base(name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger)
         {
+            _publishResultsEnvelope = publishResultsEnvelope;
         }
 
         public override bool GetStopOnEof()
@@ -78,11 +83,11 @@ namespace EventStore.Projections.Core.Services.Processing
             return new ExternallyFedReaderStrategy(0, _projectionConfig.RunAs, timeProvider);
         }
 
-        protected override ResultWriter CreateResultWriter(
+        protected override IResultWriter CreateResultWriter(
             IEmittedEventWriter emittedEventWriter, CheckpointTag zeroCheckpointTag,
             ProjectionNamesBuilder namingBuilder)
         {
-            throw new NotImplementedException();
+            return new SlaveResultWriter(_publishResultsEnvelope);
         }
 
         protected override ICoreProjectionCheckpointManager CreateCheckpointManager(

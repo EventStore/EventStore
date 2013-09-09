@@ -148,7 +148,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     : new NoopStatePartitionSelector());
         }
 
-        protected virtual ResultWriter CreateResultWriter(IEmittedEventWriter emittedEventWriter,
+        protected virtual IResultWriter CreateResultWriter(IEmittedEventWriter emittedEventWriter,
             CheckpointTag zeroCheckpointTag, ProjectionNamesBuilder namingBuilder)
         {
             return new ResultWriter(

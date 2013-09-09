@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
             CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
             StatePartitionSelector statePartitionSelector,
             ReaderSubscriptionDispatcher subscriptionDispatcher, int phase, IReaderStrategy readerStrategy,
-            ResultWriter resultWriter, bool useCheckpoints)
+            IResultWriter resultWriter, bool useCheckpoints)
             : base(
                 publisher, coreProjection, projectionCorrelationId, projectionProcessingStrategy,
                 coreProjectionCheckpointManager, projectionConfig, projectionName, logger, zeroCheckpointTag, phase)

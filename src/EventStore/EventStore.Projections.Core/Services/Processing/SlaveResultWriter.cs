@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void WriteRunningResult(EventProcessedResult result)
         {
-            throw new NotSupportedException();
+            // intentionally does nothing            
         }
 
         public void AccountPartition(EventProcessedResult result)

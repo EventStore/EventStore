@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action committed)
         {
-            throw new NotSupportedException();
+            committed();
         }
 
         public void BeginLoadPartitionStateAt(
