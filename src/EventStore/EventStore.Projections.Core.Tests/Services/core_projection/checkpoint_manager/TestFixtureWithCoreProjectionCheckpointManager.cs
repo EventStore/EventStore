@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _namingBuilder = ProjectionNamesBuilder.CreateForTest("projection");
             _config = new ProjectionConfig(null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
                 _pendingEventsThreshold, _maxWriteBatchLength, _emitEventEnabled,
-                _checkpointsEnabled, _createTempStreams, _stopOnEof);
+                _checkpointsEnabled, _createTempStreams, _stopOnEof, isSlaveProjection: false);
             _resultEventEmitter = new ResultEventEmitter(_namingBuilder);
             When();
         }
@@ -100,6 +100,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_projection);
             _bus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_projection);
             _bus.Subscribe<CoreProjectionProcessingMessage.Failed>(_projection);
+            _bus.Subscribe<EventReaderSubscriptionMessage.ReaderAssignedReader>(_projection);
+             
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());

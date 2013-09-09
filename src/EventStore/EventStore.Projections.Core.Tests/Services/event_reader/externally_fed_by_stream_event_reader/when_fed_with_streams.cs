@@ -32,6 +32,7 @@ using System.Linq;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed_by_stream_event_reader
@@ -153,7 +154,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
             [Test]
             public void publishes_partition_eof_message_at_the_end_of_each_stream()
             {
-                var events = HandledMessages.OfType<EventReaderSubscriptionMessage>().ToArray();
+                var events =
+                    HandledMessages
+                        .OfTypes
+                        <EventReaderSubscriptionMessage, EventReaderSubscriptionMessage.PartitionEofReached,
+                            EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[2]);
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[5]);
             }
@@ -191,7 +196,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
             [Test]
             public void publishes_partition_eof_message_at_the_end_of_each_stream()
             {
-                var events = HandledMessages.OfType<EventReaderSubscriptionMessage>().ToArray();
+                var events =
+                    HandledMessages
+                        .OfTypes
+                        <EventReaderSubscriptionMessage, EventReaderSubscriptionMessage.PartitionEofReached,
+                            EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[2]);
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[5]);
             }
@@ -227,7 +236,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
             [Test]
             public void publishes_partition_eof_message_at_the_end_of_each_stream()
             {
-                var events = HandledMessages.OfType<EventReaderSubscriptionMessage>().ToArray();
+                var events =
+                    HandledMessages
+                        .OfTypes
+                        <EventReaderSubscriptionMessage, EventReaderSubscriptionMessage.PartitionEofReached,
+                            EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[2]);
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[5]);
             }
@@ -235,7 +248,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
             [Test]
             public void publishes_eof_message()
             {
-                var lastEvent = HandledMessages.OfType<EventReaderSubscriptionMessage>().LastOrDefault();
+                var lastEvent =
+                    HandledMessages.OfType<EventReaderSubscriptionMessage>()
+                        .LastOrDefault(v => !(v is EventReaderSubscriptionMessage.ReaderAssignedReader));
                 Assert.IsNotNull(lastEvent);
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.EofReached>(lastEvent);
             }

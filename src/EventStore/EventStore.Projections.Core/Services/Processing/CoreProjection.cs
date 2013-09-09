@@ -43,7 +43,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                   ICoreProjection,
                                   ICoreProjectionForProcessingPhase,
                                   IHandle<CoreProjectionManagementMessage.GetState>,
-                                  IHandle<CoreProjectionManagementMessage.GetResult>
+                                  IHandle<CoreProjectionManagementMessage.GetResult>,
+                                  IHandle<EventReaderSubscriptionMessage.ReaderAssignedReader>  
     {
         [Flags]
         private enum State : uint
@@ -77,6 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PartitionStateCache _partitionStateCache;
         private ICoreProjectionCheckpointManager _checkpointManager;
         private readonly ICoreProjectionCheckpointReader _checkpointReader;
+        private readonly bool _isSlaveProjection;
 
         private bool _tickPending;
 
@@ -90,13 +92,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
         private readonly bool _partitionedStateState;
         private readonly Action<ProjectionStatistics> _enrichStatistics;
+        //NOTE: this is only for slave projections (TBD)
+        private Guid _slaveProjectionReaderId;
 
 
         public CoreProjection(
             ProjectionProcessingStrategy projectionProcessingStrategy, ProjectionVersion version,
             Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
             ReaderSubscriptionDispatcher subscriptionDispatcher, ILogger logger, ProjectionNamesBuilder namingBuilder, CoreProjectionCheckpointWriter coreProjectionCheckpointWriter,
-            PartitionStateCache partitionStateCache, string effectiveProjectionName, ITimeProvider timeProvider)
+            PartitionStateCache partitionStateCache, string effectiveProjectionName, ITimeProvider timeProvider, bool isSlaveProjection)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
@@ -110,6 +114,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher = publisher;
             _partitionStateCache = partitionStateCache;
             _partitionedStateState = projectionProcessingStrategy.GetIsPartitioned();
+            _isSlaveProjection = isSlaveProjection;
             var useCheckpoints = projectionProcessingStrategy.GetUseCheckpoints();
 
             _coreProjectionCheckpointWriter = coreProjectionCheckpointWriter;
@@ -456,7 +461,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             try
             {
-                _publisher.Publish(new CoreProjectionManagementMessage.Started(_projectionCorrelationId));
+                _publisher.Publish(
+                    new CoreProjectionManagementMessage.Started(_projectionCorrelationId, _slaveProjectionReaderId));
                 _projectionProcessingPhase.ProcessEvent();
             }
             catch (Exception ex)
@@ -630,6 +636,13 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Subscribed()
         {
             GoToState(State.Subscribed);
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.ReaderAssignedReader message)
+        {
+            if (!_isSlaveProjection)
+                return;
+            _slaveProjectionReaderId = message.ReaderId;
         }
     }
 }

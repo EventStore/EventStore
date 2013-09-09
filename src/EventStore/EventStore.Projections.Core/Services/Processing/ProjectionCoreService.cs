@@ -43,6 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionCoreServiceMessage.CoreTick>,
                                          IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
                                          IHandle<CoreProjectionManagementMessage.CreatePrepared>,
+                                         IHandle<CoreProjectionManagementMessage.CreateAndPrepareSlave>,
                                          IHandle<CoreProjectionManagementMessage.Dispose>,
                                          IHandle<CoreProjectionManagementMessage.Start>,
                                          IHandle<CoreProjectionManagementMessage.LoadStopped>,
@@ -67,8 +68,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly IODispatcher _ioDispatcher;
 
-        private readonly ReaderSubscriptionDispatcher
-            _subscriptionDispatcher;
+        private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
         private readonly ITimeProvider _timeProvider;
 
@@ -159,6 +159,29 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        public void Handle(CoreProjectionManagementMessage.CreateAndPrepareSlave message)
+        {
+            try
+            {
+                //TODO: factory method can throw!
+                IProjectionStateHandler stateHandler = message.HandlerFactory();
+                string name = message.Name;
+                var sourceDefinition = ProjectionSourceDefinition.From(name, stateHandler.GetSourceDefinition());
+                var projectionVersion = message.Version;
+                var projectionConfig = message.Config;
+                var projectionProcessingStrategy = CreateSlaveProjectionProcessingStrategy(
+                    name, projectionVersion, sourceDefinition, projectionConfig, stateHandler, message.ResultsEnvelope);
+                CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
+            }
+            catch (Exception ex)
+            {
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
+            }
+        }
+
         private void CreateCoreProjection(Guid projectionCorrelationId, ProjectionProcessingStrategy processingStrategy)
         {
             var projection = processingStrategy.Create(
@@ -173,6 +196,14 @@ namespace EventStore.Projections.Core.Services.Processing
                     name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger)
                 : new ContinuousProjectionProcessingStrategy(
                     name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger);
+        }
+
+        private ProjectionProcessingStrategy CreateSlaveProjectionProcessingStrategy(
+            string name, ProjectionVersion projectionVersion, ProjectionSourceDefinition sourceDefinition,
+            ProjectionConfig projectionConfig, IProjectionStateHandler stateHandler, IEnvelope resultsEnvelope)
+        {
+            return new SlaveQueryProcessingStrategy(
+                name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger, resultsEnvelope);
         }
 
         public void Handle(CoreProjectionManagementMessage.Dispose message)

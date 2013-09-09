@@ -70,5 +70,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             return self.Where(v => v.Events.Any(m => m.EventType == type)).ToList();
         }
+
+        public static IEnumerable<T> OfTypes<T, T1, T2>(this IEnumerable<object> source) where T1 : T where T2 : T
+        {
+            return source.OfType<T>().Where(v => v is T1 || v is T2);
+        }
     }
 }

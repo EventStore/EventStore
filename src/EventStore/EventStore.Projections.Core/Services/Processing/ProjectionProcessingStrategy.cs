@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return new CoreProjection(
                 this, _projectionVersion, projectionCorrelationId, publisher, ioDispatcher, subscriptionDispatcher,
                 _logger, namingBuilder, coreProjectionCheckpointWriter, partitionStateCache,
-                namingBuilder.EffectiveProjectionName, timeProvider);
+                namingBuilder.EffectiveProjectionName, timeProvider, GetIsSlaveProjection());
         }
 
         protected abstract IQuerySources GetSourceDefinition();
@@ -77,6 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public abstract bool GetUseCheckpoints();
         public abstract bool GetIsPartitioned();
         public abstract bool GetProducesRunningResults();
+        public abstract bool GetIsSlaveProjection();
         public abstract void EnrichStatistics(ProjectionStatistics info);
 
         public abstract IProjectionProcessingPhase[] CreateProcessingPhases(

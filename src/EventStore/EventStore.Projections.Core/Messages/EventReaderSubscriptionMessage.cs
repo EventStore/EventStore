@@ -198,6 +198,34 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class ReaderAssignedReader : EventReaderSubscriptionMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            private readonly Guid _correlationId;
+            private readonly Guid _readerId;
+
+            public ReaderAssignedReader(Guid correlationId, Guid readerId)
+                : base(correlationId, null, 0, 0, null)
+            {
+                _correlationId = correlationId;
+                _readerId = readerId;
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+
+            public Guid ReaderId
+            {
+                get { return _readerId; }
+            }
+
+        }
+
+
         public CheckpointTag CheckpointTag
         {
             get { return _checkpointTag; }

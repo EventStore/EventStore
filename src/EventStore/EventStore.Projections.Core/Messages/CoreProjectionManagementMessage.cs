@@ -77,9 +77,17 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public Started(Guid projectionId)
+            public Guid SlaveProjectionReaderId
+            {
+                get { return _slaveProjectionReaderId; }
+            }
+
+            private readonly Guid _slaveProjectionReaderId;
+
+            public Started(Guid projectionId, Guid slaveProjectionReaderId)
                 : base(projectionId)
             {
+                _slaveProjectionReaderId = slaveProjectionReaderId;
             }
         }
 
@@ -399,6 +407,66 @@ namespace EventStore.Projections.Core.Messages
                 get { return _version; }
             }
 
+        }
+
+        public class CreateAndPrepareSlave : CoreProjectionManagementMessage
+        {
+            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
+
+            private readonly IEnvelope _envelope;
+            private readonly IEnvelope _resultsEnvelope;
+            private readonly ProjectionConfig _config;
+            private readonly Func<IProjectionStateHandler> _handlerFactory;
+            private readonly string _name;
+            private readonly ProjectionVersion _version;
+
+            public CreateAndPrepareSlave(
+                IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
+                IEnvelope resultsEnvelope, Func<IProjectionStateHandler> handlerFactory)
+                : base(projectionId)
+            {
+                _envelope = envelope;
+                _name = name;
+                _version = version;
+                _config = config;
+                _resultsEnvelope = resultsEnvelope;
+                _handlerFactory = handlerFactory;
+            }
+
+            public ProjectionConfig Config
+            {
+                get { return _config; }
+            }
+
+            public Func<IProjectionStateHandler> HandlerFactory
+            {
+                get { return _handlerFactory; }
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+            public ProjectionVersion Version
+            {
+                get { return _version; }
+            }
+
+            public IEnvelope ResultsEnvelope
+            {
+                get { return _resultsEnvelope; }
+            }
         }
 
         public class CreatePrepared : CoreProjectionManagementMessage

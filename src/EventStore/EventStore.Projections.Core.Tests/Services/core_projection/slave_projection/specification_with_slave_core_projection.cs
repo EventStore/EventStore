@@ -41,6 +41,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.slave_proje
     {
         protected Guid _eventId;
 
+        protected override bool GivenIsSlaveProjection()
+        {
+            return true;
+        }
+
         protected override bool GivenCheckpointsEnabled()
         {
             return false;

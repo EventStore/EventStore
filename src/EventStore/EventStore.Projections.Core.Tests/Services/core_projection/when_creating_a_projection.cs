@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
-            null, 5, 10, 1000, 250, true, true, true, true);
+            null, 5, 10, 1000, 250, true, true, true, true, false);
 
         private IODispatcher _ioDispatcher;
 
@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false);
+            var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false, false);
             new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(
@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false);
+            var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false, false);
             new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(
@@ -146,7 +146,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false);
+            var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false, false);
             new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null).Create(

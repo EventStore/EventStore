@@ -93,6 +93,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 return true;
             }
 
+            public override bool GetIsSlaveProjection()
+            {
+                return false;
+            }
+
             public override void EnrichStatistics(ProjectionStatistics info)
             {
             }

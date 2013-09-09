@@ -68,9 +68,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
                 yield return
                     (new ProjectionManagementMessage.Post(
                         new PublishEnvelope(_bus), _projectionMode, _projectionName,
-                        ProjectionManagementMessage.RunAs.System,
-                        "native:" + _fakeProjectionType.AssemblyQualifiedName, _projectionSource, enabled: true,
-                        checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
+                        ProjectionManagementMessage.RunAs.System, "native:" + _fakeProjectionType.AssemblyQualifiedName,
+                        _projectionSource, enabled: true, checkpointsEnabled: _checkpointsEnabled,
+                        emitEnabled: _emitEnabled));
             }
         }
 
@@ -127,7 +127,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             {
                 foreach (var m in base.When()) yield return m;
                 var readerAssignedMessage =
-                    _consumer.HandledMessages.OfType<ReaderSubscriptionManagement.ReaderAssignedReader>().LastOrDefault();
+                    _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.ReaderAssignedReader>().LastOrDefault();
                 Assert.IsNotNull(readerAssignedMessage);
                 var reader = readerAssignedMessage.ReaderId;
 

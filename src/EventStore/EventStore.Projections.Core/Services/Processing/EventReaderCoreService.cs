@@ -103,7 +103,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 _eventReaderSubscriptions.Add(forkedEventReaderId, message.SubscriptionId);
                 _eventReaders.Add(forkedEventReaderId, forkedEventReader);
                 _publisher.Publish(
-                    new ReaderSubscriptionManagement.ReaderAssignedReader(message.SubscriptionId, forkedEventReaderId));
+                    new EventReaderSubscriptionMessage.ReaderAssignedReader(
+                        message.SubscriptionId, forkedEventReaderId));
             }
             else
             {
@@ -140,7 +141,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptionEventReaders.Add(subscriptionId, distibutionPointCorrelationId);
             _eventReaderSubscriptions.Add(distibutionPointCorrelationId, subscriptionId);
             _publisher.Publish(
-                new ReaderSubscriptionManagement.ReaderAssignedReader(
+                new EventReaderSubscriptionMessage.ReaderAssignedReader(
                     subscriptionId, distibutionPointCorrelationId));
             eventReader.Resume();
         }
@@ -156,7 +157,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _eventReaders.Remove(eventReaderId);
                 _eventReaderSubscriptions.Remove(eventReaderId);
                 _publisher.Publish(
-                    new ReaderSubscriptionManagement.ReaderAssignedReader(message.SubscriptionId, Guid.Empty));
+                    new EventReaderSubscriptionMessage.ReaderAssignedReader(message.SubscriptionId, Guid.Empty));
                 _logger.Trace(
                     "The '{0}' subscription has unsubscribed (reader: {1})", message.SubscriptionId,
                     eventReaderId);
@@ -307,7 +308,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventReaders.Remove(eventReaderId);
             _eventReaderSubscriptions.Remove(eventReaderId);
             _subscriptionEventReaders[projectionId] = Guid.Empty;
-            _publisher.Publish(new ReaderSubscriptionManagement.ReaderAssignedReader(message.CorrelationId, Guid.Empty));
+            _publisher.Publish(new EventReaderSubscriptionMessage.ReaderAssignedReader(message.CorrelationId, Guid.Empty));
             return true;
         }
 

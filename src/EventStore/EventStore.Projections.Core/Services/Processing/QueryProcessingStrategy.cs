@@ -58,6 +58,11 @@ namespace EventStore.Projections.Core.Services.Processing
             return !_sourceDefinition.DefinesFold;
         }
 
+        public override bool GetIsSlaveProjection()
+        {
+            return false;
+        }
+
         protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
             PartitionStateCache partitionStateCache, CoreProjection coreProjection, IODispatcher ioDispatcher,

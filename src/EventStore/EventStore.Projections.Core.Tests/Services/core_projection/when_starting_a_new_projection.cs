@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using System.Linq;
@@ -61,6 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
             var startedMessage = _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Single();
             Assert.AreEqual(_projectionCorrelationId, startedMessage.ProjectionId);
+            Assert.AreEqual(Guid.Empty, startedMessage.SlaveProjectionReaderId);
         }
     }
 }

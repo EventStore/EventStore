@@ -28,12 +28,15 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager
 {
-    public class FakeCoreProjection : ICoreProjection, ICoreProjectionForProcessingPhase
+    public class FakeCoreProjection : ICoreProjection,
+        ICoreProjectionForProcessingPhase,
+        IHandle<EventReaderSubscriptionMessage.ReaderAssignedReader>
     {
         public readonly List<CoreProjectionProcessingMessage.CheckpointCompleted> _checkpointCompletedMessages =
             new List<CoreProjectionProcessingMessage.CheckpointCompleted>();
@@ -110,6 +113,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void Subscribed()
         {
             SubscribedInvoked ++;
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.ReaderAssignedReader message)
+        {
+            throw new NotImplementedException();
         }
     }
 }
