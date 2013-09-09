@@ -247,7 +247,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         {
             if (meta.MaxCount.HasValue) yield return string.Format("$maxCount:{0}", meta.MaxCount);
             if (meta.MaxAge.HasValue) yield return string.Format("$maxAge:{0}", (int)meta.MaxAge.Value.TotalSeconds);
-            if (meta.StartFrom.HasValue) yield return string.Format("$startFrom:{0})", meta.StartFrom);
+            if (meta.TruncateBefore.HasValue) yield return string.Format("$tb:{0})", meta.TruncateBefore);
         }
     }
 

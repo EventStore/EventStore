@@ -103,7 +103,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly Queue<TransInfo> _notProcessedTrans = new Queue<TransInfo>();
         private readonly BoundedCache<Guid, Tuple<string, int>> _committedEvents = new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, ESConsts.CommitedEventsMemCacheLimit, x => 16 + 4 + IntPtr.Size + 2*x.Item1.Length);
         private readonly IStickyLRUCache<string, int> _streamVersions = new StickyLRUCache<string, int>(ESConsts.StreamInfoCacheCapacity);
-        private readonly IStickyLRUCache<string, byte[]> _streamRawMetas = new StickyLRUCache<string, byte[]>(1); // the least possible capacity so we keep only non-flushed sticky raw metadata
+        private readonly IStickyLRUCache<string, byte[]> _streamRawMetas = new StickyLRUCache<string, byte[]>(0); // store nothing flushed, only sticky non-flushed stuff
         private readonly Queue<CommitInfo> _notProcessedCommits = new Queue<CommitInfo>();
 
         private long _cachedTransInfo;
@@ -179,7 +179,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (curVersion == EventNumber.DeletedStream)
                 return new CommitCheckResult(CommitDecision.Deleted, streamId, curVersion, -1, -1, false);
 
-            bool isSoftDeleted = streamInfo.Metadata.StartFrom == EventNumber.DeletedStream;
+            bool isSoftDeleted = streamInfo.Metadata.TruncateBefore == EventNumber.DeletedStream;
 
             // idempotency checks
             if (expectedVersion == ExpectedVersion.Any)
@@ -472,7 +472,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             try
             {
                 var jobj = JObject.Parse(Encoding.UTF8.GetString(metaRaw));
-                jobj[SystemMetadata.StartFrom] = recreateFromEventNumber;
+                jobj[SystemMetadata.TruncateBefore] = recreateFromEventNumber;
                 using (var memoryStream = new MemoryStream())
                 using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream)))
                 {

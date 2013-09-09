@@ -57,12 +57,12 @@ namespace EventStore.Core.Services.Storage
 
         private readonly IPublisher _masterBus;
         private readonly ICheckpoint _writerCheckpoint;
-        private readonly ICheckpoint _chaserCheckpoint;
         private readonly ITransactionFileChaser _chaser;
         private readonly IIndexCommitter _indexCommitter;
         private readonly IEpochManager _epochManager;
         private Thread _thread;
         private volatile bool _stop;
+        private volatile bool _systemStarted;
 
         private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Storage Chaser");
 
@@ -99,19 +99,12 @@ namespace EventStore.Core.Services.Storage
             _thread = new Thread(ChaseTransactionLog);
             _thread.IsBackground = true;
             _thread.Name = Name;
-
-            // We rebuild index till the chaser position, because
-            // everything else will be done by chaser as during replication
-            // with no concurrency issues with writer, as writer before jumping 
-            // into master-mode and accepting writes will wait till chaser caught up.
-            _indexCommitter.Init(_chaser.Checkpoint.Read());
-
-            _masterBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
+            _thread.Start();
         }
 
         public void Handle(SystemMessage.SystemStart message)
         {
-            _thread.Start();
+            _systemStarted = true;
         }
 
         private void ChaseTransactionLog()
@@ -119,12 +112,23 @@ namespace EventStore.Core.Services.Storage
             _queueStats.Start();
             QueueMonitor.Default.Register(this);
 
-            _chaser.Open();
             try
             {
+                _chaser.Open();
+                
+                // We rebuild index till the chaser position, because
+                // everything else will be done by chaser as during replication
+                // with no concurrency issues with writer, as writer before jumping 
+                // into master-mode and accepting writes will wait till chaser caught up.
+                _indexCommitter.Init(_chaser.Checkpoint.Read());
+                _masterBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
+
                 while (!_stop)
                 {
-                    ChaserIteration();
+                    if (_systemStarted)
+                        ChaserIteration();
+                    else
+                        Thread.Sleep(1);
                 }
             }
             catch (Exception exc)

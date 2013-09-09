@@ -42,11 +42,11 @@ namespace EventStore.Core.Data
 
         public readonly int? MaxCount;
         public readonly TimeSpan? MaxAge;
-        public readonly int? StartFrom;
+        public readonly int? TruncateBefore;
         public readonly TimeSpan? CacheControl;
         public readonly StreamAcl Acl;
 
-        public StreamMetadata(int? maxCount, TimeSpan? maxAge, int? startFrom, TimeSpan? cacheControl, StreamAcl acl)
+        public StreamMetadata(int? maxCount, TimeSpan? maxAge, int? truncateBefore, TimeSpan? cacheControl, StreamAcl acl)
         {
             if (maxCount <= 0)
                 throw new ArgumentOutOfRangeException(
@@ -54,9 +54,9 @@ namespace EventStore.Core.Data
             if (maxAge <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException(
                     "maxAge", string.Format("{0} should be positive time span.", SystemMetadata.MaxAge));
-            if (startFrom < 0)
+            if (truncateBefore < 0)
                 throw new ArgumentOutOfRangeException(
-                    "startFrom", string.Format("{0} should be non negative value.", SystemMetadata.StartFrom));
+                    "truncateBefore", string.Format("{0} should be non negative value.", SystemMetadata.TruncateBefore));
 
             if (cacheControl <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException(
@@ -64,14 +64,14 @@ namespace EventStore.Core.Data
 
             MaxCount = maxCount;
             MaxAge = maxAge;
-            StartFrom = startFrom;
+            TruncateBefore = truncateBefore;
             CacheControl = cacheControl;
             Acl = acl;
         }
 
         public override string ToString()
         {
-            return string.Format("MaxCount: {0}, MaxAge: {1}, StartFrom: {2} CacheControl: {3}, Acl: {4}", MaxCount, MaxAge, StartFrom, CacheControl, Acl);
+            return string.Format("MaxCount: {0}, MaxAge: {1}, TruncateBefore: {2} CacheControl: {3}, Acl: {4}", MaxCount, MaxAge, TruncateBefore, CacheControl, Acl);
         }
 
         public static StreamMetadata FromJsonBytes(byte[] json)
@@ -83,7 +83,7 @@ namespace EventStore.Core.Data
 
                 int? maxCount = null;
                 TimeSpan? maxAge = null;
-                int? startFrom = null;
+                int? truncateBefore = null;
                 TimeSpan? cacheControl = null;
                 StreamAcl acl = null;
 
@@ -110,11 +110,11 @@ namespace EventStore.Core.Data
                             maxAge = TimeSpan.FromSeconds((long) reader.Value);
                             break;
                         }
-                        case SystemMetadata.StartFrom:
+                        case SystemMetadata.TruncateBefore:
                         {
                             Check(reader.Read(), reader);
                             Check(JsonToken.Integer, reader);
-                            startFrom = (int)(long)reader.Value;
+                            truncateBefore = (int)(long)reader.Value;
                             break;
                         }
                         case SystemMetadata.CacheControl:
@@ -140,7 +140,7 @@ namespace EventStore.Core.Data
                 }
                 return new StreamMetadata(maxCount > 0 ? maxCount : null,
                                           maxAge > TimeSpan.Zero ? maxAge : null,
-                                          startFrom >= 0 ? startFrom : null,
+                                          truncateBefore >= 0 ? truncateBefore : null,
                                           cacheControl > TimeSpan.Zero ? cacheControl : null,
                                           acl);
             }
@@ -248,10 +248,10 @@ namespace EventStore.Core.Data
                 jsonWriter.WritePropertyName(SystemMetadata.MaxAge);
                 jsonWriter.WriteValue((long) MaxAge.Value.TotalSeconds);
             }
-            if (StartFrom.HasValue)
+            if (TruncateBefore.HasValue)
             {
-                jsonWriter.WritePropertyName(SystemMetadata.StartFrom);
-                jsonWriter.WriteValue(StartFrom.Value);				   
+                jsonWriter.WritePropertyName(SystemMetadata.TruncateBefore);
+                jsonWriter.WriteValue(TruncateBefore.Value);				   
             }
             if (CacheControl.HasValue)
             {

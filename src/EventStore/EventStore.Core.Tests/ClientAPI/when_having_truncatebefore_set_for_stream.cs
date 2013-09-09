@@ -35,7 +35,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class when_having_start_from_set_for_stream : SpecificationWithDirectoryPerTestFixture
+    public class when_having_truncatebefore_set_for_stream : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
         private IEventStoreConnection _connection;
@@ -63,12 +63,12 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void read_event_respects_start_from()
+        public void read_event_respects_truncatebefore()
         {
-            const string stream = "read_event_respects_start_from";
+            const string stream = "read_event_respects_truncatebefore";
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadEvent(stream, 1, false);
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
@@ -79,12 +79,12 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void read_stream_forward_respects_start_from()
+        public void read_stream_forward_respects_truncatebefore()
         {
-            const string stream = "read_stream_forward_respects_start_from";
+            const string stream = "read_stream_forward_respects_truncatebefore";
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadStreamEventsForward(stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -94,12 +94,12 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void read_stream_backward_respects_start_from()
+        public void read_stream_backward_respects_truncatebefore()
         {
-            const string stream = "read_stream_backward_respects_start_from";
+            const string stream = "read_stream_backward_respects_truncatebefore";
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadStreamEventsBackward(stream, -1, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -109,13 +109,13 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void after_setting_less_strict_start_from_read_event_reads_more_events()
+        public void after_setting_less_strict_truncatebefore_read_event_reads_more_events()
         {
-            const string stream = "after_setting_less_strict_start_from_read_event_reads_more_events";
+            const string stream = "after_setting_less_strict_truncatebefore_read_event_reads_more_events";
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadEvent(stream, 1, false);
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
@@ -124,7 +124,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[2].EventId, res.Event.Value.OriginalEvent.EventId);
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(1));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(1));
 
             res = _connection.ReadEvent(stream, 0, false);
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
@@ -135,13 +135,13 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void after_setting_more_strict_start_from_read_event_reads_less_events()
+        public void after_setting_more_strict_truncatebefore_read_event_reads_less_events()
         {
-            const string stream = "after_setting_more_strict_start_from_read_event_reads_less_events";
+            const string stream = "after_setting_more_strict_truncatebefore_read_event_reads_less_events";
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadEvent(stream, 1, false);
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
@@ -150,7 +150,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[2].EventId, res.Event.Value.OriginalEvent.EventId);
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(3));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(3));
 
             res = _connection.ReadEvent(stream, 2, false);
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
@@ -167,7 +167,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadEvent(stream, 1, false);
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
@@ -176,7 +176,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[2].EventId, res.Event.Value.OriginalEvent.EventId);
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(2).SetMaxCount(4));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(4));
 
             res = _connection.ReadEvent(stream, 1, false);
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
@@ -193,7 +193,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadEvent(stream, 1, false);
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
@@ -202,7 +202,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[2].EventId, res.Event.Value.OriginalEvent.EventId);
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(2).SetMaxCount(2));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(2));
 
             res = _connection.ReadEvent(stream, 2, false);
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
@@ -214,13 +214,13 @@ namespace EventStore.Core.Tests.ClientAPI
 
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void after_setting_less_strict_start_from_read_stream_forward_reads_more_events()
+        public void after_setting_less_strict_truncatebefore_read_stream_forward_reads_more_events()
         {
-            const string stream = "after_setting_less_strict_start_from_read_stream_forward_reads_more_events";
+            const string stream = "after_setting_less_strict_truncatebefore_read_stream_forward_reads_more_events";
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadStreamEventsForward(stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -228,7 +228,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(1));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(1));
 
             res = _connection.ReadStreamEventsForward(stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -238,13 +238,13 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void after_setting_more_strict_start_from_read_stream_forward_reads_less_events()
+        public void after_setting_more_strict_truncatebefore_read_stream_forward_reads_less_events()
         {
-            const string stream = "after_setting_more_strict_start_from_read_stream_forward_reads_less_events";
+            const string stream = "after_setting_more_strict_truncatebefore_read_stream_forward_reads_less_events";
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadStreamEventsForward(stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -252,7 +252,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(3));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(3));
 
             res = _connection.ReadStreamEventsForward(stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -268,7 +268,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadStreamEventsForward(stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -276,7 +276,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(2).SetMaxCount(4));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(4));
 
             res = _connection.ReadStreamEventsForward(stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -292,7 +292,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadStreamEventsForward(stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -300,7 +300,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(2).SetMaxCount(2));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(2));
 
             res = _connection.ReadStreamEventsForward(stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -310,13 +310,13 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void after_setting_less_strict_start_from_read_stream_backward_reads_more_events()
+        public void after_setting_less_strict_truncatebefore_read_stream_backward_reads_more_events()
         {
-            const string stream = "after_setting_less_strict_start_from_read_stream_backward_reads_more_events";
+            const string stream = "after_setting_less_strict_truncatebefore_read_stream_backward_reads_more_events";
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadStreamEventsBackward(stream, -1, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -324,7 +324,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(1));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(1));
 
             res = _connection.ReadStreamEventsBackward(stream, -1, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -334,13 +334,13 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void after_setting_more_strict_start_from_read_stream_backward_reads_less_events()
+        public void after_setting_more_strict_truncatebefore_read_stream_backward_reads_less_events()
         {
-            const string stream = "after_setting_more_strict_start_from_read_stream_backward_reads_less_events";
+            const string stream = "after_setting_more_strict_truncatebefore_read_stream_backward_reads_less_events";
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadStreamEventsBackward(stream, -1, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -348,7 +348,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(3));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(3));
 
             res = _connection.ReadStreamEventsBackward(stream, -1, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -364,7 +364,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadStreamEventsBackward(stream, -1, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -372,7 +372,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(2).SetMaxCount(4));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(4));
 
             res = _connection.ReadStreamEventsBackward(stream, -1, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -388,7 +388,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetStartFrom(2));
+            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
 
             var res = _connection.ReadStreamEventsBackward(stream, -1, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -396,7 +396,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetStartFrom(2).SetMaxCount(2));
+            _connection.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(2));
 
             res = _connection.ReadStreamEventsBackward(stream, -1, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);

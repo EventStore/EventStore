@@ -52,8 +52,7 @@ namespace EventStore.Core.DataStructures
 
         public StickyLRUCache(int maxCount)
         {
-            if (maxCount <= 0)
-                throw new ArgumentOutOfRangeException("maxCount");
+            Ensure.Nonnegative(maxCount, "maxCount");
 
             _maxCount = maxCount;
         }
@@ -172,7 +171,7 @@ namespace EventStore.Core.DataStructures
 
         private void EnsureCapacity()
         {
-            while (_items.Count >= _maxCount)
+            while (_items.Count > 0 && _items.Count >= _maxCount)
             {
                 var node = _orderList.First;
                 if (node.Value.Stickiness == 0)
@@ -185,6 +184,7 @@ namespace EventStore.Core.DataStructures
                 {
                     _orderList.Remove(node);
                     _orderList.AddLast(node);
+                    break; // hope garbage will be freed on later puts
                 }
             }
         }

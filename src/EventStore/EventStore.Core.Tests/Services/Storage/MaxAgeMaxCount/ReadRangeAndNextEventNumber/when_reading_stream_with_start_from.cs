@@ -31,7 +31,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNextEventNumber
 {
-    public class when_reading_stream_with_start_from: ReadIndexTestScenario
+    public class when_reading_stream_with_truncatebefore: ReadIndexTestScenario
     {
         private EventRecord _event3;
         private EventRecord _event4;
@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         
         protected override void WriteTestScenario()
         {
-            WriteStreamMetadata("ES", 0, @"{""$startFrom"":2}");
+            WriteStreamMetadata("ES", 0, @"{""$tb"":2}");
             WriteSingleEvent("ES", 0, "bla");
             WriteSingleEvent("ES", 1, "bla");
             _event3 = WriteSingleEvent("ES", 2, "bla");

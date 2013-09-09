@@ -82,6 +82,11 @@ namespace EventStore.Core.Messages
 
                 LiveUntil = liveUntil;
             }
+
+            public override string ToString()
+            {
+                return string.Format("WRITE_PREPARES: CorrelationId: {0}, EventStreamId: {1}, ExpectedVersion: {2}, LiveUntil: {3}", CorrelationId, EventStreamId, ExpectedVersion, LiveUntil);
+            }
         }
 
         public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage

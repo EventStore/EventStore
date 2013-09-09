@@ -331,7 +331,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             var meta = _readIndex.GetStreamMetadata(prepare.EventStreamId);
             bool canRemove = (meta.MaxCount.HasValue && eventNumber < lastEventNumber - meta.MaxCount.Value + 1)
-                          || (meta.StartFrom.HasValue && eventNumber < meta.StartFrom.Value)
+                          || (meta.TruncateBefore.HasValue && eventNumber < meta.TruncateBefore.Value)
                           || (meta.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - meta.MaxAge.Value);
 
             if (canRemove)

@@ -95,7 +95,7 @@
     <Compile Include="ClientAPI\Security\overriden_user_stream_security.cs" />
     <Compile Include="ClientAPI\Security\overriden_system_stream_security.cs" />
     <Compile Include="ClientAPI\append_to_stream.cs" />
-    <Compile Include="ClientAPI\when_having_start_from_set_for_stream.cs" />
+    <Compile Include="ClientAPI\when_having_truncatebefore_set_for_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />
     <Compile Include="ClientAPI\read_event_should.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
@@ -251,7 +251,7 @@
     <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_single_prepare.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_writing_few_prepares_on_same_event_number_and_commiting_delete_on_this_version_read_index_should.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_writing_delete_prepare_but_no_commit_read_index_should.cs" />
-    <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_with_startfrom_specified.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_with_truncatebefore_specified.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_both_maxage_and_maxcount_specified_with_maxage_more_strict.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_both_maxage_and_maxcount_specified_with_maxcount_more_strict.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_with_maxage_specified.cs" />
@@ -259,7 +259,7 @@
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_start_from.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\with_too_big_start_from.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\with_big_start_from.cs" />
-    <Compile Include="Services\Storage\MaxAgeMaxCount\when_having_stream_with_startfrom_specified.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\when_having_stream_with_truncatebefore_specified.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_age_is_more_strict.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_count_is_more_strict.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_age.cs" />

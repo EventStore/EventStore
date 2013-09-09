@@ -35,7 +35,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 {
     [TestFixture]
-    public class with_big_start_from: ReadIndexTestScenario
+    public class with_big_truncatebefore: ReadIndexTestScenario
     {
         private EventRecord _r1;
         private EventRecord _r2;
@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         {
             var now = DateTime.UtcNow;
 
-            const string metadata = @"{""$startFrom"":2147483647}"; //int.maxValue
+            const string metadata = @"{""$tb"":2147483647}"; //int.maxValue
 
             _r1 = WriteStreamMetadata("ES", 0, metadata, now.AddSeconds(-100));
             _r2 = WriteSingleEvent("ES", 0, "bla1", now.AddSeconds(-50));

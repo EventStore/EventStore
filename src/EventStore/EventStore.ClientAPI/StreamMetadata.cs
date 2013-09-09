@@ -77,7 +77,7 @@ namespace EventStore.ClientAPI
     {
         public readonly int? MaxCount;
         public readonly TimeSpan? MaxAge;
-        public readonly int? StartFrom;
+        public readonly int? TruncateBefore;
         public readonly TimeSpan? CacheControl;
         public readonly StreamAcl Acl;
 
@@ -89,30 +89,30 @@ namespace EventStore.ClientAPI
 
         private readonly IDictionary<string, JToken> _customMetadata;
 
-        internal StreamMetadata(int? maxCount, TimeSpan? maxAge, int? startFrom, TimeSpan? cacheControl, 
+        internal StreamMetadata(int? maxCount, TimeSpan? maxAge, int? truncateBefore, TimeSpan? cacheControl, 
                                 StreamAcl acl, IDictionary<string, JToken> customMetadata = null)
         {
             if (maxCount <= 0)
                 throw new ArgumentOutOfRangeException("maxCount", string.Format("{0} should be positive value.", SystemMetadata.MaxCount));
             if (maxAge <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException("maxAge", string.Format("{0} should be positive time span.", SystemMetadata.MaxAge));
-            if (startFrom < 0)
-                throw new ArgumentOutOfRangeException("startFrom", string.Format("{0} should be non negative value.", SystemMetadata.StartFrom));
+            if (truncateBefore < 0)
+                throw new ArgumentOutOfRangeException("truncateBefore", string.Format("{0} should be non negative value.", SystemMetadata.TruncateBefore));
 
             if (cacheControl <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException("cacheControl", string.Format("{0} should be positive time span.", SystemMetadata.CacheControl));
 
             MaxCount = maxCount;
             MaxAge = maxAge;
-            StartFrom = startFrom;
+            TruncateBefore = truncateBefore;
             CacheControl = cacheControl;
             Acl = acl;
             _customMetadata = customMetadata ?? Empty.CustomStreamMetadata;  
         }
 
-        public static StreamMetadata Create(int? maxCount = null, TimeSpan? maxAge = null, int? startFrom = null, TimeSpan? cacheControl = null, StreamAcl acl = null)
+        public static StreamMetadata Create(int? maxCount = null, TimeSpan? maxAge = null, int? truncateBefore = null, TimeSpan? cacheControl = null, StreamAcl acl = null)
         {
-            return new StreamMetadata(maxCount, maxAge, startFrom, cacheControl, acl);
+            return new StreamMetadata(maxCount, maxAge, truncateBefore, cacheControl, acl);
         }
 
         public static StreamMetadataBuilder Build()
@@ -203,10 +203,10 @@ namespace EventStore.ClientAPI
                 jsonWriter.WritePropertyName(SystemMetadata.MaxAge);
                 jsonWriter.WriteValue((long) MaxAge.Value.TotalSeconds);
             }
-            if (StartFrom.HasValue)
+            if (TruncateBefore.HasValue)
             {
-                jsonWriter.WritePropertyName(SystemMetadata.StartFrom);
-                jsonWriter.WriteValue(StartFrom.Value);
+                jsonWriter.WritePropertyName(SystemMetadata.TruncateBefore);
+                jsonWriter.WriteValue(TruncateBefore.Value);
             }
             if (CacheControl.HasValue)
             {
@@ -263,7 +263,7 @@ namespace EventStore.ClientAPI
 
                 int? maxCount = null;
                 TimeSpan? maxAge = null;
-                int? startFrom = null;
+                int? truncateBefore = null;
                 TimeSpan? cacheControl = null;
                 StreamAcl acl = null;
                 Dictionary<string, JToken> customMetadata = null;
@@ -291,11 +291,11 @@ namespace EventStore.ClientAPI
                             maxAge = TimeSpan.FromSeconds((long)reader.Value);
                             break;
                         }
-                        case SystemMetadata.StartFrom:
+                        case SystemMetadata.TruncateBefore:
                         {
                             Check(reader.Read(), reader);
                             Check(JsonToken.Integer, reader);
-                            startFrom = (int)(long)reader.Value;
+                            truncateBefore = (int)(long)reader.Value;
                             break;
                         }
                         case SystemMetadata.CacheControl:
@@ -321,7 +321,7 @@ namespace EventStore.ClientAPI
                         }
                     }
                 }
-                return new StreamMetadata(maxCount, maxAge, startFrom, cacheControl, acl, customMetadata);
+                return new StreamMetadata(maxCount, maxAge, truncateBefore, cacheControl, acl, customMetadata);
             }
         }
 
@@ -395,7 +395,7 @@ namespace EventStore.ClientAPI
     {
         private int? _maxCount;
         private TimeSpan? _maxAge;
-        private int? _startFrom;
+        private int? _truncateBefore;
         private TimeSpan? _cacheControl;
         private string[] _aclRead;
         private string[] _aclWrite;
@@ -418,7 +418,7 @@ namespace EventStore.ClientAPI
                       && builder._aclMetaWrite == null
                               ? null
                               : new StreamAcl(builder._aclRead, builder._aclWrite, builder._aclDelete, builder._aclMetaRead, builder._aclMetaWrite);
-            return new StreamMetadata(builder._maxCount, builder._maxAge, builder._startFrom, builder._cacheControl, acl, builder._customMetadata);
+            return new StreamMetadata(builder._maxCount, builder._maxAge, builder._truncateBefore, builder._cacheControl, acl, builder._customMetadata);
         }
 
         public StreamMetadataBuilder SetMaxCount(int maxCount)
@@ -435,10 +435,10 @@ namespace EventStore.ClientAPI
             return this;
         }
 
-        public StreamMetadataBuilder SetStartFrom(int startFrom)
+        public StreamMetadataBuilder SetTruncateBefore(int truncateBefore)
         {
-            Ensure.Nonnegative(startFrom, "startFrom");
-            _startFrom = startFrom;
+            Ensure.Nonnegative(truncateBefore, "truncateBefore");
+            _truncateBefore = truncateBefore;
             return this;
         }
 

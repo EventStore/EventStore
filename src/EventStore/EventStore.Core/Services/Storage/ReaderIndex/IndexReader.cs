@@ -49,7 +49,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
 
         /// <summary>
-        /// Doesn't filter $maxAge, $maxCount, $startFrom, doesn't check stream deletion, etc.
+        /// Doesn't filter $maxAge, $maxCount, $tb(truncate before), doesn't check stream deletion, etc.
         /// </summary>
         PrepareLogRecord ReadPrepare(string streamId, int eventNumber);
 
@@ -113,8 +113,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             int minEventNumber = 0;
             if (metadata.MaxCount.HasValue)
                 minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
-            if (metadata.StartFrom.HasValue)
-                minEventNumber = Math.Max(minEventNumber, metadata.StartFrom.Value);
+            if (metadata.TruncateBefore.HasValue)
+                minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
 
             if (eventNumber < minEventNumber || eventNumber > lastEventNumber)
                 return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber);
@@ -199,8 +199,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 int minEventNumber = 0;
                 if (metadata.MaxCount.HasValue)
                     minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
-                if (metadata.StartFrom.HasValue) 
-                    minEventNumber = Math.Max(minEventNumber, metadata.StartFrom.Value);
+                if (metadata.TruncateBefore.HasValue) 
+                    minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
                 if (endEventNumber < minEventNumber)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
                                                      metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
@@ -250,8 +250,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 int minEventNumber = 0;
                 if (metadata.MaxCount.HasValue)
                     minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
-                if (metadata.StartFrom.HasValue)
-                    minEventNumber = Math.Max(minEventNumber, metadata.StartFrom.Value);
+                if (metadata.TruncateBefore.HasValue)
+                    minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
                 if (endEventNumber < minEventNumber)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
                                                      metadata, -1, lastEventNumber, isEndOfStream: true);

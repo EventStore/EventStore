@@ -34,7 +34,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Scavenging
 {
     [TestFixture]
-    public class when_having_stream_with_start_from_specified : ScavengeTestScenario
+    public class when_having_stream_with_truncatebefore_specified : ScavengeTestScenario
     {
         protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {
