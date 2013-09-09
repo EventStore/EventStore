@@ -206,11 +206,25 @@ namespace EventStore.Core.Services.VNode
         {
             Log.Info("========== [{0}] IS SHUT DOWN!!! SWEET DREAMS!!!", _httpEndPoint);
             _state = VNodeState.Shutdown;
-            _outputBus.Publish(message);
+            try
+            {
+                _outputBus.Publish(message);
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Error when publishing {0}.", message);
+            }
             if (_exitProcessOnShutdown)
             {
-                _node.WorkersHandler.Stop();
-                _mainQueue.RequestStop();
+                try
+                {
+                    _node.WorkersHandler.Stop();
+                    _mainQueue.RequestStop();
+                }
+                catch (Exception exc)
+                {
+                    Log.ErrorException(exc, "Error when stopping workers/main queue.");
+                }
                 Application.Exit(ExitCode.Success, "Shutdown with exiting from process was requested.");
             }
         }
