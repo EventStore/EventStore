@@ -172,22 +172,19 @@ namespace EventStore.Core.DataStructures
 
         private void EnsureCapacity()
         {
-            int maxTries = 5;
-            while (_items.Count >= _maxCount && maxTries > 0)
+            while (_items.Count >= _maxCount)
             {
                 var node = _orderList.First;
-                _orderList.Remove(node);
-
                 if (node.Value.Stickiness == 0)
                 {
+                    _orderList.Remove(node);
                     _items.Remove(node.Value.Key);
                     ReturnNode(node);
                 }
                 else
                 {
-                    Log.Trace("StickyLRU: stickiness: {0}, key: {1}, value: {2}.", node.Value.Stickiness, node.Value.Key, node.Value.Value);
+                    _orderList.Remove(node);
                     _orderList.AddLast(node);
-                    maxTries -= 1;
                 }
             }
         }
