@@ -124,4 +124,75 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
             Assert.AreEqual("{\"data\":1}", result.Result);
         }
     }
+
+    [TestFixture]
+    public class when_processing_a_non_existing_stream : specification_with_slave_projection
+    {
+        private Guid _subscriptionId;
+
+        protected override void Given()
+        {
+            base.Given();
+            // No streams
+        }
+
+        protected override IEnumerable<WhenStep> When()
+        {
+            foreach (var m in base.When()) yield return m;
+            yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId);
+            var readerAssigned =
+                HandledMessages.OfType<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>().LastOrDefault();
+            Assert.IsNotNull(readerAssigned);
+            _subscriptionId = readerAssigned.SubscriptionId;
+            yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream", 0);
+        }
+
+        [Test]
+        public void publishes_partition_result_message()
+        {
+            var results =
+                HandledMessages.OfType<PartitionProcessingResult>().ToArray();
+            Assert.AreEqual(1, results.Length);
+            var result = results[0];
+            Assert.IsNull(result.Result);
+        }
+    }
+
+    [TestFixture]
+    public class when_processing_multiple_streams : specification_with_slave_projection
+    {
+        private Guid _subscriptionId;
+
+        protected override void Given()
+        {
+            base.Given();
+            ExistingEvent("test-stream", "handle_this_type", "", "{\"data\":1}");
+            ExistingEvent("test-stream", "handle_this_type", "", "{\"data\":1}");
+            ExistingEvent("test-stream2", "handle_this_type", "", "{\"data\":2}");
+        }
+
+        protected override IEnumerable<WhenStep> When()
+        {
+            foreach (var m in base.When()) yield return m;
+            yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId);
+            var readerAssigned =
+                HandledMessages.OfType<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>().LastOrDefault();
+            Assert.IsNotNull(readerAssigned);
+            _subscriptionId = readerAssigned.SubscriptionId;
+            yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream", 0);
+            yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream2", 1);
+            yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream3", 2);
+        }
+
+        [Test]
+        public void publishes_partition_result_message()
+        {
+            var results =
+                HandledMessages.OfType<PartitionProcessingResult>().ToArray();
+            Assert.AreEqual(3, results.Length);
+            Assert.AreEqual("{\"data\":1}", results[0].Result);
+            Assert.AreEqual("{\"data\":2}", results[0].Result);
+            Assert.IsNull(results[0].Result);
+        }
+    }
 }

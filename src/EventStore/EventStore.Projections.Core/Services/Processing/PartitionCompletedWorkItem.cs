@@ -61,8 +61,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void WriteOutput()
         {
-            if (_state.Result != null)
-                _projection.EmitEofResult(_partition, _state.Result, _checkpointTag, Guid.Empty, null);
+            _projection.EmitEofResult(_partition, _state.Result, _checkpointTag, Guid.Empty, null);
             NextStage();
         }
     }
