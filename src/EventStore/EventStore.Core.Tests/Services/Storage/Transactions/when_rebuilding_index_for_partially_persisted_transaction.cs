@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
                                       readers,
                                       TableIndex,
                                       new ByLengthHasher(),
-                                      new NoLRUCache<string, StreamCacheInfo>(),
+                                      0,
                                       additionalCommitChecks: true, 
                                       metastreamMaxCount: 1);
             ReadIndex.Init(ChaserCheckpoint.Read());

@@ -48,9 +48,7 @@ namespace EventStore.Core.DataStructures
 
         public LRUCache(int maxCount)
         {
-            if (maxCount <= 0)
-                throw new ArgumentOutOfRangeException("maxCount");
-
+            Ensure.Nonnegative(maxCount, "maxCount");
             _maxCount = maxCount;
         }
 
@@ -140,7 +138,7 @@ namespace EventStore.Core.DataStructures
 
         private void EnsureCapacity()
         {
-            while (_items.Count >= _maxCount)
+            while (_items.Count > 0 && _items.Count >= _maxCount)
             {
                 var node = _orderList.First;
                 _orderList.Remove(node);

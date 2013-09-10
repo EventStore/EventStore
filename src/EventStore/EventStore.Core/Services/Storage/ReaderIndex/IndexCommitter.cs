@@ -353,7 +353,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (newEventNumber == EventNumber.DeletedStream)
                 return;
 
-            int lastEventNumber = _indexReader.GetStreamInfo(streamId).LastEventNumber;
+            int lastEventNumber = _indexReader.GetStreamLastEventNumber(streamId);
             if (newEventNumber != lastEventNumber + 1)
             {
                 if (Debugger.IsAttached)

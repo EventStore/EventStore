@@ -151,7 +151,7 @@ namespace EventStore.Core
                                           readerPool,
                                           tableIndex,
                                           new XXHashUnsafe(),
-                                          new LRUCache<string, StreamCacheInfo>(ESConsts.StreamInfoCacheCapacity),
+                                          ESConsts.StreamInfoCacheCapacity,
                                           Application.IsDefined(Application.AdditionalCommitChecks),
                                           Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1);
             var writer = new TFChunkWriter(db);

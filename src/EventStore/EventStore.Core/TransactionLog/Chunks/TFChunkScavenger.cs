@@ -279,9 +279,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 return true;
             }
 
-            var streamInfo = _readIndex.GetStreamInfo(prepare.EventStreamId);
-            var lastEventNumber = streamInfo.LastEventNumber;
-            if (streamInfo.IsDeleted)
+            var lastEventNumber = _readIndex.GetStreamLastEventNumber(prepare.EventStreamId);
+            if (lastEventNumber == EventNumber.DeletedStream)
             {
                 // When all prepares and commit of transaction belong to single chunk and the stream is deleted,
                 // we can safely delete both prepares and commit.

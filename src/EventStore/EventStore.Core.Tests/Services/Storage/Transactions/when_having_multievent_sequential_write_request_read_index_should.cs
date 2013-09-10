@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         [Test]
         public void return_correct_last_event_version_for_stream()
         {
-            Assert.AreEqual(2, ReadIndex.GetLastStreamEventNumber("ES"));
+            Assert.AreEqual(2, ReadIndex.GetStreamLastEventNumber("ES"));
         }
 
         [Test]

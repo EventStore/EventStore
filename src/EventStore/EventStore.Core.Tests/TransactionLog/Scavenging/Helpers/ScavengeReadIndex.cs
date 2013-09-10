@@ -66,11 +66,6 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             throw new NotImplementedException();
         }
 
-        public Core.Services.Storage.ReaderIndex.StreamInfo GetStreamInfo(string streamId)
-        {
-            return new Core.Services.Storage.ReaderIndex.StreamInfo(GetLastStreamEventNumber(streamId), GetStreamMetadata(streamId));
-        }
-
         public bool IsStreamDeleted(string streamId)
         {
             if (SystemStreams.IsMetastream(streamId))
@@ -80,7 +75,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             return _streams.TryGetValue(streamId, out streamInfo) && streamInfo.StreamVersion == EventNumber.DeletedStream;
         }
 
-        public int GetLastStreamEventNumber(string streamId)
+        public int GetStreamLastEventNumber(string streamId)
         {
             if (IsStreamDeleted(streamId))
                 return EventNumber.DeletedStream;

@@ -57,7 +57,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                          ObjectPool<ITransactionFileReader> readerPool,
                          ITableIndex tableIndex,
                          IHasher hasher,
-                         ILRUCache<string, StreamCacheInfo> streamInfoCache,
+                         int streamInfoCacheCapacity,
                          bool additionalCommitChecks,
                          int metastreamMaxCount)
         {
@@ -65,12 +65,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.NotNull(readerPool, "readerPool");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(hasher, "hasher");
-            Ensure.NotNull(streamInfoCache, "streamInfoCache");
+            Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
             Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
 
             var metastreamMetadata = new StreamMetadata(metastreamMaxCount, null, null, null, null);
 
-            _indexBackend = new IndexBackend(readerPool, streamInfoCache);
+            _indexBackend = new IndexBackend(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
             _indexReader = new IndexReader(_indexBackend, hasher, tableIndex, metastreamMetadata);
             _indexWriter = new IndexWriter(_indexBackend, _indexReader);
             _indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, hasher, additionalCommitChecks);
@@ -107,24 +107,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return _indexReader.ReadStreamEventsBackward(streamId, fromEventNumber, maxCount);
         }
 
-        StreamInfo IReadIndex.GetStreamInfo(string streamId)
-        {
-            return _indexReader.GetStreamInfo(streamId);
-        }
-
         bool IReadIndex.IsStreamDeleted(string streamId)
         {
-            return _indexReader.GetStreamInfo(streamId).LastEventNumber == EventNumber.DeletedStream;
+            return _indexReader.GetStreamLastEventNumber(streamId) == EventNumber.DeletedStream;
         }
 
-        int IReadIndex.GetLastStreamEventNumber(string streamId)
+        int IReadIndex.GetStreamLastEventNumber(string streamId)
         {
-            return _indexReader.GetStreamInfo(streamId).LastEventNumber;
+            return _indexReader.GetStreamLastEventNumber(streamId);
         }
 
         StreamMetadata IReadIndex.GetStreamMetadata(string streamId)
         {
-            return _indexReader.GetStreamInfo(streamId).Metadata;
+            return _indexReader.GetStreamMetadata(streamId);
         }
 
         public string GetEventStreamIdByTransactionId(long transactionId)

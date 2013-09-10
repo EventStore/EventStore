@@ -174,12 +174,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public CommitCheckResult CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds)
         {
-            var streamInfo = GetStreamInfo(streamId);
-            var curVersion = streamInfo.LastEventNumber;
+            var curVersion = GetStreamLastEventNumber(streamId);
             if (curVersion == EventNumber.DeletedStream)
                 return new CommitCheckResult(CommitDecision.Deleted, streamId, curVersion, -1, -1, false);
 
-            bool isSoftDeleted = streamInfo.Metadata.TruncateBefore == EventNumber.DeletedStream;
+            bool isSoftDeleted = GetStreamMetadata(streamId).TruncateBefore == EventNumber.DeletedStream;
 
             // idempotency checks
             if (expectedVersion == ExpectedVersion.Any)
@@ -325,22 +324,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private StreamInfo GetStreamInfo(string streamId)
+        private int GetStreamLastEventNumber(string streamId)
         {
             int lastEventNumber;
-            StreamMetadata streamMeta = null;
-            if (!_streamVersions.TryGet(streamId, out lastEventNumber))
-            {
-                var streamInfo = _indexReader.GetStreamInfo(streamId);
-                lastEventNumber = streamInfo.LastEventNumber;
-                streamMeta = streamInfo.Metadata;
-            }
+            if (_streamVersions.TryGet(streamId, out lastEventNumber))
+                return lastEventNumber;
+            return _indexReader.GetStreamLastEventNumber(streamId);
+        }
+
+        private StreamMetadata GetStreamMetadata(string streamId)
+        {
             byte[] rawMeta;
             if (_streamRawMetas.TryGet(streamId, out rawMeta))
-                streamMeta = Helper.EatException(() => StreamMetadata.FromJsonBytes(rawMeta), StreamMetadata.Empty);
-            else if (streamMeta == null)
-                streamMeta = _indexReader.GetStreamInfo(streamId).Metadata;
-            return new StreamInfo(lastEventNumber, streamMeta);
+                return Helper.EatException(() => StreamMetadata.FromJsonBytes(rawMeta), StreamMetadata.Empty);
+            return _indexReader.GetStreamMetadata(streamId);
         }
 
         public void UpdateTransactionInfo(long transactionId, long logPosition, TransactionInfo transactionInfo)
@@ -463,7 +460,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public Tuple<int, byte[]> GetSoftUndeletedStreamMeta(string streamId, int recreateFromEventNumber)
         {
             var metastreamId = SystemStreams.MetastreamOf(streamId);
-            var metaLastEventNumber = GetStreamInfo(metastreamId).LastEventNumber;
+            var metaLastEventNumber = GetStreamLastEventNumber(metastreamId);
 
             byte[] metaRaw;
             if (!_streamRawMetas.TryGet(streamId, out metaRaw))

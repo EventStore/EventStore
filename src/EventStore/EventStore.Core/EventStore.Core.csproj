@@ -177,7 +177,6 @@
     <Compile Include="Index\TableIndex.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexReadStreamResult.cs" />
     <Compile Include="Data\ReadEventResult.cs" />
-    <Compile Include="Services\Storage\ReaderIndex\StreamCacheInfo.cs" />
     <Compile Include="Services\Storage\StorageReaderWorker.cs" />
     <Compile Include="Services\Storage\StorageScavenger.cs" />
     <Compile Include="Services\SystemNames.cs" />

@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams
         [Test]
         public void get_last_event_number_reports_deleted_metastream()
         {
-            Assert.AreEqual(EventNumber.DeletedStream, ReadIndex.GetLastStreamEventNumber("$$test"));
+            Assert.AreEqual(EventNumber.DeletedStream, ReadIndex.GetStreamLastEventNumber("$$test"));
         }
 
         [Test]

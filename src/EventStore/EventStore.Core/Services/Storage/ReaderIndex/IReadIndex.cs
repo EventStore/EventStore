@@ -57,9 +57,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         /// </summary>
         IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
 
-        StreamInfo GetStreamInfo(string streamId);
         bool IsStreamDeleted(string streamId);
-        int GetLastStreamEventNumber(string streamId);
+        int GetStreamLastEventNumber(string streamId);
         StreamMetadata GetStreamMetadata(string streamId);
 
         string GetEventStreamIdByTransactionId(long transactionId);

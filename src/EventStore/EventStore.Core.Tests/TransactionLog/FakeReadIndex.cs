@@ -95,20 +95,15 @@ namespace EventStore.Core.Tests.TransactionLog
             throw new NotImplementedException();
         }
 
-        public StreamInfo GetStreamInfo(string streamId)
-        {
-            return new StreamInfo(GetLastStreamEventNumber(streamId), null);
-        }
-
         public bool IsStreamDeleted(string streamId)
         {
             return _isStreamDeleted(streamId);
         }
 
-        public int GetLastStreamEventNumber(string streamId)
+        public int GetStreamLastEventNumber(string streamId)
         {
             if (SystemStreams.IsMetastream(streamId))
-                return GetLastStreamEventNumber(SystemStreams.OriginalStreamOf(streamId));
+                return GetStreamLastEventNumber(SystemStreams.OriginalStreamOf(streamId));
             return _isStreamDeleted(streamId) ? EventNumber.DeletedStream : 1000000;
         }
 

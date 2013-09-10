@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams
         [Test]
         public void last_event_stream_number_is_correct()
         {
-            Assert.AreEqual(4, ReadIndex.GetLastStreamEventNumber("$$test"));
+            Assert.AreEqual(4, ReadIndex.GetStreamLastEventNumber("$$test"));
         }
 
         [Test]
