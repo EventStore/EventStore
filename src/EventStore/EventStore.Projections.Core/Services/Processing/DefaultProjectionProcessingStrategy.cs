@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 firstPhase);
         }
 
-        protected virtual EventProcessingProjectionProcessingPhase CreateFirstProcessingPhase(
+        protected virtual IProjectionProcessingPhase CreateFirstProcessingPhase(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
             Action updateStatistics, CoreProjection coreProjection, ReaderSubscriptionDispatcher subscriptionDispatcher,
             CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager checkpointManager,
@@ -108,7 +108,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected abstract IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
             PartitionStateCache partitionStateCache, CoreProjection coreProjection, IODispatcher ioDispatcher,
-            EventProcessingProjectionProcessingPhase firstPhase);
+            IProjectionProcessingPhase firstPhase);
 
         protected override IQuerySources GetSourceDefinition()
         {

@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
         CheckpointTag LastProcessedEventPosition { get; }
     }
 
-    public interface IEventProcessingProjectionPhase : IProjectionPhaseCompleter, IProjectionPhaseCheckpointManager, IProjectionPhaseStateManager
+    public interface IEventProcessingProjectionPhase : IProjectionPhaseStateManager
     {
         EventProcessedResult ProcessCommittedEvent(EventReaderSubscriptionMessage.CommittedEventReceived message,
             string partition);

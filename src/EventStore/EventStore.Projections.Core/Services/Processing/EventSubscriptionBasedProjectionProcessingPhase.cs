@@ -34,7 +34,15 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class ProjectionProcessingPhaseBase : IProjectionPhaseCompleter, IProjectionPhaseCheckpointManager, IProjectionPhaseStateManager
+    public abstract class EventSubscriptionBasedProjectionProcessingPhase : IProjectionPhaseCompleter,
+        IProjectionPhaseCheckpointManager,
+        IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
+        IHandle<EventReaderSubscriptionMessage.NotAuthorized>,
+        IHandle<EventReaderSubscriptionMessage.EofReached>,
+        IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
+        IHandle<EventReaderSubscriptionMessage.ReaderAssignedReader>,
+        IProjectionProcessingPhase,
+        IProjectionPhaseStateManager
     {
         protected readonly IPublisher _publisher;
         protected readonly ICoreProjectionForProcessingPhase _coreProjection;
@@ -44,19 +52,19 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly string _projectionName;
         protected readonly ILogger _logger;
         protected readonly CheckpointTag _zeroCheckpointTag;
-        protected CoreProjectionQueue _processingQueue;
-        protected PartitionStateCache _partitionStateCache;
-        protected ReaderSubscriptionDispatcher _subscriptionDispatcher;
-        protected IReaderStrategy _readerStrategy;
-        protected IResultWriter _resultWriter;
-        protected bool _useCheckpoints;
+        protected readonly CoreProjectionQueue _processingQueue;
+        protected readonly PartitionStateCache _partitionStateCache;
+        protected readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
+        protected readonly IReaderStrategy _readerStrategy;
+        protected readonly IResultWriter _resultWriter;
+        protected readonly bool _useCheckpoints;
         protected long _expectedSubscriptionMessageSequenceNumber = -1;
         protected Guid _currentSubscriptionId;
         protected bool _subscribed;
         protected PhaseState _state;
-        protected bool _stopOnEof;
+        protected readonly bool _stopOnEof;
 
-        protected ProjectionProcessingPhaseBase(
+        protected EventSubscriptionBasedProjectionProcessingPhase(
             IPublisher publisher, ICoreProjectionForProcessingPhase coreProjection, Guid projectionCorrelationId,
             ICoreProjectionCheckpointManager checkpointManager, ProjectionConfig projectionConfig, string projectionName,
             ILogger logger, CheckpointTag zeroCheckpointTag, PartitionStateCache partitionStateCache,
@@ -201,8 +209,7 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var getStateWorkItem = new GetStateWorkItem(
-                    message.Envelope, message.CorrelationId, message.ProjectionId, this,
-                    message.Partition);
+                    message.Envelope, message.CorrelationId, message.ProjectionId, this, message.Partition);
                 _processingQueue.EnqueueOutOfOrderTask(getStateWorkItem);
                 ProcessEvent();
             }
@@ -519,6 +526,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 _publisher.Publish(
                     new CoreProjectionManagementMessage.SlaveProjectionReaderAssigned(
                         _projectionCorrelationId, message.SubscriptionId, message.ReaderId));
+        }
+
+
+        public abstract void Dispose();
+
+        public void SetProjectionState(PhaseState state)
+        {
+            _state = state;
+            _processingQueue.SetIsRunning(state == PhaseState.Running);
         }
     }
 }

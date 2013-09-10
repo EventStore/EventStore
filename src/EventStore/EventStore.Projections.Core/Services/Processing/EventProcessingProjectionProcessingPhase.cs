@@ -32,16 +32,10 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EventProcessingProjectionProcessingPhase : ProjectionProcessingPhaseBase,
+    public class EventProcessingProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase,
         IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
-        IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
-        IHandle<EventReaderSubscriptionMessage.NotAuthorized>,
-        IHandle<EventReaderSubscriptionMessage.EofReached>,
         IHandle<EventReaderSubscriptionMessage.PartitionEofReached>,
-        IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
-        IHandle<EventReaderSubscriptionMessage.ReaderAssignedReader>,
-        IEventProcessingProjectionPhase,
-        IProjectionProcessingPhase
+        IEventProcessingProjectionPhase
     {
         private readonly IProjectionStateHandler _projectionStateHandler;
         private readonly bool _definesStateTransform;
@@ -104,13 +98,6 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _coreProjection.SetFaulted(ex);
             }
-        }
-
-
-        public void SetProjectionState(PhaseState state)
-        {
-            _state = state;
-            _processingQueue.SetIsRunning(state == PhaseState.Running);
         }
 
 
@@ -253,7 +240,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (_projectionStateHandler != null)
                 _projectionStateHandler.Dispose();

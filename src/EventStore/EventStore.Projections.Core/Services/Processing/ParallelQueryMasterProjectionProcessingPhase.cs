@@ -32,7 +32,7 @@ using EventStore.Core.Bus;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ParallelQueryMasterProjectionProcessingPhase : EventProcessingProjectionProcessingPhase
+    public class ParallelQueryMasterProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase
     {
         public ParallelQueryMasterProjectionProcessingPhase(
             CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher, ProjectionConfig projectionConfig,
@@ -41,15 +41,20 @@ namespace EventStore.Projections.Core.Services.Processing
             ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector,
             ReaderSubscriptionDispatcher subscriptionDispatcher, IReaderStrategy readerStrategy,
             IResultWriter resultWriter, bool checkpointsEnabled, bool stopOnEof)
-            : base(
-                coreProjection, projectionCorrelationId, publisher, projectionConfig,
-                updateStatistics, stateHandler, partitionStateCache, definesStateTransform, name, logger,
-                zeroCheckpointTag, checkpointManager, statePartitionSelector, subscriptionDispatcher,
-                readerStrategy, resultWriter, checkpointsEnabled, stopOnEof)
+            : base(publisher, coreProjection, projectionCorrelationId, checkpointManager, projectionConfig, name, logger, zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics, subscriptionDispatcher, readerStrategy, checkpointsEnabled, stopOnEof)
         {
             throw new NotImplementedException();
         }
 
 
+        public override void NewCheckpointStarted(CheckpointTag at)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Dispose()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
