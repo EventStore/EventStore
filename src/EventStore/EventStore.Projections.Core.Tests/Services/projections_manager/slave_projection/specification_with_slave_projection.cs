@@ -32,6 +32,7 @@ using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
@@ -96,6 +97,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
     {
         private Guid _subscriptionId;
 
+        protected override void Given()
+        {
+            base.Given();
+            ExistingEvent("test-stream", "handle_this_type", "", "{\"data\":1}");
+        }
+
         protected override IEnumerable<WhenStep> When()
         {
             foreach (var m in base.When()) yield return m;
@@ -108,9 +115,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
         }
 
         [Test]
-        public void replies_with_slave_projection_reader_id_on_started_message()
+        public void publishes_partition_result_message()
         {
-            Assert.Inconclusive();
+            var results =
+                HandledMessages.OfType<PartitionProcessingResult>().ToArray();
+            Assert.AreEqual(1, results.Length);
+            var result = results[0];
+            Assert.AreEqual("{\"data\":1}", result.Result);
         }
     }
 }
