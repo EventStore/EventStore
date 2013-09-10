@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_correct_last_event_version_for_first_stream()
         {
-            Assert.AreEqual(0, ReadIndex.GetLastStreamEventNumber("AB"));
+            Assert.AreEqual(0, ReadIndex.GetStreamLastEventNumber("AB"));
         }
 
         [Test]
@@ -95,7 +95,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_correct_last_event_version_for_second_stream()
         {
-            Assert.AreEqual(EventNumber.DeletedStream, ReadIndex.GetLastStreamEventNumber("CD"));
+            Assert.AreEqual(EventNumber.DeletedStream, ReadIndex.GetStreamLastEventNumber("CD"));
         }
 
         [Test]
@@ -131,7 +131,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_correct_last_event_version_for_third_stream()
         {
-            Assert.AreEqual(0, ReadIndex.GetLastStreamEventNumber("EF"));
+            Assert.AreEqual(0, ReadIndex.GetStreamLastEventNumber("EF"));
         }
 
         [Test]
@@ -219,7 +219,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_correct_last_event_version_for_nonexistent_stream_with_same_hash()
         {
-            Assert.AreEqual(-1, ReadIndex.GetLastStreamEventNumber("ZZ"));
+            Assert.AreEqual(-1, ReadIndex.GetStreamLastEventNumber("ZZ"));
         }
 
         [Test]

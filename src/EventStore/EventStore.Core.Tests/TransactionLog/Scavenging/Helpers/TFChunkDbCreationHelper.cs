@@ -240,10 +240,14 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
             var meta = rec.Metadata;
             return Helper.UTF8NoBom.GetBytes(
-                string.Format("{{{0}{1}{2}}}",
-                              meta.MaxCount == null ? "" : string.Format("$maxCount:{0}", meta.MaxCount),
-                              meta.MaxCount.HasValue ? "," : "",
-                              meta.MaxAge == null ? "" : string.Format("$maxAge:{0}", (int)meta.MaxAge.Value.TotalSeconds)));
+                "{" + String.Join(",", GetMetadata(meta)) + "}");
+        }
+
+        private IEnumerable<string> GetMetadata(StreamMetadata meta)
+        {
+            if (meta.MaxCount.HasValue) yield return string.Format("$maxCount:{0}", meta.MaxCount);
+            if (meta.MaxAge.HasValue) yield return string.Format("$maxAge:{0}", (int)meta.MaxAge.Value.TotalSeconds);
+            if (meta.TruncateBefore.HasValue) yield return string.Format("$tb:{0})", meta.TruncateBefore);
         }
     }
 

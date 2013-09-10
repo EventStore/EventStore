@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
+using EventStore.Core.Data;
+
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
     public struct TransactionInfo

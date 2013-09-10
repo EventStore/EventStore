@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                       readers,
                                       TableIndex,
                                       new ByLengthHasher(),
-                                      new NoLRUCache<string, StreamCacheInfo>(),
+                                      0,
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: _metastreamMaxCount);
 

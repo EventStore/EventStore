@@ -58,10 +58,11 @@ namespace EventStore.Core.Services.Storage
         private readonly IPublisher _masterBus;
         private readonly ICheckpoint _writerCheckpoint;
         private readonly ITransactionFileChaser _chaser;
-        private readonly IReadIndex _readIndex;
+        private readonly IIndexCommitter _indexCommitter;
         private readonly IEpochManager _epochManager;
         private Thread _thread;
         private volatile bool _stop;
+        private volatile bool _systemStarted;
 
         private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Storage Chaser");
 
@@ -74,18 +75,19 @@ namespace EventStore.Core.Services.Storage
         public StorageChaser(IPublisher masterBus, 
                              ICheckpoint writerCheckpoint, 
                              ITransactionFileChaser chaser, 
-                             IReadIndex readIndex, 
+                             IIndexCommitter indexCommitter, 
                              IEpochManager epochManager)
         {
             Ensure.NotNull(masterBus, "masterBus");
+            Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.NotNull(chaser, "chaser");
-            Ensure.NotNull(readIndex, "readIndex");
+            Ensure.NotNull(indexCommitter, "indexCommitter");
             Ensure.NotNull(epochManager, "epochManager");
 
             _masterBus = masterBus;
             _writerCheckpoint = writerCheckpoint;
             _chaser = chaser;
-            _readIndex = readIndex;
+            _indexCommitter = indexCommitter;
             _epochManager = epochManager;
 
             _flushDelay = 0;
@@ -97,11 +99,12 @@ namespace EventStore.Core.Services.Storage
             _thread = new Thread(ChaseTransactionLog);
             _thread.IsBackground = true;
             _thread.Name = Name;
+            _thread.Start();
         }
 
         public void Handle(SystemMessage.SystemStart message)
         {
-            _thread.Start();
+            _systemStarted = true;
         }
 
         private void ChaseTransactionLog()
@@ -109,12 +112,23 @@ namespace EventStore.Core.Services.Storage
             _queueStats.Start();
             QueueMonitor.Default.Register(this);
 
-            _chaser.Open();
             try
             {
+                _chaser.Open();
+                
+                // We rebuild index till the chaser position, because
+                // everything else will be done by chaser as during replication
+                // with no concurrency issues with writer, as writer before jumping 
+                // into master-mode and accepting writes will wait till chaser caught up.
+                _indexCommitter.Init(_chaser.Checkpoint.Read());
+                _masterBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
+
                 while (!_stop)
                 {
-                    ChaserIteration();
+                    if (_systemStarted)
+                        ChaserIteration();
+                    else
+                        Thread.Sleep(1);
                 }
             }
             catch (Exception exc)
@@ -228,7 +242,7 @@ namespace EventStore.Core.Services.Storage
         {
             CommitPendingTransaction(_transaction);
 
-            _readIndex.Commit(record);
+            _indexCommitter.Commit(record);
             _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
                                                             record.LogPosition,
                                                             record.TransactionPosition,
@@ -254,7 +268,7 @@ namespace EventStore.Core.Services.Storage
         {
             if (transaction.Count > 0)
             {
-                _readIndex.Commit(_transaction);
+                _indexCommitter.Commit(_transaction);
                 _transaction.Clear();
             }
         }

@@ -153,6 +153,7 @@
     <Compile Include="NodeSubsystems.cs" />
     <Compile Include="Services\Storage\ReaderIndex\AllReader.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexBackend.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexCommitter.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexReader.cs" />
     <Compile Include="Services\Storage\ReaderIndex\StreamAccessType.cs" />
     <Compile Include="Services\Storage\ReaderIndex\StreamAccess.cs" />
@@ -176,7 +177,6 @@
     <Compile Include="Index\TableIndex.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexReadStreamResult.cs" />
     <Compile Include="Data\ReadEventResult.cs" />
-    <Compile Include="Services\Storage\ReaderIndex\StreamCacheInfo.cs" />
     <Compile Include="Services\Storage\StorageReaderWorker.cs" />
     <Compile Include="Services\Storage\StorageScavenger.cs" />
     <Compile Include="Services\SystemNames.cs" />

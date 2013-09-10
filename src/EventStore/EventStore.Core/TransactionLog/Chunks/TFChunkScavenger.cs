@@ -279,10 +279,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 return true;
             }
 
-            var lastEventNumber = _readIndex.GetLastStreamEventNumber(prepare.EventStreamId);
-            var isStreamDeleted = lastEventNumber == EventNumber.DeletedStream;
-
-            if (isStreamDeleted)
+            var lastEventNumber = _readIndex.GetStreamLastEventNumber(prepare.EventStreamId);
+            if (lastEventNumber == EventNumber.DeletedStream)
             {
                 // When all prepares and commit of transaction belong to single chunk and the stream is deleted,
                 // we can safely delete both prepares and commit.
@@ -330,27 +328,16 @@ namespace EventStore.Core.TransactionLog.Chunks
                 return true;
             }
 
-            var streamMetadata = _readIndex.GetStreamMetadata(prepare.EventStreamId);
+            var meta = _readIndex.GetStreamMetadata(prepare.EventStreamId);
+            bool canRemove = (meta.MaxCount.HasValue && eventNumber < lastEventNumber - meta.MaxCount.Value + 1)
+                          || (meta.TruncateBefore.HasValue && eventNumber < meta.TruncateBefore.Value)
+                          || (meta.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - meta.MaxAge.Value);
 
-            bool keep = true;
-            if (streamMetadata.MaxCount.HasValue)
-            {
-                int maxKeptEventNumber = lastEventNumber - streamMetadata.MaxCount.Value + 1;
-                if (eventNumber < maxKeptEventNumber)
-                    keep = false;
-            }
-
-            if (streamMetadata.MaxAge.HasValue)
-            {
-                if (prepare.TimeStamp < DateTime.UtcNow - streamMetadata.MaxAge.Value)
-                    keep = false;
-            }
-
-            if (keep)
-                commitInfo.ForciblyKeep();
-            else
+            if (canRemove)
                 commitInfo.TryNotToKeep();
-            return keep;
+            else
+                commitInfo.ForciblyKeep();
+            return !canRemove;
         }
 
         private bool ShouldKeepCommit(CommitLogRecord commit, Dictionary<long, CommitInfo> commits)

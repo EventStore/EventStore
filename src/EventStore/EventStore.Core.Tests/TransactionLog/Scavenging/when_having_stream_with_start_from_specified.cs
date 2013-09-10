@@ -25,10 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-
 using System.Linq;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -36,30 +34,40 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Scavenging
 {
     [TestFixture]
-    public class when_metastream_is_scavenged_and_read_index_is_set_to_keep_just_last_metaevent : ScavengeTestScenario
+    public class when_having_stream_with_truncatebefore_specified : ScavengeTestScenario
     {
         protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {
             return dbCreator
-                .Chunk(Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(10, null, null, null, null)),
-                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(5, null, null, null, null)),
-                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(3, null, null, null, null)),
-                       Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(2, null, null, null, null)),
-                       Rec.Commit(0, "$$bla"))
-                .CompleteLastChunk()
-                .CreateDb();
+                    .Chunk(Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(null, null, 7, null, null)),
+                           Rec.Commit(0, "$$bla"),
+                           Rec.Prepare(1, "bla"), // event 0
+                           Rec.Commit(1, "bla"),  
+                           Rec.Prepare(2, "bla"), // event 1
+						   Rec.Prepare(2, "bla"), // event 2
+						   Rec.Prepare(2, "bla"), // event 3
+						   Rec.Prepare(2, "bla"), // event 4
+						   Rec.Prepare(2, "bla"), // event 5
+                           Rec.Commit(2, "bla"),
+						   Rec.Prepare(3, "bla"), // event 6
+						   Rec.Prepare(3, "bla"), // event 7
+						   Rec.Prepare(3, "bla"), // event 8
+						   Rec.Prepare(3, "bla"), // event 9
+						   Rec.Commit(3, "bla")) 
+                    .CompleteLastChunk()
+                    .CreateDb();
         }
 
         protected override LogRecord[][] KeptRecords(DbResult dbResult)
         {
             return new[]
             {
-                dbResult.Recs[0].Where((x, i) => i >= 3).ToArray()
+                dbResult.Recs[0].Where((x, i) => new [] {0, 1, 11, 12, 13, 14}.Contains(i)).ToArray()
             };
         }
 
         [Test]
-        public void only_last_metaevent_is_left()
+        public void expired_prepares_are_scavenged()
         {
             CheckRecords();
         }

@@ -90,7 +90,7 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message)
         {
-            _bus.Publish(new SystemMessage.StorageReaderInitializationDone());
+            _bus.Publish(new SystemMessage.ServiceInitialized("StorageReader"));
         }
 
         void IHandle<SystemMessage.BecomeShuttingDown>.Handle(SystemMessage.BecomeShuttingDown message)

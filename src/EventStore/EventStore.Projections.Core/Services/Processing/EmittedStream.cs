@@ -360,14 +360,14 @@ namespace EventStore.Projections.Core.Services.Processing
                                                  ? new Event(
                                                        Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
                                                        new StreamMetadata(
-                                                           null, null, null,
+                                                           null, null, null, null,
                                                            new StreamAcl(
                                                                SystemRoles.All, null, null, SystemRoles.All,
                                                                null)).ToJsonBytes(), null)
                                                  : new Event(
                                                        Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
                                                        new StreamMetadata(
-                                                           null, null, null, new StreamAcl((string)null, null, null, null, null))
+                                                           null, null, null, null, new StreamAcl((string)null, null, null, null, null))
                                                            .ToJsonBytes(), null);
             _awaitingMetadataWriteCompleted = true;
             PublishWriteMetaStream();

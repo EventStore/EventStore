@@ -44,11 +44,11 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams
 
         protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {
-            return dbCreator.Chunk(Rec.Prepare(0, "$$test", "0", metadata: new StreamMetadata(10, null, null, null)),
-                                   Rec.Prepare(0, "$$test", "1", metadata: new StreamMetadata(9, null, null, null)),
-                                   Rec.Prepare(0, "$$test", "2", metadata: new StreamMetadata(8, null, null, null)),
-                                   Rec.Prepare(0, "$$test", "3", metadata: new StreamMetadata(7, null, null, null)),
-                                   Rec.Prepare(0, "$$test", "4", metadata: new StreamMetadata(6, null, null, null)),
+            return dbCreator.Chunk(Rec.Prepare(0, "$$test", "0", metadata: new StreamMetadata(10, null, null, null, null)),
+                                   Rec.Prepare(0, "$$test", "1", metadata: new StreamMetadata(9, null, null, null, null)),
+                                   Rec.Prepare(0, "$$test", "2", metadata: new StreamMetadata(8, null, null, null, null)),
+                                   Rec.Prepare(0, "$$test", "3", metadata: new StreamMetadata(7, null, null, null, null)),
+                                   Rec.Prepare(0, "$$test", "4", metadata: new StreamMetadata(6, null, null, null, null)),
                                    Rec.Commit(0, "$$test"))
                             .CreateDb();
         }
@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams
         [Test]
         public void last_event_stream_number_is_correct()
         {
-            Assert.AreEqual(4, ReadIndex.GetLastStreamEventNumber("$$test"));
+            Assert.AreEqual(4, ReadIndex.GetStreamLastEventNumber("$$test"));
         }
 
         [Test]

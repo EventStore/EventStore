@@ -50,7 +50,7 @@ namespace EventStore.Core.Settings
                                                + 1 /* for epoch manager usage of master replication service */;
 
         public const int MemTableEntryCount = 1000000;
-        public const int StreamMetadataCacheCapacity = 100000;
+        public const int StreamInfoCacheCapacity = 100000;
         public const int TransactionMetadataCacheCapacity = 50000;
         public const int CommitedEventsMemCacheLimit = 8*1024*1024;
         public const int CachedEpochCount = 1000;

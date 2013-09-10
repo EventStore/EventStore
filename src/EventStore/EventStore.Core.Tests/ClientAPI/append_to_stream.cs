@@ -208,8 +208,7 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
-        [Test, Category("LongRunning")]
-        [Category("Network")]
+        [Test, Category("LongRunning"), Category("Network")]
         public void can_append_multiple_events_at_once()
         {
             const string stream = "can_append_multiple_events_at_once";

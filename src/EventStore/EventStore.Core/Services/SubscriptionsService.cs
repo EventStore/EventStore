@@ -134,10 +134,10 @@ namespace EventStore.Core.Services
             {
                 var lastEventNumber = msg.EventStreamId.IsEmptyString()
                                                 ? (int?) null
-                                                : _readIndex.GetLastStreamEventNumber(msg.EventStreamId);
+                                                : _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
                 var lastCommitPos = _readIndex.LastCommitPosition;
                 SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId, 
-                                    msg.ResolveLinkTos, lastCommitPos, lastEventNumber);
+                                  msg.ResolveLinkTos, lastCommitPos, lastEventNumber);
                 var subscribedMessage = new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
                 msg.Envelope.ReplyWith(subscribedMessage);
             }

@@ -38,14 +38,15 @@ namespace EventStore.Core.Data
 {
     public class StreamMetadata
     {
-        public static readonly StreamMetadata Empty = new StreamMetadata(null, null, null, null);
+        public static readonly StreamMetadata Empty = new StreamMetadata(null, null, null, null, null);
 
         public readonly int? MaxCount;
         public readonly TimeSpan? MaxAge;
+        public readonly int? TruncateBefore;
         public readonly TimeSpan? CacheControl;
         public readonly StreamAcl Acl;
 
-        public StreamMetadata(int? maxCount, TimeSpan? maxAge, TimeSpan? cacheControl, StreamAcl acl)
+        public StreamMetadata(int? maxCount, TimeSpan? maxAge, int? truncateBefore, TimeSpan? cacheControl, StreamAcl acl)
         {
             if (maxCount <= 0)
                 throw new ArgumentOutOfRangeException(
@@ -53,19 +54,24 @@ namespace EventStore.Core.Data
             if (maxAge <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException(
                     "maxAge", string.Format("{0} should be positive time span.", SystemMetadata.MaxAge));
+            if (truncateBefore < 0)
+                throw new ArgumentOutOfRangeException(
+                    "truncateBefore", string.Format("{0} should be non negative value.", SystemMetadata.TruncateBefore));
+
             if (cacheControl <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException(
                     "cacheControl", string.Format("{0} should be positive time span.", SystemMetadata.CacheControl));
 
             MaxCount = maxCount;
             MaxAge = maxAge;
+            TruncateBefore = truncateBefore;
             CacheControl = cacheControl;
             Acl = acl;
         }
 
         public override string ToString()
         {
-            return string.Format("MaxCount: {0}, MaxAge: {1}, CacheControl: {2}, Acl: {3}", MaxCount, MaxAge, CacheControl, Acl);
+            return string.Format("MaxCount: {0}, MaxAge: {1}, TruncateBefore: {2} CacheControl: {3}, Acl: {4}", MaxCount, MaxAge, TruncateBefore, CacheControl, Acl);
         }
 
         public static StreamMetadata FromJsonBytes(byte[] json)
@@ -77,6 +83,7 @@ namespace EventStore.Core.Data
 
                 int? maxCount = null;
                 TimeSpan? maxAge = null;
+                int? truncateBefore = null;
                 TimeSpan? cacheControl = null;
                 StreamAcl acl = null;
 
@@ -103,6 +110,13 @@ namespace EventStore.Core.Data
                             maxAge = TimeSpan.FromSeconds((long) reader.Value);
                             break;
                         }
+                        case SystemMetadata.TruncateBefore:
+                        {
+                            Check(reader.Read(), reader);
+                            Check(JsonToken.Integer, reader);
+                            truncateBefore = (int)(long)reader.Value;
+                            break;
+                        }
                         case SystemMetadata.CacheControl:
                         {
                             Check(reader.Read(), reader);
@@ -126,6 +140,7 @@ namespace EventStore.Core.Data
                 }
                 return new StreamMetadata(maxCount > 0 ? maxCount : null,
                                           maxAge > TimeSpan.Zero ? maxAge : null,
+                                          truncateBefore >= 0 ? truncateBefore : null,
                                           cacheControl > TimeSpan.Zero ? cacheControl : null,
                                           acl);
             }
@@ -232,6 +247,11 @@ namespace EventStore.Core.Data
             {
                 jsonWriter.WritePropertyName(SystemMetadata.MaxAge);
                 jsonWriter.WriteValue((long) MaxAge.Value.TotalSeconds);
+            }
+            if (TruncateBefore.HasValue)
+            {
+                jsonWriter.WritePropertyName(SystemMetadata.TruncateBefore);
+                jsonWriter.WriteValue(TruncateBefore.Value);				   
             }
             if (CacheControl.HasValue)
             {

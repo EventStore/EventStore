@@ -178,7 +178,7 @@ namespace EventStore.Core.Services.Storage
             var lastCommitPosition = _readIndex.LastCommitPosition;
             try
             {
-                if (msg.ValidationStreamVersion.HasValue && _readIndex.GetLastStreamEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
+                if (msg.ValidationStreamVersion.HasValue && _readIndex.GetStreamLastEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
                     return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition, msg.ValidationStreamVersion.Value);
 
                 var access = _readIndex.CheckStreamAccess(msg.EventStreamId, StreamAccessType.Read, msg.User);
@@ -208,7 +208,7 @@ namespace EventStore.Core.Services.Storage
             var lastCommitPosition = _readIndex.LastCommitPosition;
             try
             {
-                if (msg.ValidationStreamVersion.HasValue && _readIndex.GetLastStreamEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
+                if (msg.ValidationStreamVersion.HasValue && _readIndex.GetStreamLastEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
                     return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition, msg.ValidationStreamVersion.Value);
 
                 var access = _readIndex.CheckStreamAccess(msg.EventStreamId, StreamAccessType.Read, msg.User);
