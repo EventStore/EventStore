@@ -104,7 +104,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var metadata = streamInfo.Metadata;
             if (lastEventNumber == EventNumber.DeletedStream)
                 return new IndexReadEventResult(ReadEventResult.StreamDeleted, metadata, lastEventNumber);
-            if (lastEventNumber == ExpectedVersion.NoStream)
+            if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
                 return new IndexReadEventResult(ReadEventResult.NoStream, metadata, lastEventNumber);
 
             if (eventNumber == -1)
@@ -190,7 +190,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var metadata = streamInfo.Metadata;
                 if (lastEventNumber == EventNumber.DeletedStream)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted, StreamMetadata.Empty, lastEventNumber);
-                if (lastEventNumber == ExpectedVersion.NoStream)
+                if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata, lastEventNumber);
 
                 int startEventNumber = fromEventNumber;
@@ -240,7 +240,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var metadata = streamInfo.Metadata;
                 if (lastEventNumber == EventNumber.DeletedStream)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted, StreamMetadata.Empty, lastEventNumber);
-                if (lastEventNumber == ExpectedVersion.NoStream)
+                if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata, lastEventNumber);
 
                 int endEventNumber = fromEventNumber < 0 ? lastEventNumber : fromEventNumber;

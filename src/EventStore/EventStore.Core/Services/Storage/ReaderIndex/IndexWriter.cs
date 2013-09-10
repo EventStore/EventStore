@@ -467,16 +467,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             byte[] metaRaw;
             if (!_streamRawMetas.TryGet(streamId, out metaRaw))
-                metaRaw = _indexReader.ReadPrepare(streamId, metaLastEventNumber).Data;
+                metaRaw = _indexReader.ReadPrepare(metastreamId, metaLastEventNumber).Data;
 
             try
             {
                 var jobj = JObject.Parse(Encoding.UTF8.GetString(metaRaw));
                 jobj[SystemMetadata.TruncateBefore] = recreateFromEventNumber;
                 using (var memoryStream = new MemoryStream())
-                using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream)))
                 {
-                    jobj.WriteTo(jsonWriter);
+                    using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream)))
+                    {
+                        jobj.WriteTo(jsonWriter);
+                    }
                     return Tuple.Create(metaLastEventNumber, memoryStream.ToArray());
                 }
             }

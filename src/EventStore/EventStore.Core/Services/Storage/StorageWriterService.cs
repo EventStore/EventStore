@@ -327,7 +327,7 @@ namespace EventStore.Core.Services.Storage
             var logPosition = Writer.Checkpoint.ReadNonFlushed();
             var res = WritePrepareWithRetry(
                 LogRecord.Prepare(logPosition, Guid.NewGuid(), Guid.NewGuid(), logPosition, 0,
-                                  streamId, metaLastEventNumber,
+                                  SystemStreams.MetastreamOf(streamId), metaLastEventNumber,
                                   PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson,
                                   SystemEventTypes.StreamMetadata, modifiedMeta, Empty.ByteArray));
 
@@ -357,9 +357,6 @@ namespace EventStore.Core.Services.Storage
                                                        eventId, message.EventStreamId, expectedVersion, PrepareFlags.IsCommitted); 
                 var res = WritePrepareWithRetry(record);
                 _indexWriter.PreCommit(new[] {res.Prepare});
-
-                if (commitCheck.IsSoftDeleted)
-                    SoftUndeleteStream(commitCheck.EventStreamId, commitCheck.CurrentVersion + 1);
             }
             catch (Exception exc)
             {

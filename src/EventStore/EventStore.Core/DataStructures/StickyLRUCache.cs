@@ -27,15 +27,12 @@
 //  
 using System;
 using System.Collections.Generic;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.DataStructures
 {
     public class StickyLRUCache<TKey, TValue>: IStickyLRUCache<TKey, TValue>, ILRUCache<TKey, TValue>
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<StickyLRUCache<TKey, TValue>>();
-
         private class LRUItem
         {
             public TKey Key;
@@ -48,7 +45,6 @@ namespace EventStore.Core.DataStructures
         private readonly Queue<LinkedListNode<LRUItem>> _nodesPool = new Queue<LinkedListNode<LRUItem>>();
 
         private readonly int _maxCount;
-        private readonly object _lock = new object();
 
         public StickyLRUCache(int maxCount)
         {
@@ -59,34 +55,28 @@ namespace EventStore.Core.DataStructures
 
         public void Clear()
         {
-            lock (_lock)
+            while (_orderList.Count > 0)
             {
-                while (_orderList.Count > 0)
-                {
-                    var node = _orderList.First;
-                    _orderList.RemoveFirst();
-                    ReturnNode(node);
-                }
-                _items.Clear();
+                var node = _orderList.First;
+                _orderList.RemoveFirst();
+                ReturnNode(node);
             }
+            _items.Clear();
         }
 
         public bool TryGet(TKey key, out TValue value)
         {
-            lock (_lock)
+            LinkedListNode<LRUItem> node;
+            if (_items.TryGetValue(key, out node))
             {
-                LinkedListNode<LRUItem> node;
-                if (_items.TryGetValue(key, out node))
-                {
-                    _orderList.Remove(node);
-                    _orderList.AddLast(node);
-                    value = node.Value.Value;
-                    return true;
-                }
-
-                value = default(TValue);
-                return false;
+                _orderList.Remove(node);
+                _orderList.AddLast(node);
+                value = node.Value.Value;
+                return true;
             }
+
+            value = default(TValue);
+            return false;
         }
 
         TValue ILRUCache<TKey, TValue>.Put(TKey key, TValue value)
@@ -101,41 +91,35 @@ namespace EventStore.Core.DataStructures
 
         public TValue Put(TKey key, TValue value, int stickiness)
         {
-            lock (_lock)
+            LinkedListNode<LRUItem> node;
+            if (!_items.TryGetValue(key, out node))
             {
-                LinkedListNode<LRUItem> node;
-                if (!_items.TryGetValue(key, out node))
-                {
-                    node = GetNode();
-                    node.Value.Key = key;
-                    node.Value.Value = value;
-                    node.Value.Stickiness = stickiness;
+                node = GetNode();
+                node.Value.Key = key;
+                node.Value.Value = value;
+                node.Value.Stickiness = stickiness;
 
-                    EnsureCapacity();
+                EnsureCapacity();
 
-                    _items.Add(key, node);
-                }
-                else
-                {
-                    node.Value.Value = value;
-                    node.Value.Stickiness += stickiness;
-                    _orderList.Remove(node);
-                }
-                _orderList.AddLast(node);
-                return value;
+                _items.Add(key, node);
             }
+            else
+            {
+                node.Value.Value = value;
+                node.Value.Stickiness += stickiness;
+                _orderList.Remove(node);
+            }
+            _orderList.AddLast(node);
+            return value;
         }
 
         public void Remove(TKey key)
         {
-            lock (_lock)
+            LinkedListNode<LRUItem> node;
+            if (_items.TryGetValue(key, out node))
             {
-                LinkedListNode<LRUItem> node;
-                if (_items.TryGetValue(key, out node))
-                {
-                    _orderList.Remove(node);
-                    _items.Remove(key);
-                }
+                _orderList.Remove(node);
+                _items.Remove(key);
             }
         }
 
@@ -144,29 +128,26 @@ namespace EventStore.Core.DataStructures
             Ensure.NotNull(addFactory, "addFactory");
             Ensure.NotNull(updateFactory, "updateFactory");
 
-            lock (_lock)
+            LinkedListNode<LRUItem> node;
+            if (!_items.TryGetValue(key, out node))
             {
-                LinkedListNode<LRUItem> node;
-                if (!_items.TryGetValue(key, out node))
-                {
-                    node = GetNode();
-                    node.Value.Key = key;
-                    node.Value.Value = addFactory(key);
-                    node.Value.Stickiness = stickiness;
+                node = GetNode();
+                node.Value.Key = key;
+                node.Value.Value = addFactory(key);
+                node.Value.Stickiness = stickiness;
 
-                    EnsureCapacity();
+                EnsureCapacity();
 
-                    _items.Add(key, node);
-                }
-                else
-                {
-                    node.Value.Value = updateFactory(key, node.Value.Value);
-                    node.Value.Stickiness += stickiness;
-                    _orderList.Remove(node);
-                }
-                _orderList.AddLast(node);
-                return node.Value.Value;
+                _items.Add(key, node);
             }
+            else
+            {
+                node.Value.Value = updateFactory(key, node.Value.Value);
+                node.Value.Stickiness += stickiness;
+                _orderList.Remove(node);
+            }
+            _orderList.AddLast(node);
+            return node.Value.Value;
         }
 
         private void EnsureCapacity()
