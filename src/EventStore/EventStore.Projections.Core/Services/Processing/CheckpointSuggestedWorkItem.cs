@@ -32,7 +32,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class CheckpointSuggestedWorkItem : CheckpointWorkItemBase
     {
-        private readonly IEventProcessingProjectionPhase _projectionPhase;
+        private readonly IProjectionPhaseCheckpointManager _projectionPhase;
         private readonly EventReaderSubscriptionMessage.CheckpointSuggested _message;
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
 
@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _completeRequested = false;
 
         public CheckpointSuggestedWorkItem(
-            IEventProcessingProjectionPhase projectionPhase, EventReaderSubscriptionMessage.CheckpointSuggested message,
+            IProjectionPhaseCheckpointManager projectionPhase, EventReaderSubscriptionMessage.CheckpointSuggested message,
             ICoreProjectionCheckpointManager checkpointManager)
             : base() 
         {

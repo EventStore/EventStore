@@ -27,30 +27,29 @@
 // 
 
 using System;
-using EventStore.Core.Messaging;
-using EventStore.Projections.Core.Messages;
+using EventStore.Common.Log;
+using EventStore.Core.Bus;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class GetResultWorkItem : GetDataWorkItemBase
+    public class ParallelQueryMasterProjectionProcessingPhase : EventProcessingProjectionProcessingPhase
     {
-        public GetResultWorkItem(
-            IEnvelope envelope, Guid correlationId, Guid projectionId, IProjectionPhaseStateManager projection,
-            string partition)
-            : base(envelope, correlationId, projectionId, projection, partition)
+        public ParallelQueryMasterProjectionProcessingPhase(
+            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher, ProjectionConfig projectionConfig,
+            Action updateStatistics, IProjectionStateHandler stateHandler, PartitionStateCache partitionStateCache,
+            bool definesStateTransform, string name, ILogger logger, CheckpointTag zeroCheckpointTag,
+            ICoreProjectionCheckpointManager checkpointManager, StatePartitionSelector statePartitionSelector,
+            ReaderSubscriptionDispatcher subscriptionDispatcher, IReaderStrategy readerStrategy,
+            IResultWriter resultWriter, bool checkpointsEnabled, bool stopOnEof)
+            : base(
+                coreProjection, projectionCorrelationId, publisher, projectionConfig,
+                updateStatistics, stateHandler, partitionStateCache, definesStateTransform, name, logger,
+                zeroCheckpointTag, checkpointManager, statePartitionSelector, subscriptionDispatcher,
+                readerStrategy, resultWriter, checkpointsEnabled, stopOnEof)
         {
+            throw new NotImplementedException();
         }
 
-        protected override void Reply(PartitionState state, CheckpointTag checkpointTag)
-        {
-            if (state == null)
-                _envelope.ReplyWith(
-                    new CoreProjectionManagementMessage.ResultReport(
-                        _correlationId, _projectionId, _partition, null, checkpointTag));
-            else
-                _envelope.ReplyWith(
-                    new CoreProjectionManagementMessage.ResultReport(
-                        _correlationId, _projectionId, _partition, state.Result, checkpointTag));
-        }
+
     }
 }

@@ -68,18 +68,33 @@ namespace EventStore.Projections.Core.Services.Processing
                 definesFold, readerStrategy);
 
 
-            var resultWriter = CreateResultWriter(checkpointManager as IEmittedEventWriter, zeroCheckpointTag, namingBuilder);
+            var resultWriter = CreateFirstPhaseResultWriter(
+                checkpointManager as IEmittedEventWriter, zeroCheckpointTag, namingBuilder);
 
             var statePartitionSelector = CreateStatePartitionSelector(
                 _stateHandler, _sourceDefinition.ByCustomPartitions, _sourceDefinition.ByStreams);
-            var firstPhase = new EventProcessingProjectionProcessingPhase(
-                coreProjection, projectionCorrelationId, publisher, this, _projectionConfig, updateStatistics,
-                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, _name, _logger,
-                zeroCheckpointTag, checkpointManager, statePartitionSelector, subscriptionDispatcher,
-                0, readerStrategy, resultWriter, _projectionConfig.CheckpointsEnabled);
+
+            var firstPhase = CreateFirstProcessingPhase(
+                publisher, projectionCorrelationId, partitionStateCache, updateStatistics, coreProjection,
+                subscriptionDispatcher, zeroCheckpointTag, checkpointManager, statePartitionSelector, readerStrategy,
+                resultWriter);
 
             return CreateProjectionProcessingPhases(
-                publisher, projectionCorrelationId, namingBuilder, partitionStateCache, coreProjection, ioDispatcher, firstPhase);
+                publisher, projectionCorrelationId, namingBuilder, partitionStateCache, coreProjection, ioDispatcher,
+                firstPhase);
+        }
+
+        protected virtual EventProcessingProjectionProcessingPhase CreateFirstProcessingPhase(
+            IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
+            Action updateStatistics, CoreProjection coreProjection, ReaderSubscriptionDispatcher subscriptionDispatcher,
+            CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager checkpointManager,
+            StatePartitionSelector statePartitionSelector, IReaderStrategy readerStrategy, IResultWriter resultWriter)
+        {
+            return new EventProcessingProjectionProcessingPhase(
+                coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics,
+                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, _name, _logger,
+                zeroCheckpointTag, checkpointManager, statePartitionSelector, subscriptionDispatcher, readerStrategy,
+                resultWriter, _projectionConfig.CheckpointsEnabled, this.GetStopOnEof());
         }
 
         protected virtual IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
@@ -88,7 +103,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 0, _sourceDefinition, timeProvider, _projectionConfig.StopOnEof, _projectionConfig.RunAs);
         }
 
-        protected abstract IResultEventEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder);
+        protected abstract IResultEventEmitter CreateFirstPhaseResultEmitter(ProjectionNamesBuilder namingBuilder);
 
         protected abstract IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
@@ -113,9 +128,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected virtual ICoreProjectionCheckpointManager CreateCheckpointManager(
             Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
-            ProjectionNamesBuilder namingBuilder,
-            CoreProjectionCheckpointWriter coreProjectionCheckpointWriter, bool definesFold,
-            IReaderStrategy readerStrategy)
+            ProjectionNamesBuilder namingBuilder, CoreProjectionCheckpointWriter coreProjectionCheckpointWriter,
+            bool definesFold, IReaderStrategy readerStrategy)
         {
             var emitAny = _projectionConfig.EmitEventEnabled;
 
@@ -139,7 +153,8 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private static StatePartitionSelector CreateStatePartitionSelector(IProjectionStateHandler projectionStateHandler, bool byCustomPartitions, bool byStream)
+        private static StatePartitionSelector CreateStatePartitionSelector(
+            IProjectionStateHandler projectionStateHandler, bool byCustomPartitions, bool byStream)
         {
             return byCustomPartitions
                 ? new ByHandleStatePartitionSelector(projectionStateHandler)
@@ -148,12 +163,13 @@ namespace EventStore.Projections.Core.Services.Processing
                     : new NoopStatePartitionSelector());
         }
 
-        protected virtual IResultWriter CreateResultWriter(IEmittedEventWriter emittedEventWriter,
-            CheckpointTag zeroCheckpointTag, ProjectionNamesBuilder namingBuilder)
+        protected virtual IResultWriter CreateFirstPhaseResultWriter(
+            IEmittedEventWriter emittedEventWriter, CheckpointTag zeroCheckpointTag,
+            ProjectionNamesBuilder namingBuilder)
         {
             return new ResultWriter(
-                CreateResultEmitter(namingBuilder), emittedEventWriter, GetProducesRunningResults(), zeroCheckpointTag,
-                namingBuilder.GetPartitionCatalogStreamName());
+                CreateFirstPhaseResultEmitter(namingBuilder), emittedEventWriter, GetProducesRunningResults(),
+                zeroCheckpointTag, namingBuilder.GetPartitionCatalogStreamName());
         }
     }
 }

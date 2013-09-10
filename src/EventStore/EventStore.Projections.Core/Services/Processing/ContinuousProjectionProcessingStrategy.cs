@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return new IProjectionProcessingPhase[] {firstPhase};
         }
 
-        protected override IResultEventEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
+        protected override IResultEventEmitter CreateFirstPhaseResultEmitter(ProjectionNamesBuilder namingBuilder)
         {
             return _sourceDefinition.ProducesResults
                 ? new ResultEventEmitter(namingBuilder)

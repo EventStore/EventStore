@@ -32,7 +32,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -78,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return new[] {firstPhase};
         }
 
-        protected override IResultEventEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
+        protected override IResultEventEmitter CreateFirstPhaseResultEmitter(ProjectionNamesBuilder namingBuilder)
         {
             throw new NotImplementedException();
         }
@@ -89,7 +88,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 0, _projectionConfig.RunAs, timeProvider, _sourceDefinition.LimitingCommitPosition ?? long.MinValue);
         }
 
-        protected override IResultWriter CreateResultWriter(
+        protected override IResultWriter CreateFirstPhaseResultWriter(
             IEmittedEventWriter emittedEventWriter, CheckpointTag zeroCheckpointTag,
             ProjectionNamesBuilder namingBuilder)
         {

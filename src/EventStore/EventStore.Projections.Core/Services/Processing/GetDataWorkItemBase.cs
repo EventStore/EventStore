@@ -37,25 +37,21 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly IEnvelope _envelope;
         protected Guid _correlationId;
         protected Guid _projectionId;
-        private readonly IEventProcessingProjectionPhase _projection;
-        private PartitionStateCache _partitionStateCache;
+        private readonly IProjectionPhaseStateManager _projection;
         private PartitionState _state;
         private CheckpointTag _lastProcessedCheckpointTag;
 
         protected GetDataWorkItemBase(
-            IEnvelope envelope, Guid correlationId, Guid projectionId, IEventProcessingProjectionPhase projection,
-            PartitionStateCache partitionStateCache, string partition)
+            IEnvelope envelope, Guid correlationId, Guid projectionId, IProjectionPhaseStateManager projection, string partition)
             : base(null)
         {
             if (envelope == null) throw new ArgumentNullException("envelope");
-            if (partitionStateCache == null) throw new ArgumentNullException("partitionStateCache");
             if (partition == null) throw new ArgumentNullException("partition");
             _partition = partition;
             _envelope = envelope;
             _correlationId = correlationId;
             _projectionId = projectionId;
             _projection = projection;
-            _partitionStateCache = partitionStateCache;
         }
 
         protected override void GetStatePartition()

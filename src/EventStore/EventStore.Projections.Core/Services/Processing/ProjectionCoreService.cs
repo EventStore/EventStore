@@ -31,7 +31,6 @@ using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
@@ -71,6 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
         private readonly ITimeProvider _timeProvider;
+        private readonly ProcessingStrategySelector _processingStrategySelector;
 
 
         public ProjectionCoreService(
@@ -83,6 +83,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _ioDispatcher = ioDispatcher;
             _subscriptionDispatcher = subscriptionDispatcher;
             _timeProvider = timeProvider;
+            _processingStrategySelector = new ProcessingStrategySelector();
+        }
+
+        public ILogger Logger
+        {
+            get { return _logger; }
         }
 
         public void Handle(ProjectionCoreServiceMessage.StartCore message)
@@ -125,7 +131,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var sourceDefinition = ProjectionSourceDefinition.From(name, stateHandler.GetSourceDefinition());
                 var projectionVersion = message.Version;
                 var projectionConfig = message.Config;
-                var projectionProcessingStrategy = CreateProjectionProcessingStrategy(
+                var projectionProcessingStrategy = _processingStrategySelector.CreateProjectionProcessingStrategy(
                     name, projectionVersion, sourceDefinition, projectionConfig, stateHandler);
                 CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
@@ -146,7 +152,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var sourceDefinition = ProjectionSourceDefinition.From(name, message.SourceDefinition);
                 var projectionVersion = message.Version;
                 var projectionConfig = message.Config;
-                var projectionProcessingStrategy = CreateProjectionProcessingStrategy(
+                var projectionProcessingStrategy = _processingStrategySelector.CreateProjectionProcessingStrategy(
                     name, projectionVersion, sourceDefinition, projectionConfig, null);
                 CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
@@ -169,8 +175,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 var sourceDefinition = ProjectionSourceDefinition.From(name, stateHandler.GetSourceDefinition());
                 var projectionVersion = message.Version;
                 var projectionConfig = message.Config;
-                var projectionProcessingStrategy = CreateSlaveProjectionProcessingStrategy(
-                    name, projectionVersion, sourceDefinition, projectionConfig, stateHandler, message.ResultsEnvelope);
+                var projectionProcessingStrategy = _processingStrategySelector.CreateSlaveProjectionProcessingStrategy(
+                    name, projectionVersion, sourceDefinition, projectionConfig, stateHandler, message.ResultsEnvelope, this);
                 CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
@@ -187,23 +193,6 @@ namespace EventStore.Projections.Core.Services.Processing
             var projection = processingStrategy.Create(
                 projectionCorrelationId, _publisher, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
             _projections.Add(projectionCorrelationId, projection);
-        }
-
-        private ProjectionProcessingStrategy CreateProjectionProcessingStrategy(string name, ProjectionVersion projectionVersion, ProjectionSourceDefinition sourceDefinition, ProjectionConfig projectionConfig, IProjectionStateHandler stateHandler)
-        {
-            return projectionConfig.StopOnEof
-                ? (ProjectionProcessingStrategy) new QueryProcessingStrategy(
-                    name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger)
-                : new ContinuousProjectionProcessingStrategy(
-                    name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger);
-        }
-
-        private ProjectionProcessingStrategy CreateSlaveProjectionProcessingStrategy(
-            string name, ProjectionVersion projectionVersion, ProjectionSourceDefinition sourceDefinition,
-            ProjectionConfig projectionConfig, IProjectionStateHandler stateHandler, IEnvelope resultsEnvelope)
-        {
-            return new SlaveQueryProcessingStrategy(
-                name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger, resultsEnvelope);
         }
 
         public void Handle(CoreProjectionManagementMessage.Dispose message)

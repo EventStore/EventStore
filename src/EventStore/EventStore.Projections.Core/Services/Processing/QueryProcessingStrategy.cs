@@ -90,7 +90,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return new[] {firstPhase, writeResultsPhase};
         }
 
-        protected override IResultEventEmitter CreateResultEmitter(ProjectionNamesBuilder namingBuilder)
+        protected override IResultEventEmitter CreateFirstPhaseResultEmitter(ProjectionNamesBuilder namingBuilder)
         {
             return new ResultEventEmitter(namingBuilder);
         }

@@ -230,6 +230,8 @@
     <Compile Include="Services\Processing\NoopResultEventEmitter.cs" />
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\NotAuthorizedWorkItem.cs" />
+    <Compile Include="Services\Processing\ParallelQueryMasterProjectionProcessingPhase.cs" />
+    <Compile Include="Services\Processing\ParallelQueryProcessingStrategy.cs" />
     <Compile Include="Services\Processing\PartitionCompletedWorkItem.cs" />
     <Compile Include="Services\Processing\PartitionState.cs" />
     <Compile Include="Services\Processing\PartitionStateCache.cs" />
@@ -238,6 +240,7 @@
     <Compile Include="Services\Processing\PositionTracker.cs" />
     <Compile Include="Services\Processing\PreparePositionTagger.cs" />
     <Compile Include="Services\Processing\PreTaggedPositionTagger.cs" />
+    <Compile Include="Services\Processing\ProcessingStrategySelector.cs" />
     <Compile Include="Services\Processing\ProgressWorkItem.cs" />
     <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
     <Compile Include="Services\Processing\EventReaderCoreService.cs" />

@@ -30,9 +30,9 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     class CompletedWorkItem : CheckpointWorkItemBase
     {
-        private readonly IEventProcessingProjectionPhase _projection;
+        private readonly IProjectionPhaseCompleter _projection;
 
-        public CompletedWorkItem(IEventProcessingProjectionPhase projection)
+        public CompletedWorkItem(IProjectionPhaseCompleter projection)
             : base()
         {
             _projection = projection;

@@ -30,23 +30,35 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IEventProcessingProjectionPhase
+    public interface IProjectionPhaseCompleter
     {
-        EventProcessedResult ProcessCommittedEvent(EventReaderSubscriptionMessage.CommittedEventReceived message,
-            string partition);
+        void Complete();
+    }
 
+    public interface IProjectionPhaseCheckpointManager
+    {
+        void NewCheckpointStarted(CheckpointTag checkpointTag);
+        void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem);
+    }
+
+    public interface IProjectionPhaseStateManager
+    {
         void BeginGetPartitionStateAt(
             string statePartition, CheckpointTag at, Action<PartitionState> loadCompleted,
             bool lockLoaded);
+
+        CheckpointTag LastProcessedEventPosition { get; }
+    }
+
+    public interface IEventProcessingProjectionPhase : IProjectionPhaseCompleter, IProjectionPhaseCheckpointManager, IProjectionPhaseStateManager
+    {
+        EventProcessedResult ProcessCommittedEvent(EventReaderSubscriptionMessage.CommittedEventReceived message,
+            string partition);
 
         void FinalizeEventProcessing(
             EventProcessedResult result, CheckpointTag eventCheckpointTag, float progress);
 
         void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action completed);
-        CheckpointTag LastProcessedEventPosition { get; }
-        void Complete();
-        void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem);
-        void NewCheckpointStarted(CheckpointTag checkpointTag);
 
         void EmitEofResult(
             string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId);
