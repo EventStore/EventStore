@@ -191,8 +191,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
                 HandledMessages.OfType<PartitionProcessingResult>().ToArray();
             Assert.AreEqual(3, results.Length);
             Assert.AreEqual("{\"data\":1}", results[0].Result);
-            Assert.AreEqual("{\"data\":2}", results[0].Result);
-            Assert.IsNull(results[0].Result);
+            Assert.AreEqual("{\"data\":2}", results[1].Result);
+            Assert.IsNull(results[2].Result);
         }
     }
 }
