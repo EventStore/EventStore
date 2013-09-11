@@ -74,6 +74,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscribed = false;
         }
 
+        public void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections)
+        {
+            throw new NotSupportedException();
+        }
+
         public void ProcessEvent()
         {
             if (!_subscribed)

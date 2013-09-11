@@ -213,7 +213,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(CoreProjectionManagementMessage.Start message)
         {
             var projection = _projections[message.ProjectionId];
-            projection.Start();
+            projection.Start(message.SlaveProjections);
         }
 
         public void Handle(CoreProjectionManagementMessage.LoadStopped message)

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Runtime.InteropServices;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
@@ -92,6 +93,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
         private readonly bool _partitionedStateState;
         private readonly Action<ProjectionStatistics> _enrichStatistics;
+
+        private SlaveProjectionCommunicationChannels _slaveProjections;
         //NOTE: this is only for slave projections (TBD)
 
 
@@ -148,10 +151,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 new CoreProjectionManagementMessage.StatisticsReport(_projectionCorrelationId, info));
         }
 
-        public void Start()
+        public void Start(SlaveProjectionCommunicationChannels slaveProjections = null)
         {
-            _startOnLoad = true;
             EnsureState(State.Initial);
+            _startOnLoad = true;
+            _slaveProjections = slaveProjections;
             GoToState(State.LoadStateRequested);
         }
 
@@ -274,6 +278,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_startOnLoad)
                 {
                     _projectionProcessingPhase.Subscribe(checkpointTag, fromCheckpoint: true);
+                    if (_slaveProjections != null)
+                        _projectionProcessingPhase.AssignSlaves(_slaveProjections);
                 }
                 else
                     GoToState(State.Stopped);
@@ -510,6 +516,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 var nextPhaseZeroPosition = nextPhase.MakeZeroCheckpointTag();
                 BeginPhase(nextPhase, nextPhaseZeroPosition);
                 _projectionProcessingPhase.Subscribe(nextPhaseZeroPosition, fromCheckpoint: false);
+                if (_slaveProjections != null)
+                    _projectionProcessingPhase.AssignSlaves(_slaveProjections);
             }
         }
 

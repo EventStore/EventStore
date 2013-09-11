@@ -118,6 +118,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _coreProjection.EnsureTickPending();
         }
 
+        public virtual void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections)
+        {
+            throw new NotSupportedException();
+        }
+
         public void ProcessEvent()
         {
             if (_processingQueue.ProcessEvent())
