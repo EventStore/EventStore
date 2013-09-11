@@ -257,6 +257,7 @@
     <Compile Include="Services\projections_manager\continuous\a_new_posted_projection.cs" />
     <Compile Include="Services\projections_manager\continuous\a_running_projection.cs" />
     <Compile Include="Services\projections_manager\FakeFromCatalogStreamProjection.cs" />
+    <Compile Include="Services\projections_manager\managed_projection\when_starting_a_managed_projection_without_slave_projections.cs" />
     <Compile Include="Services\projections_manager\managed_projection\when_starting_a_managed_projection_with_slave_projections.cs" />
     <Compile Include="Services\projections_manager\query\an_expired_projection.cs" />
     <Compile Include="Services\projections_manager\query\a_running_foreach_stream_projection.cs" />
