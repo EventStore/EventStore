@@ -87,32 +87,32 @@ namespace EventStore.ClientAPI
             return _conn.DeleteStreamAsync(stream, expectedVersion, userCredentials);
         }
 
-        public void AppendToStream(string stream, int expectedVersion, params EventData[] events)
+        public int AppendToStream(string stream, int expectedVersion, params EventData[] events)
         {
-            _conn.AppendToStream(stream, expectedVersion, events);
+            return _conn.AppendToStream(stream, expectedVersion, events);
         }
 
-        public void AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
+        public int AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
         {
-            _conn.AppendToStream(stream, expectedVersion, userCredentials, events);
+            return _conn.AppendToStream(stream, expectedVersion, userCredentials, events);
         }
 
-        public void AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
+        public int AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
         {
-            _conn.AppendToStream(stream, expectedVersion, events, userCredentials);
+            return _conn.AppendToStream(stream, expectedVersion, events, userCredentials);
         }
 
-        public Task AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events)
+        public Task<int> AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events)
         {
             return _conn.AppendToStreamAsync(stream, expectedVersion, events);
         }
 
-        public Task AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
+        public Task<int> AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
         {
             return _conn.AppendToStreamAsync(stream, expectedVersion, userCredentials, events);
         }
 
-        public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
+        public Task<int> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
         {
             return _conn.AppendToStreamAsync(stream, expectedVersion, events, userCredentials);
         }
@@ -147,7 +147,7 @@ namespace EventStore.ClientAPI
             return ((IEventStoreTransactionConnection)_conn).TransactionalWriteAsync(transaction, events, userCredentials);
         }
 
-        public Task CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials = null)
+        public Task<int> CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials = null)
         {
             return ((IEventStoreTransactionConnection)_conn).CommitTransactionAsync(transaction, userCredentials);
         }
@@ -255,22 +255,22 @@ namespace EventStore.ClientAPI
                                             eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);
         }
 
-        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
+        public int SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
-            _conn.SetStreamMetadata(stream, expectedMetastreamVersion, metadata, userCredentials);
+            return _conn.SetStreamMetadata(stream, expectedMetastreamVersion, metadata, userCredentials);
         }
 
-        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
+        public Task<int> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
             return _conn.SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata, userCredentials);
         }
 
-        public void SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
+        public int SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
         {
-            _conn.SetStreamMetadata(stream, expectedMetastreamVersion, metadata, userCredentials);
+            return _conn.SetStreamMetadata(stream, expectedMetastreamVersion, metadata, userCredentials);
         }
 
-        public Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
+        public Task<int> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
         {
             return _conn.SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata, userCredentials);
         }

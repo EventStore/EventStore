@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                     "test", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(10, 5), null)
                     });
             var msg = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First();
-            _bus.Publish(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, 0));
+            _bus.Publish(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, 0, 0));
             _stream.Checkpoint();
         }
 

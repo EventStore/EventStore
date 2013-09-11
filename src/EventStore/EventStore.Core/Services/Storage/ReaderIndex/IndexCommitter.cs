@@ -72,8 +72,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         long LastCommitPosition { get; }
         void Init(long buildToPosition);
         void Dispose();
-        void Commit(CommitLogRecord commit);
-        void Commit(IList<PrepareLogRecord> commitedPrepares);
+        int Commit(CommitLogRecord commit);
+        int Commit(IList<PrepareLogRecord> commitedPrepares);
     }
 
     public class IndexCommitter : IIndexCommitter
@@ -188,15 +188,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        public void Commit(CommitLogRecord commit)
+        public int Commit(CommitLogRecord commit)
         {
+            int eventNumber = EventNumber.Invalid;
+
             var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
             if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !_indexRebuild))
-                return;  // already committed
+                return eventNumber;  // already committed
 
             string streamId = null;
             uint streamHash = 0;
-            int eventNumber = int.MinValue;
             var indexEntries = new List<IndexEntry>();
             var prepares = new List<PrepareLogRecord>();
 
@@ -236,7 +237,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 _tableIndex.AddEntries(commit.LogPosition, indexEntries); // atomically add a whole bulk of entries
             }
 
-            if (eventNumber != int.MinValue)
+            if (eventNumber != EventNumber.Invalid)
             {
                 if (eventNumber < 0) throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
 
@@ -256,19 +257,22 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
             }
+
+            return eventNumber;
         }
 
-        public void Commit(IList<PrepareLogRecord> commitedPrepares)
+        public int Commit(IList<PrepareLogRecord> commitedPrepares)
         {
+            int eventNumber = EventNumber.Invalid;
+
             if (commitedPrepares.Count == 0)
-                return;
+                return eventNumber;
 
             var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
             var lastPrepare = commitedPrepares[commitedPrepares.Count - 1];
 
             string streamId = lastPrepare.EventStreamId;
             uint streamHash = _hasher.Hash(streamId);
-            int eventNumber = int.MinValue;
             var indexEntries = new List<IndexEntry>();
             var prepares = new List<PrepareLogRecord>();
 
@@ -281,7 +285,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
 
                 if (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !_indexRebuild))
-                    return;  // already committed
+                    continue;  // already committed
 
                 eventNumber = prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
 
@@ -302,7 +306,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 _tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries); // atomically add a whole bulk of entries
             }
 
-            if (eventNumber != int.MinValue)
+            if (eventNumber != EventNumber.Invalid)
             {
                 if (eventNumber < 0) throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
 
@@ -322,6 +326,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 _bus.Publish(new StorageMessage.EventCommited(prepares[i].LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
             }
+
+            return eventNumber;
         }
 
         private IEnumerable<PrepareLogRecord> GetTransactionPrepares(long transactionPos, long commitPos)

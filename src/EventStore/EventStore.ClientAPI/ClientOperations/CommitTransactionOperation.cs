@@ -34,12 +34,12 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class CommitTransactionOperation : OperationBase<object, ClientMessage.TransactionCommitCompleted>
+    internal class CommitTransactionOperation : OperationBase<int, ClientMessage.TransactionCommitCompleted>
     {
         private readonly bool _requireMaster;
         private readonly long _transactionId;
 
-        public CommitTransactionOperation(ILogger log, TaskCompletionSource<object> source,
+        public CommitTransactionOperation(ILogger log, TaskCompletionSource<int> source,
                                           bool requireMaster, long transactionId, UserCredentials userCredentials)
             : base(log, source, TcpCommand.TransactionCommit, TcpCommand.TransactionCommitCompleted, userCredentials)
         {
@@ -83,9 +83,9 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        protected override object TransformResponse(ClientMessage.TransactionCommitCompleted response)
+        protected override int TransformResponse(ClientMessage.TransactionCommitCompleted response)
         {
-            return null;
+            return response.LastEventNumber;
         }
 
         public override string ToString()

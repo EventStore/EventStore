@@ -37,7 +37,6 @@ using EventStore.ClientAPI.Transport.Tcp;
 namespace EventStore.ClientAPI.ClientOperations
 {
     internal abstract class OperationBase<TResult, TResponse>: IClientOperation 
-        where TResult: class
         where TResponse: class
     {
         private readonly TcpCommand _requestCommand;

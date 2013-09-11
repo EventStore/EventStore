@@ -72,8 +72,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                     "stream1", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(140, 130), null)
                     });
             var writes = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().ToArray();
-            writes[0].Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writes[0].CorrelationId, 0));
-            writes[1].Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writes[1].CorrelationId, 0));
+            writes[0].Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writes[0].CorrelationId, 0, 0));
+            writes[1].Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writes[1].CorrelationId, 0, 0));
             _checkpoint.Prepare(CheckpointTag.FromPosition(200, 150));
             //TODO: test whether checkpoint does not allow positions before last emitted event caused by position
         }

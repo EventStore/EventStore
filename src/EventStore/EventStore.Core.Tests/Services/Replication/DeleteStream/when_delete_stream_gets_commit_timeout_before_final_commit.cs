@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
 //            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, 1, PrepareFlags.SingleWrite);
 //            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, 1, PrepareFlags.SingleWrite);
 //            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3);
+            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3);
         }
 
         protected override Message When()

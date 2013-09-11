@@ -36,7 +36,7 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class AppendToStreamOperation : OperationBase<object, ClientMessage.WriteEventsCompleted>
+    internal class AppendToStreamOperation : OperationBase<int, ClientMessage.WriteEventsCompleted>
     {
         private readonly bool _requireMaster;
         private readonly string _stream;
@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private bool _wasCommitTimeout;
 
         public AppendToStreamOperation(ILogger log, 
-                                       TaskCompletionSource<object> source,
+                                       TaskCompletionSource<int> source,
                                        bool requireMaster,
                                        string stream,
                                        int expectedVersion,
@@ -100,9 +100,9 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        protected override object TransformResponse(ClientMessage.WriteEventsCompleted response)
+        protected override int TransformResponse(ClientMessage.WriteEventsCompleted response)
         {
-            return null;
+            return response.LastEventNumber;
         }
 
         public override string ToString()

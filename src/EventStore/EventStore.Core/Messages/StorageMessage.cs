@@ -229,18 +229,23 @@ namespace EventStore.Core.Messages
             public readonly long LogPosition;
             public readonly long TransactionPosition;
             public readonly int FirstEventNumber;
+            public readonly int LastEventNumber;
 
-            public CommitAck(Guid correlationId, long logPosition, long transactionPosition, int firstEventNumber)
+            public CommitAck(Guid correlationId, long logPosition, long transactionPosition, int firstEventNumber, int lastEventNumber)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.Nonnegative(logPosition, "logPosition");
                 Ensure.Nonnegative(transactionPosition, "transactionPosition");
-                Ensure.Nonnegative(firstEventNumber, "firstEventNumber");
+                if (firstEventNumber < -1)
+                    throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
+                if (lastEventNumber < firstEventNumber)
+                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0} > FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
 
                 CorrelationId = correlationId;
                 LogPosition = logPosition;
                 TransactionPosition = transactionPosition;
                 FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
             }
         }
 

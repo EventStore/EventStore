@@ -208,15 +208,20 @@ namespace EventStore.Core.Messages
             public readonly OperationResult Result;
             public readonly string Message;
             public readonly int FirstEventNumber;
+            public readonly int LastEventNumber;
 
-            public WriteEventsCompleted(Guid correlationId, int firstEventNumber)
+            public WriteEventsCompleted(Guid correlationId, int firstEventNumber, int lastEventNumber)
             {
-                Ensure.Nonnegative(firstEventNumber, "firstEventNumber");
+                if (firstEventNumber < -1)
+                    throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
+                if (lastEventNumber < firstEventNumber)
+                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0} > FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
 
                 CorrelationId = correlationId;
                 Result = OperationResult.Success;
                 Message = null;
                 FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
             }
 
             public WriteEventsCompleted(Guid correlationId, OperationResult result, string message)
@@ -228,25 +233,27 @@ namespace EventStore.Core.Messages
                 Result = result;
                 Message = message;
                 FirstEventNumber = EventNumber.Invalid;
+                LastEventNumber = EventNumber.Invalid;
             }
 
-            private WriteEventsCompleted(Guid correlationId, OperationResult result, string message, int firstEventNumber)
+            private WriteEventsCompleted(Guid correlationId, OperationResult result, string message, int firstEventNumber, int lastEventNumber)
             {
                 CorrelationId = correlationId;
                 Result = result;
                 Message = message;
                 FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
             }
 
             public WriteEventsCompleted WithCorrelationId(Guid newCorrId)
             {
-                return new WriteEventsCompleted(newCorrId, Result, Message, FirstEventNumber);
+                return new WriteEventsCompleted(newCorrId, Result, Message, FirstEventNumber, LastEventNumber);
             }
 
             public override string ToString()
             {
-                return String.Format("WRITE COMPLETED: CorrelationId: {0}, Result: {1}, Message: {2}, FirstEventNumber: {3}",
-                                     CorrelationId, Result, Message, FirstEventNumber);
+                return String.Format("WRITE COMPLETED: CorrelationId: {0}, Result: {1}, Message: {2}, FirstEventNumber: {3}, LastEventNumber: {4}",
+                                     CorrelationId, Result, Message, FirstEventNumber, LastEventNumber);
             }
         }
 
@@ -365,18 +372,50 @@ namespace EventStore.Core.Messages
             public readonly long TransactionId;
             public readonly OperationResult Result;
             public readonly string Message;
+            public readonly int FirstEventNumber;
+            public readonly int LastEventNumber;
+
+            public TransactionCommitCompleted(Guid correlationId, long transactionId, int firstEventNumber, int lastEventNumber)
+            {
+                if (firstEventNumber < -1)
+                    throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
+                if (lastEventNumber < firstEventNumber)
+                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0} > FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
+                CorrelationId = correlationId;
+                TransactionId = transactionId;
+                Result = OperationResult.Success;
+                Message = string.Empty;
+                FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
+            }
 
             public TransactionCommitCompleted(Guid correlationId, long transactionId, OperationResult result, string message)
+            {
+                if (result == OperationResult.Success)
+                    throw new ArgumentException("Invalid constructor used for successful write.", "result");
+
+                CorrelationId = correlationId;
+                TransactionId = transactionId;
+                Result = result;
+                Message = message;
+                FirstEventNumber = EventNumber.Invalid;
+                LastEventNumber = EventNumber.Invalid;
+            }
+
+            private TransactionCommitCompleted(Guid correlationId, long transactionId, OperationResult result, string message,
+                                               int firstEventNumber, int lastEventNumber)
             {
                 CorrelationId = correlationId;
                 TransactionId = transactionId;
                 Result = result;
                 Message = message;
+                FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
             }
 
             public TransactionCommitCompleted WithCorrelationId(Guid newCorrId)
             {
-                return new TransactionCommitCompleted(newCorrId, TransactionId, Result, Message);
+                return new TransactionCommitCompleted(newCorrId, TransactionId, Result, Message, FirstEventNumber, LastEventNumber);
             }
         }
 

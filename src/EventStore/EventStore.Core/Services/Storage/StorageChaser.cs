@@ -32,6 +32,7 @@ using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
@@ -225,11 +226,23 @@ namespace EventStore.Core.Services.Storage
                 {
                     CommitPendingTransaction(_transaction);
 
-                    var firstEventNumber = record.ExpectedVersion + 1 - record.TransactionOffset;
+                    int firstEventNumber;
+                    int lastEventNumber;
+                    if (record.Flags.HasAnyOf(PrepareFlags.Data))
+                    {
+                        firstEventNumber = record.ExpectedVersion + 1 - record.TransactionOffset;
+                        lastEventNumber = record.ExpectedVersion + 1;
+                    }
+                    else
+                    {
+                        firstEventNumber = record.ExpectedVersion;
+                        lastEventNumber = record.ExpectedVersion;
+                    }
                     _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
                                                                     record.LogPosition,
                                                                     record.TransactionPosition,
-                                                                    firstEventNumber));
+                                                                    firstEventNumber,
+                                                                    lastEventNumber));
                 }
             }
             else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd))
@@ -242,11 +255,14 @@ namespace EventStore.Core.Services.Storage
         {
             CommitPendingTransaction(_transaction);
 
-            _indexCommitter.Commit(record);
-            _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
-                                                            record.LogPosition,
-                                                            record.TransactionPosition,
-                                                            record.FirstEventNumber));
+            var firstEventNumber = record.FirstEventNumber;
+            var lastEventNumber = _indexCommitter.Commit(record);
+            if (lastEventNumber == EventNumber.Invalid)
+            {
+                firstEventNumber = record.FirstEventNumber - 1;
+                lastEventNumber = record.FirstEventNumber - 1;
+            }
+            _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition, record.TransactionPosition, firstEventNumber, lastEventNumber));
         }
 
         private void ProcessSystemRecord(SystemLogRecord record)

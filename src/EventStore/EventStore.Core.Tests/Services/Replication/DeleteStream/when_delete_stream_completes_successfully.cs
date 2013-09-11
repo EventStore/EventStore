@@ -51,14 +51,14 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
 //            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
 //            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
 //            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
-            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3);
-            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3);
+            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3);
+            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3);
 
         }
 
         protected override Message When()
         {
-            return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3);
+            return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3);
         }
 
         [Test]

@@ -47,9 +47,9 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
         protected override IEnumerable<Message> WithInitialMessages()
         {
             yield return new ClientMessage.DeleteStream(InternalCorrId, ClientCorrId, Envelope, true, "test123", ExpectedVersion.Any, null);
-            yield return new StorageMessage.CommitAck(InternalCorrId, 1, 1, 0);
-            yield return new StorageMessage.CommitAck(InternalCorrId, 1, 1, 0);
-            yield return new StorageMessage.CommitAck(InternalCorrId, 1, 1, 0);
+            yield return new StorageMessage.CommitAck(InternalCorrId, 1, 1, 0, 0);
+            yield return new StorageMessage.CommitAck(InternalCorrId, 1, 1, 0, 0);
+            yield return new StorageMessage.CommitAck(InternalCorrId, 1, 1, 0, 0);
         }
 
         protected override Message When()

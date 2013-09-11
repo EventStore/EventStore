@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.Security.Principal;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -37,7 +36,6 @@ using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
@@ -80,16 +78,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         void IReadIndex.Init(long buildToPosition)
         {
             _indexCommitter.Init(buildToPosition);
-        }
-
-        void IReadIndex.Commit(CommitLogRecord commit)
-        {
-            _indexCommitter.Commit(commit);
-        }
-
-        void IReadIndex.Commit(IList<PrepareLogRecord> prepares)
-        {
-            _indexCommitter.Commit(prepares);
         }
 
         IndexReadEventResult IReadIndex.ReadEvent(string streamId, int eventNumber)

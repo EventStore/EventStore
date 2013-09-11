@@ -90,10 +90,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         public void ready_for_checkpoint_after_all_writes_complete()
         {
             var writes = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().ToArray();
-            writes[0].Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writes[0].CorrelationId, 0));
-            writes[1].Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writes[1].CorrelationId, 0));
+            writes[0].Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writes[0].CorrelationId, 0, 0));
+            writes[1].Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writes[1].CorrelationId, 0, 0));
             writes = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().ToArray();
-            writes[2].Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writes[2].CorrelationId, 0));
+            writes[2].Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writes[2].CorrelationId, 0, 0));
 
             Assert.AreEqual(1, _readyHandler.HandledMessages.OfType<CoreProjectionProcessingMessage.ReadyForCheckpoint>().Count());
         }

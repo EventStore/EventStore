@@ -29,7 +29,6 @@
 using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Core.Data;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
@@ -39,8 +38,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         IIndexWriter IndexWriter { get; }
 
         void Init(long buildToPosition);
-        void Commit(CommitLogRecord record);
-        void Commit(IList<PrepareLogRecord> commitedPrepares);
         ReadIndexStats GetStatistics();
         
         IndexReadEventResult ReadEvent(string streamId, int eventNumber);

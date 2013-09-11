@@ -55,6 +55,7 @@ message WriteEventsCompleted {
 	required OperationResult result = 1;
 	optional string message = 2;
 	required int32 first_event_number = 3;
+	required int32 last_event_number = 4;
 }
 
 message DeleteStream {
@@ -101,6 +102,8 @@ message TransactionCommitCompleted {
 	required int64 transaction_id = 1;
 	required OperationResult result = 2;
 	optional string message = 3;
+	required int32 first_event_number = 4;
+	required int32 last_event_number = 5;
 }
 
 message ReadEvent {

@@ -80,12 +80,12 @@ namespace EventStore.Core.Tests.Helpers
                 fixture.ProcessWrite(
                     message.Envelope, message.CorrelationId, _startMessage.EventStreamId, _startMessage.ExpectedVersion,
                     _events.Select(v => v.Item2).ToArray(),
-                    f =>
+                    (f, l) =>
                     new ClientMessage.TransactionCommitCompleted(
-                        message.CorrelationId, message.TransactionId, OperationResult.Success, ""),
+                        message.CorrelationId, message.TransactionId, f, l),
                     new ClientMessage.TransactionCommitCompleted(
-                        message.CorrelationId, message.TransactionId, OperationResult.WrongExpectedVersion,
-                        "Wrong expected version"), _events.Select(v => (long)v.Item1).ToArray(), commitPosition);
+                        message.CorrelationId, message.TransactionId, OperationResult.WrongExpectedVersion, "Wrong expected version"),
+                    _events.Select(v => (long)v.Item1).ToArray(), commitPosition);
             }
         }
 
@@ -170,7 +170,7 @@ namespace EventStore.Core.Tests.Helpers
             var message = _writesQueue.Dequeue();
             ProcessWrite(
                 message.Envelope, message.CorrelationId, message.EventStreamId, message.ExpectedVersion, message.Events,
-                firstEventNumber => new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber),
+                (firstEventNumber, lastEventNumber) => new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber, lastEventNumber),
                 new ClientMessage.WriteEventsCompleted(
                     message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
         }
@@ -379,7 +379,8 @@ namespace EventStore.Core.Tests.Helpers
                 ProcessWrite(
                     message.Envelope, message.CorrelationId, message.EventStreamId, message.ExpectedVersion,
                     message.Events,
-                    firstEventNumber => new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber),
+                    (firstEventNumber, lastEventNumber) =>
+                        new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber, lastEventNumber),
                     new ClientMessage.WriteEventsCompleted(
                         message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
             }
@@ -387,7 +388,7 @@ namespace EventStore.Core.Tests.Helpers
                 _writesQueue.Enqueue(message);
         }
 
-        private void ProcessWrite<T>(IEnvelope envelope, Guid correlationId, string streamId, int expectedVersion, Event[] events, Func<int, T> writeEventsCompleted, T wrongExpectedVersionResponse, long[] positions = null, int? commitPosition = null) where T : Message
+        private void ProcessWrite<T>(IEnvelope envelope, Guid correlationId, string streamId, int expectedVersion, Event[] events, Func<int, int, T> writeEventsCompleted, T wrongExpectedVersionResponse, long[] positions = null, int? commitPosition = null) where T : Message
         {
             if (positions == null)
             {
@@ -435,7 +436,7 @@ namespace EventStore.Core.Tests.Helpers
             }
 
             var firstEventNumber = list.Count - events.Length;
-            envelope.ReplyWith(writeEventsCompleted(firstEventNumber));
+            envelope.ReplyWith(writeEventsCompleted(firstEventNumber, firstEventNumber + events.Length - 1));
         }
 
         public void Handle(ClientMessage.DeleteStream message)

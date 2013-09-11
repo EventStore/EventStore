@@ -64,9 +64,9 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     liveUntil: NextTimeoutTime - TimeoutOffset));
         }
 
-        protected override void CompleteSuccessRequest(int firstEventNumber)
+        protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber)
         {
-            base.CompleteSuccessRequest(firstEventNumber);
+            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber);
             var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, OperationResult.Success, null);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
