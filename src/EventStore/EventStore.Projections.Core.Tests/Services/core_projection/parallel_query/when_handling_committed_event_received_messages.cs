@@ -27,32 +27,37 @@
 // 
 
 using System;
-using EventStore.Common.Log;
-using EventStore.Core.Bus;
+using EventStore.Core.Data;
+using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_query
 {
-    public class ParallelQueryMasterProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase
+    [TestFixture]
+    class when_handling_committed_event_received_messages : specification_with_parallel_query
     {
-        public ParallelQueryMasterProjectionProcessingPhase(
-            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher, ProjectionConfig projectionConfig,
-            Action updateStatistics, PartitionStateCache partitionStateCache, string name, ILogger logger, CheckpointTag zeroCheckpointTag,
-            ICoreProjectionCheckpointManager checkpointManager, 
-            ReaderSubscriptionDispatcher subscriptionDispatcher, IReaderStrategy readerStrategy,
-            IResultWriter resultWriter, bool checkpointsEnabled, bool stopOnEof)
-            : base(publisher, coreProjection, projectionCorrelationId, checkpointManager, projectionConfig, name, logger, zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics, subscriptionDispatcher, readerStrategy, checkpointsEnabled, stopOnEof)
+        protected override void Given()
         {
+            base.Given();
+            _eventId = Guid.NewGuid();
         }
 
-
-        public override void NewCheckpointStarted(CheckpointTag at)
+        protected override void When()
         {
-            throw new NotImplementedException();
+            var tag0 = CheckpointTag.FromStreamPosition(0, "catalog", 0);
+            _bus.Publish(
+                EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
+                    new ResolvedEvent(
+                        "catalog", 0, "catalog", 0, false, new TFPos(120, 110), _eventId,
+                        "$@", false, "test-stream", ""), tag0, _subscriptionId, 0));
         }
 
-        public override void Dispose()
+        [Test]
+        public void spools_slave_stream_processing()
         {
-            throw new NotImplementedException();
+            Assert.Inconclusive();
         }
     }
 }

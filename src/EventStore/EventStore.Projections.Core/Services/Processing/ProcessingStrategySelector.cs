@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 && !string.IsNullOrEmpty(sourceDefinition.CatalogStream))
             {
                 return new ParallelQueryProcessingStrategy(
-                    name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger);
+                    name, projectionVersion, projectionConfig, sourceDefinition, _logger);
             }
 
             return projectionConfig.StopOnEof

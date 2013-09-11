@@ -31,22 +31,21 @@ using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ParallelQueryProcessingStrategy : DefaultProjectionProcessingStrategy
+    public class ParallelQueryProcessingStrategy : EventReaderBasedProjectionProcessingStrategy
     {
-        private readonly IProjectionStateHandler _stateHandler;
         private readonly ProjectionConfig _projectionConfig;
         private readonly IQuerySources _sourceDefinition;
 
         public ParallelQueryProcessingStrategy(
-            string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
-            ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger)
-            : base(name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger)
+            string name, ProjectionVersion projectionVersion, ProjectionConfig projectionConfig,
+            IQuerySources sourceDefinition, ILogger logger)
+            : base(name, projectionVersion, projectionConfig, sourceDefinition, logger)
         {
-            _stateHandler = stateHandler;
             _projectionConfig = projectionConfig;
             _sourceDefinition = sourceDefinition;
         }
@@ -66,20 +65,21 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
         {
-            throw new NotImplementedException();
+            return new ParallelQueryMasterReaderStrategy(
+                0, SystemAccount.Principal, timeProvider, _sourceDefinition.CatalogStream);
         }
 
         protected override IProjectionProcessingPhase CreateFirstProcessingPhase(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
             Action updateStatistics, CoreProjection coreProjection, ReaderSubscriptionDispatcher subscriptionDispatcher,
             CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager checkpointManager,
-            StatePartitionSelector statePartitionSelector, IReaderStrategy readerStrategy, IResultWriter resultWriter)
+            IReaderStrategy readerStrategy, IResultWriter resultWriter)
         {
             return new ParallelQueryMasterProjectionProcessingPhase(
                 coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics,
-                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, _name, _logger,
-                zeroCheckpointTag, checkpointManager, statePartitionSelector, subscriptionDispatcher, readerStrategy,
-                resultWriter, _projectionConfig.CheckpointsEnabled, this.GetStopOnEof());
+                partitionStateCache, _name, _logger, zeroCheckpointTag,
+                checkpointManager, subscriptionDispatcher, readerStrategy, resultWriter,
+                _projectionConfig.CheckpointsEnabled, this.GetStopOnEof());
         }
 
         public override bool GetStopOnEof()

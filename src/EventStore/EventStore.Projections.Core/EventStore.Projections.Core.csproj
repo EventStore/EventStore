@@ -183,6 +183,7 @@
     <Compile Include="Services\Processing\BypassingEventFilter.cs" />
     <Compile Include="Services\Processing\ByStreamCatalogEventReader.cs" />
     <Compile Include="Services\Processing\ByStreamStatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\CatalogStreamPositionTagger.cs" />
     <Compile Include="Services\Processing\CategoryEventFilter.cs" />
     <Compile Include="Services\Processing\CheckpointSuggestedWorkItem.cs" />
     <Compile Include="Services\Processing\CheckpointTagExtensions.cs" />
@@ -204,6 +205,7 @@
     <Compile Include="Services\Processing\EventProcessedResult.cs" />
     <Compile Include="Services\Processing\EventReorderingReaderSubscription.cs" />
     <Compile Include="Services\Processing\ExternallyFedByStreamEventReader.cs" />
+    <Compile Include="Services\Processing\ExternallyFedReaderStrategy.cs" />
     <Compile Include="Services\Processing\ExtraMetaData.cs" />
     <Compile Include="Services\Processing\GetDataWorkItemBase.cs" />
     <Compile Include="Services\Processing\GetResultWorkItem.cs" />
@@ -231,6 +233,7 @@
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\NotAuthorizedWorkItem.cs" />
     <Compile Include="Services\Processing\ParallelQueryMasterProjectionProcessingPhase.cs" />
+    <Compile Include="Services\Processing\ParallelQueryMasterReaderStrategy.cs" />
     <Compile Include="Services\Processing\ParallelQueryProcessingStrategy.cs" />
     <Compile Include="Services\Processing\PartitionCompletedWorkItem.cs" />
     <Compile Include="Services\Processing\PartitionState.cs" />

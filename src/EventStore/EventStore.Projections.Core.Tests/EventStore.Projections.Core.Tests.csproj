@@ -149,6 +149,8 @@
     <Compile Include="Services\core_projection\multi_phase\when_creating_a_multi_phase_projection.cs" />
     <Compile Include="Services\core_projection\multi_phase\when_starting_a_multi_phase_projection.cs" />
     <Compile Include="Services\core_projection\multi_phase\when_starting_phase2_without_a_reader_strategy.cs" />
+    <Compile Include="Services\core_projection\parallel_query\specification_with_parallel_query.cs" />
+    <Compile Include="Services\core_projection\parallel_query\when_handling_committed_event_received_messages.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_handling_stream_awaiting_message.cs" />
     <Compile Include="Services\core_projection\query_by_stream\specification_with_from_catalog_query.cs" />
     <Compile Include="Services\core_projection\slave_projection\specification_with_slave_core_projection.cs" />

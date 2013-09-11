@@ -35,18 +35,16 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class DefaultProjectionProcessingStrategy : ProjectionProcessingStrategy
+    public abstract class EventReaderBasedProjectionProcessingStrategy : ProjectionProcessingStrategy
     {
-        private readonly IProjectionStateHandler _stateHandler;
         protected readonly ProjectionConfig _projectionConfig;
         protected readonly IQuerySources _sourceDefinition;
 
-        protected DefaultProjectionProcessingStrategy(
-            string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
-            ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger)
+        protected EventReaderBasedProjectionProcessingStrategy(
+            string name, ProjectionVersion projectionVersion, ProjectionConfig projectionConfig,
+            IQuerySources sourceDefinition, ILogger logger)
             : base(name, projectionVersion, logger)
         {
-            _stateHandler = stateHandler;
             _projectionConfig = projectionConfig;
             _sourceDefinition = sourceDefinition;
         }
@@ -71,31 +69,19 @@ namespace EventStore.Projections.Core.Services.Processing
             var resultWriter = CreateFirstPhaseResultWriter(
                 checkpointManager as IEmittedEventWriter, zeroCheckpointTag, namingBuilder);
 
-            var statePartitionSelector = CreateStatePartitionSelector(
-                _stateHandler, _sourceDefinition.ByCustomPartitions, _sourceDefinition.ByStreams);
-
             var firstPhase = CreateFirstProcessingPhase(
                 publisher, projectionCorrelationId, partitionStateCache, updateStatistics, coreProjection,
-                subscriptionDispatcher, zeroCheckpointTag, checkpointManager, statePartitionSelector, readerStrategy,
-                resultWriter);
+                subscriptionDispatcher, zeroCheckpointTag, checkpointManager, readerStrategy, resultWriter);
 
             return CreateProjectionProcessingPhases(
                 publisher, projectionCorrelationId, namingBuilder, partitionStateCache, coreProjection, ioDispatcher,
                 firstPhase);
         }
 
-        protected virtual IProjectionProcessingPhase CreateFirstProcessingPhase(
+        protected abstract IProjectionProcessingPhase CreateFirstProcessingPhase(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
             Action updateStatistics, CoreProjection coreProjection, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager checkpointManager,
-            StatePartitionSelector statePartitionSelector, IReaderStrategy readerStrategy, IResultWriter resultWriter)
-        {
-            return new EventProcessingProjectionProcessingPhase(
-                coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics,
-                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, _name, _logger,
-                zeroCheckpointTag, checkpointManager, statePartitionSelector, subscriptionDispatcher, readerStrategy,
-                resultWriter, _projectionConfig.CheckpointsEnabled, this.GetStopOnEof());
-        }
+            CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager checkpointManager, IReaderStrategy readerStrategy, IResultWriter resultWriter);
 
         protected virtual IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
         {
@@ -153,6 +139,41 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        protected virtual IResultWriter CreateFirstPhaseResultWriter(
+            IEmittedEventWriter emittedEventWriter, CheckpointTag zeroCheckpointTag,
+            ProjectionNamesBuilder namingBuilder)
+        {
+            return new ResultWriter(
+                CreateFirstPhaseResultEmitter(namingBuilder), emittedEventWriter, GetProducesRunningResults(),
+                zeroCheckpointTag, namingBuilder.GetPartitionCatalogStreamName());
+        }
+    }
+
+    public abstract class DefaultProjectionProcessingStrategy : EventReaderBasedProjectionProcessingStrategy
+    {
+        private readonly IProjectionStateHandler _stateHandler;
+
+        protected DefaultProjectionProcessingStrategy(string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler, ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger)
+            : base(name, projectionVersion, projectionConfig, sourceDefinition, logger)
+        {
+            _stateHandler = stateHandler;
+        }
+
+        protected override IProjectionProcessingPhase CreateFirstProcessingPhase(
+            IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
+            Action updateStatistics, CoreProjection coreProjection, ReaderSubscriptionDispatcher subscriptionDispatcher,
+            CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager checkpointManager, IReaderStrategy readerStrategy, IResultWriter resultWriter)
+        {
+            var statePartitionSelector = CreateStatePartitionSelector(
+                _stateHandler, _sourceDefinition.ByCustomPartitions, _sourceDefinition.ByStreams);
+
+            return new EventProcessingProjectionProcessingPhase(
+                coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics,
+                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, _name, _logger,
+                zeroCheckpointTag, checkpointManager, statePartitionSelector, subscriptionDispatcher, readerStrategy,
+                resultWriter, _projectionConfig.CheckpointsEnabled, this.GetStopOnEof());
+        }
+
         private static StatePartitionSelector CreateStatePartitionSelector(
             IProjectionStateHandler projectionStateHandler, bool byCustomPartitions, bool byStream)
         {
@@ -161,15 +182,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 : (byStream
                     ? (StatePartitionSelector) new ByStreamStatePartitionSelector()
                     : new NoopStatePartitionSelector());
-        }
-
-        protected virtual IResultWriter CreateFirstPhaseResultWriter(
-            IEmittedEventWriter emittedEventWriter, CheckpointTag zeroCheckpointTag,
-            ProjectionNamesBuilder namingBuilder)
-        {
-            return new ResultWriter(
-                CreateFirstPhaseResultEmitter(namingBuilder), emittedEventWriter, GetProducesRunningResults(),
-                zeroCheckpointTag, namingBuilder.GetPartitionCatalogStreamName());
         }
     }
 }
