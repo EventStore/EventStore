@@ -168,6 +168,9 @@
     <Compile Include="Messages\ReaderSubscriptionManagement.cs" />
     <Compile Include="Messages\EventReaderSubscriptionMessage.cs" />
     <Compile Include="Messages\ReaderSubscriptionMessage.cs" />
+    <Compile Include="Messages\SlaveProjectionCommunicationChannel.cs" />
+    <Compile Include="Messages\SlaveProjectionCommunicationChannels.cs" />
+    <Compile Include="Messages\SlaveProjectionDefinitions.cs" />
     <Compile Include="Messaging\PublishToWrapEnvelop.cs" />
     <Compile Include="Messaging\UnwrapEnvelopeHandler.cs" />
     <Compile Include="Messaging\UnwrapEnvelopeMessage.cs" />

@@ -190,6 +190,20 @@ namespace EventStore.Projections.Core.Messages
                 _enableRunAs = enableRunAs;
             }
 
+            public Post(
+                IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, Type handlerType, string query,
+                bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs = false)
+                : base(envelope, runAs)
+            {
+                _name = name;
+                _handlerType = "native:" + handlerType.Namespace + "." + handlerType.Name;
+                _mode = mode;
+                _query = query;
+                _enabled = enabled;
+                _checkpointsEnabled = checkpointsEnabled;
+                _emitEnabled = emitEnabled;
+                _enableRunAs = enableRunAs;
+            }
             // shortcut for posting ad-hoc JS queries
             public Post(IEnvelope envelope, RunAs runAs, string query, bool enabled)
                 : base(envelope, runAs)
@@ -759,6 +773,56 @@ namespace EventStore.Projections.Core.Messages
                 Name = name;
                 Handler = handler;
                 Query = query;
+            }
+        }
+
+        public class StartSlaveProjections : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            private readonly string _name;
+            private readonly SlaveProjectionDefinitions _slaveProjections;
+
+            public StartSlaveProjections(string name, SlaveProjectionDefinitions slaveProjections)
+            {
+                _name = name;
+                _slaveProjections = slaveProjections;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public SlaveProjectionDefinitions SlaveProjections
+            {
+                get { return _slaveProjections; }
+            }
+        }
+
+        public class SlaveProjectionsStarted : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            private readonly string _name;
+            private readonly SlaveProjectionCommunicationChannels _slaveProjections;
+
+            public SlaveProjectionsStarted(string name, SlaveProjectionCommunicationChannels slaveProjections)
+            {
+                _name = name;
+                _slaveProjections = slaveProjections;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public SlaveProjectionCommunicationChannels SlaveProjections
+            {
+                get { return _slaveProjections; }
             }
         }
     }

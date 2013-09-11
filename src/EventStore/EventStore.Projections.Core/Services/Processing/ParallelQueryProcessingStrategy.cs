@@ -111,5 +111,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
         }
 
+        public override SlaveProjectionDefinitions GetSlaveProjections()
+        {
+            return null;
+        }
     }
 }

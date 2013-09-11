@@ -69,6 +69,11 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
+        public override SlaveProjectionDefinitions GetSlaveProjections()
+        {
+            return null;
+        }
+
         protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
             PartitionStateCache partitionStateCache, CoreProjection coreProjection, IODispatcher ioDispatcher,

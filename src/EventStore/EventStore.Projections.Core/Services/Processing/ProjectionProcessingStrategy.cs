@@ -85,5 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
             ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher,
             CoreProjectionCheckpointWriter coreProjectionCheckpointWriter);
+
+        public abstract SlaveProjectionDefinitions GetSlaveProjections();
     }
 }

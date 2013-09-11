@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             _mp.InitializeNew(
                 new ProjectionManagementMessage.Post(
                     new NoopEnvelope(), ProjectionMode.OneTime, "name", ProjectionManagementMessage.RunAs.Anonymous,
-                    null, @"log(1);", enabled: true, checkpointsEnabled: false, emitEnabled: false), () => { });
+                    (string)null, @"log(1);", enabled: true, checkpointsEnabled: false, emitEnabled: false), () => { });
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]

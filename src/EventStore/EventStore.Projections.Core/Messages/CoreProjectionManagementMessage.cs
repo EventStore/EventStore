@@ -107,10 +107,19 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public Start(Guid projectionId)
+            private readonly SlaveProjectionCommunicationChannels _slaveProjections;
+
+            public Start(Guid projectionId, SlaveProjectionCommunicationChannels slaveProjections = null)
                 : base(projectionId)
             {
+                _slaveProjections = slaveProjections;
             }
+
+            public SlaveProjectionCommunicationChannels SlaveProjections
+            {
+                get { return _slaveProjections; }
+            }
+
         }
 
         public class LoadStopped : CoreProjectionManagementMessage
@@ -335,19 +344,32 @@ namespace EventStore.Projections.Core.Messages
         public class Prepared : CoreProjectionManagementMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             private readonly ProjectionSourceDefinition _sourceDefinition;
+            private readonly SlaveProjectionDefinitions _slaveProjections;
 
-            public Prepared(Guid projectionId, ProjectionSourceDefinition sourceDefinition)
+            public Prepared(
+                Guid projectionId, ProjectionSourceDefinition sourceDefinition,
+                SlaveProjectionDefinitions slaveProjections)
                 : base(projectionId)
             {
                 _sourceDefinition = sourceDefinition;
+                _slaveProjections = slaveProjections;
             }
 
             public ProjectionSourceDefinition SourceDefinition
             {
                 get { return _sourceDefinition; }
+            }
+
+            public SlaveProjectionDefinitions SlaveProjections
+            {
+                get { return _slaveProjections; }
             }
         }
 

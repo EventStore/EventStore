@@ -115,6 +115,7 @@ namespace EventStore.Projections.Core.Services.Management
         private DateTime _lastAccessed;
         private int _lastWrittenVersion = -1;
         private IPrincipal _runAs;
+        private SlaveProjectionDefinitions _slaveProjections;
 
         public ManagedProjection(
             IPublisher coreQueue, Guid id, int projectionId, string name, bool enabledToRun, ILogger logger,
@@ -393,6 +394,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _state = ManagedProjectionState.Prepared;
             _persistedState.SourceDefinition = message.SourceDefinition;
+            _slaveProjections = message.SlaveProjections;
             OnPrepared();
         }
 
@@ -662,7 +664,14 @@ namespace EventStore.Projections.Core.Services.Management
                         completed();
                 };
             _state = ManagedProjectionState.Starting;
-            _coreQueue.Publish(new CoreProjectionManagementMessage.Start(_id));
+            if (_slaveProjections != null)
+            {
+                _output.Publish(new ProjectionManagementMessage.StartSlaveProjections(_name, _slaveProjections));
+            }
+            else
+            {
+                _coreQueue.Publish(new CoreProjectionManagementMessage.Start(_id));
+            }
         }
 
         private void LoadStopped(Action onLoaded)
@@ -939,6 +948,11 @@ namespace EventStore.Projections.Core.Services.Management
                     new ProjectionManagementMessage.ProjectionState(
                         message.Name, message.Partition, "*** UNKNOWN ***", position: null));
             }
+        }
+
+        public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message)
+        {
+            _coreQueue.Publish(new CoreProjectionManagementMessage.Start(_id, message.SlaveProjections));
         }
     }
 
