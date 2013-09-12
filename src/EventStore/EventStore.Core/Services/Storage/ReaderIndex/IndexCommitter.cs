@@ -139,10 +139,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         case LogRecordType.Prepare:
                         {
                             var prepare = (PrepareLogRecord) result.LogRecord;
-                            if (prepare.Flags.HasAllOf(PrepareFlags.IsCommitted))
+                            if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted))
                             {
-                                commitedPrepares.Add(prepare);
-                                if (prepare.Flags.HasAllOf(PrepareFlags.TransactionEnd))
+                                if (prepare.Flags.HasAnyOf(PrepareFlags.Data))
+                                    commitedPrepares.Add(prepare);
+                                if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
                                 {
                                     Commit(commitedPrepares);
                                     commitedPrepares.Clear();

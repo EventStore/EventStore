@@ -220,7 +220,8 @@ namespace EventStore.Core.Services.Storage
 
             if (record.Flags.HasAnyOf(PrepareFlags.IsCommitted))
             {
-                _transaction.Add(record);
+                if (record.Flags.HasAnyOf(PrepareFlags.Data))
+                    _transaction.Add(record);
 
                 if (record.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
                 {

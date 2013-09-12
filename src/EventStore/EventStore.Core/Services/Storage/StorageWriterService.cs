@@ -294,12 +294,11 @@ namespace EventStore.Core.Services.Storage
                 }
                 else
                 {
-                    var res = WritePrepareWithRetry(
+                    WritePrepareWithRetry(
                         LogRecord.Prepare(logPosition, message.CorrelationId, Guid.NewGuid(), logPosition, -1,
                                           message.EventStreamId, commitCheck.CurrentVersion,
                                           PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommitted,
                                           null, Empty.ByteArray, Empty.ByteArray));
-                    prepares.Add(res.Prepare);
                 }
                 _indexWriter.PreCommit(prepares);
 
