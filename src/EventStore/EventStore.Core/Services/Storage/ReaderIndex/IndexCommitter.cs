@@ -141,7 +141,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                             var prepare = (PrepareLogRecord) result.LogRecord;
                             if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted))
                             {
-                                if (prepare.Flags.HasAnyOf(PrepareFlags.Data))
+                                if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete))
                                     commitedPrepares.Add(prepare);
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
                                 {
