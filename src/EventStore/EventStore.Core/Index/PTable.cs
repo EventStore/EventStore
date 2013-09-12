@@ -370,7 +370,7 @@ namespace EventStore.Core.Index
         {
             var midpoints = _midpoints;
             if (midpoints == null) 
-                return Tuple.Create(0, Count);
+                return Tuple.Create(0, Count-1);
             int lowerMidpoint = LowerMidpointBound(midpoints, stream);
             int upperMidpoint = UpperMidpointBound(midpoints, stream);
             return Tuple.Create(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
