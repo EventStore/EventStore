@@ -6,7 +6,7 @@ namespace EventStore.Projections.Core.Messages
 {
     namespace ParallelQueryProcessingMessages
     {
-        public sealed class PartitionProcessingResult : Message
+        public sealed class PartitionProcessingResult : CoreProjectionManagementMessage
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -16,7 +16,9 @@ namespace EventStore.Projections.Core.Messages
             private readonly Guid _causedByGuid;
             private readonly CheckpointTag _position;
 
-            public PartitionProcessingResult(string partition, Guid causedByGuid, CheckpointTag position, string result)
+            public PartitionProcessingResult(
+                Guid masterCoreProjectionId, string partition, Guid causedByGuid, CheckpointTag position, string result)
+                : base(masterCoreProjectionId)
             {
                 _partition = partition;
                 _causedByGuid = causedByGuid;

@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.slave_proje
         {
             return new SlaveQueryProcessingStrategy(
                 _projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
-                Envelope);
+                GetInputQueue(), _projectionCorrelationId);
         }
 
         protected override void Given()

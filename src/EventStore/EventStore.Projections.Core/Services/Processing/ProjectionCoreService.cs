@@ -179,8 +179,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 var sourceDefinition = ProjectionSourceDefinition.From(name, stateHandler.GetSourceDefinition());
                 var projectionVersion = message.Version;
                 var projectionConfig = message.Config;
-                var projectionProcessingStrategy = _processingStrategySelector.CreateSlaveProjectionProcessingStrategy(
-                    name, projectionVersion, sourceDefinition, projectionConfig, stateHandler, message.ResultsEnvelope, this);
+                var projectionProcessingStrategy =
+                    _processingStrategySelector.CreateSlaveProjectionProcessingStrategy(
+                        name, projectionVersion, sourceDefinition, projectionConfig, stateHandler,
+                        message.ResultsPublisher, message.MasterCoreProjectionId, this);
                 CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(

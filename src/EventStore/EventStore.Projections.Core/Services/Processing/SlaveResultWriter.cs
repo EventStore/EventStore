@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
@@ -34,20 +35,22 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class SlaveResultWriter : IResultWriter
     {
-        private readonly IEnvelope _publishResultsEnvelope;
+        private readonly IPublisher _resultsPublisher;
+        private readonly Guid _masterCoreProjectionId;
 
-        public SlaveResultWriter(IEnvelope publishResultsEnvelope)
+        public SlaveResultWriter(IPublisher resultsPublisher, Guid masterCoreProjectionId)
         {
-            if (publishResultsEnvelope == null) throw new ArgumentNullException("publishResultsEnvelope");
+            if (resultsPublisher == null) throw new ArgumentNullException("resultsPublisher");
 
-            _publishResultsEnvelope = publishResultsEnvelope;
+            _resultsPublisher = resultsPublisher;
+            _masterCoreProjectionId = masterCoreProjectionId;
         }
 
         public void WriteEofResult(
             string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId)
         {
-            _publishResultsEnvelope.ReplyWith(
-                new PartitionProcessingResult(partition, causedByGuid, causedBy, resultBody));
+            _resultsPublisher.Publish(
+                new PartitionProcessingResult(_masterCoreProjectionId, partition, causedByGuid, causedBy, resultBody));
         }
 
         public void WriteRunningResult(EventProcessedResult result)

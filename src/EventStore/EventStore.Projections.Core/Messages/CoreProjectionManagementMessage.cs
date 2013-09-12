@@ -29,6 +29,7 @@
 using System;
 using System.Security.Principal;
 using System.Text;
+using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -433,7 +434,8 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private readonly IEnvelope _envelope;
-            private readonly IEnvelope _resultsEnvelope;
+            private readonly IPublisher _resultsPublisher;
+            private readonly Guid _masterCoreProjectionId;
             private readonly ProjectionConfig _config;
             private readonly Func<IProjectionStateHandler> _handlerFactory;
             private readonly string _name;
@@ -441,14 +443,15 @@ namespace EventStore.Projections.Core.Messages
 
             public CreateAndPrepareSlave(
                 IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
-                IEnvelope resultsEnvelope, Func<IProjectionStateHandler> handlerFactory)
+                IPublisher resultsPublisher, Guid masterCoreProjectionId, Func<IProjectionStateHandler> handlerFactory)
                 : base(projectionId)
             {
                 _envelope = envelope;
                 _name = name;
                 _version = version;
                 _config = config;
-                _resultsEnvelope = resultsEnvelope;
+                _resultsPublisher = resultsPublisher;
+                _masterCoreProjectionId = masterCoreProjectionId;
                 _handlerFactory = handlerFactory;
             }
 
@@ -477,9 +480,14 @@ namespace EventStore.Projections.Core.Messages
                 get { return _version; }
             }
 
-            public IEnvelope ResultsEnvelope
+            public IPublisher ResultsPublisher
             {
-                get { return _resultsEnvelope; }
+                get { return _resultsPublisher; }
+            }
+
+            public Guid MasterCoreProjectionId
+            {
+                get { return _masterCoreProjectionId; }
             }
         }
 

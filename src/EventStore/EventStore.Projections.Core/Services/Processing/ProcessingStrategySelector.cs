@@ -26,7 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Common.Log;
+using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 
@@ -58,10 +60,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ProjectionProcessingStrategy CreateSlaveProjectionProcessingStrategy(
             string name, ProjectionVersion projectionVersion, ProjectionSourceDefinition sourceDefinition,
-            ProjectionConfig projectionConfig, IProjectionStateHandler stateHandler, IEnvelope resultsEnvelope, ProjectionCoreService projectionCoreService)
+            ProjectionConfig projectionConfig, IProjectionStateHandler stateHandler, IPublisher resultsEnvelope,
+            Guid masterCoreProjectionId, ProjectionCoreService projectionCoreService)
         {
             return new SlaveQueryProcessingStrategy(
-                name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, projectionCoreService.Logger, resultsEnvelope);
+                name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, projectionCoreService.Logger,
+                resultsEnvelope, masterCoreProjectionId);
         }
     }
 }

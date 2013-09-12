@@ -38,15 +38,17 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class SlaveQueryProcessingStrategy : DefaultProjectionProcessingStrategy
     {
-        private readonly IEnvelope _publishResultsEnvelope;
+        private readonly IPublisher _resultsPublisher;
+        private readonly Guid _masterCoreProjectionId;
 
         public SlaveQueryProcessingStrategy(
             string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
             ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger,
-            IEnvelope publishResultsEnvelope)
+            IPublisher resultsPublisher, Guid masterCoreProjectionId)
             : base(name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger)
         {
-            _publishResultsEnvelope = publishResultsEnvelope;
+            _resultsPublisher = resultsPublisher;
+            _masterCoreProjectionId = masterCoreProjectionId;
         }
 
         public override bool GetStopOnEof()
@@ -97,7 +99,7 @@ namespace EventStore.Projections.Core.Services.Processing
             IEmittedEventWriter emittedEventWriter, CheckpointTag zeroCheckpointTag,
             ProjectionNamesBuilder namingBuilder)
         {
-            return new SlaveResultWriter(_publishResultsEnvelope);
+            return new SlaveResultWriter(_resultsPublisher, _masterCoreProjectionId);
         }
 
         protected override ICoreProjectionCheckpointManager CreateCheckpointManager(
