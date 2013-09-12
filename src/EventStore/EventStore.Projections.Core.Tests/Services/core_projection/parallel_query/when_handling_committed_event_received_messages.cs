@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -47,17 +48,24 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
         protected override void When()
         {
             var tag0 = CheckpointTag.FromStreamPosition(0, "catalog", 0);
+            var tag1 = CheckpointTag.FromStreamPosition(0, "catalog", 1);
             _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
-                        "catalog", 0, "catalog", 0, false, new TFPos(120, 110), _eventId,
-                        "$@", false, "test-stream", ""), tag0, _subscriptionId, 0));
+                        "catalog", 0, "catalog", 0, false, new TFPos(120, 110), _eventId, "$@", false, "test-stream", ""),
+                    tag0, _subscriptionId, 0));
+            _bus.Publish(
+                EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
+                    new ResolvedEvent(
+                        "catalog", 1, "catalog", 1, false, new TFPos(220, 210), Guid.NewGuid(), "$@", false,
+                        "test-stream2", ""), tag1, _subscriptionId, 1));
         }
 
         [Test]
         public void spools_slave_stream_processing()
         {
-            Assert.Inconclusive();
+            var spooled = HandledMessages.OfType<ReaderSubscriptionManagement.SpoolStreamReading>().ToArray();
+            Assert.AreEqual(2, spooled.Length);
         }
     }
 }

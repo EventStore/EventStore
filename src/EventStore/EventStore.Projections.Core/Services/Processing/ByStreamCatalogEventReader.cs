@@ -216,28 +216,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnqueueStreamForProcessing(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
+            //TODO: consider catalog referring to earlier written events (should we check here?)
             if (resolvedEvent.OriginalEvent.LogPosition > _limitingCommitPosition)
                 return;
-            switch (resolvedEvent.Event.EventType)
-            {
-                case SystemEventTypes.LinkTo:
-                {
-                    string[] parts = Helper.UTF8NoBom.GetString(resolvedEvent.Event.Data).Split('@');
-                    string streamId = parts[1];
-                    _pendingStreams.Enqueue(streamId);
-                    break;
-                }
-                case SystemEventTypes.StreamReference:
-                case SystemEventTypes.V1__StreamCreated__:
-                case SystemEventTypes.V2__StreamCreated_InIndex:
-                {
-                    string streamId = Helper.UTF8NoBom.GetString(resolvedEvent.Event.Data);
-                    _pendingStreams.Enqueue(streamId);
-                    break;
-                }
-                default:
-                    throw new NotSupportedException("Unknown event type: " + resolvedEvent.Event.EventType);
-            }
+            var streamId = SystemEventTypes.StreamReferenceEventToStreamId(resolvedEvent.Event.EventType, resolvedEvent.Event.Data);
+            _pendingStreams.Enqueue(streamId);
             _catalogNextSequenceNumber = resolvedEvent.OriginalEventNumber;
         }
 

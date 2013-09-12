@@ -29,26 +29,33 @@
 using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ParallelQueryMasterProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase
+    public class ParallelQueryMasterProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase,
+        IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>
+
     {
+        private SlaveProjectionCommunicationChannels _slaves;
+
         public ParallelQueryMasterProjectionProcessingPhase(
-            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher, ProjectionConfig projectionConfig,
-            Action updateStatistics, PartitionStateCache partitionStateCache, string name, ILogger logger, CheckpointTag zeroCheckpointTag,
-            ICoreProjectionCheckpointManager checkpointManager, 
-            ReaderSubscriptionDispatcher subscriptionDispatcher, IReaderStrategy readerStrategy,
-            IResultWriter resultWriter, bool checkpointsEnabled, bool stopOnEof)
-            : base(publisher, coreProjection, projectionCorrelationId, checkpointManager, projectionConfig, name, logger, zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics, subscriptionDispatcher, readerStrategy, checkpointsEnabled, stopOnEof)
+            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
+            ProjectionConfig projectionConfig, Action updateStatistics, PartitionStateCache partitionStateCache,
+            string name, ILogger logger, CheckpointTag zeroCheckpointTag,
+            ICoreProjectionCheckpointManager checkpointManager, ReaderSubscriptionDispatcher subscriptionDispatcher,
+            IReaderStrategy readerStrategy, IResultWriter resultWriter, bool checkpointsEnabled, bool stopOnEof)
+            : base(
+                publisher, coreProjection, projectionCorrelationId, checkpointManager, projectionConfig, name, logger,
+                zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics, subscriptionDispatcher,
+                readerStrategy, checkpointsEnabled, stopOnEof)
         {
         }
 
 
         public override void NewCheckpointStarted(CheckpointTag at)
         {
-            throw new NotImplementedException();
         }
 
         public override void Dispose()
@@ -58,7 +65,18 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections)
         {
-            throw new NotImplementedException();
+            _slaves = slaveProjections;
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
+        {
+            //TODO: implement proper load distribution
+            var channelGroup = _slaves.Channels["slave"];
+            var channel = channelGroup[0];
+            var resolvedEvent = message.Data;
+            var streamId = SystemEventTypes.StreamReferenceEventToStreamId(resolvedEvent.EventType, resolvedEvent.Data);
+            channel.PublishEnvelope.ReplyWith(
+                new ReaderSubscriptionManagement.SpoolStreamReading(channel.CoreProjectionId, "*", -1));
         }
     }
 }

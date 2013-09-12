@@ -27,6 +27,8 @@
 // 
 
 using System;
+using System.Collections.Generic;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_query
@@ -34,6 +36,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
     public abstract class specification_with_parallel_query : TestFixtureWithCoreProjectionStarted
     {
         protected Guid _eventId;
+        protected Guid _slave1;
+        protected Guid _slave2;
 
         protected override bool GivenCheckpointsEnabled()
         {
@@ -63,6 +67,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
 
         protected override void Given()
         {
+            _slave1 = Guid.NewGuid();
+            _slave2 = Guid.NewGuid();
+
             _checkpointHandledThreshold = 10;
             _checkpointUnhandledBytesThreshold = 10000;
 
@@ -73,6 +80,20 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
                 source.SetOutputState();
                 source.SetByStream();
             };
+            _slaveProjections =
+                new SlaveProjectionCommunicationChannels(
+                    new Dictionary<string, SlaveProjectionCommunicationChannel[]>
+                    {
+                        {
+                            "slave",
+                            new[]
+                            {
+                                new SlaveProjectionCommunicationChannel(_slave1, Envelope),
+                                new SlaveProjectionCommunicationChannel(_slave2, Envelope)
+                            }
+                        }
+                    });
+
             TicksAreHandledImmediately();
             AllWritesSucceed();
             NoOtherStreams();

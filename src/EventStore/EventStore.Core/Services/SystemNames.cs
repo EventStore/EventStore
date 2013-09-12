@@ -26,6 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
+using System;
+using EventStore.Common.Utils;
+
 namespace EventStore.Core.Services
 {
     public static class SystemHeaders
@@ -95,6 +98,53 @@ namespace EventStore.Core.Services
         public const string V1__StreamCreated__ = "$stream-created";
         public const string V1__StreamCreatedImplicit__ = "$stream-created-implicit";
 
+        public static string StreamReferenceEventToStreamId(string eventType, byte[] data)
+        {
+            string streamId = null;
+            switch (eventType)
+            {
+                case LinkTo:
+                {
+                    string[] parts = Helper.UTF8NoBom.GetString(data).Split('@');
+                    streamId = parts[1];
+                    break;
+                }
+                case StreamReference:
+                case V1__StreamCreated__:
+                case V2__StreamCreated_InIndex:
+                {
+                    streamId = Helper.UTF8NoBom.GetString(data);
+                    break;
+                }
+                default:
+                    throw new NotSupportedException("Unknown event type: " + eventType);
+            }
+            return streamId;
+        }
+
+        public static string StreamReferenceEventToStreamId(string eventType, string data)
+        {
+            string streamId = null;
+            switch (eventType)
+            {
+                case LinkTo:
+                    {
+                        string[] parts = data.Split('@');
+                        streamId = parts[1];
+                        break;
+                    }
+                case StreamReference:
+                case V1__StreamCreated__:
+                case V2__StreamCreated_InIndex:
+                    {
+                        streamId = data;
+                        break;
+                    }
+                default:
+                    throw new NotSupportedException("Unknown event type: " + eventType);
+            }
+            return streamId;
+        }
     }
 
     public static class SystemUsers

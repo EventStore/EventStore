@@ -35,10 +35,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     public abstract class TestFixtureWithCoreProjectionStarted : TestFixtureWithCoreProjection
     {
         protected Guid _subscriptionId;
+        protected SlaveProjectionCommunicationChannels _slaveProjections;
+
+        protected override void Given()
+        {
+            base.Given();
+            _slaveProjections = null;
+        }
 
         protected override void PreWhen()
         {
-            _coreProjection.Start();
+            _coreProjection.Start(_slaveProjections);
             var lastSubscribe =
                 _consumer.HandledMessages.OfType<ReaderSubscriptionManagement.Subscribe>().LastOrDefault();
             _subscriptionId = lastSubscribe != null ? lastSubscribe.SubscriptionId : Guid.NewGuid();
