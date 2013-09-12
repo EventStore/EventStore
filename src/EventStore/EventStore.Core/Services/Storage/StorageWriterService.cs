@@ -296,7 +296,7 @@ namespace EventStore.Core.Services.Storage
                 {
                     var res = WritePrepareWithRetry(
                         LogRecord.Prepare(logPosition, message.CorrelationId, Guid.NewGuid(), logPosition, -1,
-                                          message.EventStreamId, message.ExpectedVersion,
+                                          message.EventStreamId, commitCheck.CurrentVersion,
                                           PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommitted,
                                           null, Empty.ByteArray, Empty.ByteArray));
                     prepares.Add(res.Prepare);

@@ -73,6 +73,21 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning"), Category("Network")]
+        public void should_allow_appending_zero_events_to_stream_with_expver_any()
+        {
+            const string stream = "should_allow_appending_zero_events_to_stream_with_no_problems";
+            using (var store = TestConnection.To(_node, _tcpType))
+            {
+                store.Connect();
+
+                Assert.AreEqual(-1, store.AppendToStream(stream, ExpectedVersion.Any).NextExpectedVersion);
+
+                var read = store.ReadStreamEventsForward(stream, 0, 2, resolveLinkTos: false);
+                Assert.That(read.Events.Length, Is.EqualTo(0));
+            }
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
         public void should_create_stream_with_no_stream_exp_ver_on_first_write_if_does_not_exist()
         {
             const string stream = "should_create_stream_with_no_stream_exp_ver_on_first_write_if_does_not_exist";
