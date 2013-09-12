@@ -472,6 +472,44 @@ namespace EventStore.Core.Index
             return false;
         }
 
+        public bool TryGetOldestEntry(uint stream, out IndexEntry entry)
+        {
+            int counter = 0;
+            while (counter < 5)
+            {
+                counter++;
+                try
+                {
+                    return TryGetOldestEntryInternal(stream, out entry);
+                }
+                catch (FileBeingDeletedException)
+                {
+                    Log.Trace("File being deleted.");
+                }
+            }
+            throw new InvalidOperationException("Something is wrong. Files are locked.");
+        }
+
+        private bool TryGetOldestEntryInternal(uint stream, out IndexEntry entry)
+        {
+            var map = _indexMap;
+            foreach (var table in map.InReverseOrder())
+            {
+                if (table.TryGetOldestEntry(stream, out entry))
+                    return true;
+            }
+
+            var awaiting = _awaitingMemTables;
+            for (int index = awaiting.Count - 1; index >= 0; index--)
+            {
+                if (awaiting[index].Table.TryGetOldestEntry(stream, out entry))
+                    return true;
+            }
+
+            entry = InvalidIndexEntry;
+            return false;
+        }
+
         public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion)
         {
             int counter = 0;

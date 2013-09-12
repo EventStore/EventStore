@@ -155,6 +155,29 @@ namespace EventStore.Core.Index
             return false;
         }
 
+        public bool TryGetOldestEntry(uint stream, out IndexEntry entry)
+        {
+            entry = TableIndex.InvalidIndexEntry;
+
+            SortedList<Tuple<int, long>, byte> list;
+            if (_hash.TryGetValue(stream, out list))
+            {
+                if (!Monitor.TryEnter(list, 10000))
+                    throw new UnableToAcquireLockInReasonableTimeException();
+                try
+                {
+                    var oldest = list.Keys[0];
+                    entry = new IndexEntry(stream, oldest.Item1, oldest.Item2);
+                    return true;
+                }
+                finally
+                {
+                    Monitor.Exit(list);
+                }
+            }
+            return false;
+        }
+
         public IEnumerable<IndexEntry> IterateAllInOrder()
         {
             //Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder...");

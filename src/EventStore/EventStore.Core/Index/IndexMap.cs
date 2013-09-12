@@ -100,7 +100,7 @@ namespace EventStore.Core.Index
         {
             var map = _map;
             // level 0 (newest tables) -> N (oldest tables)
-            for (int i = 0; i < map.Count; i++)
+            for (int i = 0; i < map.Count; ++i)
             {
                 // last in the level's list (newest on level) -> to first (oldest on level)
                 for (int j = map[i].Count - 1; j >= 0; --j)
@@ -108,7 +108,21 @@ namespace EventStore.Core.Index
                     yield return map[i][j];
                 }
             }
-        } 
+        }
+
+        public IEnumerable<PTable> InReverseOrder()
+        {
+            var map = _map;
+            // N (oldest tables) -> level 0 (newest tables)
+            for (int i = map.Count-1; i >= 0; --i)
+            {
+                // from first (oldest on level) in the level's list -> last in the level's list (newest on level)
+                for (int j = 0, n=map[i].Count; j < n; ++j)
+                {
+                    yield return map[i][j];
+                }
+            }
+        }
 
         public IEnumerable<string> GetAllFilenames()
         {
