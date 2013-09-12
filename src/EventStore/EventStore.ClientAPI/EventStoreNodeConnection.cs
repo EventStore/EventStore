@@ -116,7 +116,7 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        public int AppendToStream(string stream, int expectedVersion, params EventData[] events)
+        public WriteResult AppendToStream(string stream, int expectedVersion, params EventData[] events)
         {
 // ReSharper disable RedundantArgumentDefaultValue
 // ReSharper disable RedundantCast
@@ -125,19 +125,19 @@ namespace EventStore.ClientAPI
 // ReSharper restore RedundantArgumentDefaultValue
         }
 
-        public int AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
+        public WriteResult AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
         {
 // ReSharper disable RedundantCast
             return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, userCredentials).Result;
 // ReSharper restore RedundantCast
         }
 
-        public int AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
+        public WriteResult AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
         {
             return  AppendToStreamAsync(stream, expectedVersion, events, userCredentials).Result;
         }
 
-        public Task<int> AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events)
+        public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events)
         {
 // ReSharper disable RedundantArgumentDefaultValue
 // ReSharper disable RedundantCast
@@ -146,20 +146,20 @@ namespace EventStore.ClientAPI
 // ReSharper restore RedundantArgumentDefaultValue
         }
 
-        public Task<int> AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
+        public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
         {
 // ReSharper disable RedundantCast
             return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, userCredentials);
 // ReSharper restore RedundantCast
         }
 
-        public Task<int> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
+        public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
         {
 // ReSharper disable PossibleMultipleEnumeration
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
 
-            var source = new TaskCompletionSource<int>();
+            var source = new TaskCompletionSource<WriteResult>();
             EnqueueOperation(new AppendToStreamOperation(_settings.Log, source, _settings.RequireMaster, 
                                                          stream, expectedVersion, events, userCredentials));
             return source.Task;
@@ -201,11 +201,11 @@ namespace EventStore.ClientAPI
 // ReSharper restore PossibleMultipleEnumeration
         }
 
-        Task<int> IEventStoreTransactionConnection.CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials)
+        Task<WriteResult> IEventStoreTransactionConnection.CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials)
         {
             Ensure.NotNull(transaction, "transaction");
 
-            var source = new TaskCompletionSource<int>();
+            var source = new TaskCompletionSource<WriteResult>();
             EnqueueOperation(new CommitTransactionOperation(_settings.Log, source, _settings.RequireMaster, 
                                                             transaction.TransactionId, userCredentials));
             return source.Task;
@@ -390,28 +390,28 @@ namespace EventStore.ClientAPI
         }
 
 
-        public int SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
+        public WriteResult SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
             return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata, userCredentials).Result;
         }
 
-        public Task<int> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
+        public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
             return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata.AsJsonBytes(), userCredentials);
         }
 
-        public int SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
+        public WriteResult SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
         {
             return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata, userCredentials).Result;
         }
 
-        public Task<int> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
+        public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             if (SystemStreams.IsMetastream(stream)) 
                 throw new ArgumentException(string.Format("Setting metadata for metastream '{0}' is not supported.", stream), "stream");
 
-            var source = new TaskCompletionSource<int>();
+            var source = new TaskCompletionSource<WriteResult>();
 
             var metaevent = new EventData(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata ?? Empty.ByteArray, null);
             EnqueueOperation(new AppendToStreamOperation(_settings.Log,

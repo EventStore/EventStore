@@ -105,6 +105,7 @@
     <Compile Include="ConnectionSettingsBuilder.cs" />
     <Compile Include="ClusterSettings.cs" />
     <Compile Include="ClusterSettingsBuilder.cs" />
+    <Compile Include="WriteResult.cs" />
     <Compile Include="SystemSettings.cs" />
     <Compile Include="EventReadResult.cs" />
     <Compile Include="Core\EventStoreConnectionLogicHandler.cs" />

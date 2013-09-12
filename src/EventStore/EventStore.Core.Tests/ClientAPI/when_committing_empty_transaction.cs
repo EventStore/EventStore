@@ -58,11 +58,11 @@ namespace EventStore.Core.Tests.ClientAPI
                                                           ExpectedVersion.NoStream,
                                                           _firstEvent,
                                                           TestEvent.NewTestEvent(),
-                                                          TestEvent.NewTestEvent()));
+                                                          TestEvent.NewTestEvent()).NextExpectedVersion);
 
             using (var transaction = _connection.StartTransaction("test-stream", 2))
             {
-                Assert.AreEqual(2, transaction.Commit());
+                Assert.AreEqual(2, transaction.Commit().NextExpectedVersion);
             }
         }
 
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test]
         public void following_append_with_correct_expected_version_are_commited_correctly()
         {
-            Assert.AreEqual(4, _connection.AppendToStream("test-stream", 2, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()));
+            Assert.AreEqual(4, _connection.AppendToStream("test-stream", 2, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
 
             var res = _connection.ReadStreamEventsForward("test-stream", 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test]
         public void following_append_with_expected_version_any_are_commited_correctly()
         {
-            Assert.AreEqual(4, _connection.AppendToStream("test-stream", ExpectedVersion.Any, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()));
+            Assert.AreEqual(4, _connection.AppendToStream("test-stream", ExpectedVersion.Any, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
 
             var res = _connection.ReadStreamEventsForward("test-stream", 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -105,7 +105,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test]
         public void committing_first_event_with_expected_version_no_stream_is_idempotent()
         {
-            Assert.AreEqual(0, _connection.AppendToStream("test-stream", ExpectedVersion.NoStream, _firstEvent));
+            Assert.AreEqual(0, _connection.AppendToStream("test-stream", ExpectedVersion.NoStream, _firstEvent).NextExpectedVersion);
 
             var res = _connection.ReadStreamEventsForward("test-stream", 0, 100, false);
             Assert.AreEqual(SliceReadStatus.Success, res.Status);

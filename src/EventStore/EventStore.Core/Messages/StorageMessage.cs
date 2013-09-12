@@ -238,8 +238,8 @@ namespace EventStore.Core.Messages
                 Ensure.Nonnegative(transactionPosition, "transactionPosition");
                 if (firstEventNumber < -1)
                     throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
-                if (lastEventNumber < firstEventNumber)
-                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0} > FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
+                if (lastEventNumber - firstEventNumber + 1 < 0)
+                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
 
                 CorrelationId = correlationId;
                 LogPosition = logPosition;

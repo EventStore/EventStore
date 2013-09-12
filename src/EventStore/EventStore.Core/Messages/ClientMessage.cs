@@ -214,8 +214,8 @@ namespace EventStore.Core.Messages
             {
                 if (firstEventNumber < -1)
                     throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
-                if (lastEventNumber < firstEventNumber)
-                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0} > FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
+                if (lastEventNumber - firstEventNumber + 1 < 0)
+                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
 
                 CorrelationId = correlationId;
                 Result = OperationResult.Success;
@@ -379,8 +379,8 @@ namespace EventStore.Core.Messages
             {
                 if (firstEventNumber < -1)
                     throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
-                if (lastEventNumber < firstEventNumber)
-                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0} > FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
+                if (lastEventNumber - firstEventNumber + 1 < 0)
+                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
                 CorrelationId = correlationId;
                 TransactionId = transactionId;
                 Result = OperationResult.Success;

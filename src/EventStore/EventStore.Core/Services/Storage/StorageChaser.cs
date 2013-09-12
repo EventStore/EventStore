@@ -235,7 +235,7 @@ namespace EventStore.Core.Services.Storage
                     }
                     else
                     {
-                        firstEventNumber = record.ExpectedVersion;
+                        firstEventNumber = record.ExpectedVersion + 1;
                         lastEventNumber = record.ExpectedVersion;
                     }
                     _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
@@ -258,10 +258,7 @@ namespace EventStore.Core.Services.Storage
             var firstEventNumber = record.FirstEventNumber;
             var lastEventNumber = _indexCommitter.Commit(record);
             if (lastEventNumber == EventNumber.Invalid)
-            {
-                firstEventNumber = record.FirstEventNumber - 1;
                 lastEventNumber = record.FirstEventNumber - 1;
-            }
             _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition, record.TransactionPosition, firstEventNumber, lastEventNumber));
         }
 

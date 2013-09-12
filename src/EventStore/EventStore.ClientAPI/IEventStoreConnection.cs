@@ -101,8 +101,7 @@ namespace EventStore.ClientAPI
         /// <param name="stream">The name of the stream to append the events to.</param>
         /// <param name="expectedVersion">The expected version of the stream</param>
         /// <param name="events">The events to write to the stream</param>
-        /// <returns>Expected version for following write requests</returns>
-        int AppendToStream(string stream, int expectedVersion, params EventData[] events);
+        WriteResult AppendToStream(string stream, int expectedVersion, params EventData[] events);
 
         /// <summary>
         /// Appends Events synchronously to a stream.
@@ -121,8 +120,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The expected version of the stream</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <param name="events">The events to write to the stream</param>
-        /// <returns>Expected version for following write requests</returns>
-        int AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events);
+        WriteResult AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events);
 
         /// <summary>
         /// Appends Events synchronously to a stream.
@@ -141,8 +139,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The expected version of the stream</param>
         /// <param name="events">The events to write to the stream</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
-        /// <returns>Expected version for following write requests</returns>
-        int AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
+        WriteResult AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Appends Events asynchronously to a stream.
@@ -160,8 +157,7 @@ namespace EventStore.ClientAPI
         /// <param name="stream">The name of the stream to append events to</param>
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="events">The events to append to the stream</param>
-        /// <returns>A <see cref="Task"/> that returns expected version for following write requests</returns>
-        Task<int> AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events);
+        Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events);
 
         /// <summary>
         /// Appends Events asynchronously to a stream.
@@ -180,8 +176,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <param name="events">The events to append to the stream</param>
-        /// <returns>A <see cref="Task"/> that returns expected version for following write requests</returns>
-        Task<int> AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events);
+        Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events);
 
         /// <summary>
         /// Appends Events asynchronously to a stream.
@@ -200,8 +195,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="events">The events to append to the stream</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
-        /// <returns>A <see cref="Task"/> that returns expected version for following write requests</returns>
-        Task<int> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
+        Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Starts a transaction in the event store on a given stream
@@ -391,13 +385,13 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);
 
-        int SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
+        WriteResult SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
+
+        Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
+
+        WriteResult SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
         
-        Task<int> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
-        
-        int SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
-        
-        Task<int> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
+        Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
         
         StreamMetadataResult GetStreamMetadata(string stream, UserCredentials userCredentials = null);
         

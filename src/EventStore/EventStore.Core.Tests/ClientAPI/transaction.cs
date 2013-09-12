@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.NoStream))
                 {
                     transaction.Write(new[] { TestEvent.NewTestEvent() });
-                    Assert.AreEqual(0, transaction.Commit());
+                    Assert.AreEqual(0, transaction.Commit().NextExpectedVersion);
                 }
             }
         }
@@ -87,7 +87,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.Any))
                 {
                     transaction.Write(new[] {TestEvent.NewTestEvent()});
-                    Assert.AreEqual(0, transaction.Commit());
+                    Assert.AreEqual(0, transaction.Commit().NextExpectedVersion);
                 }
             }
         }
@@ -120,7 +120,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect();
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.NoStream))
                 {
-                    Assert.AreEqual(-1, transaction.Commit());
+                    Assert.AreEqual(-1, transaction.Commit().NextExpectedVersion);
                 }
 
                 var result = store.ReadStreamEventsForward(stream, 0, 1, resolveLinkTos: false);
@@ -138,7 +138,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.NoStream))
                 {
                     Assert.DoesNotThrow(() => transaction.Write());
-                    Assert.AreEqual(-1, transaction.Commit());
+                    Assert.AreEqual(-1, transaction.Commit().NextExpectedVersion);
                 }
 
                 var result = store.ReadStreamEventsForward(stream, 0, 1, resolveLinkTos: false);
@@ -265,7 +265,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 {
                     store.AppendToStream(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()});
                     transaction.Write(TestEvent.NewTestEvent());
-                    Assert.AreEqual(1, transaction.Commit());
+                    Assert.AreEqual(1, transaction.Commit().NextExpectedVersion);
                 }
             }
         }
@@ -300,11 +300,11 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 var transaction1 = store.StartTransaction(streamId, ExpectedVersion.Any);
                 transaction1.Write(new[] {e});
-                Assert.AreEqual(0, transaction1.Commit());
+                Assert.AreEqual(0, transaction1.Commit().NextExpectedVersion);
 
                 var transaction2 = store.StartTransaction(streamId, ExpectedVersion.Any);
                 transaction2.Write(new[] {e});
-                Assert.AreEqual(0, transaction2.Commit());
+                Assert.AreEqual(0, transaction2.Commit().NextExpectedVersion);
 
                 var res = store.ReadStreamEventsForward(streamId, 0, 100, false);
                 Assert.AreEqual(1, res.Events.Length);

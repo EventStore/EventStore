@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             for (var i = 0; i < events.Length; i++)
             {
                 var expVer = _version == ExpectedVersion.Any ? ExpectedVersion.Any : _version + i;
-                var nextExpVer = _store.AppendToStream(_stream, expVer, new[] {events[i]});
+                var nextExpVer = _store.AppendToStream(_stream, expVer, new[] { events[i] }).NextExpectedVersion;
                 if (_version != ExpectedVersion.Any)
                     Assert.AreEqual(expVer + 1, nextExpVer);
             }
@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             return this;
         }
 
-        public int Commit()
+        public WriteResult Commit()
         {
             return _transaction.Commit();
         }

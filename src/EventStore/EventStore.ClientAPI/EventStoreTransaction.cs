@@ -65,7 +65,7 @@ namespace EventStore.ClientAPI
         /// Commits this transaction
         /// </summary>
         /// <returns>Expected version for following write requests</returns>
-        public int Commit()
+        public WriteResult Commit()
         {
             return CommitAsync().Result;
         }
@@ -74,7 +74,7 @@ namespace EventStore.ClientAPI
         /// Asynchronously commits this transaction
         /// </summary>
         /// <returns>A <see cref="Task"/> that returns expected version for following write requests</returns>
-        public Task<int> CommitAsync()
+        public Task<WriteResult> CommitAsync()
         {
             if (_isRolledBack) throw new InvalidOperationException("Can't commit a rolledback transaction");
             if (_isCommitted) throw new InvalidOperationException("Transaction is already committed");
