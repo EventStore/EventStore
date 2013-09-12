@@ -53,31 +53,34 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
             _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
-                        "catalog", 0, "catalog", 0, false, new TFPos(120, 110), _eventId, "$@", false, "test-stream", ""),
+                        "catalog", 0, "catalog", 0, false, new TFPos(120, 110), _eventId, "$@", false, "account-00", ""),
                     tag0, _subscriptionId, 0));
             _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "catalog", 1, "catalog", 1, false, new TFPos(220, 210), Guid.NewGuid(), "$@", false,
-                        "test-stream2", ""), tag1, _subscriptionId, 1));
+                        "account-01", ""), tag1, _subscriptionId, 1));
 
             _bus.Publish(
                 new PartitionProcessingResult(
-                    _projectionCorrelationId, "test-stream", Guid.Empty,
-                    CheckpointTag.FromByStreamPosition(0, "catalog", 0, "test-stream", int.MaxValue, 10000),
+                    _projectionCorrelationId, "account-00", Guid.Empty,
+                    CheckpointTag.FromByStreamPosition(0, "catalog", 0, "account-00", int.MaxValue, 10000),
                     "{\"data\":1}"));
             _bus.Publish(
                 new PartitionProcessingResult(
-                    _projectionCorrelationId, "test-stream2", Guid.Empty,
-                    CheckpointTag.FromByStreamPosition(0, "catalog", 1, "test-stream2", int.MaxValue, 10000),
+                    _projectionCorrelationId, "account-01", Guid.Empty,
+                    CheckpointTag.FromByStreamPosition(0, "catalog", 1, "account-01", int.MaxValue, 10000),
                     "{\"data\":2}"));
         }
 
         [Test]
-        public void spools_slave_stream_processing()
+        public void writes_state_for_each_partition()
         {
-            var spooled = HandledMessages.OfType<ReaderSubscriptionManagement.SpoolStreamReading>().ToArray();
-            Assert.AreEqual(2, spooled.Length);
+            Assert.AreEqual(2, _writeEventHandler.HandledMessages.OfEventType("Result").Count);
+            var message = _writeEventHandler.HandledMessages.WithEventType("Result")[0];
+            Assert.AreEqual("$projections-projection-account-00-result", message.EventStreamId);
+            var message2 = _writeEventHandler.HandledMessages.WithEventType("Result")[1];
+            Assert.AreEqual("$projections-projection-account-01-result", message2.EventStreamId);
         }
     }
 }

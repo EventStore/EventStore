@@ -29,6 +29,8 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_query
@@ -38,6 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
         protected Guid _eventId;
         protected Guid _slave1;
         protected Guid _slave2;
+        private PublishSubscribeDispatcher<ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading, PartitionProcessingResult> _spoolProcessingResponseDispatcher;
 
         protected override bool GivenCheckpointsEnabled()
         {
@@ -62,11 +65,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
         protected override ProjectionProcessingStrategy GivenProjectionProcessingStrategy()
         {
             return new ParallelQueryProcessingStrategy(
-                _projectionName, _version, _projectionConfig, _stateHandler.GetSourceDefinition(), null);
+                _projectionName, _version, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
+                _spoolProcessingResponseDispatcher, _subscriptionDispatcher);
         }
 
         protected override void Given()
         {
+            _spoolProcessingResponseDispatcher =
+                new PublishSubscribeDispatcher
+                    <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
+                        PartitionProcessingResult>(GetInputQueue(), m => m.CorrelationId, m => m.CorrelationId);
+
             _slave1 = Guid.NewGuid();
             _slave2 = Guid.NewGuid();
 
@@ -88,8 +97,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
                             "slave",
                             new[]
                             {
-                                new SlaveProjectionCommunicationChannel(_slave1, Envelope),
-                                new SlaveProjectionCommunicationChannel(_slave2, Envelope)
+                                new SlaveProjectionCommunicationChannel(_slave1, GetInputQueue()),
+                                new SlaveProjectionCommunicationChannel(_slave2, GetInputQueue())
                             }
                         }
                     });

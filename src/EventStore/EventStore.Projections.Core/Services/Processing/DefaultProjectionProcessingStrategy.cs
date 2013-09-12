@@ -39,20 +39,22 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         protected readonly ProjectionConfig _projectionConfig;
         protected readonly IQuerySources _sourceDefinition;
+        private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
         protected EventReaderBasedProjectionProcessingStrategy(
             string name, ProjectionVersion projectionVersion, ProjectionConfig projectionConfig,
-            IQuerySources sourceDefinition, ILogger logger)
+            IQuerySources sourceDefinition, ILogger logger, ReaderSubscriptionDispatcher subscriptionDispatcher)
             : base(name, projectionVersion, logger)
         {
             _projectionConfig = projectionConfig;
             _sourceDefinition = sourceDefinition;
+            _subscriptionDispatcher = subscriptionDispatcher;
         }
 
         public override sealed IProjectionProcessingPhase[] CreateProcessingPhases(
             IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
             Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
-            ITimeProvider timeProvider, IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher,
+            ITimeProvider timeProvider, IODispatcher ioDispatcher,
             CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
         {
             var definesFold = _sourceDefinition.DefinesFold;
@@ -71,7 +73,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var firstPhase = CreateFirstProcessingPhase(
                 publisher, projectionCorrelationId, partitionStateCache, updateStatistics, coreProjection,
-                subscriptionDispatcher, zeroCheckpointTag, checkpointManager, readerStrategy, resultWriter);
+                _subscriptionDispatcher, zeroCheckpointTag, checkpointManager, readerStrategy, resultWriter);
 
             return CreateProjectionProcessingPhases(
                 publisher, projectionCorrelationId, namingBuilder, partitionStateCache, coreProjection, ioDispatcher,
@@ -153,8 +155,11 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly IProjectionStateHandler _stateHandler;
 
-        protected DefaultProjectionProcessingStrategy(string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler, ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger)
-            : base(name, projectionVersion, projectionConfig, sourceDefinition, logger)
+        protected DefaultProjectionProcessingStrategy(
+            string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
+            ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger,
+            ReaderSubscriptionDispatcher subscriptionDispatcher)
+            : base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher)
         {
             _stateHandler = stateHandler;
         }

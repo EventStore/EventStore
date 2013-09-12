@@ -29,14 +29,26 @@
 using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ProcessingStrategySelector
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProcessingStrategySelector>();
+        private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading, PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+        private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
+
+        public ProcessingStrategySelector(
+            ReaderSubscriptionDispatcher subscriptionDispatcher,
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
+                    PartitionProcessingResult> spoolProcessingResponseDispatcher)
+        {
+            _subscriptionDispatcher = subscriptionDispatcher;
+            _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
+        }
 
         public ProjectionProcessingStrategy CreateProjectionProcessingStrategy(
             string name, ProjectionVersion projectionVersion, IQuerySources sourceDefinition,
@@ -47,15 +59,18 @@ namespace EventStore.Projections.Core.Services.Processing
                 && !string.IsNullOrEmpty(sourceDefinition.CatalogStream))
             {
                 return new ParallelQueryProcessingStrategy(
-                    name, projectionVersion, projectionConfig, sourceDefinition, _logger);
+                    name, projectionVersion, projectionConfig, sourceDefinition, _logger,
+                    _spoolProcessingResponseDispatcher, _subscriptionDispatcher);
             }
 
             return projectionConfig.StopOnEof
                 ? (ProjectionProcessingStrategy)
                     new QueryProcessingStrategy(
-                        name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger)
+                        name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger,
+                        _subscriptionDispatcher)
                 : new ContinuousProjectionProcessingStrategy(
-                    name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger);
+                    name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, _logger,
+                    _subscriptionDispatcher);
         }
 
         public ProjectionProcessingStrategy CreateSlaveProjectionProcessingStrategy(
@@ -65,7 +80,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new SlaveQueryProcessingStrategy(
                 name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, projectionCoreService.Logger,
-                resultsEnvelope, masterCoreProjectionId);
+                resultsEnvelope, masterCoreProjectionId, _subscriptionDispatcher);
         }
     }
 }

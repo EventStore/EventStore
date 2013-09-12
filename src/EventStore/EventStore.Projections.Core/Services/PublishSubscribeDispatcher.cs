@@ -58,14 +58,19 @@ namespace EventStore.Projections.Core.Services
 
         public Guid PublishSubscribe(TSubscribeRequest request, object subscriber)
         {
-            //TODO: expiration?
+            return PublishSubscribe(_publisher, request, subscriber);
+        }
+
+        public Guid PublishSubscribe(IPublisher publisher, TSubscribeRequest request, object subscriber)
+        {
+//TODO: expiration?
             Guid requestCorrelationId;
             lock (_map)
             {
                 requestCorrelationId = _getRequestCorrelationId(request);
                 _map.Add(requestCorrelationId, subscriber);
             }
-            _publisher.Publish(request);
+            publisher.Publish(request);
             //NOTE: the following condition is required as publishing the message could also process the message 
             // and the correlationId is already invalid here (as subscriber unsubscribed)
             return _map.ContainsKey(requestCorrelationId) ? requestCorrelationId : Guid.Empty;
@@ -73,7 +78,12 @@ namespace EventStore.Projections.Core.Services
 
         public void Publish(TControlMessageBase request)
         {
-            _publisher.Publish(request);
+            Publish(_publisher, request);
+        }
+
+        public void Publish(IPublisher publisher, TControlMessageBase request)
+        {
+            publisher.Publish(request);
         }
 
 

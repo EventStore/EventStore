@@ -31,6 +31,7 @@ using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -38,6 +39,11 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>
 
     {
+        private
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
+                    PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+
         private SlaveProjectionCommunicationChannels _slaves;
 
         public ParallelQueryMasterProjectionProcessingPhase(
@@ -45,12 +51,13 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionConfig projectionConfig, Action updateStatistics, PartitionStateCache partitionStateCache,
             string name, ILogger logger, CheckpointTag zeroCheckpointTag,
             ICoreProjectionCheckpointManager checkpointManager, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            IReaderStrategy readerStrategy, IResultWriter resultWriter, bool checkpointsEnabled, bool stopOnEof)
+            IReaderStrategy readerStrategy, IResultWriter resultWriter, bool checkpointsEnabled, bool stopOnEof, PublishSubscribeDispatcher<ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading, PartitionProcessingResult> spoolProcessingResponseDispatcher)
             : base(
                 publisher, coreProjection, projectionCorrelationId, checkpointManager, projectionConfig, name, logger,
                 zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics, subscriptionDispatcher,
                 readerStrategy, checkpointsEnabled, stopOnEof)
         {
+            _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
         }
 
 
@@ -75,8 +82,10 @@ namespace EventStore.Projections.Core.Services.Processing
             var channel = channelGroup[0];
             var resolvedEvent = message.Data;
             var streamId = SystemEventTypes.StreamReferenceEventToStreamId(resolvedEvent.EventType, resolvedEvent.Data);
-            channel.PublishEnvelope.ReplyWith(
-                new ReaderSubscriptionManagement.SpoolStreamReading(channel.CoreProjectionId, "*", -1));
+            var spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
+                channel.PublishEnvelope,
+                new ReaderSubscriptionManagement.SpoolStreamReading(
+                    channel.CoreProjectionId, Guid.NewGuid(), streamId, resolvedEvent.PositionSequenceNumber), this);
         }
     }
 }

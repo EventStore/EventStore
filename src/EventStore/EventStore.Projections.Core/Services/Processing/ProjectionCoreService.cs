@@ -34,6 +34,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -72,18 +73,27 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ITimeProvider _timeProvider;
         private readonly ProcessingStrategySelector _processingStrategySelector;
 
+        private readonly
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
+                    PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+
 
         public ProjectionCoreService(
-            IPublisher inputQueue, IPublisher publisher,
-            ReaderSubscriptionDispatcher
-                subscriptionDispatcher, ITimeProvider timeProvider, IODispatcher ioDispatcher)
+            IPublisher inputQueue, IPublisher publisher, ReaderSubscriptionDispatcher subscriptionDispatcher,
+            ITimeProvider timeProvider, IODispatcher ioDispatcher,
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
+                    PartitionProcessingResult> spoolProcessingResponseDispatcher)
         {
             _inputQueue = inputQueue;
             _publisher = publisher;
             _ioDispatcher = ioDispatcher;
+            _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
             _subscriptionDispatcher = subscriptionDispatcher;
             _timeProvider = timeProvider;
-            _processingStrategySelector = new ProcessingStrategySelector();
+            _processingStrategySelector = new ProcessingStrategySelector(
+                _subscriptionDispatcher, _spoolProcessingResponseDispatcher);
         }
 
         public ILogger Logger

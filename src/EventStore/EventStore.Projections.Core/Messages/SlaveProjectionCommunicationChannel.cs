@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Projections.Core.Messages
@@ -34,9 +35,9 @@ namespace EventStore.Projections.Core.Messages
     public sealed class SlaveProjectionCommunicationChannel
     {
         private readonly Guid _coreProjectionId;
-        private readonly IEnvelope _publishEnvelope;
+        private readonly IPublisher _publishEnvelope;
 
-        public SlaveProjectionCommunicationChannel(Guid coreProjectionId, IEnvelope publishEnvelope)
+        public SlaveProjectionCommunicationChannel(Guid coreProjectionId, IPublisher publishEnvelope)
         {
             _coreProjectionId = coreProjectionId;
             _publishEnvelope = publishEnvelope;
@@ -47,7 +48,7 @@ namespace EventStore.Projections.Core.Messages
             get { return _coreProjectionId; }
         }
 
-        public IEnvelope PublishEnvelope
+        public IPublisher PublishEnvelope
         {
             get { return _publishEnvelope; }
         }

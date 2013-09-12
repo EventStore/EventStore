@@ -111,7 +111,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
                 HandledMessages.OfType<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>().LastOrDefault();
             Assert.IsNotNull(readerAssigned);
             _subscriptionId = readerAssigned.SubscriptionId;
-            yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream", 0);
+            yield return
+                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0);
         }
 
         [Test]
@@ -144,7 +145,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
                 HandledMessages.OfType<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>().LastOrDefault();
             Assert.IsNotNull(readerAssigned);
             _subscriptionId = readerAssigned.SubscriptionId;
-            yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream", 0);
+            yield return
+                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0);
         }
 
         [Test]
@@ -179,9 +181,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
                 HandledMessages.OfType<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>().LastOrDefault();
             Assert.IsNotNull(readerAssigned);
             _subscriptionId = readerAssigned.SubscriptionId;
-            yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream", 0);
-            yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream2", 1);
-            yield return new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, "test-stream3", 2);
+            yield return
+                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0);
+            yield return
+                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream2", 1);
+            yield return
+                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream3", 2);
         }
 
         [Test]

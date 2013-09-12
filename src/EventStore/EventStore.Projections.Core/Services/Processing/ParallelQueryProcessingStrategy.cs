@@ -33,6 +33,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -41,13 +42,22 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ProjectionConfig _projectionConfig;
         private readonly IQuerySources _sourceDefinition;
 
+        private readonly PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
+                    PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+
         public ParallelQueryProcessingStrategy(
             string name, ProjectionVersion projectionVersion, ProjectionConfig projectionConfig,
-            IQuerySources sourceDefinition, ILogger logger)
-            : base(name, projectionVersion, projectionConfig, sourceDefinition, logger)
+            IQuerySources sourceDefinition, ILogger logger,
+            PublishSubscribeDispatcher
+                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
+                    PartitionProcessingResult> spoolProcessingResponseDispatcher,
+            ReaderSubscriptionDispatcher subscriptionDispatcher)
+            : base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher)
         {
             _projectionConfig = projectionConfig;
             _sourceDefinition = sourceDefinition;
+            _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
         }
 
         protected override IResultEventEmitter CreateFirstPhaseResultEmitter(ProjectionNamesBuilder namingBuilder)
@@ -60,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
             PartitionStateCache partitionStateCache, CoreProjection coreProjection, IODispatcher ioDispatcher,
             IProjectionProcessingPhase firstPhase)
         {
-            return new IProjectionProcessingPhase[] {firstPhase};
+            return new [] {firstPhase};
         }
 
         protected override IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
@@ -77,9 +87,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new ParallelQueryMasterProjectionProcessingPhase(
                 coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics,
-                partitionStateCache, _name, _logger, zeroCheckpointTag,
-                checkpointManager, subscriptionDispatcher, readerStrategy, resultWriter,
-                _projectionConfig.CheckpointsEnabled, this.GetStopOnEof());
+                partitionStateCache, _name, _logger, zeroCheckpointTag, checkpointManager, subscriptionDispatcher,
+                readerStrategy, resultWriter, _projectionConfig.CheckpointsEnabled, this.GetStopOnEof(),
+                _spoolProcessingResponseDispatcher);
         }
 
         public override bool GetStopOnEof()

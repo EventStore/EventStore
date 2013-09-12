@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -44,7 +45,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                   ICoreProjection,
                                   ICoreProjectionForProcessingPhase,
                                   IHandle<CoreProjectionManagementMessage.GetState>,
-                                  IHandle<CoreProjectionManagementMessage.GetResult>
+                                  IHandle<CoreProjectionManagementMessage.GetResult>,
+                                  IHandle<PartitionProcessingResult>
                                   
     {
         [Flags]
@@ -123,7 +125,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _projectionProcessingPhases = projectionProcessingStrategy.CreateProcessingPhases(
                 publisher, projectionCorrelationId, partitionStateCache, UpdateStatistics, this, namingBuilder,
-                timeProvider, ioDispatcher, subscriptionDispatcher, coreProjectionCheckpointWriter);
+                timeProvider, ioDispatcher, coreProjectionCheckpointWriter);
 
 
             //NOTE: currently assuming the first checkpoint manager to be able to load any state
@@ -643,6 +645,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Subscribed()
         {
             GoToState(State.Subscribed);
+        }
+
+        public void Handle(PartitionProcessingResult message)
+        {
+            throw new NotImplementedException();
         }
     }
 }

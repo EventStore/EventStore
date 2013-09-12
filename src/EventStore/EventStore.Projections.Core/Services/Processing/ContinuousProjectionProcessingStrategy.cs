@@ -38,8 +38,11 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         public ContinuousProjectionProcessingStrategy(
             string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
-            ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger)
-            : base(name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger)
+            ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger,
+            ReaderSubscriptionDispatcher subscriptionDispatcher)
+            : base(
+                name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger,
+                subscriptionDispatcher)
         {
         }
 

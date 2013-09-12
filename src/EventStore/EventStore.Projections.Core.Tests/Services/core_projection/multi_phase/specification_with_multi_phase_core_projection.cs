@@ -106,7 +106,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
                 Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
                 ITimeProvider timeProvider, IODispatcher ioDispatcher,
-                ReaderSubscriptionDispatcher subscriptionDispatcher,
                 CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
             {
                 return new[] {_phase1, _phase2};

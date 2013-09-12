@@ -114,8 +114,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             var publisher1 = new FakePublisher();
             var publisher2 = new FakePublisher();
 
-            var channel1 = new SlaveProjectionCommunicationChannel(Guid.NewGuid(), new PublishEnvelope(publisher1));
-            var channel2 = new SlaveProjectionCommunicationChannel(Guid.NewGuid(), new PublishEnvelope(publisher2));
+            var channel1 = new SlaveProjectionCommunicationChannel(Guid.NewGuid(), publisher1);
+            var channel2 = new SlaveProjectionCommunicationChannel(Guid.NewGuid(), publisher2);
             var channels =
                 new SlaveProjectionCommunicationChannels(
                     new Dictionary<string, SlaveProjectionCommunicationChannel[]>

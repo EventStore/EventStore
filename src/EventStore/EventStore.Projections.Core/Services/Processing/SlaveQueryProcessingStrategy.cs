@@ -44,8 +44,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public SlaveQueryProcessingStrategy(
             string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
             ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger,
-            IPublisher resultsPublisher, Guid masterCoreProjectionId)
-            : base(name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger)
+            IPublisher resultsPublisher, Guid masterCoreProjectionId,
+            ReaderSubscriptionDispatcher subscriptionDispatcher)
+            : base(
+                name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger,
+                subscriptionDispatcher)
         {
             _resultsPublisher = resultsPublisher;
             _masterCoreProjectionId = masterCoreProjectionId;

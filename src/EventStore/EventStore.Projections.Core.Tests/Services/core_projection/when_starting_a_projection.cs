@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var version = new ProjectionVersion(1, 0, 0);
             var projectionProcessingStrategy = new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _projectionConfig,
-                projectionStateHandler.GetSourceDefinition(), null);
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher);
             _coreProjection =
                 projectionProcessingStrategy.Create(
                         Guid.NewGuid(), _bus, _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
