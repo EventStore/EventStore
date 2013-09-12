@@ -270,6 +270,7 @@
     <Compile Include="Services\Processing\ResolvedEvent.cs" />
     <Compile Include="Services\Processing\ResultEventEmitter.cs" />
     <Compile Include="Services\Processing\EmittedLinkToWithRecategorization.cs" />
+    <Compile Include="Services\Processing\SpoolStreamProcessingWorkItem.cs" />
     <Compile Include="Services\Processing\StagedProcessingQueue.cs" />
     <Compile Include="Services\Processing\StatePartitionSelector.cs" />
     <Compile Include="Services\Processing\StreamEventFilter.cs" />

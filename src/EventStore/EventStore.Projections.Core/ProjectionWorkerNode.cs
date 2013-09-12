@@ -55,8 +55,7 @@ namespace EventStore.Projections.Core
         private readonly FeedReaderService _feedReaderService;
         private readonly IODispatcher _ioDispatcher;
 
-        private
-            PublishSubscribeDispatcher
+        private readonly PublishSubscribeDispatcher
                 <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
                     PartitionProcessingResult> _spoolProcessingResponseDispatcher;
 

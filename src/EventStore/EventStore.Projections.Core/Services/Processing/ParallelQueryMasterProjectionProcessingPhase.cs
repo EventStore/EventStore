@@ -29,7 +29,6 @@
 using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
@@ -77,15 +76,23 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
-            //TODO: implement proper load distribution
-            var channelGroup = _slaves.Channels["slave"];
-            var channel = channelGroup[0];
-            var resolvedEvent = message.Data;
-            var streamId = SystemEventTypes.StreamReferenceEventToStreamId(resolvedEvent.EventType, resolvedEvent.Data);
-            var spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
-                channel.PublishEnvelope,
-                new ReaderSubscriptionManagement.SpoolStreamReading(
-                    channel.CoreProjectionId, Guid.NewGuid(), streamId, resolvedEvent.PositionSequenceNumber), this);
+            //TODO:  make sure this is no longer required : if (_state != State.StateLoaded)
+            if (IsOutOfOrderSubscriptionMessage(message))
+                return;
+            RegisterSubscriptionMessage(message);
+            try
+            {
+                CheckpointTag eventTag = message.CheckpointTag;
+                var committedEventWorkItem = new SpoolStreamProcessingWorkItem(_resultWriter, message, _slaves, _spoolProcessingResponseDispatcher);
+                _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
+                if (_state == PhaseState.Running) // prevent processing mostly one projection
+                    EnsureTickPending();
+            }
+            catch (Exception ex)
+            {
+                _coreProjection.SetFaulted(ex);
+            }
+
         }
     }
 }
