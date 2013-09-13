@@ -459,9 +459,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private StreamMetadata GetStreamMetadataUncached(TFReaderLease reader, string streamId)
         {
-            if (SystemStreams.IsMetastream(streamId))
-                return _metastreamMetadata;
-
             var metastreamId = SystemStreams.MetastreamOf(streamId);
             var metaEventNumber = GetStreamLastEventNumberCached(reader, metastreamId);
             if (metaEventNumber == ExpectedVersion.NoStream || metaEventNumber == EventNumber.DeletedStream)

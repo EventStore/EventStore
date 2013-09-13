@@ -271,6 +271,9 @@
     <Compile Include="Services\Storage\Metastreams\when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_just_last.cs" />
     <Compile Include="Services\Storage\Metastreams\when_having_deleted_stream_and_no_metastream_metastream_is_declared_deleted_as_well.cs" />
     <Compile Include="Services\Storage\Metastreams\when_having_deleted_stream_its_metastream_is_deleted_as_well.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_and_temp_but_some_metaevents_are_in_multiple_chunks.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_and_temp_but_some_events_are_in_multiple_chunks.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_and_temp_and_all_events_and_metaevents_are_in_one_chunk.cs" />
     <Compile Include="Services\Storage\SimpleDbTestScenario.cs" />
     <Compile Include="Services\Storage\Scavenge\when_having_commit_spanning_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_having_commits_spanning_multiple_chunks.cs" />
@@ -398,7 +401,6 @@
     <Compile Include="TransactionLog\when_reading_from_a_cached_tfchunk.cs" />
     <Compile Include="TransactionLog\when_uncaching_a_tfchunk.cs" />
     <Compile Include="TransactionLog\when_writing_multiple_records_to_a_tfchunk.cs" />
-    <Compile Include="TransactionLog\Scavenging\Helpers\ScavengeReadIndex.cs" />
     <Compile Include="TransactionLog\Scavenging\Helpers\ScavengeTestScenario.cs" />
     <Compile Include="TransactionLog\Scavenging\Helpers\TFChunkDbCreationHelper.cs" />
     <Compile Include="TransactionLog\Scavenging\when_deleted_stream_with_a_lot_of_data_is_scavenged.cs" />
