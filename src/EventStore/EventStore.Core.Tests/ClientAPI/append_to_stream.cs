@@ -60,18 +60,30 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning"), Category("Network")]
         public void should_allow_appending_zero_events_to_stream_with_no_problems()
         {
-            const string stream = "should_allow_appending_zero_events_to_stream_with_no_problems";
+            const string stream1 = "should_allow_appending_zero_events_to_stream_with_no_problems1";
+            const string stream2 = "should_allow_appending_zero_events_to_stream_with_no_problems2";
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
 
-                Assert.AreEqual(-1, store.AppendToStream(stream, ExpectedVersion.NoStream).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream1, ExpectedVersion.Any).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream1, ExpectedVersion.NoStream).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream1, ExpectedVersion.Any).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream1, ExpectedVersion.NoStream).NextExpectedVersion);
 
-                var read = store.ReadStreamEventsForward(stream, 0, 2, resolveLinkTos: false);
-                Assert.That(read.Events.Length, Is.EqualTo(0));
+                var read1 = store.ReadStreamEventsForward(stream1, 0, 2, resolveLinkTos: false);
+                Assert.That(read1.Events.Length, Is.EqualTo(0));
+
+                Assert.AreEqual(-1, store.AppendToStream(stream2, ExpectedVersion.NoStream).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream2, ExpectedVersion.Any).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream2, ExpectedVersion.NoStream).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream2, ExpectedVersion.Any).NextExpectedVersion);
+
+                var read2 = store.ReadStreamEventsForward(stream2, 0, 2, resolveLinkTos: false);
+                Assert.That(read2.Events.Length, Is.EqualTo(0));
             }
         }
-
+        
         [Test, Category("LongRunning"), Category("Network")]
         public void should_create_stream_with_no_stream_exp_ver_on_first_write_if_does_not_exist()
         {
