@@ -39,22 +39,24 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ParallelQueryProcessingStrategy : EventReaderBasedProjectionProcessingStrategy
     {
+        private readonly Func<IProjectionStateHandler> _handlerFactory;
         private readonly ProjectionConfig _projectionConfig;
-        private readonly IQuerySources _sourceDefinition;
+        private readonly IQueryDefinition _sourceDefinition;
 
         private readonly PublishSubscribeDispatcher
                 <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
                     PartitionProcessingResult> _spoolProcessingResponseDispatcher;
 
         public ParallelQueryProcessingStrategy(
-            string name, ProjectionVersion projectionVersion, ProjectionConfig projectionConfig,
-            IQuerySources sourceDefinition, ILogger logger,
+            string name, ProjectionVersion projectionVersion, Func<IProjectionStateHandler> handlerFactory,
+            ProjectionConfig projectionConfig, IQueryDefinition sourceDefinition, ILogger logger,
             PublishSubscribeDispatcher
                 <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
                     PartitionProcessingResult> spoolProcessingResponseDispatcher,
             ReaderSubscriptionDispatcher subscriptionDispatcher)
             : base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher)
         {
+            _handlerFactory = handlerFactory;
             _projectionConfig = projectionConfig;
             _sourceDefinition = sourceDefinition;
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
@@ -126,7 +128,10 @@ namespace EventStore.Projections.Core.Services.Processing
             return
                 new SlaveProjectionDefinitions(
                     new SlaveProjectionDefinitions.Definition(
-                        "slave", SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread));
+                        "slave", _sourceDefinition.HandlerType, _sourceDefinition.Query,
+                        SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread, ProjectionMode.Transient,
+                        _projectionConfig.EmitEventEnabled, _projectionConfig.CheckpointsEnabled,
+                        runAs: new ProjectionManagementMessage.RunAs(_projectionConfig.RunAs), enableRunAs: true));
         }
     }
 }

@@ -5,7 +5,7 @@ using EventStore.Projections.Core.Messages;
 namespace EventStore.Projections.Core.Services.Processing
 {
     [DataContract]
-    public class ProjectionSourceDefinition : IQuerySources
+    public class ProjectionSourceDefinition : IQuerySources, IQueryDefinition
     {
         [DataMember]
         public bool AllEvents { get; set; }
@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return Options != null && Options.DefinesStateTransform; }
         }
 
-        bool IQuerySources.ProducesResults 
+        bool IQuerySources.ProducesResults
         {
             get { return Options != null && Options.ProducesResults; }
         }
@@ -97,11 +97,13 @@ namespace EventStore.Projections.Core.Services.Processing
         [DataMember]
         public string PartitionResultCatalogStream { get; set; }
 
-        bool IQuerySources.ByStreams {
-            get { return ByStream; } 
+        bool IQuerySources.ByStreams
+        {
+            get { return ByStream; }
         }
 
-        public static ProjectionSourceDefinition From(string name, IQuerySources sources)
+        public static ProjectionSourceDefinition From(
+            string name, IQuerySources sources, string handlerType, string query)
         {
             var namingBuilder = new ProjectionNamesBuilder(name, sources);
             return new ProjectionSourceDefinition
@@ -115,23 +117,30 @@ namespace EventStore.Projections.Core.Services.Processing
                 Streams = (sources.Streams ?? new string[0]).ToArray(),
                 CatalogStream = sources.CatalogStream,
                 LimitingCommitPosition = sources.LimitingCommitPosition,
-                Options = new QuerySourceOptions
-                {
-                    DefinesStateTransform = sources.DefinesStateTransform,
-                    ProducesResults = sources.ProducesResults,
-                    DefinesFold = sources.DefinesFold,
-                    ForceProjectionName = sources.ForceProjectionNameOption,
-                    IncludeLinks = sources.IncludeLinksOption,
-                    PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,
-                    ProcessingLag = sources.ProcessingLagOption.GetValueOrDefault(),
-                    ReorderEvents = sources.ReorderEventsOption,
-                    ResultStreamName = sources.ResultStreamNameOption,
-                },
+                Options =
+                    new QuerySourceOptions
+                    {
+                        DefinesStateTransform = sources.DefinesStateTransform,
+                        ProducesResults = sources.ProducesResults,
+                        DefinesFold = sources.DefinesFold,
+                        ForceProjectionName = sources.ForceProjectionNameOption,
+                        IncludeLinks = sources.IncludeLinksOption,
+                        PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,
+                        ProcessingLag = sources.ProcessingLagOption.GetValueOrDefault(),
+                        ReorderEvents = sources.ReorderEventsOption,
+                        ResultStreamName = sources.ResultStreamNameOption,
+                    },
                 ResultStreamName = namingBuilder.GetResultStreamName(),
                 PartitionResultStreamNamePattern = namingBuilder.GetPartitionResultStreamNamePattern(),
                 PartitionResultCatalogStream = namingBuilder.GetPartitionResultCatalogStreamName(),
                 PartitionCatalogStream = namingBuilder.GetPartitionCatalogStreamName(),
+                HandlerType = handlerType,
+                Query = query
             };
         }
+
+        public string HandlerType { get; private set; }
+
+        public string Query { get; private set; }
     }
 }

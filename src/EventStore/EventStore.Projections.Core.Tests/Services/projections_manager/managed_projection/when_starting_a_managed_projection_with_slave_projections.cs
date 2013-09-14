@@ -73,12 +73,20 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     new[]
                     {
                         new SlaveProjectionDefinitions.Definition(
-                            "slave", SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread)
+                            "slave", StateHandlerFactory(), "",
+                            SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread,
+                            ProjectionMode.Transient, false, false, true, ProjectionManagementMessage.RunAs.System)
                     });
             _timeProvider = new FakeTimeProvider();
             _mp = new ManagedProjection(
                 _bus, Guid.NewGuid(), 1, "name", true, null, _writeDispatcher, _readDispatcher, _bus, _bus,
                 _handlerFactory, _timeProvider);
+        }
+
+        private static string StateHandlerFactory()
+        {
+            var handlerType = typeof(FakeFromCatalogStreamProjection);
+            return "native:" + handlerType.Namespace + "." + handlerType.Name;
         }
 
         protected override IEnumerable<WhenStep> When()
@@ -100,7 +108,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 });
 
             var sourceDefinition = new FakeFromCatalogStreamProjection("", Console.WriteLine).GetSourceDefinition();
-            var projectionSourceDefinition = ProjectionSourceDefinition.From(_projectionName, sourceDefinition);
+            var projectionSourceDefinition = ProjectionSourceDefinition.From(
+                _projectionName, sourceDefinition, message.HandlerType, message.Query);
 
             var slaveProjectionDefinitions = _slaveProjectionDefinitions;
 

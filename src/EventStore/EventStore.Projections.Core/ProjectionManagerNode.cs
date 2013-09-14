@@ -59,6 +59,7 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<CoreProjectionManagementMessage.StateReport>(_projectionManager);
                 mainBus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_projectionManager);
                 mainBus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.SlaveProjectionsStarted>(_projectionManager);
             }
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);

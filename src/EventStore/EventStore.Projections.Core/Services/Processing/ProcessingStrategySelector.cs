@@ -50,16 +50,14 @@ namespace EventStore.Projections.Core.Services.Processing
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
         }
 
-        public ProjectionProcessingStrategy CreateProjectionProcessingStrategy(
-            string name, ProjectionVersion projectionVersion, IQuerySources sourceDefinition,
-            ProjectionConfig projectionConfig, IProjectionStateHandler stateHandler)
+        public ProjectionProcessingStrategy CreateProjectionProcessingStrategy(string name, ProjectionVersion projectionVersion, IQueryDefinition sourceDefinition, ProjectionConfig projectionConfig, Func<IProjectionStateHandler> handlerFactory, IProjectionStateHandler stateHandler)
         {
 
             if (projectionConfig.StopOnEof && sourceDefinition.ByStreams && sourceDefinition.DefinesFold
                 && !string.IsNullOrEmpty(sourceDefinition.CatalogStream))
             {
                 return new ParallelQueryProcessingStrategy(
-                    name, projectionVersion, projectionConfig, sourceDefinition, _logger,
+                    name, projectionVersion, handlerFactory, projectionConfig, sourceDefinition, _logger,
                     _spoolProcessingResponseDispatcher, _subscriptionDispatcher);
             }
 

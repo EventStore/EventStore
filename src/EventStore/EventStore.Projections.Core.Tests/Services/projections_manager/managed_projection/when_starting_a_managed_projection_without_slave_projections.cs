@@ -93,7 +93,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 });
 
             var sourceDefinition = new FakeForeachStreamProjection("", Console.WriteLine).GetSourceDefinition();
-            var projectionSourceDefinition = ProjectionSourceDefinition.From(_projectionName, sourceDefinition);
+            var projectionSourceDefinition = ProjectionSourceDefinition.From(
+                _projectionName, sourceDefinition, message.HandlerType, message.Query);
 
             _mp.Handle(
                 new CoreProjectionManagementMessage.Prepared(

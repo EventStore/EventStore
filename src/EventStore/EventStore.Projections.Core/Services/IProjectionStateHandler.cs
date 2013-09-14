@@ -85,5 +85,12 @@ namespace EventStore.Projections.Core.Services
                     streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new TFPos(0, -1),
                     eventId, eventType, isJson, data, metadata), out state, out emittedEvents);
         }
+
+        public static string GetNativeHandlerName(this Type handlerType)
+        {
+            return "native:" + handlerType.Namespace + "." + handlerType.Name;
+        }
+
     }
+
 }

@@ -38,6 +38,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Util;
@@ -74,7 +75,8 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<CoreProjectionManagementMessage.StateReport>,
                                      IHandle<CoreProjectionManagementMessage.ResultReport>,
                                      IHandle<CoreProjectionManagementMessage.StatisticsReport>, 
-                                     IHandle<ProjectionManagementMessage.RegisterSystemProjection>
+                                     IHandle<ProjectionManagementMessage.RegisterSystemProjection>, 
+                                     IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>
     {
 
         public const int ProjectionQueryId = -2;
@@ -225,7 +227,7 @@ namespace EventStore.Projections.Core.Services.Management
                     PostNewProjection(
                         message,
                         managedProjection =>
-                        message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
+                            message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
                 }
             }
         }
@@ -461,6 +463,12 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
+        public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message)
+        {
+            var projection = _projections[message.Name];
+            projection.Handle(message);
+        }
+
         public void Handle(CoreProjectionManagementMessage.StatisticsReport message)
         {
             string name;
@@ -565,7 +573,8 @@ namespace EventStore.Projections.Core.Services.Management
                         if (projectionId == 0)
                             projectionId = Int32.MaxValue - 1;
                         var enabledToRun = IsProjectionEnabledToRunByMode(projectionName);
-                        var managedProjection = CreateManagedProjectionInstance(projectionName, projectionId);
+                        var managedProjection = CreateManagedProjectionInstance(
+                            projectionName, projectionId, Guid.NewGuid(), GetNextQueueIndex());
                         managedProjection.InitializeExisting(projectionName);
                     }
             }
@@ -669,17 +678,21 @@ namespace EventStore.Projections.Core.Services.Management
                 BeginWriteProjectionRegistration(
                     message.Name,
                     projectionId =>
-                        new NewProjectionInitializer(message, completed, projectionId).CreateAndInitializeNewProjection(
-                            this));
+                        new NewProjectionInitializer(
+                            projectionId, message.Name, message.Mode, message.HandlerType, message.Query,
+                            message.Enabled, message.EmitEnabled, message.CheckpointsEnabled, message.EnableRunAs,
+                            message.RunAs).CreateAndInitializeNewProjection(
+                                this, completed, Guid.NewGuid(), GetNextQueueIndex()));
             }
             else
-                new NewProjectionInitializer(message, completed, ProjectionQueryId).CreateAndInitializeNewProjection(
-                    this);
+                new NewProjectionInitializer(
+                    ProjectionQueryId, message.Name, message.Mode, message.HandlerType, message.Query, message.Enabled,
+                    message.EmitEnabled, message.CheckpointsEnabled, message.EnableRunAs, message.RunAs)
+                    .CreateAndInitializeNewProjection(this, completed, Guid.NewGuid(), GetNextQueueIndex());
         }
 
         public class NewProjectionInitializer
         {
-            private readonly Action<ManagedProjection> _completed;
             private readonly int _projectionId;
             private readonly bool _enabled;
             private readonly string _handlerType;
@@ -692,60 +705,76 @@ namespace EventStore.Projections.Core.Services.Management
             private readonly string _name;
 
             public NewProjectionInitializer(
-                ProjectionManagementMessage.Post message, Action<ManagedProjection> completed, int projectionId)
+                int projectionId, string name, ProjectionMode projectionMode, string handlerType, string query,
+                bool enabled, bool emitEnabled, bool checkpointsEnabled, bool enableRunAs,
+                ProjectionManagementMessage.RunAs runAs)
             {
-                if (message.Mode >= ProjectionMode.Continuous && !message.CheckpointsEnabled)
+                if (projectionMode >= ProjectionMode.Continuous && !checkpointsEnabled)
                     throw new InvalidOperationException("Continuous mode requires checkpoints");
 
-                if (message.EmitEnabled && !message.CheckpointsEnabled)
+                if (emitEnabled && !checkpointsEnabled)
                     throw new InvalidOperationException("Emit requires checkpoints");
 
-                _completed = completed;
                 _projectionId = projectionId;
-                _enabled = message.Enabled;
-                _handlerType = message.HandlerType;
-                _query = message.Query;
-                _projectionMode = message.Mode;
-                _emitEnabled = message.EmitEnabled;
-                _checkpointsEnabled = message.CheckpointsEnabled;
-                _enableRunAs = message.EnableRunAs;
-                _runAs = message.RunAs;
-                _name = message.Name;
+                _enabled = enabled;
+                _handlerType = handlerType;
+                _query = query;
+                _projectionMode = projectionMode;
+                _emitEnabled = emitEnabled;
+                _checkpointsEnabled = checkpointsEnabled;
+                _enableRunAs = enableRunAs;
+                _runAs = runAs;
+                _name = name;
             }
 
-            public void CreateAndInitializeNewProjection(ProjectionManager projectionManager)
+            public void CreateAndInitializeNewProjection(
+                ProjectionManager projectionManager, Action<ManagedProjection> completed, Guid projectionCorrelationId,
+                int queueIndex, bool isSlave = false, IPublisher slaveResultsPublisher = null,
+                Guid slaveMasterCorrelationId = default(Guid))
             {
-                var projection = projectionManager.CreateManagedProjectionInstance(_name, _projectionId);
-                projection.InitializeNew(() => _completed(projection), new ManagedProjection.PersistedState
-                {
-                    Enabled = _enabled,
-                    HandlerType = _handlerType,
-                    Query = _query,
-                    Mode = _projectionMode,
-                    EmitEnabled = _emitEnabled,
-                    CheckpointsDisabled = !_checkpointsEnabled,
-                    Epoch = -1,
-                    Version = -1,
-                    RunAs = _enableRunAs ? ManagedProjection.SerializePrincipal(_runAs) : null,
-                });
+                var projection = projectionManager.CreateManagedProjectionInstance(
+                    _name, _projectionId, projectionCorrelationId, queueIndex, isSlave, slaveResultsPublisher,
+                    slaveMasterCorrelationId);
+                projection.InitializeNew(
+                    () => completed(projection),
+                    new ManagedProjection.PersistedState
+                    {
+                        Enabled = _enabled,
+                        HandlerType = _handlerType,
+                        Query = _query,
+                        Mode = _projectionMode,
+                        EmitEnabled = _emitEnabled,
+                        CheckpointsDisabled = !_checkpointsEnabled,
+                        Epoch = -1,
+                        Version = -1,
+                        RunAs = _enableRunAs ? ManagedProjection.SerializePrincipal(_runAs) : null,
+                    });
             }
         }
 
-        private ManagedProjection CreateManagedProjectionInstance(string name, int projectionId)
+        private ManagedProjection CreateManagedProjectionInstance(
+            string name, int projectionId, Guid projectionCorrelationId, int queueIndex, bool isSlave = false,
+            IPublisher slaveResultsPublisher = null, Guid slaveMasterCorrelationId = default(Guid))
         {
-            var projectionCorrelationId = Guid.NewGuid();
-            if (_lastUsedQueue >= _queues.Length)
-                _lastUsedQueue = 0;
-            var queueIndex = _lastUsedQueue;
             var queue = _queues[queueIndex];
             _lastUsedQueue++;
             var enabledToRun = IsProjectionEnabledToRunByMode(name);
-            var managedProjectionInstance = new ManagedProjection(queue, 
-                projectionCorrelationId, projectionId, name, enabledToRun, _logger, _writeDispatcher, _readDispatcher, _inputQueue, _publisher,
-                _projectionStateHandlerFactory, _timeProvider, _timeoutSchedulers[queueIndex]);
+            var managedProjectionInstance = new ManagedProjection(
+                queue, projectionCorrelationId, projectionId, name, enabledToRun, _logger, _writeDispatcher,
+                _readDispatcher, _inputQueue, _publisher, _projectionStateHandlerFactory, _timeProvider,
+                _timeoutSchedulers[queueIndex], isSlave, slaveResultsPublisher, slaveMasterCorrelationId);
             _projectionsMap.Add(projectionCorrelationId, name);
             _projections.Add(name, managedProjectionInstance);
             return managedProjectionInstance;
+        }
+
+        private int GetNextQueueIndex()
+        {
+            int queueIndex;
+            if (_lastUsedQueue >= _queues.Length)
+                _lastUsedQueue = 0;
+            queueIndex = _lastUsedQueue;
+            return queueIndex;
         }
 
         private void BeginWriteProjectionRegistration(string name, Action<int> completed)
@@ -785,21 +814,70 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.StartSlaveProjections message)
         {
-            foreach (var group in message.SlaveProjections.Definitions)
+            var result = new Dictionary<string, SlaveProjectionCommunicationChannel[]>();
+            var counter = 0;
+            foreach (var g in message.SlaveProjections.Definitions)
             {
-                switch (group.RequestedNumber)
+                var @group = g;
+                switch (g.RequestedNumber)
                 {
                     case SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.One:
                     case SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerNode:
-                        throw new NotImplementedException();
+                    {
+                        var resultArray = new SlaveProjectionCommunicationChannel[1];
+                        result.Add(g.Name, resultArray);
+                        counter++;
+                        CINP(
+                            message, @group, resultArray, GetNextQueueIndex(), 0,
+                            () => CheckSlaveProjectionsStarted(message, ref counter, result));
                         break;
+                    }
                     case SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread:
-                        throw new NotImplementedException();
+                    {
+                        var resultArray = new SlaveProjectionCommunicationChannel[_queues.Length];
+                        result.Add(g.Name, resultArray);
+
+                        for (int index = 0; index < _queues.Length; index++)
+                        {
+                            counter++;
+                            CINP(
+                                message, @group, resultArray, index, index,
+                                () => CheckSlaveProjectionsStarted(message, ref counter, result));
+                        }
                         break;
+                    }
                     default:
                         throw new NotSupportedException();
                 }
             }
         }
+
+        private static void CheckSlaveProjectionsStarted(ProjectionManagementMessage.StartSlaveProjections message, ref int counter, Dictionary<string, SlaveProjectionCommunicationChannel[]> result)
+        {
+            counter--;
+            if (counter == 0)
+                message.Envelope.ReplyWith(
+                    new ProjectionManagementMessage.SlaveProjectionsStarted(
+                        message.Name, new SlaveProjectionCommunicationChannels(result)));
+        }
+
+        private void CINP(
+            ProjectionManagementMessage.StartSlaveProjections message, SlaveProjectionDefinitions.Definition @group,
+            SlaveProjectionCommunicationChannel[] resultArray, int queueIndex, int arrayIndex, Action completed)
+        {
+            var projectionCorrelationId = Guid.NewGuid();
+            var slaveProjectionName = message.Name + "-" + @group.Name + "-" + queueIndex;
+            var initializer = new NewProjectionInitializer(
+                ProjectionQueryId, slaveProjectionName, @group.Mode, @group.HandlerType, @group.Query, true,
+                @group.EmitEnabled, @group.CheckpointsEnabled, @group.EnableRunAs, @group.RunAs);
+            initializer.CreateAndInitializeNewProjection(
+                this, managedProjection =>
+                {
+                    resultArray[arrayIndex] = new SlaveProjectionCommunicationChannel(
+                        projectionCorrelationId, _queues[queueIndex]);
+                    completed();
+                }, projectionCorrelationId, queueIndex, true, message.ResultsPublisher, message.MasterCorrelationId);
+        }
+
     }
 }

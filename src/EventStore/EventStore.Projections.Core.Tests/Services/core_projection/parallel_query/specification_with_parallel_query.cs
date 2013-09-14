@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Utils;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services;
@@ -68,9 +69,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
 
         protected override ProjectionProcessingStrategy GivenProjectionProcessingStrategy()
         {
+            var sourceDefinition = _stateHandler.GetSourceDefinition();
+            var source = QuerySourcesDefinition.From(sourceDefinition).ToJson();
             return new ParallelQueryProcessingStrategy(
-                _projectionName, _version, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
-                _spoolProcessingResponseDispatcher, _subscriptionDispatcher);
+                _projectionName, _version, GivenProjectionStateHandler, _projectionConfig,
+                ProjectionSourceDefinition.From(
+                    _projectionName, sourceDefinition, typeof (FakeProjectionStateHandler).GetNativeHandlerName(),
+                    source), null, _spoolProcessingResponseDispatcher, _subscriptionDispatcher);
         }
 
         protected override void Given()

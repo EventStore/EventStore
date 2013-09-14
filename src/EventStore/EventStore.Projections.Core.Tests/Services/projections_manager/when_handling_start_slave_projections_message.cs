@@ -26,11 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
@@ -43,19 +45,26 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected FakePublisher _coreQueue2;
         private string _masterProjectionName;
         private SlaveProjectionDefinitions _slaveProjectionDefinitions;
+        private Guid _masterCorrelationId;
 
         protected override IPublisher[] GivenCoreQueues()
         {
-            return new[] {_coreQueue1, _coreQueue2};
+            _coreQueue1 = new FakePublisher();
+            _coreQueue2 = new FakePublisher();
+            return new[] { _coreQueue1, _coreQueue2 };
         }
 
         protected override void Given()
         {
             base.Given();
             _masterProjectionName = "master-projection";
-            _slaveProjectionDefinitions = new SlaveProjectionDefinitions(
-                new SlaveProjectionDefinitions.Definition(
-                    "slave", SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread));
+            _masterCorrelationId = Guid.NewGuid();
+            _slaveProjectionDefinitions =
+                new SlaveProjectionDefinitions(
+                    new SlaveProjectionDefinitions.Definition(
+                        "slave", StateHandlerFactory(), "",
+                        SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread, ProjectionMode.Transient,
+                        false, false, true, ProjectionManagementMessage.RunAs.System));
         }
 
         protected override IEnumerable<WhenStep> When()
@@ -64,7 +73,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
             yield return
                 new ProjectionManagementMessage.StartSlaveProjections(
-                    _masterProjectionName, _slaveProjectionDefinitions);
+                    Envelope, ProjectionManagementMessage.RunAs.System, _masterProjectionName,
+                    _slaveProjectionDefinitions, GetInputQueue(), _masterCorrelationId);
+        }
+
+        private static string StateHandlerFactory()
+        {
+            var handlerType = typeof(FakeFromCatalogStreamProjection);
+            return "native:" + handlerType.Namespace + "." + handlerType.Name;
         }
 
         [Test]

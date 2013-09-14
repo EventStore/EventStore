@@ -116,6 +116,11 @@ namespace EventStore.Projections.Core.Services.Management
         private int _lastWrittenVersion = -1;
         private IPrincipal _runAs;
         private SlaveProjectionDefinitions _slaveProjections;
+        //TODO: slave (extract into derived class)
+
+        private readonly bool _isSlave;
+        private readonly IPublisher _slaveResultsPublisher;
+        private readonly Guid _slaveMasterCorrelationId;
 
         public ManagedProjection(
             IPublisher coreQueue, Guid id, int projectionId, string name, bool enabledToRun, ILogger logger,
@@ -123,8 +128,10 @@ namespace EventStore.Projections.Core.Services.Management
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             IPublisher inputQueue, IPublisher output, ProjectionStateHandlerFactory projectionStateHandlerFactory,
-            ITimeProvider timeProvider, ISingletonTimeoutScheduler timeoutScheduler = null)
+            ITimeProvider timeProvider, ISingletonTimeoutScheduler timeoutScheduler = null, bool isSlave = false,
+            IPublisher slaveResultsPublisher = null, Guid slaveMasterCorrelationId = default(Guid))
         {
+            if (coreQueue == null) throw new ArgumentNullException("coreQueue");
             if (id == Guid.Empty) throw new ArgumentException("id");
             if (name == null) throw new ArgumentNullException("name");
             if (output == null) throw new ArgumentNullException("output");
@@ -142,6 +149,9 @@ namespace EventStore.Projections.Core.Services.Management
             _projectionStateHandlerFactory = projectionStateHandlerFactory;
             _timeProvider = timeProvider;
             _timeoutScheduler = timeoutScheduler;
+            _isSlave = isSlave;
+            _slaveResultsPublisher = slaveResultsPublisher;
+            _slaveMasterCorrelationId = slaveMasterCorrelationId;
             _getStateDispatcher =
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>(
@@ -649,7 +659,10 @@ namespace EventStore.Projections.Core.Services.Management
             _state = ManagedProjectionState.Starting;
             if (_slaveProjections != null)
             {
-                _output.Publish(new ProjectionManagementMessage.StartSlaveProjections(_name, _slaveProjections));
+                _output.Publish(
+                    new ProjectionManagementMessage.StartSlaveProjections(
+                        new PublishEnvelope(_inputQueue), new ProjectionManagementMessage.RunAs(_runAs), _name,
+                        _slaveProjections, _coreQueue, _id));
             }
             else
             {
@@ -717,36 +730,42 @@ namespace EventStore.Projections.Core.Services.Management
             //TODO: load configuration from the definition
 
 
-            var createProjectionMessage =
+            Func<IProjectionStateHandler> stateHandlerFactory = delegate
+            {
+                // this delegate runs in the context of a projection core thread
+                // TODO: move this code to the projection core service as we may be in different processes in the future
+                IProjectionStateHandler stateHandler = null;
+                try
+                {
+                    stateHandler = handlerFactory.Create(
+                        HandlerType, Query, logger: s => _logger.Trace(s),
+                        cancelCallbackFactory:
+                            _timeoutScheduler == null
+                                ? (Action<int, Action>) null
+                                : _timeoutScheduler.Schedule);
+                    return stateHandler;
+                }
+                catch (Exception ex)
+                {
+                    SetFaulted(
+                        string.Format(
+                            "Cannot create a projection state handler.\r\n\r\nHandler type: {0}\r\nQuery:\r\n\r\n{1}\r\n\r\nMessage:\r\n\r\n{2}",
+                            HandlerType, Query, ex.Message), ex);
+                    if (stateHandler != null)
+                        stateHandler.Dispose();
+                    throw;
+                }
+            };
+
+            var createProjectionMessage = _isSlave ? 
+                (Message) new CoreProjectionManagementMessage.CreateAndPrepareSlave(
+                    new PublishEnvelope(_inputQueue), _id, _name, 
+                    new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
+                    config, _slaveResultsPublisher, _slaveMasterCorrelationId, stateHandlerFactory) :
                 new CoreProjectionManagementMessage.CreateAndPrepare(
                     new PublishEnvelope(_inputQueue), _id, _name, 
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
-                    config, delegate
-                        {
-                            // this delegate runs in the context of a projection core thread
-                            // TODO: move this code to the projection core service as we may be in different processes in the future
-                            IProjectionStateHandler stateHandler = null;
-                            try
-                            {
-                                stateHandler = handlerFactory.Create(
-                                    HandlerType, Query, logger: s => _logger.Trace(s),
-                                    cancelCallbackFactory:
-                                        _timeoutScheduler == null
-                                            ? (Action<int, Action>) null
-                                            : _timeoutScheduler.Schedule);
-                                return stateHandler;
-                            }
-                            catch (Exception ex)
-                            {
-                                SetFaulted(
-                                    string.Format(
-                                        "Cannot create a projection state handler.\r\n\r\nHandler type: {0}\r\nQuery:\r\n\r\n{1}\r\n\r\nMessage:\r\n\r\n{2}",
-                                        HandlerType, Query, ex.Message), ex);
-                                if (stateHandler != null)
-                                    stateHandler.Dispose();
-                                throw;
-                            }
-                        });
+                    config, HandlerType, Query, stateHandlerFactory);
 
             //note: set runnign before start as coreProjection.start() can respond with faulted
             _state = ManagedProjectionState.Preparing;
@@ -773,8 +792,9 @@ namespace EventStore.Projections.Core.Services.Management
 
             var createProjectionMessage =
                 new CoreProjectionManagementMessage.CreatePrepared(
-                    new PublishEnvelope(_inputQueue), _id, _name, new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0,
-                    _persistedState.Version ?? 1), config, _persistedState.SourceDefinition);
+                    new PublishEnvelope(_inputQueue), _id, _name,
+                    new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 1),
+                    config, _persistedState.SourceDefinition, HandlerType, Query);
 
             //note: set running before start as coreProjection.start() can respond with faulted
             _state = ManagedProjectionState.Preparing;

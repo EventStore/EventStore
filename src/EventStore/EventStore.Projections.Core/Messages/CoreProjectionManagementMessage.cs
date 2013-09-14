@@ -381,19 +381,23 @@ namespace EventStore.Projections.Core.Messages
 
             private readonly IEnvelope _envelope;
             private readonly ProjectionConfig _config;
+            private readonly string _handlerType;
+            private readonly string _query;
             private readonly Func<IProjectionStateHandler> _handlerFactory;
             private readonly string _name;
             private readonly ProjectionVersion _version;
 
             public CreateAndPrepare(
                 IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
-                Func<IProjectionStateHandler> handlerFactory)
+                string handlerType, string query, Func<IProjectionStateHandler> handlerFactory)
                 : base(projectionId)
             {
                 _envelope = envelope;
                 _name = name;
                 _version = version;
                 _config = config;
+                _handlerType = handlerType;
+                _query = query;
                 _handlerFactory = handlerFactory;
             }
 
@@ -422,6 +426,15 @@ namespace EventStore.Projections.Core.Messages
                 get { return _version; }
             }
 
+            public string HandlerType
+            {
+                get { return _handlerType; }
+            }
+
+            public string Query
+            {
+                get { return _query; }
+            }
         }
 
         public class CreateAndPrepareSlave : CoreProjectionManagementMessage
@@ -446,6 +459,11 @@ namespace EventStore.Projections.Core.Messages
                 IPublisher resultsPublisher, Guid masterCoreProjectionId, Func<IProjectionStateHandler> handlerFactory)
                 : base(projectionId)
             {
+                if (envelope == null) throw new ArgumentNullException("envelope");
+                if (name == null) throw new ArgumentNullException("name");
+                if (config == null) throw new ArgumentNullException("config");
+                if (resultsPublisher == null) throw new ArgumentNullException("resultsPublisher");
+                if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
                 _envelope = envelope;
                 _name = name;
                 _version = version;
@@ -489,6 +507,7 @@ namespace EventStore.Projections.Core.Messages
             {
                 get { return _masterCoreProjectionId; }
             }
+
         }
 
         public class CreatePrepared : CoreProjectionManagementMessage
@@ -499,22 +518,28 @@ namespace EventStore.Projections.Core.Messages
             private readonly IEnvelope _envelope;
             private readonly ProjectionConfig _config;
             private readonly IQuerySources _sourceDefinition;
+            private readonly string _handlerType;
+            private readonly string _query;
             private readonly string _name;
             private readonly ProjectionVersion _version;
 
             public CreatePrepared(
                 IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
-                IQuerySources sourceDefinition)
+                IQuerySources sourceDefinition, string handlerType, string query)
                 : base(projectionId)
             {
                 if (name == null) throw new ArgumentNullException("name");
                 if (config == null) throw new ArgumentNullException("config");
                 if (sourceDefinition == null) throw new ArgumentNullException("sourceDefinition");
+                if (handlerType == null) throw new ArgumentNullException("handlerType");
+                if (query == null) throw new ArgumentNullException("query");
                 _envelope = envelope;
                 _name = name;
                 _version = version;
                 _config = config;
                 _sourceDefinition = sourceDefinition;
+                _handlerType = handlerType;
+                _query = query;
             }
 
             public ProjectionConfig Config
@@ -540,6 +565,16 @@ namespace EventStore.Projections.Core.Messages
             public ProjectionVersion Version
             {
                 get { return _version; }
+            }
+
+            public string HandlerType
+            {
+                get { return _handlerType; }
+            }
+
+            public string Query
+            {
+                get { return _query; }
             }
         }
 

@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Security.Principal;
+using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
@@ -776,18 +777,25 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class StartSlaveProjections : Message
+        public class StartSlaveProjections : ControlMessage
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             private readonly string _name;
             private readonly SlaveProjectionDefinitions _slaveProjections;
+            private readonly IPublisher _resultsPublisher;
+            private readonly Guid _masterCorrelationId;
 
-            public StartSlaveProjections(string name, SlaveProjectionDefinitions slaveProjections)
+            public StartSlaveProjections(
+                IEnvelope envelope, RunAs runAs, string name, SlaveProjectionDefinitions slaveProjections,
+                IPublisher resultsPublisher, Guid masterCorrelationId)
+                : base(envelope, runAs)
             {
                 _name = name;
                 _slaveProjections = slaveProjections;
+                _resultsPublisher = resultsPublisher;
+                _masterCorrelationId = masterCorrelationId;
             }
 
             public string Name
@@ -798,6 +806,16 @@ namespace EventStore.Projections.Core.Messages
             public SlaveProjectionDefinitions SlaveProjections
             {
                 get { return _slaveProjections; }
+            }
+
+            public IPublisher ResultsPublisher
+            {
+                get { return _resultsPublisher; }
+            }
+
+            public Guid MasterCorrelationId
+            {
+                get { return _masterCorrelationId; }
             }
         }
 

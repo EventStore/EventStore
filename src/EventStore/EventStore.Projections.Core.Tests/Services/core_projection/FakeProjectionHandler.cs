@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Common.Utils;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -59,6 +60,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private readonly bool _failOnProcessEvent;
         private readonly bool _failOnGetPartition;
         private readonly Action<SourceDefinitionBuilder> _configureBuilder;
+        private readonly IQuerySources _definition;
+
+        public FakeProjectionStateHandler(string source, Action<string> logger)
+        {
+            _definition = source.ParseJson<QuerySourcesDefinition>();
+        }
 
         public FakeProjectionStateHandler(
             bool failOnInitialize = false, bool failOnLoad = false, bool failOnProcessEvent = false,
@@ -218,7 +225,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         public IQuerySources GetSourceDefinition()
         {
-            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
+            return _definition ?? SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
         }
 
     }
