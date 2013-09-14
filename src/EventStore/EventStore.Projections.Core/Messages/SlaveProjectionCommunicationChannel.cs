@@ -35,11 +35,13 @@ namespace EventStore.Projections.Core.Messages
     public sealed class SlaveProjectionCommunicationChannel
     {
         private readonly Guid _coreProjectionId;
+        private readonly Guid _subscriptionId;
         private readonly IPublisher _publishEnvelope;
 
-        public SlaveProjectionCommunicationChannel(Guid coreProjectionId, IPublisher publishEnvelope)
+        public SlaveProjectionCommunicationChannel(Guid coreProjectionId, Guid subscriptionId, IPublisher publishEnvelope)
         {
             _coreProjectionId = coreProjectionId;
+            _subscriptionId = subscriptionId;
             _publishEnvelope = publishEnvelope;
         }
 
@@ -51,6 +53,11 @@ namespace EventStore.Projections.Core.Messages
         public IPublisher PublishEnvelope
         {
             get { return _publishEnvelope; }
+        }
+
+        public Guid SubscriptionId
+        {
+            get { return _subscriptionId; }
         }
     }
 }

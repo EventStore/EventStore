@@ -108,8 +108,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
                             "slave",
                             new[]
                             {
-                                new SlaveProjectionCommunicationChannel(_slave1, GetInputQueue()),
-                                new SlaveProjectionCommunicationChannel(_slave2, GetInputQueue())
+                                new SlaveProjectionCommunicationChannel(Guid.Empty, _slave1, GetInputQueue()),
+                                new SlaveProjectionCommunicationChannel(Guid.Empty, _slave2, GetInputQueue())
                             }
                         }
                     });

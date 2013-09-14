@@ -121,6 +121,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly bool _isSlave;
         private readonly IPublisher _slaveResultsPublisher;
         private readonly Guid _slaveMasterCorrelationId;
+        private Guid _slaveProjectionSubscriptionId;
 
         public ManagedProjection(
             IPublisher coreQueue, Guid id, int projectionId, string name, bool enabledToRun, ILogger logger,
@@ -188,6 +189,12 @@ namespace EventStore.Projections.Core.Services.Management
         {
             get { return _persistedState.Deleted; }
             private set { _persistedState.Deleted = value; }
+        }
+
+        //TODO: remove property. pass value back to completion routine
+        public Guid SlaveProjectionSubscriptionId
+        {
+            get { return _slaveProjectionSubscriptionId; }
         }
 
         public void Dispose()
@@ -956,6 +963,11 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message)
         {
             _coreQueue.Publish(new CoreProjectionManagementMessage.Start(_id, message.SlaveProjections));
+        }
+
+        public void Handle(CoreProjectionManagementMessage.SlaveProjectionReaderAssigned message)
+        {
+            _slaveProjectionSubscriptionId = message.SubscriptionId;
         }
     }
 

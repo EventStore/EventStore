@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
                 channel.PublishEnvelope,
                 new ReaderSubscriptionManagement.SpoolStreamReading(
-                    channel.CoreProjectionId, Guid.NewGuid(), streamId, resolvedEvent.PositionSequenceNumber), this);
+                    channel.SubscriptionId, Guid.NewGuid(), streamId, resolvedEvent.PositionSequenceNumber), this);
         }
 
         protected override void WriteOutput()

@@ -86,6 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<CoreProjectionManagementMessage.StateReport>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_manager);
+            _bus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.SlaveProjectionsStarted>(_manager);
             
             _bus.Subscribe<ProjectionManagementMessage.Post>(_manager);

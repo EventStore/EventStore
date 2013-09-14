@@ -190,7 +190,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 string name = message.Name;
                 var sourceDefinition = ProjectionSourceDefinition.From(name, stateHandler.GetSourceDefinition(), null, null);
                 var projectionVersion = message.Version;
-                var projectionConfig = message.Config;
+                var projectionConfig = message.Config.SetIsSlave();
                 var projectionProcessingStrategy =
                     _processingStrategySelector.CreateSlaveProjectionProcessingStrategy(
                         name, projectionVersion, sourceDefinition, projectionConfig, stateHandler,

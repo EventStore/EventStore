@@ -127,5 +127,12 @@ namespace EventStore.Projections.Core.Services
         {
             return new ProjectionConfig(null, 1000, 1000*1000, 100, 500, true, true, false, false, false);
         }
+
+        public ProjectionConfig SetIsSlave()
+        {
+            return new ProjectionConfig(
+                _runAs, CheckpointHandledThreshold, CheckpointUnhandledBytesThreshold, PendingEventsThreshold,
+                MaxWriteBatchLength, EmitEventEnabled, _checkpointsEnabled, CreateTempStreams, StopOnEof, true);
+        }
     }
 }

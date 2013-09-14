@@ -277,15 +277,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 var readerStrategy = _readerStrategy;
                 if (readerStrategy != null)
                 {
+                    _subscribed = true;
                     _subscriptionDispatcher.PublishSubscribe(
                         new ReaderSubscriptionManagement.Subscribe(
                             _currentSubscriptionId, checkpointTag, readerStrategy, GetSubscriptionOptions()), this);
-                    _subscribed = true;
-                    _coreProjection.Subscribed();
                 }
                 else
                 {
-                    _subscribed = true;
+                    _coreProjection.Subscribed();
                 }
             }
             catch (Exception ex)
@@ -359,6 +358,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void InitializeFromCheckpoint(CheckpointTag checkpointTag)
         {
+            _wasReaderAssigned = false;
             // this can be old checkpoint
             var adjustedCheckpointTag = _readerStrategy.PositionTagger.AdjustTag(checkpointTag);
             _processingQueue.InitializeQueue(adjustedCheckpointTag);
@@ -517,15 +517,22 @@ namespace EventStore.Projections.Core.Services.Processing
                 // this was we distinguish pre-recorded events subscription
                 if (_currentSubscriptionId != _projectionCorrelationId)
                     _publisher.Publish(new ReaderSubscriptionManagement.Unsubscribe(_currentSubscriptionId));
+                _subscribed = false;
             }
         }
 
+        private bool _wasReaderAssigned = false;
+
         public void Handle(EventReaderSubscriptionMessage.ReaderAssignedReader message)
         {
+            if (_wasReaderAssigned)
+                return;
+            _wasReaderAssigned = true;
             if (_projectionConfig.IsSlaveProjection)
                 _publisher.Publish(
                     new CoreProjectionManagementMessage.SlaveProjectionReaderAssigned(
                         _projectionCorrelationId, message.SubscriptionId, message.ReaderId));
+            _coreProjection.Subscribed();
         }
 
 

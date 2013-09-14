@@ -75,6 +75,7 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<CoreProjectionManagementMessage.StateReport>,
                                      IHandle<CoreProjectionManagementMessage.ResultReport>,
                                      IHandle<CoreProjectionManagementMessage.StatisticsReport>, 
+                                     IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
                                      IHandle<ProjectionManagementMessage.RegisterSystemProjection>, 
                                      IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>
     {
@@ -479,6 +480,16 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
+        public void Handle(CoreProjectionManagementMessage.SlaveProjectionReaderAssigned message)
+        {
+            string name;
+            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
+            {
+                var projection = _projections[name];
+                projection.Handle(message);
+            }
+        }
+
         public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
         {
             _readDispatcher.Handle(message);
@@ -874,7 +885,7 @@ namespace EventStore.Projections.Core.Services.Management
                 this, managedProjection =>
                 {
                     resultArray[arrayIndex] = new SlaveProjectionCommunicationChannel(
-                        projectionCorrelationId, _queues[queueIndex]);
+                        projectionCorrelationId, managedProjection.SlaveProjectionSubscriptionId, _queues[queueIndex]);
                     completed();
                 }, projectionCorrelationId, queueIndex, true, message.ResultsPublisher, message.MasterCorrelationId);
         }
