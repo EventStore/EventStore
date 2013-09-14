@@ -58,6 +58,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _justInitialized;
         private bool _subscriptionPaused;
 
+        public event Action EnsureTickPending
+        {
+            add { _queuePendingEvents.EnsureTickPending += value; }
+            remove { _queuePendingEvents.EnsureTickPending -= value; }
+        }
+
         public CoreProjectionQueue(
             Guid projectionCorrelationId, IPublisher publisher, int pendingEventsThreshold,
             Action updateStatistics = null)

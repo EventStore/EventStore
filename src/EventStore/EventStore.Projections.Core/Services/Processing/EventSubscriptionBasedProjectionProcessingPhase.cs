@@ -83,6 +83,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _resultWriter = resultWriter;
             _processingQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, updateStatistics);
+            _processingQueue.EnsureTickPending += EnsureTickPending;
             _subscriptionDispatcher = subscriptionDispatcher;
             _readerStrategy = readerStrategy;
             _useCheckpoints = useCheckpoints;
@@ -125,8 +126,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void ProcessEvent()
         {
-            if (_processingQueue.ProcessEvent())
-                EnsureTickPending();
+            _processingQueue.ProcessEvent();
         }
 
         public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
@@ -430,7 +430,6 @@ namespace EventStore.Projections.Core.Services.Processing
                         else
                             _partitionStateCache.CachePartitionState(statePartition, state);
                         loadCompleted(state);
-                        EnsureTickPending();
                     };
                     if (_projectionConfig.CheckpointsEnabled)
                     {
@@ -478,11 +477,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 case PhaseState.Running:
                     _checkpointManager.RecordEventOrder(
-                        resolvedEvent, orderCheckpointTag, () =>
-                        {
-                            completed();
-                            EnsureTickPending();
-                        });
+                        resolvedEvent, orderCheckpointTag, completed);
                     break;
                 case PhaseState.Stopped:
                     _logger.Error("Should not receive events in stopped state anymore");

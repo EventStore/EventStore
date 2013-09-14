@@ -46,7 +46,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly SlaveProjectionCommunicationChannels _slaves;
         private PartitionProcessingResult _resultMessage;
-        private bool _awaitingResult;
         private Guid _spoolRequestId;
 
         public SpoolStreamProcessingWorkItem(
@@ -74,18 +73,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 channel.PublishEnvelope,
                 new ReaderSubscriptionManagement.SpoolStreamReading(
                     channel.CoreProjectionId, Guid.NewGuid(), streamId, resolvedEvent.PositionSequenceNumber), this);
-            NextStage();
         }
 
         protected override void WriteOutput()
-        {
-            if (_resultMessage != null)
-                WriteResult();
-            else
-                _awaitingResult = true;
-        }
-
-        private void WriteResult()
         {
             _resultWriter.WriteEofResult(
                 _resultMessage.Partition, _resultMessage.Result, _resultMessage.Position, Guid.Empty, null);
@@ -96,8 +86,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _spoolProcessingResponseDispatcher.Cancel(_spoolRequestId);
             _resultMessage = message;
-            if (_awaitingResult)
-                WriteResult();
+            NextStage();
         }
     }
 }
