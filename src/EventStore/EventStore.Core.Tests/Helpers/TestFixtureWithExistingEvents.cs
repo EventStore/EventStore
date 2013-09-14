@@ -524,6 +524,21 @@ namespace EventStore.Core.Tests.Helpers
         {
             return _all.Last(v => v.Value.EventStreamId == streamId && v.Value.EventNumber == eventNumber).Key;
         }
+
+        public void AssertLastEvent(string streamId, string data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AssertEvent(string streamId, int eventNumber, string data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AssertEmptyStream(string streamId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
 

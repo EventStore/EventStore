@@ -56,6 +56,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     PartitionProcessingResult> spoolProcessingResponseDispatcher)
             : base(Guid.NewGuid())
         {
+            if (resultWriter == null) throw new ArgumentNullException("resultWriter");
+            if (slaves == null) throw new ArgumentNullException("slaves");
+            if (spoolProcessingResponseDispatcher == null)
+                throw new ArgumentNullException("spoolProcessingResponseDispatcher");
             _resultWriter = resultWriter;
             _message = message;
             _slaves = slaves;

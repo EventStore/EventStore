@@ -307,7 +307,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         }
 
-        public void Subscribe(CheckpointTag from, bool fromCheckpoint)
+        public virtual void Subscribe(CheckpointTag from, bool fromCheckpoint)
         {
             Contract.Assert(_checkpointManager.LastProcessedEventPosition == @from);
             if (fromCheckpoint)

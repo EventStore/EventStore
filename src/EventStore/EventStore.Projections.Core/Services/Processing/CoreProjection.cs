@@ -279,9 +279,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 GoToState(State.StateLoaded);
                 if (_startOnLoad)
                 {
-                    _projectionProcessingPhase.Subscribe(checkpointTag, fromCheckpoint: true);
                     if (_slaveProjections != null)
                         _projectionProcessingPhase.AssignSlaves(_slaveProjections);
+                    _projectionProcessingPhase.Subscribe(checkpointTag, fromCheckpoint: true);
                 }
                 else
                     GoToState(State.Stopped);
@@ -517,9 +517,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 var nextPhase = _projectionProcessingPhases[completedPhaseIndex + 1];
                 var nextPhaseZeroPosition = nextPhase.MakeZeroCheckpointTag();
                 BeginPhase(nextPhase, nextPhaseZeroPosition);
-                _projectionProcessingPhase.Subscribe(nextPhaseZeroPosition, fromCheckpoint: false);
                 if (_slaveProjections != null)
                     _projectionProcessingPhase.AssignSlaves(_slaveProjections);
+                _projectionProcessingPhase.Subscribe(nextPhaseZeroPosition, fromCheckpoint: false);
             }
         }
 

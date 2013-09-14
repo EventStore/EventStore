@@ -74,6 +74,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _slaves = slaveProjections;
         }
 
+        public override void Subscribe(CheckpointTag @from, bool fromCheckpoint)
+        {
+            if (_slaves == null)
+                throw new InvalidOperationException("Cannot subscribe to event reader without assigned slave projections");
+            base.Subscribe(@from, fromCheckpoint);
+        }
+
         public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
             //TODO:  make sure this is no longer required : if (_state != State.StateLoaded)
@@ -83,7 +90,8 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 CheckpointTag eventTag = message.CheckpointTag;
-                var committedEventWorkItem = new SpoolStreamProcessingWorkItem(_resultWriter, message, _slaves, _spoolProcessingResponseDispatcher);
+                var committedEventWorkItem = new SpoolStreamProcessingWorkItem(
+                    _resultWriter, message, _slaves, _spoolProcessingResponseDispatcher);
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
                 if (_state == PhaseState.Running) // prevent processing mostly one projection
                     EnsureTickPending();
