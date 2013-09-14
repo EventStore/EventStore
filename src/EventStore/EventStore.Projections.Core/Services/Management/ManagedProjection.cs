@@ -434,31 +434,14 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void InitializeNew(ProjectionManagementMessage.Post message, Action completed)
+        public void InitializeNew(Action completed, PersistedState persistedState)
         {
-            if (message.Mode >= ProjectionMode.Continuous && !message.CheckpointsEnabled)
-                throw new InvalidOperationException("Continuous mode requires checkpoints");
-
-            if (message.EmitEnabled && !message.CheckpointsEnabled)
-                throw new InvalidOperationException("Emit requires checkpoints");
-            LoadPersistedState(
-                new PersistedState
-                    {
-                        Enabled = message.Enabled,
-                        HandlerType = message.HandlerType,
-                        Query = message.Query,
-                        Mode = message.Mode,
-                        EmitEnabled = message.EmitEnabled,
-                        CheckpointsDisabled = !message.CheckpointsEnabled,
-                        Epoch = -1,
-                        Version = -1,
-                        RunAs = message.EnableRunAs ? SerializePrincipal(message.RunAs) : null,
-                    });
+            LoadPersistedState(persistedState);
             UpdateProjectionVersion();
             Prepare(() => BeginWrite(() => StartOrLoadStopped(completed)));
         }
 
-        private SerializedRunAs SerializePrincipal(ProjectionManagementMessage.RunAs runAs)
+        public static SerializedRunAs SerializePrincipal(ProjectionManagementMessage.RunAs runAs)
         {
             if (runAs.Principal == null)
                 return null; // anonymous

@@ -63,6 +63,7 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<ProjectionManagementMessage.Enable>,
                                      IHandle<ProjectionManagementMessage.SetRunAs>,
                                      IHandle<ProjectionManagementMessage.Reset>,
+                                     IHandle<ProjectionManagementMessage.StartSlaveProjections>,
                                      IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
                                      IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
                                      IHandle<ProjectionManagementMessage.Internal.Deleted>,
@@ -666,16 +667,67 @@ namespace EventStore.Projections.Core.Services.Management
             if (message.Mode >= ProjectionMode.OneTime)
             {
                 BeginWriteProjectionRegistration(
-                    message.Name, projectionId =>
-                        {
-                            var projection = CreateManagedProjectionInstance(message.Name, projectionId);
-                            projection.InitializeNew(message, () => completed(projection));
-                        });
+                    message.Name,
+                    projectionId =>
+                        new NewProjectionInitializer(message, completed, projectionId).CreateAndInitializeNewProjection(
+                            this));
             }
             else
+                new NewProjectionInitializer(message, completed, ProjectionQueryId).CreateAndInitializeNewProjection(
+                    this);
+        }
+
+        public class NewProjectionInitializer
+        {
+            private readonly Action<ManagedProjection> _completed;
+            private readonly int _projectionId;
+            private readonly bool _enabled;
+            private readonly string _handlerType;
+            private readonly string _query;
+            private readonly ProjectionMode _projectionMode;
+            private readonly bool _emitEnabled;
+            private readonly bool _checkpointsEnabled;
+            private readonly bool _enableRunAs;
+            private readonly ProjectionManagementMessage.RunAs _runAs;
+            private readonly string _name;
+
+            public NewProjectionInitializer(
+                ProjectionManagementMessage.Post message, Action<ManagedProjection> completed, int projectionId)
             {
-                var projection = CreateManagedProjectionInstance(message.Name, ProjectionQueryId);
-                projection.InitializeNew(message, () => completed(projection));
+                if (message.Mode >= ProjectionMode.Continuous && !message.CheckpointsEnabled)
+                    throw new InvalidOperationException("Continuous mode requires checkpoints");
+
+                if (message.EmitEnabled && !message.CheckpointsEnabled)
+                    throw new InvalidOperationException("Emit requires checkpoints");
+
+                _completed = completed;
+                _projectionId = projectionId;
+                _enabled = message.Enabled;
+                _handlerType = message.HandlerType;
+                _query = message.Query;
+                _projectionMode = message.Mode;
+                _emitEnabled = message.EmitEnabled;
+                _checkpointsEnabled = message.CheckpointsEnabled;
+                _enableRunAs = message.EnableRunAs;
+                _runAs = message.RunAs;
+                _name = message.Name;
+            }
+
+            public void CreateAndInitializeNewProjection(ProjectionManager projectionManager)
+            {
+                var projection = projectionManager.CreateManagedProjectionInstance(_name, _projectionId);
+                projection.InitializeNew(() => _completed(projection), new ManagedProjection.PersistedState
+                {
+                    Enabled = _enabled,
+                    HandlerType = _handlerType,
+                    Query = _query,
+                    Mode = _projectionMode,
+                    EmitEnabled = _emitEnabled,
+                    CheckpointsDisabled = !_checkpointsEnabled,
+                    Epoch = -1,
+                    Version = -1,
+                    RunAs = _enableRunAs ? ManagedProjection.SerializePrincipal(_runAs) : null,
+                });
             }
         }
 
@@ -731,5 +783,23 @@ namespace EventStore.Projections.Core.Services.Management
                 throw new NotSupportedException("Unsupported error code received");
         }
 
+        public void Handle(ProjectionManagementMessage.StartSlaveProjections message)
+        {
+            foreach (var group in message.SlaveProjections.Definitions)
+            {
+                switch (group.RequestedNumber)
+                {
+                    case SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.One:
+                    case SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerNode:
+                        throw new NotImplementedException();
+                        break;
+                    case SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread:
+                        throw new NotImplementedException();
+                        break;
+                    default:
+                        throw new NotSupportedException();
+                }
+            }
+        }
     }
 }

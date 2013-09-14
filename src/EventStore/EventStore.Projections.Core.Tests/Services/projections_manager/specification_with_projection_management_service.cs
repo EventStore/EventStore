@@ -97,6 +97,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionManagementMessage.Enable>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.SetRunAs>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Reset>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.StartSlaveProjections>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);

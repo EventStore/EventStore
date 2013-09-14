@@ -76,10 +76,21 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 
         protected override IEnumerable<WhenStep> When()
         {
-            _mp.InitializeNew(
-                new ProjectionManagementMessage.Post(
-                    Envelope, ProjectionMode.Transient, _projectionName, ProjectionManagementMessage.RunAs.System,
-                    typeof(FakeForeachStreamProjection), "", true, false, false), () => { });
+            ProjectionManagementMessage.Post message = new ProjectionManagementMessage.Post(
+                Envelope, ProjectionMode.Transient, _projectionName, ProjectionManagementMessage.RunAs.System,
+                typeof(FakeForeachStreamProjection), "", true, false, false);
+            _mp.InitializeNew(() => { }, new ManagedProjection.PersistedState
+                {
+                    Enabled = message.Enabled,
+                    HandlerType = message.HandlerType,
+                    Query = message.Query,
+                    Mode = message.Mode,
+                    EmitEnabled = message.EmitEnabled,
+                    CheckpointsDisabled = !message.CheckpointsEnabled,
+                    Epoch = -1,
+                    Version = -1,
+                    RunAs = message.EnableRunAs ? ManagedProjection.SerializePrincipal(message.RunAs) : null,
+                });
 
             var sourceDefinition = new FakeForeachStreamProjection("", Console.WriteLine).GetSourceDefinition();
             var projectionSourceDefinition = ProjectionSourceDefinition.From(_projectionName, sourceDefinition);
