@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Messages
 
         private readonly Definition[] _definitions;
 
-        public SlaveProjectionDefinitions(Definition[] definitions)
+        public SlaveProjectionDefinitions(params Definition[] definitions)
         {
             _definitions = definitions;
         }

@@ -123,7 +123,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override SlaveProjectionDefinitions GetSlaveProjections()
         {
-            return null;
+            return
+                new SlaveProjectionDefinitions(
+                    new SlaveProjectionDefinitions.Definition(
+                        "slave", SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread));
         }
     }
 }

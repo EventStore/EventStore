@@ -276,6 +276,7 @@
     <Compile Include="Services\projections_manager\runas\when_posting_a_persistent_projection.cs" />
     <Compile Include="Services\projections_manager\slave_projection\specification_with_slave_projection.cs" />
     <Compile Include="Services\projections_manager\TestFixtureWithProjectionCoreAndManagementServices.cs" />
+    <Compile Include="Services\projections_manager\specification_with_projection_management_service.cs" />
     <Compile Include="Services\projections_manager\v8\v8_internals.cs" />
     <Compile Include="Services\projections_manager\v8\when_compiling_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_defining_a_v8_projection.cs" />
@@ -288,6 +289,7 @@
     <Compile Include="Services\projections_manager\v8\when_running_body_reflecting_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_emitting_v8_projection.cs" />
     <Compile Include="Services\projections_manager\when_a_dsiabled_projection_has_been_loaded.cs" />
+    <Compile Include="Services\projections_manager\when_handling_start_slave_projections_message.cs" />
     <Compile Include="Services\projections_manager\when_requesting_partition_state_from_a_stopped_foreach_projection.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_disabled_projection_query_text.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_faulted_projection_query_text_invalid_defintion.cs" />
@@ -427,6 +429,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Services\checkpoint_strategy\" />
+    <Folder Include="Services\projections_manager\parallel_query\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="BeforeBuild">
