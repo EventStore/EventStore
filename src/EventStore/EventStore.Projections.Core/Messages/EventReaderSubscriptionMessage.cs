@@ -84,6 +84,27 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class SubscriptionStarted : EventReaderSubscriptionMessage
+        {
+            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            private readonly long _startingLastCommitPosition;
+
+            public long StartingLastCommitPosition
+            {
+                get { return _startingLastCommitPosition; }
+            }
+
+            public SubscriptionStarted(
+                Guid subscriptionId, CheckpointTag checkpointTag, long startingLastCommitPosition,
+                long subscriptionMessageSequenceNumber, object source = null)
+                : base(subscriptionId, checkpointTag, 0f, subscriptionMessageSequenceNumber, source)
+            {
+                _startingLastCommitPosition = startingLastCommitPosition;
+            }
+        }
+
         public sealed class NotAuthorized : EventReaderSubscriptionMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

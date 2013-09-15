@@ -50,7 +50,8 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void WriteEofResult(
-            string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId)
+            Guid subscriptionId, string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid,
+            string correlationId)
         {
             if (resultBody != null)
                 WriteResult(partition, resultBody, causedBy, causedByGuid, correlationId);

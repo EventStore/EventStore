@@ -37,14 +37,12 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ProcessingStrategySelector
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProcessingStrategySelector>();
-        private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading, PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+        private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
         private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
         public ProcessingStrategySelector(
             ReaderSubscriptionDispatcher subscriptionDispatcher,
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                    PartitionProcessingResult> spoolProcessingResponseDispatcher)
+            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher)
         {
             _subscriptionDispatcher = subscriptionDispatcher;
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;

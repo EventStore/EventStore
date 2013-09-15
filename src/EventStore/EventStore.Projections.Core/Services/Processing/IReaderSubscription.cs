@@ -35,6 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public interface IReaderSubscription : IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>,
                                                IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
+                                               IHandle<ReaderSubscriptionMessage.EventReaderStarting>,
                                                IHandle<ReaderSubscriptionMessage.EventReaderEof>,
                                                IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
                                                IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>

@@ -43,16 +43,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ProjectionConfig _projectionConfig;
         private readonly IQueryDefinition _sourceDefinition;
 
-        private readonly PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                    PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+        private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
         public ParallelQueryProcessingStrategy(
             string name, ProjectionVersion projectionVersion, Func<IProjectionStateHandler> handlerFactory,
             ProjectionConfig projectionConfig, IQueryDefinition sourceDefinition, ILogger logger,
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                    PartitionProcessingResult> spoolProcessingResponseDispatcher,
+            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
             ReaderSubscriptionDispatcher subscriptionDispatcher)
             : base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher)
         {

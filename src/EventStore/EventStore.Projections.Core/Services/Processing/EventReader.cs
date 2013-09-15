@@ -47,6 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _paused = true;
         private bool _pauseRequested = true;
         protected bool _disposed;
+        private bool _startingSent;
 
         protected EventReader(
             IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, bool stopOnEof,
@@ -155,6 +156,21 @@ namespace EventStore.Projections.Core.Services.Processing
                 _paused = !AreEventsRequested();
             else
                 RequestEvents(delay);
+        }
+
+        protected void SendStarting(long startingLastCommitPosition)
+        {
+            _publisher.Publish(
+                new ReaderSubscriptionMessage.EventReaderStarting(EventReaderCorrelationId, startingLastCommitPosition));
+        }
+
+        protected void NotifyIfStarting(long startingLastCommitPosition)
+        {
+            if (!_startingSent)
+            {
+                _startingSent = true;
+                SendStarting(startingLastCommitPosition);
+            }
         }
     }
 }

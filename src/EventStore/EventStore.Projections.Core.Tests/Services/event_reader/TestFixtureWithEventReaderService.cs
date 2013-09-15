@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             _readerService = new EventReaderCoreService(
                 GetInputQueue(), _ioDispatcher, 10, writerCheckpoint, runHeadingReader: GivenHeadingReaderRunning());
             _subscriptionDispatcher =
-                new ReaderSubscriptionDispatcher(GetInputQueue(), v => v.SubscriptionId, v => v.SubscriptionId);
+                new ReaderSubscriptionDispatcher(GetInputQueue());
 
 
             _bus.Subscribe(
@@ -73,6 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscriptionStarted>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
 
@@ -85,6 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_readerService);
+            _bus.Subscribe<ReaderSubscriptionMessage.EventReaderStarting>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Pause>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Resume>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_readerService);

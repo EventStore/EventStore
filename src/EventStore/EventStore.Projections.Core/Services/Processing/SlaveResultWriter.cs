@@ -47,10 +47,11 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void WriteEofResult(
-            string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId)
+            Guid subscriptionId, string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId)
         {
             _resultsPublisher.Publish(
-                new PartitionProcessingResult(_masterCoreProjectionId, partition, causedByGuid, causedBy, resultBody));
+                new PartitionProcessingResult(
+                    _masterCoreProjectionId, subscriptionId, partition, causedByGuid, causedBy, resultBody));
         }
 
         public void WriteRunningResult(EventProcessedResult result)

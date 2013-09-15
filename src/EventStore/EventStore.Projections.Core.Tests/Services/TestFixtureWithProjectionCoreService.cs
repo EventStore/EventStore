@@ -88,10 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services
             ReaderSubscriptionDispatcher
             _subscriptionDispatcher;
 
-        private
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                    PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+        private SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
         [SetUp]
         public void Setup()
@@ -103,11 +100,8 @@ namespace EventStore.Projections.Core.Tests.Services
             var ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
             _readerService = new EventReaderCoreService(_bus, ioDispatcher, 10, writerCheckpoint, runHeadingReader: true);
             _subscriptionDispatcher =
-                new ReaderSubscriptionDispatcher(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
-            _spoolProcessingResponseDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                        PartitionProcessingResult>(_bus, m => m.CorrelationId, m => m.CorrelationId);
+                new ReaderSubscriptionDispatcher(_bus);
+            _spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(_bus);
             _service = new ProjectionCoreService(
                 _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher,
                 _spoolProcessingResponseDispatcher);
@@ -116,6 +110,7 @@ namespace EventStore.Projections.Core.Tests.Services
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscriptionStarted>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
             _bus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());

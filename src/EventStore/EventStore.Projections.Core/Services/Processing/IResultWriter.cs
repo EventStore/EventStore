@@ -32,8 +32,10 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public interface IResultWriter
     {
+        //NOTE: subscriptionId should net be here.  Reconsider how to pass it to slave projection result writer
         void WriteEofResult(
-            string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId);
+            Guid subscriptionId, string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid,
+            string correlationId);
 
         void WriteRunningResult(EventProcessedResult result);
 

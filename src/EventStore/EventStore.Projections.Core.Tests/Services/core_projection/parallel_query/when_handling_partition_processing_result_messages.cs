@@ -64,12 +64,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
 
             _bus.Publish(
                 new PartitionProcessingResult(
-                    spoolRequests[0].CorrelationId, "account-00", Guid.Empty,
+                    spoolRequests[0].CorrelationId, spoolRequests[0].SubscriptionId, "account-00", Guid.Empty,
                     CheckpointTag.FromByStreamPosition(0, "catalog", 0, "account-00", int.MaxValue, 10000),
                     "{\"data\":1}"));
             _bus.Publish(
                 new PartitionProcessingResult(
-                    spoolRequests[1].CorrelationId, "account-01", Guid.Empty,
+                    spoolRequests[1].CorrelationId, spoolRequests[1].SubscriptionId, "account-01", Guid.Empty,
                     CheckpointTag.FromByStreamPosition(0, "catalog", 1, "account-01", int.MaxValue, 10000),
                     "{\"data\":2}"));
         }

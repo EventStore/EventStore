@@ -38,10 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>
 
     {
-        private
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                    PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+        private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
         private SlaveProjectionCommunicationChannels _slaves;
 
@@ -50,7 +47,8 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionConfig projectionConfig, Action updateStatistics, PartitionStateCache partitionStateCache,
             string name, ILogger logger, CheckpointTag zeroCheckpointTag,
             ICoreProjectionCheckpointManager checkpointManager, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            IReaderStrategy readerStrategy, IResultWriter resultWriter, bool checkpointsEnabled, bool stopOnEof, PublishSubscribeDispatcher<ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading, PartitionProcessingResult> spoolProcessingResponseDispatcher)
+            IReaderStrategy readerStrategy, IResultWriter resultWriter, bool checkpointsEnabled, bool stopOnEof,
+            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher)
             : base(
                 publisher, coreProjection, projectionCorrelationId, checkpointManager, projectionConfig, name, logger,
                 zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics, subscriptionDispatcher,
@@ -89,9 +87,10 @@ namespace EventStore.Projections.Core.Services.Processing
             RegisterSubscriptionMessage(message);
             try
             {
-                CheckpointTag eventTag = message.CheckpointTag;
+                var eventTag = message.CheckpointTag;
                 var committedEventWorkItem = new SpoolStreamProcessingWorkItem(
-                    _resultWriter, message, _slaves, _spoolProcessingResponseDispatcher);
+                    _resultWriter, message, _slaves, _spoolProcessingResponseDispatcher,
+                    _subscriptionStartedAtLastCommitPosition, _currentSubscriptionId);
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
                 if (_state == PhaseState.Running) // prevent processing mostly one projection
                     EnsureTickPending();
@@ -102,5 +101,6 @@ namespace EventStore.Projections.Core.Services.Processing
             }
 
         }
+
     }
 }

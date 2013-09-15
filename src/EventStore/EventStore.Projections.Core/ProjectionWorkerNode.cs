@@ -55,9 +55,7 @@ namespace EventStore.Projections.Core
         private readonly FeedReaderService _feedReaderService;
         private readonly IODispatcher _ioDispatcher;
 
-        private readonly PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                    PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+        private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
         public ProjectionWorkerNode(TFChunkDb db, QueuedHandler inputQueue, ITimeProvider timeProvider, RunProjections runProjections)
         {
@@ -68,11 +66,8 @@ namespace EventStore.Projections.Core
 
             IPublisher publisher = CoreOutput;
             _subscriptionDispatcher =
-                new ReaderSubscriptionDispatcher(publisher, v => v.SubscriptionId, v => v.SubscriptionId);
-            _spoolProcessingResponseDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                        PartitionProcessingResult>(publisher, m => m.CorrelationId, m => m.CorrelationId);
+                new ReaderSubscriptionDispatcher(publisher);
+            _spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(publisher);
 
             _ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue));
             _eventReaderCoreService = new EventReaderCoreService(
@@ -98,6 +93,7 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+            coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscriptionStarted>());
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
             coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
@@ -145,6 +141,7 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<ReaderSubscriptionManagement.CompleteSpooledStreamReading>(_eventReaderCoreService);
             coreInputBus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_eventReaderCoreService);
             coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_eventReaderCoreService);
+            coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderStarting>(_eventReaderCoreService);
             coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_eventReaderCoreService);
             coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(_eventReaderCoreService);
             coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_eventReaderCoreService);

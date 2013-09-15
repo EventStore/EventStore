@@ -152,6 +152,14 @@ namespace EventStore.Projections.Core.Services.Processing
                     _subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
         }
 
+        protected void PublishStartingAt(long startingLastCommitPosition)
+        {
+            _publisher.Publish(
+                new EventReaderSubscriptionMessage.SubscriptionStarted(
+                    _subscriptionId, _positionTracker.LastTag, startingLastCommitPosition,
+                    _subscriptionMessageSequenceNumber++));
+        }
+
         private void PublishNotAuthorized()
         {
             _publisher.Publish(
@@ -214,6 +222,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected virtual void EofReached()
         {
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderStarting message)
+        {
+            PublishStartingAt(message.LastCommitPosition);
         }
     }
 }

@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests.Bus;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
@@ -55,6 +56,7 @@ namespace EventStore.Core.Tests.Helpers
         protected TestHandler<Message> _consumer;
         protected IODispatcher _ioDispatcher;
         protected ManualQueue _queue;
+        protected ManualQueue[] _otherQueues;
         protected FakeTimeProvider _timeProvider;
         private PublishEnvelope _envelope;
 
@@ -79,6 +81,7 @@ namespace EventStore.Core.Tests.Helpers
             _timeProvider = new FakeTimeProvider();
             _bus = new InMemoryBus("bus");
             _queue = GiveInputQueue();
+            _otherQueues = null;
             _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(GetInputQueue()));
             _readDispatcher = _ioDispatcher.BackwardReader;
             _writeDispatcher = _ioDispatcher.Writer;
@@ -134,10 +137,30 @@ namespace EventStore.Core.Tests.Helpers
                     if (message != null)
                         _queue.Publish(message);
                 }
-                _queue.Process();
+                _queue.ProcessTimer();
+                if (_otherQueues != null)
+                    foreach (var other in _otherQueues)
+                        other.ProcessTimer();
+
+                var count = 1;
+                var total = 0;
+                while (count > 0)
+                {
+                    count = 0;
+                    count += _queue.ProcessNonTimer();
+                    if (_otherQueues != null)
+                        foreach (var other in _otherQueues)
+                            count += other.ProcessNonTimer();
+                    total += count;
+                    if (total > 2000)
+                        throw new Exception("Infinite loop?");
+                }
                 // process final timer messages
             }
             _queue.Process();
+            if (_otherQueues != null)
+                foreach (var other in _otherQueues)
+                    other.Process();
         }
 
         public static T EatException<T>(Func<T> func, T defaultValue = default(T))

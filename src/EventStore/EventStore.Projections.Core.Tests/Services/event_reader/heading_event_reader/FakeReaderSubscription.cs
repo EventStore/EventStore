@@ -43,6 +43,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         private readonly List<ReaderSubscriptionMessage.EventReaderIdle> _receivedIdleNotifications =
             new List<ReaderSubscriptionMessage.EventReaderIdle>();
 
+        private readonly List<ReaderSubscriptionMessage.EventReaderStarting> _receivedStartingNotifications =
+            new List<ReaderSubscriptionMessage.EventReaderStarting>();
+
         private readonly List<ReaderSubscriptionMessage.EventReaderEof> _receivedEofNotifications =
             new List<ReaderSubscriptionMessage.EventReaderEof>();
 
@@ -67,6 +70,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             get { return _receivedIdleNotifications; }
         }
 
+        public List<ReaderSubscriptionMessage.EventReaderStarting> ReceivedStartingNotifications
+        {
+            get { return _receivedStartingNotifications; }
+        }
+
         public List<ReaderSubscriptionMessage.EventReaderEof> ReceivedEofNotifications
         {
             get { return _receivedEofNotifications; }
@@ -85,6 +93,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         public void Handle(ReaderSubscriptionMessage.EventReaderIdle message)
         {
             _receivedIdleNotifications.Add(message);
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderStarting message)
+        {
+            _receivedStartingNotifications.Add(message);
         }
 
         public void Handle(ReaderSubscriptionMessage.EventReaderEof message)

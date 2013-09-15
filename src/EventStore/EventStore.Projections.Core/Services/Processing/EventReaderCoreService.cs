@@ -51,6 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<ReaderSubscriptionManagement.CompleteSpooledStreamReading>,
         IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>, 
         IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
+        IHandle<ReaderSubscriptionMessage.EventReaderStarting>,
         IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>,
         IHandle<ReaderSubscriptionMessage.EventReaderEof>,
         IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
@@ -189,6 +190,16 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_stopped)
                 return;
             if (_runHeadingReader && _headingEventReader.Handle(message))
+                return;
+            if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+                return; // unsubscribed
+            _subscriptions[projectionId].Handle(message);
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderStarting message)
+        {
+            Guid projectionId;
+            if (_stopped)
                 return;
             if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed

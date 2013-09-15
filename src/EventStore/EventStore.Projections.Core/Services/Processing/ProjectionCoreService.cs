@@ -73,18 +73,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ITimeProvider _timeProvider;
         private readonly ProcessingStrategySelector _processingStrategySelector;
 
-        private readonly
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                    PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+        private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
 
         public ProjectionCoreService(
             IPublisher inputQueue, IPublisher publisher, ReaderSubscriptionDispatcher subscriptionDispatcher,
             ITimeProvider timeProvider, IODispatcher ioDispatcher,
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                    PartitionProcessingResult> spoolProcessingResponseDispatcher)
+            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher)
         {
             _inputQueue = inputQueue;
             _publisher = publisher;

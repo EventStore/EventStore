@@ -37,6 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public abstract class EventSubscriptionBasedProjectionProcessingPhase : IProjectionPhaseCompleter,
         IProjectionPhaseCheckpointManager,
         IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
+        IHandle<EventReaderSubscriptionMessage.SubscriptionStarted>,
         IHandle<EventReaderSubscriptionMessage.NotAuthorized>,
         IHandle<EventReaderSubscriptionMessage.EofReached>,
         IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
@@ -139,6 +140,21 @@ namespace EventStore.Projections.Core.Services.Processing
                 var progressWorkItem = new ProgressWorkItem(_checkpointManager, message.Progress);
                 _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 ProcessEvent();
+            }
+            catch (Exception ex)
+            {
+                _coreProjection.SetFaulted(ex);
+            }
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.SubscriptionStarted message)
+        {
+            if (IsOutOfOrderSubscriptionMessage(message))
+                return;
+            RegisterSubscriptionMessage(message);
+            try
+            {
+                _subscriptionStartedAtLastCommitPosition = message.StartingLastCommitPosition;
             }
             catch (Exception ex)
             {
@@ -468,7 +484,8 @@ namespace EventStore.Projections.Core.Services.Processing
         public void EmitEofResult(
             string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId)
         {
-            _resultWriter.WriteEofResult(partition, resultBody, causedBy, causedByGuid, correlationId);
+            _resultWriter.WriteEofResult(
+                _currentSubscriptionId, partition, resultBody, causedBy, causedByGuid, correlationId);
         }
 
         public void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action completed)
@@ -522,6 +539,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private bool _wasReaderAssigned = false;
+        protected long _subscriptionStartedAtLastCommitPosition;
 
         public void Handle(EventReaderSubscriptionMessage.ReaderAssignedReader message)
         {

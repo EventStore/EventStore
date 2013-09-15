@@ -98,13 +98,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
         {
             protected override IEnumerable<WhenStep> When()
             {
-                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 1000);
+                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 10000);
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
                 yield return
                     new ReaderSubscriptionManagement.SpoolStreamReading(
-                        _subscriptionId, Guid.NewGuid(), "test-stream", 0);
+                        _subscriptionId, Guid.NewGuid(), "test-stream", 0, 10000);
             }
 
             [Test]
@@ -133,16 +133,16 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
         {
             protected override IEnumerable<WhenStep> When()
             {
-                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 1000);
+                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 10000);
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
                 yield return
                     new WhenStep(
                         new ReaderSubscriptionManagement.SpoolStreamReading(
-                            _subscriptionId, Guid.NewGuid(), "test-stream", 0),
+                            _subscriptionId, Guid.NewGuid(), "test-stream", 0, 10000),
                         new ReaderSubscriptionManagement.SpoolStreamReading(
-                            _subscriptionId, Guid.NewGuid(), "test-stream2", 1));
+                            _subscriptionId, Guid.NewGuid(), "test-stream2", 1, 10000));
             }
 
             [Test]
@@ -174,13 +174,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
         {
             protected override IEnumerable<WhenStep> When()
             {
-                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 1000);
+                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 10000);
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
                 yield return
                     new ReaderSubscriptionManagement.SpoolStreamReading(
-                        _subscriptionId, Guid.NewGuid(), "test-stream", 0);
+                        _subscriptionId, Guid.NewGuid(), "test-stream", 0, 10000);
                 yield return Yield;
 
                 Assert.AreEqual(
@@ -188,7 +188,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
 
                 yield return
                     new ReaderSubscriptionManagement.SpoolStreamReading(
-                        _subscriptionId, Guid.NewGuid(), "test-stream2", 1);
+                        _subscriptionId, Guid.NewGuid(), "test-stream2", 1, 10000);
             }
 
             [Test]
@@ -220,16 +220,16 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
         {
             protected override IEnumerable<WhenStep> When()
             {
-                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 1000);
+                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 10000);
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
                 yield return
                     new WhenStep(
                         new ReaderSubscriptionManagement.SpoolStreamReading(
-                            _subscriptionId, Guid.NewGuid(), "test-stream", 0),
+                            _subscriptionId, Guid.NewGuid(), "test-stream", 0, 10000),
                         new ReaderSubscriptionManagement.SpoolStreamReading(
-                            _subscriptionId, Guid.NewGuid(), "test-stream2", 1),
+                            _subscriptionId, Guid.NewGuid(), "test-stream2", 1, 10000),
                         new ReaderSubscriptionManagement.CompleteSpooledStreamReading(_subscriptionId));
             }
 

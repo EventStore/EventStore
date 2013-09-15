@@ -87,6 +87,24 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public sealed class EventReaderStarting : SubscriptionMessage
+        {
+            private readonly long _lastCommitPosition;
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public EventReaderStarting(Guid correlationId, long lastCommitPosition, object source = null)
+                : base(correlationId, null, source)
+            {
+                _lastCommitPosition = lastCommitPosition;
+            }
+
+            public long LastCommitPosition
+            {
+                get { return _lastCommitPosition; }
+            }
+        }
+
         public class EventReaderEof : SubscriptionMessage
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

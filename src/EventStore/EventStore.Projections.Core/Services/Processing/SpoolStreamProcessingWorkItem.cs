@@ -39,21 +39,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IResultWriter _resultWriter;
         private readonly EventReaderSubscriptionMessage.CommittedEventReceived _message;
 
-        private readonly
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                    PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+        private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
         private readonly SlaveProjectionCommunicationChannels _slaves;
         private PartitionProcessingResult _resultMessage;
-        private Guid _spoolRequestId;
+        private Tuple<Guid, string> _spoolRequestId;
+        private readonly long _limitingCommitPosition;
+        private readonly Guid _subscriptionId;
 
         public SpoolStreamProcessingWorkItem(
             IResultWriter resultWriter,
             EventReaderSubscriptionMessage.CommittedEventReceived message, SlaveProjectionCommunicationChannels slaves,
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                    PartitionProcessingResult> spoolProcessingResponseDispatcher)
+            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher, long limitingCommitPosition, Guid subscriptionId)
             : base(Guid.NewGuid())
         {
             if (resultWriter == null) throw new ArgumentNullException("resultWriter");
@@ -64,6 +61,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _message = message;
             _slaves = slaves;
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
+            _limitingCommitPosition = limitingCommitPosition;
+            _subscriptionId = subscriptionId;
         }
 
         protected override void ProcessEvent()
@@ -76,12 +75,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
                 channel.PublishEnvelope,
                 new ReaderSubscriptionManagement.SpoolStreamReading(
-                    channel.SubscriptionId, Guid.NewGuid(), streamId, resolvedEvent.PositionSequenceNumber), this);
+                    channel.SubscriptionId, Guid.NewGuid(), streamId, resolvedEvent.PositionSequenceNumber, _limitingCommitPosition), this);
         }
 
         protected override void WriteOutput()
         {
-            _resultWriter.WriteEofResult(
+            _resultWriter.WriteEofResult(_subscriptionId, 
                 _resultMessage.Partition, _resultMessage.Result, _resultMessage.Position, Guid.Empty, null);
             NextStage();
         }

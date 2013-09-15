@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
@@ -36,9 +37,9 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 {
     public class FeedReaderService: IHandle<FeedReaderMessage.ReadPage>
     {
-        private readonly 
+        private readonly
             PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
+                <Guid, ReaderSubscriptionManagement.Subscribe,
                     ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
             _subscriptionDispatcher;
 
@@ -46,7 +47,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 
         public FeedReaderService(
             PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
+                <Guid, ReaderSubscriptionManagement.Subscribe,
                 ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
                 subscriptionDispatcher, ITimeProvider timeProvider)
         {

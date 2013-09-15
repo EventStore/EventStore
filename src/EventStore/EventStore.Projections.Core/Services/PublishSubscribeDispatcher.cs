@@ -34,7 +34,7 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services
 {
-    public class PublishSubscribeDispatcher<TSubscribeRequest, TControlMessageBase, TResponseBase> 
+    public class PublishSubscribeDispatcher<TGuid, TSubscribeRequest, TControlMessageBase, TResponseBase> 
         where TSubscribeRequest : Message 
         where TControlMessageBase: Message
         where TResponseBase : Message
@@ -42,29 +42,29 @@ namespace EventStore.Projections.Core.Services
         //NOTE: this class is not intended to be used from multiple threads, 
         //however we support count requests from other threads for statistics purposes
 
-        private readonly Dictionary<Guid, object> _map = new Dictionary<Guid, object>();
+        private readonly Dictionary<TGuid, object> _map = new Dictionary<TGuid, object>();
         private readonly IPublisher _publisher;
-        private readonly Func<TSubscribeRequest, Guid> _getRequestCorrelationId;
-        private readonly Func<TResponseBase, Guid> _getResponseCorrelationId;
+        private readonly Func<TSubscribeRequest, TGuid> _getRequestCorrelationId;
+        private readonly Func<TResponseBase, TGuid> _getResponseCorrelationId;
 
         public PublishSubscribeDispatcher(
-            IPublisher publisher, Func<TSubscribeRequest, Guid> getRequestCorrelationId,
-            Func<TResponseBase, Guid> getResponseCorrelationId)
+            IPublisher publisher, Func<TSubscribeRequest, TGuid> getRequestCorrelationId,
+            Func<TResponseBase, TGuid> getResponseCorrelationId)
         {
             _publisher = publisher;
             _getRequestCorrelationId = getRequestCorrelationId;
             _getResponseCorrelationId = getResponseCorrelationId;
         }
 
-        public Guid PublishSubscribe(TSubscribeRequest request, object subscriber)
+        public TGuid PublishSubscribe(TSubscribeRequest request, object subscriber)
         {
             return PublishSubscribe(_publisher, request, subscriber);
         }
 
-        public Guid PublishSubscribe(IPublisher publisher, TSubscribeRequest request, object subscriber)
+        public TGuid PublishSubscribe(IPublisher publisher, TSubscribeRequest request, object subscriber)
         {
 //TODO: expiration?
-            Guid requestCorrelationId;
+            TGuid requestCorrelationId;
             lock (_map)
             {
                 requestCorrelationId = _getRequestCorrelationId(request);
@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Services
             publisher.Publish(request);
             //NOTE: the following condition is required as publishing the message could also process the message 
             // and the correlationId is already invalid here (as subscriber unsubscribed)
-            return _map.ContainsKey(requestCorrelationId) ? requestCorrelationId : Guid.Empty;
+            return _map.ContainsKey(requestCorrelationId) ? requestCorrelationId : default(TGuid);
         }
 
         public void Publish(TControlMessageBase request)
@@ -87,7 +87,7 @@ namespace EventStore.Projections.Core.Services
         }
 
 
-        public void Cancel(Guid requestId)
+        public void Cancel(TGuid requestId)
         {
             lock (_map)
                 _map.Remove(requestId);
@@ -106,9 +106,9 @@ namespace EventStore.Projections.Core.Services
 
         private class Subscriber<T> : IHandle<T> where T : TResponseBase
         {
-            private readonly PublishSubscribeDispatcher<TSubscribeRequest, TControlMessageBase, TResponseBase> _host;
+            private readonly PublishSubscribeDispatcher<TGuid, TSubscribeRequest, TControlMessageBase, TResponseBase> _host;
 
-            public Subscriber(PublishSubscribeDispatcher<TSubscribeRequest, TControlMessageBase, TResponseBase> host)
+            public Subscriber(PublishSubscribeDispatcher<TGuid, TSubscribeRequest, TControlMessageBase, TResponseBase> host)
             {
                 _host = host;
             }
@@ -136,7 +136,7 @@ namespace EventStore.Projections.Core.Services
             return false;
         }
 
-        public void Subscribed(Guid correlationId, object subscriber)
+        public void Subscribed(TGuid correlationId, object subscriber)
         {
             lock (_map)
             {

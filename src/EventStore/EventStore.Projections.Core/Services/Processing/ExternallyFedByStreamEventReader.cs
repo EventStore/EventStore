@@ -217,7 +217,18 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
         {
+            EnsureLimitingCommitPositionSet(message.LimitingCommitPosition);
             EnqueueStreamForProcessing(message.StreamId, message.CatalogSequenceNumber);
+        }
+
+        private void EnsureLimitingCommitPositionSet(long limitingCommitPosition)
+        {
+            if (_limitingCommitPosition != null && _limitingCommitPosition.GetValueOrDefault() != limitingCommitPosition)
+                throw new InvalidOperationException(
+                    string.Format(
+                        "ExternallyFedByStreamEventReader cannot be used with different limiting commit positions.  "
+                        + "Currently set: {0}. New: {1}", _limitingCommitPosition, limitingCommitPosition));
+            _limitingCommitPosition = limitingCommitPosition;
         }
 
         public void Handle(ReaderSubscriptionManagement.CompleteSpooledStreamReading message)

@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
             Assert.IsNotNull(readerAssigned);
             _subscriptionId = readerAssigned.SubscriptionId;
             yield return
-                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0);
+                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0, 10000);
         }
 
         [Test]
@@ -146,7 +146,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
             Assert.IsNotNull(readerAssigned);
             _subscriptionId = readerAssigned.SubscriptionId;
             yield return
-                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0);
+                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0, 10000);
         }
 
         [Test]
@@ -182,11 +182,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
             Assert.IsNotNull(readerAssigned);
             _subscriptionId = readerAssigned.SubscriptionId;
             yield return
-                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0);
+                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0, 10000);
             yield return
-                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream2", 1);
+                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream2", 1, 10000);
             yield return
-                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream3", 2);
+                new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream3", 2, 10000);
         }
 
         [Test]

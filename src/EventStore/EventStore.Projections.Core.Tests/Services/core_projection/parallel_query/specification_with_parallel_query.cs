@@ -42,10 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
         protected Guid _slave1;
         protected Guid _slave2;
 
-        private
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                    PartitionProcessingResult> _spoolProcessingResponseDispatcher;
+        private SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
         protected override bool GivenCheckpointsEnabled()
         {
@@ -80,10 +77,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
 
         protected override void Given()
         {
-            _spoolProcessingResponseDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.SpoolStreamReading, ReaderSubscriptionManagement.SpoolStreamReading,
-                        PartitionProcessingResult>(GetInputQueue(), m => m.CorrelationId, m => m.CorrelationId);
+            _spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(GetInputQueue());
 
             _bus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
 

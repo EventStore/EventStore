@@ -52,11 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
         {
             private IPublisher _bus;
 
-            private
-                PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
-                        > _subscriptionDispatcher;
+            private ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
             private QuerySourcesDefinition _testQueryDefinition;
 
@@ -64,11 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             public void SetUp()
             {
                 _bus = new InMemoryBus("test");
-                _subscriptionDispatcher =
-                    new PublishSubscribeDispatcher
-                        <ReaderSubscriptionManagement.Subscribe,
-                            ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage,
-                            EventReaderSubscriptionMessage>(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
+                _subscriptionDispatcher = new ReaderSubscriptionDispatcher(_bus);
                 _testQueryDefinition = new QuerySourcesDefinition {AllStreams = true, AllEvents = true};
             }
 
@@ -141,11 +133,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
         {
             protected InMemoryBus _bus;
 
-            protected
-                PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
-                        > _subscriptionDispatcher;
+            protected ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
             protected QuerySourcesDefinition _testQueryDefinition;
             protected TestHandler<Message> _consumer;
@@ -157,11 +145,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                 _bus = new InMemoryBus("test");
                 _consumer = new TestHandler<Message>();
                 _bus.Subscribe(_consumer);
-                _subscriptionDispatcher =
-                    new PublishSubscribeDispatcher
-                        <ReaderSubscriptionManagement.Subscribe,
-                            ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage,
-                            EventReaderSubscriptionMessage>(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
+                _subscriptionDispatcher = new ReaderSubscriptionDispatcher(_bus);
                 _testQueryDefinition = GivenQuerySource();
                 _feedReader = new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition, GivenFromPosition(), 10,
