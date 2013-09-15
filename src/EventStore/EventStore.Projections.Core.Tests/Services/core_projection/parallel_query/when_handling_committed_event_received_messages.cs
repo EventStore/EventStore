@@ -47,8 +47,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
 
         protected override void When()
         {
-            var tag0 = CheckpointTag.FromByStreamPosition(0, "catalog", 0, null, -1, 10000);
-            var tag1 = CheckpointTag.FromByStreamPosition(0, "catalog", 1, null, -1, 10000);
+            var tag0 = CheckpointTag.FromByStreamPosition(0, "", 0, null, -1, 10000);
+            var tag1 = CheckpointTag.FromByStreamPosition(0, "", 1, null, -1, 10000);
             _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(

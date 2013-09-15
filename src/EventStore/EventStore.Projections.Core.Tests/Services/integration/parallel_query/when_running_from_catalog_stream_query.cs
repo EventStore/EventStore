@@ -60,9 +60,9 @@ fromStreamCatalog('catalog').foreachStream().when({
         [Test]
         public void just()
         {
-            AssertLastEvent("$projections-account-01-result", "{\"c\":2}");
-            AssertLastEvent("$projections-account-02-result", "{\"c\":0}");
-            AssertLastEvent("$projections-account-03-result", "{\"c\":3}");
+            AssertLastEvent("$projections-query-account-01-result", "{\"c\":2}");
+//            AssertLastEvent("$projections-query-account-02-result", "{\"c\":0}");
+            AssertLastEvent("$projections-query-account-03-result", "{\"c\":3}");
         }
     }
 }

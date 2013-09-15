@@ -48,8 +48,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
 
         protected override void When()
         {
-            var tag0 = CheckpointTag.FromByStreamPosition(0, "catalog", 0, null, -1, 10000);
-            var tag1 = CheckpointTag.FromByStreamPosition(0, "catalog", 1, null, -1, 10000);
+            var tag0 = CheckpointTag.FromByStreamPosition(0, "", 0, null, -1, 10000);
+            var tag1 = CheckpointTag.FromByStreamPosition(0, "", 1, null, -1, 10000);
             _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
@@ -65,12 +65,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
             _bus.Publish(
                 new PartitionProcessingResult(
                     spoolRequests[1].CorrelationId, spoolRequests[1].SubscriptionId, "account-01", Guid.Empty,
-                    CheckpointTag.FromByStreamPosition(0, "catalog", 1, "account-01", int.MaxValue, 10000),
+                    CheckpointTag.FromByStreamPosition(0, "", 1, "account-01", int.MaxValue, 10000),
                     "{\"data\":2}"));
             _bus.Publish(
                 new PartitionProcessingResult(
                     spoolRequests[0].CorrelationId, spoolRequests[0].SubscriptionId, "account-00", Guid.Empty,
-                    CheckpointTag.FromByStreamPosition(0, "catalog", 0, "account-00", int.MaxValue, 10000),
+                    CheckpointTag.FromByStreamPosition(0, "", 0, "account-00", int.MaxValue, 10000),
                     "{\"data\":1}"));
         }
 

@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         "Invalid catalog stream '{0}'.  Expected catalog stream is '{1}'", committedEvent.Data.EventStreamId, _catalogStream));
 
             return CheckpointTag.FromByStreamPosition(
-                previous.Phase, committedEvent.Data.PositionStreamId, committedEvent.Data.PositionSequenceNumber, null,
+                previous.Phase, "", committedEvent.Data.PositionSequenceNumber, null,
                 -1, previous.CommitPosition.GetValueOrDefault());
         }
 
@@ -78,13 +78,13 @@ namespace EventStore.Projections.Core.Services.Processing
         public override CheckpointTag MakeZeroCheckpointTag()
         {
             return CheckpointTag.FromByStreamPosition(
-                Phase, _catalogStream, -1, null,
+                Phase, "", -1, null,
                 -1, int.MinValue);
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
         {
-            return checkpointTag.Mode_ == CheckpointTag.Mode.ByStream && checkpointTag.CatalogStream == _catalogStream;
+            return checkpointTag.Mode_ == CheckpointTag.Mode.ByStream && checkpointTag.CatalogStream == "";
         }
 
         public override CheckpointTag AdjustTag(CheckpointTag tag)
