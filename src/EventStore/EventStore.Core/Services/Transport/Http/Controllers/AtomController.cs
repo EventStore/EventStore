@@ -101,7 +101,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             // STREAMS
             Register(http, "/streams/{stream}", HttpMethod.Post, PostEvents, AtomCodecs, AtomCodecs);
-            Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, AtomCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, Codec.NoCodecs, AtomCodecs);
 
             Register(http, "/streams/{stream}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
 
