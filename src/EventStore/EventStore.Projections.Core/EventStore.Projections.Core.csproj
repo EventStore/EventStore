@@ -289,6 +289,7 @@
     <Compile Include="Services\Processing\TransactionFilePositionTagger.cs" />
     <Compile Include="Services\Processing\TransactionFileEventReader.cs" />
     <Compile Include="Services\Processing\WorkItem.cs" />
+    <Compile Include="Services\Processing\WorkLoadEstimationStrategy.cs" />
     <Compile Include="Services\Processing\WriteQueryEofProjectionProcessingPhase.cs" />
     <Compile Include="Services\Processing\WriteQueryResultProjectionProcessingPhase.cs" />
     <Compile Include="Services\Processing\WriteQueryResultProjectionProcessingPhaseBase.cs" />

@@ -33,9 +33,9 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ParallelProcessingLoadBalancer
     {
-        private class WorkerState
+        public class WorkerState
         {
-            private readonly int Worker ;
+            private readonly int Worker;
             public int UnmeasuredTasksScheduled;
             public int MeasuredTasksScheduled;
             public long ScheduledSize;
@@ -51,20 +51,29 @@ namespace EventStore.Projections.Core.Services.Processing
             private readonly object Task;
             internal readonly int Worker;
             public int Size;
+            internal readonly Action<int> Scheduled;
+            public bool Measured;
 
             public TaskState(object task, int worker)
             {
                 Task = task;
                 Worker = worker;
             }
+
+            public TaskState(object task, Action<int> scheduled)
+            {
+                Task = task;
+                Worker = -1;
+                Scheduled = scheduled;
+            }
         }
 
         private readonly int _workers;
-        private readonly long _maxScheduledSizePerWorker;
-        private readonly int _maxUnmeasuredTasksPerWorker;
 
         private readonly WorkerState[] _workerState;
         private readonly Dictionary<object, TaskState> _tasks = new Dictionary<object, TaskState>();
+        private readonly Queue<TaskState> _pendingTasks = new Queue<TaskState>();
+        private readonly WorkLoadEstimationStrategy _workLoadEstimationStrategy;
 
         public ParallelProcessingLoadBalancer(
             int workers, long maxScheduledSizePerWorker, int maxUnmeasuredTasksPerWorker)
@@ -74,9 +83,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (maxUnmeasuredTasksPerWorker <= 0) throw new ArgumentException("maxUnmeasuredTasksPerWorker <= 0");
 
             _workers = workers;
-            _maxScheduledSizePerWorker = maxScheduledSizePerWorker;
-            _maxUnmeasuredTasksPerWorker = maxUnmeasuredTasksPerWorker;
 
+            _workLoadEstimationStrategy = new WorkLoadEstimationStrategy(maxScheduledSizePerWorker, maxUnmeasuredTasksPerWorker);
             _workerState = new WorkerState[workers];
             for (int index = 0; index < _workerState.Length; index++)
                 _workerState[index] = new WorkerState(index);
@@ -87,26 +95,64 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var taskState = _tasks[task];
             taskState.Size = size;
+            taskState.Measured = true;
             var workerState = _workerState[taskState.Worker];
             workerState.MeasuredTasksScheduled++;
             workerState.UnmeasuredTasksScheduled--;
             workerState.ScheduledSize += size;
+            Schedule();
+        }
+
+        private void Schedule()
+        {
+            if (_pendingTasks.Count > 0)
+            {
+                var leastLoadedWorker = FindLeastLoaded();
+                if (_workLoadEstimationStrategy.MayScheduleOn(_workerState[leastLoadedWorker]))
+                {
+                    var task = _pendingTasks.Dequeue();
+                    ScheduleOn(task, leastLoadedWorker);
+                    task.Scheduled(leastLoadedWorker);
+                }
+            }
         }
 
         public void AccountCompleted(object task)
         {
             var taskState = _tasks[task];
             var workerState = _workerState[taskState.Worker];
-            workerState.MeasuredTasksScheduled --;
-            workerState.ScheduledSize -= taskState.Size;
+            if (taskState.Measured)
+            {
+                workerState.MeasuredTasksScheduled --;
+                workerState.ScheduledSize -= taskState.Size;
+            }
+            else
+            {
+                workerState.UnmeasuredTasksScheduled--;
+            }
+            Schedule();
         }
 
         public void ScheduleTask<T>(T task, Action<T, int> scheduled)
         {
             var index = FindLeastLoaded();
-            _workerState[index].UnmeasuredTasksScheduled ++;
+            var leastLoadedWorkerState = _workerState[index];
+            if (_workLoadEstimationStrategy.MayScheduleOn(leastLoadedWorkerState))
+            {
+                ScheduleOn(task, index);
+                scheduled(task, index);
+            }
+            else
+            {
+                _pendingTasks.Enqueue(new TaskState(task, worker => scheduled(task, worker)));
+            }
+        }
+
+        private void ScheduleOn<T>(T task, int index)
+        {
+            var worker = _workerState[index];
+            worker.UnmeasuredTasksScheduled++;
             _tasks.Add(task, new TaskState(task, index));
-            scheduled(task, index);
         }
 
         private int FindLeastLoaded()
@@ -115,7 +161,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var best = long.MaxValue;
             for (var i = 0; i < _workerState.Length; i++)
             {
-                var current = EstimateWorkerLoad(i);
+                var current = _workLoadEstimationStrategy.EstimateWorkerLoad(_workerState[i]);
                 if (current < best)
                 {
                     best = current;
@@ -123,11 +169,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
             }
             return bestIndex;
-        }
-
-        private long EstimateWorkerLoad(int i)
-        {
-            return _workerState[i].UnmeasuredTasksScheduled*10 + _workerState[i].ScheduledSize;
         }
     }
 }
