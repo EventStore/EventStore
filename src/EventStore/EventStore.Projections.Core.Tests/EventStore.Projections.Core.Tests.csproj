@@ -187,10 +187,12 @@
     <Compile Include="Services\parallel_processing_load_balancer\when_accounting_completed_task.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\when_accounting_completed_unmeasured_task.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\when_accounting_measured_tasks.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_completing_a_task_and_others_pending.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\when_completing_a_task_and_other_pending.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\when_creating.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\when_scheduling_first_task.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\when_scheduling_first_tasks.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_scheduling_many_measured_tasks.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\when_scheduling_many_unmeasured_tasks.cs" />
     <Compile Include="Services\partition_state\partition_state.cs" />
     <Compile Include="Services\partition_state_cache\when_caching_a_parition_state.cs" />

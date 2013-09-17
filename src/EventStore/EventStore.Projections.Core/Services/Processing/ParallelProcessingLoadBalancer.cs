@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public class TaskState
         {
             private readonly object Task;
-            internal readonly int Worker;
+            internal int Worker;
             public int Size;
             internal readonly Action<int> Scheduled;
             public bool Measured;
@@ -68,8 +68,6 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private readonly int _workers;
-
         private readonly WorkerState[] _workerState;
         private readonly Dictionary<object, TaskState> _tasks = new Dictionary<object, TaskState>();
         private readonly Queue<TaskState> _pendingTasks = new Queue<TaskState>();
@@ -82,9 +80,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (maxScheduledSizePerWorker <= 0) throw new ArgumentException("maxScheduledSizePerWorker <= 0");
             if (maxUnmeasuredTasksPerWorker <= 0) throw new ArgumentException("maxUnmeasuredTasksPerWorker <= 0");
 
-            _workers = workers;
-
-            _workLoadEstimationStrategy = new WorkLoadEstimationStrategy(maxScheduledSizePerWorker, maxUnmeasuredTasksPerWorker);
+            _workLoadEstimationStrategy = new WorkLoadEstimationStrategy(
+                maxScheduledSizePerWorker, maxUnmeasuredTasksPerWorker);
             _workerState = new WorkerState[workers];
             for (int index = 0; index < _workerState.Length; index++)
                 _workerState[index] = new WorkerState(index);
@@ -94,11 +91,19 @@ namespace EventStore.Projections.Core.Services.Processing
         public void AccountMeasured(object task, int size)
         {
             var taskState = _tasks[task];
-            taskState.Size = size;
-            taskState.Measured = true;
             var workerState = _workerState[taskState.Worker];
             _workLoadEstimationStrategy.RemoveTaskLoad(workerState, taskState);
+            taskState.Size = size;
+            taskState.Measured = true;
             _workLoadEstimationStrategy.AddTaskLoad(workerState, taskState);
+            Schedule();
+        }
+
+        public void AccountCompleted(object task)
+        {
+            var taskState = _tasks[task];
+            var workerState = _workerState[taskState.Worker];
+            _workLoadEstimationStrategy.RemoveTaskLoad(workerState, taskState);
             Schedule();
         }
 
@@ -110,41 +115,33 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_workLoadEstimationStrategy.MayScheduleOn(_workerState[leastLoadedWorker]))
                 {
                     var task = _pendingTasks.Dequeue();
-                    ScheduleOn(task, leastLoadedWorker);
-                    task.Scheduled(leastLoadedWorker);
+                    ScheduleOn(leastLoadedWorker, task);
                 }
             }
-        }
-
-        public void AccountCompleted(object task)
-        {
-            var taskState = _tasks[task];
-            var workerState = _workerState[taskState.Worker];
-            _workLoadEstimationStrategy.RemoveTaskLoad(workerState, taskState);
-            Schedule();
         }
 
         public void ScheduleTask<T>(T task, Action<T, int> scheduled)
         {
             var index = FindLeastLoaded();
             var leastLoadedWorkerState = _workerState[index];
+            var taskState = new TaskState(task, worker => scheduled(task, worker));
+            _tasks.Add(task, taskState);
             if (_workLoadEstimationStrategy.MayScheduleOn(leastLoadedWorkerState))
             {
-                ScheduleOn(task, index);
-                scheduled(task, index);
+                ScheduleOn(index, taskState);
             }
             else
             {
-                _pendingTasks.Enqueue(new TaskState(task, worker => scheduled(task, worker)));
+                _pendingTasks.Enqueue(taskState);
             }
         }
 
-        private void ScheduleOn(object task, int index)
+        private void ScheduleOn(int index, TaskState taskState)
         {
             var worker = _workerState[index];
-            var taskState = new TaskState(task, index);
+            taskState.Worker = index;
             _workLoadEstimationStrategy.AddTaskLoad(worker, taskState);
-            _tasks.Add(task, taskState);
+            taskState.Scheduled(index);
         }
 
         private int FindLeastLoaded()

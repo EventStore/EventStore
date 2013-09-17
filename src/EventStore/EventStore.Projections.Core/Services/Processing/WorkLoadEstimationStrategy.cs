@@ -13,7 +13,8 @@
 
         public bool MayScheduleOn(ParallelProcessingLoadBalancer.WorkerState leastLoadedWorkerState)
         {
-            return leastLoadedWorkerState.UnmeasuredTasksScheduled < _maxUnmeasuredTasksPerWorker;
+            return leastLoadedWorkerState.UnmeasuredTasksScheduled < _maxUnmeasuredTasksPerWorker
+                   && leastLoadedWorkerState.ScheduledSize < _maxScheduledSizePerWorker;
         }
 
         public long EstimateWorkerLoad(ParallelProcessingLoadBalancer.WorkerState workerState)
