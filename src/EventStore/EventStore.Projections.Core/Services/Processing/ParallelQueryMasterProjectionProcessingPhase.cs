@@ -30,7 +30,6 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -38,7 +37,12 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>
 
     {
+        //TODO: make it configurable
+        public const int _maxScheduledSizePerWorker = 10;
+        public const int _maxUnmeasuredTasksPerWorker = 10000;
+
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
+        private ParallelProcessingLoadBalancer _loadBalancer;
 
         private SlaveProjectionCommunicationChannels _slaves;
 
@@ -70,6 +74,8 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections)
         {
             _slaves = slaveProjections;
+            _loadBalancer = new ParallelProcessingLoadBalancer(
+                _slaves.Channels.Count, _maxScheduledSizePerWorker, _maxUnmeasuredTasksPerWorker);
         }
 
         public override void Subscribe(CheckpointTag @from, bool fromCheckpoint)
@@ -89,7 +95,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var eventTag = message.CheckpointTag;
                 var committedEventWorkItem = new SpoolStreamProcessingWorkItem(
-                    _resultWriter, message, _slaves, _spoolProcessingResponseDispatcher,
+                    _resultWriter, _loadBalancer, message, _slaves, _spoolProcessingResponseDispatcher,
                     _subscriptionStartedAtLastCommitPosition, _currentSubscriptionId);
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
                 if (_state == PhaseState.Running) // prevent processing mostly one projection

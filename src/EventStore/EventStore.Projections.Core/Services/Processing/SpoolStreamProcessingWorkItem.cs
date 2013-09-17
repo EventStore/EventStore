@@ -37,6 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class SpoolStreamProcessingWorkItem : WorkItem, IHandle<PartitionProcessingResult>
     {
         private readonly IResultWriter _resultWriter;
+        private readonly ParallelProcessingLoadBalancer _loadBalancer;
         private readonly EventReaderSubscriptionMessage.CommittedEventReceived _message;
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
@@ -48,7 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Guid _subscriptionId;
 
         public SpoolStreamProcessingWorkItem(
-            IResultWriter resultWriter,
+            IResultWriter resultWriter, ParallelProcessingLoadBalancer loadBalancer,
             EventReaderSubscriptionMessage.CommittedEventReceived message, SlaveProjectionCommunicationChannels slaves,
             SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher, long limitingCommitPosition, Guid subscriptionId)
             : base(Guid.NewGuid())
@@ -58,6 +59,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (spoolProcessingResponseDispatcher == null)
                 throw new ArgumentNullException("spoolProcessingResponseDispatcher");
             _resultWriter = resultWriter;
+            _loadBalancer = loadBalancer;
             _message = message;
             _slaves = slaves;
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
@@ -67,15 +69,19 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void ProcessEvent()
         {
-            //TODO: implement proper load distribution
             var channelGroup = _slaves.Channels["slave"];
-            var channel = channelGroup[0];
             var resolvedEvent = _message.Data;
             var streamId = SystemEventTypes.StreamReferenceEventToStreamId(resolvedEvent.EventType, resolvedEvent.Data);
-            _spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
-                channel.PublishEnvelope,
-                new ReaderSubscriptionManagement.SpoolStreamReading(
-                    channel.SubscriptionId, Guid.NewGuid(), streamId, resolvedEvent.PositionSequenceNumber, _limitingCommitPosition), this);
+            _loadBalancer.ScheduleTask(
+                streamId, (streamId_, workerIndex) =>
+                {
+                    var channel = channelGroup[workerIndex];
+                    _spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
+                        channel.PublishEnvelope,
+                        new ReaderSubscriptionManagement.SpoolStreamReading(
+                            channel.SubscriptionId, Guid.NewGuid(), streamId_, resolvedEvent.PositionSequenceNumber,
+                            _limitingCommitPosition), this);
+                });
         }
 
         protected override void WriteOutput()

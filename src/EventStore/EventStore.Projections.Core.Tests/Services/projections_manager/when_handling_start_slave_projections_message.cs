@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             return "native:" + handlerType.Namespace + "." + handlerType.Name;
         }
 
-        [Test]
+        [Test, Ignore("test framework.")]
         public void publishes_slave_projections_started_message()
         {
             var startedMessages = HandledMessages.OfType<ProjectionManagementMessage.SlaveProjectionsStarted>().ToArray();

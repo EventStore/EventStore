@@ -48,21 +48,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public class TaskState
         {
-            private readonly object Task;
             internal int Worker;
             public int Size;
             internal readonly Action<int> Scheduled;
             public bool Measured;
 
-            public TaskState(object task, int worker)
+            public TaskState(Action<int> scheduled)
             {
-                Task = task;
-                Worker = worker;
-            }
-
-            public TaskState(object task, Action<int> scheduled)
-            {
-                Task = task;
                 Worker = -1;
                 Scheduled = scheduled;
             }
@@ -126,7 +118,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var index = FindLeastLoaded();
             var leastLoadedWorkerState = _workerState[index];
-            var taskState = new TaskState(task, worker => scheduled(task, worker));
+            var taskState = new TaskState(worker => scheduled(task, worker));
             _tasks.Add(task, taskState);
             if (_workLoadEstimationStrategy.MayScheduleOn(leastLoadedWorkerState))
             {
