@@ -38,8 +38,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
     {
         //TODO: make it configurable
-        public const int _maxScheduledSizePerWorker = 10;
-        public const int _maxUnmeasuredTasksPerWorker = 10000;
+        public const int _maxScheduledSizePerWorker = 10000;
+        public const int _maxUnmeasuredTasksPerWorker = 30;
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
         private ParallelProcessingLoadBalancer _loadBalancer;
@@ -68,14 +68,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override void Dispose()
         {
-            throw new NotImplementedException();
         }
 
         public override void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections)
         {
             _slaves = slaveProjections;
             _loadBalancer = new ParallelProcessingLoadBalancer(
-                _slaves.Channels.Count, _maxScheduledSizePerWorker, _maxUnmeasuredTasksPerWorker);
+                _slaves.Channels["slave"].Length, _maxScheduledSizePerWorker, _maxUnmeasuredTasksPerWorker);
         }
 
         public override void Subscribe(CheckpointTag @from, bool fromCheckpoint)

@@ -93,6 +93,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(PartitionProcessingResult message)
         {
+            _loadBalancer.AccountCompleted(message.Partition);
             _spoolProcessingResponseDispatcher.Cancel(_spoolRequestId);
             _resultMessage = message;
             NextStage();

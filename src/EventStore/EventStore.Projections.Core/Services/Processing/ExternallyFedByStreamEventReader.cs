@@ -169,6 +169,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     }
                     if (completed.IsEndOfStream)
                         _dataNextSequenceNumber = int.MaxValue;
+                    else
+                        _dataNextSequenceNumber = completed.NextEventNumber;
                     PauseOrContinueProcessing(delay: false);
                     break;
                 default:
