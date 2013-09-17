@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.parallel_processing_load_ba
 
         protected virtual long GivenMaxScheduledSizePerWorker()
         {
-            return 20;
+            return 1000;
         }
 
         protected virtual int GivenWorkers()
