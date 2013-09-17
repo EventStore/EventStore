@@ -109,7 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void Schedule()
         {
-            if (_pendingTasks.Count > 0)
+            while (_pendingTasks.Count > 0)
             {
                 var leastLoadedWorker = FindLeastLoaded();
                 if (_workLoadEstimationStrategy.MayScheduleOn(_workerState[leastLoadedWorker]))
@@ -117,6 +117,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     var task = _pendingTasks.Dequeue();
                     ScheduleOn(leastLoadedWorker, task);
                 }
+                else
+                    break;
             }
         }
 
