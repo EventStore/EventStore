@@ -50,6 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             private readonly object Task;
             internal readonly int Worker;
+            public int Size;
 
             public TaskState(object task, int worker)
             {
@@ -85,6 +86,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void AccountMeasured(object task, int size)
         {
             var taskState = _tasks[task];
+            taskState.Size = size;
             var workerState = _workerState[taskState.Worker];
             workerState.MeasuredTasksScheduled++;
             workerState.UnmeasuredTasksScheduled--;
@@ -93,7 +95,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void AccountCompleted(object task)
         {
-            throw new NotImplementedException();
+            var taskState = _tasks[task];
+            var workerState = _workerState[taskState.Worker];
+            workerState.MeasuredTasksScheduled --;
+            workerState.ScheduledSize -= taskState.Size;
         }
 
         public void ScheduleTask<T>(T task, Action<T, int> scheduled)
