@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private class TaskState
+        public class TaskState
         {
             private readonly object Task;
             internal readonly int Worker;
@@ -97,9 +97,8 @@ namespace EventStore.Projections.Core.Services.Processing
             taskState.Size = size;
             taskState.Measured = true;
             var workerState = _workerState[taskState.Worker];
-            workerState.MeasuredTasksScheduled++;
-            workerState.UnmeasuredTasksScheduled--;
-            workerState.ScheduledSize += size;
+            _workLoadEstimationStrategy.RemoveTaskLoad(workerState, taskState);
+            _workLoadEstimationStrategy.AddTaskLoad(workerState, taskState);
             Schedule();
         }
 
@@ -121,15 +120,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var taskState = _tasks[task];
             var workerState = _workerState[taskState.Worker];
-            if (taskState.Measured)
-            {
-                workerState.MeasuredTasksScheduled --;
-                workerState.ScheduledSize -= taskState.Size;
-            }
-            else
-            {
-                workerState.UnmeasuredTasksScheduled--;
-            }
+            _workLoadEstimationStrategy.RemoveTaskLoad(workerState, taskState);
             Schedule();
         }
 
@@ -148,11 +139,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void ScheduleOn<T>(T task, int index)
+        private void ScheduleOn(object task, int index)
         {
             var worker = _workerState[index];
-            worker.UnmeasuredTasksScheduled++;
-            _tasks.Add(task, new TaskState(task, index));
+            var taskState = new TaskState(task, index);
+            _workLoadEstimationStrategy.AddTaskLoad(worker, taskState);
+            _tasks.Add(task, taskState);
         }
 
         private int FindLeastLoaded()

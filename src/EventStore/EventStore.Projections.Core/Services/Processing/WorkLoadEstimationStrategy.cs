@@ -20,5 +20,31 @@
         {
             return workerState.UnmeasuredTasksScheduled*10 + workerState.ScheduledSize;
         }
+
+        public void RemoveTaskLoad(ParallelProcessingLoadBalancer.WorkerState workerState, ParallelProcessingLoadBalancer.TaskState taskState)
+        {
+            if (taskState.Measured)
+            {
+                workerState.MeasuredTasksScheduled --;
+                workerState.ScheduledSize -= taskState.Size;
+            }
+            else
+            {
+                workerState.UnmeasuredTasksScheduled--;
+            }
+        }
+
+        public void AddTaskLoad(ParallelProcessingLoadBalancer.WorkerState worker, ParallelProcessingLoadBalancer.TaskState task)
+        {
+            if (task.Measured)
+            {
+                worker.MeasuredTasksScheduled++;
+                worker.ScheduledSize += task.Size;
+            }
+            else
+            {
+                worker.UnmeasuredTasksScheduled++;
+            }
+        }
     }
 }
