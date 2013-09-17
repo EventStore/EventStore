@@ -183,6 +183,10 @@
     <Compile Include="Services\handlers\categorize_events_by_stream_path.cs" />
     <Compile Include="Services\integration\parallel_query\when_running_from_catalog_stream_query.cs" />
     <Compile Include="Services\integration\specification_with_a_v8_query_posted.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\specification_with_parallel_processing_load_balancer.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_creating.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_scheduling_first_task.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_scheduling_first_tasks.cs" />
     <Compile Include="Services\partition_state\partition_state.cs" />
     <Compile Include="Services\partition_state_cache\when_caching_a_parition_state.cs" />
     <Compile Include="Services\partition_state_update_manager\FakeEventWriter.cs" />

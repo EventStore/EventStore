@@ -235,6 +235,7 @@
     <Compile Include="Services\Processing\NoopResultEventEmitter.cs" />
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\NotAuthorizedWorkItem.cs" />
+    <Compile Include="Services\Processing\ParallelProcessingLoadBalancer.cs" />
     <Compile Include="Services\Processing\ParallelQueryMasterProjectionProcessingPhase.cs" />
     <Compile Include="Services\Processing\ParallelQueryMasterReaderStrategy.cs" />
     <Compile Include="Services\Processing\ParallelQueryProcessingStrategy.cs" />
