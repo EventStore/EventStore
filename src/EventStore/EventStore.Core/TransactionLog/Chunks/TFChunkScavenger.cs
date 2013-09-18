@@ -34,6 +34,9 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
+using EventStore.Core.Index;
+using EventStore.Core.Index.Hashes;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -45,15 +48,21 @@ namespace EventStore.Core.TransactionLog.Chunks
         private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunkScavenger>();
 
         private readonly TFChunkDb _db;
+        private readonly ITableIndex _tableIndex;
+        private readonly IHasher _hasher;
         private readonly IReadIndex _readIndex;
         private readonly long _maxChunkDataSize;
 
-        public TFChunkScavenger(TFChunkDb db, IReadIndex readIndex, long? maxChunkDataSize = null)
+        public TFChunkScavenger(TFChunkDb db, ITableIndex tableIndex, IHasher hasher, IReadIndex readIndex, long? maxChunkDataSize = null)
         {
             Ensure.NotNull(db, "db");
+            Ensure.NotNull(tableIndex, "tableIndex");
+            Ensure.NotNull(hasher, "hasher");
             Ensure.NotNull(readIndex, "readIndex");
  
             _db = db;
+            _tableIndex = tableIndex;
+            _hasher = hasher;
             _readIndex = readIndex;
             _maxChunkDataSize = maxChunkDataSize ?? db.Config.ChunkSize;
         }
@@ -147,9 +156,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             var sw = Stopwatch.StartNew();
 
             int chunkStartNumber = oldChunks.First().ChunkHeader.ChunkStartNumber;
-            long chunkStartPosition = oldChunks.First().ChunkHeader.ChunkStartPosition;
+            long chunkStartPos = oldChunks.First().ChunkHeader.ChunkStartPosition;
             int chunkEndNumber = oldChunks.Last().ChunkHeader.ChunkEndNumber;
-
+            long chunkEndPos = oldChunks.Last().ChunkHeader.ChunkEndPosition;
+            
             var tmpChunkPath = Path.Combine(_db.Config.Path, Guid.NewGuid() + ".scavenge.tmp");
             var oldChunksList = string.Join("\n", oldChunks);
             Log.Trace("SCAVENGING: started to scavenge & merge chunks: {0}\nResulting temp chunk file: {1}.",
@@ -176,7 +186,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                                   prepare => { /* NOOP */ },
                                   commit =>
                                   {
-                                      if (commit.TransactionPosition >= chunkStartPosition)
+                                      if (commit.TransactionPosition >= chunkStartPos)
                                           commits.Add(commit.TransactionPosition, new CommitInfo(commit));
                                   },
                                   system => { /* NOOP */ });
@@ -188,7 +198,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     TraverseChunk(oldChunk,
                                   prepare => 
                                   {
-                                      if (ShouldKeepPrepare(prepare, commits))
+                                      if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
                                           positionMapping.Add(WriteRecord(newChunk, prepare));
                                   },
                                   commit =>
@@ -254,7 +264,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private bool ShouldKeepPrepare(PrepareLogRecord prepare, Dictionary<long, CommitInfo> commits)
+        private bool ShouldKeepPrepare(PrepareLogRecord prepare, Dictionary<long, CommitInfo> commits, long chunkStart, long chunkEnd)
         {
             CommitInfo commitInfo;
             bool isCommitted = commits.TryGetValue(prepare.TransactionPosition, out commitInfo)
@@ -290,7 +300,15 @@ namespace EventStore.Core.TransactionLog.Chunks
                 return false;
             }
 
-            if (isCommitted && prepare.Flags.HasNoneOf(PrepareFlags.Data))
+            if (!isCommitted)
+            {
+                // If we could somehow figure out (from read index) the event number of this prepare
+                // (if it is actually committed, but commit is in another chunk) then we can apply same scavenging logic.
+                // Unfortunately, if it is not committed prepare we can say nothing for now, so should conservatively keep it.
+                return true;
+            }
+
+            if (prepare.Flags.HasNoneOf(PrepareFlags.Data))
             {
                 // We encountered system prepare with no data. As of now it can appear only in explicit
                 // transactions so we can safely remove it. The performance shouldn't hurt, because
@@ -305,18 +323,15 @@ namespace EventStore.Core.TransactionLog.Chunks
                 return false;
             }
 
-            if (!isCommitted)
+            if (IsSoftDeletedTempStreamWithinSameChunk(prepare.EventStreamId, chunkStart, chunkEnd))
             {
-                // If we could somehow figure out (from read index) the event number of this prepare
-                // (if it is actually committed, but commit is in another chunk) then we can apply same scavenging logic.
-                // Unfortunately, if it is not committed prepare we can say nothing for now, so should conservatively keep it.
-                return true;
+                commitInfo.TryNotToKeep();
+                return false;
             }
 
             var eventNumber = prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)
                                       ? prepare.ExpectedVersion + 1 // IsCommitted prepares always have explicit expected version
                                       : commitInfo.EventNumber + prepare.TransactionOffset;
-
             // We should always physically keep the very last prepare in the stream.
             // Otherwise we get into trouble when trying to resolve LastStreamEventNumber, for instance.
             // That is because our TableIndex doesn't keep EventStreamId, only hash of it, so on doing some operations
@@ -338,6 +353,36 @@ namespace EventStore.Core.TransactionLog.Chunks
             else
                 commitInfo.ForciblyKeep();
             return !canRemove;
+        }
+
+        private bool IsSoftDeletedTempStreamWithinSameChunk(string eventStreamId, long chunkStart, long chunkEnd)
+        {
+            uint sh;
+            uint msh;
+            if (SystemStreams.IsMetastream(eventStreamId))
+            {
+                var originalStreamId = SystemStreams.OriginalStreamOf(eventStreamId);
+                var meta = _readIndex.GetStreamMetadata(originalStreamId);
+                if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
+                    return false;
+                sh = _hasher.Hash(originalStreamId);
+                msh = _hasher.Hash(eventStreamId);
+            }
+            else
+            {
+                var meta = _readIndex.GetStreamMetadata(eventStreamId);
+                if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
+                    return false;
+                sh = _hasher.Hash(eventStreamId);
+                msh = _hasher.Hash(SystemStreams.MetastreamOf(eventStreamId));
+            }
+
+            IndexEntry e;
+            var allInChunk = _tableIndex.TryGetOldestEntry(sh, out e) && e.Position >= chunkStart && e.Position < chunkEnd
+                          && _tableIndex.TryGetLatestEntry(sh, out e) && e.Position >= chunkStart && e.Position < chunkEnd
+                          && _tableIndex.TryGetOldestEntry(msh, out e) && e.Position >= chunkStart && e.Position < chunkEnd
+                          && _tableIndex.TryGetLatestEntry(msh, out e) && e.Position >= chunkStart && e.Position < chunkEnd;
+            return allInChunk;
         }
 
         private bool ShouldKeepCommit(CommitLogRecord commit, Dictionary<long, CommitInfo> commits)

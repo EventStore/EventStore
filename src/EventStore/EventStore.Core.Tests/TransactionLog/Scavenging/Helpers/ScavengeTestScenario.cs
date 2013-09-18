@@ -1,5 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using EventStore.Core.DataStructures;
+using EventStore.Core.Index;
+using EventStore.Core.Index.Hashes;
+using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Settings;
+using EventStore.Core.Tests.Fakes;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -12,6 +19,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
     [TestFixture]
     public abstract class ScavengeTestScenario: SpecificationWithDirectoryPerTestFixture
     {
+        protected IReadIndex ReadIndex;
+        protected TFChunkDb Db { get { return _dbResult.Db; } }
+
         private readonly int _metastreamMaxCount;
         private DbResult _dbResult;
         private LogRecord[][] _keptRecords;
@@ -42,13 +52,27 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             _dbResult.Db.Config.ChaserCheckpoint.Write(_dbResult.Db.Config.WriterCheckpoint.Read());
             _dbResult.Db.Config.ChaserCheckpoint.Flush();
 
-            var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams, _metastreamMaxCount);
-            var scavenger = new TFChunkScavenger(_dbResult.Db, scavengeReadIndex);
+            var indexPath = Path.Combine(PathName, "index");
+            var readerPool = new ObjectPool<ITransactionFileReader>(
+                "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
+                () => new TFChunkReader(_dbResult.Db, _dbResult.Db.Config.WriterCheckpoint));
+            var tableIndex = new TableIndex(indexPath,
+                                            () => new HashListMemTable(maxSize: 200),
+                                            () => new TFReaderLease(readerPool),
+                                            maxSizeForMemory: 100,
+                                            maxTablesPerLevel: 2);
+            var hasher = new XXHashUnsafe();
+            ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, hasher, 100, true, _metastreamMaxCount);
+            ReadIndex.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
+
+            //var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams, _metastreamMaxCount);
+            var scavenger = new TFChunkScavenger(_dbResult.Db, tableIndex, hasher, ReadIndex);
             scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
         }
 
         public override void TestFixtureTearDown()
         {
+            ReadIndex.Close();
             _dbResult.Db.Close();
 
             base.TestFixtureTearDown();

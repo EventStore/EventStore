@@ -71,6 +71,7 @@ namespace EventStore.Core.Services
         public const string MaxAge = "$maxAge";
         public const string MaxCount = "$maxCount";
         public const string TruncateBefore = "$tb";
+        public const string TempStream = "$tmp";
         public const string CacheControl = "$cacheControl";
 
         public const string Acl = "$acl";

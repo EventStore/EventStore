@@ -255,7 +255,7 @@ namespace EventStore.Core.Index
         public bool TryGetOneValue(uint stream, int number, out long position)
         {
             IndexEntry entry;
-            if (TryGetOneEntry(stream, number, number, out entry))
+            if (TryGetLargestEntry(stream, number, number, out entry))
             {
                 position = entry.Position;
                 return true;
@@ -266,10 +266,10 @@ namespace EventStore.Core.Index
 
         public bool TryGetLatestEntry(uint stream, out IndexEntry entry)
         {
-            return TryGetOneEntry(stream, 0, int.MaxValue, out entry);
+            return TryGetLargestEntry(stream, 0, int.MaxValue, out entry);
         }
 
-        private bool TryGetOneEntry(uint stream, int startNumber, int endNumber, out IndexEntry entry)
+        private bool TryGetLargestEntry(uint stream, int startNumber, int endNumber, out IndexEntry entry)
         {
             Ensure.Nonnegative(startNumber, "startNumber");
             Ensure.Nonnegative(endNumber, "endNumber");
@@ -294,16 +294,65 @@ namespace EventStore.Core.Index
                 {
                     var mid = low + (high - low) / 2;
                     IndexEntry midpoint = ReadEntry(mid, workItem);
-                    if (midpoint.Key <= endKey)
-                        high = mid;
-                    else
+                    if (midpoint.Key > endKey)
                         low = mid + 1;
+                    else
+                        high = mid;
                 }
 
                 var candEntry = ReadEntry(high, workItem);
                 if (candEntry.Key > endKey)
                     throw new Exception(string.Format("candEntry.Key {0} > startKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", candEntry.Key, startKey, stream, startNumber, endNumber, Filename));
                 if (candEntry.Key < startKey)
+                    return false;
+                entry = candEntry;
+                return true;
+            }
+            finally
+            {
+                ReturnWorkItem(workItem);
+            }
+        }
+
+        public bool TryGetOldestEntry(uint stream, out IndexEntry entry)
+        {
+            return TryGetSmallestEntry(stream, 0, int.MaxValue, out entry);
+        }
+
+        private bool TryGetSmallestEntry(uint stream, int startNumber, int endNumber, out IndexEntry entry)
+        {
+            Ensure.Nonnegative(startNumber, "startNumber");
+            Ensure.Nonnegative(endNumber, "endNumber");
+
+            entry = TableIndex.InvalidIndexEntry;
+
+            var startKey = BuildKey(stream, startNumber);
+            var endKey = BuildKey(stream, endNumber);
+
+            if (startKey > _maxEntry || endKey < _minEntry)
+                return false;
+
+            var workItem = GetWorkItem();
+            try
+            {
+                var recordRange = LocateRecordRange(startKey);
+
+                int low = recordRange.Item1;
+                int high = recordRange.Item2;
+                while (low < high)
+                {
+                    var mid = low + (high - low + 1) / 2;
+                    IndexEntry midpoint = ReadEntry(mid, workItem);
+                    if (midpoint.Key < startKey)
+                        high = mid - 1;
+                    else
+                        low = mid;
+                }
+
+                var candEntry = ReadEntry(high, workItem);
+                if (candEntry.Key < startKey)
+                    throw new Exception(string.Format("candEntry.Key {0} < startKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", candEntry.Key, startKey, stream, startNumber, endNumber, Filename));
+                if (candEntry.Key > endKey)
                     return false;
                 entry = candEntry;
                 return true;

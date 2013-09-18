@@ -105,6 +105,16 @@ namespace EventStore.Core.Tests.Index
         }
 
         [Test]
+        public void try_get_oldest_entry_for_smallest_hash_returns_correct_index_entry()
+        {
+            IndexEntry entry;
+            Assert.IsTrue(PTable.TryGetOldestEntry(0, out entry));
+            Assert.AreEqual(0, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0x0001, entry.Position);
+        }
+
+        [Test]
         public void the_largest_items_can_be_found()
         {
             long position;
@@ -139,6 +149,16 @@ namespace EventStore.Core.Tests.Index
         }
 
         [Test]
+        public void try_get_oldest_entry_for_largest_hash_returns_correct_index_entry()
+        {
+            IndexEntry entry;
+            Assert.IsTrue(PTable.TryGetOldestEntry(1, out entry));
+            Assert.AreEqual(1, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0x0003, entry.Position);
+        }
+
+        [Test]
         public void non_existent_item_cannot_be_found()
         {
             long position;
@@ -157,6 +177,13 @@ namespace EventStore.Core.Tests.Index
         {
             IndexEntry entry;
             Assert.IsFalse(PTable.TryGetLatestEntry(2, out entry));
+        }
+
+        [Test]
+        public void try_get_oldest_entry_returns_nothing_for_nonexistent_stream()
+        {
+            IndexEntry entry;
+            Assert.IsFalse(PTable.TryGetOldestEntry(2, out entry));
         }
     }
 }

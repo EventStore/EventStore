@@ -27,7 +27,6 @@
 //  
 
 using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
@@ -39,11 +38,11 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams
     {
         protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {
-            return dbCreator.Chunk(Rec.Prepare(0, "$$test", "0", metadata: new StreamMetadata(10, null, null, null, null)),
-                                   Rec.Prepare(0, "$$test", "1", metadata: new StreamMetadata(9, null, null, null, null)),
-                                   Rec.Prepare(0, "$$test", "2", metadata: new StreamMetadata(8, null, null, null, null)),
-                                   Rec.Prepare(0, "$$test", "3", metadata: new StreamMetadata(7, null, null, null, null)),
-                                   Rec.Prepare(0, "$$test", "4", metadata: new StreamMetadata(6, null, null, null, null)),
+            return dbCreator.Chunk(Rec.Prepare(0, "$$test", "0", metadata: new StreamMetadata(maxCount: 10)),
+                                   Rec.Prepare(0, "$$test", "1", metadata: new StreamMetadata(maxCount: 9)),
+                                   Rec.Prepare(0, "$$test", "2", metadata: new StreamMetadata(maxCount: 8)),
+                                   Rec.Prepare(0, "$$test", "3", metadata: new StreamMetadata(maxCount: 7)),
+                                   Rec.Prepare(0, "$$test", "4", metadata: new StreamMetadata(maxCount: 6)),
                                    Rec.Commit(0, "$$test"))
                             .CreateDb();
         }
