@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
                 connection.Connect();
-                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
             }
         }
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 connection.Connect();
 
-                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any);
+                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
             }
         }
@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 connection.Connect();
 
-                var delete = connection.DeleteStreamAsync(stream, 1);
+                var delete = connection.DeleteStreamAsync(stream, 1, hardDelete: true);
                 Assert.That(() => delete.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }
@@ -105,10 +105,10 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 connection.Connect();
 
-                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
-                var secondDelete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any);
+                var secondDelete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any, hardDelete: true);
                 Assert.That(() => secondDelete.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
             }
         }

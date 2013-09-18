@@ -281,7 +281,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
                 {
                     transaction.Write(TestEvent.NewTestEvent());
-                    store.DeleteStream(stream, ExpectedVersion.EmptyStream);
+                    store.DeleteStream(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                     Assert.That(() => transaction.Commit(),
                                 Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
                 }

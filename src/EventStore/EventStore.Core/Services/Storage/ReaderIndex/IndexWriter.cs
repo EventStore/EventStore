@@ -77,6 +77,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         long NotCachedTransInfo { get; }
 
         void Reset();
+        int GetStreamLastEventNumber(string streamId);
         CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition);
         CommitCheckResult CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds);
         void PreCommit(CommitLogRecord commit);
@@ -327,7 +328,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private int GetStreamLastEventNumber(string streamId)
+        public int GetStreamLastEventNumber(string streamId)
         {
             int lastEventNumber;
             if (_streamVersions.TryGet(streamId, out lastEventNumber))

@@ -274,12 +274,12 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = package.Data.Deserialize<TcpClientMessageDto.DeleteStream>();
             if (dto == null) return null;
             return new ClientMessage.DeleteStream(Guid.NewGuid(), package.CorrelationId, envelope, dto.RequireMaster,
-                                                  dto.EventStreamId, dto.ExpectedVersion, user, login, password);
+                                                  dto.EventStreamId, dto.ExpectedVersion, dto.HardDelete ?? false, user, login, password);
         }
 
         private static TcpPackage WrapDeleteStream(ClientMessage.DeleteStream msg)
         {
-            var dto = new TcpClientMessageDto.DeleteStream(msg.EventStreamId, msg.ExpectedVersion, msg.RequireMaster);
+            var dto = new TcpClientMessageDto.DeleteStream(msg.EventStreamId, msg.ExpectedVersion, msg.RequireMaster, msg.HardDelete);
             return CreateWriteRequestPackage(TcpCommand.DeleteStream, msg, dto);
         }
 

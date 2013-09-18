@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
                 {
-                    var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                    var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                     Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");
 
                     Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event didn't fire in time.");

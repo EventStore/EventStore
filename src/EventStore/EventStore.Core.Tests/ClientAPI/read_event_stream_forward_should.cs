@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
                 store.Connect();
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
                 var read = store.ReadStreamEventsForwardAsync(stream, 0, 1, resolveLinkTos: false);

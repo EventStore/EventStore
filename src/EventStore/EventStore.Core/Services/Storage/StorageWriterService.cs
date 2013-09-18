@@ -350,12 +350,29 @@ namespace EventStore.Core.Services.Storage
                     return;
                 }
 
-                // when IsCommitted ExpectedVersion is actually real EventNumber
-                const int expectedVersion = EventNumber.DeletedStream - 1;
-                var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(), message.CorrelationId,
-                                                       eventId, message.EventStreamId, expectedVersion, PrepareFlags.IsCommitted); 
-                var res = WritePrepareWithRetry(record);
-                _indexWriter.PreCommit(new[] {res.Prepare});
+                if (message.HardDelete)
+                {
+                    // HARD DELETE
+                    const int expectedVersion = EventNumber.DeletedStream - 1;
+                    var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(), message.CorrelationId,
+                                                           eventId, message.EventStreamId, expectedVersion, PrepareFlags.IsCommitted);
+                    var res = WritePrepareWithRetry(record);
+                    _indexWriter.PreCommit(new[] { res.Prepare });
+                }
+                else 
+                {
+                    // SOFT DELETE
+                    var metastreamId = SystemStreams.MetastreamOf(message.EventStreamId);
+                    var expectedVersion = _indexWriter.GetStreamLastEventNumber(metastreamId);
+                    var logPosition = Writer.Checkpoint.ReadNonFlushed();
+                    const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson;
+                    var data = new StreamMetadata(truncateBefore: EventNumber.DeletedStream).ToJsonBytes();
+                    var res = WritePrepareWithRetry(
+                        LogRecord.Prepare(logPosition, message.CorrelationId, eventId, logPosition, 0,
+                                          metastreamId, expectedVersion, flags, SystemEventTypes.StreamMetadata,
+                                          data, null));
+                    _indexWriter.PreCommit(new[] { res.Prepare });
+                }
             }
             catch (Exception exc)
             {

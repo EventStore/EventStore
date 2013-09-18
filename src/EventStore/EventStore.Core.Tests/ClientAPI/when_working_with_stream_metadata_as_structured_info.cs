@@ -220,7 +220,7 @@ namespace EventStore.Core.Tests.ClientAPI
             var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
             _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadata);
 
-            _connection.DeleteStream(stream, ExpectedVersion.EmptyStream);
+            _connection.DeleteStream(stream, ExpectedVersion.EmptyStream, hardDelete: true);
 
             var meta = _connection.GetStreamMetadata(stream);
             Assert.AreEqual(stream, meta.Stream);

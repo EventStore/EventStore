@@ -62,6 +62,7 @@ message DeleteStream {
 	required string event_stream_id = 1;
 	required int32 expected_version = 2;
 	required bool require_master = 3;
+	optional bool hard_delete = 4;
 }
 
 message DeleteStreamCompleted {

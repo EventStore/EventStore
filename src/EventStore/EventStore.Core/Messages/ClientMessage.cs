@@ -426,9 +426,10 @@ namespace EventStore.Core.Messages
 
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
+            public readonly bool HardDelete;
 
             public DeleteStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireMaster,
-                                string eventStreamId, int expectedVersion,
+                                string eventStreamId, int expectedVersion, bool hardDelete,
                                 IPrincipal user, string login = null, string password = null)
                 : base(internalCorrId, correlationId, envelope, requireMaster, user, login, password)
             {
@@ -437,6 +438,7 @@ namespace EventStore.Core.Messages
 
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
+                HardDelete = hardDelete;
             }
         }
 

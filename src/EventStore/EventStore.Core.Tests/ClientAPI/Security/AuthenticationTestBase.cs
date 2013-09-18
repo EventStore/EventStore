@@ -231,7 +231,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
         protected void DeleteStream(string streamId, string login, string password)
         {
-            Connection.DeleteStream(streamId, ExpectedVersion.Any, 
+            Connection.DeleteStream(streamId, ExpectedVersion.Any, true, 
                                     login == null && password == null ? null : new UserCredentials(login, password));
         }
 

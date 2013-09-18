@@ -100,10 +100,11 @@ namespace EventStore.Core.Messages
             public IEnvelope Envelope { get; private set; }
             public string EventStreamId { get; private set; }
             public int ExpectedVersion { get; private set; }
+            public readonly bool HardDelete;
 
             public readonly DateTime LiveUntil;
 
-            public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, DateTime liveUntil)
+            public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, bool hardDelete, DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -113,6 +114,7 @@ namespace EventStore.Core.Messages
                 Envelope = envelope;
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
+                HardDelete = hardDelete;
 
                 LiveUntil = liveUntil;
             }

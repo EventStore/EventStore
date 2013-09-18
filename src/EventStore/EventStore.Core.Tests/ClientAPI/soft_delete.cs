@@ -67,8 +67,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "soft_deleted_stream_returns_no_stream_and_no_events_on_read";
 
             Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-
-            Assert.AreEqual(0, _conn.SetStreamMetadata(stream, ExpectedVersion.NoStream, StreamMetadata.Build().SetTruncateBefore(int.MaxValue)).NextExpectedVersion);
+            _conn.DeleteStream(stream, 1);
 
             var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.StreamNotFound, res.Status);
@@ -82,8 +81,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "soft_deleted_stream_allows_recreation_when_expver_any";
 
             Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-
-            Assert.AreEqual(0, _conn.SetStreamMetadata(stream, ExpectedVersion.NoStream, StreamMetadata.Build().SetTruncateBefore(int.MaxValue)).NextExpectedVersion);
+            _conn.DeleteStream(stream, 1);
 
             var events = new[] {TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent()};
             Assert.AreEqual(4, _conn.AppendToStream(stream, ExpectedVersion.Any, events).NextExpectedVersion);
@@ -106,8 +104,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "soft_deleted_stream_allows_recreation_when_expver_no_stream";
 
             Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-
-            Assert.AreEqual(0, _conn.SetStreamMetadata(stream, ExpectedVersion.NoStream, StreamMetadata.Build().SetTruncateBefore(int.MaxValue)).NextExpectedVersion);
+            _conn.DeleteStream(stream, 1);
 
             var events = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };
             Assert.AreEqual(4, _conn.AppendToStream(stream, ExpectedVersion.NoStream, events).NextExpectedVersion);
@@ -130,8 +127,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "soft_deleted_stream_allows_recreation_when_expver_is_exact";
 
             Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-
-            Assert.AreEqual(0, _conn.SetStreamMetadata(stream, ExpectedVersion.NoStream, StreamMetadata.Build().SetTruncateBefore(int.MaxValue)).NextExpectedVersion);
+            _conn.DeleteStream(stream, 1);
 
             var events = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };
             Assert.AreEqual(4, _conn.AppendToStream(stream, 1, events).NextExpectedVersion);
@@ -184,14 +180,13 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void soft_deleted_stream_can_be_deleted()
+        public void soft_deleted_stream_can_be_hard_deleted()
         {
             const string stream = "soft_deleted_stream_can_be_deleted";
 
             Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            Assert.AreEqual(0, _conn.SetStreamMetadata(stream, ExpectedVersion.NoStream, StreamMetadata.Build().SetTruncateBefore(int.MaxValue)).NextExpectedVersion);
-
-            _conn.DeleteStream(stream, ExpectedVersion.Any);
+            _conn.DeleteStream(stream, 1);
+            _conn.DeleteStream(stream, ExpectedVersion.Any, hardDelete: true);
 
             var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
             Assert.AreEqual(SliceReadStatus.StreamDeleted, res.Status);
@@ -209,7 +204,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "soft_deleted_stream_allows_recreation_only_for_first_write";
 
             Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            Assert.AreEqual(0, _conn.SetStreamMetadata(stream, ExpectedVersion.NoStream, StreamMetadata.Build().SetTruncateBefore(int.MaxValue)).NextExpectedVersion);
+            _conn.DeleteStream(stream, 1);
 
             var events = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };
             Assert.AreEqual(4, _conn.AppendToStream(stream, ExpectedVersion.NoStream, events).NextExpectedVersion);
@@ -235,7 +230,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "soft_deleted_stream_appends_both_concurrent_writes_when_expver_any";
 
             Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            Assert.AreEqual(0, _conn.SetStreamMetadata(stream, ExpectedVersion.NoStream, StreamMetadata.Build().SetTruncateBefore(int.MaxValue)).NextExpectedVersion);
+            _conn.DeleteStream(stream, 1);
 
             var events1 = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };
             var events2 = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };

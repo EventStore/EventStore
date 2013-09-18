@@ -103,16 +103,26 @@ namespace EventStore.ClientAPI
 
         public void DeleteStream(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
-            DeleteStreamAsync(stream, expectedVersion, userCredentials).Wait();
+            DeleteStreamAsync(stream, expectedVersion, false, userCredentials).Wait();
+        }
+
+        public void DeleteStream(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
+        {
+            DeleteStreamAsync(stream, expectedVersion, hardDelete, userCredentials).Wait();
         }
 
         public Task DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
+        {
+            return DeleteStreamAsync(stream, expectedVersion, false, userCredentials);
+        }
+
+        public Task DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<object>();
             EnqueueOperation(new DeleteStreamOperation(_settings.Log, source, _settings.RequireMaster, 
-                                                       stream, expectedVersion, userCredentials));
+                                                       stream, expectedVersion, hardDelete, userCredentials));
             return source.Task;
         }
 

@@ -129,7 +129,7 @@ namespace EventStore.Core.Services.UserManagement
                 message,
                 (completed, data) =>
                 _ioDispatcher.DeleteStream(
-                    "$user-" + message.LoginName, completed.FromEventNumber, SystemAccount.Principal,
+                    "$user-" + message.LoginName, completed.FromEventNumber, true, SystemAccount.Principal,
                     streamCompleted =>
                     WritePasswordChangedEventConditionalAnd(
                         message, true, () => ReplyByWriteResult(message, streamCompleted.Result))));
