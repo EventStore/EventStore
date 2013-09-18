@@ -122,6 +122,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _slaveResultsPublisher;
         private readonly Guid _slaveMasterCorrelationId;
         private Guid _slaveProjectionSubscriptionId;
+        private SlaveProjectionCommunicationChannels _slaveProjectionCommunicationChannels;
 
         public ManagedProjection(
             IPublisher coreQueue, Guid id, int projectionId, string name, bool enabledToRun, ILogger logger,
@@ -385,7 +386,31 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.Stopped message)
         {
             _state = message.Completed ? ManagedProjectionState.Completed : ManagedProjectionState.Stopped;
+            OnStoppedOrFaulted();
+        }
+
+        private void OnStoppedOrFaulted()
+        {
             FireStoppedOrFaulted();
+            StopSlaveProjections();
+        }
+
+        private void StopSlaveProjections()
+        {
+            if (_slaveProjectionCommunicationChannels != null)
+            {
+                foreach (var group in _slaveProjectionCommunicationChannels.Channels)
+                {
+                    foreach (var channel in group.Value)
+                    {
+                        _output.Publish(
+                            new ProjectionManagementMessage.Delete(
+                                new NoopEnvelope(), channel.ManagedProjectionName,
+                                ProjectionManagementMessage.RunAs.System, true, true));
+                    }
+                }
+
+            }
         }
 
         private void FireStoppedOrFaulted()
@@ -404,7 +429,7 @@ namespace EventStore.Projections.Core.Services.Management
                 _persistedState.SourceDefinition = null;
                 OnPrepared();
             }
-            FireStoppedOrFaulted();
+            OnStoppedOrFaulted();
         }
 
         public void Handle(CoreProjectionManagementMessage.Prepared message)
@@ -964,7 +989,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message)
         {
-            _coreQueue.Publish(new CoreProjectionManagementMessage.Start(_id, message.SlaveProjections));
+            _slaveProjectionCommunicationChannels = message.SlaveProjections;
+            _coreQueue.Publish(new CoreProjectionManagementMessage.Start(_id, _slaveProjectionCommunicationChannels));
         }
 
         public void Handle(CoreProjectionManagementMessage.SlaveProjectionReaderAssigned message)

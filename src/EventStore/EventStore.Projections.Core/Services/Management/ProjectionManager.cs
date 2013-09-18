@@ -885,7 +885,8 @@ namespace EventStore.Projections.Core.Services.Management
                 this, managedProjection =>
                 {
                     resultArray[arrayIndex] = new SlaveProjectionCommunicationChannel(
-                        projectionCorrelationId, managedProjection.SlaveProjectionSubscriptionId, _queues[queueIndex]);
+                        slaveProjectionName, projectionCorrelationId, managedProjection.SlaveProjectionSubscriptionId,
+                        _queues[queueIndex]);
                     completed();
                 }, projectionCorrelationId, queueIndex, true, message.ResultsPublisher, message.MasterCorrelationId);
         }
