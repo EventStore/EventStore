@@ -61,13 +61,15 @@ namespace EventStore.Core.Messages
 
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
+
             public string EventStreamId { get; private set; }
             public int ExpectedVersion { get; private set; }
             public readonly Event[] Events;
 
             public readonly DateTime LiveUntil;
 
-            public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, Event[] events, DateTime liveUntil)
+            public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion,
+                                 Event[] events, DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");

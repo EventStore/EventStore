@@ -103,7 +103,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly Queue<TransInfo> _notProcessedTrans = new Queue<TransInfo>();
         private readonly BoundedCache<Guid, Tuple<string, int>> _committedEvents = new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, ESConsts.CommitedEventsMemCacheLimit, x => 16 + 4 + IntPtr.Size + 2*x.Item1.Length);
         private readonly IStickyLRUCache<string, int> _streamVersions = new StickyLRUCache<string, int>(ESConsts.StreamInfoCacheCapacity);
-        private readonly IStickyLRUCache<string, byte[]> _streamRawMetas = new StickyLRUCache<string, byte[]>(0); // store nothing flushed, only sticky non-flushed stuff
+        private readonly IStickyLRUCache<string, StreamMeta> _streamRawMetas = new StickyLRUCache<string, StreamMeta>(0); // store nothing flushed, only sticky non-flushed stuff
         private readonly Queue<CommitInfo> _notProcessedCommits = new Queue<CommitInfo>();
 
         private long _cachedTransInfo;
@@ -178,8 +178,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (curVersion == EventNumber.DeletedStream)
                 return new CommitCheckResult(CommitDecision.Deleted, streamId, curVersion, -1, -1, false);
 
-            bool isSoftDeleted = GetStreamMetadata(streamId).TruncateBefore == EventNumber.DeletedStream;
-
             // idempotency checks
             if (expectedVersion == ExpectedVersion.Any)
             {
@@ -191,15 +189,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     Tuple<string, int> prepInfo;
                     if (!_committedEvents.TryGetRecord(eventId, out prepInfo) || prepInfo.Item1 != streamId)
                         return new CommitCheckResult(first ? CommitDecision.Ok : CommitDecision.CorruptedIdempotency,
-                                                     streamId, curVersion, -1, -1, isSoftDeleted);
+                                                     streamId, curVersion, -1, -1, first && IsSoftDeleted(streamId));
                     if (first)
                         startEventNumber = prepInfo.Item2;
                     endEventNumber = prepInfo.Item2;
                     first = false;
                 }
                 return first /* no data in transaction */
-                    ? new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, isSoftDeleted)
-                    : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, isSoftDeleted);
+                    ? new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, IsSoftDeleted(streamId))
+                    : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, false);
             }
 
             if (expectedVersion < curVersion)
@@ -219,23 +217,28 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                     var first = eventNumber == expectedVersion + 1;
                     if (!first)
-                        return new CommitCheckResult(CommitDecision.CorruptedIdempotency, streamId, curVersion, -1, -1, isSoftDeleted);
+                        return new CommitCheckResult(CommitDecision.CorruptedIdempotency, streamId, curVersion, -1, -1, false);
 
-                    var decision = isSoftDeleted && expectedVersion == ExpectedVersion.NoStream
-                                           ? CommitDecision.Ok
-                                           : CommitDecision.WrongExpectedVersion;
-                    return new CommitCheckResult(decision, streamId, curVersion, -1, -1, isSoftDeleted);
+                    if (expectedVersion == ExpectedVersion.NoStream && IsSoftDeleted(streamId))
+                        return new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, true);
+
+                    return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
                 }
                 return eventNumber == expectedVersion /* no data in transaction */
-                    ? new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, isSoftDeleted)
-                    : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber, isSoftDeleted);
+                    ? new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false)
+                    : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber, false);
             }
 
             if (expectedVersion > curVersion)
-                return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, isSoftDeleted);
+                return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
 
             // expectedVersion == currentVersion
-            return new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, isSoftDeleted);
+            return new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, IsSoftDeleted(streamId));
+        }
+
+        private bool IsSoftDeleted(string streamId)
+        {
+            return GetStreamMetadata(streamId).TruncateBefore == EventNumber.DeletedStream;
         }
 
         public void PreCommit(CommitLogRecord commit)
@@ -268,7 +271,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (lastPrepare != null && SystemStreams.IsMetastream(streamId))
             {
                 var rawMeta = lastPrepare.Data;
-                _streamRawMetas.Put(SystemStreams.OriginalStreamOf(streamId), rawMeta, +1);
+                _streamRawMetas.Put(SystemStreams.OriginalStreamOf(streamId), new StreamMeta(rawMeta, null), +1);
             }
         }
 
@@ -296,7 +299,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (SystemStreams.IsMetastream(streamId))
             {
                 var rawMeta = lastPrepare.Data;
-                _streamRawMetas.Put(SystemStreams.OriginalStreamOf(streamId), rawMeta, +1);
+                _streamRawMetas.Put(SystemStreams.OriginalStreamOf(streamId), new StreamMeta(rawMeta, null), +1);
             }
         }
 
@@ -334,9 +337,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private StreamMetadata GetStreamMetadata(string streamId)
         {
-            byte[] rawMeta;
-            if (_streamRawMetas.TryGet(streamId, out rawMeta))
-                return Helper.EatException(() => StreamMetadata.FromJsonBytes(rawMeta), StreamMetadata.Empty);
+            StreamMeta meta;
+            if (_streamRawMetas.TryGet(streamId, out meta))
+            {
+                if (meta.Meta != null)
+                    return meta.Meta;
+                var m = Helper.EatException(() => StreamMetadata.FromJsonBytes(meta.RawMeta), StreamMetadata.Empty);
+                _streamRawMetas.Put(streamId, new StreamMeta(meta.RawMeta, m), 0);
+                return m;
+            }
             return _indexReader.GetStreamMetadata(streamId);
         }
 
@@ -462,13 +471,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var metastreamId = SystemStreams.MetastreamOf(streamId);
             var metaLastEventNumber = GetStreamLastEventNumber(metastreamId);
 
-            byte[] metaRaw;
-            if (!_streamRawMetas.TryGet(streamId, out metaRaw))
-                metaRaw = _indexReader.ReadPrepare(metastreamId, metaLastEventNumber).Data;
+            StreamMeta meta;
+            if (!_streamRawMetas.TryGet(streamId, out meta))
+                meta = new StreamMeta(_indexReader.ReadPrepare(metastreamId, metaLastEventNumber).Data, null);
 
             try
             {
-                var jobj = JObject.Parse(Encoding.UTF8.GetString(metaRaw));
+                var jobj = JObject.Parse(Encoding.UTF8.GetString(meta.RawMeta));
                 jobj[SystemMetadata.TruncateBefore] = recreateFromEventNumber;
                 using (var memoryStream = new MemoryStream())
                 {
@@ -484,6 +493,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var msg = string.Format("Error deserializing to-be-soft-undeleted stream '{0}' metadata. That's wrong!", streamId);
                 Log.ErrorException(exc, msg);
                 throw new Exception(msg, exc);
+            }
+        }
+
+        private struct StreamMeta
+        {
+            public readonly byte[] RawMeta;
+            public readonly StreamMetadata Meta;
+
+            public StreamMeta(byte[] rawMeta, StreamMetadata meta)
+            {
+                RawMeta = rawMeta;
+                Meta = meta;
             }
         }
     }
