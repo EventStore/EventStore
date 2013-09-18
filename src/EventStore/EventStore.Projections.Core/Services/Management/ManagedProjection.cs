@@ -433,7 +433,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
         {
             //TODO: configurable expiration
-            if (Mode == ProjectionMode.Transient)
+            if (Mode == ProjectionMode.Transient && !_isSlave)
             {
                 if (_lastAccessed.AddMinutes(5) < _timeProvider.Now)
                 {
