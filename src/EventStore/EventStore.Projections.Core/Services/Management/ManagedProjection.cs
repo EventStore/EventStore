@@ -433,22 +433,24 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
         {
             //TODO: configurable expiration
-            if (Mode == ProjectionMode.Transient && !_isSlave)
+            if (IsExpiredProjection())
             {
-                if (_lastAccessed.AddMinutes(5) < _timeProvider.Now)
+                if (_state == ManagedProjectionState.Creating)
                 {
-                    if (_state == ManagedProjectionState.Creating)
-                    {
-                        // NOTE: workaround for stop not working on creating state (just ignore them)
-                        return;
-                    }
-                    Stop(
-                        () =>
+                    // NOTE: workaround for stop not working on creating state (just ignore them)
+                    return;
+                }
+                Stop(
+                    () =>
                         Handle(
                             new ProjectionManagementMessage.Delete(
                                 new NoopEnvelope(), _name, ProjectionManagementMessage.RunAs.System, false, false)));
-                }
             }
+        }
+
+        private bool IsExpiredProjection()
+        {
+            return Mode == ProjectionMode.Transient && !_isSlave && _lastAccessed.AddMinutes(5) < _timeProvider.Now;
         }
 
         public void InitializeNew(Action completed, PersistedState persistedState)
