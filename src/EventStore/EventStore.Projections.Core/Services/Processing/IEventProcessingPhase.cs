@@ -47,6 +47,8 @@ namespace EventStore.Projections.Core.Services.Processing
             string statePartition, CheckpointTag at, Action<PartitionState> loadCompleted,
             bool lockLoaded);
 
+        void UnlockAndForgetBefore(CheckpointTag checkpointTag);
+
         CheckpointTag LastProcessedEventPosition { get; }
     }
 

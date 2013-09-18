@@ -62,6 +62,11 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override void WriteOutput()
         {
             _projection.EmitEofResult(_partition, _state.Result, _checkpointTag, Guid.Empty, null);
+            //NOTE: write output is an ordered processing stage
+            //      thus all the work items before have been already processed
+            //      and as we are processing in the stream-by-stream mode
+            //      it is safe to clean everything before this position up
+            _projection.UnlockAndForgetBefore(_checkpointTag);
             NextStage();
         }
     }

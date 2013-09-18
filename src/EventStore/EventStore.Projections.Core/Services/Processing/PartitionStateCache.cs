@@ -140,15 +140,16 @@ namespace EventStore.Projections.Core.Services.Processing
             return stateData.Item1;
         }
 
-        public void Unlock(CheckpointTag beforeCheckpoint)
+        public void Unlock(CheckpointTag beforeCheckpoint, bool forgetUnlocked = false)
         {
             _unlockedBefore = beforeCheckpoint;
-            CleanUp();
+            CleanUp(removeAllUnlocked: forgetUnlocked);
         }
 
-        private void CleanUp()
+        private void CleanUp(bool removeAllUnlocked = false)
         {
-            while (_cacheOrder.Count > _maxCachedPartitions*5 || CachedItemCount > _maxCachedPartitions)
+            while (removeAllUnlocked || _cacheOrder.Count > _maxCachedPartitions*5
+                   || CachedItemCount > _maxCachedPartitions)
             {
                 if (_cacheOrder.Count == 0)
                     break;

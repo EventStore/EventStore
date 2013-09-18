@@ -196,6 +196,7 @@
     <Compile Include="Services\parallel_processing_load_balancer\when_scheduling_many_unmeasured_tasks.cs" />
     <Compile Include="Services\partition_state\partition_state.cs" />
     <Compile Include="Services\partition_state_cache\when_caching_a_parition_state.cs" />
+    <Compile Include="Services\partition_state_cache\when_unlocking_and_forgetting_part_of_cached_states.cs" />
     <Compile Include="Services\partition_state_update_manager\FakeEventWriter.cs" />
     <Compile Include="Services\partition_state_update_manager\when_created.cs" />
     <Compile Include="Services\partition_state_update_manager\when_creating.cs" />

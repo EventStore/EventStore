@@ -91,6 +91,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopOnEof = stopOnEof;
         }
 
+        public void UnlockAndForgetBefore(CheckpointTag checkpointTag)
+        {
+            _partitionStateCache.Unlock(checkpointTag, forgetUnlocked: true);
+        }
+
         public CheckpointTag LastProcessedEventPosition
         {
             get { return _coreProjection.LastProcessedEventPosition; }
