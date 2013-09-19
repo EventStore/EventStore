@@ -28,6 +28,7 @@
 
 using System;
 using System.Linq;
+using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -247,6 +248,110 @@ namespace EventStore.Core.Tests.ClientAPI
             var meta = _conn.GetStreamMetadata(stream);
             Assert.AreEqual(2, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(1, meta.MetastreamVersion);
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void setting_json_metadata_on_empty_soft_deleted_stream_recreates_stream_not_overriding_metadata()
+        {
+            const string stream = "setting_json_metadata_on_empty_soft_deleted_stream_recreates_stream_not_overriding_metadata";
+
+            _conn.DeleteStream(stream, ExpectedVersion.NoStream, hardDelete: false);
+
+            Assert.AreEqual(1, _conn.SetStreamMetadata(stream, 0,
+                                    StreamMetadata.Build().SetMaxCount(100)
+                                                          .SetDeleteRole("some-role")
+                                                          .SetCustomProperty("key1", true)
+                                                          .SetCustomProperty("key2", 17)
+                                                          .SetCustomProperty("key3", "some value")).NextExpectedVersion);
+
+            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            Assert.AreEqual(SliceReadStatus.StreamNotFound, res.Status);
+            Assert.AreEqual(-1, res.LastEventNumber);
+            Assert.AreEqual(0, res.Events.Length);
+
+            var meta = _conn.GetStreamMetadata(stream);
+            Assert.AreEqual(2, meta.MetastreamVersion);
+            Assert.AreEqual(0, meta.StreamMetadata.TruncateBefore);
+            Assert.AreEqual(100, meta.StreamMetadata.MaxCount);
+            Assert.AreEqual("some-role", meta.StreamMetadata.Acl.DeleteRole);
+            Assert.AreEqual(true, meta.StreamMetadata.GetValue<bool>("key1"));
+            Assert.AreEqual(17, meta.StreamMetadata.GetValue<int>("key2"));
+            Assert.AreEqual("some value", meta.StreamMetadata.GetValue<string>("key3"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void setting_json_metadata_on_nonempty_soft_deleted_stream_recreates_stream_not_overriding_metadata()
+        {
+            const string stream = "setting_json_metadata_on_nonempty_soft_deleted_stream_recreates_stream_not_overriding_metadata";
+
+            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
+            _conn.DeleteStream(stream, 1, hardDelete: false);
+
+            Assert.AreEqual(1, _conn.SetStreamMetadata(stream, 0,
+                                                       StreamMetadata.Build().SetMaxCount(100)
+                                                                     .SetDeleteRole("some-role")
+                                                                     .SetCustomProperty("key1", true)
+                                                                     .SetCustomProperty("key2", 17)
+                                                                     .SetCustomProperty("key3", "some value")).NextExpectedVersion);
+
+            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            Assert.AreEqual(SliceReadStatus.Success, res.Status);
+            Assert.AreEqual(1, res.LastEventNumber);
+            Assert.AreEqual(0, res.Events.Length);
+
+            var meta = _conn.GetStreamMetadata(stream);
+            Assert.AreEqual(2, meta.MetastreamVersion);
+            Assert.AreEqual(2, meta.StreamMetadata.TruncateBefore);
+            Assert.AreEqual(100, meta.StreamMetadata.MaxCount);
+            Assert.AreEqual("some-role", meta.StreamMetadata.Acl.DeleteRole);
+            Assert.AreEqual(true, meta.StreamMetadata.GetValue<bool>("key1"));
+            Assert.AreEqual(17, meta.StreamMetadata.GetValue<int>("key2"));
+            Assert.AreEqual("some value", meta.StreamMetadata.GetValue<string>("key3"));
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void setting_nonjson_metadata_on_empty_soft_deleted_stream_recreates_stream_overriding_metadata()
+        {
+            const string stream = "setting_nonjson_metadata_on_empty_soft_deleted_stream_recreates_stream_overriding_metadata";
+
+            _conn.DeleteStream(stream, ExpectedVersion.NoStream, hardDelete: false);
+
+            Assert.AreEqual(1, _conn.SetStreamMetadata(stream, 0, new byte[256]).NextExpectedVersion);
+
+            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            Assert.AreEqual(SliceReadStatus.StreamNotFound, res.Status);
+            Assert.AreEqual(-1, res.LastEventNumber);
+            Assert.AreEqual(0, res.Events.Length);
+
+            var meta = _conn.GetStreamMetadata(stream);
+            Assert.AreEqual(2, meta.MetastreamVersion);
+            Assert.AreEqual(0, meta.StreamMetadata.TruncateBefore);
+            Assert.AreEqual(null, meta.StreamMetadata.MaxCount);
+            Assert.AreEqual(null, meta.StreamMetadata.Acl);
+            Assert.IsEmpty(meta.StreamMetadata.CustomKeys);
+        }
+
+        [Test, Category("LongRunning"), Category("Network")]
+        public void setting_nonjson_metadata_on_nonempty_soft_deleted_stream_recreates_stream_overriding_metadata()
+        {
+            const string stream = "setting_nonjson_metadata_on_nonempty_soft_deleted_stream_recreates_stream_overriding_metadata";
+
+            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
+            _conn.DeleteStream(stream, 1, hardDelete: false);
+
+            Assert.AreEqual(1, _conn.SetStreamMetadata(stream, 0, new byte[256]).NextExpectedVersion);
+
+            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            Assert.AreEqual(SliceReadStatus.Success, res.Status);
+            Assert.AreEqual(1, res.LastEventNumber);
+            Assert.AreEqual(0, res.Events.Length);
+
+            var meta = _conn.GetStreamMetadata(stream);
+            Assert.AreEqual(2, meta.MetastreamVersion);
+            Assert.AreEqual(2, meta.StreamMetadata.TruncateBefore);
+            Assert.AreEqual(null, meta.StreamMetadata.MaxCount);
+            Assert.AreEqual(null, meta.StreamMetadata.Acl);
+            Assert.IsEmpty(meta.StreamMetadata.CustomKeys);
         }
     }
 }
