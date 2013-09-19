@@ -6,14 +6,13 @@ using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
-namespace EventStore.Core.Services.Transport.Http
+namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public class GossipController : CommunicationController,
                                     IHttpSender,

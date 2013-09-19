@@ -2,10 +2,9 @@
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.Tests.Services.ElectionsService;
 using NUnit.Framework;
 
-namespace EventStore.Core.Private.Tests.Services.ElectionsService
+namespace EventStore.Core.Tests.Services.ElectionsService
 {
     [TestFixture]
     public sealed class elections_service_should_stuck_with_single_node_response

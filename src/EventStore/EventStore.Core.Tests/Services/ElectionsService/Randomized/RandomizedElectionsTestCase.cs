@@ -6,7 +6,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Private.Tests.Services.ElectionsService.Randomized;
 using EventStore.Core.Tests.Infrastructure;
 using EventStore.Core.TransactionLog.Checkpoint;
 

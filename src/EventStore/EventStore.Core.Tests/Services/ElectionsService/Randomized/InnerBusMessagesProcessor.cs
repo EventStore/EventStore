@@ -6,7 +6,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Infrastructure;
 
-namespace EventStore.Core.Private.Tests.Services.ElectionsService.Randomized
+namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
 {
     internal class InnerBusMessagesProcessor : IHandle<Message>
     {

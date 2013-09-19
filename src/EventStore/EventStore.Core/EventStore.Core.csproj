@@ -220,14 +220,14 @@
     <Compile Include="Data\UserData.cs" />
     <Compile Include="Services\Transport\Http\Authentication\TrustedHttpAuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Controllers\ClusterWebUIController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\ElectController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\GossipController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\GuidController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\UsersController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
-    <Compile Include="Services\Transport\Http\ElectController.cs" />
-    <Compile Include="Services\Transport\Http\GossipController.cs" />
     <Compile Include="Services\Transport\Http\IncomingHttpRequestAuthenticationManager.cs" />
     <Compile Include="Services\Transport\Http\AuthenticatedHttpRequestProcessor.cs" />
     <Compile Include="Services\Transport\Http\IHttpService.cs" />
