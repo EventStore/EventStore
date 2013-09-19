@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Standard
                         "Categorize stream projection handler has been initialized with separator: '{0}'", _separator));
             }
             // we will need to declare event types we are interested in
-            _categoryStreamPrefix = "$ce-";
+            _categoryStreamPrefix = "$ce" + _separator;
         }
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
