@@ -77,6 +77,14 @@ namespace EventStore.ClientAPI
         void DeleteStream(string stream, int expectedVersion, UserCredentials userCredentials = null);
 
         /// <summary>
+        /// Deletes a stream from the Event Store synchronously
+        /// </summary>
+        /// <param name="stream">The name of the stream to be deleted</param>
+        /// <param name="expectedVersion">The expected version the stream should have when being deleted. <see cref="ExpectedVersion"/></param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+        void DeleteStream(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null);
+
+        /// <summary>
         /// Deletes a stream from the Event Store asynchronously
         /// </summary>
         /// <param name="stream">The name of the stream to delete.</param>
@@ -84,6 +92,15 @@ namespace EventStore.ClientAPI
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task"/> that can be awaited upon by the caller.</returns>
         Task DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null);
+
+        /// <summary>
+        /// Deletes a stream from the Event Store asynchronously
+        /// </summary>
+        /// <param name="stream">The name of the stream to delete.</param>
+        /// <param name="expectedVersion">The expected version that the streams should have when being deleted. <see cref="ExpectedVersion"/></param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+        /// <returns>A <see cref="Task"/> that can be awaited upon by the caller.</returns>
+        Task DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Appends Events synchronously to a stream.

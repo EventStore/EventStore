@@ -28,7 +28,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -41,6 +43,8 @@ using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -248,34 +252,35 @@ namespace EventStore.Core.Services.Storage
             Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(message.CorrelationId, totalTime));
         }
 
-        void IHandle<StorageMessage.WritePrepares>.Handle(StorageMessage.WritePrepares message)
+        void IHandle<StorageMessage.WritePrepares>.Handle(StorageMessage.WritePrepares msg)
         {
             Interlocked.Decrement(ref FlushMessagesInQueue);
 
             try
             {
-                if (message.LiveUntil < DateTime.UtcNow)
+                if (msg.LiveUntil < DateTime.UtcNow)
                     return;
 
-                var commitCheck = _indexWriter.CheckCommit(message.EventStreamId, message.ExpectedVersion, message.Events.Select(x => x.EventId));
+                string streamId = msg.EventStreamId;
+                var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion, msg.Events.Select(x => x.EventId));
                 if (commitCheck.Decision != CommitDecision.Ok)
                 {
-                    ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
+                    ActOnCommitCheckFailure(msg.Envelope, msg.CorrelationId, commitCheck);
                     return;
                 }
 
                 var prepares = new List<PrepareLogRecord>();
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
-                if (message.Events.Length > 0)
+                if (msg.Events.Length > 0)
                 {
                     var transactionPosition = logPosition;
-                    for (int i = 0; i < message.Events.Length; ++i)
+                    for (int i = 0; i < msg.Events.Length; ++i)
                     {
-                        var evnt = message.Events[i];
+                        var evnt = msg.Events[i];
                         var flags = PrepareFlags.Data | PrepareFlags.IsCommitted;
                         if (i == 0)
                             flags |= PrepareFlags.TransactionBegin;
-                        if (i == message.Events.Length - 1)
+                        if (i == msg.Events.Length - 1)
                             flags |= PrepareFlags.TransactionEnd;
                         if (evnt.IsJson)
                             flags |= PrepareFlags.IsJson;
@@ -283,8 +288,8 @@ namespace EventStore.Core.Services.Storage
                         // when IsCommitted ExpectedVersion is always explicit
                         var expectedVersion = commitCheck.CurrentVersion + i;
                         var res = WritePrepareWithRetry(
-                            LogRecord.Prepare(logPosition, message.CorrelationId, evnt.EventId,
-                                              transactionPosition, i, message.EventStreamId,
+                            LogRecord.Prepare(logPosition, msg.CorrelationId, evnt.EventId,
+                                              transactionPosition, i, streamId,
                                               expectedVersion, flags, evnt.EventType, evnt.Data, evnt.Metadata));
                         logPosition = res.NewPos;
                         if (i == 0)
@@ -295,15 +300,21 @@ namespace EventStore.Core.Services.Storage
                 else
                 {
                     WritePrepareWithRetry(
-                        LogRecord.Prepare(logPosition, message.CorrelationId, Guid.NewGuid(), logPosition, -1,
-                                          message.EventStreamId, commitCheck.CurrentVersion,
+                        LogRecord.Prepare(logPosition, msg.CorrelationId, Guid.NewGuid(), logPosition, -1,
+                                          streamId, commitCheck.CurrentVersion,
                                           PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommitted,
                                           null, Empty.ByteArray, Empty.ByteArray));
                 }
+
+                bool softUndeleteMetastream = SystemStreams.IsMetastream(streamId)
+                                              && _indexWriter.IsSoftDeleted(SystemStreams.OriginalStreamOf(streamId));
+
                 _indexWriter.PreCommit(prepares);
 
                 if (commitCheck.IsSoftDeleted)
-                    SoftUndeleteStream(commitCheck.EventStreamId, commitCheck.CurrentVersion + 1);
+                    SoftUndeleteStream(streamId, commitCheck.CurrentVersion + 1);
+                if (softUndeleteMetastream)
+                    SoftUndeleteMetastream(streamId);
             }
             catch (Exception exc)
             {
@@ -317,11 +328,27 @@ namespace EventStore.Core.Services.Storage
         }
 
 
+        private void SoftUndeleteMetastream(string metastreamId)
+        {
+            var origStreamId = SystemStreams.OriginalStreamOf(metastreamId);
+            var rawMetaInfo = _indexWriter.GetStreamRawMeta(origStreamId);
+            SoftUndeleteStream(origStreamId,
+                               metaLastEventNumber: rawMetaInfo.Item1,
+                               rawMeta: rawMetaInfo.Item2,
+                               recreateFrom: _indexWriter.GetStreamLastEventNumber(origStreamId) + 1);
+        }
+
         private void SoftUndeleteStream(string streamId, int recreateFromEventNumber)
         {
-            var undeletedInfo = _indexWriter.GetSoftUndeletedStreamMeta(streamId, recreateFromEventNumber);
-            var metaLastEventNumber = undeletedInfo.Item1;
-            var modifiedMeta = undeletedInfo.Item2;
+            var rawInfo = _indexWriter.GetStreamRawMeta(streamId);
+            var metaLastEventNumber = rawInfo.Item1;
+            var rawMeta = rawInfo.Item2;
+            SoftUndeleteStream(streamId, metaLastEventNumber, rawMeta, recreateFromEventNumber);
+        }
+
+        private void SoftUndeleteStream(string streamId, int metaLastEventNumber, byte[] rawMeta, int recreateFrom)
+        {
+            var modifiedMeta = SoftUndeleteRawMeta(rawMeta, recreateFrom);
 
             var logPosition = Writer.Checkpoint.ReadNonFlushed();
             var res = WritePrepareWithRetry(
@@ -331,6 +358,21 @@ namespace EventStore.Core.Services.Storage
                                   SystemEventTypes.StreamMetadata, modifiedMeta, Empty.ByteArray));
 
             _indexWriter.PreCommit(new[] { res.Prepare });
+        }
+
+        public byte[] SoftUndeleteRawMeta(byte[] rawMeta, int recreateFromEventNumber)
+        {
+            var jobj = Helper.EatException(() => JObject.Parse(Encoding.UTF8.GetString(rawMeta)), new JObject());
+            jobj[SystemMetadata.TruncateBefore] = recreateFromEventNumber;
+
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream)))
+                {
+                    jobj.WriteTo(jsonWriter);
+                }
+                return memoryStream.ToArray();
+            }
         }
 
         void IHandle<StorageMessage.WriteDelete>.Handle(StorageMessage.WriteDelete message)
@@ -350,12 +392,29 @@ namespace EventStore.Core.Services.Storage
                     return;
                 }
 
-                // when IsCommitted ExpectedVersion is actually real EventNumber
-                const int expectedVersion = EventNumber.DeletedStream - 1;
-                var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(), message.CorrelationId,
-                                                       eventId, message.EventStreamId, expectedVersion, PrepareFlags.IsCommitted); 
-                var res = WritePrepareWithRetry(record);
-                _indexWriter.PreCommit(new[] {res.Prepare});
+                if (message.HardDelete)
+                {
+                    // HARD DELETE
+                    const int expectedVersion = EventNumber.DeletedStream - 1;
+                    var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(), message.CorrelationId,
+                                                           eventId, message.EventStreamId, expectedVersion, PrepareFlags.IsCommitted);
+                    var res = WritePrepareWithRetry(record);
+                    _indexWriter.PreCommit(new[] { res.Prepare });
+                }
+                else 
+                {
+                    // SOFT DELETE
+                    var metastreamId = SystemStreams.MetastreamOf(message.EventStreamId);
+                    var expectedVersion = _indexWriter.GetStreamLastEventNumber(metastreamId);
+                    var logPosition = Writer.Checkpoint.ReadNonFlushed();
+                    const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson;
+                    var data = new StreamMetadata(truncateBefore: EventNumber.DeletedStream).ToJsonBytes();
+                    var res = WritePrepareWithRetry(
+                        LogRecord.Prepare(logPosition, message.CorrelationId, eventId, logPosition, 0,
+                                          metastreamId, expectedVersion, flags, SystemEventTypes.StreamMetadata,
+                                          data, null));
+                    _indexWriter.PreCommit(new[] { res.Prepare });
+                }
             }
             catch (Exception exc)
             {
@@ -499,14 +558,21 @@ namespace EventStore.Core.Services.Storage
                     return;
                 }
 
+
                 var commit = WriteCommitWithRetry(LogRecord.Commit(commitPos,
                                                                    message.CorrelationId,
                                                                    message.TransactionPosition,
                                                                    commitCheck.CurrentVersion + 1));
+
+                bool softUndeleteMetastream = SystemStreams.IsMetastream(commitCheck.EventStreamId)
+                                              && _indexWriter.IsSoftDeleted(SystemStreams.OriginalStreamOf(commitCheck.EventStreamId));
+               
                 _indexWriter.PreCommit(commit);
 
                 if (commitCheck.IsSoftDeleted)
                     SoftUndeleteStream(commitCheck.EventStreamId, commitCheck.CurrentVersion + 1);
+                if (softUndeleteMetastream)
+                    SoftUndeleteMetastream(commitCheck.EventStreamId);
             }
             catch (Exception exc)
             {

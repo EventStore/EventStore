@@ -125,7 +125,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, new[] { TestEvent.NewTestEvent() });
@@ -144,7 +144,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 try
                 {
-                    store.DeleteStream(stream, ExpectedVersion.EmptyStream);
+                    store.DeleteStream(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 }
                 catch (Exception exc)
                 {
@@ -166,7 +166,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
                 var append = store.AppendToStreamAsync(stream, 5, new[] { TestEvent.NewTestEvent() });
@@ -307,7 +307,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, new[] { TestEvent.NewTestEvent() });
@@ -324,7 +324,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { TestEvent.NewTestEvent() });
@@ -341,7 +341,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
                 var append = store.AppendToStreamAsync(stream, 5, new[] { TestEvent.NewTestEvent() });

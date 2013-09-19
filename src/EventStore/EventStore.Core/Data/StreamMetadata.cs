@@ -38,7 +38,7 @@ namespace EventStore.Core.Data
 {
     public class StreamMetadata
     {
-        public static readonly StreamMetadata Empty = new StreamMetadata(null, null, null, null, null, null);
+        public static readonly StreamMetadata Empty = new StreamMetadata();
 
         public readonly int? MaxCount;
         public readonly TimeSpan? MaxAge;
@@ -62,7 +62,6 @@ namespace EventStore.Core.Data
             if (truncateBefore < 0)
                 throw new ArgumentOutOfRangeException(
                     "truncateBefore", string.Format("{0} should be non negative value.", SystemMetadata.TruncateBefore));
-
             if (cacheControl <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException(
                     "cacheControl", string.Format("{0} should be positive time span.", SystemMetadata.CacheControl));

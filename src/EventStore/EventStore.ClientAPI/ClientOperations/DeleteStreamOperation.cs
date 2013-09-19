@@ -39,19 +39,22 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly bool _requireMaster;
         private readonly string _stream;
         private readonly int _expectedVersion;
+        private readonly bool _hardDelete;
 
         public DeleteStreamOperation(ILogger log, TaskCompletionSource<object> source,
-                                     bool requireMaster, string stream, int expectedVersion, UserCredentials userCredentials)
+                                     bool requireMaster, string stream, int expectedVersion, bool hardDelete,
+                                     UserCredentials userCredentials)
             :base(log, source, TcpCommand.DeleteStream, TcpCommand.DeleteStreamCompleted, userCredentials)
         {
             _requireMaster = requireMaster;
             _stream = stream;
             _expectedVersion = expectedVersion;
+            _hardDelete = hardDelete;
         }
 
         protected override object CreateRequestDto()
         {
-            return new ClientMessage.DeleteStream(_stream, _expectedVersion, _requireMaster);
+            return new ClientMessage.DeleteStream(_stream, _expectedVersion, _requireMaster, _hardDelete);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.DeleteStreamCompleted response)

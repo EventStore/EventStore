@@ -82,9 +82,19 @@ namespace EventStore.ClientAPI
             _conn.DeleteStream(stream, expectedVersion, userCredentials);
         }
 
+        public void DeleteStream(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
+        {
+            _conn.DeleteStream(stream, expectedVersion, hardDelete, userCredentials);
+        }
+
         public Task DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
             return _conn.DeleteStreamAsync(stream, expectedVersion, userCredentials);
+        }
+        
+        public Task DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
+        {
+            return _conn.DeleteStreamAsync(stream, expectedVersion, hardDelete, userCredentials);
         }
 
         public WriteResult AppendToStream(string stream, int expectedVersion, params EventData[] events)

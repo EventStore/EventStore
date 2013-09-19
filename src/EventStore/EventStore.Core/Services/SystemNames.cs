@@ -36,6 +36,7 @@ namespace EventStore.Core.Services
         public const string LongPoll = "ES-LongPoll";
         public const string TrustedAuth = "ES-TrustedAuth";
         public const string ProjectionPosition = "ES-Position";
+        public const string HardDelete = "ES-HardDelete";
     }
 
     public static class SystemStreams

@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                  -1, 
                                  new EventData(_eventId0, "event0", false, new byte[3], new byte[2]),
                                  new EventData(_eventId1, "event1", false, new byte[7], new byte[10]));
-            _conn.DeleteStream("deleted-stream", -1);
+            _conn.DeleteStream("deleted-stream", -1, hardDelete: true);
         }
 
         [TestFixtureTearDown]

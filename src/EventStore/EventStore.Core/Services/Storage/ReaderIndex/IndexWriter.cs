@@ -86,7 +86,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         void PurgeNotProcessedCommitsTill(long checkpoint);
         void PurgeNotProcessedTransactions(long checkpoint);
 
-        Tuple<int, byte[]> GetSoftUndeletedStreamMeta(string streamId, int recreateFromEventNumber);
+        bool IsSoftDeleted(string streamId);
+        int GetStreamLastEventNumber(string streamId);
+        StreamMetadata GetStreamMetadata(string streamId);
+        Tuple<int, byte[]> GetStreamRawMeta(string streamId);
     }
 
     public class IndexWriter : IIndexWriter
@@ -236,11 +239,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, IsSoftDeleted(streamId));
         }
 
-        private bool IsSoftDeleted(string streamId)
-        {
-            return GetStreamMetadata(streamId).TruncateBefore == EventNumber.DeletedStream;
-        }
-
         public void PreCommit(CommitLogRecord commit)
         {
             string streamId = null;
@@ -301,52 +299,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var rawMeta = lastPrepare.Data;
                 _streamRawMetas.Put(SystemStreams.OriginalStreamOf(streamId), new StreamMeta(rawMeta, null), +1);
             }
-        }
-
-        private struct TransInfo
-        {
-            public readonly long TransactionId;
-            public readonly long LogPosition;
-
-            public TransInfo(long transactionId, long logPosition)
-            {
-                TransactionId = transactionId;
-                LogPosition = logPosition;
-            }
-        }
-
-        private struct CommitInfo
-        {
-            public readonly string StreamId;
-            public readonly long LogPosition;
-
-            public CommitInfo(string streamId, long logPosition)
-            {
-                StreamId = streamId;
-                LogPosition = logPosition;
-            }
-        }
-
-        private int GetStreamLastEventNumber(string streamId)
-        {
-            int lastEventNumber;
-            if (_streamVersions.TryGet(streamId, out lastEventNumber))
-                return lastEventNumber;
-            return _indexReader.GetStreamLastEventNumber(streamId);
-        }
-
-        private StreamMetadata GetStreamMetadata(string streamId)
-        {
-            StreamMeta meta;
-            if (_streamRawMetas.TryGet(streamId, out meta))
-            {
-                if (meta.Meta != null)
-                    return meta.Meta;
-                var m = Helper.EatException(() => StreamMetadata.FromJsonBytes(meta.RawMeta), StreamMetadata.Empty);
-                _streamRawMetas.Put(streamId, new StreamMeta(meta.RawMeta, m), 0);
-                return m;
-            }
-            return _indexReader.GetStreamMetadata(streamId);
         }
 
         public void UpdateTransactionInfo(long transactionId, long logPosition, TransactionInfo transactionInfo)
@@ -466,7 +418,34 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        public Tuple<int, byte[]> GetSoftUndeletedStreamMeta(string streamId, int recreateFromEventNumber)
+        public bool IsSoftDeleted(string streamId)
+        {
+            return GetStreamMetadata(streamId).TruncateBefore == EventNumber.DeletedStream;
+        }
+
+        public int GetStreamLastEventNumber(string streamId)
+        {
+            int lastEventNumber;
+            if (_streamVersions.TryGet(streamId, out lastEventNumber))
+                return lastEventNumber;
+            return _indexReader.GetStreamLastEventNumber(streamId);
+        }
+
+        public StreamMetadata GetStreamMetadata(string streamId)
+        {
+            StreamMeta meta;
+            if (_streamRawMetas.TryGet(streamId, out meta))
+            {
+                if (meta.Meta != null)
+                    return meta.Meta;
+                var m = Helper.EatException(() => StreamMetadata.FromJsonBytes(meta.RawMeta), StreamMetadata.Empty);
+                _streamRawMetas.Put(streamId, new StreamMeta(meta.RawMeta, m), 0);
+                return m;
+            }
+            return _indexReader.GetStreamMetadata(streamId);
+        }
+
+        public Tuple<int, byte[]> GetStreamRawMeta(string streamId)
         {
             var metastreamId = SystemStreams.MetastreamOf(streamId);
             var metaLastEventNumber = GetStreamLastEventNumber(metastreamId);
@@ -475,25 +454,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (!_streamRawMetas.TryGet(streamId, out meta))
                 meta = new StreamMeta(_indexReader.ReadPrepare(metastreamId, metaLastEventNumber).Data, null);
 
-            try
-            {
-                var jobj = JObject.Parse(Encoding.UTF8.GetString(meta.RawMeta));
-                jobj[SystemMetadata.TruncateBefore] = recreateFromEventNumber;
-                using (var memoryStream = new MemoryStream())
-                {
-                    using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream)))
-                    {
-                        jobj.WriteTo(jsonWriter);
-                    }
-                    return Tuple.Create(metaLastEventNumber, memoryStream.ToArray());
-                }
-            }
-            catch (Exception exc)
-            {
-                var msg = string.Format("Error deserializing to-be-soft-undeleted stream '{0}' metadata. That's wrong!", streamId);
-                Log.ErrorException(exc, msg);
-                throw new Exception(msg, exc);
-            }
+            return Tuple.Create(metaLastEventNumber, meta.RawMeta);
         }
 
         private struct StreamMeta
@@ -505,6 +466,30 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 RawMeta = rawMeta;
                 Meta = meta;
+            }
+        }
+
+        private struct TransInfo
+        {
+            public readonly long TransactionId;
+            public readonly long LogPosition;
+
+            public TransInfo(long transactionId, long logPosition)
+            {
+                TransactionId = transactionId;
+                LogPosition = logPosition;
+            }
+        }
+
+        private struct CommitInfo
+        {
+            public readonly string StreamId;
+            public readonly long LogPosition;
+
+            public CommitInfo(string streamId, long logPosition)
+            {
+                StreamId = streamId;
+                LogPosition = logPosition;
             }
         }
     }

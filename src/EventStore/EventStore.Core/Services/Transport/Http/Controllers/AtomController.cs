@@ -177,11 +177,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
                 return;
             }
+            bool hardDelete;
+            if (!GetHardDelete(manager, out hardDelete))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.HardDelete));
+                return;
+            }
             if (!requireMaster && _httpForwarder.ForwardRequest(manager))
                 return;
             var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.DeleteStreamCompleted, Configure.DeleteStreamCompleted);
             var corrId = Guid.NewGuid();
-            Publish(new ClientMessage.DeleteStream(corrId, corrId, envelope, requireMaster, stream, expectedVersion, manager.User));
+            Publish(new ClientMessage.DeleteStream(corrId, corrId, envelope, requireMaster, stream, expectedVersion, hardDelete, manager.User));
         }
 
         private void GetStreamEvent(HttpEntityManager manager, UriTemplateMatch match)
@@ -551,6 +557,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return true;
             }
             if (string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase))
+                return true;
+            return false;
+        }
+
+        private bool GetHardDelete(HttpEntityManager manager, out bool hardDelete)
+        {
+            hardDelete = false;
+            var hardDel = manager.HttpEntity.Request.Headers[SystemHeaders.HardDelete];
+            if (hardDel == null)
+                return true;
+            if (string.Equals(hardDel, "True", StringComparison.OrdinalIgnoreCase))
+            {
+                hardDelete = true;
+                return true;
+            }
+            if (string.Equals(hardDel, "False", StringComparison.OrdinalIgnoreCase))
                 return true;
             return false;
         }

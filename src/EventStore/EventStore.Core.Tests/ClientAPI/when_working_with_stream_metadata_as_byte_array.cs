@@ -165,7 +165,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "setting_metadata_for_deleted_stream_throws_stream_deleted_exception";
 
-            _connection.DeleteStream(stream, ExpectedVersion.NoStream);
+            _connection.DeleteStream(stream, ExpectedVersion.NoStream, hardDelete: true);
 
             var metadataBytes = Guid.NewGuid().ToByteArray();
             Assert.That(() => _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadataBytes),
@@ -193,7 +193,7 @@ namespace EventStore.Core.Tests.ClientAPI
             var metadataBytes = Guid.NewGuid().ToByteArray();
             _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadataBytes);
 
-            _connection.DeleteStream(stream, ExpectedVersion.NoStream);
+            _connection.DeleteStream(stream, ExpectedVersion.NoStream, hardDelete: true);
 
             var meta = _connection.GetStreamMetadataAsRawBytes(stream);
             Assert.AreEqual(stream, meta.Stream);

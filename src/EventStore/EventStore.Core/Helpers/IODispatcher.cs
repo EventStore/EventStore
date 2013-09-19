@@ -147,12 +147,12 @@ namespace EventStore.Core.Helpers
         }
 
         public void DeleteStream(
-            string streamId, int expectedVersion, IPrincipal principal, 
+            string streamId, int expectedVersion, bool hardDelete, IPrincipal principal, 
             Action<ClientMessage.DeleteStreamCompleted> action)
         {
             var corrId = Guid.NewGuid();
             StreamDeleter.Publish(
-                new ClientMessage.DeleteStream(corrId, corrId, Writer.Envelope, false, streamId, expectedVersion, principal), action);
+                new ClientMessage.DeleteStream(corrId, corrId, Writer.Envelope, false, streamId, expectedVersion, hardDelete, principal), action);
         }
 
         public void UpdateStreamAcl(

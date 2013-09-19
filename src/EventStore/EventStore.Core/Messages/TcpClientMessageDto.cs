@@ -201,13 +201,17 @@ namespace EventStore.Core.Messages
     [ProtoMember(3, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
     public readonly bool RequireMaster;
   
+    [ProtoMember(4, IsRequired = false, Name=@"hard_delete", DataFormat = DataFormat.Default)]
+    public readonly bool? HardDelete;
+  
     private DeleteStream() {}
   
-    public DeleteStream(string eventStreamId, int expectedVersion, bool requireMaster)
+    public DeleteStream(string eventStreamId, int expectedVersion, bool requireMaster, bool? hardDelete)
     {
         EventStreamId = eventStreamId;
         ExpectedVersion = expectedVersion;
         RequireMaster = requireMaster;
+        HardDelete = hardDelete;
     }
   }
   
