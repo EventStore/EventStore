@@ -66,7 +66,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
             Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
 
-            var metastreamMetadata = new StreamMetadata(metastreamMaxCount, null, null, null, null);
+            var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
             _indexBackend = new IndexBackend(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
             _indexReader = new IndexReader(_indexBackend, hasher, tableIndex, metastreamMetadata);

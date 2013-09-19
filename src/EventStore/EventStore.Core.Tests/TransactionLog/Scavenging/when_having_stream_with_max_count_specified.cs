@@ -27,7 +27,6 @@
 // 
 using System.Linq;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -40,7 +39,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging
         protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator)
         {
             return dbCreator
-                    .Chunk(Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(3, null, null, null, null)),
+                    .Chunk(Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(maxCount: 3)),
                            Rec.Commit(0, "$$bla"),
                            Rec.Prepare(1, "bla"),
                            Rec.Commit(1, "bla"),

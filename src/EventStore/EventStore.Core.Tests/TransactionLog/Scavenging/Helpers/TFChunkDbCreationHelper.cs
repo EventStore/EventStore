@@ -239,15 +239,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             if (rec.Metadata == null) return null;
 
             var meta = rec.Metadata;
-            return Helper.UTF8NoBom.GetBytes(
-                "{" + String.Join(",", GetMetadata(meta)) + "}");
-        }
-
-        private IEnumerable<string> GetMetadata(StreamMetadata meta)
-        {
-            if (meta.MaxCount.HasValue) yield return string.Format("$maxCount:{0}", meta.MaxCount);
-            if (meta.MaxAge.HasValue) yield return string.Format("$maxAge:{0}", (int)meta.MaxAge.Value.TotalSeconds);
-            if (meta.TruncateBefore.HasValue) yield return string.Format("$tb:{0})", meta.TruncateBefore);
+            return meta.ToJsonBytes();
         }
     }
 

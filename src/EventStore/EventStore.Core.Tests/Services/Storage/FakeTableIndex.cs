@@ -34,6 +34,8 @@ namespace EventStore.Core.Tests.Services.Storage
 {
     public class FakeTableIndex: ITableIndex
     {
+        internal static readonly IndexEntry InvalidIndexEntry = new IndexEntry(0, -1, -1);
+
         public long PrepareCheckpoint { get { throw new NotImplementedException(); } }
         public long CommitCheckpoint { get { throw new NotImplementedException(); } }
 
@@ -57,17 +59,25 @@ namespace EventStore.Core.Tests.Services.Storage
 
         public bool TryGetOneValue(uint stream, int version, out long position)
         {
-            throw new NotImplementedException();
+            position = -1;
+            return false;
         }
 
         public bool TryGetLatestEntry(uint stream, out IndexEntry entry)
         {
-            throw new NotImplementedException();
+            entry = InvalidIndexEntry;
+            return false;
+        }
+
+        public bool TryGetOldestEntry(uint stream, out IndexEntry entry)
+        {
+            entry = InvalidIndexEntry;
+            return false;
         }
 
         public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion)
         {
-            throw new NotImplementedException();
+            yield break;
         }
     }
 }

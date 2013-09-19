@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Net;
+using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
@@ -37,19 +38,19 @@ namespace EventStore.Core.Messages
     {
         public class SystemInit : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
         }
 
         public class SystemStart : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
         }
 
         public class ServiceInitialized: Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly string ServiceName;
@@ -63,13 +64,13 @@ namespace EventStore.Core.Messages
 
         public class WriteEpoch: Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
         }
 
         public abstract class StateChangeMessage: Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -85,7 +86,7 @@ namespace EventStore.Core.Messages
 
         public class BecomePreMaster : StateChangeMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public BecomePreMaster(Guid correlationId): base(correlationId, VNodeState.PreMaster)
@@ -95,7 +96,7 @@ namespace EventStore.Core.Messages
 
         public class BecomeMaster: StateChangeMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public BecomeMaster(Guid correlationId): base(correlationId, VNodeState.Master)
@@ -105,7 +106,7 @@ namespace EventStore.Core.Messages
 
         public class BecomeShuttingDown : StateChangeMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly bool ExitProcess;
@@ -119,7 +120,7 @@ namespace EventStore.Core.Messages
 
         public class BecomeShutdown : StateChangeMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public BecomeShutdown(Guid correlationId): base(correlationId, VNodeState.Shutdown)
@@ -129,7 +130,7 @@ namespace EventStore.Core.Messages
 
         public class BecomeUnknown : StateChangeMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public BecomeUnknown(Guid correlationId)
@@ -140,7 +141,7 @@ namespace EventStore.Core.Messages
 
         public abstract class ReplicaStateMessage : StateChangeMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly VNodeInfo Master;
@@ -155,7 +156,7 @@ namespace EventStore.Core.Messages
 
         public class BecomePreReplica : ReplicaStateMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public BecomePreReplica(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.PreReplica, master)
@@ -165,7 +166,7 @@ namespace EventStore.Core.Messages
 
         public class BecomeCatchingUp : ReplicaStateMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public BecomeCatchingUp(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.CatchingUp, master)
@@ -175,7 +176,7 @@ namespace EventStore.Core.Messages
 
         public class BecomeClone : ReplicaStateMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public BecomeClone(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.Clone, master)
@@ -185,7 +186,7 @@ namespace EventStore.Core.Messages
 
         public class BecomeSlave : ReplicaStateMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public BecomeSlave(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.Slave, master)
@@ -195,14 +196,14 @@ namespace EventStore.Core.Messages
 
         public class ServiceShutdown : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly string ServiceName;
 
             public ServiceShutdown(string serviceName)
             {
-                if (string.IsNullOrEmpty(serviceName)) 
+                if (String.IsNullOrEmpty(serviceName)) 
                     throw new ArgumentNullException("serviceName");
                 ServiceName = serviceName;
             }
@@ -210,13 +211,13 @@ namespace EventStore.Core.Messages
 
         public class ShutdownTimeout : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
         }
 
         public class VNodeConnectionLost : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly IPEndPoint VNodeEndPoint;
@@ -234,7 +235,7 @@ namespace EventStore.Core.Messages
 
         public class VNodeConnectionEstablished : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly IPEndPoint VNodeEndPoint;
@@ -252,7 +253,7 @@ namespace EventStore.Core.Messages
 
         public class WaitForChaserToCatchUp : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -269,7 +270,7 @@ namespace EventStore.Core.Messages
 
         public class ChaserCaughtUp : Message
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -280,5 +281,17 @@ namespace EventStore.Core.Messages
                 CorrelationId = correlationId;
             }
         }
+
+	    public class RequestForwardingTimerTick : Message
+	    {
+		    private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+		    public override int MsgTypeId { get { return TypeId; } }
+	    }
+
+	    public class NoQuorumMessage : Message
+	    {
+		    private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+		    public override int MsgTypeId { get { return TypeId; } }
+	    }
     }
 }

@@ -146,11 +146,11 @@ namespace EventStore.Core
                                             () => new TFReaderLease(readerPool),
                                             maxSizeForMemory: memTableEntryCount,
                                             maxTablesPerLevel: 2);
-
+            var hasher = new XXHashUnsafe();
             var readIndex = new ReadIndex(_mainQueue,
                                           readerPool,
                                           tableIndex,
-                                          new XXHashUnsafe(),
+                                          hasher,
                                           ESConsts.StreamInfoCacheCapacity,
                                           Application.IsDefined(Application.AdditionalCommitChecks),
                                           Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1);
@@ -180,6 +180,8 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
 
             var storageScavenger = new StorageScavenger(db,
+                                                        tableIndex,
+                                                        hasher,
                                                         readIndex,
                                                         Application.IsDefined(Application.AlwaysKeepScavenged),
                                                         mergeChunks: false /*!Application.IsDefined(Application.DisableMergeChunks)*/);

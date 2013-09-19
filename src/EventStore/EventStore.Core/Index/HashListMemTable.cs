@@ -30,7 +30,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 
@@ -145,6 +144,29 @@ namespace EventStore.Core.Index
                 {
                     var latest = list.Keys[list.Count - 1];
                     entry = new IndexEntry(stream, latest.Item1, latest.Item2);
+                    return true;
+                }
+                finally
+                {
+                    Monitor.Exit(list);
+                }
+            }
+            return false;
+        }
+
+        public bool TryGetOldestEntry(uint stream, out IndexEntry entry)
+        {
+            entry = TableIndex.InvalidIndexEntry;
+
+            SortedList<Tuple<int, long>, byte> list;
+            if (_hash.TryGetValue(stream, out list))
+            {
+                if (!Monitor.TryEnter(list, 10000))
+                    throw new UnableToAcquireLockInReasonableTimeException();
+                try
+                {
+                    var oldest = list.Keys[0];
+                    entry = new IndexEntry(stream, oldest.Item1, oldest.Item2);
                     return true;
                 }
                 finally

@@ -37,6 +37,7 @@ namespace EventStore.Core.Index
 
         bool TryGetOneValue(uint stream, int number, out long position);
         bool TryGetLatestEntry(uint stream, out IndexEntry entry);
+        bool TryGetOldestEntry(uint stream, out IndexEntry entry);
         IEnumerable<IndexEntry> GetRange(uint stream, int startNumber, int endNumber);
         IEnumerable<IndexEntry> IterateAllInOrder();
     }
