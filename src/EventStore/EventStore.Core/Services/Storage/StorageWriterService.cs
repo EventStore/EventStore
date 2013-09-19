@@ -348,7 +348,9 @@ namespace EventStore.Core.Services.Storage
 
         private void SoftUndeleteStream(string streamId, int metaLastEventNumber, byte[] rawMeta, int recreateFrom)
         {
-            var modifiedMeta = SoftUndeleteRawMeta(rawMeta, recreateFrom);
+            byte[] modifiedMeta;
+            if (!SoftUndeleteRawMeta(rawMeta, recreateFrom, out modifiedMeta))
+                return;
 
             var logPosition = Writer.Checkpoint.ReadNonFlushed();
             var res = WritePrepareWithRetry(
@@ -360,19 +362,28 @@ namespace EventStore.Core.Services.Storage
             _indexWriter.PreCommit(new[] { res.Prepare });
         }
 
-        public byte[] SoftUndeleteRawMeta(byte[] rawMeta, int recreateFromEventNumber)
+        public bool SoftUndeleteRawMeta(byte[] rawMeta, int recreateFromEventNumber, out byte[] modifiedMeta)
         {
-            var jobj = Helper.EatException(() => JObject.Parse(Encoding.UTF8.GetString(rawMeta)), new JObject());
-            jobj[SystemMetadata.TruncateBefore] = recreateFromEventNumber;
-
-            using (var memoryStream = new MemoryStream())
+            try
             {
-                using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream)))
+                var jobj = JObject.Parse(Encoding.UTF8.GetString(rawMeta));
+                jobj[SystemMetadata.TruncateBefore] = recreateFromEventNumber;
+                using (var memoryStream = new MemoryStream())
                 {
-                    jobj.WriteTo(jsonWriter);
+                    using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream)))
+                    {
+                        jobj.WriteTo(jsonWriter);
+                    }
+                    modifiedMeta = memoryStream.ToArray();
+                    return true;
                 }
-                return memoryStream.ToArray();
             }
+            catch (Exception)
+            {
+                modifiedMeta = null;
+                return false;
+            }
+
         }
 
         void IHandle<StorageMessage.WriteDelete>.Handle(StorageMessage.WriteDelete message)
