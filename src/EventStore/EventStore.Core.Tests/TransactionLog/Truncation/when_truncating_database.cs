@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         [Test]
         public void everything_should_go_fine()
         {
-            var miniNode = new MiniNode(PathName);
+            var miniNode = new MiniNode(PathName, inMemDb: false);
             miniNode.Start();
 
             var tcpPort = miniNode.TcpEndPoint.Port;
@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
             miniNode.Shutdown(keepDb: true, keepPorts: true);
 
             // --- first restart and truncation
-            miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort);
+            miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort, inMemDb: false);
             
             miniNode.Start();
             Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
             miniNode.Shutdown(keepDb: true, keepPorts: true);
 
             // -- second restart
-            miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort);
+            miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort, inMemDb: false);
             Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
             miniNode.Start();
 

@@ -74,7 +74,8 @@ namespace EventStore.Core.Tests.Helpers
                         int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null, 
                         ISubsystem[] subsystems = null,
                         int? chunkSize = null, int? cachedChunkSize = null, bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true,
-                        int memTableSize = 1000)
+                        int memTableSize = 1000,
+                        bool inMemDb = true)
         {
             if (_running) throw new Exception("Previous MiniNode is still running!!!");
             _running = true;
@@ -90,7 +91,7 @@ namespace EventStore.Core.Tests.Helpers
 
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}-{2}", extTcpPort, extSecTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
-            Db = new TFChunkDb(CreateDbConfig(chunkSize ?? ChunkSize, _dbPath, cachedChunkSize ?? CachedChunkSize));
+            Db = new TFChunkDb(CreateDbConfig(chunkSize ?? ChunkSize, _dbPath, cachedChunkSize ?? CachedChunkSize, inMemDb));
             
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
@@ -194,29 +195,39 @@ namespace EventStore.Core.Tests.Helpers
             return host.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
         }
 
-        private TFChunkDbConfig CreateDbConfig(int chunkSize, string dbPath, long chunksCacheSize)
+        private TFChunkDbConfig CreateDbConfig(int chunkSize, string dbPath, long chunksCacheSize, bool inMemDb)
         {
-            var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
-            var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
-            var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
-            var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
             ICheckpoint writerChk;
             ICheckpoint chaserChk;
             ICheckpoint epochChk;
             ICheckpoint truncateChk;
-            if (Runtime.IsMono)
+            if (inMemDb)
             {
-                writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-                chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-                epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-                truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
+                writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
+                chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
+                epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
+                truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
             }
             else
             {
-                writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-                chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-                epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-                truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
+                var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
+                var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
+                var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
+                var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
+                if (Runtime.IsMono)
+                {
+                    writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+                    chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+                    epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
+                    truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
+                }
+                else
+                {
+                    writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+                    chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+                    epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
+                    truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
+                }
             }
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
@@ -225,8 +236,8 @@ namespace EventStore.Core.Tests.Helpers
                                                  writerChk,
                                                  chaserChk,
                                                  epochChk,
-                                                 truncateChk);
-
+                                                 truncateChk,
+                                                 inMemDb);
             return nodeConfig;
         }
     }

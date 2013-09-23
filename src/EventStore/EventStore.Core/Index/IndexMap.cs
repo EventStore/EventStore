@@ -131,10 +131,15 @@ namespace EventStore.Core.Index
                    select table.Filename;
         }
 
+        public static IndexMap CreateEmpty(int maxTablesPerLevel = 4)
+        {
+            return new IndexMap(IndexMapVersion, new List<List<PTable>>(), -1, -1, maxTablesPerLevel);
+        }
+
         public static IndexMap FromFile(string filename, int maxTablesPerLevel = 4, bool loadPTables = true)
         {
             if (!File.Exists(filename))
-                return new IndexMap(IndexMapVersion, new List<List<PTable>>(), -1, -1, maxTablesPerLevel);
+                return CreateEmpty(maxTablesPerLevel);
 
             using (var f = File.OpenRead(filename))
             {

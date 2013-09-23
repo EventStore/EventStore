@@ -42,6 +42,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public readonly ICheckpoint EpochCheckpoint;
         public readonly ICheckpoint TruncateCheckpoint;
         public readonly IFileNamingStrategy FileNamingStrategy;
+        public readonly bool InMemDb;
 
         public TFChunkDbConfig(string path, 
                                IFileNamingStrategy fileNamingStrategy, 
@@ -50,7 +51,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                                ICheckpoint writerCheckpoint, 
                                ICheckpoint chaserCheckpoint,
                                ICheckpoint epochCheckpoint,
-                               ICheckpoint truncateCheckpoint)
+                               ICheckpoint truncateCheckpoint,
+                               bool inMemDb = false)
         {
             Ensure.NotNullOrEmpty(path, "path");
             Ensure.NotNull(fileNamingStrategy, "fileNamingStrategy");
@@ -69,6 +71,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             EpochCheckpoint = epochCheckpoint;
             TruncateCheckpoint = truncateCheckpoint;
             FileNamingStrategy = fileNamingStrategy;
+            InMemDb = inMemDb;
         }
     }
 }

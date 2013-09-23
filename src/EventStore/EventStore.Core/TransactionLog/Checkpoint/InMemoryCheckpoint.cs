@@ -44,10 +44,10 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 
         public InMemoryCheckpoint() : this(Guid.NewGuid().ToString(), 0) {}
 
-        public InMemoryCheckpoint(string name, long initialValue)
+        public InMemoryCheckpoint(string name, long initValue = 0)
         {
-            _last = initialValue;
-            _lastFlushed = initialValue;
+            _last = initValue;
+            _lastFlushed = initValue;
             _name = name;
         }
 

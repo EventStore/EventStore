@@ -51,24 +51,27 @@ namespace EventStore.ClusterNode
                                 string.Format("{0:yyyy-MM-dd_HH.mm.ss.ffffff}-Node{1}", _startupTimeStamp, nodePort));
         }
 
-        protected override void Create(ClusterNodeOptions options)
+        protected override void Create(ClusterNodeOptions opts)
         {
-            var dbPath = Path.GetFullPath(ResolveDbPath(options.DbPath, options.ExternalHttpPort));
+            var dbPath = Path.GetFullPath(ResolveDbPath(opts.DbPath, opts.ExternalHttpPort));
 
-            _dbLock = new ExclusiveDbLock(dbPath);
-            if (!_dbLock.Acquire())
-                throw new Exception(string.Format("Couldn't acquire exclusive lock on DB at '{0}'.", dbPath));
+            if (!opts.InMemDb)
+            {
+                _dbLock = new ExclusiveDbLock(dbPath);
+                if (!_dbLock.Acquire())
+                    throw new Exception(string.Format("Couldn't acquire exclusive lock on DB at '{0}'.", dbPath));
+            }
             _clusterNodeMutex = new ClusterNodeMutex();
             if (!_clusterNodeMutex.Acquire())
                 throw new Exception(string.Format("Couldn't acquire exclusive Cluster Node mutex '{0}'.", _clusterNodeMutex.MutexName));
 
-            var dbConfig = CreateDbConfig(dbPath, options.CachedChunks, options.ChunksCacheSize);
+            var dbConfig = CreateDbConfig(dbPath, opts.CachedChunks, opts.ChunksCacheSize, opts.InMemDb);
             var db = new TFChunkDb(dbConfig);
-            var vNodeSettings = GetClusterVNodeSettings(options);
-            var managersIps = options.FakeDnsIps.Union(new[] { vNodeSettings.ManagerEndPoint.Address }).Distinct().ToArray();
-            var dnsService = options.FakeDns ? (IDnsService)new ConfigDns(managersIps) : new DnsService();
-            var dbVerifyHashes = !options.SkipDbVerify;
-            var runProjections = options.RunProjections;
+            var vNodeSettings = GetClusterVNodeSettings(opts);
+            var managersIps = opts.FakeDnsIps.Union(new[] { vNodeSettings.ManagerEndPoint.Address }).Distinct().ToArray();
+            var dnsService = opts.FakeDns ? (IDnsService)new ConfigDns(managersIps) : new DnsService();
+            var dbVerifyHashes = !opts.SkipDbVerify;
+            var runProjections = opts.RunProjections;
 
             Log.Info("\n{0,-25} {1}\n"
                      + "{2,-25} {3}\n"
@@ -86,7 +89,7 @@ namespace EventStore.ClusterNode
             var enabledNodeSubsystems = runProjections >= RunProjections.System
                 ? new[] {NodeSubsystems.Projections}
                 : new NodeSubsystems[0];
-            _projections = new Projections.Core.ProjectionsSubsystem(options.ProjectionThreads, options.RunProjections);
+            _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);
             _node = new ClusterVNode(db, vNodeSettings, dnsService, dbVerifyHashes, ESConsts.MemTableEntryCount, _projections);
             RegisterWebControllers(enabledNodeSubsystems);
             RegisterUiProjections();

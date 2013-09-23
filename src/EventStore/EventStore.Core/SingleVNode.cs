@@ -145,7 +145,8 @@ namespace EventStore.Core
                                             () => new HashListMemTable(maxSize: memTableEntryCount * 2),
                                             () => new TFReaderLease(readerPool),
                                             maxSizeForMemory: memTableEntryCount,
-                                            maxTablesPerLevel: 2);
+                                            maxTablesPerLevel: 2,
+                                            inMem: db.Config.InMemDb);
             var hasher = new XXHashUnsafe();
             var readIndex = new ReadIndex(_mainQueue,
                                           readerPool,

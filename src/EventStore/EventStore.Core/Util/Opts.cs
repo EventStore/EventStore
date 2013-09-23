@@ -106,6 +106,12 @@ namespace EventStore.Core.Util
         public const string DbPathDescr = "The path the db should be loaded/saved to.";
         public static readonly string DbPathDefault = string.Empty;
 
+        public const string InMemDbCmd = "mem-db";
+        public const string InMemDbEnv = "MEM_DB";
+        public const string InMemDbJson = "memDb";
+        public const string InMemDbDescr = "Keep everything in memory, no directories or files are created.";
+        public const bool   InMemDbDefault = false;
+
         public const string EnableTrustedAuthCmd = "enable-trusted-auth";
         public const string EnableTrustedAuthEnv = "ENABLE_TRUSTED_AUTH";
         public const string EnableTrustedAuthJson = "enableTrustedAuth";

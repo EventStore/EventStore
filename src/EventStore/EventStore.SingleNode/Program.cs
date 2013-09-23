@@ -37,7 +37,6 @@ using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Common.Utils;
 using System.Linq;
-using EventStore.Core.Util;
 using EventStore.Web.Playground;
 using EventStore.Web.Users;
 
@@ -76,18 +75,21 @@ namespace EventStore.SingleNode
             return string.Format("{0}-{1}-single-node", options.Ip, options.HttpPort);
         }
 
-        protected override void Create(SingleNodeOptions options)
+        protected override void Create(SingleNodeOptions opts)
         {
-            var dbPath = Path.GetFullPath(ResolveDbPath(options.DbPath, options.HttpPort));
+            var dbPath = Path.GetFullPath(ResolveDbPath(opts.DbPath, opts.HttpPort));
 
-            _dbLock = new ExclusiveDbLock(dbPath);
-            if (!_dbLock.Acquire())
-                throw new Exception(string.Format("Couldn't acquire exclusive lock on DB at '{0}'.", dbPath));
+            if (!opts.InMemDb)
+            {
+                _dbLock = new ExclusiveDbLock(dbPath);
+                if (!_dbLock.Acquire())
+                    throw new Exception(string.Format("Couldn't acquire exclusive lock on DB at '{0}'.", dbPath));
+            }
 
-            var db = new TFChunkDb(CreateDbConfig(dbPath, options.CachedChunks, options.ChunksCacheSize));
-            var vnodeSettings = GetVNodeSettings(options);
-            var dbVerifyHashes = !options.SkipDbVerify;
-            var runProjections = options.RunProjections;
+            var db = new TFChunkDb(CreateDbConfig(dbPath, opts.CachedChunks, opts.ChunksCacheSize, opts.InMemDb));
+            var vnodeSettings = GetVNodeSettings(opts);
+            var dbVerifyHashes = !opts.SkipDbVerify;
+            var runProjections = opts.RunProjections;
 
             Log.Info("\n{0,-25} {1}\n{2,-25} {3} (0x{3:X})\n{4,-25} {5} (0x{5:X})\n{6,-25} {7} (0x{7:X})\n{8,-25} {9} (0x{9:X})\n",
                      "DATABASE:", db.Config.Path,
@@ -99,7 +101,7 @@ namespace EventStore.SingleNode
             var enabledNodeSubsystems = runProjections >= RunProjections.System
                 ? new[] {NodeSubsystems.Projections}
                 : new NodeSubsystems[0];
-            _projections = new Projections.Core.ProjectionsSubsystem(options.ProjectionThreads, runProjections);
+            _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, runProjections);
             _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, ESConsts.MemTableEntryCount, _projections);
             RegisterWebControllers(enabledNodeSubsystems);
             RegisterUIProjections();
