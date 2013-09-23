@@ -42,19 +42,21 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Func<IProjectionStateHandler> _handlerFactory;
         private readonly ProjectionConfig _projectionConfig;
         private readonly IQueryDefinition _sourceDefinition;
+        private readonly ProjectionNamesBuilder _namesBuilder;
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
         public ParallelQueryProcessingStrategy(
             string name, ProjectionVersion projectionVersion, Func<IProjectionStateHandler> handlerFactory,
-            ProjectionConfig projectionConfig, IQueryDefinition sourceDefinition, ILogger logger,
-            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
+            ProjectionConfig projectionConfig, IQueryDefinition sourceDefinition, ProjectionNamesBuilder namesBuilder,
+            ILogger logger, SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
             ReaderSubscriptionDispatcher subscriptionDispatcher)
             : base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher)
         {
             _handlerFactory = handlerFactory;
             _projectionConfig = projectionConfig;
             _sourceDefinition = sourceDefinition;
+            _namesBuilder = namesBuilder;
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
         }
 
@@ -73,6 +75,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
         {
+            if (_sourceDefinition.HasCategories())
+            {
+                return new ParallelQueryMasterReaderStrategy(
+                    0, SystemAccount.Principal, timeProvider,
+                    _namesBuilder.GetCategoryCatalogStreamName(_sourceDefinition.Categories[0]));
+            }
             return new ParallelQueryMasterReaderStrategy(
                 0, SystemAccount.Principal, timeProvider, _sourceDefinition.CatalogStream);
         }

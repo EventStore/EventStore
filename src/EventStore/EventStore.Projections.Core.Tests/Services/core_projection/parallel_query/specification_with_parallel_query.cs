@@ -72,7 +72,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
                 _projectionName, _version, GivenProjectionStateHandler, _projectionConfig,
                 ProjectionSourceDefinition.From(
                     _projectionName, sourceDefinition, typeof (FakeProjectionStateHandler).GetNativeHandlerName(),
-                    source), null, _spoolProcessingResponseDispatcher, _subscriptionDispatcher);
+                    source), new ProjectionNamesBuilder(_projectionName, sourceDefinition), null,
+                _spoolProcessingResponseDispatcher, _subscriptionDispatcher);
         }
 
         protected override void Given()

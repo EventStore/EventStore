@@ -130,15 +130,19 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             try
             {
-                //TODO: factory method can throw!
+                //TODO: factory method can throw
                 IProjectionStateHandler stateHandler = message.HandlerFactory();
                 string name = message.Name;
                 var sourceDefinition = ProjectionSourceDefinition.From(
                     name, stateHandler.GetSourceDefinition(), message.HandlerType, message.Query);
                 var projectionVersion = message.Version;
                 var projectionConfig = message.Config;
+                var namesBuilder = new ProjectionNamesBuilder(name, sourceDefinition);
+
                 var projectionProcessingStrategy = _processingStrategySelector.CreateProjectionProcessingStrategy(
-                    name, projectionVersion, sourceDefinition, projectionConfig, message.HandlerFactory, stateHandler);
+                    name, projectionVersion, namesBuilder,
+                    sourceDefinition, projectionConfig, message.HandlerFactory, stateHandler);
+
                 var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
                 CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
@@ -161,8 +165,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     name, message.SourceDefinition, message.HandlerType, message.Query);
                 var projectionVersion = message.Version;
                 var projectionConfig = message.Config;
+                var namesBuilder = new ProjectionNamesBuilder(name, sourceDefinition);
+
                 var projectionProcessingStrategy = _processingStrategySelector.CreateProjectionProcessingStrategy(
-                    name, projectionVersion, sourceDefinition, projectionConfig, null, null);
+                    name, projectionVersion, namesBuilder, sourceDefinition, projectionConfig, null, null);
+
                 var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
                 CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(

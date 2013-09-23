@@ -97,6 +97,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private const string ProjectionCheckpointStreamSuffix = "-checkpoint";
         private const string ProjectionOrderStreamSuffix = "-order";
         private const string ProjectionPartitionCatalogStreamSuffix = "-partitions";
+        private const string CategoryCatalogStreamNamePrefix = "$category-";
 
         public string GetPartitionCatalogStreamName()
         {
@@ -132,6 +133,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public string GetOrderStreamName()
         {
             return _orderStreamName;
+        }
+
+        public string GetCategoryCatalogStreamName(string category)
+        {
+            return CategoryCatalogStreamNamePrefix + category;
         }
     }
 }
