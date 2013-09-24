@@ -61,7 +61,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         public int PhysicalDataSize { get { return _physicalDataSize; } }  
 
         public string FileName { get { return _filename; } }
-        public int FileSize { get { return _filesize; } }
+        public int FileSize { get { return _fileSize; } }
 
         public ChunkHeader ChunkHeader { get { return _chunkHeader; } }
         public ChunkFooter ChunkFooter { get { return _chunkFooter; } }
@@ -80,7 +80,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private readonly bool _inMem;
         private readonly string _filename;
-        private int _filesize;
+        private int _fileSize;
         private volatile bool _isReadOnly;
         private ChunkHeader _chunkHeader;
         private ChunkFooter _chunkFooter;
@@ -188,7 +188,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             if (!fileInfo.Exists)
                 throw new CorruptDatabaseException(new ChunkNotFoundException(_filename));
 
-            _filesize = (int)fileInfo.Length;
+            _fileSize = (int)fileInfo.Length;
             _isReadOnly = true;
             SetAttributes();
             CreateReaderStreams();
@@ -237,6 +237,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             Ensure.NotNull(chunkHeader, "chunkHeader");
             Ensure.Positive(fileSize, "fileSize");
 
+            _fileSize = fileSize;
             _isReadOnly = false;
             _chunkHeader = chunkHeader;
             _physicalDataSize = 0;
@@ -256,9 +257,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private void InitOngoing(int writePosition, bool checkSize)
         {
             Ensure.Nonnegative(writePosition, "writePosition");
-            if (!File.Exists(_filename))
+            var fileInfo = new FileInfo(_filename);
+            if (!fileInfo.Exists)
                 throw new CorruptDatabaseException(new ChunkNotFoundException(_filename));
 
+            _fileSize = (int)fileInfo.Length;
             _isReadOnly = false;
             _physicalDataSize = writePosition;
             _logicalDataSize = writePosition;
@@ -745,7 +748,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             int mapSize = 0;
             if (mapping != null)
             {
-                if (_isCached != 0)
+                if (!_inMem && _isCached != 0)
                 {
                     throw new InvalidOperationException("Trying to write mapping while chunk is cached! "
                                                       + "You probably are writing scavenged chunk as cached. "
@@ -777,7 +780,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             if (workItem.StreamLength != fileSize)
             {
                 workItem.ResizeStream(fileSize);
-                _filesize = fileSize;
+                _fileSize = fileSize;
             }
 
             return footerWithHash;
@@ -983,7 +986,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private Stream GetSequentialReaderFileStream()
         {
             return _inMem
-                ? (Stream) new UnmanagedMemoryStream((byte*) _cachedData, _filesize)
+                ? (Stream) new UnmanagedMemoryStream((byte*) _cachedData, _fileSize)
                 : new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 65536, FileOptions.SequentialScan);
         }
 
