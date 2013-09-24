@@ -55,9 +55,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -66,8 +64,6 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
@@ -89,7 +85,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         bool IsSoftDeleted(string streamId);
         int GetStreamLastEventNumber(string streamId);
         StreamMetadata GetStreamMetadata(string streamId);
-        Tuple<int, byte[]> GetStreamRawMeta(string streamId);
+        RawMetaInfo GetStreamRawMeta(string streamId);
+    }
+
+    public struct RawMetaInfo
+    {
+        public readonly int MetaLastEventNumber;
+        public readonly byte[] RawMeta;
+
+        public RawMetaInfo(int metaLastEventNumber, byte[] rawMeta)
+        {
+            MetaLastEventNumber = metaLastEventNumber;
+            RawMeta = rawMeta;
+        }
     }
 
     public class IndexWriter : IIndexWriter
@@ -104,7 +112,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private readonly IStickyLRUCache<long, TransactionInfo> _transactionInfoCache = new StickyLRUCache<long, TransactionInfo>(ESConsts.TransactionMetadataCacheCapacity);
         private readonly Queue<TransInfo> _notProcessedTrans = new Queue<TransInfo>();
-        private readonly BoundedCache<Guid, Tuple<string, int>> _committedEvents = new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, ESConsts.CommitedEventsMemCacheLimit, x => 16 + 4 + IntPtr.Size + 2*x.Item1.Length);
+        private readonly BoundedCache<Guid, EventInfo> _committedEvents = new BoundedCache<Guid, EventInfo>(int.MaxValue, ESConsts.CommitedEventsMemCacheLimit, x => 16 + 4 + IntPtr.Size + 2*x.StreamId.Length);
         private readonly IStickyLRUCache<string, int> _streamVersions = new StickyLRUCache<string, int>(ESConsts.StreamInfoCacheCapacity);
         private readonly IStickyLRUCache<string, StreamMeta> _streamRawMetas = new StickyLRUCache<string, StreamMeta>(0); // store nothing flushed, only sticky non-flushed stuff
         private readonly Queue<CommitInfo> _notProcessedCommits = new Queue<CommitInfo>();
@@ -189,13 +197,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 int endEventNumber = -1;
                 foreach (var eventId in eventIds)
                 {
-                    Tuple<string, int> prepInfo;
-                    if (!_committedEvents.TryGetRecord(eventId, out prepInfo) || prepInfo.Item1 != streamId)
+                    EventInfo prepInfo;
+                    if (!_committedEvents.TryGetRecord(eventId, out prepInfo) || prepInfo.StreamId != streamId)
                         return new CommitCheckResult(first ? CommitDecision.Ok : CommitDecision.CorruptedIdempotency,
                                                      streamId, curVersion, -1, -1, first && IsSoftDeleted(streamId));
                     if (first)
-                        startEventNumber = prepInfo.Item2;
-                    endEventNumber = prepInfo.Item2;
+                        startEventNumber = prepInfo.EventNumber;
+                    endEventNumber = prepInfo.EventNumber;
                     first = false;
                 }
                 return first /* no data in transaction */
@@ -210,8 +218,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 {
                     eventNumber += 1;
 
-                    Tuple<string, int> prepInfo;
-                    if (_committedEvents.TryGetRecord(eventId, out prepInfo) && prepInfo.Item1 == streamId && prepInfo.Item2 == eventNumber)
+                    EventInfo prepInfo;
+                    if (_committedEvents.TryGetRecord(eventId, out prepInfo)
+                        && prepInfo.StreamId == streamId
+                        && prepInfo.EventNumber == eventNumber)
                         continue;
 
                     var res = _indexReader.ReadPrepare(streamId, eventNumber);
@@ -260,7 +270,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                       ? EventNumber.DeletedStream
                                       : commit.FirstEventNumber + prepare.TransactionOffset;
                 lastPrepare = prepare;
-                _committedEvents.PutRecord(prepare.EventId, Tuple.Create(streamId, eventNumber), throwOnDuplicate: false);
+                _committedEvents.PutRecord(prepare.EventId, new EventInfo(streamId, eventNumber), throwOnDuplicate: false);
             }
 
             if (eventNumber != int.MinValue)
@@ -290,7 +300,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
 
                 eventNumber = prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
-                _committedEvents.PutRecord(prepare.EventId, Tuple.Create(streamId, eventNumber), throwOnDuplicate: false);
+                _committedEvents.PutRecord(prepare.EventId, new EventInfo(streamId, eventNumber), throwOnDuplicate: false);
             }
             _notProcessedCommits.Enqueue(new CommitInfo(streamId, lastPrepare.LogPosition));
             _streamVersions.Put(streamId, eventNumber, 1);
@@ -445,7 +455,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return _indexReader.GetStreamMetadata(streamId);
         }
 
-        public Tuple<int, byte[]> GetStreamRawMeta(string streamId)
+        public RawMetaInfo GetStreamRawMeta(string streamId)
         {
             var metastreamId = SystemStreams.MetastreamOf(streamId);
             var metaLastEventNumber = GetStreamLastEventNumber(metastreamId);
@@ -454,7 +464,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (!_streamRawMetas.TryGet(streamId, out meta))
                 meta = new StreamMeta(_indexReader.ReadPrepare(metastreamId, metaLastEventNumber).Data, null);
 
-            return Tuple.Create(metaLastEventNumber, meta.RawMeta);
+            return new RawMetaInfo(metaLastEventNumber, meta.RawMeta);
         }
 
         private struct StreamMeta
@@ -466,6 +476,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 RawMeta = rawMeta;
                 Meta = meta;
+            }
+        }
+
+        private struct EventInfo
+        {
+            public readonly string StreamId;
+            public readonly int EventNumber;
+
+            public EventInfo(string streamId, int eventNumber)
+            {
+                StreamId = streamId;
+                EventNumber = eventNumber;
             }
         }
 

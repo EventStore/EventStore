@@ -28,7 +28,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -94,7 +93,7 @@ namespace EventStore.Transport.Tcp
         private SocketAsyncEventArgs _sendSocketArgs;
 
         private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
-        private readonly Queue<Tuple<ArraySegment<byte>, int>> _receiveQueue = new Queue<Tuple<ArraySegment<byte>, int>>();
+        private readonly Queue<ReceivedData> _receiveQueue = new Queue<ReceivedData>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
         private readonly object _receivingLock = new object();
@@ -291,8 +290,8 @@ namespace EventStore.Transport.Tcp
 
             lock (_receivingLock)
             {
-                var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
-                _receiveQueue.Enqueue(Tuple.Create(fullBuffer, socketArgs.Count));
+                var buf = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count);
+                _receiveQueue.Enqueue(new ReceivedData(buf, socketArgs.BytesTransferred));
             }
 
             lock (_receiveSocketArgs)
@@ -309,32 +308,36 @@ namespace EventStore.Transport.Tcp
         private void TryDequeueReceivedData()
         {
             Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback;
-            List<Tuple<ArraySegment<byte>, int>> res;
+            List<ReceivedData> res;
             lock (_receivingLock)
             {
                 // no awaiting callback or no data to dequeue
                 if (_receiveCallback == null || _receiveQueue.Count == 0)
                     return;
 
-                res = new List<Tuple<ArraySegment<byte>, int>>(_receiveQueue.Count);
+                res = new List<ReceivedData>(_receiveQueue.Count);
                 while (_receiveQueue.Count > 0)
                 {
-                    var arraySegments = _receiveQueue.Dequeue();
-                    res.Add(arraySegments);
+                    res.Add(_receiveQueue.Dequeue());
                 }
 
                 callback = _receiveCallback;
                 _receiveCallback = null;
             }
 
-            callback(this, res.Select(v => v.Item1).ToArray());
-
+            var data = new ArraySegment<byte>[res.Count];
             int bytes = 0;
+            for (int i = 0; i < data.Length; ++i)
+            {
+                var d = res[i];
+                bytes += d.DataLen;
+                data[i] = new ArraySegment<byte>(d.Buf.Array, d.Buf.Offset, d.DataLen);
+            }
+            callback(this, data);
+
             for (int i = 0, n = res.Count; i < n; ++i)
             {
-                var tuple = res[i];
-                bytes += tuple.Item1.Count;
-                BufferManager.CheckIn(new ArraySegment<byte>(tuple.Item1.Array, tuple.Item1.Offset, tuple.Item2)); // dispose buffers
+                BufferManager.CheckIn(res[i].Buf); // dispose buffers
             }
             NotifyReceiveDispatched(bytes);
         }
@@ -414,6 +417,18 @@ namespace EventStore.Transport.Tcp
         public override string ToString()
         {
             return RemoteEndPoint.ToString();
+        }
+
+        private struct ReceivedData
+        {
+            public readonly ArraySegment<byte> Buf;
+            public readonly int DataLen;
+
+            public ReceivedData(ArraySegment<byte> buf, int dataLen)
+            {
+                Buf = buf;
+                DataLen = dataLen;
+            }
         }
     }
 }

@@ -108,11 +108,8 @@ namespace EventStore.Core.DataStructures
             }
         }
 
-        public TValue Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory)
+        public TValue Put<T>(TKey key, T userData, Func<TKey, T, TValue> addFactory, Func<TKey, TValue, T, TValue> updateFactory)
         {
-            Ensure.NotNull(addFactory, "addFactory");
-            Ensure.NotNull(updateFactory, "updateFactory");
-
             lock (_lock)
             {
                 LinkedListNode<LRUItem> node;
@@ -120,7 +117,7 @@ namespace EventStore.Core.DataStructures
                 {
                     node = GetNode();
                     node.Value.Key = key;
-                    node.Value.Value = addFactory(key);
+                    node.Value.Value = addFactory(key, userData);
 
                     EnsureCapacity();
 
@@ -128,7 +125,7 @@ namespace EventStore.Core.DataStructures
                 }
                 else
                 {
-                    node.Value.Value = updateFactory(key, node.Value.Value);
+                    node.Value.Value = updateFactory(key, node.Value.Value, userData);
                     _orderList.Remove(node);
                 }
                 _orderList.AddLast(node);

@@ -32,6 +32,7 @@ using System.IO;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
@@ -288,8 +289,8 @@ namespace EventStore.Core.Index
             {
                 var recordRange = LocateRecordRange(endKey);
 
-                int low = recordRange.Item1;
-                int high = recordRange.Item2;
+                int low = recordRange.Lower;
+                int high = recordRange.Upper;
                 while (low < high)
                 {
                     var mid = low + (high - low) / 2;
@@ -337,8 +338,8 @@ namespace EventStore.Core.Index
             {
                 var recordRange = LocateRecordRange(startKey);
 
-                int low = recordRange.Item1;
-                int high = recordRange.Item2;
+                int low = recordRange.Lower;
+                int high = recordRange.Upper;
                 while (low < high)
                 {
                     var mid = low + (high - low + 1) / 2;
@@ -380,8 +381,8 @@ namespace EventStore.Core.Index
             try
             {
                 var recordRange = LocateRecordRange(endKey);
-                int low = recordRange.Item1;
-                int high = recordRange.Item2;
+                int low = recordRange.Lower;
+                int high = recordRange.Upper;
                 while (low < high)
                 {
                     var mid = low + (high - low) / 2;
@@ -415,14 +416,14 @@ namespace EventStore.Core.Index
             return ((uint)version) | (((ulong)stream) << 32);
         }
 
-        private Tuple<int, int> LocateRecordRange(ulong stream)
+        private Range LocateRecordRange(ulong stream)
         {
             var midpoints = _midpoints;
             if (midpoints == null) 
-                return Tuple.Create(0, Count-1);
+                return new Range(0, Count-1);
             int lowerMidpoint = LowerMidpointBound(midpoints, stream);
             int upperMidpoint = UpperMidpointBound(midpoints, stream);
-            return Tuple.Create(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
+            return new Range(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
         }
 
         private int LowerMidpointBound(Midpoint[] midpoints, ulong stream)

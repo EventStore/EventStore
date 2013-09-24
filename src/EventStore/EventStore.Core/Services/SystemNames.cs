@@ -48,7 +48,7 @@ namespace EventStore.Core.Services
 
         public static bool IsSystemStream(string streamId)
         {
-            return streamId.StartsWith("$");
+            return streamId.Length != 0 && streamId[0] == '$';
         }
 
         public static string MetastreamOf(string streamId)
@@ -58,7 +58,7 @@ namespace EventStore.Core.Services
 
         public static bool IsMetastream(string streamId)
         {
-            return streamId.StartsWith("$$");
+            return streamId.Length >= 2 && streamId[0] == '$' && streamId[1] == '$';
         }
 
         public static string OriginalStreamOf(string metastreamId)

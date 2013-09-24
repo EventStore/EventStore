@@ -94,7 +94,7 @@ namespace EventStore.Transport.Tcp.Framing
         private void Parse(ArraySegment<byte> bytes)
         {
             byte[] data = bytes.Array;
-            for (int i = bytes.Offset; i < bytes.Offset + bytes.Count; i++)
+            for (int i = bytes.Offset, n = bytes.Offset + bytes.Count; i < n; i++)
             {
                 if (_headerBytes < HeaderLength)
                 {

@@ -37,12 +37,12 @@ namespace EventStore.Core.Index
 {
     public class HashListMemTable : IMemTable, ISearchTable
     {
-        private static readonly IComparer<Tuple<int, long>> MemTableComparer = new MemTableComparer();
+        private static readonly IComparer<Entry> MemTableComparer = new EntryComparer();
 
         public int Count { get { return _count; } }
         public Guid Id { get { return _id; } }
 
-        private readonly ConcurrentDictionary<uint, SortedList<Tuple<int, long>, byte>> _hash;
+        private readonly ConcurrentDictionary<uint, SortedList<Entry, byte>> _hash;
         private readonly Guid _id = Guid.NewGuid();
         private int _count;
 
@@ -50,7 +50,7 @@ namespace EventStore.Core.Index
 
         public HashListMemTable(int maxSize)
         {
-            _hash = new ConcurrentDictionary<uint, SortedList<Tuple<int, long>, byte>>();
+            _hash = new ConcurrentDictionary<uint, SortedList<Entry, byte>>();
         }
 
         public bool MarkForConversion()
@@ -72,10 +72,10 @@ namespace EventStore.Core.Index
             Interlocked.Add(ref _count, entries.Count);
 
             var stream = entries[0].Stream; // NOTE: all entries should have the same stream
-            SortedList<Tuple<int, long>, byte> list;
+            SortedList<Entry, byte> list;
             if (!_hash.TryGetValue(stream, out list))
             {
-                list = new SortedList<Tuple<int, long>, byte>(MemTableComparer);
+                list = new SortedList<Entry, byte>(MemTableComparer);
                 _hash.AddOrUpdate(stream, list, (x, y) => { throw new Exception("This should never happen as MemTable updates are single-threaded."); });
             }
 
@@ -90,7 +90,7 @@ namespace EventStore.Core.Index
                         throw new Exception("Not all index entries in a bulk have the same stream hash.");
                     Ensure.Nonnegative(entry.Version, "entry.Version");
                     Ensure.Nonnegative(entry.Position, "entry.Position");
-                    list.Add(new Tuple<int, long>(entry.Version, entry.Position), 1);
+                    list.Add(new Entry(entry.Version, entry.Position), 0);
                 }
             }
             finally
@@ -106,20 +106,20 @@ namespace EventStore.Core.Index
 
             position = 0;
 
-            SortedList<Tuple<int, long>, byte> list;
+            SortedList<Entry, byte> list;
             if (_hash.TryGetValue(stream, out list))
             {
                 if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
                 try
                 {
-                    int endIdx = list.UpperBound(Tuple.Create(number, long.MaxValue));
+                    int endIdx = list.UpperBound(new Entry(number, long.MaxValue));
                     if (endIdx == -1)
                         return false;
 
                     var key = list.Keys[endIdx];
-                    if (key.Item1 == number)
+                    if (key.EvNum == number)
                     {
-                        position = key.Item2;
+                        position = key.LogPos;
                         return true;
                     }
                 }
@@ -135,7 +135,7 @@ namespace EventStore.Core.Index
         {
             entry = TableIndex.InvalidIndexEntry;
 
-            SortedList<Tuple<int, long>, byte> list;
+            SortedList<Entry, byte> list;
             if (_hash.TryGetValue(stream, out list))
             {
                 if (!Monitor.TryEnter(list, 10000))
@@ -143,7 +143,7 @@ namespace EventStore.Core.Index
                 try
                 {
                     var latest = list.Keys[list.Count - 1];
-                    entry = new IndexEntry(stream, latest.Item1, latest.Item2);
+                    entry = new IndexEntry(stream, latest.EvNum, latest.LogPos);
                     return true;
                 }
                 finally
@@ -158,7 +158,7 @@ namespace EventStore.Core.Index
         {
             entry = TableIndex.InvalidIndexEntry;
 
-            SortedList<Tuple<int, long>, byte> list;
+            SortedList<Entry, byte> list;
             if (_hash.TryGetValue(stream, out list))
             {
                 if (!Monitor.TryEnter(list, 10000))
@@ -166,7 +166,7 @@ namespace EventStore.Core.Index
                 try
                 {
                     var oldest = list.Keys[0];
-                    entry = new IndexEntry(stream, oldest.Item1, oldest.Item2);
+                    entry = new IndexEntry(stream, oldest.EvNum, oldest.LogPos);
                     return true;
                 }
                 finally
@@ -190,7 +190,7 @@ namespace EventStore.Core.Index
                 for (int i = list.Count - 1; i >= 0; --i)
                 {
                     var x = list.Keys[i];
-                    yield return new IndexEntry(key, x.Item1, x.Item2);
+                    yield return new IndexEntry(key, x.EvNum, x.LogPos);
                 }
             }
             //Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder... DONE!");
@@ -210,19 +210,19 @@ namespace EventStore.Core.Index
 
             var ret = new List<IndexEntry>();
 
-            SortedList<Tuple<int, long>, byte> list;
+            SortedList<Entry, byte> list;
             if (_hash.TryGetValue(stream, out list))
             {
                 if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
                 try
                 {
-                    var endIdx = list.UpperBound(Tuple.Create(endNumber, long.MaxValue));
+                    var endIdx = list.UpperBound(new Entry(endNumber, long.MaxValue));
                     for (int i = endIdx; i >= 0; i--)
                     {
                         var key = list.Keys[i];
-                        if (key.Item1 < startNumber)
+                        if (key.EvNum < startNumber)
                             break;
-                        ret.Add(new IndexEntry(stream, version: key.Item1, position: key.Item2));
+                        ret.Add(new IndexEntry(stream, version: key.EvNum, position: key.LogPos));
                     }
                 }
                 finally
@@ -232,15 +232,29 @@ namespace EventStore.Core.Index
             }
             return ret;
         }
-    }
 
-    public class MemTableComparer : IComparer<Tuple<int, long>>
-    {
-        public int Compare(Tuple<int, long> x, Tuple<int, long> y)
+        private struct Entry
         {
-            var first = x.Item1.CompareTo(y.Item1);
-            if (first != 0) return first;
-            return x.Item2.CompareTo(y.Item2);
+            public readonly int EvNum;
+            public readonly long LogPos;
+
+            public Entry(int evNum, long logPos)
+            {
+                EvNum = evNum;
+                LogPos = logPos;
+            }
+        }
+
+        private class EntryComparer : IComparer<Entry>
+        {
+            public int Compare(Entry x, Entry y)
+            {
+                if (x.EvNum < y.EvNum) return -1;
+                if (x.EvNum > y.EvNum) return 1;
+                if (x.LogPos < y.LogPos) return -1;
+                if (x.LogPos > y.LogPos) return 1;
+                return 0;
+            }
         }
     }
 

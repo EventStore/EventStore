@@ -29,6 +29,7 @@
 using System;
 using System.IO;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -303,7 +304,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     return -1;
 
                 var recordRange = LocatePosRange(midpoints, pos);
-                return TranslateExactWithoutMidpoints(workItem, pos, recordRange.Item1, recordRange.Item2);
+                return TranslateExactWithoutMidpoints(workItem, pos, recordRange.Lower, recordRange.Upper);
             }
 
             public RecordReadResult TryReadFirst()
@@ -319,8 +320,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 var workItem = Chunk.GetReaderWorkItem();
                 try
                 {
-                    var pos = TranslateClosestForwardPosition(workItem, logicalPosition);
-                    var actualPosition = pos.Item1;
+                    var actualPosition = TranslateClosestForwardPosition(workItem, logicalPosition);
                     if (actualPosition == -1 || actualPosition >= Chunk.PhysicalDataSize)
                         return RecordReadResult.Failure;
 
@@ -351,8 +351,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 var workItem = Chunk.GetReaderWorkItem();
                 try
                 {
-                    var pos = TranslateClosestForwardPosition(workItem, logicalPosition);
-                    var actualPosition = pos.Item1;
+                    var actualPosition = TranslateClosestForwardPosition(workItem, logicalPosition);
                     // here we allow actualPosition == _physicalDataSize as we can read backward the very last record that way
                     if (actualPosition == -1 || actualPosition > Chunk.PhysicalDataSize)
                         return RecordReadResult.Failure;
@@ -371,7 +370,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 }
             }
 
-            private Tuple<int, int> TranslateClosestForwardPosition(ReaderWorkItem workItem, long logicalPosition)
+            private int TranslateClosestForwardPosition(ReaderWorkItem workItem, long logicalPosition)
             {
                 var midpoints = _midpoints;
                 if (workItem.IsMemory || midpoints == null)
@@ -379,23 +378,23 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 return TranslateClosestForwardWithMidpoints(workItem, midpoints, logicalPosition);
             }
 
-            private Tuple<int, int> TranslateClosestForwardWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, long pos)
+            private int TranslateClosestForwardWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, long pos)
             {
                 // to allow backward reading of the last record, forward read will decline anyway
                 if (pos > midpoints[midpoints.Length - 1].LogPos)
-                    return Tuple.Create(Chunk.PhysicalDataSize, midpoints.Length); 
+                    return Chunk.PhysicalDataSize; 
 
                 var recordRange = LocatePosRange(midpoints, pos);
-                return TranslateClosestForwardWithoutMidpoints(workItem, pos, recordRange.Item1, recordRange.Item2);
+                return TranslateClosestForwardWithoutMidpoints(workItem, pos, recordRange.Lower, recordRange.Upper);
             }
 
-            private Tuple<int, int> TranslateClosestForwardWithoutMidpoints(ReaderWorkItem workItem, long pos, int startIndex, int endIndex)
+            private int TranslateClosestForwardWithoutMidpoints(ReaderWorkItem workItem, long pos, int startIndex, int endIndex)
             {
                 PosMap res = ReadPosMap(workItem, endIndex);
 
                 // to allow backward reading of the last record, forward read will decline anyway
                 if (pos > res.LogPos)
-                    return Tuple.Create(Chunk.PhysicalDataSize, endIndex + 1); 
+                    return Chunk.PhysicalDataSize; 
 
                 int low = startIndex;
                 int high = endIndex;
@@ -412,14 +411,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                         res = v;
                     }
                 }
-                return Tuple.Create(res.ActualPos, high);
+                return res.ActualPos;
             }
 
-            private static Tuple<int, int> LocatePosRange(Midpoint[] midpoints, long pos)
+            private static Range LocatePosRange(Midpoint[] midpoints, long pos)
             {
                 int lowerMidpoint = LowerMidpointBound(midpoints, pos);
                 int upperMidpoint = UpperMidpointBound(midpoints, pos);
-                return Tuple.Create(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
+                return new Range(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
             }
 
             /// <summary>

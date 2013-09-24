@@ -233,9 +233,9 @@ namespace EventStore.Core.Index
 
         public void AddEntries(long commitPos, IList<IndexEntry> entries)
         {
-            Ensure.Nonnegative(commitPos, "commitPos");
-            Ensure.NotNull(entries, "entries");
-            Ensure.Positive(entries.Count, "entries.Count");
+            //Ensure.Nonnegative(commitPos, "commitPos");
+            //Ensure.NotNull(entries, "entries");
+            //Ensure.Positive(entries.Count, "entries.Count");
 
             //should only be called on a single thread.
             var table = (IMemTable)_awaitingMemTables[0].Table; // always a memtable

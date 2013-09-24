@@ -50,20 +50,22 @@ namespace EventStore.Core.Data
         public readonly byte[] Metadata;
 
         public EventRecord(int eventNumber, PrepareLogRecord prepare)
-            : this(eventNumber,
-                   prepare.LogPosition,
-                   prepare.CorrelationId,
-                   prepare.EventId,
-                   prepare.TransactionPosition,
-                   prepare.TransactionOffset,
-                   prepare.EventStreamId,
-                   prepare.ExpectedVersion,
-                   prepare.TimeStamp,
-                   prepare.Flags,
-                   prepare.EventType,
-                   prepare.Data,
-                   prepare.Metadata)
         {
+            Ensure.Nonnegative(eventNumber, "eventNumber");
+
+            EventNumber = eventNumber;
+            LogPosition = prepare.LogPosition;
+            CorrelationId = prepare.CorrelationId;
+            EventId = prepare.EventId;
+            TransactionPosition = prepare.TransactionPosition;
+            TransactionOffset = prepare.TransactionOffset;
+            EventStreamId = prepare.EventStreamId;
+            ExpectedVersion = prepare.ExpectedVersion;
+            TimeStamp = prepare.TimeStamp;
+            Flags = prepare.Flags;
+            EventType = prepare.EventType ?? string.Empty;
+            Data = prepare.Data ?? Empty.ByteArray;
+            Metadata = prepare.Metadata ?? Empty.ByteArray;
         }
 
         public EventRecord(int eventNumber, 
@@ -100,8 +102,8 @@ namespace EventStore.Core.Data
             TimeStamp = timeStamp;
             Flags = flags;
             EventType = eventType ?? string.Empty;
-            Data = data ?? Common.Utils.Empty.ByteArray;
-            Metadata = metadata ?? Common.Utils.Empty.ByteArray;
+            Data = data ?? Empty.ByteArray;
+            Metadata = metadata ?? Empty.ByteArray;
         }
 
         public bool Equals(EventRecord other)

@@ -71,11 +71,6 @@ namespace EventStore.Core.Messages
             public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion,
                                  Event[] events, DateTime liveUntil)
             {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.NotNull(eventStreamId, "eventStreamId");
-                Ensure.NotNull(events, "events");
-                
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 EventStreamId = eventStreamId;

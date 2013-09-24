@@ -31,7 +31,7 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Core.DataStructures
 {
-    public class StickyLRUCache<TKey, TValue>: IStickyLRUCache<TKey, TValue>, ILRUCache<TKey, TValue>
+    public class StickyLRUCache<TKey, TValue>: IStickyLRUCache<TKey, TValue>
     {
         private class LRUItem
         {
@@ -79,16 +79,6 @@ namespace EventStore.Core.DataStructures
             return false;
         }
 
-        TValue ILRUCache<TKey, TValue>.Put(TKey key, TValue value)
-        {
-            return Put(key, value, 0);
-        }
-
-        TValue ILRUCache<TKey, TValue>.Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory)
-        {
-            return Put(key, addFactory, updateFactory, 0);
-        }
-
         public TValue Put(TKey key, TValue value, int stickiness)
         {
             LinkedListNode<LRUItem> node;
@@ -125,9 +115,6 @@ namespace EventStore.Core.DataStructures
 
         public TValue Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory, int stickiness)
         {
-            Ensure.NotNull(addFactory, "addFactory");
-            Ensure.NotNull(updateFactory, "updateFactory");
-
             LinkedListNode<LRUItem> node;
             if (!_items.TryGetValue(key, out node))
             {

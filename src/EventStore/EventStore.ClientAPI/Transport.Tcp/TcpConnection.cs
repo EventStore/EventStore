@@ -297,8 +297,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 res = new List<ArraySegment<byte>>(_receiveQueue.Count);
                 while (_receiveQueue.Count > 0)
                 {
-                    var arraySegments = _receiveQueue.Dequeue();
-                    res.Add(arraySegments);
+                    res.Add(_receiveQueue.Dequeue());
                 }
 
                 callback = _receiveCallback;
@@ -312,7 +311,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             {
                 bytes += res[i].Count;
             }
-                NotifyReceiveDispatched(bytes);
+            NotifyReceiveDispatched(bytes);
         }
 
         public void Close(string reason)

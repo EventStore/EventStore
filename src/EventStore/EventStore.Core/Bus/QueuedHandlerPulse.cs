@@ -175,7 +175,7 @@ namespace EventStore.Core.Bus
 
         public void Publish(Message message)
         {
-            Ensure.NotNull(message, "message");
+            //Ensure.NotNull(message, "message");
             _queue.Enqueue(message);
             if (_starving)
             {

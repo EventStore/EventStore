@@ -160,7 +160,7 @@ namespace EventStore.Core.Bus
 
         public void Publish(Message message)
         {
-            Ensure.NotNull(message, "message");
+            //Ensure.NotNull(message, "message");
             _queue.Enqueue(message);
             if (Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0)
                 ThreadPool.QueueUserWorkItem(ReadFromQueue);

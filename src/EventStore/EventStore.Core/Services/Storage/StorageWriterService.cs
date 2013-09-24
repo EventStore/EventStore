@@ -332,18 +332,14 @@ namespace EventStore.Core.Services.Storage
         {
             var origStreamId = SystemStreams.OriginalStreamOf(metastreamId);
             var rawMetaInfo = _indexWriter.GetStreamRawMeta(origStreamId);
-            SoftUndeleteStream(origStreamId,
-                               metaLastEventNumber: rawMetaInfo.Item1,
-                               rawMeta: rawMetaInfo.Item2,
+            SoftUndeleteStream(origStreamId, rawMetaInfo.MetaLastEventNumber, rawMetaInfo.RawMeta,
                                recreateFrom: _indexWriter.GetStreamLastEventNumber(origStreamId) + 1);
         }
 
         private void SoftUndeleteStream(string streamId, int recreateFromEventNumber)
         {
             var rawInfo = _indexWriter.GetStreamRawMeta(streamId);
-            var metaLastEventNumber = rawInfo.Item1;
-            var rawMeta = rawInfo.Item2;
-            SoftUndeleteStream(streamId, metaLastEventNumber, rawMeta, recreateFromEventNumber);
+            SoftUndeleteStream(streamId, rawInfo.MetaLastEventNumber, rawInfo.RawMeta, recreateFromEventNumber);
         }
 
         private void SoftUndeleteStream(string streamId, int metaLastEventNumber, byte[] rawMeta, int recreateFrom)

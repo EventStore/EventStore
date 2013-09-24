@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
@@ -91,8 +92,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         {
             var res = _streamLastEventNumberCache.Put(
                 streamId,
-                key => cacheVersion == 0 ? new EventNumberCached(1, lastEventNumber) : new EventNumberCached(1, null),
-                (key, old) => old.Version == cacheVersion ? new EventNumberCached(cacheVersion+1, lastEventNumber ?? old.LastEventNumber) : old);
+                new KeyValuePair<int, int?>(cacheVersion, lastEventNumber),
+                (key, d) => d.Key == 0 ? new EventNumberCached(1, d.Value) : new EventNumberCached(1, null),
+                (key, old, d) => old.Version == d.Key ? new EventNumberCached(d.Key+1, d.Value ?? old.LastEventNumber) : old);
             return res.LastEventNumber;
         }
 
@@ -100,24 +102,27 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         {
             var res = _streamMetadataCache.Put(
                 streamId,
-                key => cacheVersion == 0 ? new MetadataCached(1, metadata) : new MetadataCached(1, null),
-                (key, old) => old.Version == cacheVersion ? new MetadataCached(cacheVersion + 1, metadata ?? old.Metadata) : old);
+                new KeyValuePair<int, StreamMetadata>(cacheVersion, metadata),
+                (key, d) => d.Key == 0 ? new MetadataCached(1, d.Value) : new MetadataCached(1, null),
+                (key, old, d) => old.Version == d.Key ? new MetadataCached(d.Key + 1, d.Value ?? old.Metadata) : old);
             return res.Metadata;
         }
 
         int? IIndexBackend.SetStreamLastEventNumber(string streamId, int lastEventNumber)
         {
             var res = _streamLastEventNumberCache.Put(streamId,
-                                                      key => new EventNumberCached(1, lastEventNumber), 
-                                                      (key, old) => new EventNumberCached(old.Version + 1, lastEventNumber));
+                                                      lastEventNumber,
+                                                      (key, lastEvNum) => new EventNumberCached(1, lastEvNum), 
+                                                      (key, old, lastEvNum) => new EventNumberCached(old.Version + 1, lastEvNum));
             return res.LastEventNumber;
         }
 
         StreamMetadata IIndexBackend.SetStreamMetadata(string streamId, StreamMetadata metadata)
         {
             var res = _streamMetadataCache.Put(streamId,
-                                               key => new MetadataCached(1, metadata),
-                                               (key, old) => new MetadataCached(old.Version + 1, metadata));
+                                               metadata,
+                                               (key, meta) => new MetadataCached(1, meta),
+                                               (key, old, meta) => new MetadataCached(old.Version + 1, meta));
             return res.Metadata;
         }
 

@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,19 +24,18 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
-
-namespace EventStore.Core.Services.Storage.ReaderIndex
+// 
+namespace EventStore.Core.Data
 {
-    public struct TransactionInfo
+    public struct Range
     {
-        public readonly int TransactionOffset;
-        public readonly string EventStreamId;
+        public readonly int Lower;
+        public readonly int Upper;
 
-        public TransactionInfo(int transactionOffset, string eventStreamId)
+        public Range(int lower, int upper)
         {
-            TransactionOffset = transactionOffset;
-            EventStreamId = eventStreamId;
+            Lower = lower;
+            Upper = upper;
         }
     }
 }
