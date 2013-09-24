@@ -97,7 +97,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
             const int chunkSize = 1024*1024;
             const int cachedSize = chunkSize*3;
 
-            var miniNode = new MiniNode(PathName, chunkSize: chunkSize, cachedChunkSize: cachedSize);
+            var miniNode = new MiniNode(PathName, chunkSize: chunkSize, cachedChunkSize: cachedSize, inMemDb: false);
             miniNode.Start();
 
             var tcpPort = miniNode.TcpEndPoint.Port;
@@ -124,7 +124,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
             miniNode.Shutdown(keepDb: true, keepPorts: true);
 
             // --- first restart and truncation
-            miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort, chunkSize: chunkSize, cachedChunkSize: cachedSize);
+            miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort, chunkSize: chunkSize, cachedChunkSize: cachedSize, inMemDb: false);
 
             miniNode.Start();
             Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
