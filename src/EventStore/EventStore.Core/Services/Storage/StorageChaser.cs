@@ -155,9 +155,7 @@ namespace EventStore.Core.Services.Storage
         private void ChaserIteration()
         {
             _queueStats.EnterBusy();
-            _queueStats.ProcessingStarted<ChaserTryReadNext>(0);
             var result = _chaser.TryReadNext();
-            _queueStats.ProcessingEnded(1);
 
             if (result.Success)
             {
@@ -295,10 +293,6 @@ namespace EventStore.Core.Services.Storage
         public QueueStats GetStatistics()
         {
             return _queueStats.GetStatistics(0);
-        }
-
-        private class ChaserTryReadNext
-        {
         }
 
         private class ChaserCheckpointFlush

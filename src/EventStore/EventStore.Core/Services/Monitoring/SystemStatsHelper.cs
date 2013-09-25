@@ -138,7 +138,8 @@ namespace EventStore.Core.Services.Monitoring
 
         private void GetPerfCounterInformation(Dictionary<string, object> stats, int count)
         {
-            if (_giveup) return;
+            if (_giveup)
+                return;
             var process = Process.GetCurrentProcess();
             try
             {
@@ -157,9 +158,11 @@ namespace EventStore.Core.Services.Monitoring
             {
                 _log.Info("Received error reading counters. Attempting to rebuild.");
                 _perfCounter = new PerfCounterHelper(_log);
-                GetPerfCounterInformation(stats, count + 1);
                 _giveup = count > 10;
-                if(_giveup) _log.Error("Maximum rebuild attempts reached. Giving up on rebuilds.");
+                if (_giveup)
+                    _log.Error("Maximum rebuild attempts reached. Giving up on rebuilds.");
+                else
+                    GetPerfCounterInformation(stats, count + 1);
             }
         }
 
