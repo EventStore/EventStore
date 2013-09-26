@@ -151,6 +151,32 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class PartitionMeasured : EventReaderSubscriptionMessage
+        {
+            private readonly string _partition;
+            private readonly int _size;
+            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public string Partition
+            {
+                get { return _partition; }
+            }
+
+            public int Size
+            {
+                get { return _size; }
+            }
+
+            public PartitionMeasured(
+                Guid subscriptionId, string partition, int size, long subscriptionMessageSequenceNumber,
+                object source = null)
+                : base(subscriptionId, null, 100.0f, subscriptionMessageSequenceNumber, source)
+            {
+                _partition = partition;
+                _size = size;
+            }
+        }
         public class CommittedEventReceived : EventReaderSubscriptionMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

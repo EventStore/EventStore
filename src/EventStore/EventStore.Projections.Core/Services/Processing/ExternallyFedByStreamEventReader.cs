@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
@@ -58,6 +59,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private Guid _dataReadRequestId;
         private bool _catalogEof;
         private int _catalogCurrentSequenceNumber;
+        private readonly HashSet<Guid> _readLengthRequests = new HashSet<Guid>();
 
 
         public ExternallyFedByStreamEventReader(
@@ -220,7 +222,43 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
         {
             EnsureLimitingCommitPositionSet(message.LimitingCommitPosition);
+            BeginReadStreamLength(message.StreamId);
             EnqueueStreamForProcessing(message.StreamId, message.CatalogSequenceNumber);
+        }
+
+        private void BeginReadStreamLength(string streamId)
+        {
+            var requestId = _ioDispatcher.ReadBackward(
+                streamId, -1, 1, false, ReadAs, completed =>
+                {
+                    _readLengthRequests.Remove(_dataReadRequestId);
+                    switch (completed.Result)
+                    {
+                        case ReadStreamResult.AccessDenied:
+                            SendNotAuthorized();
+                            break;
+                        case ReadStreamResult.NoStream:
+                            DeliverStreamLength(streamId, 0);
+                            break;
+                        case ReadStreamResult.StreamDeleted:
+                            DeliverStreamLength(streamId, 0);
+                            break;
+                        case ReadStreamResult.Success:
+                            DeliverStreamLength(streamId, completed.LastEventNumber);
+                            break;
+                        default:
+                            throw new NotSupportedException();
+                    }
+                });
+            if (requestId != Guid.Empty)
+                _readLengthRequests.Add(requestId);
+        }
+
+        private void DeliverStreamLength(string streamId, int length)
+        {
+            _publisher.Publish(
+                //TODO: publish both link and event data
+                new ReaderSubscriptionMessage.EventReaderPartitionMeasured(EventReaderCorrelationId, streamId, length));
         }
 
         private void EnsureLimitingCommitPositionSet(long limitingCommitPosition)

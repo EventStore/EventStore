@@ -38,6 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                                IHandle<ReaderSubscriptionMessage.EventReaderStarting>,
                                                IHandle<ReaderSubscriptionMessage.EventReaderEof>,
                                                IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
+                                               IHandle<ReaderSubscriptionMessage.EventReaderPartitionMeasured>,
                                                IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>
     {
         IEventReader CreatePausedEventReader(IPublisher publisher, IODispatcher ioDispatcher, Guid forkedEventReaderId);
