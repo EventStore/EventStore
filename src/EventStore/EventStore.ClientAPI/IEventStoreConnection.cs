@@ -380,7 +380,8 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null);
+                UserCredentials userCredentials = null,
+                int readBatchSize = 500);
 
         EventStoreSubscription SubscribeToAll(
                 bool resolveLinkTos, 
@@ -400,7 +401,8 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null);
+                UserCredentials userCredentials = null,
+                int readBatchSize = 500);
 
         WriteResult SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
 

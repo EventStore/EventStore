@@ -346,14 +346,15 @@ namespace EventStore.ClientAPI
                                                                          Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                          Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                                                                          Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                                                                         UserCredentials userCredentials = null)
+                                                                         UserCredentials userCredentials = null,
+                                                                         int readBatchSize = 500)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription =
                     new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, fromEventNumberExclusive, 
                                                             resolveLinkTos, userCredentials, eventAppeared, 
-                                                            liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging);
+                                                            liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging, readBatchSize);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
@@ -388,13 +389,14 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null)
+                UserCredentials userCredentials = null,
+                int readBatchSize = 500)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription = 
                     new EventStoreAllCatchUpSubscription(this, _settings.Log, fromPositionExclusive, resolveLinkTos,
                                                          userCredentials, eventAppeared, liveProcessingStarted, 
-                                                         subscriptionDropped, _settings.VerboseLogging);
+                                                         subscriptionDropped, _settings.VerboseLogging, readBatchSize);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
