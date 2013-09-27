@@ -24,6 +24,7 @@ namespace EventStore.ClusterNode
         public bool Force { get { return _helper.Get(() => Force); } }
         public int ClusterSize { get { return _helper.Get(() => ClusterSize); } }
         public int MinFlushDelayMs { get { return _helper.Get(() => MinFlushDelayMs); } }
+        public int NodePriority { get { return _helper.Get(() => NodePriority); } }
 
         public int CommitCount { get { return _helper.Get(() => CommitCount); } }
         public int PrepareCount { get { return _helper.Get(() => PrepareCount); } }
@@ -82,6 +83,7 @@ namespace EventStore.ClusterNode
             _helper.RegisterRef(() => ClusterDns, Opts.ClusterDnsCmd, Opts.ClusterDnsEnv, Opts.ClusterDnsJson, Opts.ClusterDnsDefault, Opts.ClusterDnsDescr);
             _helper.Register(() => ClusterSize, Opts.ClusterSizeCmd, Opts.ClusterSizeEnv, Opts.ClusterSizeJson, Opts.ClusterSizeDefault, Opts.ClusterSizeDescr);
             _helper.Register(() => MinFlushDelayMs, Opts.MinFlushDelayMsCmd, Opts.MinFlushDelayMsEnv, Opts.MinFlushDelayMsJson, Opts.MinFlushDelayMsDefault, Opts.MinFlushDelayMsDescr);
+            _helper.Register(() => NodePriority, Opts.NodePriorityCmd, Opts.NodePriorityEnv, Opts.NodePriorityJson, Opts.NodePriorityDefault, Opts.NodePriorityDescr);
             
             _helper.Register(() => CommitCount, Opts.CommitCountCmd, Opts.CommitCountEnv, Opts.CommitCountJson, Opts.CommitCountDefault, Opts.CommitCountDescr);
             _helper.Register(() => PrepareCount, Opts.PrepareCountCmd, Opts.PrepareCountEnv, Opts.PrepareCountJson, Opts.PrepareCountDefault, Opts.PrepareCountDescr);

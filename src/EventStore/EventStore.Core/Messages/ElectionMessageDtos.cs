@@ -85,6 +85,8 @@ namespace EventStore.Core.Messages
             public long WriterCheckpoint { get; set; }
             public long ChaserCheckpoint { get; set; }
 
+            public int NodePriority { get; set; }
+
             public PrepareOkDto()
             {
             }
@@ -103,6 +105,8 @@ namespace EventStore.Core.Messages
                 LastCommitPosition = message.LastCommitPosition;
                 WriterCheckpoint = message.WriterCheckpoint;
                 ChaserCheckpoint = message.ChaserCheckpoint;
+
+                NodePriority = message.NodePriority;
             }
         }
 

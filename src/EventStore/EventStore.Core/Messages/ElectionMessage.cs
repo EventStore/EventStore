@@ -155,6 +155,7 @@ namespace EventStore.Core.Messages
             public readonly long LastCommitPosition;
             public readonly long WriterCheckpoint;
             public readonly long ChaserCheckpoint;
+            public readonly int NodePriority;
 
             public PrepareOk(int view,
                              Guid serverId, 
@@ -164,7 +165,8 @@ namespace EventStore.Core.Messages
                              Guid epochId,
                              long lastCommitPosition,
                              long writerCheckpoint,
-                             long chaserCheckpoint)
+                             long chaserCheckpoint,
+                             int nodePriority)
             {
                 View = view;
                 ServerId = serverId;
@@ -175,6 +177,7 @@ namespace EventStore.Core.Messages
                 LastCommitPosition = lastCommitPosition;
                 WriterCheckpoint = writerCheckpoint;
                 ChaserCheckpoint = chaserCheckpoint;
+                NodePriority = nodePriority;
             }
 
             public PrepareOk(ElectionMessageDto.PrepareOkDto dto)
@@ -188,14 +191,15 @@ namespace EventStore.Core.Messages
                 LastCommitPosition = dto.LastCommitPosition;
                 WriterCheckpoint = dto.WriterCheckpoint;
                 ChaserCheckpoint = dto.ChaserCheckpoint;
+                NodePriority = dto.NodePriority;
             }
 
             public override string ToString()
             {
                 return string.Format("---- PrepareOk: view {0}, serverId {1}, serverInternalHttp {2}, epochNumber {3}, " +
-                                     "epochPosition {4}, epochId {5}, lastCommitPosition {6}, writerCheckpoint {7}, chaserCheckpoint {8}",
+                                     "epochPosition {4}, epochId {5}, lastCommitPosition {6}, writerCheckpoint {7}, chaserCheckpoint {8}, nodePriority: {9}",
                                      View, ServerId, ServerInternalHttp, EpochNumber,
-                                     EpochPosition, EpochId, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint);
+                                     EpochPosition, EpochId, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint, NodePriority);
             }
         }
 

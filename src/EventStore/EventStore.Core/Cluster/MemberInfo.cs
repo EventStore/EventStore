@@ -29,13 +29,15 @@ namespace EventStore.Core.Cluster
         public readonly int EpochNumber;
         public readonly Guid EpochId;
 
+        public readonly int NodePriority;
+
         public static MemberInfo ForManager(Guid instanceId, DateTime timeStamp, bool isAlive, 
                                             IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint)
         {
             return new MemberInfo(instanceId, timeStamp, VNodeState.Manager, true, 
                                   internalHttpEndPoint, null, externalHttpEndPoint, null, 
                                   internalHttpEndPoint, externalHttpEndPoint, 
-                                  -1, -1, -1, -1, -1, Guid.Empty);
+                                  -1, -1, -1, -1, -1, Guid.Empty, 0);
         }
 
         public static MemberInfo ForVNode(Guid instanceId,
@@ -53,7 +55,8 @@ namespace EventStore.Core.Cluster
                                           long chaserCheckpoint,
                                           long epochPosition,
                                           int epochNumber,
-                                          Guid epochId)
+                                          Guid epochId,
+                                          int nodePriority)
         {
             if (state == VNodeState.Manager)
                 throw new ArgumentException(string.Format("Wrong State for VNode: {0}", state), "state");
@@ -62,7 +65,7 @@ namespace EventStore.Core.Cluster
                                   externalTcpEndPoint, externalSecureTcpEndPoint,
                                   internalHttpEndPoint, externalHttpEndPoint,
                                   lastCommitPosition, writerCheckpoint, chaserCheckpoint,
-                                  epochPosition, epochNumber, epochId);
+                                  epochPosition, epochNumber, epochId, nodePriority);
         }
 
         private MemberInfo(Guid instanceId, DateTime timeStamp, VNodeState state, bool isAlive, 
@@ -70,7 +73,7 @@ namespace EventStore.Core.Cluster
                            IPEndPoint externalTcpEndPoint, IPEndPoint externalSecureTcpEndPoint, 
                            IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint, 
                            long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
-                           long epochPosition, int epochNumber, Guid epochId)
+                           long epochPosition, int epochNumber, Guid epochId, int nodePriority)
         {
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
             Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
@@ -97,6 +100,8 @@ namespace EventStore.Core.Cluster
             EpochPosition = epochPosition;
             EpochNumber = epochNumber;
             EpochId = epochId;
+
+            NodePriority = nodePriority;
         }
 
         internal MemberInfo(MemberInfoDto dto)
@@ -119,6 +124,7 @@ namespace EventStore.Core.Cluster
             EpochPosition = dto.EpochPosition;
             EpochNumber = dto.EpochNumber;
             EpochId = dto.EpochId;
+            NodePriority = dto.NodePriority;
         }
 
         public bool Is(IPEndPoint endPoint)
@@ -154,7 +160,8 @@ namespace EventStore.Core.Cluster
                                   chaserCheckpoint ?? ChaserCheckpoint,
                                   epoch != null ? epoch.EpochPosition : EpochPosition,
                                   epoch != null ? epoch.EpochNumber : EpochNumber,
-                                  epoch != null ? epoch.EpochId : EpochId);
+                                  epoch != null ? epoch.EpochId : EpochId,
+                                  NodePriority);
         }
 
         public override string ToString()
@@ -189,7 +196,8 @@ namespace EventStore.Core.Cluster
                    && Equals(other.ExternalHttpEndPoint, ExternalHttpEndPoint)
                    && other.EpochPosition == EpochPosition
                    && other.EpochNumber == EpochNumber
-                   && other.EpochId == EpochId;
+                   && other.EpochId == EpochId
+                   && other.NodePriority == NodePriority;
         }
 
         public override bool Equals(object obj)
@@ -216,6 +224,7 @@ namespace EventStore.Core.Cluster
                 result = (result*397) ^ EpochPosition.GetHashCode();
                 result = (result*397) ^ EpochNumber.GetHashCode();
                 result = (result*397) ^ EpochId.GetHashCode();
+                result = (result*397) ^ NodePriority;
                 return result;
             }
         }

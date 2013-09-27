@@ -75,6 +75,8 @@ namespace EventStore.ClientAPI.Messages
             public int EpochNumber { get; set; }
             public Guid EpochId { get; set; }
 
+            public int NodePriority { get; set; }
+
             public override string ToString()
             {
                 if (State == VNodeState.Manager)

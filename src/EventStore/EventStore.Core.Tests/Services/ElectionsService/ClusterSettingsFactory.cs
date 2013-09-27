@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService
                                                  false, null, false,
                                                  TimeSpan.FromHours(1),
                                                  StatsStorage.StreamAndCsv,
-												 ClusterVNodeAuthenticationType.Internal);
+												 ClusterVNodeAuthenticationType.Internal, 0);
             return vnode;
         }
 

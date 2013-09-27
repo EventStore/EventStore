@@ -153,7 +153,8 @@ namespace EventStore.ClusterNode
 	                                        TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
 	                                        options.UseInternalSsl, options.SslTargetHost, options.SslValidateServer,
 	                                        TimeSpan.FromSeconds(options.StatsPeriodSec), StatsStorage.StreamAndCsv,
-	                                        authenticationType);
+	                                        authenticationType, 
+                                            options.NodePriority);
         }
 
         protected override void Start()

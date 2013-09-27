@@ -50,6 +50,7 @@ namespace EventStore.Core.Services
         private readonly ICheckpoint _chaserCheckpoint;
         private readonly IEpochManager _epochManager;
         private readonly Func<long> _getLastCommitPosition;
+        private readonly int _nodePriority;
 
         private int _lastAttemptedView = -1;
         private int _lastInstalledView = -1;
@@ -71,7 +72,8 @@ namespace EventStore.Core.Services
                                 ICheckpoint writerCheckpoint, 
                                 ICheckpoint chaserCheckpoint,
                                 IEpochManager epochManager,
-                                Func<long> getLastCommitPosition)
+                                Func<long> getLastCommitPosition,
+                                int nodePriority)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(nodeInfo, "nodeInfo");
@@ -89,6 +91,7 @@ namespace EventStore.Core.Services
             _chaserCheckpoint = chaserCheckpoint;
             _epochManager = epochManager;
             _getLastCommitPosition = getLastCommitPosition;
+            _nodePriority = nodePriority;
 
             var ownInfo = GetOwnInfo();
             _servers = new[]
@@ -101,7 +104,7 @@ namespace EventStore.Core.Services
                                     nodeInfo.ExternalTcp, nodeInfo.ExternalSecureTcp,
                                     nodeInfo.InternalHttp, nodeInfo.ExternalHttp,
                                     ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
-                                    ownInfo.EpochPosition, ownInfo.EpochNumber, ownInfo.EpochId)
+                                    ownInfo.EpochPosition, ownInfo.EpochNumber, ownInfo.EpochId, ownInfo.NodePriority)
             };
         }
 
@@ -283,7 +286,8 @@ namespace EventStore.Core.Services
             var ownInfo = GetOwnInfo();
             return new ElectionMessage.PrepareOk(view, ownInfo.InstanceId, ownInfo.InternalHttp,
                                                  ownInfo.EpochNumber, ownInfo.EpochPosition, ownInfo.EpochId,
-                                                 ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint);
+                                                 ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
+                                                 ownInfo.NodePriority);
         }
 
         private void ShiftToRegNonLeader()
@@ -357,7 +361,8 @@ namespace EventStore.Core.Services
                 {
                     return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
                                                masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
-                                               masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint);
+                                               masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
+                                               masterMsg.NodePriority);
 
                 }
                 var master = _servers.FirstOrDefault(x => x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
@@ -365,13 +370,15 @@ namespace EventStore.Core.Services
                 {
                     return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
                                                master.EpochNumber, master.EpochPosition, master.EpochId,
-                                               master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint);
+                                               master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
+                                               master.NodePriority);
                 }
             }
             var best = _prepareOkReceived.Values
                                          .OrderByDescending(x => x.EpochNumber)
                                          .ThenByDescending(x => x.LastCommitPosition)
                                          .ThenByDescending(x => x.WriterCheckpoint)
+                                         .ThenByDescending(x => x.NodePriority)
                                          .ThenByDescending(x => x.ChaserCheckpoint)
                                          .ThenByDescending(x => x.ServerId)
                                          .FirstOrDefault();
@@ -379,7 +386,7 @@ namespace EventStore.Core.Services
                 return null;
             return new MasterCandidate(best.ServerId, best.ServerInternalHttp,
                                        best.EpochNumber, best.EpochPosition, best.EpochId,
-                                       best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint);
+                                       best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
         }
 
         private bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,
@@ -437,7 +444,7 @@ namespace EventStore.Core.Services
 
             var candidate = new MasterCandidate(message.MasterId, message.MasterInternalHttp,
                                                 message.EpochNumber, message.EpochPosition, message.EpochId,
-                                                message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint);
+                                                message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, 0);
             if (!IsLegitimateMaster(message.View, message.ServerInternalHttp, message.ServerId, candidate))
                 return;
 
@@ -496,7 +503,7 @@ namespace EventStore.Core.Services
                                        lastEpoch == null ? -1 : lastEpoch.EpochNumber,
                                        lastEpoch == null ? -1 : lastEpoch.EpochPosition,
                                        lastEpoch == null ? Guid.Empty : lastEpoch.EpochId,
-                                       lastCommitPosition, writerCheckpoint, chaserCheckpoint);
+                                       lastCommitPosition, writerCheckpoint, chaserCheckpoint, _nodePriority);
         }
 
         private static string FormatNodeInfo(MasterCandidate candidate)
@@ -529,9 +536,12 @@ namespace EventStore.Core.Services
             public readonly long WriterCheckpoint;
             public readonly long ChaserCheckpoint;
 
+            public readonly int NodePriority;
+
             public MasterCandidate(Guid instanceId, IPEndPoint internalHttp,
                                    int epochNumber, long epochPosition, Guid epochId,
-                                   long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint)
+                                   long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
+                                   int nodePriority)
             {
                 InstanceId = instanceId;
                 InternalHttp = internalHttp;
@@ -541,6 +551,7 @@ namespace EventStore.Core.Services
                 LastCommitPosition = lastCommitPosition;
                 WriterCheckpoint = writerCheckpoint;
                 ChaserCheckpoint = chaserCheckpoint;
+                NodePriority = nodePriority;
             }
         }
     }

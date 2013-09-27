@@ -35,6 +35,8 @@ namespace EventStore.Core.Cluster.Settings
 
 	    public readonly ClusterVNodeAuthenticationType AuthenticationType;
 
+	    public readonly int NodePriority;
+
         public ClusterVNodeSettings(Guid instanceId,
                                     IPEndPoint internalTcpEndPoint,
                                     IPEndPoint internalSecureTcpEndPoint, 
@@ -60,7 +62,8 @@ namespace EventStore.Core.Cluster.Settings
                                     bool sslValidateServer,
                                     TimeSpan statsPeriod,
                                     StatsStorage statsStorage,
-									ClusterVNodeAuthenticationType authenticationType)
+									ClusterVNodeAuthenticationType authenticationType,
+                                    int nodePriority)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -109,6 +112,8 @@ namespace EventStore.Core.Cluster.Settings
             StatsStorage = statsStorage;
 
 	        AuthenticationType = authenticationType;
+
+            NodePriority = nodePriority;
         }
 
         public override string ToString()

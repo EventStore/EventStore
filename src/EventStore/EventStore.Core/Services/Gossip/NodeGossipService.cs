@@ -14,6 +14,7 @@ namespace EventStore.Core.Services.Gossip
         private readonly ICheckpoint _chaserCheckpoint;
         private readonly IEpochManager _epochManager;
         private readonly Func<long> _getLastCommitPosition;
+        private readonly int _nodePriority;
 
         public NodeGossipService(IPublisher bus,
                                  IDnsService dns,
@@ -23,7 +24,8 @@ namespace EventStore.Core.Services.Gossip
                                  ICheckpoint writerCheckpoint,
                                  ICheckpoint chaserCheckpoint,
                                  IEpochManager epochManager,
-                                 Func<long> getLastCommitPosition)
+                                 Func<long> getLastCommitPosition,
+                                 int nodePriority)
                 : base(bus, dns, clusterDns, managerInternalHttpPort, nodeInfo)
         {
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
@@ -35,6 +37,7 @@ namespace EventStore.Core.Services.Gossip
             _chaserCheckpoint = chaserCheckpoint;
             _epochManager = epochManager;
             _getLastCommitPosition = getLastCommitPosition;
+            _nodePriority = nodePriority;
         }
 
         protected override MemberInfo GetInitialMe()
@@ -55,7 +58,8 @@ namespace EventStore.Core.Services.Gossip
                                        _chaserCheckpoint.Read(),
                                        lastEpoch == null ? -1 : lastEpoch.EpochPosition,
                                        lastEpoch == null ? -1 : lastEpoch.EpochNumber,
-                                       lastEpoch == null ? Guid.Empty : lastEpoch.EpochId);
+                                       lastEpoch == null ? Guid.Empty : lastEpoch.EpochId,
+                                       _nodePriority);
         }
 
         protected override MemberInfo GetUpdatedMe(MemberInfo me)

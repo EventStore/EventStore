@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
                         previousMembers[masterMemberIndex] = 
                             MemberInfo.ForVNode(previousMasterInfo.InstanceId, DateTime.UtcNow, VNodeState.Master, previousMasterInfo.IsAlive,
                                                 masterEndPoint, null, masterEndPoint, null, masterEndPoint, masterEndPoint,
-                                                -1, 0, 0, -1, -1, Guid.Empty);
+                                                -1, 0, 0, -1, -1, Guid.Empty, 0);
                     }
                 }
             }

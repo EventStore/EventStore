@@ -100,6 +100,12 @@ namespace EventStore.Core.Util
         public const string MinFlushDelayMsDescr = "The minimum flush delay in milliseconds.";
         public const int    MinFlushDelayMsDefault = TFConsts.MinFlushDelayMs;
 
+        public const string NodePriorityCmd = "node-priority=";
+        public const string NodePriorityEnv = "NODE_PRIORITY";
+        public const string NodePriorityJson = "nodePriority";
+        public const string NodePriorityDescr = "The node priority used during master election";
+        public const int    NodePriorityDefault = 0;
+
         public const string DbPathCmd = "d|db=";
         public const string DbPathEnv = "DB";
         public const string DbPathJson = "db";

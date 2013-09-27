@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
                                                                              new InMemoryCheckpoint(),
                                                                              new InMemoryCheckpoint(),
                                                                              new FakeEpochManager(),
-                                                                             () => -1);
+                                                                             () => -1, 0);
                 electionsService.SubscribeMessages(inputBus);
 
                 outputBus.Subscribe(sendOverHttpHandler);
@@ -117,7 +117,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
         {
             var members = allInstances.Select(
                 x => MemberInfo.ForVNode(x.InstanceId, DateTime.UtcNow, VNodeState.Unknown, true,
-                                         x.EndPoint, null, x.EndPoint, null, x.EndPoint, x.EndPoint, -1, 0, 0, -1, -1, Guid.Empty));
+                                         x.EndPoint, null, x.EndPoint, null, x.EndPoint, x.EndPoint, -1, 0, 0, -1, -1, Guid.Empty, 0));
             var gossip = new GossipMessage.GossipUpdated(new ClusterInfo(members.ToArray()));
             return gossip;
         }

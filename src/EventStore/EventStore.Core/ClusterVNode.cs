@@ -423,13 +423,13 @@ namespace EventStore.Core
             // ELECTIONS
             var electionsService = new ElectionsService(_mainQueue, _nodeInfo, vNodeSettings.ClusterNodeCount,
                                                         db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
-                                                        epochManager, () => readIndex.LastCommitPosition);
+                                                        epochManager, () => readIndex.LastCommitPosition, vNodeSettings.NodePriority);
             electionsService.SubscribeMessages(_mainBus);
 
             // GOSSIP
             var gossip = new NodeGossipService(_mainQueue, dnsService, vNodeSettings.ClusterDns, vNodeSettings.ManagerEndPoint.Port,
                                                _nodeInfo, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
-                                               epochManager, () => readIndex.LastCommitPosition);
+                                               epochManager, () => readIndex.LastCommitPosition, vNodeSettings.NodePriority);
             _mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
             _mainBus.Subscribe<GossipMessage.RetrieveDnsEntries>(gossip);
             _mainBus.Subscribe<GossipMessage.GotDnsEntries>(gossip);
