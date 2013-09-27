@@ -76,7 +76,7 @@ namespace EventStore.Core.Services.Storage
         private readonly InMemoryBus _writerBus;
 
         private readonly Stopwatch _watch = Stopwatch.StartNew();
-        private readonly int _minFlushDelay;
+        private readonly double _minFlushDelay;
         private long _lastFlushDelay;
         private long _lastFlushTimestamp;
 
@@ -97,7 +97,7 @@ namespace EventStore.Core.Services.Storage
 
         public StorageWriterService(IPublisher bus, 
                                     ISubscriber subscribeToBus,
-                                    int minFlushDelayMs,
+                                    TimeSpan minFlushDelay,
                                     TFChunkDb db,
                                     TFChunkWriter writer, 
                                     IIndexWriter indexWriter,
@@ -105,7 +105,6 @@ namespace EventStore.Core.Services.Storage
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(subscribeToBus, "subscribeToBus");
-            Ensure.Nonnegative(minFlushDelayMs, "minFlushDelayMs");
             Ensure.NotNull(db, "db");
             Ensure.NotNull(writer, "writer");
             Ensure.NotNull(indexWriter, "indexWriter");
@@ -117,7 +116,7 @@ namespace EventStore.Core.Services.Storage
             _indexWriter = indexWriter;
             EpochManager = epochManager;
 
-            _minFlushDelay = minFlushDelayMs * TicksPerMs;
+            _minFlushDelay = minFlushDelay.TotalMilliseconds * TicksPerMs;
             _lastFlushDelay = 0;
             _lastFlushTimestamp = _watch.ElapsedTicks;
 

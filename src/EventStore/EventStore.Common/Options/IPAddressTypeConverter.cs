@@ -33,7 +33,7 @@ using System.Net;
 
 namespace EventStore.Common.Options
 {
-    [TypeConverter(typeof(IPAddress))]
+	[TypeConverter(typeof(IPAddress))]
     public class IPAddressTypeConverter : TypeConverter
     {
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)

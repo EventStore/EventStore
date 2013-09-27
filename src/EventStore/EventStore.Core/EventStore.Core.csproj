@@ -167,10 +167,10 @@
     <Compile Include="Messaging\RequestResponseDispatcher.cs" />
     <Compile Include="Services\ClusterStorageWriterService.cs" />
     <Compile Include="Services\ElectionsService.cs" />
-    <Compile Include="Services\Gossip\DnsService.cs" />
+    <Compile Include="Services\Gossip\DnsGossipSeedSource.cs" />
     <Compile Include="Services\Gossip\GossipServiceBase.cs" />
     <Compile Include="Services\Gossip\GossipState.cs" />
-    <Compile Include="Services\Gossip\IDnsService.cs" />
+    <Compile Include="Services\Gossip\IGossipSeedSource.cs" />
     <Compile Include="Services\Gossip\LoopbackDns.cs" />
     <Compile Include="Services\Gossip\NodeGossipService.cs" />
     <Compile Include="Services\Replication\MasterReplicationService.cs" />

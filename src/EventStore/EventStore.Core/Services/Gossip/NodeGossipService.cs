@@ -16,15 +16,13 @@ namespace EventStore.Core.Services.Gossip
         private readonly Func<long> _getLastCommitPosition;
 
         public NodeGossipService(IPublisher bus,
-                                 IDnsService dns,
-                                 string clusterDns,
-                                 int managerInternalHttpPort,
-                                 VNodeInfo nodeInfo,
+                                 IGossipSeedSource gossipSeedSource,
+								 VNodeInfo nodeInfo,
                                  ICheckpoint writerCheckpoint,
                                  ICheckpoint chaserCheckpoint,
                                  IEpochManager epochManager,
                                  Func<long> getLastCommitPosition)
-                : base(bus, dns, clusterDns, managerInternalHttpPort, nodeInfo)
+                : base(bus, gossipSeedSource, nodeInfo)
         {
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");

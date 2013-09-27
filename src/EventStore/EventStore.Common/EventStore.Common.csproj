@@ -69,6 +69,7 @@
     <Compile Include="Options\IOptionContainer.cs" />
     <Compile Include="Options\IOptions.cs" />
     <Compile Include="Options\IPAddressTypeConverter.cs" />
+    <Compile Include="Options\IPEndPointTypeConverter.cs" />
     <Compile Include="Options\OptionArrayContainer.cs" />
     <Compile Include="Options\OptionContainerHelpers.cs" />
     <Compile Include="Options\OptionFlagContainer.cs" />

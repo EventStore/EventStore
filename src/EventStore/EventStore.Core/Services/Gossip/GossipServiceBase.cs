@@ -14,8 +14,8 @@ using EventStore.Core.Services.TimerService;
 namespace EventStore.Core.Services.Gossip
 {
     public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
-                                              IHandle<GossipMessage.RetrieveDnsEntries>,
-                                              IHandle<GossipMessage.GotDnsEntries>,
+                                              IHandle<GossipMessage.RetrieveGossipSeedSources>,
+                                              IHandle<GossipMessage.GotGossipSeedSources>,
                                               IHandle<GossipMessage.Gossip>,
                                               IHandle<GossipMessage.GossipReceived>,
                                               IHandle<SystemMessage.StateChangeMessage>,
@@ -37,32 +37,23 @@ namespace EventStore.Core.Services.Gossip
 
         private readonly IPublisher _bus;
         private readonly IEnvelope _publishEnvelope;
-        private readonly IDnsService _dns;
-        private readonly string _clusterDns;
-        private readonly int _managerInternalHttpPort;
+        private readonly IGossipSeedSource _gossipSeedSource;
 
         private GossipState _state;
         private ClusterInfo _cluster;
         private readonly Random _rnd = new Random(Math.Abs(Environment.TickCount));
 
         protected GossipServiceBase(IPublisher bus, 
-                                    IDnsService dns,
-                                    string clusterDns,
-                                    int managerInternalHttpPort,
+                                    IGossipSeedSource gossipSeedSource,
                                     VNodeInfo nodeInfo)
         {
             Ensure.NotNull(bus, "bus");
-            Ensure.NotNull(dns, "dns");
-            if (string.IsNullOrWhiteSpace(clusterDns))
-                throw new ArgumentException(string.Format("Invalid cluster DNS: {0}", clusterDns), "clusterDns");
-            Ensure.Positive(managerInternalHttpPort, "managerInternalHttpPort");
+            Ensure.NotNull(gossipSeedSource, "gossipSeedSource");
             Ensure.NotNull(nodeInfo, "nodeInfo");
 
             _bus = bus;
             _publishEnvelope = new PublishEnvelope(bus);
-            _dns = dns;
-            _clusterDns = clusterDns;
-            _managerInternalHttpPort = managerInternalHttpPort;
+            _gossipSeedSource = gossipSeedSource;
             NodeInfo = nodeInfo;
 
             _state = GossipState.Startup;
@@ -76,46 +67,42 @@ namespace EventStore.Core.Services.Gossip
             if (_state != GossipState.Startup)
                 return;
             _cluster = new ClusterInfo(GetInitialMe());
-            Handle(new GossipMessage.RetrieveDnsEntries());
+            Handle(new GossipMessage.RetrieveGossipSeedSources());
         }
 
-        public void Handle(GossipMessage.RetrieveDnsEntries message)
+        public void Handle(GossipMessage.RetrieveGossipSeedSources message)
         {
-            _state = GossipState.RetrievingDns;
+            _state = GossipState.RetrievingGossipSeeds;
             try
             {
-                _dns.BeginGetHostAddresses(_clusterDns, OnGotHostAddresses, null);
+	            _gossipSeedSource.BeginGetHostEndpoints(OnGotGossipSeedSources, null);
             }
             catch (Exception ex)
             {
                 Log.ErrorException(ex, "Error while retrieving cluster members through DNS.");
-                _bus.Publish(TimerMessage.Schedule.Create(DnsRetryTimeout, _publishEnvelope, new GossipMessage.RetrieveDnsEntries()));
+                _bus.Publish(TimerMessage.Schedule.Create(DnsRetryTimeout, _publishEnvelope, new GossipMessage.RetrieveGossipSeedSources()));
             }
         }
 
-        private void OnGotHostAddresses(IAsyncResult ar)
+        private void OnGotGossipSeedSources(IAsyncResult ar)
         {
             try
             {
-                var entries = _dns.EndGetHostAddresses(ar);
-                _bus.Publish(new GossipMessage.GotDnsEntries(entries));
+                var entries = _gossipSeedSource.EndGetHostEndpoints(ar);
+                _bus.Publish(new GossipMessage.GotGossipSeedSources(entries));
             }
             catch (Exception ex)
             {
                 Log.ErrorException(ex, "Error while retrieving cluster members through DNS.");
-                _bus.Publish(TimerMessage.Schedule.Create(DnsRetryTimeout, _publishEnvelope, new GossipMessage.RetrieveDnsEntries()));
+                _bus.Publish(TimerMessage.Schedule.Create(DnsRetryTimeout, _publishEnvelope, new GossipMessage.RetrieveGossipSeedSources()));
             }
         }
 
-        public void Handle(GossipMessage.GotDnsEntries message)
+        public void Handle(GossipMessage.GotGossipSeedSources message)
         {
             var now = DateTime.UtcNow;
             var dnsCluster = new ClusterInfo(
-                message.DnsEntries.Select(x => MemberInfo.ForManager(Guid.Empty,
-                                                                     now,
-                                                                     true,
-                                                                     new IPEndPoint(x, _managerInternalHttpPort),
-                                                                     new IPEndPoint(x, _managerInternalHttpPort))).ToArray());
+                message.GossipSeeds.Select(x => MemberInfo.ForManager(Guid.Empty, now, true, x, x)).ToArray());
 
             var oldCluster = _cluster;
             _cluster = MergeClusters(_cluster, dnsCluster, null, x => x);
@@ -291,12 +278,12 @@ namespace EventStore.Core.Services.Gossip
             sb.AppendFormat("CLUSTER HAS CHANGED{0}\n", source.IsNotEmptyString() ? " (" + source + ")" : string.Empty);
             sb.AppendLine("Old:");
             var ipEndPointComparer = new IPEndPointComparer();
-            foreach (var oldMember in oldCluster.Members.OrderByDescending<MemberInfo, IPEndPoint>(x => x.InternalHttpEndPoint, ipEndPointComparer))
+            foreach (var oldMember in oldCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer))
             {
                 sb.AppendLine(oldMember.ToString());
             }
             sb.AppendLine("New:");
-            foreach (var newMember in newCluster.Members.OrderByDescending<MemberInfo, IPEndPoint>(x => x.InternalHttpEndPoint, ipEndPointComparer))
+            foreach (var newMember in newCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer))
             {
                 sb.AppendLine(newMember.ToString());
             }

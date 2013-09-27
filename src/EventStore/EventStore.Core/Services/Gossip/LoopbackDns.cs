@@ -3,26 +3,26 @@ using System.Net;
 
 namespace EventStore.Core.Services.Gossip
 {
-    public class ConfigDns : IDnsService
+    public class KnownEndpointGossipSeedSource : IGossipSeedSource
     {
-        private readonly IPAddress[] _ipAddresses;
+        private readonly IPEndPoint[] _ipEndPoints;
 
-        public ConfigDns(IPAddress[] ipAddresses)
+        public KnownEndpointGossipSeedSource(IPEndPoint[] ipEndPoints)
         {
-            if (ipAddresses == null)
-                throw new ArgumentNullException("ipAddresses");
-            _ipAddresses = ipAddresses;
+			if (ipEndPoints == null)
+                throw new ArgumentNullException("ipEndPoints");
+			_ipEndPoints = ipEndPoints;
         }
 
-        public IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback requestCallback, object state)
-        {
-            requestCallback(null);
+	    public IAsyncResult BeginGetHostEndpoints(AsyncCallback requestCallback, object state)
+	    {
+		    requestCallback(null);
             return null;
-        }
+	    }
 
-        public IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult)
-        {
-            return _ipAddresses;
-        }
+	    public IPEndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult)
+	    {
+		    return _ipEndPoints;
+	    }
     }
 }

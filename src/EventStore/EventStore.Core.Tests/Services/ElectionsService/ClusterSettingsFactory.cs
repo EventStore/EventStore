@@ -20,22 +20,16 @@ namespace EventStore.Core.Tests.Services.ElectionsService
                 httpIntPort = tcpIntPort + 10,
                 httpExtPort = tcpIntPort + 11;
 
-            var vnode = new ClusterVNodeSettings(Guid.NewGuid(), 
-                                                 GetLoopbackForPort(tcpIntPort), null,
-                                                 GetLoopbackForPort(tcpExtPort), null,
-                                                 GetLoopbackForPort(httpIntPort), GetLoopbackForPort(httpExtPort),
-                                                 new[] {GetLoopbackForPort(httpExtPort).ToHttpUrl()},
-                                                 false,
-                                                 null,
-                                                 1,
-                                                 GetLoopbackForPort(ManagerPort),
-                                                 "dns", 3, true,
-                                                 TFConsts.MinFlushDelayMs,
-                                                 2, 2, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2),
-                                                 false, null, false,
-                                                 TimeSpan.FromHours(1),
-                                                 StatsStorage.StreamAndCsv,
-												 ClusterVNodeAuthenticationType.Internal);
+			var vnode = new ClusterVNodeSettings(Guid.NewGuid(),
+				GetLoopbackForPort(tcpIntPort), null,
+				GetLoopbackForPort(tcpExtPort), null,
+				GetLoopbackForPort(httpIntPort), GetLoopbackForPort(httpExtPort),
+				new[] { GetLoopbackForPort(httpExtPort).ToHttpUrl() },
+				false, null, 1, false, "dns", new[] { GetLoopbackForPort(ManagerPort) },
+				TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2),
+				TimeSpan.FromSeconds(2), false, null, false, TimeSpan.FromHours(1),
+				StatsStorage.StreamAndCsv, ClusterVNodeAuthenticationType.Internal);
+
             return vnode;
         }
 

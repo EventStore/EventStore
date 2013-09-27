@@ -35,13 +35,13 @@ namespace EventStore.Core.Services
 
         public ClusterStorageWriterService(IPublisher bus, 
                                            ISubscriber subscribeToBus,
-                                           int minFlushDelayMs,
+                                           TimeSpan minFlushDelay,
                                            TFChunkDb db, 
                                            TFChunkWriter writer, 
                                            IIndexWriter indexWriter,
                                            IEpochManager epochManager,
                                            Func<long> getLastCommitPosition) 
-            : base(bus, subscribeToBus, minFlushDelayMs, db, writer, indexWriter, epochManager)
+            : base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, epochManager)
         {
             Ensure.NotNull(getLastCommitPosition, "getLastCommitPosition");
 

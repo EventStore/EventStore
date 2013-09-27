@@ -476,6 +476,9 @@ namespace EventStore.Common.Options
             if (targetType == typeof (IPAddress))
                 conv = new IPAddressTypeConverter();
 
+			if (targetType == typeof(IPEndPoint))
+				conv = new IPEndPointTypeConverter();
+
             T t = default(T);
             try
             {

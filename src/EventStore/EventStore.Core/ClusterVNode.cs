@@ -64,14 +64,14 @@ namespace EventStore.Core
 
         public ClusterVNode(TFChunkDb db,
                             ClusterVNodeSettings vNodeSettings,
-                            IDnsService dnsService,
+                            IGossipSeedSource gossipSeedSource,
                             bool dbVerifyHashes,
                             int memTableEntryCount,
                             params ISubsystem[] subsystems)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(vNodeSettings, "vNodeSettings");
-            Ensure.NotNull(dnsService, "dnsService");
+            Ensure.NotNull(gossipSeedSource, "gossipSeedSource");
 
             _nodeInfo = vNodeSettings.NodeInfo;
             _mainBus = new InMemoryBus("MainBus");
@@ -158,7 +158,7 @@ namespace EventStore.Core
                                                 readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint));
             epochManager.Init();
 
-            var storageWriter = new ClusterStorageWriterService(_mainQueue, _mainBus, vNodeSettings.MinFlushDelayMs,
+            var storageWriter = new ClusterStorageWriterService(_mainQueue, _mainBus, vNodeSettings.MinFlushDelay,
                                                                 db, writer, readIndex.IndexWriter, epochManager,
                                                                 () => readIndex.LastCommitPosition); // subscribes internally
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
@@ -427,12 +427,11 @@ namespace EventStore.Core
             electionsService.SubscribeMessages(_mainBus);
 
             // GOSSIP
-            var gossip = new NodeGossipService(_mainQueue, dnsService, vNodeSettings.ClusterDns, vNodeSettings.ManagerEndPoint.Port,
-                                               _nodeInfo, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
-                                               epochManager, () => readIndex.LastCommitPosition);
+            var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, _nodeInfo, db.Config.WriterCheckpoint,
+											   db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastCommitPosition);
             _mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
-            _mainBus.Subscribe<GossipMessage.RetrieveDnsEntries>(gossip);
-            _mainBus.Subscribe<GossipMessage.GotDnsEntries>(gossip);
+            _mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
+            _mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
             _mainBus.Subscribe<GossipMessage.Gossip>(gossip);
             _mainBus.Subscribe<GossipMessage.GossipReceived>(gossip);
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);

@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.Util;
@@ -48,7 +49,7 @@ namespace EventStore.SingleNode
         
         public int CachedChunks { get { return _helper.Get(() => CachedChunks); } }
         public long ChunksCacheSize { get { return _helper.Get(() => ChunksCacheSize); } }
-        public int MinFlushDelayMs { get { return _helper.Get(() => MinFlushDelayMs); } }
+        public double MinFlushDelayMs { get { return _helper.Get(() => MinFlushDelayMs); } }
 
         public string DbPath { get { return _helper.Get(() => DbPath); } }
         public bool InMemDb { get { return _helper.Get(() => InMemDb); } }
@@ -74,7 +75,7 @@ namespace EventStore.SingleNode
 
         public SingleNodeOptions()
         {
-            _helper = new OptsHelper(() => Configs, Opts.EnvPrefix);
+	        _helper = new OptsHelper(() => Configs, Opts.EnvPrefix, "singlenode-config.json");
             
             _helper.Register(() => ShowHelp, Opts.ShowHelpCmd, Opts.ShowHelpEnv, Opts.ShowHelpJson, Opts.ShowHelpDefault, Opts.ShowHelpDescr);
             _helper.Register(() => ShowVersion, Opts.ShowVersionCmd, Opts.ShowVersionEnv, Opts.ShowVersionJson, Opts.ShowVersionDefault, Opts.ShowVersionDescr);

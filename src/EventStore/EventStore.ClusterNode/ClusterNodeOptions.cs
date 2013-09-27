@@ -6,6 +6,8 @@ namespace EventStore.ClusterNode
 {
     public class ClusterNodeOptions : IOptions
     {
+		private const string DefaultJsonConfigFileName = "clusternode-config.json";
+
         public bool ShowHelp { get { return _helper.Get(() => ShowHelp); } }
         public bool ShowVersion { get { return _helper.Get(() => ShowVersion); } }
         public string LogsDir { get { return _helper.Get(() => LogsDir); } }
@@ -20,20 +22,19 @@ namespace EventStore.ClusterNode
         public int InternalSecureTcpPort { get { return _helper.Get(() => InternalSecureTcpPort); } }
         public int ExternalTcpPort { get { return _helper.Get(() => ExternalTcpPort); } }
         public int ExternalSecureTcpPort { get { return _helper.Get(() => ExternalSecureTcpPort); } }
-        public string ClusterDns { get { return _helper.Get(() => ClusterDns); } }
         public bool Force { get { return _helper.Get(() => Force); } }
         public int ClusterSize { get { return _helper.Get(() => ClusterSize); } }
-        public int MinFlushDelayMs { get { return _helper.Get(() => MinFlushDelayMs); } }
+        public double MinFlushDelayMs { get { return _helper.Get(() => MinFlushDelayMs); } }
 
         public int CommitCount { get { return _helper.Get(() => CommitCount); } }
         public int PrepareCount { get { return _helper.Get(() => PrepareCount); } }
-        public bool FakeDns { get { return _helper.Get(() => FakeDns); } }
-        public IPAddress InternalManagerIp { get { return _helper.Get(() => InternalManagerIp); } }
-        public int InternalManagerHttpPort { get { return _helper.Get(() => InternalManagerHttpPort); } }
-        public IPAddress[] FakeDnsIps { get { return _helper.Get(() => FakeDnsIps); } }
+
+		public bool DiscoverViaDns { get { return _helper.Get(() => DiscoverViaDns); } }
+		public string ClusterDns { get { return _helper.Get(() => ClusterDns); } }
+		public int ClusterGossipPort { get { return _helper.Get(() => ClusterGossipPort); } }
+		public IPEndPoint[] GossipSeeds { get { return _helper.Get(() => GossipSeeds); } }
 
         public int StatsPeriodSec { get { return _helper.Get(() => StatsPeriodSec); } }
-
         public int CachedChunks { get { return _helper.Get(() => CachedChunks); } }
         public long ChunksCacheSize { get { return _helper.Get(() => ChunksCacheSize); } }
 
@@ -63,7 +64,7 @@ namespace EventStore.ClusterNode
 
         public ClusterNodeOptions()
         {
-            _helper = new OptsHelper(() => Configs, Opts.EnvPrefix);
+			_helper = new OptsHelper(() => Configs, Opts.EnvPrefix, DefaultJsonConfigFileName);
             _helper.Register(() => ShowHelp, Opts.ShowHelpCmd, Opts.ShowHelpEnv, Opts.ShowHelpJson, Opts.ShowHelpDefault, Opts.ShowHelpDescr);
             _helper.Register(() => ShowVersion, Opts.ShowVersionCmd, Opts.ShowVersionEnv, Opts.ShowVersionJson, Opts.ShowVersionDefault, Opts.ShowVersionDescr);
             _helper.RegisterRef(() => LogsDir, Opts.LogsCmd, Opts.LogsEnv, Opts.LogsJson, Opts.LogsDefault, Opts.LogsDescr);
@@ -79,16 +80,16 @@ namespace EventStore.ClusterNode
             _helper.Register(() => ExternalTcpPort, Opts.ExternalTcpPortCmd, Opts.ExternalTcpPortEnv, Opts.ExternalTcpPortJson, Opts.ExternalTcpPortDefault, Opts.ExternalTcpPortDescr);
             _helper.Register(() => ExternalSecureTcpPort, Opts.ExternalSecureTcpPortCmd, Opts.ExternalSecureTcpPortEnv, Opts.ExternalSecureTcpPortJson, Opts.ExternalSecureTcpPortDefault, Opts.ExternalSecureTcpPortDescr);
             _helper.Register(() => Force, Opts.ForceCmd, Opts.ForceEnv, Opts.ForceJson, Opts.ForceDefault, Opts.ForceDescr);
-            _helper.RegisterRef(() => ClusterDns, Opts.ClusterDnsCmd, Opts.ClusterDnsEnv, Opts.ClusterDnsJson, Opts.ClusterDnsDefault, Opts.ClusterDnsDescr);
             _helper.Register(() => ClusterSize, Opts.ClusterSizeCmd, Opts.ClusterSizeEnv, Opts.ClusterSizeJson, Opts.ClusterSizeDefault, Opts.ClusterSizeDescr);
             _helper.Register(() => MinFlushDelayMs, Opts.MinFlushDelayMsCmd, Opts.MinFlushDelayMsEnv, Opts.MinFlushDelayMsJson, Opts.MinFlushDelayMsDefault, Opts.MinFlushDelayMsDescr);
             
             _helper.Register(() => CommitCount, Opts.CommitCountCmd, Opts.CommitCountEnv, Opts.CommitCountJson, Opts.CommitCountDefault, Opts.CommitCountDescr);
             _helper.Register(() => PrepareCount, Opts.PrepareCountCmd, Opts.PrepareCountEnv, Opts.PrepareCountJson, Opts.PrepareCountDefault, Opts.PrepareCountDescr);
-            _helper.Register(() => FakeDns, Opts.FakeDnsCmd, Opts.FakeDnsEnv, Opts.FakeDnsJson, Opts.FakeDnsDefault, Opts.FakeDnsDescr);
-            _helper.RegisterRef(() => InternalManagerIp, Opts.InternalManagerIpCmd, Opts.InternalManagerIpEnv, Opts.InternalManagerIpJson, Opts.InternalManagerIpDefault, Opts.InternalManagerIpDescr);
-            _helper.Register(() => InternalManagerHttpPort, Opts.InternalManagerHttpPortCmd, Opts.InternalManagerHttpPortEnv, Opts.InternalManagerHttpPortJson, Opts.InternalManagerHttpPortDefault, Opts.InternalManagerHttpPortDescr);
-            _helper.RegisterArray(() => FakeDnsIps, Opts.FakeDnsIpsCmd, Opts.FakeDnsIpsEnv, ",", Opts.FakeDnsIpsJson, Opts.FakeDnsIpsDefault, Opts.FakeDnsIpsDescr);
+			
+			_helper.Register(() => DiscoverViaDns, Opts.DiscoverViaDnsCmd, Opts.DiscoverViaDnsEnv, Opts.DiscoverViaDnsJson, Opts.DiscoverViaDnsDefault, Opts.DiscoverViaDnsDescr);
+			_helper.RegisterRef(() => ClusterDns, Opts.ClusterDnsCmd, Opts.ClusterDnsEnv, Opts.ClusterDnsJson, Opts.ClusterDnsDefault, Opts.ClusterDnsDescr);
+	        _helper.Register(() => ClusterGossipPort, Opts.ClusterGossipPortCmd, Opts.ClusterGossipPortEnv, Opts.ClusterGossipPortJson, Opts.ClusterGossipPortDefault, Opts.ClusterGossipPortDescr);
+			_helper.RegisterArray(() => GossipSeeds, Opts.GossipSeedCmd, Opts.GossipSeedEnv, ",", Opts.GossipSeedJson, Opts.GossipSeedDefault, Opts.GossipSeedDescr);
 
             _helper.Register(() => StatsPeriodSec, Opts.StatsPeriodCmd, Opts.StatsPeriodEnv, Opts.StatsPeriodJson, Opts.StatsPeriodDefault, Opts.StatsPeriodDescr);
 

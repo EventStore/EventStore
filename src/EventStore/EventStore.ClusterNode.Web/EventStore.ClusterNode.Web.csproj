@@ -528,7 +528,9 @@
       <Link>clusternode-web\view-projection.htm</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="clusternode-web\gossip.htm" />
+    <Content Include="clusternode-web\gossip.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
