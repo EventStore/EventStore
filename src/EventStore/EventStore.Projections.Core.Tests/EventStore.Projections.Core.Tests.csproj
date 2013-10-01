@@ -107,6 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Other\json_serialization.cs" />
+    <Compile Include="Other\Stopwatch.cs" />
     <Compile Include="Other\when_matching_remaining_path.cs" />
     <Compile Include="Playground\BusTestingExtentions.cs" />
     <Compile Include="Playground\Launchpad.cs" />
@@ -182,6 +183,7 @@
     <Compile Include="Services\event_reader\TestFixtureWithEventReaderService.cs" />
     <Compile Include="Services\handlers\categorize_events_by_stream_path.cs" />
     <Compile Include="Services\integration\parallel_query\when_running_from_catalog_stream_query.cs" />
+    <Compile Include="Services\integration\parallel_query\when_running_twice_from_catalog_stream_query.cs" />
     <Compile Include="Services\integration\specification_with_a_v8_query_posted.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\specification_with_parallel_processing_load_balancer.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\when_accounting_completed_task.cs" />

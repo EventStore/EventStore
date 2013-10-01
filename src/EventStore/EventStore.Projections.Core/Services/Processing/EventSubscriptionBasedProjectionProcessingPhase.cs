@@ -535,7 +535,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _coreProjection.SetCurrentCheckpointSuggestedWorkItem(checkpointSuggestedWorkItem);
         }
 
-        public void GetStatistics(ProjectionStatistics info)
+        public virtual void GetStatistics(ProjectionStatistics info)
         {
             info.Status = info.Status + GetStatus();
             info.BufferedEvents += GetBufferedEventCount();

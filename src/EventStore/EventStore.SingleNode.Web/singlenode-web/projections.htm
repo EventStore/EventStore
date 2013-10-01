@@ -83,7 +83,7 @@
           <td class="r">{{>writePendingEventsAfterCheckpoint}} / {{>writePendingEventsBeforeCheckpoint}}</td>
           <td class="r">{{>partitionsCached}}</td>
           <td class="r">{{>eventsProcessedAfterRestart}}</td>
-          <td class="r">{{>eventsPerSecond}}</td>
+          <td class="r">{{>eventsPerSecond}}({{>averageCoreProcessingTime}})</td>
           <td class="r">{{>bufferedEvents}}</td>
         </tr>
         </script>
@@ -209,10 +209,14 @@
                     var currentTime = new Date();
                     for (var i = 0; i < data.projections.length; i++) {
                         current[data.projections[i].name] = data.projections[i];
-                        if (lastRequest[data.projections[i].name] !== undefined && lastTimestamp != null)
+                        if (lastRequest[data.projections[i].name] !== undefined && lastTimestamp != null) {
+                            var eventsProcessed = data.projections[i].eventsProcessedAfterRestart - lastRequest[data.projections[i].name].eventsProcessedAfterRestart;
+                            var elapsedTime = currentTime - lastTimestamp;
                             data.projections[i].eventsPerSecond =
-                            (1000.0 * (data.projections[i].eventsProcessedAfterRestart - lastRequest[data.projections[i].name].eventsProcessedAfterRestart) /
-                                (currentTime - lastTimestamp)).toFixed(1);
+                            (1000.0 * eventsProcessed / elapsedTime).toFixed(1);
+                            data.projections[i].averageCoreProcessingTime =
+                                ((data.projections[i].coreProcessingTime - lastRequest[data.projections[i].name].coreProcessingTime) * 100.0 / elapsedTime).toFixed(1) + "%";
+                        }
                     }
                     lastRequest = current;
                     lastTimestamp = currentTime;

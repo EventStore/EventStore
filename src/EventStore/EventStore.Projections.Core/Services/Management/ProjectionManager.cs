@@ -241,7 +241,11 @@ namespace EventStore.Projections.Core.Services.Management
             if (projection == null)
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
+            {
                 projection.Handle(message);
+                _projections.Remove(message.Name);
+                _projectionsMap.Remove(projection.Id);
+            }
         }
 
         public void Handle(ProjectionManagementMessage.GetQuery message)

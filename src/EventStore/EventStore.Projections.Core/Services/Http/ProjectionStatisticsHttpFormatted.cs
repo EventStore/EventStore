@@ -52,6 +52,7 @@ namespace EventStore.Projections.Core.Services.Http
             this.WritePendingEventsAfterCheckpoint = source.WritePendingEventsAfterCheckpoint;
             this.ReadsInProgress = source.ReadsInProgress;
             this.WritesInProgress = source.WritesInProgress;
+            this.CoreProcessingTime = source.CoreProcessingTime;
             this.PartitionsCached = source.PartitionsCached;
             var statusLocalUrl = "/projection/" + source.Name;
             this.StatusUrl = makeAbsoluteUrl(statusLocalUrl);
@@ -65,6 +66,8 @@ namespace EventStore.Projections.Core.Services.Http
             this.DisableCommandUrl = makeAbsoluteUrl(statusLocalUrl + "/command/disable");
             this.EnableCommandUrl = makeAbsoluteUrl(statusLocalUrl + "/command/enable");
         }
+
+        public long CoreProcessingTime { get; set; }
 
         public int Version { get; set; }
 

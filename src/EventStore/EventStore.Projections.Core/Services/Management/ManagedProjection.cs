@@ -198,6 +198,11 @@ namespace EventStore.Projections.Core.Services.Management
             get { return _slaveProjectionSubscriptionId; }
         }
 
+        public Guid Id
+        {
+            get { return _id; }
+        }
+
         public void Dispose()
         {
             DisposeCoreProjection();
@@ -210,7 +215,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public ProjectionStatistics GetStatistics()
         {
-            _coreQueue.Publish(new CoreProjectionManagementMessage.UpdateStatistics(_id));
+            _coreQueue.Publish(new CoreProjectionManagementMessage.UpdateStatistics(Id));
             ProjectionStatistics status;
             if (_lastReceivedStatistics == null)
             {
@@ -268,7 +273,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 _getResultDispatcher.Publish(
                     new CoreProjectionManagementMessage.GetResult(
-                        new PublishEnvelope(_inputQueue), Guid.NewGuid(), _id, message.Partition),
+                        new PublishEnvelope(_inputQueue), Guid.NewGuid(), Id, message.Partition),
                     m =>
                     message.Envelope.ReplyWith(
                         new ProjectionManagementMessage.ProjectionResult(_name, m.Partition, m.Result, m.Position)));
@@ -696,11 +701,11 @@ namespace EventStore.Projections.Core.Services.Management
                 _output.Publish(
                     new ProjectionManagementMessage.StartSlaveProjections(
                         new PublishEnvelope(_inputQueue), new ProjectionManagementMessage.RunAs(_runAs), _name,
-                        _slaveProjections, _coreQueue, _id));
+                        _slaveProjections, _coreQueue, Id));
             }
             else
             {
-                _coreQueue.Publish(new CoreProjectionManagementMessage.Start(_id));
+                _coreQueue.Publish(new CoreProjectionManagementMessage.Start(Id));
             }
         }
 
@@ -708,12 +713,12 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _onStopped = onLoaded;
             _state = ManagedProjectionState.LoadingState;
-            _coreQueue.Publish(new CoreProjectionManagementMessage.LoadStopped(_id));
+            _coreQueue.Publish(new CoreProjectionManagementMessage.LoadStopped(Id));
         }
 
         private void DisposeCoreProjection()
         {
-            _coreQueue.Publish(new CoreProjectionManagementMessage.Dispose(_id));
+            _coreQueue.Publish(new CoreProjectionManagementMessage.Dispose(Id));
         }
 
         /// <summary>
@@ -793,11 +798,11 @@ namespace EventStore.Projections.Core.Services.Management
 
             var createProjectionMessage = _isSlave ? 
                 (Message) new CoreProjectionManagementMessage.CreateAndPrepareSlave(
-                    new PublishEnvelope(_inputQueue), _id, _name, 
+                    new PublishEnvelope(_inputQueue), Id, _name, 
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
                     config, _slaveResultsPublisher, _slaveMasterCorrelationId, stateHandlerFactory) :
                 new CoreProjectionManagementMessage.CreateAndPrepare(
-                    new PublishEnvelope(_inputQueue), _id, _name, 
+                    new PublishEnvelope(_inputQueue), Id, _name, 
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
                     config, HandlerType, Query, stateHandlerFactory);
 
@@ -826,7 +831,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             var createProjectionMessage =
                 new CoreProjectionManagementMessage.CreatePrepared(
-                    new PublishEnvelope(_inputQueue), _id, _name,
+                    new PublishEnvelope(_inputQueue), Id, _name,
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 1),
                     config, _persistedState.SourceDefinition, HandlerType, Query);
 
@@ -858,7 +863,7 @@ namespace EventStore.Projections.Core.Services.Management
                 case ManagedProjectionState.Starting:
                     _state = ManagedProjectionState.Stopping;
                     _onStopped = completed;
-                    _coreQueue.Publish(new CoreProjectionManagementMessage.Stop(_id));
+                    _coreQueue.Publish(new CoreProjectionManagementMessage.Stop(Id));
                     break;
                 default:
                     throw new NotSupportedException();
@@ -950,7 +955,7 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(_name));
                     DisposeCoreProjection();
-                    _output.Publish(new ProjectionManagementMessage.Internal.Deleted(_name, _id));
+                    _output.Publish(new ProjectionManagementMessage.Internal.Deleted(_name, Id));
                 };
             UpdateProjectionVersion();
             if (Enabled)
@@ -974,7 +979,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 _getStateDispatcher.Publish(
                     new CoreProjectionManagementMessage.GetState(
-                        new PublishEnvelope(_inputQueue), Guid.NewGuid(), _id, message.Partition),
+                        new PublishEnvelope(_inputQueue), Guid.NewGuid(), Id, message.Partition),
                     m =>
                     message.Envelope.ReplyWith(
                         new ProjectionManagementMessage.ProjectionState(_name, m.Partition, m.State, m.Position)));
@@ -990,7 +995,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message)
         {
             _slaveProjectionCommunicationChannels = message.SlaveProjections;
-            _coreQueue.Publish(new CoreProjectionManagementMessage.Start(_id, _slaveProjectionCommunicationChannels));
+            _coreQueue.Publish(new CoreProjectionManagementMessage.Start(Id, _slaveProjectionCommunicationChannels));
         }
 
         public void Handle(CoreProjectionManagementMessage.SlaveProjectionReaderAssigned message)

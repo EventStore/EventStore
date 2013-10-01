@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Diagnostics;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
@@ -42,6 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly StatePartitionSelector _statePartitionSelector;
 
         private string _handlerPartition;
+        private readonly Stopwatch _stopwatch;
 
 
         public EventProcessingProjectionProcessingPhase(
@@ -60,6 +62,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionStateHandler = projectionStateHandler;
             _definesStateTransform = definesStateTransform;
             _statePartitionSelector = statePartitionSelector;
+
+            _stopwatch = new Stopwatch();
+
         }
 
         public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
@@ -172,6 +177,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             projectionResult = null;
             SetHandlerState(partition);
+            _stopwatch.Start();
             var result = _projectionStateHandler.ProcessEvent(
                 partition, message.CheckpointTag, message.EventCategory, message.Data, out newState, out emittedEvents);
             if (result)
@@ -194,6 +200,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     projectionResult = oldState.Result;
                 }
             }
+            _stopwatch.Stop();
             return result;
         }
 
@@ -238,6 +245,12 @@ namespace EventStore.Projections.Core.Services.Processing
                         _resultWriter.EventsEmitted(emittedEvents, Guid.Empty, correlationId: null);
                 }
             }
+        }
+
+        public override void GetStatistics(ProjectionStatistics info)
+        {
+            base.GetStatistics(info);
+            info.CoreProcessingTime = _stopwatch.ElapsedMilliseconds;
         }
 
         public override void Dispose()

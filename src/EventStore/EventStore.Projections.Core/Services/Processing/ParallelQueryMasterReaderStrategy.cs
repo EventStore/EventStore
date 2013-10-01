@@ -32,7 +32,6 @@ using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Projections.Core.Services.Processing
 {

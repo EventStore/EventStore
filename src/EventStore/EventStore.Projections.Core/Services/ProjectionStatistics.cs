@@ -80,6 +80,8 @@ namespace EventStore.Projections.Core.Services
 
         public ProjectionSourceDefinition Definition { get; set; }
 
+        public long CoreProcessingTime { get; set; }
+
         public ProjectionStatistics Clone()
         {
             return (ProjectionStatistics) MemberwiseClone();

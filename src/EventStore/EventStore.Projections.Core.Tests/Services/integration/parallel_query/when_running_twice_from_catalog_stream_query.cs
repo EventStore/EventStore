@@ -26,13 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
@@ -40,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.integration.parallel_query
 {
     [TestFixture]
-    public class when_running_from_catalog_stream_query: specification_with_a_v8_query_posted
+    public class when_running_twice_from_catalog_stream_query : specification_with_a_v8_query_posted
     {
         protected override void GivenEvents()
         {
@@ -63,23 +59,6 @@ fromStreamCatalog('catalog').foreachStream().when({
     $any: function(s, e) { return {c: s.c + 1}; }
 })
 ";
-        }
-
-        protected override IEnumerable<WhenStep> When()
-        {
-            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            yield return
-                (new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), _projectionMode, _projectionName,
-                    ProjectionManagementMessage.RunAs.System, "JS",
-                    _projectionSource, enabled: false, checkpointsEnabled: false,
-                    emitEnabled: false));
-            yield return
-                new ProjectionManagementMessage.Enable(
-                    Envelope, _projectionName, ProjectionManagementMessage.RunAs.System);
-            yield return
-                new ProjectionManagementMessage.Enable(
-                    Envelope, _projectionName, ProjectionManagementMessage.RunAs.System);
         }
 
         [Test]
