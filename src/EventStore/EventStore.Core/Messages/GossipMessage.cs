@@ -8,22 +8,22 @@ namespace EventStore.Core.Messages
 {
     public static partial class GossipMessage
     {
-        public class RetrieveDnsEntries : Message
+        public class RetrieveGossipSeedSources : Message
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
         }
 
-        public class GotDnsEntries : Message
+        public class GotGossipSeedSources : Message
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public readonly IPAddress[] DnsEntries;
+            public readonly IPEndPoint[] GossipSeeds;
 
-            public GotDnsEntries(IPAddress[] dnsEntries)
+            public GotGossipSeedSources(IPEndPoint[] gossipSeeds)
             {
-                DnsEntries = dnsEntries;
+                GossipSeeds = gossipSeeds;
             }
         }
 

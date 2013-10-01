@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Options;
@@ -68,8 +67,19 @@ namespace EventStore.ClusterNode
             var dbConfig = CreateDbConfig(dbPath, opts.CachedChunks, opts.ChunksCacheSize, opts.InMemDb);
             var db = new TFChunkDb(dbConfig);
             var vNodeSettings = GetClusterVNodeSettings(opts);
-            var managersIps = opts.FakeDnsIps.Union(new[] { vNodeSettings.ManagerEndPoint.Address }).Distinct().ToArray();
-            var dnsService = opts.FakeDns ? (IDnsService)new ConfigDns(managersIps) : new DnsService();
+
+	        IGossipSeedSource gossipSeedSource;
+			if (opts.DiscoverViaDns)
+			{
+				gossipSeedSource = new DnsGossipSeedSource(opts.ClusterDns, opts.ClusterGossipPort);
+			}
+			else
+			{
+				gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeeds);
+			}
+
+			//var managersIps = opts.FakeDnsIps.Union(new[] { vNodeSettings.ManagerEndPoint.Address }).Distinct().ToArray();
+			//var dnsService = opts.FakeDns ? (IGossipSeedSource)new ConfigDns(managersIps) : new DnsGossipSeedSource();
             var dbVerifyHashes = !opts.SkipDbVerify;
             var runProjections = opts.RunProjections;
 
@@ -90,7 +100,7 @@ namespace EventStore.ClusterNode
                 ? new[] {NodeSubsystems.Projections}
                 : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);
-            _node = new ClusterVNode(db, vNodeSettings, dnsService, dbVerifyHashes, ESConsts.MemTableEntryCount, _projections);
+            _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, dbVerifyHashes, ESConsts.MemTableEntryCount, _projections);
             RegisterWebControllers(enabledNodeSubsystems);
             RegisterUiProjections();
         }
@@ -128,7 +138,6 @@ namespace EventStore.ClusterNode
             var intSecTcp = options.InternalSecureTcpPort > 0 ? new IPEndPoint(options.InternalIp, options.InternalSecureTcpPort) : null;
             var extTcp = new IPEndPoint(options.ExternalIp, options.ExternalTcpPort);
             var extSecTcp = options.ExternalSecureTcpPort > 0 ? new IPEndPoint(options.ExternalIp, options.ExternalSecureTcpPort) : null;
-            var manager = new IPEndPoint(options.InternalManagerIp, options.InternalManagerHttpPort);
             var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] { extHttp.ToHttpUrl() };
 
             if (options.UseInternalSsl)
@@ -144,10 +153,9 @@ namespace EventStore.ClusterNode
 	                                        intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp,
 	                                        prefixes, options.EnableTrustedAuth,
 	                                        certificate,
-	                                        options.WorkerThreads,
-	                                        manager,
-	                                        options.ClusterDns, options.ClusterSize, options.FakeDns,
-	                                        options.MinFlushDelayMs,
+	                                        options.WorkerThreads, options.DiscoverViaDns,
+	                                        options.ClusterDns, options.GossipSeeds,
+											TimeSpan.FromMilliseconds(options.MinFlushDelayMs), options.ClusterSize,
 	                                        options.PrepareCount, options.CommitCount,
 	                                        TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
 	                                        TimeSpan.FromMilliseconds(options.CommitTimeoutMs),

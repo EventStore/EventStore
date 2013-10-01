@@ -37,6 +37,8 @@ namespace EventStore.TestClient
     /// </summary>
     public sealed class ClientOptions : IOptions
     {
+	    private const string DefaultJsonConfigFileName = "testclient-config.json";
+
         public bool ShowHelp { get { return _helper.Get(() => ShowHelp); } }
         public bool ShowVersion { get { return _helper.Get(() => ShowVersion); } }
         public string LogsDir { get { return _helper.Get(() => LogsDir); } }
@@ -56,7 +58,7 @@ namespace EventStore.TestClient
 
         public ClientOptions()
         {
-            _helper = new OptsHelper(null, Opts.EnvPrefix);
+			_helper = new OptsHelper(null, Opts.EnvPrefix, DefaultJsonConfigFileName);
 
             _helper.Register(() => ShowHelp, Opts.ShowHelpCmd, Opts.ShowHelpEnv, Opts.ShowHelpJson, Opts.ShowHelpDefault, Opts.ShowHelpDescr);
             _helper.Register(() => ShowVersion, Opts.ShowVersionCmd, Opts.ShowVersionEnv, Opts.ShowVersionJson, Opts.ShowVersionDefault, Opts.ShowVersionDescr);

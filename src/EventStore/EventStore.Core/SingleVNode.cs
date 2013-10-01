@@ -164,7 +164,7 @@ namespace EventStore.Core
                                                 readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint));
             epochManager.Init();
 
-            var storageWriter = new StorageWriterService(_mainQueue, _mainBus, _settings.MinFlushDelayMs,
+            var storageWriter = new StorageWriterService(_mainQueue, _mainBus, _settings.MinFlushDelay,
                                                          db, writer, readIndex.IndexWriter, epochManager); // subscribes internally
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
