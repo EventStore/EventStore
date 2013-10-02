@@ -138,4 +138,5 @@ namespace EventStore.Projections.Core.Services.Processing
                         runAs: new ProjectionManagementMessage.RunAs(_projectionConfig.RunAs), enableRunAs: true));
         }
     }
+
 }

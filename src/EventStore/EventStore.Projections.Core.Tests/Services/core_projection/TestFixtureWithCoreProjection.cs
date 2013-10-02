@@ -30,6 +30,7 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -89,7 +90,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected virtual CoreProjection GivenCoreProjection(ProjectionProcessingStrategy projectionProcessingStrategy)
         {
             return projectionProcessingStrategy.Create(
-                _projectionCorrelationId, _bus, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
+                _projectionCorrelationId, _bus, SystemAccount.Principal, _bus, _ioDispatcher, _subscriptionDispatcher,
+                _timeProvider);
         }
 
         protected virtual ProjectionProcessingStrategy GivenProjectionProcessingStrategy()

@@ -30,6 +30,7 @@ using System;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -71,7 +72,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
-                    Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
         }
 
         [Test, ExpectedException(typeof (ArgumentOutOfRangeException))]
@@ -83,7 +85,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
-                    Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -94,7 +97,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
-                    Guid.NewGuid(), new FakePublisher(), null, _subscriptionDispatcher, new RealTimeProvider());
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), null,
+                    _subscriptionDispatcher, new RealTimeProvider());
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -105,7 +109,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             new ContinuousProjectionProcessingStrategy(
                 null, version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
-                    Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -116,10 +121,35 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
-                    Guid.NewGuid(), null, _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, null, _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test, ExpectedException(typeof(ArgumentNullException))]
+        public void a_null_input_queue_throws_exception()
+        {
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            new ContinuousProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, _defaultProjectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), null, SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
+        }
+
+        [Test]
+        public void a_null_run_as_does_not_throw_exception()
+        {
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            new ContinuousProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, _defaultProjectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), new FakePublisher(), null, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
+        }
+
+        [Test, ExpectedException(typeof(ArgumentNullException))]
         public void a_null_subscription_dispatcher__throws_argument_null_exception()
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
@@ -127,7 +157,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
-                    Guid.NewGuid(), new FakePublisher(), _ioDispatcher, null, new RealTimeProvider());
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    null, new RealTimeProvider());
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -138,7 +169,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
-                    Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, null);
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentOutOfRangeException))]
@@ -150,7 +182,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, projectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
-                    Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -161,7 +194,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             new ContinuousProjectionProcessingStrategy(
                 "", version, projectionStateHandler, _defaultProjectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
-                    Guid.NewGuid(), new FakePublisher(), _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
         }
     }
 }

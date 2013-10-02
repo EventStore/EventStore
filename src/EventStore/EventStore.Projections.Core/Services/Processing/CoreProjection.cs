@@ -28,10 +28,13 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Utils;
@@ -46,17 +49,18 @@ namespace EventStore.Projections.Core.Services.Processing
                                   ICoreProjectionForProcessingPhase,
                                   IHandle<CoreProjectionManagementMessage.GetState>,
                                   IHandle<CoreProjectionManagementMessage.GetResult>,
-                                  IHandle<PartitionProcessingResult>
-                                  
+                                  IHandle<PartitionProcessingResult>,
+                                  IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>
     {
         [Flags]
         private enum State : uint
         {
             Initial = 0x80000000,
-            LoadStateRequested = 0x1,
-            StateLoaded = 0x2,
-            Subscribed = 0x4,
-            Running = 0x08,
+            StartSlaveProjectionsRequested = 0x1,
+            LoadStateRequested = 0x2,
+            StateLoaded = 0x4,
+            Subscribed = 0x8,
+            Running = 0x10,
             Stopping = 0x40,
             Stopped = 0x80,
             FaultedStopping = 0x100,
@@ -70,7 +74,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly IPublisher _publisher;
 
+        private readonly ProjectionProcessingStrategy _projectionProcessingStrategy;
         internal readonly Guid _projectionCorrelationId;
+        private readonly IPublisher _inputQueue;
+        private readonly IPrincipal _runAs;
 
         private readonly ILogger _logger;
 
@@ -102,7 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public CoreProjection(
             ProjectionProcessingStrategy projectionProcessingStrategy, ProjectionVersion version,
-            Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
+            Guid projectionCorrelationId, IPublisher inputQueue, IPrincipal runAs, IPublisher publisher, IODispatcher ioDispatcher,
             ReaderSubscriptionDispatcher subscriptionDispatcher, ILogger logger, ProjectionNamesBuilder namingBuilder, CoreProjectionCheckpointWriter coreProjectionCheckpointWriter,
             PartitionStateCache partitionStateCache, string effectiveProjectionName, ITimeProvider timeProvider, bool isSlaveProjection)
         {
@@ -110,7 +117,10 @@ namespace EventStore.Projections.Core.Services.Processing
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
 
+            _projectionProcessingStrategy = projectionProcessingStrategy;
             _projectionCorrelationId = projectionCorrelationId;
+            _inputQueue = inputQueue;
+            _runAs = runAs;
             _name = effectiveProjectionName;
             _version = version;
             _stopOnEof = projectionProcessingStrategy.GetStopOnEof();
@@ -153,12 +163,20 @@ namespace EventStore.Projections.Core.Services.Processing
                 new CoreProjectionManagementMessage.StatisticsReport(_projectionCorrelationId, info));
         }
 
-        public void Start(SlaveProjectionCommunicationChannels slaveProjections = null)
+        public void Start()
         {
             EnsureState(State.Initial);
             _startOnLoad = true;
-            _slaveProjections = slaveProjections;
-            GoToState(State.LoadStateRequested);
+
+            var slaveProjectionDefinitions = _projectionProcessingStrategy.GetSlaveProjections();
+            if (slaveProjectionDefinitions != null)
+            {
+                GoToState(State.StartSlaveProjectionsRequested);
+            }
+            else
+            {
+                GoToState(State.LoadStateRequested);
+            }
         }
 
         public void LoadStopped()
@@ -321,6 +339,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 //
             EnsureUnsubscribed();
+            StopSlaveProjections(); 
             GoToState(State.Initial);
             Start();
             
@@ -337,6 +356,29 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_projectionProcessingPhase != null)
                 _projectionProcessingPhase.EnsureUnsubscribed();
         }
+
+
+        private void StopSlaveProjections()
+        {
+            //TODO: encapsulate into StopSlaveProjections message?
+            var slaveProjections = _slaveProjections;
+            if (slaveProjections != null)
+            {
+                _slaveProjections = null;
+                foreach (var group in slaveProjections.Channels)
+                {
+                    foreach (var channel in group.Value)
+                    {
+                        _publisher.Publish(
+                            new ProjectionManagementMessage.Delete(
+                                new NoopEnvelope(), channel.ManagedProjectionName,
+                                ProjectionManagementMessage.RunAs.System, true, true));
+                    }
+                }
+
+            }
+        }
+
 
         private void GoToState(State state)
         {
@@ -395,6 +437,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 case State.Initial:
                     EnterInitial();
                     break;
+                case State.StartSlaveProjectionsRequested:
+                    EnterStartSlaveProjectionsRequested();
+                    break;
                 case State.LoadStateRequested:
                     EnterLoadStateRequested();
                     break;
@@ -445,6 +490,14 @@ namespace EventStore.Projections.Core.Services.Processing
             // NOTE: this is to workaround exception in GetState requests submitted by client
         }
 
+        private void EnterStartSlaveProjectionsRequested()
+        {
+            _publisher.Publish(new ProjectionManagementMessage.StartSlaveProjections(
+                        new PublishEnvelope(_inputQueue), new ProjectionManagementMessage.RunAs(_runAs), _name,
+                        _projectionProcessingStrategy.GetSlaveProjections(), _inputQueue, _projectionCorrelationId));
+
+        }
+
         private void EnterLoadStateRequested()
         {
             _checkpointReader.BeginLoadState();
@@ -486,6 +539,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterStopped()
         {
             EnsureUnsubscribed();
+            StopSlaveProjections(); 
             _publisher.Publish(new CoreProjectionManagementMessage.Stopped(_projectionCorrelationId, _completed));
         }
 
@@ -497,6 +551,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterFaulted()
         {
             EnsureUnsubscribed();
+            StopSlaveProjections(); 
             _publisher.Publish(
                 new CoreProjectionManagementMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }
@@ -558,6 +613,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Dispose()
         {
             EnsureUnsubscribed();
+            StopSlaveProjections();
             if (_projectionProcessingPhase != null)
                 _projectionProcessingPhase.Dispose();
         }
@@ -651,5 +707,12 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             throw new NotImplementedException();
         }
+
+        public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message)
+        {
+            _slaveProjections = message.SlaveProjections;
+            GoToState(State.LoadStateRequested);
+        }
+
     }
 }

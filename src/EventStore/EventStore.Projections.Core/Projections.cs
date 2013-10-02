@@ -146,6 +146,8 @@ namespace EventStore.Projections.Core
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(
                             _managerInputQueue));
+                    projectionNode.CoreOutput.Subscribe(
+                        Forwarder.Create<ProjectionManagementMessage.ControlMessage>(_managerInputQueue));
 
                 }
                 projectionNode.CoreOutput.Subscribe<TimerMessage.Schedule>(timerService);

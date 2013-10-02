@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
@@ -56,8 +57,9 @@ namespace EventStore.Projections.Core.Services.Processing
                                         IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>, 
                                         IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>, 
                                         IHandle<CoreProjectionProcessingMessage.RestartRequested>,
-                                        IHandle<CoreProjectionProcessingMessage.Failed>
-
+                                        IHandle<CoreProjectionProcessingMessage.Failed>,
+                                        IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>
+                                        
 
     {
         private readonly IPublisher _publisher;
@@ -144,7 +146,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     sourceDefinition, projectionConfig, message.HandlerFactory, stateHandler);
 
                 var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
-                CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
+                CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(
                         message.ProjectionId, sourceDefinition, slaveProjections));
@@ -171,7 +173,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     name, projectionVersion, namesBuilder, sourceDefinition, projectionConfig, null, null);
 
                 var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
-                CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
+                CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(
                         message.ProjectionId, sourceDefinition, slaveProjections));
@@ -197,7 +199,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _processingStrategySelector.CreateSlaveProjectionProcessingStrategy(
                         name, projectionVersion, sourceDefinition, projectionConfig, stateHandler,
                         message.ResultsPublisher, message.MasterCoreProjectionId, this);
-                CreateCoreProjection(message.ProjectionId, projectionProcessingStrategy);
+                CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Prepared(
                         message.ProjectionId, sourceDefinition, slaveProjections: null));
@@ -209,10 +211,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void CreateCoreProjection(Guid projectionCorrelationId, ProjectionProcessingStrategy processingStrategy)
+        private void CreateCoreProjection(
+            Guid projectionCorrelationId, IPrincipal runAs, ProjectionProcessingStrategy processingStrategy)
         {
             var projection = processingStrategy.Create(
-                projectionCorrelationId, _publisher, _ioDispatcher, _subscriptionDispatcher, _timeProvider);
+                projectionCorrelationId, _inputQueue, runAs, _publisher, _ioDispatcher, _subscriptionDispatcher,
+                _timeProvider);
             _projections.Add(projectionCorrelationId, projection);
         }
 
@@ -229,7 +233,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(CoreProjectionManagementMessage.Start message)
         {
             var projection = _projections[message.ProjectionId];
-            projection.Start(message.SlaveProjections);
+            projection.Start();
         }
 
         public void Handle(CoreProjectionManagementMessage.LoadStopped message)
@@ -306,5 +310,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 projection.Handle(message);
         }
 
+        public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.CoreProjectionCorrelationId, out projection))
+                projection.Handle(message);
+        }
     }
 }

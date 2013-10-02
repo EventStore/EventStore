@@ -65,23 +65,6 @@ fromStreamCatalog('catalog').foreachStream().when({
 ";
         }
 
-        protected override IEnumerable<WhenStep> When()
-        {
-            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            yield return
-                (new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), _projectionMode, _projectionName,
-                    ProjectionManagementMessage.RunAs.System, "JS",
-                    _projectionSource, enabled: false, checkpointsEnabled: false,
-                    emitEnabled: false));
-            yield return
-                new ProjectionManagementMessage.Enable(
-                    Envelope, _projectionName, ProjectionManagementMessage.RunAs.System);
-            yield return
-                new ProjectionManagementMessage.Enable(
-                    Envelope, _projectionName, ProjectionManagementMessage.RunAs.System);
-        }
-
         [Test]
         public void just()
         {

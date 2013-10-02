@@ -76,8 +76,7 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<CoreProjectionManagementMessage.ResultReport>,
                                      IHandle<CoreProjectionManagementMessage.StatisticsReport>, 
                                      IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
-                                     IHandle<ProjectionManagementMessage.RegisterSystemProjection>, 
-                                     IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>
+                                     IHandle<ProjectionManagementMessage.RegisterSystemProjection>
     {
 
         public const int ProjectionQueryId = -2;
@@ -466,12 +465,6 @@ namespace EventStore.Projections.Core.Services.Management
                 var projection = _projections[name];
                 projection.Handle(message);
             }
-        }
-
-        public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message)
-        {
-            var projection = _projections[message.Name];
-            projection.Handle(message);
         }
 
         public void Handle(CoreProjectionManagementMessage.StatisticsReport message)
@@ -873,7 +866,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (counter == 0)
                 message.Envelope.ReplyWith(
                     new ProjectionManagementMessage.SlaveProjectionsStarted(
-                        message.Name, new SlaveProjectionCommunicationChannels(result)));
+                        message.MasterCorrelationId, new SlaveProjectionCommunicationChannels(result)));
         }
 
         private void CINP(

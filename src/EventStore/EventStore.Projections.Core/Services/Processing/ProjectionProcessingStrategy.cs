@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
@@ -49,9 +50,11 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public CoreProjection Create(
-            Guid projectionCorrelationId, IPublisher publisher, IODispatcher ioDispatcher,
-            ReaderSubscriptionDispatcher subscriptionDispatcher, ITimeProvider timeProvider)
+            Guid projectionCorrelationId, IPublisher inputQueue, IPrincipal runAs, IPublisher publisher,
+            IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher, ITimeProvider timeProvider)
         {
+            if (inputQueue == null) throw new ArgumentNullException("inputQueue");
+            //if (runAs == null) throw new ArgumentNullException("runAs");
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
@@ -66,8 +69,8 @@ namespace EventStore.Projections.Core.Services.Processing
             var partitionStateCache = new PartitionStateCache();
 
             return new CoreProjection(
-                this, _projectionVersion, projectionCorrelationId, publisher, ioDispatcher, subscriptionDispatcher,
-                _logger, namingBuilder, coreProjectionCheckpointWriter, partitionStateCache,
+                this, _projectionVersion, projectionCorrelationId, inputQueue, runAs, publisher, ioDispatcher,
+                subscriptionDispatcher, _logger, namingBuilder, coreProjectionCheckpointWriter, partitionStateCache,
                 namingBuilder.EffectiveProjectionName, timeProvider, GetIsSlaveProjection());
         }
 

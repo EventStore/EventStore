@@ -108,18 +108,11 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            private readonly SlaveProjectionCommunicationChannels _slaveProjections;
-
-            public Start(Guid projectionId, SlaveProjectionCommunicationChannels slaveProjections = null)
+            public Start(Guid projectionId)
                 : base(projectionId)
             {
-                _slaveProjections = slaveProjections;
             }
 
-            public SlaveProjectionCommunicationChannels SlaveProjections
-            {
-                get { return _slaveProjections; }
-            }
 
         }
 

@@ -183,7 +183,7 @@
     <Compile Include="Services\event_reader\TestFixtureWithEventReaderService.cs" />
     <Compile Include="Services\handlers\categorize_events_by_stream_path.cs" />
     <Compile Include="Services\integration\parallel_query\when_running_from_catalog_stream_query.cs" />
-    <Compile Include="Services\integration\parallel_query\when_running_twice_from_catalog_stream_query.cs" />
+    <Compile Include="Services\integration\parallel_query\when_running_from_catalog_stream_query_twice.cs" />
     <Compile Include="Services\integration\specification_with_a_v8_query_posted.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\specification_with_parallel_processing_load_balancer.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\when_accounting_completed_task.cs" />
@@ -276,7 +276,6 @@
     <Compile Include="Services\projections_manager\continuous\a_running_projection.cs" />
     <Compile Include="Services\projections_manager\FakeFromCatalogStreamProjection.cs" />
     <Compile Include="Services\projections_manager\managed_projection\when_starting_a_managed_projection_without_slave_projections.cs" />
-    <Compile Include="Services\projections_manager\managed_projection\when_starting_a_managed_projection_with_slave_projections.cs" />
     <Compile Include="Services\projections_manager\query\an_expired_projection.cs" />
     <Compile Include="Services\projections_manager\query\a_running_foreach_stream_projection.cs" />
     <Compile Include="Services\projections_manager\query\a_completed_projection.cs" />

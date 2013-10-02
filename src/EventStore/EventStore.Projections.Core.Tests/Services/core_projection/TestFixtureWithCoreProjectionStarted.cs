@@ -45,7 +45,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         protected override void PreWhen()
         {
-            _coreProjection.Start(_slaveProjections);
+            _coreProjection.Start();
+            if (_slaveProjections != null)
+                _coreProjection.Handle(
+                    new ProjectionManagementMessage.SlaveProjectionsStarted(_projectionCorrelationId, _slaveProjections));
             var lastSubscribe =
                 _consumer.HandledMessages.OfType<ReaderSubscriptionManagement.Subscribe>().LastOrDefault();
             _subscriptionId = lastSubscribe != null ? lastSubscribe.SubscriptionId : Guid.NewGuid();

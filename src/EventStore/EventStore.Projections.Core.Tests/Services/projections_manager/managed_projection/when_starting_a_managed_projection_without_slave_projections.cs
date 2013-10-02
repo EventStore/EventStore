@@ -115,7 +115,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         {
             var startMessage = HandledMessages.OfType<CoreProjectionManagementMessage.Start>().LastOrDefault();
             Assert.IsNotNull(startMessage);
-            Assert.IsNull(startMessage.SlaveProjections);
             
         }
     }

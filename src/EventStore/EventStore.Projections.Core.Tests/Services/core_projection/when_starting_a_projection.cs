@@ -35,6 +35,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -88,9 +89,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var projectionProcessingStrategy = new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _projectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher);
-            _coreProjection =
-                projectionProcessingStrategy.Create(
-                        Guid.NewGuid(), _bus, _ioDispatcher, _subscriptionDispatcher, new RealTimeProvider());
+            _coreProjection = projectionProcessingStrategy.Create(
+                Guid.NewGuid(), _bus, SystemAccount.Principal, _bus, _ioDispatcher, _subscriptionDispatcher,
+                new RealTimeProvider());
             _coreProjection.Start();
         }
 
