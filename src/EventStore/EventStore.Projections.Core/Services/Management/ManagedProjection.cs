@@ -295,10 +295,13 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
-            if (Enabled && _state == ManagedProjectionState.Running)
+            if (Enabled
+                && !(_state == ManagedProjectionState.Completed || _state == ManagedProjectionState.Faulted
+                     || _state == ManagedProjectionState.Loaded || _state == ManagedProjectionState.Prepared
+                     || _state == ManagedProjectionState.Stopped))
             {
                 message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.OperationFailed("Already enabled and running"));
+                    new ProjectionManagementMessage.OperationFailed("Invalid state"));
                 return;
             }
             if (!Enabled)
@@ -418,9 +421,16 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.Prepared message)
         {
-            _state = ManagedProjectionState.Prepared;
             _persistedState.SourceDefinition = message.SourceDefinition;
-            OnPrepared();
+            if (_state == ManagedProjectionState.Preparing)
+            {
+                _state = ManagedProjectionState.Prepared;
+                OnPrepared();
+            }
+            else
+            {
+                _logger.Trace("Received prepared without being prepared");
+            }
         }
 
         public void Handle(CoreProjectionManagementMessage.StateReport message)
@@ -610,6 +620,8 @@ namespace EventStore.Projections.Core.Services.Management
                 completed();
                 return;
             }
+            var oldState = _state;
+            _state = ManagedProjectionState.Writing;
             var managedProjectionSerializedState = _persistedState.ToJsonBytes();
             var eventStreamId = "$projections-" + _name;
             var corrId = Guid.NewGuid();
@@ -618,11 +630,17 @@ namespace EventStore.Projections.Core.Services.Management
                     corrId, corrId, _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "$ProjectionUpdated", true, managedProjectionSerializedState, Empty.ByteArray),
                     SystemAccount.Principal),
-                m => WriteCompleted(m, completed, eventStreamId));
+                m => WriteCompleted(m, oldState, completed, eventStreamId));
         }
 
-        private void WriteCompleted(ClientMessage.WriteEventsCompleted message, Action completed, string eventStreamId)
+        private void WriteCompleted(
+            ClientMessage.WriteEventsCompleted message, ManagedProjectionState completedState, Action completed,
+            string eventStreamId)
         {
+            if (_state != ManagedProjectionState.Writing)
+            {
+                _logger.Error("Projection definition write completed in non writing state. ({0})", _name);
+            }
             if (message.Result == OperationResult.Success)
             {
                 _logger.Info("'{0}' projection source has been written", _name);
@@ -630,12 +648,12 @@ namespace EventStore.Projections.Core.Services.Management
                 if (writtenEventNumber != (_persistedState.Version ?? writtenEventNumber))
                     throw new Exception("Projection version and event number mismatch");
                 _lastWrittenVersion = (_persistedState.Version ?? writtenEventNumber);
+                _state = completedState;
                 if (completed != null) completed();
                 return;
             }
-            _logger.Info("Projection '{0}' source has not been written to {1}. Error: {2}",
-                         _name,
-                         eventStreamId,
+            _logger.Info(
+                "Projection '{0}' source has not been written to {1}. Error: {2}", _name, eventStreamId,
                 Enum.GetName(typeof (OperationResult), message.Result));
             if (message.Result == OperationResult.CommitTimeout || message.Result == OperationResult.ForwardTimeout
                 || message.Result == OperationResult.PrepareTimeout
@@ -868,7 +886,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void StartOrLoadStopped(Action completed)
         {
-            if (_state == ManagedProjectionState.Prepared)
+            if (_state == ManagedProjectionState.Prepared || _state == ManagedProjectionState.Writing)
             {
                 if (Enabled && _enabledToRun)
                     Start(completed);
