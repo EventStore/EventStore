@@ -4,7 +4,7 @@ Properties {
 
     #V8
     $v8Repository = "https://github.com/v8/v8.git"
-    $v8Tag = "3.19.7"
+    $v8Tag = "3.22.6"
     $v8Directory = Join-Path $baseDirectory "v8"
     
     #Python
@@ -14,7 +14,7 @@ Properties {
     
     #GYP
     $gypRepository = "http://gyp.googlecode.com/svn/trunk"
-    $gypRevision = "1642"
+    $gypRevision = "1746"
     $gypDirectory = Join-Path $v8Directory (Join-Path "build" "gyp")
     
     #Cygwin

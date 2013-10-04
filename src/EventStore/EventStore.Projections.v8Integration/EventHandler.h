@@ -7,8 +7,8 @@ namespace js1
 	{
 	public:
 		EventHandler(v8::Handle<v8::String> _name, v8::Handle<v8::Function> _handler):
-			name(v8::Persistent<v8::String>::New(_name)),
-			handler(v8::Persistent<v8::Function>::New(_handler))
+			name(v8::Persistent<v8::String>(v8::Isolate::GetCurrent(), _name)),
+			handler(v8::Persistent<v8::Function>(v8::Isolate::GetCurrent(), _handler))
 		{
 		}
 
@@ -20,7 +20,7 @@ namespace js1
 
 		v8::Handle<v8::Function> get_handler()
 		{
-			return handler;
+			return v8::Handle<v8::Function>::New(v8::Isolate::GetCurrent(), handler);
 		}
 
 	private:

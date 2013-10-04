@@ -16,8 +16,8 @@ extern "C"
 		isolate->Enter();
 		// NOTE: this also verifies whether this build can work at all
 		{
-			v8::HandleScope scope;
-			v8::Persistent<v8::Context> context = v8::Context::New();
+			v8::HandleScope scope(v8::Isolate::GetCurrent());
+			v8::Handle<v8::Context> context = v8::Context::New(v8::Isolate::GetCurrent());
 			v8::TryCatch try_catch;
 		}
 		isolate->Exit();
