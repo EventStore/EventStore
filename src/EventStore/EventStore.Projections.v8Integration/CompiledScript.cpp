@@ -52,7 +52,8 @@ namespace js1
 		//TODO: why dispose? do we call caompile_script multiple times?
 		script.reset();
 		
-		Status status = create_global_template(*global);
+		Status status = create_global_template(
+			v8::Handle<v8::ObjectTemplate>::New(v8::Isolate::GetCurrent(), *global));
 		if (status != S_OK)
 			return status;
 
@@ -76,9 +77,9 @@ namespace js1
 		return S_OK;
 	}
 
-	v8::Handle<v8::Value> CompiledScript::run_script(v8::Persistent<v8::Context> context)
+	v8::Handle<v8::Value> CompiledScript::run_script(v8::Handle<v8::Context> context)
 	{
-		v8::Context::Scope context_scope(v8::Isolate::GetCurrent(), context);
+		v8::Context::Scope context_scope(context);
 		v8::TryCatch try_catch;
 		v8::Handle<v8::Value> result = v8::Handle<v8::Script>::New(v8::Isolate::GetCurrent(), *script)->Run();
 		if (set_last_error(result.IsEmpty(), try_catch))

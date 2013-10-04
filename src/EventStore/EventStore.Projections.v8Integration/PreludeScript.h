@@ -29,7 +29,7 @@ namespace js1 {
 
 	protected:
 		virtual v8::Isolate *get_isolate();
-		virtual Status create_global_template(v8::Persistent<v8::ObjectTemplate> &result);
+		virtual Status create_global_template(v8::Handle<v8::ObjectTemplate> &result);
 
 	private:
 		v8::Isolate *isolate;
@@ -40,8 +40,8 @@ namespace js1 {
 		EXIT_CANCELLABLE_REGION exit_cancellable_region_callback;
 		ModuleScript *load_module(uint16_t *module_name);
 
-		static v8::Handle<v8::Value> log_callback(const v8::Arguments& args); 
-		static v8::Handle<v8::Value> load_module_callback(const v8::Arguments& args); 
+		static void log_callback(const v8::FunctionCallbackInfo<v8::Value>& info); 
+		static void load_module_callback(const v8::FunctionCallbackInfo<v8::Value>& info); 
 	};
 
 

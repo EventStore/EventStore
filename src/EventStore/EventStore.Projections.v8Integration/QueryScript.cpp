@@ -49,7 +49,7 @@ namespace js1
 	}
 
 	Status QueryScript::execute_handler(void *event_handler_handle, const uint16_t *data_json, 
-		const uint16_t *data_other[], int32_t other_length, v8::Persistent<v8::String> &result) 
+		const uint16_t *data_other[], int32_t other_length, v8::Handle<v8::String> &result) 
 	{
 		EventHandler *event_handler = reinterpret_cast<EventHandler *>(event_handler_handle);
 

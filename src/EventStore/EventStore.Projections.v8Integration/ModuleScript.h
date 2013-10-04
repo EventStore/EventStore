@@ -24,7 +24,7 @@ namespace js1 {
 
 	protected:
 		virtual v8::Isolate *get_isolate();
-		virtual Status create_global_template(v8::Persistent<v8::ObjectTemplate> &result);
+		virtual Status create_global_template(v8::Handle<v8::ObjectTemplate> &result);
 
 	private:
 		v8::Isolate *isolate;
