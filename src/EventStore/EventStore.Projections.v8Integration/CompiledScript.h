@@ -15,7 +15,7 @@ namespace js1 {
 		virtual v8::Isolate *get_isolate() = 0;
 		virtual Status create_global_template(v8::Handle<v8::ObjectTemplate> &result) = 0;
 
-		v8::Handle<v8::Context> &get_context();
+		v8::Handle<v8::Context> get_context();
 		Status compile_script(const uint16_t *source, const uint16_t *file_name);
 		v8::Handle<v8::Value> run_script(v8::Handle<v8::Context> context);
 		bool set_last_error(bool is_error, v8::TryCatch &try_catch);

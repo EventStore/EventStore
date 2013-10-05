@@ -41,8 +41,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Padmin", "EventS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Web.Playground", "EventStore.Web.Playground\EventStore.Web.Playground.csproj", "{7A5DFCF1-3FFE-480F-82E4-EBE73AAE7D6A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Integration.Tests", "EventStore.Integration.Tests\EventStore.Integration.Tests.csproj", "{4AFDDF59-361A-4D6D-921E-A46B9280EE99}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -187,13 +185,6 @@ Global
 		{7A5DFCF1-3FFE-480F-82E4-EBE73AAE7D6A}.Release|x64.Build.0 = Release|Any CPU
 		{7A5DFCF1-3FFE-480F-82E4-EBE73AAE7D6A}.Release|x86.ActiveCfg = Release|x86
 		{7A5DFCF1-3FFE-480F-82E4-EBE73AAE7D6A}.Release|x86.Build.0 = Release|x86
-		{4AFDDF59-361A-4D6D-921E-A46B9280EE99}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{4AFDDF59-361A-4D6D-921E-A46B9280EE99}.Debug|x64.Build.0 = Debug|Any CPU
-		{4AFDDF59-361A-4D6D-921E-A46B9280EE99}.Debug|x86.ActiveCfg = Debug|x86
-		{4AFDDF59-361A-4D6D-921E-A46B9280EE99}.Debug|x86.Build.0 = Debug|x86
-		{4AFDDF59-361A-4D6D-921E-A46B9280EE99}.Release|x64.ActiveCfg = Release|Any CPU
-		{4AFDDF59-361A-4D6D-921E-A46B9280EE99}.Release|x86.ActiveCfg = Release|x86
-		{4AFDDF59-361A-4D6D-921E-A46B9280EE99}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

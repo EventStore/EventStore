@@ -30,7 +30,7 @@ namespace js1
 			return;
 		}
 
-		if (!last_exception->IsEmpty()) 
+		if (last_exception && !last_exception->IsEmpty()) 
 		{
 			v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 			v8::Context::Scope local(get_context());
@@ -41,7 +41,7 @@ namespace js1
 		}
 	}
 
-	v8::Handle<v8::Context> &CompiledScript::get_context()
+	v8::Handle<v8::Context> CompiledScript::get_context()
 	{
 		return v8::Handle<v8::Context>::New(v8::Isolate::GetCurrent(), *context);
 	}
@@ -51,16 +51,20 @@ namespace js1
 		v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 		//TODO: why dispose? do we call caompile_script multiple times?
 		script.reset();
-		
-		Status status = create_global_template(
-			v8::Handle<v8::ObjectTemplate>::New(v8::Isolate::GetCurrent(), *global));
+
+		v8::Persistent<v8::ObjectTemplate> empty;
+
+		v8::Handle<v8::ObjectTemplate> global_local = v8::Handle<v8::ObjectTemplate>::New(
+			v8::Isolate::GetCurrent(), global ? *global : empty);
+
+		Status status = create_global_template(global_local);
+
 		if (status != S_OK)
 			return status;
 
 		context = std::shared_ptr<v8::Persistent<v8::Context>>(
 			new v8::Persistent<v8::Context>(v8::Isolate::GetCurrent(), 
-			v8::Context::New(v8::Isolate::GetCurrent(), 
-				NULL, v8::Handle<v8::ObjectTemplate>::New(v8::Isolate::GetCurrent(), *global))));
+			v8::Context::New(v8::Isolate::GetCurrent(), NULL, global_local)));
 
 		v8::Context::Scope scope(v8::Isolate::GetCurrent(), *context);
 
