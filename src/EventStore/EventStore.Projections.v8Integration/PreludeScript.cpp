@@ -10,7 +10,6 @@ namespace js1
 
 	PreludeScript::~PreludeScript()
 	{
-		global_template_factory.Dispose();
 		isolate_release(isolate);
 	}
 
@@ -23,8 +22,7 @@ namespace js1
 	Status PreludeScript::try_run()
 	{
 		v8::Context::Scope context_scope(get_context());
-		global_template_factory.Dispose();
-		global_template_factory.Clear();
+		global_template_factory.reset();
 
 		if (!enter_cancellable_region()) 
 			return S_TERMINATED;
@@ -43,11 +41,12 @@ namespace js1
 			set_last_error(v8::String::New("Prelude script must return a function"));
 			return S_ERROR;
 		}
-		global_template_factory = v8::Persistent<v8::Function>::New(prelude_result.As<v8::Function>());
+		global_template_factory = std::shared_ptr<v8::Persistent<v8::Function>>(
+			new v8::Persistent<v8::Function>(v8::Isolate::GetCurrent(), prelude_result.As<v8::Function>()));
 		return S_OK;
 	}
 
-	Status PreludeScript::get_template(std::vector<v8::Handle<v8::Value> > &prelude_arguments, v8::Persistent<v8::ObjectTemplate> &result)
+	Status PreludeScript::get_template(std::vector<v8::Handle<v8::Value> > &prelude_arguments, v8::Handle<v8::ObjectTemplate> &result)
 	{
 		v8::Context::Scope context_scope(get_context());
 		v8::Handle<v8::Object> global = get_context()->Global();
@@ -57,8 +56,8 @@ namespace js1
 
 		if (!enter_cancellable_region()) 
 			return S_TERMINATED; // initialized with 0 by default
-
-		prelude_result = global_template_factory->Call(global, (int)prelude_arguments.size(), prelude_arguments.data());
+		v8::Handle<v8::Function> global_template_factory_local = v8::Handle<v8::Function>::New(v8::Isolate::GetCurrent(), *global_template_factory);
+		prelude_result = global_template_factory_local->Call(global, (int)prelude_arguments.size(), prelude_arguments.data());
 		if (!exit_cancellable_region())
 			return S_TERMINATED; // initialized with 0 by default
 
@@ -77,7 +76,7 @@ namespace js1
 		}
 
 		prelude_result_object = prelude_result.As<v8::Object>();
-		result = v8::Persistent<v8::ObjectTemplate>::New(v8::ObjectTemplate::New());
+		result = v8::ObjectTemplate::New();
 		v8::Handle<v8::Array> global_property_names = prelude_result_object->GetPropertyNames();
 
 		for (unsigned int i = 0; i < global_property_names->Length(); i++) 
@@ -106,10 +105,10 @@ namespace js1
 		return isolate;
 	}
 
-	Status PreludeScript::create_global_template(v8::Persistent<v8::ObjectTemplate> &result) 
+	Status PreludeScript::create_global_template(v8::Handle<v8::ObjectTemplate> &result) 
 	{
 		//TODO: move actual callbacks out of this script into C# code
-		result = v8::Persistent<v8::ObjectTemplate>::New(v8::ObjectTemplate::New());
+		result = v8::ObjectTemplate::New();
 		result->Set(v8::String::New("$log"), v8::FunctionTemplate::New(log_callback, v8::External::New(this)));
 		result->Set(v8::String::New("$load_module"), v8::FunctionTemplate::New(load_module_callback, v8::External::New(this)));
 		return S_OK;
@@ -125,13 +124,20 @@ namespace js1
 		return reinterpret_cast<ModuleScript *>(module_handle);
 	}
 
-	v8::Handle<v8::Value> PreludeScript::log_callback(const v8::Arguments& args) 
+	void PreludeScript::log_callback(const v8::FunctionCallbackInfo<v8::Value>& args) 
 	{
-		if (args.Length() != 1) 
-			return v8::ThrowException(v8::Exception::Error(v8::String::New("The 'log' handler expects 1 argument")));
-
+		if (args.Length() != 1)
+		{
+			args.GetReturnValue().Set(
+				v8::ThrowException(
+					v8::Exception::Error(v8::String::New("The 'log' handler expects 1 argument"))));
+			return;
+		}
 		if (args[0].IsEmpty()) 
-			return v8::ThrowException(v8::Exception::Error(v8::String::New("The 'log' handler argument cannot be empty")));
+		{
+			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'log' handler argument cannot be empty"))));
+			return;
+		}
 
 		// TODO: do we need to check argument data type?
 
@@ -142,19 +148,29 @@ namespace js1
 		v8::String::Value message(args[0].As<v8::String>());
 
 		prelude->log_handler(*message);
-		return v8::Undefined();
+		args.GetReturnValue().Set(v8::Undefined());
+		return;
 	};
 
-	v8::Handle<v8::Value> PreludeScript::load_module_callback(const v8::Arguments& args) 
+	void PreludeScript::load_module_callback(const v8::FunctionCallbackInfo<v8::Value>& args) 
 	{
 		if (args.Length() != 1) 
-			return v8::ThrowException(v8::Exception::Error(v8::String::New("The 'load_module' handler expects 1 argument")));
+		{
+			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'load_module' handler expects 1 argument"))));
+			return;
+		}
 
 		if (args[0].IsEmpty()) 
-			return v8::ThrowException(v8::Exception::Error(v8::String::New("The 'load_module' handler argument cannot be empty")));
+		{
+			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'load_module' handler argument cannot be empty"))));
+			return;
+		}
 
 		if (!args[0]->IsString()) 
-			return v8::ThrowException(v8::Exception::Error(v8::String::New("The 'load_module' handler argument must be a string")));
+		{
+			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'load_module' handler argument must be a string"))));
+			return;
+		}
 
 		v8::Handle<v8::External> data = args.Data().As<v8::External>();
 		PreludeScript *prelude = reinterpret_cast<PreludeScript *>(data->Value());
@@ -163,9 +179,12 @@ namespace js1
 		v8::String::Value module_name(args[0].As<v8::String>());
 
 		ModuleScript *module = prelude->load_module(*module_name);
-		if (module == NULL)
-			return v8::ThrowException(v8::String::New("Cannot load module"));
-		return module->get_module_object();
+		if (module == NULL) 
+		{
+			args.GetReturnValue().Set(v8::ThrowException(v8::String::New("Cannot load module")));
+			return;
+		}
+		args.GetReturnValue().Set(module->get_module_object());
 	};
 
 }

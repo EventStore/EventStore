@@ -29,7 +29,7 @@ namespace js1 {
 	private:
 		v8::Isolate *isolate;
 		PreludeScript *prelude;
-		v8::Persistent<v8::Object> module_object;
+		std::shared_ptr<v8::Persistent<v8::Object>> module_object;
 	};
 
 

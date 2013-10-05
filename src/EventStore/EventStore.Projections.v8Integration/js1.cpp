@@ -116,6 +116,8 @@ extern "C"
 		query_script = reinterpret_cast<js1::QueryScript *>(script_handle);
 		js1::PreludeScope prelude_scope(query_script);
 
+		v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+
 		v8::Handle<v8::String> result;
 		js1::Status success = query_script->execute_handler(event_handler_handle, data_json, data_other, other_length, result);
 		if (success != js1::S_OK) {
