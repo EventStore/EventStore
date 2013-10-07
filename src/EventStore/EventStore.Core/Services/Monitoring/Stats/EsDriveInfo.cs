@@ -95,6 +95,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
             {
                 var driveInfo = ShellExecutor.GetOutput("df", string.Format("-P {0}", directory));
                 var driveInfoLines = driveInfo.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                if(driveInfoLines.Length == 0) return null;
                 var ourline = driveInfoLines[1];
                 var trimmedLine = SystemStatsHelper.SpacesRegex.Replace(ourline, " ");
                 var driveName = trimmedLine.Split(' ')[5]; //we choose the 'mounted on' column
