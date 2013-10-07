@@ -93,6 +93,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
 
             try
             {
+                if(!Directory.Exists(directory)) return null;
                 var driveInfo = ShellExecutor.GetOutput("df", string.Format("-P {0}", directory));
                 var driveInfoLines = driveInfo.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
                 if(driveInfoLines.Length == 0) return null;
