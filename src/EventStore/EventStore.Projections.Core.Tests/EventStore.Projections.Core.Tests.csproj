@@ -301,6 +301,7 @@
     <Compile Include="Services\projections_manager\v8\when_running_a_v8_projection_with_transform_by.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_body_reflecting_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_emitting_v8_projection.cs" />
+    <Compile Include="Services\projections_manager\v8\when_running_parallel_v8_projections.cs" />
     <Compile Include="Services\projections_manager\when_a_dsiabled_projection_has_been_loaded.cs" />
     <Compile Include="Services\projections_manager\when_handling_start_slave_projections_message.cs" />
     <Compile Include="Services\projections_manager\when_requesting_partition_state_from_a_stopped_foreach_projection.cs" />

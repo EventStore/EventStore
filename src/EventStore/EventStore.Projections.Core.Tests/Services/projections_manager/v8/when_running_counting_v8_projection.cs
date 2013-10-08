@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.AreEqual(@"2", _logged[1]);
         }
 
-        [Test, Category("v8"), Category("Manual"), Ignore]
+        [Test, Category("v8"), Category("Manual"), Explicit]
         public void can_handle_million_events()
         {
             for (var i = 0; i < 1000000; i++)

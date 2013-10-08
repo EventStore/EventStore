@@ -155,26 +155,8 @@ namespace EventStore.Projections.Core.v8
                 throw new InvalidOperationException("'get_sources' command handler has not been registered");
             var sourcesJson = _getSources();
 
-            Console.WriteLine(sourcesJson);
 
             _sources = sourcesJson.ParseJson<QuerySourcesDefinition>();
-
-            if (_sources.AllStreams)
-                Console.WriteLine("All streams requested");
-            else
-            {
-                foreach (var category in _sources.Categories)
-                    Console.WriteLine("Category {0} requested", category);
-                foreach (var stream in _sources.Streams)
-                    Console.WriteLine("Stream {0} requested", stream);
-            }
-            if (_sources.AllEvents)
-                Console.WriteLine("All events requested");
-            else
-            {
-                foreach (var @event in _sources.Events)
-                    Console.WriteLine("Event {0} requested", @event);
-            }
         }
 
         private string ExecuteHandler(IntPtr commandHandlerHandle, string json, string[] other = null)
