@@ -53,7 +53,6 @@ namespace EventStore.ClientAPI.Core
         /// </summary>
         /// <param name="transaction">The <see cref="EventStoreTransaction"></see> to commit</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
-        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
-        Task CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials = null);
+        Task<WriteResult> CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials = null);
     }
 }

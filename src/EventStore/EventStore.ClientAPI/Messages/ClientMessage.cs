@@ -175,13 +175,17 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"first_event_number", DataFormat = DataFormat.TwosComplement)]
     public readonly int FirstEventNumber;
   
+    [ProtoMember(4, IsRequired = true, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
+    public readonly int LastEventNumber;
+  
     private WriteEventsCompleted() {}
   
-    public WriteEventsCompleted(OperationResult result, string message, int firstEventNumber)
+    public WriteEventsCompleted(OperationResult result, string message, int firstEventNumber, int lastEventNumber)
     {
         Result = result;
         Message = message;
         FirstEventNumber = firstEventNumber;
+        LastEventNumber = lastEventNumber;
     }
   }
   
@@ -197,13 +201,17 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
     public readonly bool RequireMaster;
   
+    [ProtoMember(4, IsRequired = false, Name=@"hard_delete", DataFormat = DataFormat.Default)]
+    public readonly bool? HardDelete;
+  
     private DeleteStream() {}
   
-    public DeleteStream(string eventStreamId, int expectedVersion, bool requireMaster)
+    public DeleteStream(string eventStreamId, int expectedVersion, bool requireMaster, bool? hardDelete)
     {
         EventStreamId = eventStreamId;
         ExpectedVersion = expectedVersion;
         RequireMaster = requireMaster;
+        HardDelete = hardDelete;
     }
   }
   
@@ -343,13 +351,21 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
     public readonly string Message;
   
+    [ProtoMember(4, IsRequired = true, Name=@"first_event_number", DataFormat = DataFormat.TwosComplement)]
+    public readonly int FirstEventNumber;
+  
+    [ProtoMember(5, IsRequired = true, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
+    public readonly int LastEventNumber;
+  
     private TransactionCommitCompleted() {}
   
-    public TransactionCommitCompleted(long transactionId, OperationResult result, string message)
+    public TransactionCommitCompleted(long transactionId, OperationResult result, string message, int firstEventNumber, int lastEventNumber)
     {
         TransactionId = transactionId;
         Result = result;
         Message = message;
+        FirstEventNumber = firstEventNumber;
+        LastEventNumber = lastEventNumber;
     }
   }
   

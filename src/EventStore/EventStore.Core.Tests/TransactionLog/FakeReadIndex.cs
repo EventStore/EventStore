@@ -100,10 +100,10 @@ namespace EventStore.Core.Tests.TransactionLog
             return _isStreamDeleted(streamId);
         }
 
-        public int GetLastStreamEventNumber(string streamId)
+        public int GetStreamLastEventNumber(string streamId)
         {
             if (SystemStreams.IsMetastream(streamId))
-                return GetLastStreamEventNumber(SystemStreams.OriginalStreamOf(streamId));
+                return GetStreamLastEventNumber(SystemStreams.OriginalStreamOf(streamId));
             return _isStreamDeleted(streamId) ? EventNumber.DeletedStream : 1000000;
         }
 

@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
                                       readers,
                                       TableIndex,
                                       new ByLengthHasher(),
-                                      new NoLRUCache<string, StreamCacheInfo>(),
+                                      0,
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: MetastreamMaxCount);
             ReadIndex.Init(ChaserCheckpoint.Read());

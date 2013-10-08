@@ -69,6 +69,7 @@
     <Compile Include="Options\IOptionContainer.cs" />
     <Compile Include="Options\IOptions.cs" />
     <Compile Include="Options\IPAddressTypeConverter.cs" />
+    <Compile Include="Options\IPEndPointTypeConverter.cs" />
     <Compile Include="Options\OptionArrayContainer.cs" />
     <Compile Include="Options\OptionContainerHelpers.cs" />
     <Compile Include="Options\OptionFlagContainer.cs" />
@@ -82,6 +83,7 @@
     <Compile Include="Utils\Application.cs" />
     <Compile Include="Utils\FileStreamExtensions.cs" />
     <Compile Include="Utils\Empty.cs" />
+    <Compile Include="Utils\IPEndPointComparer.cs" />
     <Compile Include="Utils\Json.cs" />
     <Compile Include="Utils\ShellExecutor.cs" />
     <Compile Include="Utils\StringExtensions.cs" />

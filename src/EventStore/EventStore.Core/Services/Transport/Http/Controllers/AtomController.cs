@@ -32,6 +32,7 @@ using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Settings;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.Codecs;
@@ -100,14 +101,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             // STREAMS
             Register(http, "/streams/{stream}", HttpMethod.Post, PostEvents, AtomCodecs, AtomCodecs);
-            Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, AtomCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, Codec.NoCodecs, AtomCodecs);
 
             Register(http, "/streams/{stream}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
 
             Register(http, "/streams/{stream}/{event}?embed={embed}", HttpMethod.Get, GetStreamEvent, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/{stream}/{event}/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/{stream}/{event}/backward/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
-            Register(http, "/streams/{stream}/{event}/forward/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
+            RegisterCustom(http, "/streams/{stream}/{event}/forward/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
 
             // METASTREAMS
             Register(http, "/streams/{stream}/metadata", HttpMethod.Post, PostMetastreamEvent, AtomCodecs, AtomCodecs);
@@ -117,17 +118,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             Register(http, "/streams/{stream}/metadata/{event}/{count}?embed={embed}", HttpMethod.Get, GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/{stream}/metadata/{event}/backward/{count}?embed={embed}", HttpMethod.Get, GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
-            Register(http, "/streams/{stream}/metadata/{event}/forward/{count}?embed={embed}", HttpMethod.Get, GetMetastreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
+            RegisterCustom(http, "/streams/{stream}/metadata/{event}/forward/{count}?embed={embed}", HttpMethod.Get, GetMetastreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
 
             // $ALL
             Register(http, "/streams/$all?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/$all/{position}/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/$all/{position}/backward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
-            Register(http, "/streams/$all/{position}/forward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
+            RegisterCustom(http, "/streams/$all/{position}/forward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/%24all?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/%24all/{position}/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/%24all/{position}/backward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
-            Register(http, "/streams/%24all/{position}/forward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
+            RegisterCustom(http, "/streams/%24all/{position}/forward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
         }
 
         // STREAMS
@@ -176,11 +177,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
                 return;
             }
+            bool hardDelete;
+            if (!GetHardDelete(manager, out hardDelete))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.HardDelete));
+                return;
+            }
             if (!requireMaster && _httpForwarder.ForwardRequest(manager))
                 return;
             var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.DeleteStreamCompleted, Configure.DeleteStreamCompleted);
             var corrId = Guid.NewGuid();
-            Publish(new ClientMessage.DeleteStream(corrId, corrId, envelope, requireMaster, stream, expectedVersion, manager.User));
+            Publish(new ClientMessage.DeleteStream(corrId, corrId, envelope, requireMaster, stream, expectedVersion, hardDelete, manager.User));
         }
 
         private void GetStreamEvent(HttpEntityManager manager, UriTemplateMatch match)
@@ -259,7 +266,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             GetStreamEventsBackward(manager, stream, eventNumber, count, resolveLinkTos, requireMaster, headOfStream, embed);
         }
 
-        private void GetStreamEventsForward(HttpEntityManager manager, UriTemplateMatch match)
+        private RequestParams GetStreamEventsForward(HttpEntityManager manager, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
             var evNum = match.BoundVariables["event"];
@@ -270,34 +277,24 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var embed = GetEmbedLevel(manager, match);
 
             if (stream.IsEmptyString())
-            {
-                SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
             if (evNum.IsEmptyString() || !int.TryParse(evNum, out eventNumber) || eventNumber < 0)
-            {
-                SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
             if (cnt.IsEmptyString() || !int.TryParse(cnt, out count) || count <= 0)
-            {
-                SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
             bool resolveLinkTos;
             if (!GetResolveLinkTos(manager, out resolveLinkTos))
-            {
-                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
             bool requireMaster;
             if (!GetRequireMaster(manager, out requireMaster))
-            {
-                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+            TimeSpan? longPollTimeout;
+            if (!GetLongPoll(manager, out longPollTimeout))
+                return SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.LongPoll));
+            var etag = GetETagStreamVersion(manager);
 
-            GetStreamEventsForward(manager, stream, eventNumber, count, resolveLinkTos, requireMaster, embed);
+            GetStreamEventsForward(manager, stream, eventNumber, count, resolveLinkTos, requireMaster, etag, longPollTimeout, embed);
+            return new RequestParams((longPollTimeout ?? TimeSpan.Zero) +  ESConsts.HttpTimeout);
         }
 
         // METASTREAMS
@@ -403,7 +400,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                     resolveLinkTos, requireMaster, headOfStream, embed);
         }
 
-        private void GetMetastreamEventsForward(HttpEntityManager manager, UriTemplateMatch match)
+        private RequestParams GetMetastreamEventsForward(HttpEntityManager manager, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
             var evNum = match.BoundVariables["event"];
@@ -414,34 +411,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var embed = GetEmbedLevel(manager, match);
 
             if (stream.IsEmptyString() || SystemStreams.IsMetastream(stream))
-            {
-                SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
             if (evNum.IsEmptyString() || !int.TryParse(evNum, out eventNumber) || eventNumber < 0)
-            {
-                SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
             if (cnt.IsEmptyString() || !int.TryParse(cnt, out count) || count <= 0)
-            {
-                SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
             bool resolveLinkTos;
             if (!GetResolveLinkTos(manager, out resolveLinkTos))
-            {
-                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
             bool requireMaster;
             if (!GetRequireMaster(manager, out requireMaster))
-            {
-                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+            TimeSpan? longPollTimeout;
+            if (!GetLongPoll(manager, out longPollTimeout))
+                return SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.LongPoll));
+            var etag = GetETagStreamVersion(manager);
 
-            GetStreamEventsForward(manager, SystemStreams.MetastreamOf(stream), eventNumber, count, resolveLinkTos, requireMaster, embed);
+            GetStreamEventsForward(manager, SystemStreams.MetastreamOf(stream), eventNumber, count, resolveLinkTos,
+                                   requireMaster, etag, longPollTimeout, embed);
+            return new RequestParams((longPollTimeout ?? TimeSpan.Zero) + ESConsts.HttpTimeout);
         }
 
         // $ALL
@@ -482,7 +470,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                             requireMaster, true, GetETagTFPosition(manager), manager.User));
         }
 
-        private void GetAllEventsForward(HttpEntityManager manager, UriTemplateMatch match)
+        private RequestParams GetAllEventsForward(HttpEntityManager manager, UriTemplateMatch match)
         {
             var pos = match.BoundVariables["position"];
             var cnt = match.BoundVariables["count"];
@@ -492,21 +480,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var embed = GetEmbedLevel(manager, match);
 
             if (!TFPos.TryParse(pos, out position) || position.PreparePosition < 0 || position.CommitPosition < 0)
-            {
-                SendBadRequest(manager, string.Format("Invalid position argument: {0}", pos));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("Invalid position argument: {0}", pos));
             if (!int.TryParse(cnt, out count) || count <= 0)
-            {
-                SendBadRequest(manager, string.Format("Invalid count argument: {0}", cnt));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("Invalid count argument: {0}", cnt));
             bool requireMaster;
             if (!GetRequireMaster(manager, out requireMaster))
-            {
-                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
-                return;
-            }
+                return SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+            TimeSpan? longPollTimeout;
+            if (!GetLongPoll(manager, out longPollTimeout))
+                return SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.LongPoll));
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
@@ -515,7 +497,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var corrId = Guid.NewGuid();
             Publish(new ClientMessage.ReadAllEventsForward(corrId, corrId, envelope,
                                                            position.CommitPosition, position.PreparePosition, count,
-                                                           requireMaster, true, GetETagTFPosition(manager), manager.User));
+                                                           requireMaster, true, GetETagTFPosition(manager), manager.User,
+                                                           longPollTimeout));
+            return new RequestParams((longPollTimeout ?? TimeSpan.Zero) + ESConsts.HttpTimeout);
         }
 
         // HELPERS
@@ -546,6 +530,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             return false;
         }
 
+        private bool GetLongPoll(HttpEntityManager manager, out TimeSpan? longPollTimeout)
+        {
+            longPollTimeout = null;
+            var longPollHeader = manager.HttpEntity.Request.Headers[SystemHeaders.LongPoll];
+            if (longPollHeader == null)
+                return true;
+            int longPollSec;
+            if (int.TryParse(longPollHeader, out longPollSec) && longPollSec > 0)
+            {
+                longPollTimeout = TimeSpan.FromSeconds(longPollSec);
+                return true;
+            }
+            return false;
+        }
+
         private bool GetResolveLinkTos(HttpEntityManager manager, out bool resolveLinkTos)
         {
             resolveLinkTos = true;
@@ -558,6 +557,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return true;
             }
             if (string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase))
+                return true;
+            return false;
+        }
+
+        private bool GetHardDelete(HttpEntityManager manager, out bool hardDelete)
+        {
+            hardDelete = false;
+            var hardDel = manager.HttpEntity.Request.Headers[SystemHeaders.HardDelete];
+            if (hardDel == null)
+                return true;
+            if (string.Equals(hardDel, "True", StringComparison.OrdinalIgnoreCase))
+            {
+                hardDelete = true;
+                return true;
+            }
+            if (string.Equals(hardDel, "False", StringComparison.OrdinalIgnoreCase))
                 return true;
             return false;
         }
@@ -611,7 +626,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         }
 
         private void GetStreamEventsForward(HttpEntityManager manager, string stream, int eventNumber, int count,
-                                            bool resolveLinkTos, bool requireMaster, EmbedLevel embed)
+                                            bool resolveLinkTos, bool requireMaster, int? etag, TimeSpan? longPollTimeout, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
@@ -619,7 +634,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   Configure.GetStreamEventsForward);
             var corrId = Guid.NewGuid();
             Publish(new ClientMessage.ReadStreamEventsForward(corrId, corrId, envelope, stream, eventNumber, count,
-                                                              resolveLinkTos, requireMaster, GetETagStreamVersion(manager), manager.User));
+                                                              resolveLinkTos, requireMaster, etag, manager.User, longPollTimeout));
         }
 
         private int? GetETagStreamVersion(HttpEntityManager manager)

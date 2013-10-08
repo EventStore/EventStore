@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (Paused)
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
-            NotifyIfStarting(message.LastCommitPosition);
+            NotifyIfStarting(message.TfLastCommitPosition);
             switch (message.Result)
             {
                 case ReadStreamResult.NoStream:

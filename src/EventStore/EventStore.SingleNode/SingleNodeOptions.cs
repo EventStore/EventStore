@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.Util;
@@ -48,9 +49,10 @@ namespace EventStore.SingleNode
         
         public int CachedChunks { get { return _helper.Get(() => CachedChunks); } }
         public long ChunksCacheSize { get { return _helper.Get(() => ChunksCacheSize); } }
-        public int MinFlushDelayMs { get { return _helper.Get(() => MinFlushDelayMs); } }
+        public double MinFlushDelayMs { get { return _helper.Get(() => MinFlushDelayMs); } }
 
         public string DbPath { get { return _helper.Get(() => DbPath); } }
+        public bool InMemDb { get { return _helper.Get(() => InMemDb); } }
         public bool SkipDbVerify { get { return _helper.Get(() => SkipDbVerify); } }
         public RunProjections RunProjections { get { return _helper.Get(() => RunProjections); } }
         public int ProjectionThreads { get { return _helper.Get(() => ProjectionThreads); } }
@@ -73,7 +75,7 @@ namespace EventStore.SingleNode
 
         public SingleNodeOptions()
         {
-            _helper = new OptsHelper(() => Configs, Opts.EnvPrefix);
+	        _helper = new OptsHelper(() => Configs, Opts.EnvPrefix, "singlenode-config.json");
             
             _helper.Register(() => ShowHelp, Opts.ShowHelpCmd, Opts.ShowHelpEnv, Opts.ShowHelpJson, Opts.ShowHelpDefault, Opts.ShowHelpDescr);
             _helper.Register(() => ShowVersion, Opts.ShowVersionCmd, Opts.ShowVersionEnv, Opts.ShowVersionJson, Opts.ShowVersionDefault, Opts.ShowVersionDescr);
@@ -93,6 +95,7 @@ namespace EventStore.SingleNode
             _helper.Register(() => MinFlushDelayMs, Opts.MinFlushDelayMsCmd, Opts.MinFlushDelayMsEnv, Opts.MinFlushDelayMsJson, Opts.MinFlushDelayMsDefault, Opts.MinFlushDelayMsDescr);
             
             _helper.RegisterRef(() => DbPath, Opts.DbPathCmd, Opts.DbPathEnv, Opts.DbPathJson, Opts.DbPathDefault, Opts.DbPathDescr);
+            _helper.Register(() => InMemDb, Opts.InMemDbCmd, Opts.InMemDbEnv, Opts.InMemDbJson, Opts.InMemDbDefault, Opts.InMemDbDescr);
             _helper.Register(() => SkipDbVerify, Opts.SkipDbVerifyCmd, Opts.SkipDbVerifyEnv, Opts.SkipDbVerifyJson, Opts.SkipDbVerifyDefault, Opts.SkipDbVerifyDescr);
             _helper.Register(() => RunProjections, Opts.RunProjectionsCmd, Opts.RunProjectionsEnv, Opts.RunProjectionsJson, Opts.RunProjectionsDefault, Opts.RunProjectionsDescr);
             _helper.Register(() => ProjectionThreads, Opts.ProjectionThreadsCmd, Opts.ProjectionThreadsEnv, Opts.ProjectionThreadsJson, Opts.ProjectionThreadsDefault, Opts.ProjectionThreadsDescr);

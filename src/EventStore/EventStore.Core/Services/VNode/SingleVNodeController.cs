@@ -57,8 +57,9 @@ namespace EventStore.Core.Services.VNode
         private QueuedHandler _mainQueue;
         private readonly VNodeFSM _fsm;
 
-        private bool _storageReaderInitialized;
-        private bool _storageWriterInitialized;
+        private int _serviceInitsToExpect = 1 /* StorageChaser */
+                                          + 1 /* StorageReader */
+                                          + 1 /* StorageWriter */;
         private int _serviceShutdownsToExpect = 1 /* StorageChaser */ 
                                               + 1 /* StorageReader */ 
                                               + 1 /* StorageWriter */ 
@@ -98,8 +99,7 @@ namespace EventStore.Core.Services.VNode
                     .When<SystemMessage.SystemInit>().Do(Handle)
                     .When<SystemMessage.SystemStart>().Do(Handle)
                     .When<SystemMessage.BecomePreMaster>().Do(Handle)
-                    .When<SystemMessage.StorageReaderInitializationDone>().Do(Handle)
-                    .When<SystemMessage.StorageWriterInitializationDone>().Do(Handle)
+                    .When<SystemMessage.ServiceInitialized>().Do(Handle)
                     .When<ClientMessage.ScavengeDatabase>().Ignore()
                     .WhenOther().ForwardTo(_outputBus)
 
@@ -206,34 +206,35 @@ namespace EventStore.Core.Services.VNode
         {
             Log.Info("========== [{0}] IS SHUT DOWN!!! SWEET DREAMS!!!", _httpEndPoint);
             _state = VNodeState.Shutdown;
-            _outputBus.Publish(message);
+            try
+            {
+                _outputBus.Publish(message);
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Error when publishing {0}.", message);
+            }
             if (_exitProcessOnShutdown)
             {
-                _node.WorkersHandler.Stop();
-                _mainQueue.RequestStop();
+                try
+                {
+                    _node.WorkersHandler.Stop();
+                    _mainQueue.RequestStop();
+                }
+                catch (Exception exc)
+                {
+                    Log.ErrorException(exc, "Error when stopping workers/main queue.");
+                }
                 Application.Exit(ExitCode.Success, "Shutdown with exiting from process was requested.");
             }
         }
 
-        private void Handle(SystemMessage.StorageReaderInitializationDone message)
+        private void Handle(SystemMessage.ServiceInitialized message)
         {
-            _storageReaderInitialized = true;
+            Log.Info("========== [{0}] Service '{1}' initialized.", _httpEndPoint, message.ServiceName);
+            _serviceInitsToExpect -= 1;
             _outputBus.Publish(message);
-
-            CheckInitializationDone();
-        }
-
-        private void Handle(SystemMessage.StorageWriterInitializationDone message)
-        {
-            _storageWriterInitialized = true;
-            _outputBus.Publish(message);
-
-            CheckInitializationDone();
-        }
-
-        private void CheckInitializationDone()
-        {
-            if (_storageReaderInitialized && _storageWriterInitialized)
+            if (_serviceInitsToExpect == 0)
                 _mainQueue.Publish(new SystemMessage.SystemStart());
         }
 

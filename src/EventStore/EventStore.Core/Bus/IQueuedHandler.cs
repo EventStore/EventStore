@@ -36,7 +36,7 @@ namespace EventStore.Core.Bus
         void Start();
         void Stop();
         void RequestStop();
-        void Publish(Message message);
+        //void Publish(Message message);
         QueueStats GetStatistics();
     }
 }

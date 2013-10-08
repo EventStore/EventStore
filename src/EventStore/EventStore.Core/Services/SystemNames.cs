@@ -36,8 +36,10 @@ namespace EventStore.Core.Services
         public const string ExpectedVersion = "ES-ExpectedVersion";
         public const string RequireMaster = "ES-RequireMaster";
         public const string ResolveLinkTos = "ES-ResolveLinkTos";
-        public const string TrsutedAuth = "ES-TrustedAuth";
+        public const string LongPoll = "ES-LongPoll";
+        public const string TrustedAuth = "ES-TrustedAuth";
         public const string ProjectionPosition = "ES-Position";
+        public const string HardDelete = "ES-HardDelete";
     }
 
     public static class SystemStreams
@@ -49,7 +51,7 @@ namespace EventStore.Core.Services
 
         public static bool IsSystemStream(string streamId)
         {
-            return streamId.StartsWith("$");
+            return streamId.Length != 0 && streamId[0] == '$';
         }
 
         public static string MetastreamOf(string streamId)
@@ -59,7 +61,7 @@ namespace EventStore.Core.Services
 
         public static bool IsMetastream(string streamId)
         {
-            return streamId.StartsWith("$$");
+            return streamId.Length >= 2 && streamId[0] == '$' && streamId[1] == '$';
         }
 
         public static string OriginalStreamOf(string metastreamId)
@@ -72,6 +74,8 @@ namespace EventStore.Core.Services
     {
         public const string MaxAge = "$maxAge";
         public const string MaxCount = "$maxCount";
+        public const string TruncateBefore = "$tb";
+        public const string TempStream = "$tmp";
         public const string CacheControl = "$cacheControl";
 
         public const string Acl = "$acl";

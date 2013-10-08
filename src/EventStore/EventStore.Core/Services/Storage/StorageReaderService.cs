@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Storage
             _readIndex = readIndex;
             _threadCount = threadCount;
 
-            var readerWorker = new StorageReaderWorker(readIndex, writerCheckpoint);
+            var readerWorker = new StorageReaderWorker(bus, readIndex, writerCheckpoint);
             var storageReaderBus = new InMemoryBus("StorageReaderBus", watchSlowMsg: false);
             storageReaderBus.Subscribe<ClientMessage.ReadEvent>(readerWorker);
             storageReaderBus.Subscribe<ClientMessage.ReadStreamEventsBackward>(readerWorker);
@@ -90,7 +90,7 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message)
         {
-            _bus.Publish(new SystemMessage.StorageReaderInitializationDone());
+            _bus.Publish(new SystemMessage.ServiceInitialized("StorageReader"));
         }
 
         void IHandle<SystemMessage.BecomeShuttingDown>.Handle(SystemMessage.BecomeShuttingDown message)

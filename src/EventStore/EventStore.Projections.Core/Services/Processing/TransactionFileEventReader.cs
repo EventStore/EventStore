@@ -106,7 +106,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 for (int index = 0; index < message.Events.Length; index++)
                 {
                     var @event = message.Events[index];
-                    DeliverEvent(@event, message.TfEofPosition, oldFrom);
+                    DeliverEvent(@event, message.TfLastCommitPosition, oldFrom);
                     if (CheckEnough())
                         return;
                 }

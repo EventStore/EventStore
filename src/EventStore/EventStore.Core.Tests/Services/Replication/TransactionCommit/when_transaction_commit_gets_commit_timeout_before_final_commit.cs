@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
             yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.SingleWrite);
             yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.SingleWrite);
             yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.CommitAck(InternalCorrId, 3, 2, 3);
+            yield return new StorageMessage.CommitAck(InternalCorrId, 3, 2, 3, 3);
         }
 
         protected override Message When()

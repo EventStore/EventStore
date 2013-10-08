@@ -45,19 +45,22 @@ namespace EventStore.Common.Options
     {
         static OptsHelper()
         {
-            TypeDescriptor.AddAttributes(typeof(IPAddress), new TypeConverterAttribute(typeof(IPAddressTypeConverter)));
+	        TypeDescriptor.AddAttributes(typeof (IPAddress), new TypeConverterAttribute(typeof (IPAddressTypeConverter)));
+	        TypeDescriptor.AddAttributes(typeof (IPEndPoint), new TypeConverterAttribute(typeof (IPEndPointTypeConverter)));
         }
 
         private readonly string _envPrefix;
+	    private readonly string _defaultJsonConfigFile;
         private readonly string _configMember;
         private readonly OptionSet _optionSet;
         private readonly Dictionary<string, IOptionContainer> _optionContainers = new Dictionary<string, IOptionContainer>();
 
-        public OptsHelper(Expression<Func<string[]>> configs, string envPrefix)
+        public OptsHelper(Expression<Func<string[]>> configs, string envPrefix, string defaultJsonConfigFile)
         {
             Ensure.NotNull(envPrefix, "envPrefix");
 
             _envPrefix = envPrefix;
+	        _defaultJsonConfigFile = defaultJsonConfigFile;
             _configMember = configs == null ? null : MemberName(configs);
             _optionSet = new OptionSet();
         }
@@ -186,7 +189,11 @@ namespace EventStore.Common.Options
             }
 
             // add default configs, if they exist
-            jsonConfigPaths.Add(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "config.json"));
+	        var pwd = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			if (pwd != null)
+			{
+				jsonConfigPaths.Add(Path.Combine(pwd, _defaultJsonConfigFile));
+			}
 
             foreach (var configPath in jsonConfigPaths.Where(File.Exists))
             {

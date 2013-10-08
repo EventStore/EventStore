@@ -26,10 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using NUnit.Framework;
-using System.Linq;
 
 namespace EventStore.Core.Tests.Services.Transport.Http.Authentication
 {

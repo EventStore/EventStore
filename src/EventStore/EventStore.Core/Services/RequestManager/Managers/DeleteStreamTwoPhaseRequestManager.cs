@@ -38,6 +38,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
     {
         private string _eventStreamId;
         private int _expectedVersion;
+        private bool _hardDelete;
 
         public DeleteStreamTwoPhaseRequestManager(IPublisher publisher,  
                                                   int prepareCount, 
@@ -52,6 +53,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
             _eventStreamId = request.EventStreamId;
             _expectedVersion = request.ExpectedVersion;
+            _hardDelete = request.HardDelete;
             InitNoPreparePhase(request.Envelope, request.InternalCorrId, request.CorrelationId, request.EventStreamId,
                                request.User, StreamAccessType.Delete);
         }
@@ -60,13 +62,13 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
             Publisher.Publish(
                 new StorageMessage.WriteDelete(
-                    internalCorrId, PublishEnvelope, _eventStreamId, _expectedVersion,
+                    internalCorrId, PublishEnvelope, _eventStreamId, _expectedVersion, _hardDelete,
                     liveUntil: NextTimeoutTime - TimeoutOffset));
         }
 
-        protected override void CompleteSuccessRequest(int firstEventNumber)
+        protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber)
         {
-            base.CompleteSuccessRequest(firstEventNumber);
+            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber);
             var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, OperationResult.Success, null);
             ResponseEnvelope.ReplyWith(responseMsg);
         }

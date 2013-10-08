@@ -34,6 +34,8 @@ namespace EventStore.Core.TransactionLog.Chunks
 {
     public class TFChunkChaser : ITransactionFileChaser
     {
+        public ICheckpoint Checkpoint { get { return _chaserCheckpoint; } }
+
         private readonly ICheckpoint _chaserCheckpoint;
         private readonly TFChunkReader _reader;
 

@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var dropped = new CountdownEvent(1);
                 using (store.SubscribeToStream(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
                 {
-                    store.DeleteStream(stream, ExpectedVersion.EmptyStream);
+                    store.DeleteStream(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                     Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
                 }
             }

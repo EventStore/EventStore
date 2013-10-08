@@ -100,7 +100,7 @@ namespace EventStore.Core.Index
         {
             var map = _map;
             // level 0 (newest tables) -> N (oldest tables)
-            for (int i = 0; i < map.Count; i++)
+            for (int i = 0; i < map.Count; ++i)
             {
                 // last in the level's list (newest on level) -> to first (oldest on level)
                 for (int j = map[i].Count - 1; j >= 0; --j)
@@ -108,7 +108,21 @@ namespace EventStore.Core.Index
                     yield return map[i][j];
                 }
             }
-        } 
+        }
+
+        public IEnumerable<PTable> InReverseOrder()
+        {
+            var map = _map;
+            // N (oldest tables) -> level 0 (newest tables)
+            for (int i = map.Count-1; i >= 0; --i)
+            {
+                // from first (oldest on level) in the level's list -> last in the level's list (newest on level)
+                for (int j = 0, n=map[i].Count; j < n; ++j)
+                {
+                    yield return map[i][j];
+                }
+            }
+        }
 
         public IEnumerable<string> GetAllFilenames()
         {
@@ -117,10 +131,15 @@ namespace EventStore.Core.Index
                    select table.Filename;
         }
 
+        public static IndexMap CreateEmpty(int maxTablesPerLevel = 4)
+        {
+            return new IndexMap(IndexMapVersion, new List<List<PTable>>(), -1, -1, maxTablesPerLevel);
+        }
+
         public static IndexMap FromFile(string filename, int maxTablesPerLevel = 4, bool loadPTables = true)
         {
             if (!File.Exists(filename))
-                return new IndexMap(IndexMapVersion, new List<List<PTable>>(), -1, -1, maxTablesPerLevel);
+                return CreateEmpty(maxTablesPerLevel);
 
             using (var f = File.OpenRead(filename))
             {

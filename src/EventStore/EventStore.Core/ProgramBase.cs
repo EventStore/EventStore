@@ -182,35 +182,44 @@ namespace EventStore.Core
             return msg;
         }
 
-        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize)
+        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize, bool inMemDb)
         {
-            if (!Directory.Exists(dbPath)) // mono crashes without this check
-                Directory.CreateDirectory(dbPath);
-
             ICheckpoint writerChk;
             ICheckpoint chaserChk;
             ICheckpoint epochChk;
             ICheckpoint truncateChk;
 
-            var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
-            var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
-            var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
-            var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
-            if (Runtime.IsMono)
+            if (inMemDb)
             {
-                writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-                chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-                epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-                truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
+                writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
+                chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
+                epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
+                truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
             }
             else
             {
-                writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-                chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-                epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-                truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
-            }
+                if (!Directory.Exists(dbPath)) // mono crashes without this check
+                    Directory.CreateDirectory(dbPath);
 
+                var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
+                var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
+                var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
+                var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
+                if (Runtime.IsMono)
+                {
+                    writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+                    chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+                    epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
+                    truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
+                }
+                else
+                {
+                    writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+                    chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+                    epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
+                    truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
+                }
+            }
             var cache = cachedChunks >= 0
                                 ? cachedChunks*(long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
                                 : chunksCacheSize;
@@ -221,7 +230,8 @@ namespace EventStore.Core
                                                  writerChk,
                                                  chaserChk,
                                                  epochChk,
-                                                 truncateChk);
+                                                 truncateChk,
+                                                 inMemDb);
             return nodeConfig;
         }
 

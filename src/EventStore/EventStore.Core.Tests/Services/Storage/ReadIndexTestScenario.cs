@@ -101,11 +101,12 @@ namespace EventStore.Core.Tests.Services.Storage
                                         () => new TFReaderLease(readers),
                                         MaxEntriesInMemTable);
 
+            var hasher = new ByLengthHasher();
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       readers,
                                       TableIndex,
-                                      new ByLengthHasher(),
-                                      new NoLRUCache<string, StreamCacheInfo>(),
+                                      hasher,
+                                      0,
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: MetastreamMaxCount);
 
@@ -116,7 +117,7 @@ namespace EventStore.Core.Tests.Services.Storage
             {
                 if (_completeLastChunkOnScavenge)
                     Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
-                _scavenger = new TFChunkScavenger(Db, ReadIndex);
+                _scavenger = new TFChunkScavenger(Db, TableIndex, hasher, ReadIndex);
                 _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks);
             }
         }

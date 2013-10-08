@@ -48,6 +48,7 @@ namespace EventStore.Core.Services.Transport.Http
     public interface IHttpService
     {
         ServiceAccessibility Accessibility { get; }
+        void RegisterCustomAction(ControllerAction action, Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler);
         void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler);
     }
 }

@@ -471,9 +471,11 @@ namespace EventStore.Core.Tests.Index
             Assert.AreEqual(0x11, entries[0].Stream);
             Assert.AreEqual(0x01, entries[0].Version);
             Assert.AreEqual(0xfff3, entries[0].Position);
+
             Assert.AreEqual(0x11, entries[1].Stream);
             Assert.AreEqual(0x01, entries[1].Version);
             Assert.AreEqual(0xfff2, entries[1].Position);
+
             Assert.AreEqual(0x11, entries[2].Stream);
             Assert.AreEqual(0x01, entries[2].Version);
             Assert.AreEqual(0xfff1, entries[2].Position);
@@ -545,6 +547,72 @@ namespace EventStore.Core.Tests.Index
         }
 
         [Test]
+        public void try_get_oldest_entry_finds_nothing_on_empty_memtable()
+        {
+            IndexEntry entry;
+            Assert.IsFalse(MemTable.TryGetOldestEntry(0x12, out entry));
+        }
+
+        [Test]
+        public void try_get_oldest_entry_finds_nothing_on_empty_stream()
+        {
+            MemTable.Add(0x11, 0x01, 0xffff);
+            IndexEntry entry;
+            Assert.IsFalse(MemTable.TryGetOldestEntry(0x12, out entry));
+        }
+
+        [Test]
+        public void single_item_is_oldest()
+        {
+            MemTable.Add(0x11, 0x01, 0xffff);
+            IndexEntry entry;
+            Assert.IsTrue(MemTable.TryGetOldestEntry(0x11, out entry));
+            Assert.AreEqual(0x11, entry.Stream);
+            Assert.AreEqual(0x01, entry.Version);
+            Assert.AreEqual(0xffff, entry.Position);
+        }
+
+        [Test]
+        public void try_get_oldest_entry_returns_correct_entry()
+        {
+            MemTable.Add(0x11, 0x01, 0xffff);
+            MemTable.Add(0x11, 0x02, 0xfff2);
+            IndexEntry entry;
+            Assert.IsTrue(MemTable.TryGetOldestEntry(0x11, out entry));
+            Assert.AreEqual(0x11, entry.Stream);
+            Assert.AreEqual(0x01, entry.Version);
+            Assert.AreEqual(0xffff, entry.Position);
+        }
+
+        [Test]
+        public void try_get_oldest_entry_when_duplicated_entries_returns_the_one_with_smallest_position()
+        {
+            MemTable.Add(0x11, 0x01, 0xfff1);
+            MemTable.Add(0x11, 0x02, 0xfff2);
+            MemTable.Add(0x11, 0x01, 0xfff3);
+            MemTable.Add(0x11, 0x02, 0xfff4);
+            IndexEntry entry;
+            Assert.IsTrue(MemTable.TryGetOldestEntry(0x11, out entry));
+            Assert.AreEqual(0x11, entry.Stream);
+            Assert.AreEqual(0x01, entry.Version);
+            Assert.AreEqual(0xfff1, entry.Position);
+        }
+
+        [Test]
+        public void try_get_oldest_entry_returns_the_entry_with_the_smallest_position_when_triduplicated()
+        {
+            MemTable.Add(0x11, 0x01, 0xfff1);
+            MemTable.Add(0x11, 0x01, 0xfff3);
+            MemTable.Add(0x11, 0x01, 0xfff5);
+            IndexEntry entry;
+            Assert.IsTrue(MemTable.TryGetOldestEntry(0x11, out entry));
+            Assert.AreEqual(0x11, entry.Stream);
+            Assert.AreEqual(0x01, entry.Version);
+            Assert.AreEqual(0xfff1, entry.Position);
+        }
+
+
+        [Test]
         public void the_smallest_items_with_hash_collisions_can_be_found()
         {
             MemTable.Add(0, 0, 0x0001);
@@ -591,6 +659,22 @@ namespace EventStore.Core.Tests.Index
             Assert.AreEqual(0, entry.Stream);
             Assert.AreEqual(0, entry.Version);
             Assert.AreEqual(0x0002, entry.Position);
+        }
+
+        [Test]
+        public void try_get_oldest_entry_for_smallest_hash_with_collisions_returns_correct_index_entry()
+        {
+            MemTable.Add(0, 0, 0x0001);
+            MemTable.Add(0, 0, 0x0002);
+            MemTable.Add(1, 0, 0x0003);
+            MemTable.Add(1, 0, 0x0004);
+            MemTable.Add(1, 0, 0x0005);
+
+            IndexEntry entry;
+            Assert.IsTrue(MemTable.TryGetOldestEntry(0, out entry));
+            Assert.AreEqual(0, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0x0001, entry.Position);
         }
 
         [Test]
@@ -643,6 +727,22 @@ namespace EventStore.Core.Tests.Index
             Assert.AreEqual(1, entry.Stream);
             Assert.AreEqual(0, entry.Version);
             Assert.AreEqual(0x0005, entry.Position);
+        }
+
+        [Test]
+        public void try_get_oldest_entry_for_largest_hash_with_collisions_returns_correct_index_entry()
+        {
+            MemTable.Add(0, 0, 0x0001);
+            MemTable.Add(0, 0, 0x0002);
+            MemTable.Add(1, 0, 0x0003);
+            MemTable.Add(1, 0, 0x0004);
+            MemTable.Add(1, 0, 0x0005);
+
+            IndexEntry entry;
+            Assert.IsTrue(MemTable.TryGetOldestEntry(1, out entry));
+            Assert.AreEqual(1, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0x0003, entry.Position);
         }
     }
 }

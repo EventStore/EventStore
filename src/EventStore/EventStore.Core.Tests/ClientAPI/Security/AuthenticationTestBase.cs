@@ -96,9 +96,9 @@ namespace EventStore.Core.Tests.ClientAPI.Security
                             adminCreateEvent2.Set();
                         }), SystemAccount.Principal, "adm", "Administrator User", new[] { SystemRoles.Admins}, "admpa$$"));
 
-            Assert.IsTrue(userCreateEvent1.Wait(120000), "User 1 creation failed");
-            Assert.IsTrue(userCreateEvent2.Wait(120000), "User 2 creation failed");
-            Assert.IsTrue(adminCreateEvent2.Wait(120000), "Administrator User creation failed");
+            Assert.IsTrue(userCreateEvent1.Wait(10000), "User 1 creation failed");
+            Assert.IsTrue(userCreateEvent2.Wait(10000), "User 2 creation failed");
+            Assert.IsTrue(adminCreateEvent2.Wait(10000), "Administrator User creation failed");
 
             Connection = TestConnection.Create(_node.TcpEndPoint, TcpType.Normal, _userCredentials);
             Connection.Connect();
@@ -231,7 +231,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
         protected void DeleteStream(string streamId, string login, string password)
         {
-            Connection.DeleteStream(streamId, ExpectedVersion.Any, 
+            Connection.DeleteStream(streamId, ExpectedVersion.Any, true, 
                                     login == null && password == null ? null : new UserCredentials(login, password));
         }
 

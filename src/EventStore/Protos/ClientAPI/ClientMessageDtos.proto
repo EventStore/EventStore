@@ -55,12 +55,14 @@ message WriteEventsCompleted {
 	required OperationResult result = 1;
 	optional string message = 2;
 	required int32 first_event_number = 3;
+	required int32 last_event_number = 4;
 }
 
 message DeleteStream {
 	required string event_stream_id = 1;
 	required int32 expected_version = 2;
 	required bool require_master = 3;
+	optional bool hard_delete = 4;
 }
 
 message DeleteStreamCompleted {
@@ -101,6 +103,8 @@ message TransactionCommitCompleted {
 	required int64 transaction_id = 1;
 	required OperationResult result = 2;
 	optional string message = 3;
+	required int32 first_event_number = 4;
+	required int32 last_event_number = 5;
 }
 
 message ReadEvent {

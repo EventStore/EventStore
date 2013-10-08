@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
 using System.Linq;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;

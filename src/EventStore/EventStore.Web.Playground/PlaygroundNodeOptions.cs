@@ -50,7 +50,7 @@ namespace EventStore.Web.Playground
 
         public PlaygroundNodeOptions()
         {
-            _helper = new OptsHelper(() => Configs, Opts.EnvPrefix);
+            _helper = new OptsHelper(() => Configs, Opts.EnvPrefix, "config.json");
 
             _helper.Register(() => ShowHelp, Opts.ShowHelpCmd, Opts.ShowHelpEnv, Opts.ShowHelpJson, Opts.ShowHelpDefault, Opts.ShowHelpDescr);
             _helper.Register(() => ShowVersion, Opts.ShowVersionCmd, Opts.ShowVersionEnv, Opts.ShowVersionJson, Opts.ShowVersionDefault, Opts.ShowVersionDescr);

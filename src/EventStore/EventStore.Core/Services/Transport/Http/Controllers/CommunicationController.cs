@@ -32,7 +32,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
-using EventStore.Transport.Http.Client;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
@@ -41,17 +40,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     public abstract class CommunicationController : IHttpController
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<CommunicationController>();
+        private static readonly ICodec[] DefaultCodecs = new ICodec[] { Codec.Json, Codec.Xml };
 
         private readonly IPublisher _publisher;
-        protected readonly HttpAsyncClient Client;
-        private readonly ICodec[] _defaultCodecs = new ICodec[] {Codec.Json, Codec.Xml};
 
         protected CommunicationController(IPublisher publisher)
         {
             Ensure.NotNull(publisher, "publisher");
 
             _publisher = publisher;
-            Client = new HttpAsyncClient();
         }
 
         public void Publish(Message message)
@@ -68,18 +65,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected abstract void SubscribeCore(IHttpService service);
 
-        protected void SendBadRequest(HttpEntityManager httpEntityManager, string reason)
+        protected RequestParams SendBadRequest(HttpEntityManager httpEntityManager, string reason)
         {
             httpEntityManager.ReplyStatus(HttpStatusCode.BadRequest,
                                           reason,
                                           e => Log.Debug("Error while closing http connection (bad request): {0}.", e.Message));
+            return new RequestParams(done: true);
         }
 
-        protected void SendOk(HttpEntityManager httpEntityManager)
+        protected RequestParams SendOk(HttpEntityManager httpEntityManager)
         {
             httpEntityManager.ReplyStatus(HttpStatusCode.OK,
                                           "OK",
                                           e => Log.Debug("Error while closing http connection (ok): {0}.", e.Message));
+            return new RequestParams(done: true);
         }
 
         protected void Register(IHttpService service, string uriTemplate, string httpMethod, 
@@ -88,34 +87,36 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             service.RegisterAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs), handler);
         }
 
-        protected void RegisterTextBody(
-            IHttpService service, string uriTemplate, string httpMethod, Action<HttpEntityManager, string> action)
+        protected void RegisterCustom(IHttpService service, string uriTemplate, string httpMethod,
+                                      Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler,
+                                      ICodec[] requestCodecs, ICodec[] responseCodecs)
         {
-            Register(
-                service, uriTemplate, httpMethod, (http, match) => http.ReadTextRequestAsync(action, LogError),
-                _defaultCodecs, _defaultCodecs);
+            service.RegisterCustomAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs), handler);
         }
 
-        protected void RegisterTextBody(
-            IHttpService service, string uriTemplate, string httpMethod,
-            Action<HttpEntityManager, UriTemplateMatch, string> action, ICodec[] requestCodecs = null,
-            ICodec[] responseCodecs = null)
+        protected void RegisterTextBody(IHttpService service, string uriTemplate, string httpMethod,
+                                        Action<HttpEntityManager, string> action,
+                                        ICodec[] requestCodecs = null, ICodec[] responseCodecs = null)
         {
-            Register(
-                service, uriTemplate, httpMethod,
-                (http, match) => http.ReadTextRequestAsync((manager, s) => action(manager, match, s), LogError),
-                requestCodecs ?? _defaultCodecs, responseCodecs ?? _defaultCodecs);
+            Register(service, uriTemplate, httpMethod,
+                     (http, match) => http.ReadTextRequestAsync(action, e => Log.Debug("Error on reading request: {0}.", e.Message)),
+                     requestCodecs ?? DefaultCodecs, responseCodecs ?? DefaultCodecs);
         }
 
-        protected void LogError(Exception exc)
+        protected void RegisterTextBody(IHttpService service, string uriTemplate, string httpMethod,
+                                        Action<HttpEntityManager, UriTemplateMatch, string> action,
+                                        ICodec[] requestCodecs = null, ICodec[] responseCodecs = null)
         {
-            Log.Debug("Error occurred: {0}.", exc.Message);
+            Register(service, uriTemplate, httpMethod,
+                     (http, match) => http.ReadTextRequestAsync((manager, s) => action(manager, match, s),
+                                                                e => Log.Debug("Error on reading request: {0}.", e.Message)),
+                     requestCodecs ?? DefaultCodecs, responseCodecs ?? DefaultCodecs);
         }
 
-        protected void RegisterUrlBased(
-            IHttpService service, string uriTemplate, string httpMethod, Action<HttpEntityManager, UriTemplateMatch> action)
+        protected void RegisterUrlBased(IHttpService service, string uriTemplate, string httpMethod,
+                                        Action<HttpEntityManager, UriTemplateMatch> action)
         {
-            Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, _defaultCodecs);
+            Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs);
         }
 
         protected static string MakeUrl(HttpEntityManager http, string path)

@@ -87,7 +87,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ClientMessage.ReadAllEventsForward(
                     msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
                     msg.CommitPosition, msg.PreparePosition, msg.MaxCount, msg.ResolveLinkTos, msg.RequireMaster,
-                    msg.ValidationTfEofPosition, msg.User));
+                    msg.ValidationTfLastCommitPosition, msg.User));
         }
     }
 }

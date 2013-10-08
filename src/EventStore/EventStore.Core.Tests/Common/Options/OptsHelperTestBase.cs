@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Common.Options
         {
             base.SetUp();
 
-            Helper = new OptsHelper(() => FakeConfigsProperty, EnvPrefix);
+	        Helper = new OptsHelper(() => FakeConfigsProperty, EnvPrefix, "config.json");
             Helper.RegisterArray(() => FakeConfigsProperty, "cfg=", null, null, null, new string[0], "Configs.");
         }
 

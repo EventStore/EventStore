@@ -77,6 +77,14 @@ namespace EventStore.ClientAPI
         void DeleteStream(string stream, int expectedVersion, UserCredentials userCredentials = null);
 
         /// <summary>
+        /// Deletes a stream from the Event Store synchronously
+        /// </summary>
+        /// <param name="stream">The name of the stream to be deleted</param>
+        /// <param name="expectedVersion">The expected version the stream should have when being deleted. <see cref="ExpectedVersion"/></param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+        void DeleteStream(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null);
+
+        /// <summary>
         /// Deletes a stream from the Event Store asynchronously
         /// </summary>
         /// <param name="stream">The name of the stream to delete.</param>
@@ -86,41 +94,13 @@ namespace EventStore.ClientAPI
         Task DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null);
 
         /// <summary>
-        /// Appends Events synchronously to a stream.
+        /// Deletes a stream from the Event Store asynchronously
         /// </summary>
-        /// <remarks>
-        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. For example, if no stream exists
-        /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
-        /// 
-        /// There are also differences in idempotency between different types of calls.
-        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
-        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
-        /// will do its best to provide idempotency but does not guarantee idempotency.
-        /// </remarks>
-        /// <param name="stream">The name of the stream to append the events to.</param>
-        /// <param name="expectedVersion">The expected version of the stream</param>
-        /// <param name="events">The events to write to the stream</param>
-        void AppendToStream(string stream, int expectedVersion, params EventData[] events);
-
-        /// <summary>
-        /// Appends Events synchronously to a stream.
-        /// </summary>
-        /// <remarks>
-        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
-        /// make a very large difference in the observed behavior. For example, if no stream exists
-        /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
-        /// 
-        /// There are also differences in idempotency between different types of calls.
-        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
-        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
-        /// will do its best to provide idempotency but does not guarantee idempotency.
-        /// </remarks>
-        /// <param name="stream">The name of the stream to append the events to.</param>
-        /// <param name="expectedVersion">The expected version of the stream</param>
+        /// <param name="stream">The name of the stream to delete.</param>
+        /// <param name="expectedVersion">The expected version that the streams should have when being deleted. <see cref="ExpectedVersion"/></param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
-        /// <param name="events">The events to write to the stream</param>
-        void AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events);
+        /// <returns>A <see cref="Task"/> that can be awaited upon by the caller.</returns>
+        Task DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Appends Events synchronously to a stream.
@@ -138,8 +118,45 @@ namespace EventStore.ClientAPI
         /// <param name="stream">The name of the stream to append the events to.</param>
         /// <param name="expectedVersion">The expected version of the stream</param>
         /// <param name="events">The events to write to the stream</param>
+        WriteResult AppendToStream(string stream, int expectedVersion, params EventData[] events);
+
+        /// <summary>
+        /// Appends Events synchronously to a stream.
+        /// </summary>
+        /// <remarks>
+        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
+        /// make a very large difference in the observed behavior. For example, if no stream exists
+        /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
+        /// 
+        /// There are also differences in idempotency between different types of calls.
+        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
+        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
+        /// will do its best to provide idempotency but does not guarantee idempotency.
+        /// </remarks>
+        /// <param name="stream">The name of the stream to append the events to.</param>
+        /// <param name="expectedVersion">The expected version of the stream</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
-        void AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
+        /// <param name="events">The events to write to the stream</param>
+        WriteResult AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events);
+
+        /// <summary>
+        /// Appends Events synchronously to a stream.
+        /// </summary>
+        /// <remarks>
+        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
+        /// make a very large difference in the observed behavior. For example, if no stream exists
+        /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
+        /// 
+        /// There are also differences in idempotency between different types of calls.
+        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
+        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
+        /// will do its best to provide idempotency but does not guarantee idempotency.
+        /// </remarks>
+        /// <param name="stream">The name of the stream to append the events to.</param>
+        /// <param name="expectedVersion">The expected version of the stream</param>
+        /// <param name="events">The events to write to the stream</param>
+        /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+        WriteResult AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Appends Events asynchronously to a stream.
@@ -157,8 +174,7 @@ namespace EventStore.ClientAPI
         /// <param name="stream">The name of the stream to append events to</param>
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="events">The events to append to the stream</param>
-        /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
-        Task AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events);
+        Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events);
 
         /// <summary>
         /// Appends Events asynchronously to a stream.
@@ -177,8 +193,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <param name="events">The events to append to the stream</param>
-        /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
-        Task AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events);
+        Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events);
 
         /// <summary>
         /// Appends Events asynchronously to a stream.
@@ -197,8 +212,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="events">The events to append to the stream</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
-        /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
-        Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
+        Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Starts a transaction in the event store on a given stream
@@ -366,7 +380,8 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null);
+                UserCredentials userCredentials = null,
+                int readBatchSize = 500);
 
         EventStoreSubscription SubscribeToAll(
                 bool resolveLinkTos, 
@@ -386,15 +401,16 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null);
+                UserCredentials userCredentials = null,
+                int readBatchSize = 500);
 
-        void SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
+        WriteResult SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
+
+        Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
+
+        WriteResult SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
         
-        Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
-        
-        void SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
-        
-        Task SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
+        Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
         
         StreamMetadataResult GetStreamMetadata(string stream, UserCredentials userCredentials = null);
         

@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http.EntityManagement

@@ -202,7 +202,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendEof();
                     return;
                 case ReadStreamResult.Success:
-                    _limitingCommitPosition = _limitingCommitPosition ?? completed.LastCommitPosition;
+                    _limitingCommitPosition = _limitingCommitPosition ?? completed.TfLastCommitPosition;
                     foreach (var e in completed.Events)
                         EnqueueStreamForProcessing(e);
                     if (completed.IsEndOfStream)

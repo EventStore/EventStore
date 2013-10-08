@@ -75,8 +75,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 var events = Enumerable.Range(0, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events.First()).Commit());
+                Assert.AreEqual(5, writer.StartTransaction(-1).Write(events).Commit().NextExpectedVersion);
+                Assert.AreEqual(0, writer.StartTransaction(-1).Write(events.First()).Commit().NextExpectedVersion);
 
                 var total = EventsStream.Count(store, stream);
                 Assert.That(total, Is.EqualTo(events.Length));
@@ -95,8 +95,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 var events = Enumerable.Range(0, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.DoesNotThrow(() => writer.StartTransaction(ExpectedVersion.Any).Write(events.First()).Commit());
+                Assert.AreEqual(5, writer.StartTransaction(-1).Write(events).Commit().NextExpectedVersion);
+                Assert.AreEqual(0, writer.StartTransaction(ExpectedVersion.Any).Write(events.First()).Commit().NextExpectedVersion);
 
                 var total = EventsStream.Count(store, stream);
                 Assert.That(total, Is.EqualTo(events.Length));
@@ -115,8 +115,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 var events = Enumerable.Range(0, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.DoesNotThrow(() => writer.StartTransaction(5).Write(events.First()).Commit());
+                Assert.AreEqual(5, writer.StartTransaction(-1).Write(events).Commit().NextExpectedVersion);
+                Assert.AreEqual(6, writer.StartTransaction(5).Write(events.First()).Commit().NextExpectedVersion);
 
                 var total = EventsStream.Count(store, stream);
                 Assert.That(total, Is.EqualTo(events.Length + 1));
@@ -135,7 +135,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var events = Enumerable.Range(0, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
+                Assert.AreEqual(5, writer.StartTransaction(-1).Write(events).Commit().NextExpectedVersion);
                 Assert.That(() => writer.StartTransaction(6).Write(events.First()).Commit(), 
                             Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
@@ -153,7 +153,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var events = Enumerable.Range(0, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
+                Assert.AreEqual(5, writer.StartTransaction(-1).Write(events).Commit().NextExpectedVersion);
                 Assert.That(() => writer.StartTransaction(4).Write(events.First()).Commit(), 
                             Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
@@ -171,8 +171,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 var events = Enumerable.Range(0, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.DoesNotThrow(() => writer.StartTransaction(0).Write(events.First()).Commit());
+                Assert.AreEqual(0, writer.StartTransaction(-1).Write(events).Commit().NextExpectedVersion);
+                Assert.AreEqual(1, writer.StartTransaction(0).Write(events.First()).Commit().NextExpectedVersion);
 
                 var total = EventsStream.Count(store, stream);
                 Assert.That(total, Is.EqualTo(events.Length + 1));
@@ -191,8 +191,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 var events = Enumerable.Range(0, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.DoesNotThrow(() => writer.StartTransaction(ExpectedVersion.Any).Write(events.First()).Commit());
+                Assert.AreEqual(0, writer.StartTransaction(-1).Write(events).Commit().NextExpectedVersion);
+                Assert.AreEqual(0, writer.StartTransaction(ExpectedVersion.Any).Write(events.First()).Commit().NextExpectedVersion);
 
                 var total = EventsStream.Count(store, stream);
                 Assert.That(total, Is.EqualTo(events.Length));
@@ -211,8 +211,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 var events = Enumerable.Range(0, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events.First()).Commit());
+                Assert.AreEqual(0, writer.StartTransaction(-1).Write(events).Commit().NextExpectedVersion);
+                Assert.AreEqual(0, writer.StartTransaction(-1).Write(events.First()).Commit().NextExpectedVersion);
 
                 var total = EventsStream.Count(store, stream);
                 Assert.That(total, Is.EqualTo(events.Length));
@@ -231,8 +231,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 var events = Enumerable.Range(0, 3).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.DoesNotThrow(() => writer.StartTransaction(ExpectedVersion.Any).Write(events[1]).Write(events[1]).Commit());
+                Assert.AreEqual(2, writer.StartTransaction(-1).Write(events).Commit().NextExpectedVersion);
+                Assert.AreEqual(1, writer.StartTransaction(ExpectedVersion.Any).Write(events[1]).Write(events[1]).Commit().NextExpectedVersion);
 
                 var total = EventsStream.Count(store, stream);
                 Assert.That(total, Is.EqualTo(events.Length));
@@ -251,7 +251,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var events = Enumerable.Range(0, 2).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
-                Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
+                Assert.AreEqual(1, writer.StartTransaction(-1).Write(events).Commit().NextExpectedVersion);
                 Assert.That(() => writer.StartTransaction(-1)
                                         .Write(events.Concat(new[] { TestEvent.NewTestEvent(Guid.NewGuid()) }).ToArray())
                                         .Commit(),

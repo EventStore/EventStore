@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.Security.Principal;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -37,25 +36,26 @@ using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
     public class ReadIndex : IDisposable, IReadIndex
     {
-        public long LastCommitPosition { get { return _indexWriter.LastCommitPosition; } }
+        public long LastCommitPosition { get { return _indexCommitter.LastCommitPosition; } }
         public IIndexWriter IndexWriter { get { return _indexWriter; } }
+        public IIndexCommitter IndexCommitter { get { return _indexCommitter; } }
 
-        private readonly IIndexBackend _backend;
+        private readonly IIndexBackend _indexBackend;
         private readonly IIndexReader _indexReader;
         private readonly IIndexWriter _indexWriter;
+        private readonly IIndexCommitter _indexCommitter;
         private readonly IAllReader _allReader;
 
         public ReadIndex(IPublisher bus,
                          ObjectPool<ITransactionFileReader> readerPool,
                          ITableIndex tableIndex,
                          IHasher hasher,
-                         ILRUCache<string, StreamCacheInfo> streamInfoCache,
+                         int streamInfoCacheCapacity,
                          bool additionalCommitChecks,
                          int metastreamMaxCount)
         {
@@ -63,32 +63,21 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.NotNull(readerPool, "readerPool");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(hasher, "hasher");
-            Ensure.NotNull(streamInfoCache, "streamInfoCache");
+            Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
             Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
 
-            _backend = new IndexBackend(readerPool, streamInfoCache);
+            var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
-            var metastreamMetadata = new StreamMetadata(metastreamMaxCount, null, null, null);
-            _indexReader = new IndexReader(_backend, hasher, tableIndex, metastreamMetadata);
-
-            _indexWriter = new IndexWriter(bus, _backend, _indexReader, tableIndex, hasher, additionalCommitChecks);
-            
-            _allReader = new AllReader(_backend);
+            _indexBackend = new IndexBackend(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
+            _indexReader = new IndexReader(_indexBackend, hasher, tableIndex, metastreamMetadata);
+            _indexWriter = new IndexWriter(_indexBackend, _indexReader);
+            _indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, hasher, additionalCommitChecks);
+            _allReader = new AllReader(_indexBackend);
         }
 
         void IReadIndex.Init(long buildToPosition)
         {
-            _indexWriter.Init(buildToPosition);
-        }
-
-        void IReadIndex.Commit(CommitLogRecord commit)
-        {
-            _indexWriter.Commit(commit);
-        }
-
-        void IReadIndex.Commit(IList<PrepareLogRecord> prepares)
-        {
-            _indexWriter.Commit(prepares);
+            _indexCommitter.Init(buildToPosition);
         }
 
         IndexReadEventResult IReadIndex.ReadEvent(string streamId, int eventNumber)
@@ -108,12 +97,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         bool IReadIndex.IsStreamDeleted(string streamId)
         {
-            return _indexReader.IsStreamDeleted(streamId);
+            return _indexReader.GetStreamLastEventNumber(streamId) == EventNumber.DeletedStream;
         }
 
-        int IReadIndex.GetLastStreamEventNumber(string streamId)
+        int IReadIndex.GetStreamLastEventNumber(string streamId)
         {
-            return _indexReader.GetLastStreamEventNumber(streamId);
+            return _indexReader.GetStreamLastEventNumber(streamId);
+        }
+
+        StreamMetadata IReadIndex.GetStreamMetadata(string streamId)
+        {
+            return _indexReader.GetStreamMetadata(streamId);
         }
 
         public string GetEventStreamIdByTransactionId(long transactionId)
@@ -124,11 +118,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         StreamAccess IReadIndex.CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user)
         {
             return _indexReader.CheckStreamAccess(streamId, streamAccessType, user);
-        }
-
-        StreamMetadata IReadIndex.GetStreamMetadata(string streamId)
-        {
-            return _indexReader.GetStreamMetadata(streamId);
         }
 
         IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount)
@@ -159,7 +148,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public void Dispose()
         {
-            _indexWriter.Dispose();
+            _indexCommitter.Dispose();
         }
     }
 }

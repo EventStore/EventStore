@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Tests.Helpers;
@@ -38,7 +39,10 @@ namespace EventStore.Integration.Tests.Helpers
     {
         public static MediumNode Create(string pathname, bool runProjections)
         {
-            return new MediumNode(pathname, new Projections.Core.ProjectionsSubsystem(projectionWorkerThreadCount: 1, runProjections: runProjections), runProjections);
+            var projectionsSubsystem = new ProjectionsSubsystem(
+                    projectionWorkerThreadCount: 1,
+                    runProjections: runProjections ? RunProjections.All : RunProjections.System);
+            return new MediumNode(pathname, projectionsSubsystem, runProjections);
         }
 
         private Projections.Core.ProjectionsSubsystem _projections;

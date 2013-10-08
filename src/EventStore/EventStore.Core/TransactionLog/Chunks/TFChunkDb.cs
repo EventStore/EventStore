@@ -56,6 +56,13 @@ namespace EventStore.Core.TransactionLog.Chunks
             ValidateReaderChecksumsMustBeLess(Config);
 
             var checkpoint = Config.WriterCheckpoint.Read();
+
+            if (Config.InMemDb)
+            {
+                Manager.AddNewChunk();
+                return;
+            }
+
             var lastChunkNum = (int) (checkpoint/Config.ChunkSize);
             var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
 

@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -48,13 +49,13 @@ namespace EventStore.Core.Services.Monitoring
         private readonly ICheckpoint _writerCheckpoint;
         private readonly string _dbPath;
         private PerfCounterHelper _perfCounter;
-        private bool _doStats;
+        private bool _giveup;
 
         public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
-            _doStats = true;
+
             _log = log;
             _writerCheckpoint = writerCheckpoint;
             _perfCounter = new PerfCounterHelper(_log);
@@ -138,12 +139,8 @@ namespace EventStore.Core.Services.Monitoring
 
         private void GetPerfCounterInformation(Dictionary<string, object> stats, int count)
         {
-            if (!_doStats) return;
-            if(count > 3)
-            {
-                _log.Info("Reached max count of trying to recreate counters on error.");
-                _doStats = false;
-            }
+            if (_giveup)
+                return;
             var process = Process.GetCurrentProcess();
             try
             {
@@ -162,7 +159,11 @@ namespace EventStore.Core.Services.Monitoring
             {
                 _log.Info("Received error reading counters. Attempting to rebuild.");
                 _perfCounter = new PerfCounterHelper(_log);
-                GetPerfCounterInformation(stats, count + 1);
+                _giveup = count > 10;
+                if (_giveup)
+                    _log.Error("Maximum rebuild attempts reached. Giving up on rebuilds.");
+                else
+                    GetPerfCounterInformation(stats, count + 1);
             }
         }
 

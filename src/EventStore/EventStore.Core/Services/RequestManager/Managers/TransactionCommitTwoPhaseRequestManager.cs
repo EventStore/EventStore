@@ -28,6 +28,7 @@
 
 using System;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
@@ -61,10 +62,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     internalCorrId, PublishEnvelope, _transactionId, liveUntil: NextTimeoutTime - TimeoutOffset));
         }
 
-        protected override void CompleteSuccessRequest(int firstEventNumber)
+        protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber)
         {
-            base.CompleteSuccessRequest(firstEventNumber);
-            var responseMsg = new ClientMessage.TransactionCommitCompleted(ClientCorrId, _transactionId, OperationResult.Success, null);
+            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber);
+            var responseMsg = new ClientMessage.TransactionCommitCompleted(ClientCorrId, _transactionId, firstEventNumber, lastEventNumber);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
 

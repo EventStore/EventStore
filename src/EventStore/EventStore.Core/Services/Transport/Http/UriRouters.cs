@@ -34,7 +34,7 @@ namespace EventStore.Core.Services.Transport.Http
 {
     public interface IUriRouter
     {
-        void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler);
+        void RegisterAction(ControllerAction action, Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler);
         List<UriToActionMatch> GetAllUriMatches(Uri uri);
     }
 
@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private readonly RouterNode _root = new RouterNode();
 
-        public void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
+        public void RegisterAction(ControllerAction action, Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler)
         {
             Ensure.NotNull(action, "action");
             Ensure.NotNull(handler, "handler");
@@ -132,7 +132,7 @@ namespace EventStore.Core.Services.Transport.Http
     {
         private readonly List<HttpRoute> _actions = new List<HttpRoute>();
 
-        public void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
+        public void RegisterAction(ControllerAction action, Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler)
         {
             if (_actions.Contains(x => x.Action.Equals(action)))
                 throw new ArgumentException("Duplicate route.");
@@ -157,10 +157,10 @@ namespace EventStore.Core.Services.Transport.Http
     internal class HttpRoute
     {
         public readonly ControllerAction Action;
-        public readonly Action<HttpEntityManager, UriTemplateMatch> Handler;
+        public readonly Func<HttpEntityManager, UriTemplateMatch, RequestParams> Handler;
         public readonly UriTemplate UriTemplate;
 
-        public HttpRoute(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler)
+        public HttpRoute(ControllerAction action, Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler)
         {
             Action = action;
             Handler = handler;

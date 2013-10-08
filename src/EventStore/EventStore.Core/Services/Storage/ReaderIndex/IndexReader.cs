@@ -47,11 +47,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         IndexReadEventResult ReadEvent(string streamId, int eventNumber);
         IndexReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount);
         IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
-        bool IsStreamDeleted(string streamId);
-        int GetLastStreamEventNumber(string streamId);
+
+        /// <summary>
+        /// Doesn't filter $maxAge, $maxCount, $tb(truncate before), doesn't check stream deletion, etc.
+        /// </summary>
+        PrepareLogRecord ReadPrepare(string streamId, int eventNumber);
+
         string GetEventStreamIdByTransactionId(long transactionId); 
         StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
+        
         StreamMetadata GetStreamMetadata(string streamId);
+        int GetStreamLastEventNumber(string streamId);
     }
 
     public class IndexReader : IIndexReader
@@ -95,24 +101,26 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private IndexReadEventResult ReadEventInternal(TFReaderLease reader, string streamId, int eventNumber)
         {
-            var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
-            if (lastEventNumber == EventNumber.DeletedStream)
-                return new IndexReadEventResult(ReadEventResult.StreamDeleted, StreamMetadata.Empty, lastEventNumber);
+            var lastEventNumber = GetStreamLastEventNumberCached(reader, streamId);
             var metadata = GetStreamMetadataCached(reader, streamId);
-            if (lastEventNumber == ExpectedVersion.NoStream)
+            if (lastEventNumber == EventNumber.DeletedStream)
+                return new IndexReadEventResult(ReadEventResult.StreamDeleted, metadata, lastEventNumber);
+            if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
                 return new IndexReadEventResult(ReadEventResult.NoStream, metadata, lastEventNumber);
 
             if (eventNumber == -1)
                 eventNumber = lastEventNumber;
 
+            int minEventNumber = 0;
             if (metadata.MaxCount.HasValue)
-            {
-                var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
-                if (eventNumber < minEventNumber || eventNumber > lastEventNumber)
-                    return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber);
-            }
+                minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
+            if (metadata.TruncateBefore.HasValue)
+                minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
 
-            PrepareLogRecord prepare = GetPrepare(reader, streamId, eventNumber);
+            if (eventNumber < minEventNumber || eventNumber > lastEventNumber)
+                return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber);
+
+            PrepareLogRecord prepare = ReadPrepareInternal(reader, streamId, eventNumber);
             if (prepare != null)
             {
                 if (metadata.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)
@@ -123,7 +131,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber);
         }
 
-        private PrepareLogRecord GetPrepare(TFReaderLease reader, string streamId, int eventNumber)
+        PrepareLogRecord IIndexReader.ReadPrepare(string streamId, int eventNumber)
+        {
+            using (var reader = _backend.BorrowReader())
+            {
+                return ReadPrepareInternal(reader, streamId, eventNumber);
+            }
+        }
+
+        private PrepareLogRecord ReadPrepareInternal(TFReaderLease reader, string streamId, int eventNumber)
         {
             // we assume that you already did check for stream deletion
             Ensure.NotNullOrEmpty(streamId, "streamId");
@@ -133,7 +149,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             long position;
             if (_tableIndex.TryGetOneValue(streamHash, eventNumber, out position))
             {
-                var rec = GetPrepare(reader, position);
+                var rec = ReadPrepareInternal(reader, position);
                 if (rec != null && rec.EventStreamId == streamId)
                     return rec;
 
@@ -142,7 +158,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     Interlocked.Increment(ref _hashCollisions);
                     if (indexEntry.Position == position) // already checked that
                         continue;
-                    rec = GetPrepare(reader, indexEntry.Position);
+                    rec = ReadPrepareInternal(reader, indexEntry.Position);
                     if (rec != null && rec.EventStreamId == streamId)
                         return rec;
                 }
@@ -150,7 +166,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return null;
         }
 
-        private static PrepareLogRecord GetPrepare(TFReaderLease reader, long logPosition)
+        private static PrepareLogRecord ReadPrepareInternal(TFReaderLease reader, long logPosition)
         {
             RecordReadResult result = reader.TryReadAt(logPosition);
             if (!result.Success)
@@ -170,27 +186,28 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var streamHash = _hasher.Hash(streamId);
             using (var reader = _backend.BorrowReader())
             {
-                var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
+                var lastEventNumber = GetStreamLastEventNumberCached(reader, streamId);
+                var metadata = GetStreamMetadataCached(reader, streamId);
                 if (lastEventNumber == EventNumber.DeletedStream)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted, StreamMetadata.Empty, lastEventNumber);
-                var metadata = GetStreamMetadataCached(reader, streamId);
-                if (lastEventNumber == ExpectedVersion.NoStream)
+                if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata, lastEventNumber);
 
                 int startEventNumber = fromEventNumber;
                 int endEventNumber = (int) Math.Min(int.MaxValue, (long) fromEventNumber + maxCount - 1);
 
+                int minEventNumber = 0;
                 if (metadata.MaxCount.HasValue)
-                {
-                    var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
-                    if (endEventNumber < minEventNumber)
-                        return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
-                                                         metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
-                    startEventNumber = Math.Max(startEventNumber, minEventNumber);
-                }
+                    minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
+                if (metadata.TruncateBefore.HasValue) 
+                    minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
+                if (endEventNumber < minEventNumber)
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
+                                                     metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
+                startEventNumber = Math.Max(startEventNumber, minEventNumber);
 
                 var recordsQuery = _tableIndex.GetRange(streamHash, startEventNumber, endEventNumber)
-                                              .Select(x => new {x.Version, Prepare = GetPrepare(reader, x.Position)})
+                                              .Select(x => new {x.Version, Prepare = ReadPrepareInternal(reader, x.Position)})
                                               .Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId);
 
                 if (metadata.MaxAge.HasValue)
@@ -218,33 +235,34 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var streamHash = _hasher.Hash(streamId);
             using (var reader = _backend.BorrowReader())
             {
-                var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
+                var lastEventNumber = GetStreamLastEventNumberCached(reader, streamId);
+                var metadata = GetStreamMetadataCached(reader, streamId);
                 if (lastEventNumber == EventNumber.DeletedStream)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted, StreamMetadata.Empty, lastEventNumber);
-                var metadata = GetStreamMetadataCached(reader, streamId);
-                if (lastEventNumber == ExpectedVersion.NoStream)
+                if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata, lastEventNumber);
 
                 int endEventNumber = fromEventNumber < 0 ? lastEventNumber : fromEventNumber;
                 int startEventNumber = (int)Math.Max(0L, (long)endEventNumber - maxCount + 1);
                 bool isEndOfStream = false;
 
+                int minEventNumber = 0;
                 if (metadata.MaxCount.HasValue)
-                {
-                    var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
-                    if (endEventNumber < minEventNumber)
-                        return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
-                                                         metadata, -1, lastEventNumber, isEndOfStream: true);
+                    minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
+                if (metadata.TruncateBefore.HasValue)
+                    minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
+                if (endEventNumber < minEventNumber)
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
+                                                     metadata, -1, lastEventNumber, isEndOfStream: true);
 
-                    if (startEventNumber <= minEventNumber)
-                    {
-                        isEndOfStream = true;
-                        startEventNumber = minEventNumber;
-                    }
+                if (startEventNumber <= minEventNumber)
+                {
+                    isEndOfStream = true;
+                    startEventNumber = minEventNumber;
                 }
 
                 var recordsQuery = _tableIndex.GetRange(streamHash, startEventNumber, endEventNumber)
-                                              .Select(x => new {x.Version, Prepare = GetPrepare(reader, x.Position)})
+                                              .Select(x => new {x.Version, Prepare = ReadPrepareInternal(reader, x.Position)})
                                               .Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId);
 
                 if (metadata.MaxAge.HasValue)
@@ -265,80 +283,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        bool IIndexReader.IsStreamDeleted(string streamId)
-        {
-            Ensure.NotNullOrEmpty(streamId, "streamId");
-            using (var reader = _backend.BorrowReader())
-            {
-                return GetLastStreamEventNumberCached(reader, streamId) == EventNumber.DeletedStream;
-            }
-        }
-
-        int IIndexReader.GetLastStreamEventNumber(string streamId)
-        {
-            Ensure.NotNullOrEmpty(streamId, "streamId");
-            using (var reader = _backend.BorrowReader())
-            {
-                return GetLastStreamEventNumberCached(reader, streamId);
-            }
-        }
-
         public string GetEventStreamIdByTransactionId(long transactionId)
         {
             Ensure.Nonnegative(transactionId, "transactionId");
             using (var reader = _backend.BorrowReader())
             {
-                var res = GetPrepare(reader, transactionId);
+                var res = ReadPrepareInternal(reader, transactionId);
                 return res == null ? null : res.EventStreamId;
             }
-        }
-
-        private int GetLastStreamEventNumberCached(TFReaderLease reader, string streamId)
-        {
-            // if this is metastream -- check if original stream was deleted, if yes -- metastream is deleted as well
-            if (SystemStreams.IsMetastream(streamId)
-                && GetLastStreamEventNumberCached(reader, SystemStreams.OriginalStreamOf(streamId)) == EventNumber.DeletedStream)
-                return EventNumber.DeletedStream;
-
-            StreamCacheInfo streamCacheInfo;
-            if (_backend.TryGetStreamCacheInfo(streamId, out streamCacheInfo) && streamCacheInfo.LastEventNumber.HasValue)
-            {
-                Interlocked.Increment(ref _cachedStreamInfo);
-                return streamCacheInfo.LastEventNumber.Value;
-            }
-
-            var lastEventNumber = GetLastStreamEventNumberUncached(reader, streamId);
-            // Conditional update depending on previously returned cache info version.
-            // If version is not correct -- nothing is changed in cache.
-            // This update is conditioned to not interfere with updating stream cache info by commit procedure
-            // (which is the source of truth).
-            var res = _backend.UpdateStreamCacheInfo(streamCacheInfo.Version, streamId, lastEventNumber, null);
-            return res.LastEventNumber ?? lastEventNumber;
-        }
-
-        private int GetLastStreamEventNumberUncached(TFReaderLease reader, string streamId)
-        {
-            Interlocked.Increment(ref _notCachedStreamInfo);
-
-            var streamHash = _hasher.Hash(streamId);
-            IndexEntry latestEntry;
-            if (!_tableIndex.TryGetLatestEntry(streamHash, out latestEntry))
-                return ExpectedVersion.NoStream;
-
-            var rec = GetPrepare(reader, latestEntry.Position);
-            if (rec == null) throw new Exception("Couldn't read latest stream's prepare! That shouldn't happen EVER!");
-            if (rec.EventStreamId == streamId) // LUCKY!!!
-                return latestEntry.Version;
-
-            // TODO AN here lies the problem of out of memory if the stream has A LOT of events in them
-            foreach (var indexEntry in _tableIndex.GetRange(streamHash, 0, int.MaxValue))
-            {
-                var r = GetPrepare(reader, indexEntry.Position);
-                if (r != null && r.EventStreamId == streamId)
-                    return indexEntry.Version; // AT LAST!!!
-                Interlocked.Increment(ref _hashCollisions);
-            }
-            return ExpectedVersion.NoStream; // no such event stream
         }
 
 
@@ -415,6 +367,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return new StreamAccess(false);
         }
 
+        int IIndexReader.GetStreamLastEventNumber(string streamId)
+        {
+            Ensure.NotNullOrEmpty(streamId, "streamId");
+            using (var reader = _backend.BorrowReader())
+            {
+                return GetStreamLastEventNumberCached(reader, streamId);
+            }
+        }
+
         StreamMetadata IIndexReader.GetStreamMetadata(string streamId)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
@@ -424,35 +385,88 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
+        private int GetStreamLastEventNumberCached(TFReaderLease reader, string streamId)
+        {
+            // if this is metastream -- check if original stream was deleted, if yes -- metastream is deleted as well
+            if (SystemStreams.IsMetastream(streamId)
+                && GetStreamLastEventNumberCached(reader, SystemStreams.OriginalStreamOf(streamId)) == EventNumber.DeletedStream)
+                return EventNumber.DeletedStream;
+
+            var cache = _backend.TryGetStreamLastEventNumber(streamId);
+            if (cache.LastEventNumber != null)
+            {
+                Interlocked.Increment(ref _cachedStreamInfo);
+                return cache.LastEventNumber.GetValueOrDefault();
+            }
+
+            Interlocked.Increment(ref _notCachedStreamInfo);
+            var lastEventNumber = GetStreamLastEventNumberUncached(reader, streamId);
+
+            // Conditional update depending on previously returned cache info version.
+            // If version is not correct -- nothing is changed in cache.
+            // This update is conditioned to not interfere with updating stream cache info by commit procedure
+            // (which is the source of truth).
+            var res = _backend.UpdateStreamLastEventNumber(cache.Version, streamId, lastEventNumber);
+            return res ?? lastEventNumber;
+        }
+
+        private int GetStreamLastEventNumberUncached(TFReaderLease reader, string streamId)
+        {
+            var streamHash = _hasher.Hash(streamId);
+            IndexEntry latestEntry;
+            if (!_tableIndex.TryGetLatestEntry(streamHash, out latestEntry))
+                return ExpectedVersion.NoStream;
+
+            var rec = ReadPrepareInternal(reader, latestEntry.Position);
+            if (rec == null) throw new Exception("Couldn't read latest stream's prepare! That shouldn't happen EVER!");
+            if (rec.EventStreamId == streamId) // LUCKY!!!
+                return latestEntry.Version;
+
+            // TODO AN here lies the problem of out of memory if the stream has A LOT of events in them
+            foreach (var indexEntry in _tableIndex.GetRange(streamHash, 0, int.MaxValue))
+            {
+                var r = ReadPrepareInternal(reader, indexEntry.Position);
+                if (r != null && r.EventStreamId == streamId)
+                    return indexEntry.Version; // AT LAST!!!
+                Interlocked.Increment(ref _hashCollisions);
+            }
+            return ExpectedVersion.NoStream; // no such event stream
+        }
+
         private StreamMetadata GetStreamMetadataCached(TFReaderLease reader, string streamId)
         {
+            // if this is metastream -- check if original stream was deleted, if yes -- metastream is deleted as well
             if (SystemStreams.IsMetastream(streamId))
                 return _metastreamMetadata;
 
-            StreamCacheInfo streamCacheInfo;
-            if (_backend.TryGetStreamCacheInfo(streamId, out streamCacheInfo) && streamCacheInfo.Metadata != null)
+            var cache = _backend.TryGetStreamMetadata(streamId);
+            if (cache.Metadata != null)
             {
                 Interlocked.Increment(ref _cachedStreamInfo);
-                return streamCacheInfo.Metadata;
+                return cache.Metadata;
             }
 
-            var metadata = GetStreamMetadataUncached(reader, streamId);
-            var res = _backend.UpdateStreamCacheInfo(streamCacheInfo.Version, streamId, null, metadata);
-            return res.Metadata ?? metadata;
+            Interlocked.Increment(ref _notCachedStreamInfo);
+            var streamMetadata = GetStreamMetadataUncached(reader, streamId);
+
+            // Conditional update depending on previously returned cache info version.
+            // If version is not correct -- nothing is changed in cache.
+            // This update is conditioned to not interfere with updating stream cache info by commit procedure
+            // (which is the source of truth).
+            var res = _backend.UpdateStreamMetadata(cache.Version, streamId, streamMetadata);
+            return res ?? streamMetadata;
         }
 
         private StreamMetadata GetStreamMetadataUncached(TFReaderLease reader, string streamId)
         {
-            Interlocked.Increment(ref _notCachedStreamInfo);
-
             var metastreamId = SystemStreams.MetastreamOf(streamId);
-            var metaEventNumber = GetLastStreamEventNumberCached(reader, metastreamId);
+            var metaEventNumber = GetStreamLastEventNumberCached(reader, metastreamId);
             if (metaEventNumber == ExpectedVersion.NoStream || metaEventNumber == EventNumber.DeletedStream)
                 return StreamMetadata.Empty;
 
-            PrepareLogRecord prepare = GetPrepare(reader, metastreamId, metaEventNumber);
+            PrepareLogRecord prepare = ReadPrepareInternal(reader, metastreamId, metaEventNumber);
             if (prepare == null)
-                throw new Exception(string.Format("GetPrepare couldn't find metaevent #{0} on metastream '{1}'. "
+                throw new Exception(string.Format("ReadPrepareInternal couldn't find metaevent #{0} on metastream '{1}'. "
                                                   + "That should never happen.", metaEventNumber, metastreamId));
 
             if (prepare.Data.Length == 0 || prepare.Flags.HasNoneOf(PrepareFlags.IsJson))

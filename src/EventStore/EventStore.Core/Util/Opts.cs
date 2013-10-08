@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.TransactionLog.Chunks;
@@ -98,13 +99,25 @@ namespace EventStore.Core.Util
         public const string MinFlushDelayMsEnv = "MIN_FLUSH_DELAY";
         public const string MinFlushDelayMsJson = "minFlushDelay";
         public const string MinFlushDelayMsDescr = "The minimum flush delay in milliseconds.";
-        public const int    MinFlushDelayMsDefault = TFConsts.MinFlushDelayMs;
+        public static double MinFlushDelayMsDefault = TFConsts.MinFlushDelayMs.TotalMilliseconds;
+
+        public const string NodePriorityCmd = "node-priority=";
+        public const string NodePriorityEnv = "NODE_PRIORITY";
+        public const string NodePriorityJson = "nodePriority";
+        public const string NodePriorityDescr = "The node priority used during master election";
+        public const int    NodePriorityDefault = 0;
 
         public const string DbPathCmd = "d|db=";
         public const string DbPathEnv = "DB";
         public const string DbPathJson = "db";
         public const string DbPathDescr = "The path the db should be loaded/saved to.";
         public static readonly string DbPathDefault = string.Empty;
+
+        public const string InMemDbCmd = "mem-db";
+        public const string InMemDbEnv = "MEM_DB";
+        public const string InMemDbJson = "memDb";
+        public const string InMemDbDescr = "Keep everything in memory, no directories or files are created.";
+        public const bool   InMemDbDefault = false;
 
         public const string EnableTrustedAuthCmd = "enable-trusted-auth";
         public const string EnableTrustedAuthEnv = "ENABLE_TRUSTED_AUTH";
@@ -256,35 +269,23 @@ namespace EventStore.Core.Util
         public const string ExternalSecureTcpPortDescr = "External Secure TCP Port.";
         public const int    ExternalSecureTcpPortDefault = 0;
 
-        public const string ClusterDnsCmd = "cluster-dns=";
-        public const string ClusterDnsEnv = "CLUSTER_DNS";
-        public const string ClusterDnsJson = "clusterDns";
-        public const string ClusterDnsDescr = null;
-        public const string ClusterDnsDefault = "fake.dns";
-
-        public const string ClusterSizeCmd = "nodes-count|cluster-size=";
+		public const string ClusterSizeCmd = "nodes-count|cluster-size=";
         public const string ClusterSizeEnv = "CLUSTER_SIZE";
         public const string ClusterSizeJson = "clusterSize";
-        public const string ClusterSizeDescr = null;
+		public const string ClusterSizeDescr = "The number of nodes in the cluster.";
         public const int    ClusterSizeDefault = 3;
 
         public const string CommitCountCmd = "commit-count=";
         public const string CommitCountEnv = "COMMIT_COUNT";
         public const string CommitCountJson = "commitCount";
-        public const string CommitCountDescr = null;
+		public const string CommitCountDescr = "The number of nodes which must acknowledge commits before acknowledging to a client.";
         public const int    CommitCountDefault = 2;
 
         public const string PrepareCountCmd = "prepare-count=";
         public const string PrepareCountEnv = "PREPARE_COUNT";
         public const string PrepareCountJson = "prepareCount";
-        public const string PrepareCountDescr = null;
+		public const string PrepareCountDescr = "The number of nodes which must acknowledge prepares.";	
         public const int    PrepareCountDefault = 2;
-
-        public const string FakeDnsCmd = "f|fake-dns";
-        public const string FakeDnsEnv = "FAKE_DNS";
-        public const string FakeDnsJson = "fakeDns";
-        public const string FakeDnsDescr = null;
-        public const bool   FakeDnsDefault = true;
 
         public const string InternalManagerIpCmd = "manager-ip|int-manager-ip|internal-manager-ip=";
         public const string InternalManagerIpEnv = "INT_MANAGER_IP";
@@ -310,12 +311,6 @@ namespace EventStore.Core.Util
         public const string ExternalManagerHttpPortDescr = null;
         public const int    ExternalManagerHttpPortDefault = 30778;
 
-        public const string FakeDnsIpsCmd = "fake-dns-ip=";
-        public const string FakeDnsIpsEnv = "FAKE_DNS_IPS";
-        public const string FakeDnsIpsJson = "fakeDnsIps";
-        public const string FakeDnsIpsDescr = null;
-        public static readonly IPAddress[] FakeDnsIpsDefault = new IPAddress[0];
-
         public const string UseInternalSslCmd = "use-internal-ssl";
         public const string UseInternalSslEnv = "USE_INTERNAL_SSL";
         public const string UseInternalSslJson = "useInternalSsl";
@@ -333,6 +328,30 @@ namespace EventStore.Core.Util
         public const string SslValidateServerJson = "sslValidateServer";
         public const string SslValidateServerDescr = "Whether to validate that server's certificate is trusted.";
         public const bool   SslValidateServerDefault = true;
+
+		public const string DiscoverViaDnsCmd = "use-dns-discovery";
+ 	    public const string DiscoverViaDnsEnv = "USE_DNS_DISCOVERY";
+ 	    public const string DiscoverViaDnsJson = "useDnsDiscovery";
+ 	    public const string DiscoverViaDnsDescr = "Whether to use DNS lookup to discover other cluster nodes.";
+ 	    public const bool DiscoverViaDnsDefault = true;
+ 
+ 		public const string ClusterDnsCmd = "cluster-dns=";
+ 		public const string ClusterDnsEnv = "CLUSTER_DNS";
+ 		public const string ClusterDnsJson = "clusterDns";
+ 		public const string ClusterDnsDescr = "DNS name from which other nodes can be discovered.";
+ 		public const string ClusterDnsDefault = "fake.dns";
+
+	    public const string ClusterGossipPortCmd = "cluster-gossip-port=";
+	    public const string ClusterGossipPortEnv = "CLUSTER_GOSSIP_PORT";
+	    public const string ClusterGossipPortJson = "clusterGossipPort";
+	    public const int ClusterGossipPortDefault = 30777;
+	    public const string ClusterGossipPortDescr = "The port on which cluster nodes' managers are running.";
+
+ 	    public const string GossipSeedCmd = "gossip-seed=";
+ 	    public const string GossipSeedEnv = "GOSSIP_SEED";
+ 	    public const string GossipSeedJson = "gossipSeed";
+ 	    public const string GossipSeedDescr = "Endpoints for other cluster nodes from which to seed gossip";
+ 		public static readonly IPEndPoint[] GossipSeedDefault = new IPEndPoint[0];
 
         /*
          *  MANAGER OPTIONS 
@@ -370,16 +389,10 @@ namespace EventStore.Core.Util
 		/*
 		 * Authentication Options
 		 */
-	    public const string UseLdapsAuthenticationCmd = "ldaps-authentication";
-	    public const string UseLdapsAuthenticationEnv = "LDAPS_AUTHENTICATION";
-	    public const string UseLdapsAuthenticationJson = "ldapsAuthentication";
-	    public const string UseLdapsAuthenticationDescr = "Use LDAPS authentication, disable Event Store internal authentication";
-	    public static readonly bool UseLdapsAuthenticationDefault = false;
-
 	    public const string LdapsConfigurationFileCmd = "ldaps-config=";
 	    public const string LdapsConfigurationFileEnv = "LDAPS_CONFIG";
 	    public const string LdapsConfigurationFileJson = "ldapsConfigFile";
-	    public const string LdapsConfigurationFileDescr = "Path to the configuration file for LDAPS authentication";
+	    public const string LdapsConfigurationFileDescr = "Path to the configuration file for LDAPS authentication. If this is specified, Event Store internal authentication will be disabled.";
 	    public static readonly string LdapsConfigurationFileDefault = string.Empty;
     }
 }

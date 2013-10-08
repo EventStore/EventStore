@@ -54,6 +54,7 @@ namespace EventStore.Core.Index
         private readonly int _maxSizeForMemory;
         private readonly int _maxTablesPerLevel;
         private readonly bool _additionalReclaim;
+        private readonly bool _inMem;
         private readonly string _directory;
         private readonly Func<IMemTable> _memTableFactory;
         private readonly Func<TFReaderLease> _tfReaderFactory;
@@ -76,7 +77,8 @@ namespace EventStore.Core.Index
                           Func<TFReaderLease> tfReaderFactory,
                           int maxSizeForMemory = 1000000,
                           int maxTablesPerLevel = 4,
-                          bool additionalReclaim = false)
+                          bool additionalReclaim = false,
+                          bool inMem = false)
         {
             Ensure.NotNullOrEmpty(directory, "directory");
             Ensure.NotNull(memTableFactory, "memTableFactory");
@@ -91,6 +93,7 @@ namespace EventStore.Core.Index
             _maxSizeForMemory = maxSizeForMemory;
             _maxTablesPerLevel = maxTablesPerLevel;
             _additionalReclaim = additionalReclaim;
+            _inMem = inMem;
             _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
         }
 
@@ -103,6 +106,14 @@ namespace EventStore.Core.Index
                 throw new IOException("TableIndex is already initialized.");           
             _initialized = true;
             
+            if (_inMem)
+            {
+                _indexMap = IndexMap.CreateEmpty(_maxTablesPerLevel);
+                _prepareCheckpoint = _indexMap.PrepareCheckpoint;
+                _commitCheckpoint = _indexMap.CommitCheckpoint;
+                return;
+            }
+
             CreateIfDoesNotExist(_directory);
             var indexmapFile = Path.Combine(_directory, IndexMapFilename);
             var backupFile = Path.Combine(_directory, IndexMapBackupFilename);
@@ -222,9 +233,9 @@ namespace EventStore.Core.Index
 
         public void AddEntries(long commitPos, IList<IndexEntry> entries)
         {
-            Ensure.Nonnegative(commitPos, "commitPos");
-            Ensure.NotNull(entries, "entries");
-            Ensure.Positive(entries.Count, "entries.Count");
+            //Ensure.Nonnegative(commitPos, "commitPos");
+            //Ensure.NotNull(entries, "entries");
+            //Ensure.Positive(entries.Count, "entries.Count");
 
             //should only be called on a single thread.
             var table = (IMemTable)_awaitingMemTables[0].Table; // always a memtable
@@ -248,15 +259,18 @@ namespace EventStore.Core.Index
                     Log.Trace("Switching MemTable, currently: {0} awaiting tables.", newTables.Count);
 
                     _awaitingMemTables = newTables;
-                    if (!_backgroundRunning)
+                    if (!_inMem)
                     {
-                        _backgroundRunningEvent.Reset();
-                        _backgroundRunning = true;
-                        ThreadPool.QueueUserWorkItem(x => ReadOffQueue());
-                    }
+                        if (!_backgroundRunning)
+                        {
+                            _backgroundRunningEvent.Reset();
+                            _backgroundRunning = true;
+                            ThreadPool.QueueUserWorkItem(x => ReadOffQueue());
+                        }
 
-                    if (_additionalReclaim)
-                        ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
+                        if (_additionalReclaim)
+                            ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
+                    }
                 }
             }
         }
@@ -472,6 +486,44 @@ namespace EventStore.Core.Index
             return false;
         }
 
+        public bool TryGetOldestEntry(uint stream, out IndexEntry entry)
+        {
+            int counter = 0;
+            while (counter < 5)
+            {
+                counter++;
+                try
+                {
+                    return TryGetOldestEntryInternal(stream, out entry);
+                }
+                catch (FileBeingDeletedException)
+                {
+                    Log.Trace("File being deleted.");
+                }
+            }
+            throw new InvalidOperationException("Something is wrong. Files are locked.");
+        }
+
+        private bool TryGetOldestEntryInternal(uint stream, out IndexEntry entry)
+        {
+            var map = _indexMap;
+            foreach (var table in map.InReverseOrder())
+            {
+                if (table.TryGetOldestEntry(stream, out entry))
+                    return true;
+            }
+
+            var awaiting = _awaitingMemTables;
+            for (int index = awaiting.Count - 1; index >= 0; index--)
+            {
+                if (awaiting[index].Table.TryGetOldestEntry(stream, out entry))
+                    return true;
+            }
+
+            entry = InvalidIndexEntry;
+            return false;
+        }
+
         public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion)
         {
             int counter = 0;
@@ -556,7 +608,8 @@ namespace EventStore.Core.Index
             //this should also make sure that no background tasks are running anymore
             if (!_backgroundRunningEvent.Wait(7000))
                 throw new TimeoutException("Could not finish background thread in reasonable time.");
-
+            if (_inMem)
+                return;
             if (_indexMap != null)
             {
                 if (removeFiles)

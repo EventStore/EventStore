@@ -25,8 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using EventStore.Core.Index;
@@ -47,7 +45,7 @@ namespace EventStore.Core.Tests.Index
         {
             base.TestFixtureSetUp();
 
-            _indexDir = base.PathName;
+            _indexDir = PathName;
             var fakeReader = new TFReaderLease(new FakeTfReader());
             _tableIndex = new TableIndex(_indexDir,
                                          () => new HashListMemTable(maxSize: 10),
@@ -92,6 +90,13 @@ namespace EventStore.Core.Tests.Index
 
         [Test]
         public void should_not_return_latest_entry_for_nonexisting_stream()
+        {
+            IndexEntry entry;
+            Assert.IsFalse(_tableIndex.TryGetLatestEntry(0xFEED, out entry));
+        }
+
+        [Test]
+        public void should_not_return_oldest_entry_for_nonexisting_stream()
         {
             IndexEntry entry;
             Assert.IsFalse(_tableIndex.TryGetLatestEntry(0xFEED, out entry));
@@ -155,6 +160,42 @@ namespace EventStore.Core.Tests.Index
             Assert.AreEqual(0xABBA, entry.Stream);
             Assert.AreEqual(1, entry.Version);
             Assert.AreEqual(0xFF03, entry.Position);
+        }
+
+        [Test]
+        public void should_return_correct_oldest_entries_for_each_stream()
+        {
+            IndexEntry entry;
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xDEAD, out entry));
+            Assert.AreEqual(0xDEAD, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0xFF00, entry.Position);
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xBEEF, out entry));
+            Assert.AreEqual(0xBEEF, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0xFF00, entry.Position);
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xABBA, out entry));
+            Assert.AreEqual(0xABBA, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0xFF00, entry.Position);
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xADA, out entry));
+            Assert.AreEqual(0xADA, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0xFF00, entry.Position);
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xCEED, out entry));
+            Assert.AreEqual(0xCEED, entry.Stream);
+            Assert.AreEqual(10, entry.Version);
+            Assert.AreEqual(0xFFF1, entry.Position);
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xBABA, out entry));
+            Assert.AreEqual(0xBABA, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0xFF00, entry.Position);
         }
 
         [Test]

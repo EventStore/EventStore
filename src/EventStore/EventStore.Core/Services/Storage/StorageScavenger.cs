@@ -31,6 +31,8 @@ using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Index;
+using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
@@ -42,17 +44,25 @@ namespace EventStore.Core.Services.Storage
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageScavenger>();
 
         private readonly TFChunkDb _db;
+        private readonly ITableIndex _tableIndex;
+        private readonly IHasher _hasher;
         private readonly IReadIndex _readIndex;
         private readonly bool _alwaysKeepScavenged;
         private readonly bool _mergeChunks;
 
         private int _isScavengingRunning;
 
-        public StorageScavenger(TFChunkDb db, IReadIndex readIndex, bool alwaysKeepScavenged, bool mergeChunks)
+        public StorageScavenger(TFChunkDb db, ITableIndex tableIndex, IHasher hasher, 
+                                IReadIndex readIndex, bool alwaysKeepScavenged, bool mergeChunks)
         {
             Ensure.NotNull(db, "db");
+            Ensure.NotNull(tableIndex, "tableIndex");
+            Ensure.NotNull(hasher, "hasher");
             Ensure.NotNull(readIndex, "readIndex");
+
             _db = db;
+            _tableIndex = tableIndex;
+            _hasher = hasher;
             _readIndex = readIndex;
             _alwaysKeepScavenged = alwaysKeepScavenged;
             _mergeChunks = mergeChunks;
@@ -81,7 +91,7 @@ namespace EventStore.Core.Services.Storage
                 }
                 else
                 {
-                    var scavenger = new TFChunkScavenger(_db, _readIndex);
+                    var scavenger = new TFChunkScavenger(_db, _tableIndex, _hasher, _readIndex);
                     spaceSaved = scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks);
                     result = ClientMessage.ScavengeDatabase.ScavengeResult.Success;
                 }

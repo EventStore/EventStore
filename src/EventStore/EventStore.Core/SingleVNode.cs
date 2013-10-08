@@ -145,13 +145,14 @@ namespace EventStore.Core
                                             () => new HashListMemTable(maxSize: memTableEntryCount * 2),
                                             () => new TFReaderLease(readerPool),
                                             maxSizeForMemory: memTableEntryCount,
-                                            maxTablesPerLevel: 2);
-
+                                            maxTablesPerLevel: 2,
+                                            inMem: db.Config.InMemDb);
+            var hasher = new XXHashUnsafe();
             var readIndex = new ReadIndex(_mainQueue,
                                           readerPool,
                                           tableIndex,
-                                          new XXHashUnsafe(),
-                                          new LRUCache<string, StreamCacheInfo>(ESConsts.StreamMetadataCacheCapacity),
+                                          hasher,
+                                          ESConsts.StreamInfoCacheCapacity,
                                           Application.IsDefined(Application.AdditionalCommitChecks),
                                           Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1);
             var writer = new TFChunkWriter(db);
@@ -163,7 +164,7 @@ namespace EventStore.Core
                                                 readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint));
             epochManager.Init();
 
-            var storageWriter = new StorageWriterService(_mainQueue, _mainBus, _settings.MinFlushDelayMs,
+            var storageWriter = new StorageWriterService(_mainQueue, _mainBus, _settings.MinFlushDelay,
                                                          db, writer, readIndex.IndexWriter, epochManager); // subscribes internally
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
@@ -174,12 +175,14 @@ namespace EventStore.Core
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
             var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
-            var storageChaser = new StorageChaser(_mainQueue, db.Config.WriterCheckpoint, chaser, readIndex, epochManager);
+            var storageChaser = new StorageChaser(_mainQueue, db.Config.WriterCheckpoint, chaser, readIndex.IndexCommitter, epochManager);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
             _mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
 
             var storageScavenger = new StorageScavenger(db,
+                                                        tableIndex,
+                                                        hasher,
                                                         readIndex,
                                                         Application.IsDefined(Application.AlwaysKeepScavenged),
                                                         mergeChunks: false /*!Application.IsDefined(Application.DisableMergeChunks)*/);
@@ -202,7 +205,7 @@ namespace EventStore.Core
 
             // AUTHENTICATION INFRASTRUCTURE
             var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
-            var dispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_workersHandler, crossThread: true));
+            var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
             var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
             var passwordChangeNotificationReader = new PasswordChangeNotificationReader(_mainQueue, dispatcher);
             _mainBus.Subscribe<SystemMessage.SystemStart>(passwordChangeNotificationReader);
@@ -309,21 +312,27 @@ namespace EventStore.Core
             // SUBSCRIPTIONS
             var subscrBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
             var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", false);
+            _mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.SystemStart, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.SubscribeToStream, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
+            _mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.PollStream, Message>());
+            _mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.CheckPollTimeout, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommited, Message>());
 
-            var subscription = new SubscriptionsService(subscrQueue, readIndex);
+            var subscription = new SubscriptionsService(_mainQueue, subscrQueue, readIndex);
+            subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
             subscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscription);
             subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);
             subscrBus.Subscribe<ClientMessage.SubscribeToStream>(subscription);
             subscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(subscription);
+            subscrBus.Subscribe<SubscriptionMessage.PollStream>(subscription);
+            subscrBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscription);
             subscrBus.Subscribe<StorageMessage.EventCommited>(subscription);
 
             // USER MANAGEMENT
-            var ioDispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_mainQueue));
+            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
             _mainBus.Subscribe(ioDispatcher.BackwardReader);
             _mainBus.Subscribe(ioDispatcher.ForwardReader);
             _mainBus.Subscribe(ioDispatcher.Writer);

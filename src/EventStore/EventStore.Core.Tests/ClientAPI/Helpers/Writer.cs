@@ -27,6 +27,7 @@
 //  
 
 using EventStore.ClientAPI;
+using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
@@ -47,7 +48,10 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         {
             for (var i = 0; i < events.Length; i++)
             {
-                _store.AppendToStream(_stream, _version == ExpectedVersion.Any ? ExpectedVersion.Any : _version + i, new[] {events[i]});
+                var expVer = _version == ExpectedVersion.Any ? ExpectedVersion.Any : _version + i;
+                var nextExpVer = _store.AppendToStream(_stream, expVer, new[] { events[i] }).NextExpectedVersion;
+                if (_version != ExpectedVersion.Any)
+                    Assert.AreEqual(expVer + 1, nextExpVer);
             }
             return new TailWriter(_store, _stream);
         }
@@ -104,9 +108,9 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             return this;
         }
 
-        public void Commit()
+        public WriteResult Commit()
         {
-            _transaction.Commit();
+            return _transaction.Commit();
         }
     }
 }

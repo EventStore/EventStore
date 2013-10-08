@@ -32,8 +32,8 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
-using HttpStatusCode = System.Net.HttpStatusCode;
 using System.Linq;
+using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace EventStore.Core.Tests.Http.Streams
 {

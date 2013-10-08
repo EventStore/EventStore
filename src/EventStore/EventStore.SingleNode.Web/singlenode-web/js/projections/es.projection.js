@@ -22,13 +22,15 @@ es.projection = function (settings) {
         processor.initialize();
 
         var sources = JSON.parse(processor.get_sources());
-        if (sources.all_streams
-            || (sources.categories != null && sources.categories.length > 1)
+        if ((sources.categories != null && sources.categories.length > 1)
             || (sources.streams != null && sources.streams.length > 1)) {
             throw "Unsupported projection source to run in the web browser";
         }
 
-        if (sources.categories != null && sources.categories.length == 1) {
+        if (sources.allStreams) {
+            category = null;
+            startPolling('$all', processEvent);
+        } else if (sources.categories != null && sources.categories.length == 1) {
             category = sources.categories[0];
             startPolling("$ce-" + category, processEvent);
         } else {
@@ -68,58 +70,61 @@ es.projection = function (settings) {
 
         function readFirstPage() {
             currentTimeout = null;
-            $.ajax(
-                nextPageUrl + "?embed=content",
-                {
-                    headers: {
-                        Accept: 'application/vnd.eventstore.atom+json'
-                    },
-                    success: function(page) {
-                        var lastLink = getFeedLink(page.links, 'last');
-                        if (!lastLink) {
-                            // head is the last page already
-                            if (page.entries) {
-                                for (var i = 0, n = page.entries.length; i < n; i += 1) {
-                                    callback(page.entries[n - i - 1].content);
-                                }
-                            }
-                            nextPageUrl = getFeedLink(page.links, 'previous');
-                        } else {
-                            nextPageUrl = lastLink;
+            $.ajax(nextPageUrl + "?embed=content",
+                   {
+                       dataType: 'json',
+                       headers: {
+                            'Accept': 'application/vnd.eventstore.atom+json'
+                       }
+                   })
+            .done(function(data, textStatus, jqXHR) {
+                var lastLink = getFeedLink(data.links, 'last');
+                if (!lastLink) {
+                    // head is the last page already
+                    if (data.entries) {
+                        for (var i = 0, n = data.entries.length; i < n; i += 1) {
+                            var event = data.entries[n - i - 1].content;
+                            if (event)
+                                callback(event);
                         }
-                        readNextPage = readForwardPage;
-                        currentTimeout = setTimeout(readNextPage, 0);
-                    },
-                    error: function(jqXhr, status, error) {
-                        currentTimeout = setTimeout(readNextPage, 1000);
                     }
-                });
+                    nextPageUrl = getFeedLink(data.links, 'previous');
+                } else {
+                    nextPageUrl = lastLink;
+                }
+                readNextPage = readForwardPage;
+                currentTimeout = setTimeout(readNextPage, 0);
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                currentTimeout = setTimeout(readNextPage, 1000);
+            });
         }
 
         function readForwardPage() {
             currentTimeout = null;
-            $.ajax(
-                nextPageUrl + "?embed=content",
-                {
-                    headers: {
-                        Accept: 'application/vnd.eventstore.atom+json'
-                    },
-                    success: function (pageStr) {
-                        var page = jQuery.parseJSON(pageStr);
-                        if (!page) page = pageStr;
-                        if (page.entries) {
-                            for (var i = 0, n = page.entries.length; i < n; i += 1) {
-                                callback(page.entries[n - i - 1].content);
-                            }
-                        }
-                        var prevLink = getFeedLink(page.links, 'previous');
-                        nextPageUrl = prevLink || nextPageUrl;
-                        currentTimeout = setTimeout(readNextPage, prevLink ? 0 : 1000);
-                    },
-                    error: function() {
-                        currentTimeout = setTimeout(readNextPage, 1000);
+            $.ajax(nextPageUrl + "?embed=content",
+                   {
+                       dataType: 'json',
+                       headers: {
+                           'Accept': 'application/vnd.eventstore.atom+json',
+                           'ES-LongPoll': 30
+                       }
+                   })
+            .done(function (data, textStatus, jqXHR) {
+                if (data.entries) {
+                    for (var i = 0, n = data.entries.length; i < n; i += 1) {
+                        var event = data.entries[n - i - 1].content;
+                        if (event)
+                            callback(event);
                     }
-                });
+                }
+                var prevLink = getFeedLink(data.links, 'previous');
+                nextPageUrl = prevLink || nextPageUrl;
+                currentTimeout = setTimeout(readNextPage, prevLink ? 0 : 1000);
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+                currentTimeout = setTimeout(readNextPage, 1000);
+            });
         }
     }
 };

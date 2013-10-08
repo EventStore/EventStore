@@ -129,7 +129,7 @@ namespace EventStore.Core.Services.UserManagement
                 message,
                 (completed, data) =>
                 _ioDispatcher.DeleteStream(
-                    "$user-" + message.LoginName, completed.FromEventNumber, SystemAccount.Principal,
+                    "$user-" + message.LoginName, completed.FromEventNumber, true, SystemAccount.Principal,
                     streamCompleted =>
                     WritePasswordChangedEventConditionalAnd(
                         message, true, () => ReplyByWriteResult(message, streamCompleted.Result))));
@@ -355,7 +355,7 @@ namespace EventStore.Core.Services.UserManagement
             _ioDispatcher.UpdateStreamAcl(
                 "$user-" + loginName, ExpectedVersion.Any, SystemAccount.Principal,
                 new StreamMetadata(
-                    null, null, null, new StreamAcl(null, SystemRoles.Admins, SystemRoles.Admins, null, SystemRoles.Admins)),
+                    null, null, null, null, null, new StreamAcl(null, SystemRoles.Admins, SystemRoles.Admins, null, SystemRoles.Admins)),
                 onCompleted);
         }
 

@@ -138,6 +138,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                 _router.RegisterAction(new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs), (x, y) =>
                 {
                     CountdownEvent.Signal();
+                    return new RequestParams(TimeSpan.Zero);
                 });
             }
 

@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void setting_metadata_few_times_returns_last_metadata_info()
         {
             const string stream = "setting_metadata_few_times_returns_last_metadata_info";
-            var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), TimeSpan.FromSeconds(0xABACABA));
+            var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
             _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadata);
 
             var meta = _connection.GetStreamMetadata(stream);
@@ -91,9 +91,10 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(0, meta.MetastreamVersion);
             Assert.AreEqual(metadata.MaxCount, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(metadata.MaxAge, meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(metadata.TruncateBefore, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(metadata.CacheControl, meta.StreamMetadata.CacheControl);
 
-            metadata = StreamMetadata.Create(37, TimeSpan.FromSeconds(0xBEEFDEAD), TimeSpan.FromSeconds(0xDABACABAD));
+            metadata = StreamMetadata.Create(37, TimeSpan.FromSeconds(0xBEEFDEAD), 24, TimeSpan.FromSeconds(0xDABACABAD));
             _connection.SetStreamMetadata(stream, 0, metadata);
 
             meta = _connection.GetStreamMetadata(stream);
@@ -102,6 +103,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(1, meta.MetastreamVersion);
             Assert.AreEqual(metadata.MaxCount, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(metadata.MaxAge, meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(metadata.TruncateBefore, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(metadata.CacheControl, meta.StreamMetadata.CacheControl);
         }
 
@@ -118,7 +120,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void setting_metadata_with_expected_version_any_works()
         {
             const string stream = "setting_metadata_with_expected_version_any_works";
-            var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), TimeSpan.FromSeconds(0xABACABA));
+            var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
             _connection.SetStreamMetadata(stream, ExpectedVersion.Any, metadata);
 
             var meta = _connection.GetStreamMetadata(stream);
@@ -127,9 +129,10 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(0, meta.MetastreamVersion);
             Assert.AreEqual(metadata.MaxCount, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(metadata.MaxAge, meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(metadata.TruncateBefore, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(metadata.CacheControl, meta.StreamMetadata.CacheControl);
 
-            metadata = StreamMetadata.Create(37, TimeSpan.FromSeconds(0xBEEFDEAD), TimeSpan.FromSeconds(0xDABACABAD));
+            metadata = StreamMetadata.Create(37, TimeSpan.FromSeconds(0xBEEFDEAD), 24, TimeSpan.FromSeconds(0xDABACABAD));
             _connection.SetStreamMetadata(stream, ExpectedVersion.Any, metadata);
 
             meta = _connection.GetStreamMetadata(stream);
@@ -138,6 +141,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(1, meta.MetastreamVersion);
             Assert.AreEqual(metadata.MaxCount, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(metadata.MaxAge, meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(metadata.TruncateBefore, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(metadata.CacheControl, meta.StreamMetadata.CacheControl);
         }
 
@@ -145,7 +149,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void setting_metadata_for_not_existing_stream_works()
         {
             const string stream = "setting_metadata_for_not_existing_stream_works";
-            var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), TimeSpan.FromSeconds(0xABACABA));
+            var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF),  10,TimeSpan.FromSeconds(0xABACABA));
             _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadata);
 
             var meta = _connection.GetStreamMetadata(stream);
@@ -154,6 +158,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(0, meta.MetastreamVersion);
             Assert.AreEqual(metadata.MaxCount, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(metadata.MaxAge, meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(metadata.TruncateBefore, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(metadata.CacheControl, meta.StreamMetadata.CacheControl);
         }
 
@@ -164,7 +169,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
 
-            var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), TimeSpan.FromSeconds(0xABACABA));
+            var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
             _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadata);
 
             var meta = _connection.GetStreamMetadata(stream);
@@ -173,6 +178,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(0, meta.MetastreamVersion);
             Assert.AreEqual(metadata.MaxCount, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(metadata.MaxAge, meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(metadata.TruncateBefore, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(metadata.CacheControl, meta.StreamMetadata.CacheControl);
         }
 
@@ -187,6 +193,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(-1, meta.MetastreamVersion);
             Assert.AreEqual(null, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(null, meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(null, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(null, meta.StreamMetadata.CacheControl);
         }
 
@@ -201,6 +208,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(-1, meta.MetastreamVersion);
             Assert.AreEqual(1, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(null, meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(null, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(null, meta.StreamMetadata.CacheControl);
         }
 
@@ -209,10 +217,10 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "getting_metadata_for_deleted_stream_returns_empty_stream_metadata_and_signals_stream_deletion";
 
-            var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), TimeSpan.FromSeconds(0xABACABA));
+            var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
             _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadata);
 
-            _connection.DeleteStream(stream, ExpectedVersion.EmptyStream);
+            _connection.DeleteStream(stream, ExpectedVersion.EmptyStream, hardDelete: true);
 
             var meta = _connection.GetStreamMetadata(stream);
             Assert.AreEqual(stream, meta.Stream);
@@ -220,6 +228,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(EventNumber.DeletedStream, meta.MetastreamVersion);
             Assert.AreEqual(null, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(null, meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(null, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(null, meta.StreamMetadata.CacheControl);
             Assert.AreEqual(null, meta.StreamMetadata.Acl);
         }
@@ -232,6 +241,7 @@ namespace EventStore.Core.Tests.ClientAPI
             var rawMeta = Helper.UTF8NoBom.GetBytes(@"{
                                                            ""$maxCount"": 17,
                                                            ""$maxAge"": 123321,
+                                                           ""$tb"": 23,
                                                            ""$cacheControl"": 7654321,
                                                            ""$acl"": {
                                                                ""$r"": ""readRole"",
@@ -258,6 +268,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(0, meta.MetastreamVersion);
             Assert.AreEqual(17, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(TimeSpan.FromSeconds(123321), meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(23, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(TimeSpan.FromSeconds(7654321), meta.StreamMetadata.CacheControl);
             
             Assert.NotNull(meta.StreamMetadata.Acl);
@@ -285,6 +296,7 @@ namespace EventStore.Core.Tests.ClientAPI
             StreamMetadata metadata = StreamMetadata.Build()
                                                     .SetMaxCount(17)
                                                     .SetMaxAge(TimeSpan.FromSeconds(123321))
+                                                    .SetTruncateBefore(23)
                                                     .SetCacheControl(TimeSpan.FromSeconds(7654321))
                                                     .SetReadRole("readRole")
                                                     .SetWriteRole("writeRole")
@@ -310,6 +322,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(0, meta.MetastreamVersion);
             Assert.AreEqual(17, meta.StreamMetadata.MaxCount);
             Assert.AreEqual(TimeSpan.FromSeconds(123321), meta.StreamMetadata.MaxAge);
+            Assert.AreEqual(23, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(TimeSpan.FromSeconds(7654321), meta.StreamMetadata.CacheControl);
 
             Assert.NotNull(meta.StreamMetadata.Acl);

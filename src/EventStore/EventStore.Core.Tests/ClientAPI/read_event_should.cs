@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                  -1, 
                                  new EventData(_eventId0, "event0", false, new byte[3], new byte[2]),
                                  new EventData(_eventId1, "event1", false, new byte[7], new byte[10]));
-            _conn.DeleteStream("deleted-stream", -1);
+            _conn.DeleteStream("deleted-stream", -1, hardDelete: true);
         }
 
         [TestFixtureTearDown]
@@ -97,6 +97,13 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.IsNull(res.Event);
             Assert.AreEqual("unexisting-stream", res.Stream);
             Assert.AreEqual(5, res.EventNumber);
+        }
+
+        [Test, Category("Network")]
+        public void return_no_stream_if_requested_last_event_in_empty_stream()
+        {
+            var res = _conn.ReadEvent("some-really-empty-stream", -1, false);
+            Assert.AreEqual(EventReadStatus.NoStream, res.Status);
         }
 
         [Test, Category("Network")]

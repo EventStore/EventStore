@@ -108,7 +108,7 @@ namespace EventStore.ClientAPI
             Verbose = verboseLogging;
         }
 
-        public void Start()
+        internal void Start()
         {
             ThreadPool.QueueUserWorkItem(_ =>
             {
@@ -286,9 +286,10 @@ namespace EventStore.ClientAPI
                                                   Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                   Action<EventStoreCatchUpSubscription> liveProcessingStarted,
                                                   Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
-                                                  bool verboseLogging)
+                                                  bool verboseLogging,
+                                                  int readBatchSize = 500)
                 : base(connection, log, string.Empty, resolveLinkTos, userCredentials, 
-                       eventAppeared, liveProcessingStarted, subscriptionDropped, verboseLogging)
+                       eventAppeared, liveProcessingStarted, subscriptionDropped, verboseLogging, readBatchSize)
         {
             _lastProcessedPosition = fromPositionExclusive ?? new Position(-1, -1);
             _nextReadPosition = fromPositionExclusive ?? Position.Start;
@@ -353,9 +354,10 @@ namespace EventStore.ClientAPI
                                                      Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                      Action<EventStoreCatchUpSubscription> liveProcessingStarted,
                                                      Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
-                                                     bool verboseLogging)
+                                                     bool verboseLogging,
+                                                     int readBatchSize = 500)
             : base(connection, log, streamId, resolveLinkTos, userCredentials, 
-                   eventAppeared, liveProcessingStarted, subscriptionDropped, verboseLogging)
+                   eventAppeared, liveProcessingStarted, subscriptionDropped, verboseLogging, readBatchSize)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
 

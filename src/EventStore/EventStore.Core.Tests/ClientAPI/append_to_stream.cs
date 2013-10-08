@@ -60,18 +60,30 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning"), Category("Network")]
         public void should_allow_appending_zero_events_to_stream_with_no_problems()
         {
-            const string stream = "should_allow_appending_zero_events_to_stream_with_no_problems";
+            const string stream1 = "should_allow_appending_zero_events_to_stream_with_no_problems1";
+            const string stream2 = "should_allow_appending_zero_events_to_stream_with_no_problems2";
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
 
-                Assert.DoesNotThrow(() => store.AppendToStream(stream, ExpectedVersion.NoStream));
+                Assert.AreEqual(-1, store.AppendToStream(stream1, ExpectedVersion.Any).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream1, ExpectedVersion.NoStream).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream1, ExpectedVersion.Any).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream1, ExpectedVersion.NoStream).NextExpectedVersion);
 
-                var read = store.ReadStreamEventsForward(stream, 0, 2, resolveLinkTos: false);
-                Assert.That(read.Events.Length, Is.EqualTo(0));
+                var read1 = store.ReadStreamEventsForward(stream1, 0, 2, resolveLinkTos: false);
+                Assert.That(read1.Events.Length, Is.EqualTo(0));
+
+                Assert.AreEqual(-1, store.AppendToStream(stream2, ExpectedVersion.NoStream).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream2, ExpectedVersion.Any).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream2, ExpectedVersion.NoStream).NextExpectedVersion);
+                Assert.AreEqual(-1, store.AppendToStream(stream2, ExpectedVersion.Any).NextExpectedVersion);
+
+                var read2 = store.ReadStreamEventsForward(stream2, 0, 2, resolveLinkTos: false);
+                Assert.That(read2.Events.Length, Is.EqualTo(0));
             }
         }
-
+        
         [Test, Category("LongRunning"), Category("Network")]
         public void should_create_stream_with_no_stream_exp_ver_on_first_write_if_does_not_exist()
         {
@@ -79,8 +91,8 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
-                var append = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, new[] { TestEvent.NewTestEvent() });
-                Assert.DoesNotThrow(append.Wait);
+
+                Assert.AreEqual(0, store.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).NextExpectedVersion);
 
                 var read = store.ReadStreamEventsForwardAsync(stream, 0, 2, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
@@ -96,8 +108,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
-                var append = store.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { TestEvent.NewTestEvent() });
-                Assert.DoesNotThrow(append.Wait);
+                Assert.AreEqual(0, store.AppendToStream(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()).NextExpectedVersion);
 
                 var read = store.ReadStreamEventsForwardAsync(stream, 0, 2, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
@@ -114,7 +125,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, new[] { TestEvent.NewTestEvent() });
@@ -133,7 +144,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 try
                 {
-                    store.DeleteStream(stream, ExpectedVersion.EmptyStream);
+                    store.DeleteStream(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 }
                 catch (Exception exc)
                 {
@@ -155,7 +166,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
                 var append = store.AppendToStreamAsync(stream, 5, new[] { TestEvent.NewTestEvent() });
@@ -186,10 +197,8 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
-                store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
-
-                var append = store.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { TestEvent.NewTestEvent() });
-                Assert.DoesNotThrow(append.Wait);
+                Assert.AreEqual(0, store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).NextExpectedVersion);
+                Assert.AreEqual(1, store.AppendToStream(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()).NextExpectedVersion);
             }
         }
 
@@ -201,15 +210,14 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
-                store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
+                Assert.AreEqual(0, store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).NextExpectedVersion);
 
                 var append = store.AppendToStreamAsync(stream, 1, new[] { TestEvent.NewTestEvent() });
                 Assert.That(() => append.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }
 
-        [Test, Category("LongRunning")]
-        [Category("Network")]
+        [Test, Category("LongRunning"), Category("Network")]
         public void can_append_multiple_events_at_once()
         {
             const string stream = "can_append_multiple_events_at_once";
@@ -218,8 +226,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect();
 
                 var events = Enumerable.Range(0, 100).Select(i => TestEvent.NewTestEvent(i.ToString(), i.ToString()));
-                var append = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, events);
-                Assert.DoesNotThrow(append.Wait);
+                Assert.AreEqual(99, store.AppendToStream(stream, ExpectedVersion.EmptyStream, events).NextExpectedVersion);
             }
         }
     }
@@ -253,7 +260,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
-                Assert.DoesNotThrow(() => store.AppendToStream(stream, ExpectedVersion.NoStream));
+                Assert.AreEqual(-1, store.AppendToStream(stream, ExpectedVersion.NoStream).NextExpectedVersion);
 
                 var read = store.ReadStreamEventsForward(stream, 0, 2, resolveLinkTos: false);
                 Assert.That(read.Events.Length, Is.EqualTo(0));
@@ -267,8 +274,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
-                var append = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, new[] { TestEvent.NewTestEvent() });
-                Assert.DoesNotThrow(append.Wait);
+                Assert.AreEqual(0, store.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).NextExpectedVersion);
 
                 var read = store.ReadStreamEventsForwardAsync(stream, 0, 2, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
@@ -284,8 +290,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
-                var append = store.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { TestEvent.NewTestEvent() });
-                Assert.DoesNotThrow(append.Wait);
+                Assert.AreEqual(0, store.AppendToStream(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()).NextExpectedVersion);
 
                 var read = store.ReadStreamEventsForwardAsync(stream, 0, 2, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
@@ -302,7 +307,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, new[] { TestEvent.NewTestEvent() });
@@ -319,7 +324,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { TestEvent.NewTestEvent() });
@@ -336,7 +341,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect();
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
                 var append = store.AppendToStreamAsync(stream, 5, new[] { TestEvent.NewTestEvent() });
@@ -352,10 +357,8 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
-                store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
-
-                var append = store.AppendToStreamAsync(stream, 0, new[] { TestEvent.NewTestEvent() });
-                Assert.DoesNotThrow(append.Wait);
+                Assert.AreEqual(0, store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).NextExpectedVersion);
+                Assert.AreEqual(1, store.AppendToStream(stream, 0, TestEvent.NewTestEvent()).NextExpectedVersion);
             }
         }
 
@@ -367,10 +370,8 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
-                store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
-
-                var append = store.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { TestEvent.NewTestEvent() });
-                Assert.DoesNotThrow(append.Wait);
+                Assert.AreEqual(0, store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).NextExpectedVersion);
+                Assert.AreEqual(1, store.AppendToStream(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()).NextExpectedVersion);
             }
         }
 
@@ -382,7 +383,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.Connect();
-                store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
+                Assert.AreEqual(0, store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).NextExpectedVersion);
 
                 var append = store.AppendToStreamAsync(stream, 1, new[] { TestEvent.NewTestEvent() });
                 Assert.That(() => append.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
@@ -399,8 +400,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect();
 
                 var events = Enumerable.Range(0, 100).Select(i => TestEvent.NewTestEvent(i.ToString(), i.ToString()));
-                var append = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, events);
-                Assert.DoesNotThrow(append.Wait);
+                Assert.AreEqual(99, store.AppendToStream(stream, ExpectedVersion.EmptyStream, events).NextExpectedVersion);
             }
         }
     }

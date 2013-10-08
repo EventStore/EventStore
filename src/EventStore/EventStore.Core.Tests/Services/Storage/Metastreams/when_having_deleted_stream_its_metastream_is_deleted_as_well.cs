@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams
         {
             return dbCreator.Chunk(Rec.Prepare(0, "test"),
                                    Rec.Commit(0, "test"),
-                                   Rec.Prepare(1, "$$test", metadata: new StreamMetadata(2, null, null, null)),
+                                   Rec.Prepare(1, "$$test", metadata: new StreamMetadata(2, null, null, null, null)),
                                    Rec.Commit(1, "$$test"),
                                    Rec.Delete(2, "test"),
                                    Rec.Commit(2, "test"))
@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams
         [Test]
         public void get_last_event_number_reports_deleted_metastream()
         {
-            Assert.AreEqual(EventNumber.DeletedStream, ReadIndex.GetLastStreamEventNumber("$$test"));
+            Assert.AreEqual(EventNumber.DeletedStream, ReadIndex.GetStreamLastEventNumber("$$test"));
         }
 
         [Test]

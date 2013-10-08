@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,21 +25,31 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using EventStore.Core.Data;
+using System;
 
-namespace EventStore.Core.Services.Storage.ReaderIndex
+namespace EventStore.Core.Services.Transport.Http
 {
-    public struct StreamCacheInfo
+    public struct RequestParams
     {
-        public readonly int Version;
-        public readonly StreamMetadata Metadata;
-        public readonly int? LastEventNumber;
+        public readonly bool IsDone;
+        public readonly TimeSpan Timeout;
 
-        public StreamCacheInfo(int version, int? lastEventNumber, StreamMetadata metadata)
+        public RequestParams(bool done)
         {
-            Version = version;
-            LastEventNumber = lastEventNumber;
-            Metadata = metadata;
+            IsDone = done;
+            Timeout = TimeSpan.Zero;
+        }
+
+        public RequestParams(TimeSpan timeout)
+        {
+            IsDone = false;
+            Timeout = timeout;
+        }
+
+        public RequestParams(bool done, TimeSpan timeout)
+        {
+            IsDone = done;
+            Timeout = timeout;
         }
     }
 }

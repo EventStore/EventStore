@@ -104,7 +104,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
         [Test]
         public void last_event_number_returns_stream_deleted()
         {
-            Assert.AreEqual(EventNumber.DeletedStream, ReadIndex.GetLastStreamEventNumber("ES"));
+            Assert.AreEqual(EventNumber.DeletedStream, ReadIndex.GetStreamLastEventNumber("ES"));
         }
     }
 }

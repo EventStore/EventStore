@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_minus_one_for_nonexistent_stream_as_last_event_version()
         {
-            Assert.AreEqual(-1, ReadIndex.GetLastStreamEventNumber("ES-NONEXISTENT"));
+            Assert.AreEqual(-1, ReadIndex.GetStreamLastEventNumber("ES-NONEXISTENT"));
         }
 
         [Test]
@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_correct_event_version_for_deleted_stream()
         {
-            Assert.AreEqual(EventNumber.DeletedStream, ReadIndex.GetLastStreamEventNumber("ES"));
+            Assert.AreEqual(EventNumber.DeletedStream, ReadIndex.GetStreamLastEventNumber("ES"));
         }
 
         [Test]
@@ -109,7 +109,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_correct_last_event_version_for_nonexistent_stream_with_same_hash_as_deleted_one()
         {
-            Assert.AreEqual(-1, ReadIndex.GetLastStreamEventNumber("AB"));
+            Assert.AreEqual(-1, ReadIndex.GetStreamLastEventNumber("AB"));
         }
 
         [Test]
