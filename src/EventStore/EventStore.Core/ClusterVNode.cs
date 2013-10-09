@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
@@ -183,23 +182,10 @@ namespace EventStore.Core
             _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
             // ReSharper restore RedundantTypeArgumentsOfMethod
 
-            // AUTHENTICATION INFRASTRUCTURE
-            var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
-
-	        IAuthenticationProvider authenticationProvider;
-			{
-				var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
-				authenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
-				SubscribeWorkers(bus =>
-				{
-					bus.Subscribe(dispatcher.ForwardReader);
-					bus.Subscribe(dispatcher.BackwardReader);
-					bus.Subscribe(dispatcher.Writer);
-					bus.Subscribe(dispatcher.StreamDeleter);
-					bus.Subscribe(dispatcher);
-				});
-			}
-			
+            // AUTHENTICATION INFRASTRUCTURE - delegate to plugins
+	        var authenticationProvider = vNodeSettings.AuthenticationProviderFactory.BuildAuthenticationProvider(_mainQueue, _workersHandler, _workerBuses);
+	        Ensure.NotNull(authenticationProvider, "authenticationProvider");
+		
             {
                 // EXTERNAL TCP
                 var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
@@ -384,7 +370,7 @@ namespace EventStore.Core
             _mainBus.Subscribe(ioDispatcher.StreamDeleter);
             _mainBus.Subscribe(ioDispatcher);
 
-            var userManagement = new UserManagementService(_mainQueue, ioDispatcher, passwordHashAlgorithm, skipInitializeStandardUsersCheck: false);
+            var userManagement = new UserManagementService(_mainQueue, ioDispatcher, new Rfc2898PasswordHashAlgorithm(), skipInitializeStandardUsersCheck: false);
             _mainBus.Subscribe<UserManagementMessage.Create>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.Update>(userManagement);
             _mainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
@@ -467,7 +453,7 @@ namespace EventStore.Core
         public void Start() 
         {
             _mainQueue.Publish(new SystemMessage.SystemInit());
-            //TODO: replace with messages
+
             if (_subsystems != null)
                 foreach (var subsystem in _subsystems)
                     subsystem.Start();
@@ -476,7 +462,7 @@ namespace EventStore.Core
         public void Stop()
         {
             _mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess: false));
-            //TODO: replace with messages
+
             if (_subsystems != null)
                 foreach (var subsystem in _subsystems)
                     subsystem.Stop();

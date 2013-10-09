@@ -1,11 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.Composition;
+using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Net;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core;
+using EventStore.Core.Authentication;
 using EventStore.Core.Cluster.Settings;
+using EventStore.Core.PluginModel;
 using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
@@ -78,8 +85,6 @@ namespace EventStore.ClusterNode
 				gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeeds);
 			}
 
-			//var managersIps = opts.FakeDnsIps.Union(new[] { vNodeSettings.ManagerEndPoint.Address }).Distinct().ToArray();
-			//var dnsService = opts.FakeDns ? (IGossipSeedSource)new ConfigDns(managersIps) : new DnsGossipSeedSource();
             var dbVerifyHashes = !opts.SkipDbVerify;
             var runProjections = opts.RunProjections;
 
@@ -146,10 +151,9 @@ namespace EventStore.ClusterNode
                 if (intSecTcp == null) throw new Exception("Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
             }
 
-			//Default to internal authentication
-			const ClusterVNodeAuthenticationType authenticationType = ClusterVNodeAuthenticationType.Internal;
-	        
-	        return new ClusterVNodeSettings(Guid.NewGuid(),
+			var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, options.AuthenticationConfigFile);
+
+			return new ClusterVNodeSettings(Guid.NewGuid(),
 	                                        intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp,
 	                                        prefixes, options.EnableTrustedAuth,
 	                                        certificate,
@@ -161,11 +165,60 @@ namespace EventStore.ClusterNode
 	                                        TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
 	                                        options.UseInternalSsl, options.SslTargetHost, options.SslValidateServer,
 	                                        TimeSpan.FromSeconds(options.StatsPeriodSec), StatsStorage.StreamAndCsv,
-	                                        authenticationType, 
-                                            options.NodePriority);
+											options.NodePriority, authenticationProviderFactory);
         }
 
-        protected override void Start()
+	    private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)
+	    {
+			var catalog = new AggregateCatalog();
+
+			var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			var pluginsPath = Path.Combine(currentPath ?? String.Empty, "plugins");
+
+		    if (Directory.Exists(pluginsPath))
+		    {
+				Log.Info("Plugins path: {0}", pluginsPath);
+			    catalog.Catalogs.Add(new DirectoryCatalog(pluginsPath));
+		    }
+		    else
+		    {
+			    Log.Info("Can't find plugins path: {0}", pluginsPath);
+		    }
+
+		    var compositionContainer = new CompositionContainer(catalog);
+			var potentialPlugins = compositionContainer.GetExports<IAuthenticationPlugin>();
+
+			var authenticationTypeToPlugin = new Dictionary<string, Func<IAuthenticationProviderFactory>> {
+				{ "internal", () => new InternalAuthenticationProviderFactory() }
+			};
+
+		    foreach (var potentialPlugin in potentialPlugins)
+			{
+				try
+				{
+					var plugin = potentialPlugin.Value;
+					var commandLine = plugin.CommandLineName.ToLowerInvariant();
+					Log.Info("Loaded authentication plugin: {0} version {1} (Command Line: {2}", plugin.Name, plugin.Version, commandLine);
+					authenticationTypeToPlugin.Add(commandLine, () => plugin.GetAuthenticationProviderFactory(authenticationConfigFile));
+				}
+				catch (CompositionException ex)
+				{
+					Log.ErrorException(ex, "Error loading authentication plugin.");
+				}
+			}
+
+		    Func<IAuthenticationProviderFactory> factory;
+			if (!authenticationTypeToPlugin.TryGetValue(authenticationType.ToLowerInvariant(), out factory))
+			{
+				throw new ApplicationInitializationException(string.Format("The authentication type {0} is not recognised. If this is supposed " + 
+					"to be provided by an authentication plugin, confirm the plugin DLL is located in {1}.\n" +
+					"Valid options for authentication are: {2}.", authenticationType, pluginsPath, string.Join(", ", authenticationTypeToPlugin.Keys)));
+			}
+
+		    return factory();
+	    }
+
+	    protected override void Start()
         {
             _node.Start();
         }

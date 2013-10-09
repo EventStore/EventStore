@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
 
@@ -37,7 +38,7 @@ namespace EventStore.Core.Cluster.Settings
 		public readonly TimeSpan StatsPeriod;
 		public readonly StatsStorage StatsStorage;
 
-		public readonly ClusterVNodeAuthenticationType AuthenticationType;
+		public readonly IAuthenticationProviderFactory AuthenticationProviderFactory;
 
 		public ClusterVNodeSettings(Guid instanceId,
 									IPEndPoint internalTcpEndPoint,
@@ -64,8 +65,8 @@ namespace EventStore.Core.Cluster.Settings
 									bool sslValidateServer,
 									TimeSpan statsPeriod,
 									StatsStorage statsStorage,
-									ClusterVNodeAuthenticationType authenticationType,
-									int nodePriority)
+									int nodePriority,
+									IAuthenticationProviderFactory authenticationProviderFactory)
 		{
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -118,7 +119,7 @@ namespace EventStore.Core.Cluster.Settings
 			StatsPeriod = statsPeriod;
 			StatsStorage = statsStorage;
 
-			AuthenticationType = authenticationType;
+			AuthenticationProviderFactory = authenticationProviderFactory;
 
 			NodePriority = nodePriority;
 		}
@@ -150,7 +151,7 @@ namespace EventStore.Core.Cluster.Settings
 								 + "SslValidateServer: {22}\n"
 								 + "StatsPeriod: {23}\n"
 								 + "StatsStorage: {24}\n"
-								 + "AuthenticationType: {25}\n"
+								 + "AuthenticationProviderFactory Type: {25}\n"
 								 + "NodePriority: {26}",
 								 NodeInfo.InstanceId,
 								 NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
@@ -164,7 +165,7 @@ namespace EventStore.Core.Cluster.Settings
 								 ClusterNodeCount, MinFlushDelay,
 								 PrepareAckCount, CommitAckCount, PrepareTimeout, CommitTimeout,
 								 UseSsl, SslTargetHost, SslValidateServer,
-								 StatsPeriod, StatsStorage, AuthenticationType,
+								 StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
 								 NodePriority);
 		}
 	}
