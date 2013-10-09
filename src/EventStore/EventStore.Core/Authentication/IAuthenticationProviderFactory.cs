@@ -26,11 +26,14 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using EventStore.Core.Bus;
+using EventStore.Core.Services;
+using EventStore.Core.Services.Transport.Http;
 
 namespace EventStore.Core.Authentication
 {
 	public interface IAuthenticationProviderFactory
 	{
-		IAuthenticationProvider BuildAuthenticationProvider(IPublisher mainQueue, IPublisher workersQueue, InMemoryBus[] workerBusses);
+		IAuthenticationProvider BuildAuthenticationProvider(IPublisher mainQueue, IBus mainBus, IPublisher workersQueue, InMemoryBus[] workerBusses);
+		void RegisterHttpControllers(HttpService externalHttpService, HttpService internalHttpService, HttpSendService httpSendService, IPublisher mainQueue, IPublisher networkSendQueue);
 	}
 }

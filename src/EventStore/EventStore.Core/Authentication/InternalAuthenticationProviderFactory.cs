@@ -1,14 +1,19 @@
 ﻿using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
+using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
+using EventStore.Core.Services.Transport.Http.Controllers;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Settings;
 
 namespace EventStore.Core.Authentication
 {
 	public class InternalAuthenticationProviderFactory : IAuthenticationProviderFactory
 	{
-		public IAuthenticationProvider BuildAuthenticationProvider(IPublisher mainQueue, IPublisher workersQueue, InMemoryBus[] workerBusses)
+		public IAuthenticationProvider BuildAuthenticationProvider(IPublisher mainQueue, IBus mainBus, IPublisher workersQueue, InMemoryBus[] workerBusses)
 		{
 			var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
 			var dispatcher = new IODispatcher(mainQueue, new PublishEnvelope(workersQueue, crossThread: true));
@@ -20,8 +25,35 @@ namespace EventStore.Core.Authentication
 				bus.Subscribe(dispatcher.StreamDeleter);
 				bus.Subscribe(dispatcher);
 			}
+
+			// USER MANAGEMENT
+			var ioDispatcher = new IODispatcher(mainQueue, new PublishEnvelope(mainQueue));
+			mainBus.Subscribe(ioDispatcher.BackwardReader);
+			mainBus.Subscribe(ioDispatcher.ForwardReader);
+			mainBus.Subscribe(ioDispatcher.Writer);
+			mainBus.Subscribe(ioDispatcher.StreamDeleter);
+			mainBus.Subscribe(ioDispatcher);
+
+			var userManagement = new UserManagementService(mainQueue, ioDispatcher, passwordHashAlgorithm, skipInitializeStandardUsersCheck: false);
+			mainBus.Subscribe<UserManagementMessage.Create>(userManagement);
+			mainBus.Subscribe<UserManagementMessage.Update>(userManagement);
+			mainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
+			mainBus.Subscribe<UserManagementMessage.Disable>(userManagement);
+			mainBus.Subscribe<UserManagementMessage.Delete>(userManagement);
+			mainBus.Subscribe<UserManagementMessage.ResetPassword>(userManagement);
+			mainBus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
+			mainBus.Subscribe<UserManagementMessage.Get>(userManagement);
+			mainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
+			mainBus.Subscribe<SystemMessage.BecomeMaster>(userManagement);
 			
 			return new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
+		}
+
+		public void RegisterHttpControllers(HttpService externalHttpService, HttpService internalHttpService, HttpSendService httpSendService, IPublisher mainQueue, IPublisher networkSendQueue)
+		{
+			var usersController = new UsersController(httpSendService, mainQueue, networkSendQueue);
+			externalHttpService.SetupController(usersController);
+			internalHttpService.SetupController(usersController);
 		}
 	}
 }

@@ -31,7 +31,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
-using EventStore.Core.Util;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Web.Users

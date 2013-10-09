@@ -8,7 +8,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
-using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
@@ -26,7 +25,6 @@ using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
@@ -183,7 +181,7 @@ namespace EventStore.Core
             // ReSharper restore RedundantTypeArgumentsOfMethod
 
             // AUTHENTICATION INFRASTRUCTURE - delegate to plugins
-	        var authenticationProvider = vNodeSettings.AuthenticationProviderFactory.BuildAuthenticationProvider(_mainQueue, _workersHandler, _workerBuses);
+	        var authenticationProvider = vNodeSettings.AuthenticationProviderFactory.BuildAuthenticationProvider(_mainQueue, _mainBus, _workersHandler, _workerBuses);
 	        Ensure.NotNull(authenticationProvider, "authenticationProvider");
 		
             {
@@ -265,7 +263,6 @@ namespace EventStore.Core
             var pingController = new PingController();
             var statController = new StatController(monitoringQueue, _workersHandler);
             var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler);
-            var usersController = new UsersController(httpSendService, _mainQueue, _workersHandler);
             var gossipController = new GossipController(_mainQueue, _workersHandler);
             var electController = new ElectController(_mainQueue);
 
@@ -281,8 +278,7 @@ namespace EventStore.Core
             _externalHttpService.SetupController(statController);
             _externalHttpService.SetupController(atomController);
             _externalHttpService.SetupController(gossipController);
-            _externalHttpService.SetupController(usersController);
-
+            
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
             _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);
@@ -296,7 +292,9 @@ namespace EventStore.Core
             _internalHttpService.SetupController(atomController);
             _internalHttpService.SetupController(gossipController);
             _internalHttpService.SetupController(electController);
-            _internalHttpService.SetupController(usersController);
+
+			// Authentication plugin HTTP
+	        vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService, _internalHttpService, httpSendService, _mainQueue, _workersHandler);
 
             _mainBus.Subscribe<SystemMessage.SystemInit>(_internalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_internalHttpService);
@@ -361,26 +359,6 @@ namespace EventStore.Core
             subscrBus.Subscribe<SubscriptionMessage.PollStream>(subscription);
             subscrBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscription);
             subscrBus.Subscribe<StorageMessage.EventCommited>(subscription);
-
-            // USER MANAGEMENT
-            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
-            _mainBus.Subscribe(ioDispatcher.BackwardReader);
-            _mainBus.Subscribe(ioDispatcher.ForwardReader);
-            _mainBus.Subscribe(ioDispatcher.Writer);
-            _mainBus.Subscribe(ioDispatcher.StreamDeleter);
-            _mainBus.Subscribe(ioDispatcher);
-
-            var userManagement = new UserManagementService(_mainQueue, ioDispatcher, new Rfc2898PasswordHashAlgorithm(), skipInitializeStandardUsersCheck: false);
-            _mainBus.Subscribe<UserManagementMessage.Create>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.Update>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.Disable>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.Delete>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.ResetPassword>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.Get>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
-            _mainBus.Subscribe<SystemMessage.BecomeMaster>(userManagement);
 
             // TIMER
             _timeProvider = new RealTimeProvider();
