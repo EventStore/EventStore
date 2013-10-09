@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager;
@@ -147,7 +148,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
             [Test]
             public void writes_query_results()
             {
-                Assert.AreEqual(3, _checkpointManager.EmittedEvents.Count);
+                Assert.AreEqual(3, _checkpointManager.EmittedEvents.Count(v => v.Event.EventType == "Result"));
             }
         }
 
@@ -166,7 +167,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
             [Test]
             public void writes_query_results_only_once()
             {
-                Assert.AreEqual(3, _checkpointManager.EmittedEvents.Count);
+                Assert.AreEqual(3, _checkpointManager.EmittedEvents.Count(v => v.Event.EventType == "Result"));
             }
         }
     }

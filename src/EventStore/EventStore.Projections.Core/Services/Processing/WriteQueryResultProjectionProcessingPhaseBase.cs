@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -10,17 +12,20 @@ namespace EventStore.Projections.Core.Services.Processing
         private ICoreProjectionForProcessingPhase _coreProjection;
         protected PartitionStateCache _stateCache;
         protected ICoreProjectionCheckpointManager _checkpointManager;
+        protected readonly IEmittedEventWriter _emittedEventWriter;
         private bool _subscribed;
         private PhaseState _projectionState;
 
         public WriteQueryResultProjectionProcessingPhaseBase(
             int phase, string resultStream, ICoreProjectionForProcessingPhase coreProjection,
-            PartitionStateCache stateCache, ICoreProjectionCheckpointManager checkpointManager)
+            PartitionStateCache stateCache, ICoreProjectionCheckpointManager checkpointManager,
+            IEmittedEventWriter emittedEventWriter)
         {
             if (resultStream == null) throw new ArgumentNullException("resultStream");
             if (coreProjection == null) throw new ArgumentNullException("coreProjection");
             if (stateCache == null) throw new ArgumentNullException("stateCache");
             if (checkpointManager == null) throw new ArgumentNullException("checkpointManager");
+            if (emittedEventWriter == null) throw new ArgumentNullException("emittedEventWriter");
             if (string.IsNullOrEmpty(resultStream)) throw new ArgumentException("resultStream");
 
             _phase = phase;
@@ -28,6 +33,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _coreProjection = coreProjection;
             _stateCache = stateCache;
             _checkpointManager = checkpointManager;
+            _emittedEventWriter = emittedEventWriter;
         }
 
         public ICoreProjectionCheckpointManager CheckpointManager
@@ -87,12 +93,27 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
 
             var phaseCheckpointTag = CheckpointTag.FromPhase(_phase, completed: true);
-            WriteResults(phaseCheckpointTag);
+            var writeResults = WriteResults(phaseCheckpointTag);
+
+            var writeEofResults = WriteEofEvent(phaseCheckpointTag);
+
+            _emittedEventWriter.EventsEmitted(writeResults.Concat(writeEofResults).ToArray(), Guid.Empty, null);
+
             _checkpointManager.EventProcessed(phaseCheckpointTag, 100.0f);
             _coreProjection.CompletePhase();
         }
 
-        protected abstract void WriteResults(CheckpointTag phaseCheckpointTag);
+        private IEnumerable<EmittedEventEnvelope> WriteEofEvent(CheckpointTag phaseCheckpointTag)
+        {
+            EmittedStream.WriterConfiguration.StreamMetadata streamMetadata = null;
+            yield return
+                new EmittedEventEnvelope(
+                    new EmittedDataEvent(
+                        _resultStream, Guid.NewGuid(), "$Eof", true, null, null, phaseCheckpointTag, null),
+                    streamMetadata);
+        }
+
+        protected abstract IEnumerable<EmittedEventEnvelope> WriteResults(CheckpointTag phaseCheckpointTag);
 
         public void Subscribe(CheckpointTag from, bool fromCheckpoint)
         {
