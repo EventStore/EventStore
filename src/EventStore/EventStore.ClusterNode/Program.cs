@@ -198,7 +198,7 @@ namespace EventStore.ClusterNode
 				{
 					var plugin = potentialPlugin.Value;
 					var commandLine = plugin.CommandLineName.ToLowerInvariant();
-					Log.Info("Loaded authentication plugin: {0} version {1} (Command Line: {2}", plugin.Name, plugin.Version, commandLine);
+					Log.Info("Loaded authentication plugin: {0} version {1} (Command Line: {2})", plugin.Name, plugin.Version, commandLine);
 					authenticationTypeToPlugin.Add(commandLine, () => plugin.GetAuthenticationProviderFactory(authenticationConfigFile));
 				}
 				catch (CompositionException ex)
