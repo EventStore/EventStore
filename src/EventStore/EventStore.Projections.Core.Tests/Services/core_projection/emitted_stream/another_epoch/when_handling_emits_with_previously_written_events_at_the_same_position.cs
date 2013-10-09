@@ -28,9 +28,12 @@
 
 using System;
 using System.Linq;
+using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream.another_epoch
@@ -81,6 +84,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _stream.Start();
             _stream.EmitEvents(CreateEventBatch());
             OneWriteCompletes();
+        }
+
+        [Test]
+        public void truncates_existing_stream_at_correct_position()
+        {
+            var writes =
+                HandledMessages.OfType<ClientMessage.WriteEvents>()
+                    .OfEventType(SystemEventTypes.StreamMetadata)
+                    .ToArray();
+            Assert.AreEqual(1, writes.Length);
+            HelperExtensions.AssertJson(new {___tb = 2}, writes[0].Data.ParseJson<JObject>());
         }
 
         [Test]

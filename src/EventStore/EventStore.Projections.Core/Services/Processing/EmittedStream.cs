@@ -77,6 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private Event[] _submittedToWriteEvents;
         private EmittedEvent[] _submittedToWriteEmittedEvents;
         private int _lastKnownEventNumber = ExpectedVersion.Invalid;
+        private int _retrievedNextEventNumber = ExpectedVersion.Invalid;
         private readonly bool _noCheckpoints;
         private bool _disposed;
         private bool _recoveryCompleted;
@@ -296,6 +297,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _awaitingListEventsCompleted = false;
 
             var newPhysicalStream = message.Events.Length == 0;
+            _retrievedNextEventNumber = newPhysicalStream
+                ? (message.StreamMetadata != null ? (message.StreamMetadata.TruncateBefore ?? 0) : 0)
+                : message.LastEventNumber + 1;
 
             if (_lastCommittedOrSubmittedEventPosition == null)
             {
@@ -421,7 +425,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 : new StreamAcl((string)null, null, null, null, null);
 
             var streamMetadata = new StreamMetadata(
-                _writerConfiguration.MaxCount, _writerConfiguration.MaxAge, acl: streamAcl);
+                _writerConfiguration.MaxCount, _writerConfiguration.MaxAge, acl: streamAcl,
+                truncateBefore: _retrievedNextEventNumber == 0 ? (int?) null : _retrievedNextEventNumber);
 
             _submittedWriteMetaStreamEvent = new Event(
                 Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, streamMetadata.ToJsonBytes(), null);
