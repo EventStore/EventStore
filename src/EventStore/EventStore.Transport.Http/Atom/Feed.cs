@@ -42,6 +42,8 @@ namespace EventStore.Transport.Http.Atom
         public string Updated { get; set; }
         public string StreamId { get; set; }
         public PersonElement Author { get; set; }
+        public bool HeadOfStream { get; set; }
+        public string SelfUrl { get; set; }
 
         public List<LinkElement> Links { get; set; }
         public List<EntryElement> Entries { get; set; }
@@ -73,6 +75,16 @@ namespace EventStore.Transport.Http.Atom
         {
             Ensure.NotNull(name, "name");
             Author = new PersonElement(name);
+        }
+
+        public void SetHeadOfStream(bool headOfStream)
+        {
+            this.HeadOfStream = headOfStream;
+        }
+
+        public void SetSelfUrl(string self)
+        {
+            this.SelfUrl = self;
         }
 
         public void AddLink(string relation, string uri, string contentType = null)
