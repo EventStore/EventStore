@@ -82,6 +82,21 @@ namespace EventStore.ClusterNode
 			}
 			else
 			{
+				if (opts.GossipSeeds.Length == 0)
+				{
+					if (opts.ClusterSize > 1)
+					{
+						Log.Error(string.Format("DNS discovery is disabled, but no gossip seed endpoints have been specified. " +
+						                        "Specify gossip seeds using the --{0} command line option.", Opts.GossipSeedCmd));
+					}
+					else
+					{
+						Log.Info(string.Format("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since" +
+											   "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified" +
+						                       "seeds using the --{0} command line option.", Opts.GossipSeedCmd));
+					}
+				}
+
 				gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeeds);
 			}
 

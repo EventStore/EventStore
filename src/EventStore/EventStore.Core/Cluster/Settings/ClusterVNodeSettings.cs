@@ -82,10 +82,7 @@ namespace EventStore.Core.Cluster.Settings
 			Ensure.Positive(clusterNodeCount, "clusterNodeCount");
 			Ensure.Positive(prepareAckCount, "prepareAckCount");
 			Ensure.Positive(commitAckCount, "commitAckCount");
-
-			if (!discoverViaDns && gossipSeeds.Length == 0)
-				throw new ArgumentException("Either DNS Discovery must be enabled, or gossip seeds must be provided");
-
+			
 			if (discoverViaDns && string.IsNullOrWhiteSpace(clusterDns))
 				throw new ArgumentException("Either DNS Discovery must be disabled (and seeds specified), or a cluster DNS name must be provided.");
 
