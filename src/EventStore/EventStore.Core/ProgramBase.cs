@@ -96,7 +96,7 @@ namespace EventStore.Core
             }
             catch (ApplicationInitializationException ex)
             {
-                Log.FatalException(ex, "Application initialization error: {0}.", FormatExceptionMessage(ex));
+                Log.FatalException(ex, "Application initialization error: {0}", FormatExceptionMessage(ex));
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
             catch (Exception ex)

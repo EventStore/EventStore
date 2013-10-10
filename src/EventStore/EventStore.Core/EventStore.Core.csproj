@@ -66,6 +66,8 @@
   <ItemGroup>
     <Compile Include="Authentication\AuthenticationRequest.cs" />
     <Compile Include="Authentication\IAuthenticationProvider.cs" />
+    <Compile Include="Authentication\IAuthenticationProviderFactory.cs" />
+    <Compile Include="Authentication\InternalAuthenticationProviderFactory.cs" />
     <Compile Include="Bus\AdHocHandler.cs" />
     <Compile Include="Bus\QueueStatsCollector.cs" />
     <Compile Include="Bus\IQueuedHandler.cs" />
@@ -165,6 +167,7 @@
     <Compile Include="Helpers\IODispatcher.cs" />
     <Compile Include="Messages\UserManagementMessage.cs" />
     <Compile Include="Messaging\RequestResponseDispatcher.cs" />
+    <Compile Include="PluginModel\IAuthenticationPlugin.cs" />
     <Compile Include="Services\ClusterStorageWriterService.cs" />
     <Compile Include="Services\ElectionsService.cs" />
     <Compile Include="Services\Gossip\DnsGossipSeedSource.cs" />

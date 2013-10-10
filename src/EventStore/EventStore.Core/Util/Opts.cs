@@ -24,9 +24,7 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
-using System;
 using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.TransactionLog.Chunks;
@@ -389,10 +387,16 @@ namespace EventStore.Core.Util
 		/*
 		 * Authentication Options
 		 */
-	    public const string LdapsConfigurationFileCmd = "ldaps-config=";
-	    public const string LdapsConfigurationFileEnv = "LDAPS_CONFIG";
-	    public const string LdapsConfigurationFileJson = "ldapsConfigFile";
-	    public const string LdapsConfigurationFileDescr = "Path to the configuration file for LDAPS authentication. If this is specified, Event Store internal authentication will be disabled.";
-	    public static readonly string LdapsConfigurationFileDefault = string.Empty;
+	    public const string AuthenticationTypeCmd = "authentication=";
+		public const string AuthenticationTypeEnv = "AUTHENTICATION";
+		public const string AuthenticationTypeJson = "authentication";
+		public const string AuthenticationTypeDescr = "The type of authentication to use.";
+	    public static readonly string AuthenticationTypeDefault = "internal";
+
+	    public const string AuthenticationConfigFileCmd = "authentication-config=";
+		public const string AuthenticationConfigFileEnv = "AUTHENTICATION_CONFIG";
+		public const string AuthenticationConfigFileJson = "authenticationConfig";
+		public const string AuthenticationConfigFileDescr = "Path to the configuration file for authentication configuration (if applicable).";
+		public static readonly string AuthenticationConfigFileDefault = string.Empty;
     }
 }

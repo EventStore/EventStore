@@ -4,12 +4,10 @@ using System.IO;
 using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
-using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
@@ -27,7 +25,6 @@ using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
@@ -183,23 +180,10 @@ namespace EventStore.Core
             _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
             // ReSharper restore RedundantTypeArgumentsOfMethod
 
-            // AUTHENTICATION INFRASTRUCTURE
-            var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
-
-	        IAuthenticationProvider authenticationProvider;
-			{
-				var dispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_workersHandler, crossThread: true));
-				authenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
-				SubscribeWorkers(bus =>
-				{
-					bus.Subscribe(dispatcher.ForwardReader);
-					bus.Subscribe(dispatcher.BackwardReader);
-					bus.Subscribe(dispatcher.Writer);
-					bus.Subscribe(dispatcher.StreamDeleter);
-					bus.Subscribe(dispatcher);
-				});
-			}
-			
+            // AUTHENTICATION INFRASTRUCTURE - delegate to plugins
+	        var authenticationProvider = vNodeSettings.AuthenticationProviderFactory.BuildAuthenticationProvider(_mainQueue, _mainBus, _workersHandler, _workerBuses);
+	        Ensure.NotNull(authenticationProvider, "authenticationProvider");
+		
             {
                 // EXTERNAL TCP
                 var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
@@ -279,7 +263,6 @@ namespace EventStore.Core
             var pingController = new PingController();
             var statController = new StatController(monitoringQueue, _workersHandler);
             var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler);
-            var usersController = new UsersController(httpSendService, _mainQueue, _workersHandler);
             var gossipController = new GossipController(_mainQueue, _workersHandler);
             var electController = new ElectController(_mainQueue);
 
@@ -295,8 +278,7 @@ namespace EventStore.Core
             _externalHttpService.SetupController(statController);
             _externalHttpService.SetupController(atomController);
             _externalHttpService.SetupController(gossipController);
-            _externalHttpService.SetupController(usersController);
-
+            
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
             _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);
@@ -310,7 +292,9 @@ namespace EventStore.Core
             _internalHttpService.SetupController(atomController);
             _internalHttpService.SetupController(gossipController);
             _internalHttpService.SetupController(electController);
-            _internalHttpService.SetupController(usersController);
+
+			// Authentication plugin HTTP
+	        vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService, _internalHttpService, httpSendService, _mainQueue, _workersHandler);
 
             _mainBus.Subscribe<SystemMessage.SystemInit>(_internalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_internalHttpService);
@@ -375,26 +359,6 @@ namespace EventStore.Core
             subscrBus.Subscribe<SubscriptionMessage.PollStream>(subscription);
             subscrBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscription);
             subscrBus.Subscribe<StorageMessage.EventCommited>(subscription);
-
-            // USER MANAGEMENT
-            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
-            _mainBus.Subscribe(ioDispatcher.BackwardReader);
-            _mainBus.Subscribe(ioDispatcher.ForwardReader);
-            _mainBus.Subscribe(ioDispatcher.Writer);
-            _mainBus.Subscribe(ioDispatcher.StreamDeleter);
-            _mainBus.Subscribe(ioDispatcher);
-
-            var userManagement = new UserManagementService(_mainQueue, ioDispatcher, passwordHashAlgorithm, skipInitializeStandardUsersCheck: false);
-            _mainBus.Subscribe<UserManagementMessage.Create>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.Update>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.Disable>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.Delete>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.ResetPassword>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.Get>(userManagement);
-            _mainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
-            _mainBus.Subscribe<SystemMessage.BecomeMaster>(userManagement);
 
             // TIMER
             _timeProvider = new RealTimeProvider();
@@ -467,7 +431,7 @@ namespace EventStore.Core
         public void Start() 
         {
             _mainQueue.Publish(new SystemMessage.SystemInit());
-            //TODO: replace with messages
+
             if (_subsystems != null)
                 foreach (var subsystem in _subsystems)
                     subsystem.Start();
@@ -476,7 +440,7 @@ namespace EventStore.Core
         public void Stop()
         {
             _mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess: false));
-            //TODO: replace with messages
+
             if (_subsystems != null)
                 foreach (var subsystem in _subsystems)
                     subsystem.Stop();
