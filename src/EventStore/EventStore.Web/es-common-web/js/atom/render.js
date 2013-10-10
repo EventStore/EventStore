@@ -23,6 +23,7 @@
                     }
                 }
             );
+            console.log(html);
             $(targetElement).html(html);
 
         });

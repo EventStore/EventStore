@@ -43,7 +43,8 @@
         var eTag = '{{:eTag}}';
         function schedule() {
             setTimeout(function() {
-                var dataUrl = data.selfUrl + "?embed=tryharder";
+                var dataUrl = "{{:selfUrl}}?embed=tryharder";
+                console.log(dataUrl);
                 $.ajax(dataUrl, {
                     headers: {
                         'Accept': 'application/vnd.eventstore.atom+json',

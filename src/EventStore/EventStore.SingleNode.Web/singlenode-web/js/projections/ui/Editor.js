@@ -93,10 +93,11 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
 
         function sourceChanged(source) {
 
+            window.reRenderData = reRenderData;
+
             function reRenderData(data) {
                 renderHtmlBy(data, templateJs, controls.result_stream_container);
             }
-
 
 
             function schedule(dataUrl) {
