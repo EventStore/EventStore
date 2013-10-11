@@ -51,6 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         void StateUpdated(string partition, PartitionState oldState, PartitionState newState);
+        void PartitionCompleted(string partition);
         void EventProcessed(CheckpointTag checkpointTag, float progress);
 
         /// <summary>

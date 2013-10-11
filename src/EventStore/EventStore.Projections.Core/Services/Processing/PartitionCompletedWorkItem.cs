@@ -33,15 +33,18 @@ namespace EventStore.Projections.Core.Services.Processing
     class PartitionCompletedWorkItem : CheckpointWorkItemBase
     {
         private readonly IEventProcessingProjectionPhase _projection;
+        private readonly ICoreProjectionCheckpointManager _checkpointManager;
         private readonly string _partition;
         private readonly CheckpointTag _checkpointTag;
         private PartitionState _state;
 
         public PartitionCompletedWorkItem(
-            IEventProcessingProjectionPhase projection, string partition, CheckpointTag checkpointTag)
+            IEventProcessingProjectionPhase projection, ICoreProjectionCheckpointManager checkpointManager,
+            string partition, CheckpointTag checkpointTag)
             : base()
         {
             _projection = projection;
+            _checkpointManager = checkpointManager;
             _partition = partition;
             _checkpointTag = checkpointTag;
         }
@@ -67,6 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //      and as we are processing in the stream-by-stream mode
             //      it is safe to clean everything before this position up
             _projection.UnlockAndForgetBefore(_checkpointTag);
+            _checkpointManager.PartitionCompleted(_partition);
             NextStage();
         }
     }

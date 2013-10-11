@@ -142,6 +142,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new NotSupportedException("Internal check");
         }
 
+        public void PartitionCompleted(string partition)
+        {
+        }
+
         public void EventProcessed(CheckpointTag checkpointTag, float progress)
         {
             if (_stopped)

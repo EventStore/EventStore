@@ -95,8 +95,9 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var partitionCompletedWorkItem = new PartitionCompletedWorkItem(
-                    this, message.Partition, message.CheckpointTag);
-                _processingQueue.EnqueueTask(partitionCompletedWorkItem, message.CheckpointTag, allowCurrentPosition: true);
+                    this, _checkpointManager, message.Partition, message.CheckpointTag);
+                _processingQueue.EnqueueTask(
+                    partitionCompletedWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 ProcessEvent();
             }
             catch (Exception ex)

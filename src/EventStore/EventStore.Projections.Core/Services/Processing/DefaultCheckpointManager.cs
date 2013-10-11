@@ -88,6 +88,11 @@ namespace EventStore.Projections.Core.Services.Processing
             committed();
         }
 
+        public override void PartitionCompleted(string partition)
+        {
+            _partitionStateUpdateManager.PartitionCompleted(partition);
+        }
+
         public override void Initialize()
         {
             base.Initialize();

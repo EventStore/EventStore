@@ -89,6 +89,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 eventWriter.ValidateOrderAndEmitEvents(list.OrderBy(v => v.Event.CausedByTag).ToArray());
             }
         }
+
+        public void PartitionCompleted(string partition)
+        {
+            _states.Remove(partition);
+        }
     }
 }
     

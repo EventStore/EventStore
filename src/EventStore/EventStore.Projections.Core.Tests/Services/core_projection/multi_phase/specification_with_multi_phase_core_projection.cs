@@ -321,6 +321,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 throw new NotImplementedException();
             }
 
+            public void PartitionCompleted(string partition)
+            {
+            }
+
             public void EventProcessed(CheckpointTag checkpointTag, float progress)
             {
                 _lastEvent = checkpointTag;

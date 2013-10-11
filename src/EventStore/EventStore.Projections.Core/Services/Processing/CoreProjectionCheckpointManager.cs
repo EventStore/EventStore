@@ -106,6 +106,8 @@ namespace EventStore.Projections.Core.Services.Processing
         public abstract void BeginLoadPartitionStateAt(
             string statePartition, CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted);
 
+        public abstract void PartitionCompleted(string partition);
+
         public virtual void Initialize()
         {
             if (_currentCheckpoint != null) _currentCheckpoint.Dispose();
