@@ -2,7 +2,7 @@
 #------------ Start of configuration -------------
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-V8_TAG="3.19.7"
+V8_TAG="3.22.9"
 PRODUCTNAME="Event Store Open Source"
 COMPANYNAME="Event Store LLP"
 COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
@@ -31,6 +31,7 @@ function usage() {
     echo ""
     echo "  full - will clean the repository prior to building. This"
     echo "         always builds libv8.so and libjs1.so."
+    echo "  js1 -  rebuild libjs1.lib only"
     echo ""
     echo "Valid platforms are:"
     echo "  x86"
@@ -59,7 +60,7 @@ function checkParams() {
         ACTION="quick"
         echo "Action defaulted to: $ACTION"
     else
-        if [[ "$action" == "quick" || "$action" == "incremental" || "$action" == "full" ]]; then
+        if [[ "$action" == "quick" || "$action" == "incremental" || "$action" == "full" || "$action" == "js1" ]]; then
             ACTION=$action
             echo "Action set to: $ACTION"
         else
@@ -128,7 +129,7 @@ function getV8() {
 
         if [[ "$gittag" != "$tag" ]] ; then
             echo "Pulling V8 repository..."
-            git pull || err
+            git fetch || err
             echo "Checking out $tag..."
             git checkout $tag || err
         else
@@ -201,7 +202,8 @@ function buildJS1() {
         gccArch="-arch amd64"
     fi
 
-    g++ $includeString $libsString *.cpp -o $outputDir/libjs1.so $gccArch -lv8 -O2 -fPIC --shared --save-temps || err
+#    g++ $includeString $libsString *.cpp -o $outputDir/libjs1.so $gccArch -lv8 -O2 -fPIC --shared --save-temps  || err
+    g++ $includeString $libsString *.cpp -o $outputDir/libjs1.so $gccArch -lv8 -O2 -fPIC --shared --save-temps -std=c++0x || err
     popd > /dev/null || err
 }
 
@@ -286,16 +288,21 @@ if [[ "$ACTION" == "full" ]] ; then
     cleanAll
 fi
 
-if [[ "$ACTION" == "incremental" || "$ACTION" == "full" ]] ; then
-    getV8 $V8_TAG
-    getDependencies
-
-    buildV8
+if [[ "$ACTION" == "js1" ]] ; then
     buildJS1
-    buildEventStore
 else
-    [[ -f src/EventStore/libs/libv8.so ]] || exitWithError "Cannot find libv8.so - cannot do a quick build!"
-    [[ -f src/EventStore/libs/libjs1.so ]] || exitWithError "Cannot find libjs1.so - cannot do a quick build!"
 
-    buildEventStore
+    if [[ "$ACTION" == "incremental" || "$ACTION" == "full" ]] ; then
+        getV8 $V8_TAG
+        getDependencies
+
+        buildV8
+        buildJS1
+        buildEventStore
+    else
+        [[ -f src/EventStore/libs/libv8.so ]] || exitWithError "Cannot find libv8.so - cannot do a quick build!"
+        [[ -f src/EventStore/libs/libjs1.so ]] || exitWithError "Cannot find libjs1.so - cannot do a quick build!"
+
+        buildEventStore
+    fi
 fi
