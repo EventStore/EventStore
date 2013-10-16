@@ -20,7 +20,7 @@ Properties {
     #ICU 
     $icuRepository = "https://src.chromium.org/chrome/trunk/deps/third_party/icu46"
     $icuRevision = "214189"
-    $icuDirectory = Join-Path (Join-Path $baseDirectory "v8") (Join-Path "third_party" "icu46")
+    $icuDirectory = Join-Path (Join-Path $baseDirectory "v8") (Join-Path "third_party" "icu")
     
     #Cygwin
     $cygwinRepository = "http://src.chromium.org/svn/trunk/deps/third_party/cygwin"
