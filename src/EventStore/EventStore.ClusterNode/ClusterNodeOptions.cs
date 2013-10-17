@@ -56,9 +56,12 @@ namespace EventStore.ClusterNode
 
         public bool UseInternalSsl { get { return _helper.Get(() => UseInternalSsl); } } 
         public string SslTargetHost { get { return _helper.Get(() => SslTargetHost); } } 
-        public bool SslValidateServer { get { return _helper.Get(() => SslValidateServer); } } 
+        public bool SslValidateServer { get { return _helper.Get(() => SslValidateServer); } }
 
-        public int PrepareTimeoutMs { get { return _helper.Get(() => PrepareTimeoutMs); } }
+		public string AuthenticationType { get { return _helper.Get(() => AuthenticationType); } }
+		public string AuthenticationConfigFile { get { return _helper.Get(() => AuthenticationConfigFile); } }
+
+	    public int PrepareTimeoutMs { get { return _helper.Get(() => PrepareTimeoutMs); } }
         public int CommitTimeoutMs { get { return _helper.Get(() => CommitTimeoutMs); } }
 
         private readonly OptsHelper _helper;
@@ -116,6 +119,9 @@ namespace EventStore.ClusterNode
             _helper.Register(() => UseInternalSsl, Opts.UseInternalSslCmd, Opts.UseInternalSslEnv, Opts.UseInternalSslJson, Opts.UseInternalSslDefault, Opts.UseInternalSslDescr);
             _helper.RegisterRef(() => SslTargetHost, Opts.SslTargetHostCmd, Opts.SslTargetHostEnv, Opts.SslTargetHostJson, Opts.SslTargetHostDefault, Opts.SslTargetHostDescr);
             _helper.Register(() => SslValidateServer, Opts.SslValidateServerCmd, Opts.SslValidateServerEnv, Opts.SslValidateServerJson, Opts.SslValidateServerDefault, Opts.SslValidateServerDescr);
+
+	        _helper.RegisterRef(() => AuthenticationType, Opts.AuthenticationTypeCmd, Opts.AuthenticationTypeEnv, Opts.AuthenticationTypeJson, Opts.AuthenticationTypeDefault, Opts.AuthenticationTypeDescr);
+	        _helper.RegisterRef(() => AuthenticationConfigFile, Opts.AuthenticationConfigFileCmd, Opts.AuthenticationConfigFileEnv, Opts.AuthenticationConfigFileJson, Opts.AuthenticationConfigFileDefault, Opts.AuthenticationConfigFileDescr);
 
             _helper.Register(() => PrepareTimeoutMs, Opts.PrepareTimeoutMsCmd, Opts.PrepareTimeoutMsEnv, Opts.PrepareTimeoutMsJson, Opts.PrepareTimeoutMsDefault, Opts.PrepareTimeoutMsDescr);
             _helper.Register(() => CommitTimeoutMs, Opts.CommitTimeoutMsCmd, Opts.CommitTimeoutMsEnv, Opts.CommitTimeoutMsJson, Opts.CommitTimeoutMsDefault, Opts.CommitTimeoutMsDescr);
