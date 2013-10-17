@@ -177,6 +177,8 @@ function buildV8() {
 
     pushd out/$makecall/lib.target > /dev/null
     cp libv8.so ../../../../src/EventStore/libs || err
+    cp libicui18n.so ../../../../src/EventStore/libs || err
+    cp libicuuc.so ../../../../src/EventStore/libs || err
     popd > /dev/null
 
     [[ -d ../src/EventStore/libs/include ]] || mkdir ../src/EventStore/libs/include
@@ -202,7 +204,6 @@ function buildJS1() {
         gccArch="-arch amd64"
     fi
 
-#    g++ $includeString $libsString *.cpp -o $outputDir/libjs1.so $gccArch -lv8 -O2 -fPIC --shared --save-temps  || err
     g++ $includeString $libsString *.cpp -o $outputDir/libjs1.so $gccArch -lv8 -O2 -fPIC --shared --save-temps -std=c++0x || err
     popd > /dev/null || err
 }
