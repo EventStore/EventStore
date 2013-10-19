@@ -166,10 +166,11 @@ namespace EventStore.Projections.Core.v8
             _prelude.ScheduleTerminateExecution();
 
             IntPtr resultJsonPtr;
+            IntPtr result2JsonPtr;
             IntPtr memoryHandle;
             bool success = Js1.ExecuteCommandHandler(
                 _script.GetHandle(), commandHandlerHandle, json, other, other != null ? other.Length : 0,
-                out resultJsonPtr, out memoryHandle);
+                out resultJsonPtr, out result2JsonPtr, out memoryHandle);
 
             var terminated = _prelude.CancelTerminateExecution();
             if (!success)

@@ -32,7 +32,8 @@ namespace js1 {
 		Status compile_script(const uint16_t *query_source, const uint16_t *file_name);
 		Status try_run();
 		Status execute_handler(void* event_handler_handle, const uint16_t *data_json, 
-			const uint16_t *data_other[], int32_t other_length, v8::Handle<v8::String> &result);
+			const uint16_t *data_other[], int32_t other_length, v8::Handle<v8::String> &result,
+			v8::Handle<v8::String> &result2);
 	protected:
 		virtual v8::Isolate *get_isolate();
 		virtual Status create_global_template(v8::Handle<v8::ObjectTemplate> &result);
@@ -44,6 +45,8 @@ namespace js1 {
 		REVERSE_COMMAND_CALLBACK reverse_command_callback;
 
 		PreludeScript *prelude;
+
+		Status QueryScript::GetStringValue(v8::Handle<v8::Value> call_result, v8::Handle<v8::String> &result);
 
 		void on(const v8::FunctionCallbackInfo<v8::Value>& info);
 		void notify(const v8::FunctionCallbackInfo<v8::Value>& info);

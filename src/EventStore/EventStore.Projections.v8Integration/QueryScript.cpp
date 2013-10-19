@@ -49,7 +49,8 @@ namespace js1
 	}
 
 	Status QueryScript::execute_handler(void *event_handler_handle, const uint16_t *data_json, 
-		const uint16_t *data_other[], int32_t other_length, v8::Handle<v8::String> &result) 
+		const uint16_t *data_other[], int32_t other_length, v8::Handle<v8::String> &result,
+			v8::Handle<v8::String> &result2) 
 	{
 		EventHandler *event_handler = reinterpret_cast<EventHandler *>(event_handler_handle);
 
@@ -88,18 +89,20 @@ namespace js1
 			result = empty;
 			return S_ERROR;
 		}
-		if (call_result->IsNull()) 
+
+		if (call_result->IsArray()) 
 		{
-			result.Clear();
-			return S_OK;
+			v8::Handle<v8::Array> array_result = call_result.As<v8::Array>();
+			Status status = GetStringValue(array_result->Get(0), result);
+			if (status != Status::S_OK) 
+				return status;
+
+			return GetStringValue(array_result->Get(1), result2);
 		}
-		if (!call_result->IsString()) {
-			set_last_error(v8::String::New("Handler must return string data or null"));
-			result = empty;
-			return S_ERROR;
+		else 
+		{
+			return GetStringValue(call_result, result);
 		}
-		result = call_result.As<v8::String>();
-		return S_OK;
 	}
 
 	v8::Isolate *QueryScript::get_isolate()
@@ -122,6 +125,24 @@ namespace js1
 		if (status != S_OK)
 			return status;
 		return S_OK;
+	}
+
+	Status QueryScript::GetStringValue(v8::Handle<v8::Value> call_result, v8::Handle<v8::String> &result) 
+	{
+		v8::Handle<v8::String> empty;
+		if (call_result->IsNull()) 
+		{
+			result.Clear();
+			return S_OK;
+		}
+		if (!call_result->IsString()) {
+			set_last_error(v8::String::New("Handler must return string data or null"));
+			result = empty;
+			return S_ERROR;
+		}
+		result = call_result.As<v8::String>();
+		return S_OK;
+		
 	}
 
 	void QueryScript::on(const v8::FunctionCallbackInfo<v8::Value>& args) 
