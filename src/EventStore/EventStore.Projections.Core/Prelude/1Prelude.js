@@ -240,6 +240,11 @@ function scope($on, $notify) {
         eventProcessor.emit(message);
     }
 
+    function linkStreamTo(streamId, linkedStreamId, metadata) {
+        var message = { streamId: streamId, eventName: "$@", body: linkedStreamId, metadata: metadata, isJson: false };
+        eventProcessor.emit(message);
+    }
+
     function options(options_obejct) {
         eventProcessor.options(options_obejct);
     }
@@ -260,6 +265,7 @@ function scope($on, $notify) {
         emit: emit, 
         linkTo: linkTo,
         copyTo: copyTo,
+        linkStreamTo: linkStreamTo,
         require: modules.require,
     };
 };
