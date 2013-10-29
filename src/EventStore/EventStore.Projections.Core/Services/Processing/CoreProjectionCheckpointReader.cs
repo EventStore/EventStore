@@ -87,9 +87,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (message.Events.Length > 0)
             {
-                var checkpoint =
-                    message.Events.FirstOrDefault(
-                        v => v.Event.EventType == ProjectionNamesBuilder.EventType_ProjectionCheckpoint).Event;
+                var checkpoint = message.Events.Where(v => v.Event.EventType == ProjectionNamesBuilder.EventType_ProjectionCheckpoint).Select(x => x.Event).FirstOrDefault();
                 if (checkpoint != null)
                 {
                     var parsed = checkpoint.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
