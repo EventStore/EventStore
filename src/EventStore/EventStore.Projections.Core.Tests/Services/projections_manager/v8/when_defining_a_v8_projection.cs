@@ -430,6 +430,31 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
+        public class with_bi_state_option : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    options({
+                        biState: true,
+                    });
+                    fromAll().whenAny(
+                        function(state, sharedState, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.IsBiState);
+                //TODO: ???
+            }
+        }
+
+        [TestFixture]
         public class with_reorder_events_option : TestFixtureWithJsProjection
         {
             protected override void Given()

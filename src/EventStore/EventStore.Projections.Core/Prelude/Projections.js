@@ -60,6 +60,7 @@ var $projections = {
                 $includeLinks: false,
                 reorderEvents: false,
                 processingLag: 0,
+                biState: false,
             },
             version: 4
         };

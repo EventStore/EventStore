@@ -109,6 +109,11 @@ namespace EventStore.Projections.Core.Messages
             get { return Options != null ? Options.ProcessingLag : null; }
         }
 
+        bool IQuerySources.IsBiState
+        {
+            get { return Options != null ? Options.IsBiState : false; }
+        }
+
         [DataMember(Name = "options")]
         public QuerySourcesDefinitionOptions Options { get; set; }
 
@@ -135,6 +140,7 @@ namespace EventStore.Projections.Core.Messages
                         IncludeLinks = sources.IncludeLinksOption,
                         PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,
                         ProcessingLag = sources.ProcessingLagOption.GetValueOrDefault(),
+                        IsBiState = sources.IsBiState,
                         ReorderEvents = sources.ReorderEventsOption,
                         ResultStreamName = sources.ResultStreamNameOption,
                     }

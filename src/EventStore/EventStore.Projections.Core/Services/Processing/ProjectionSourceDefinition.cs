@@ -85,6 +85,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return Options != null ? Options.ProcessingLag : (int?) null; }
         }
 
+        bool IQuerySources.IsBiState 
+        {
+            get { return Options != null ? Options.IsBiState : false; }
+        }
+
         [DataMember]
         public string ResultStreamName { get; set; }
 
@@ -127,6 +132,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         IncludeLinks = sources.IncludeLinksOption,
                         PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,
                         ProcessingLag = sources.ProcessingLagOption.GetValueOrDefault(),
+                        IsBiState = sources.IsBiState,
                         ReorderEvents = sources.ReorderEventsOption,
                         ResultStreamName = sources.ResultStreamNameOption,
                     },

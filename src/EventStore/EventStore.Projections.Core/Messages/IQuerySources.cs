@@ -52,6 +52,8 @@ namespace EventStore.Projections.Core.Messages
 
         bool ProducesResults { get; }
 
+        bool IsBiState { get; }
+
         bool IncludeLinksOption { get; }
 
         string ResultStreamNameOption { get; }

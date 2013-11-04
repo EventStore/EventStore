@@ -143,6 +143,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.ProcessingLag = processingLag;
         }
 
+        public void SetIsBiState(bool isBiState)
+        {
+            _options.IsBiState = isBiState;
+        }
+
         public bool AllStreams
         {
             get { return _allStreams; }
@@ -241,6 +246,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _options.ProcessingLag; }
         }
 
+        public bool IsBiState 
+        {
+            get { return _options.IsBiState; }
+        }
+
         public static IQuerySources From(Action<SourceDefinitionBuilder> configure)
         {
             var b = new SourceDefinitionBuilder();
@@ -276,6 +286,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         [DataMember]
         public int ProcessingLag { get; set; }
+
+        [DataMember]
+        public bool IsBiState { get; set; }
 
         [DataMember]
         public bool DefinesStateTransform { get; set; }
