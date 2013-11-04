@@ -41,8 +41,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IProjectionStateHandler _projectionStateHandler;
         private readonly bool _definesStateTransform;
         private readonly StatePartitionSelector _statePartitionSelector;
+        private readonly bool _isBiState;
 
         private string _handlerPartition;
+        private bool _sharedStateSet;
         private readonly Stopwatch _stopwatch;
 
 
@@ -52,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
             PartitionStateCache partitionStateCache, bool definesStateTransform, string projectionName, ILogger logger,
             CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
             StatePartitionSelector statePartitionSelector, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            IReaderStrategy readerStrategy, IResultWriter resultWriter, bool useCheckpoints, bool stopOnEof)
+            IReaderStrategy readerStrategy, IResultWriter resultWriter, bool useCheckpoints, bool stopOnEof, bool isBiState)
             : base(
                 publisher, coreProjection, projectionCorrelationId, coreProjectionCheckpointManager, projectionConfig,
                 projectionName, logger, zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics,
@@ -62,6 +64,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionStateHandler = projectionStateHandler;
             _definesStateTransform = definesStateTransform;
             _statePartitionSelector = statePartitionSelector;
+            _isBiState = isBiState;
 
             _stopwatch = new Stopwatch();
 
@@ -219,6 +222,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projectionStateHandler.Load(newState.State);
             else
                 _projectionStateHandler.Initialize();
+            if (!_sharedStateSet && _isBiState)
+            {
+                var newSharedState = _partitionStateCache.GetLockedPartitionState("");
+                _projectionStateHandler.LoadShared(newSharedState.State);
+                _sharedStateSet = true;
+            }
         }
 
 

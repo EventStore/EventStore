@@ -68,6 +68,7 @@ var $projections = {
         var initStateHandler = function () { return {}; };
 
         var projectionState = null;
+        var projectionSharedState = null;
 
         var commandHandlers = {
             set_debugging: function () {
@@ -75,7 +76,13 @@ var $projections = {
             },
 
             initialize: function () {
-                projectionState = initStateHandler();
+                var initialState = initStateHandler();
+                if (!options.biState)
+                    projectionState = initialState;
+                else {
+                    projectionState = initialState[0];
+                    projectionSharedState = initialState[1];
+                }
                 return "OK";
             },
 
@@ -85,8 +92,15 @@ var $projections = {
 
             process_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition) {
                 processEvent(event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition);
-                var stateJson = JSON.stringify(projectionState);
-                return stateJson;
+                var stateJson;
+                if (!options.biState) {
+                    stateJson = JSON.stringify(projectionState);
+                    return stateJson;
+                } else {
+                    stateJson = JSON.stringify(projectionState);
+                    var sharedStateJson = JSON.stringify(projectionSharedState);
+                    return [stateJson, sharedStateJson];
+                }
             },
 
             transform_state_to_result: function () {
@@ -103,6 +117,12 @@ var $projections = {
             set_state: function (jsonState) {
                 var parsedState = JSON.parse(jsonState);
                 projectionState = parsedState;
+                return "OK";
+            },
+
+            set_shared_state: function(jsonState) {
+                var parsedState = JSON.parse(jsonState);
+                projectionSharedState = parsedState;
                 return "OK";
             },
 
@@ -233,7 +253,7 @@ var $projections = {
             var eventName = eventType;
 
             var eventHandler;
-            var state = projectionState;
+            var state = !options.biState ? projectionState : [projectionState, projectionSharedState];
 
             var index;
 
@@ -253,7 +273,6 @@ var $projections = {
                 state = callHandler(defaultEventHandler, state, eventEnvelope);
             }
 
-
             for (index = 0; index < anyEventHandlers.length; index++) {
                 eventHandler = anyEventHandlers[index];
                 state = callHandler(eventHandler, state, eventEnvelope);
@@ -263,7 +282,12 @@ var $projections = {
             if (eventHandler !== undefined) {
                 state = callHandler(eventHandler, state, eventEnvelope);
             }
-            projectionState = state;
+            if (!options.biState) {
+                projectionState = state;
+            } else {
+                projectionState = state[0];
+                projectionSharedState = state[1];
+            }
         }
 
         function fromStream(sourceStream) {

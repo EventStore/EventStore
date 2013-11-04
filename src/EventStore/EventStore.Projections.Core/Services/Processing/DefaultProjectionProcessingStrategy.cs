@@ -173,10 +173,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 _stateHandler, _sourceDefinition.ByCustomPartitions, _sourceDefinition.ByStreams);
 
             return new EventProcessingProjectionProcessingPhase(
-                coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics,
-                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, _name, _logger,
-                zeroCheckpointTag, checkpointManager, statePartitionSelector, subscriptionDispatcher, readerStrategy,
-                resultWriter, _projectionConfig.CheckpointsEnabled, this.GetStopOnEof());
+                coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics, _stateHandler,
+                partitionStateCache, _sourceDefinition.DefinesStateTransform, _name, _logger, zeroCheckpointTag,
+                checkpointManager, statePartitionSelector, subscriptionDispatcher, readerStrategy, resultWriter,
+                _projectionConfig.CheckpointsEnabled, this.GetStopOnEof(), _sourceDefinition.IsBiState);
         }
 
         private static StatePartitionSelector CreateStatePartitionSelector(
