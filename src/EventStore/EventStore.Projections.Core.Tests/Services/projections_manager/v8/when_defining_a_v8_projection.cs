@@ -490,6 +490,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
     {
         protected ResolvedEvent _handledEvent;
         protected string _newState;
+        protected string _newSharedState;
         protected EmittedEventEnvelope[] _emittedEventEnvelopes;
 
         protected override void When()
@@ -498,7 +499,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 "",
                 CheckpointTag.FromPosition(
                     0, _handledEvent.Position.CommitPosition, _handledEvent.Position.PreparePosition), "", _handledEvent,
-                out _newState, out _emittedEventEnvelopes);
+                out _newState, out _newSharedState, out _emittedEventEnvelopes);
         }
 
         protected static ResolvedEvent CreateSampleEvent(

@@ -1,10 +1,10 @@
-﻿// This file will be automatically updated as part of the build process.
-// Note "Comments" does not appear in the properties in Windows (inexplicably)
-// but can be obtained by using:
-//
-//			(Get-Item .\js1.dll).VersionInfo.Comments
-//
-// in Powershell (from a pwd where js1.dll is located)
+
+
+
+
+
+
+
 
 #include "resource.h"
 #include <windows.h>
@@ -14,19 +14,19 @@
 #define EVENTSTORE_PRODUCTVERSION 0,0,0,0
 #define EVENTSTORE_FILEVERSION_STR "0.0.0.0"
 #define EVENTSTORE_FILEVERSION 0,0,0,0
-#define EVENTSTORE_COMMITNUMBER_STR "Commit Hash: not set"
-#define EVENTSTORE_COPYRIGHT_STR "Copyright © 2012-2013 Event Store LLP. All rights reserved."
+#define EVENTSTORE_COMMITNUMBER_STR "0.0.0.0.dev@cc75c20863042ec1ccb13ce165739a636b165810@Tue, 29 Oct 2013 06:44:57 -0700"
+#define EVENTSTORE_COPYRIGHT_STR "Copyright 2012 Event Store LLP. All rights reserved."
 
-/////////////////////////////////////////////////////////////////////////////
-// English (United States) resources
+
+
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Version
-//
+
+
+
+
 
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION EVENTSTORE_FILEVERSION
@@ -62,21 +62,21 @@ BEGIN
     END
 END
 
-#endif    // English (United States) resources
-/////////////////////////////////////////////////////////////////////////////
+#endif    
 
 
-/////////////////////////////////////////////////////////////////////////////
-// English (United Kingdom) resources
+
+
+
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 
 #ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
+
+
+
+
 
 1 TEXTINCLUDE 
 BEGIN
@@ -94,20 +94,20 @@ BEGIN
     "\0"
 END
 
-#endif    // APSTUDIO_INVOKED
+#endif    
 
-#endif    // English (United Kingdom) resources
-/////////////////////////////////////////////////////////////////////////////
+#endif    
+
 
 
 
 #ifndef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// Generated from the TEXTINCLUDE 3 resource.
-//
 
 
-/////////////////////////////////////////////////////////////////////////////
-#endif    // not APSTUDIO_INVOKED
+
+
+
+
+
+#endif    
 

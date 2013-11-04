@@ -128,6 +128,12 @@ namespace EventStore.Projections.Core.Services.v8
             _query.SetState(state);
         }
 
+        public void LoadShared(string state)
+        {
+            CheckDisposed();
+            _query.SetSharedState(state);
+        }
+
         public void Initialize()
         {
             CheckDisposed();
@@ -154,14 +160,14 @@ namespace EventStore.Projections.Core.Services.v8
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
-            out EmittedEventEnvelope[] emittedEvents)
+            out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
             CheckDisposed();
             if (data == null)
                 throw new ArgumentNullException("data");
             _eventPosition = eventPosition;
             _emittedEvents = null;
-            newState = _query.Push(
+            var newStates = _query.Push(
                 data.Data.Trim(), // trimming data passed to a JS 
                 new[]
                     {
@@ -169,6 +175,8 @@ namespace EventStore.Projections.Core.Services.v8
                         data.EventStreamId, data.EventType, category ?? "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
                         data.Metadata, partition
                     });
+            newState = newStates.Item1;
+            newSharedState = newStates.Item2;
             try
             {
                 if (!string.IsNullOrEmpty(newState))

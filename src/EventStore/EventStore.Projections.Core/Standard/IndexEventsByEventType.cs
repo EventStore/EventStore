@@ -61,6 +61,11 @@ namespace EventStore.Projections.Core.Standard
         {
         }
 
+        public void LoadShared(string state)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Initialize()
         {
         }
@@ -72,8 +77,9 @@ namespace EventStore.Projections.Core.Standard
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEventEnvelope[] emittedEvents)
+            out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
+            newSharedState = null;
             emittedEvents = null;
             newState = null;
             if (data.EventStreamId != data.PositionStreamId)

@@ -43,6 +43,7 @@ namespace EventStore.Projections.Core.Services
     public interface IProjectionStateHandler : IDisposable, ISourceDefinitionSource
     {
         void Load(string state);
+        void LoadShared(string state);
         void Initialize();
 
         /// <summary>
@@ -58,7 +59,7 @@ namespace EventStore.Projections.Core.Services
         /// <returns>true - if event was processed (new state must be returned) </returns>
         bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
-            out EmittedEventEnvelope[] emittedEvents);
+            out string newSharedState, out EmittedEventEnvelope[] emittedEvents);
 
         /// <summary>
         /// Transforms current state into a projection result.  Should not call any emit/linkTo etc 
@@ -79,11 +80,12 @@ namespace EventStore.Projections.Core.Services
             string eventType, string category, Guid eventId, int eventSequenceNumber, string metadata, string data,
             out string state, out EmittedEventEnvelope[] emittedEvents, bool isJson = true)
         {
+            string ignoredSharedState;
             return self.ProcessEvent(
                 partition, eventPosition, category,
                 new ResolvedEvent(
-                    streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new TFPos(0, -1),
-                    eventId, eventType, isJson, data, metadata), out state, out emittedEvents);
+                    streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new TFPos(0, -1), eventId,
+                    eventType, isJson, data, metadata), out state, out ignoredSharedState, out emittedEvents);
         }
 
         public static string GetNativeHandlerName(this Type handlerType)

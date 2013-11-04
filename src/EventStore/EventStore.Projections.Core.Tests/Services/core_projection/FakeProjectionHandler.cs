@@ -99,6 +99,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _loadedState = state;
         }
 
+        public void LoadShared(string state)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Initialize()
         {
             if (_failOnInitialize)
@@ -116,8 +121,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEventEnvelope[] emittedEvents)
+            out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
+            newSharedState = null;
             if (_failOnProcessEvent)
                 throw new Exception("PROCESS_EVENT_FAILED");
             _lastProcessedStreamId = data.EventStreamId;
