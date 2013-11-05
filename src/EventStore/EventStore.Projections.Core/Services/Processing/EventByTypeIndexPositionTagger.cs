@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly HashSet<string> _eventTypes;
         private readonly Dictionary<string, string> _streamToEventType;
 
-        public EventByTypeIndexPositionTagger(string[] eventTypes)
+        public EventByTypeIndexPositionTagger(int phase, string[] eventTypes): base(phase)
         {
             if (eventTypes == null) throw new ArgumentNullException("eventTypes");
             if (eventTypes.Length == 0) throw new ArgumentException("eventTypes");
@@ -52,6 +52,8 @@ namespace EventStore.Projections.Core.Services.Processing
         public override bool IsMessageAfterCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent)
         {
+            if (previous.Phase < Phase)
+                return true;
             if (previous.Mode_ != CheckpointTag.Mode.EventTypeIndex)
                 throw new ArgumentException("Mode.EventTypeIndex expected", "previous");
             if (committedEvent.Data.OriginalPosition.CommitPosition <= 0)
@@ -63,6 +65,10 @@ namespace EventStore.Projections.Core.Services.Processing
         public override CheckpointTag MakeCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent)
         {
+            if (previous.Phase != Phase)
+                throw new ArgumentException(
+                    string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
+
             if (committedEvent.Data.OriginalPosition < previous.Position)
                 throw new InvalidOperationException(
                     string.Format(
@@ -77,10 +83,15 @@ namespace EventStore.Projections.Core.Services.Processing
                        : previous.UpdateEventTypeIndexPosition(committedEvent.Data.OriginalPosition);
         }
 
+        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof)
+        {
+            throw new NotImplementedException();
+        }
+
         public override CheckpointTag MakeZeroCheckpointTag()
         {
             return CheckpointTag.FromEventTypeIndexPositions(
-                new TFPos(0, -1), _eventTypes.ToDictionary(v => v, v => ExpectedVersion.NoStream));
+                Phase, new TFPos(0, -1), _eventTypes.ToDictionary(v => v, v => ExpectedVersion.NoStream));
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
@@ -92,24 +103,32 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override CheckpointTag AdjustTag(CheckpointTag tag)
         {
+            if (tag.Phase != Phase)
+                throw new ArgumentException(
+                    string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, tag.Phase), "tag");
+
             if (tag.Mode_ == CheckpointTag.Mode.EventTypeIndex)
             {
                 int p;
                 return CheckpointTag.FromEventTypeIndexPositions(
-                    tag.Position, _eventTypes.ToDictionary(v => v, v => tag.Streams.TryGetValue(v, out p) ? p : -1));
+                    tag.Phase, tag.Position,
+                    _eventTypes.ToDictionary(v => v, v => tag.Streams.TryGetValue(v, out p) ? p : -1));
             }
 
             switch (tag.Mode_)
             {
                 case CheckpointTag.Mode.MultiStream:
-                    throw new NotSupportedException("Conversion from MultiStream to EventTypeIndex position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from MultiStream to EventTypeIndex position tag is not supported");
                 case CheckpointTag.Mode.Stream:
-                    throw new NotSupportedException("Conversion from Stream to EventTypeIndex position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from Stream to EventTypeIndex position tag is not supported");
                 case CheckpointTag.Mode.PreparePosition:
-                    throw new NotSupportedException("Conversion from PreparePosition to EventTypeIndex position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from PreparePosition to EventTypeIndex position tag is not supported");
                 case CheckpointTag.Mode.Position:
                     return CheckpointTag.FromEventTypeIndexPositions(
-                        tag.Position, _eventTypes.ToDictionary(v => v, v => -1));
+                        tag.Phase, tag.Position, _eventTypes.ToDictionary(v => v, v => -1));
                 default:
                     throw new Exception();
             }

@@ -27,6 +27,8 @@
 // 
 
 using System;
+using EventStore.Common.Utils;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -57,12 +59,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private readonly bool _failOnLoad;
         private readonly bool _failOnProcessEvent;
         private readonly bool _failOnGetPartition;
-        private readonly Action<QuerySourceProcessingStrategyBuilder> _configureBuilder;
+        private readonly Action<SourceDefinitionBuilder> _configureBuilder;
+        private readonly IQuerySources _definition;
+
+        public FakeProjectionStateHandler(string source, Action<string> logger)
+        {
+            _definition = source.ParseJson<QuerySourcesDefinition>();
+        }
 
         public FakeProjectionStateHandler(
             bool failOnInitialize = false, bool failOnLoad = false, bool failOnProcessEvent = false,
             bool failOnGetPartition = true,
-            Action<QuerySourceProcessingStrategyBuilder> configureBuilder = null)
+            Action<SourceDefinitionBuilder> configureBuilder = null)
         {
             _failOnInitialize = failOnInitialize;
             _failOnLoad = failOnLoad;
@@ -71,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _configureBuilder = configureBuilder;
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             if (_configureBuilder != null)
                 _configureBuilder(builder);
@@ -99,9 +107,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _loadedState = "";
         }
 
-        public string GetStatePartition(
-            CheckpointTag position, string streamId, string eventType, string category, Guid eventid, int sequenceNumber,
-            string metadata, string data)
+        public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             if (_failOnGetPartition)
                 throw new Exception("GetStatePartition FAILED");
@@ -110,7 +116,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEvent[] emittedEvents)
+            out string newState, out EmittedEventEnvelope[] emittedEvents)
         {
             if (_failOnProcessEvent)
                 throw new Exception("PROCESS_EVENT_FAILED");
@@ -140,58 +146,68 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 case "no_state_emit1_type":
                     _loadedState = newState = "";
                     emittedEvents = new[]
-                        {
+                    {
+                        new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, null, eventPosition, null),
-                        };
+                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, true, _emit1Data, null, eventPosition, null)),
+                    };
                     return true;
                 case "emit1_type":
                     _loadedState = newState = data.Data;
                     emittedEvents = new[]
-                        {
+                    {
+                        new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, null, eventPosition, null),
-                        };
+                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, true, _emit1Data, null, eventPosition, null)),
+                    };
                     return true;
                 case "emit22_type":
                     _loadedState = newState = data.Data;
                     emittedEvents = new[]
-                        {
+                    {
+                        new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit1Data, null, eventPosition, null),
+                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, true, _emit1Data, null, eventPosition, null)),
+                        new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit2Data, null, eventPosition, null),
-                        };
+                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, true, _emit2Data, null, eventPosition, null)),
+                    };
                     return true;
                 case "emit212_type":
                     _loadedState = newState = data.Data;
                     emittedEvents = new[]
-                        {
+                    {
+                        new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit1Data, null, eventPosition, null),
+                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, true, _emit1Data, null, eventPosition, null)),
+                        new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit2Data, null, eventPosition, null),
+                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, true, _emit2Data, null, eventPosition, null)),
+                        new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit3Data, null, eventPosition, null),
-                        };
+                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, true, _emit3Data, null, eventPosition, null)),
+                    };
                     return true;
                 case "emit12_type":
                     _loadedState = newState = data.Data;
                     emittedEvents = new[]
-                        {
+                    {
+                        new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, null, eventPosition, null),
+                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, true, _emit1Data, null, eventPosition, null)),
+                        new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit2Data, null, eventPosition, null),
-                        };
+                                _emit2StreamId, Guid.NewGuid(), _emit2EventType, true, _emit2Data, null, eventPosition, null)),
+                    };
                     return true;
                 case "just_emit":
                     newState = _loadedState;
                     emittedEvents = new[]
-                        {
+                    {
+                        new EmittedEventEnvelope(
                             new EmittedDataEvent(
-                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, null, eventPosition, null),
-                        };
+                                _emit1StreamId, Guid.NewGuid(), _emit1EventType, true, _emit1Data, null, eventPosition, null)),
+                    };
                     return true;
                 default:
                     throw new NotSupportedException();
@@ -206,5 +222,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void Dispose()
         {
         }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return _definition ?? SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
+        }
+
     }
 }

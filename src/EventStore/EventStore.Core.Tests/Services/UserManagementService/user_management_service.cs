@@ -71,18 +71,23 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 _bus.Subscribe<SystemMessage.BecomeMaster>(_users);
             }
 
+            protected override ManualQueue GiveInputQueue()
+            {
+                return new ManualQueue(_bus);
+            }
+
             [SetUp]
             public void SetUp()
             {
-                SetUpManualQueue();
-                GivenCommands();
+                WhenLoop(GivenCommands());
                 _queue.Process();
                 HandledMessages.Clear();
                 WhenLoop();
             }
 
-            protected virtual void GivenCommands()
+            protected virtual IEnumerable<WhenStep> GivenCommands()
             {
+                yield break;
             }
 
             protected ClientMessage.WriteEvents[] HandledPasswordChangedNotificationWrites()
@@ -199,13 +204,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_creating_an_already_existing_user_account : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
                         Envelope, SystemAccount.Principal, "user1", "Existing John", new[] {"admin", "other"},
-                        "existing!"));
+                        "existing!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -256,12 +260,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_updating_user_details : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return
                     new UserManagementMessage.Create(
-                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -330,12 +333,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_ordinary_user_attempts_to_update_its_own_details : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -395,9 +397,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_updating_non_existing_user_details : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
+                yield break;
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -440,14 +442,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_updating_a_disabled_user_account_details : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
                 var replyTo = Envelope;
-                _users.Handle(
+                yield return
                     new UserManagementMessage.Create(
-                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
-                _users.Handle(new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1"));
+                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+                yield return new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -479,12 +480,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_disabling_an_enabled_user_account : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return
                     new UserManagementMessage.Create(
-                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -522,12 +522,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_an_ordinary_user_attempts_to_disable_a_user_account : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -558,14 +557,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_disabling_a_disabled_user_account : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
                 var replyTo = Envelope;
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
-                _users.Handle(new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1"));
+                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+                yield return new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -596,14 +594,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_enabling_a_disabled_user_account : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
                 var replyTo = Envelope;
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
-                _users.Handle(new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1"));
+                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+                yield return new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -634,14 +631,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_an_ordinary_user_attempts_to_enable_a_user_account : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
                 var replyTo = Envelope;
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
-                _users.Handle(new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1"));
+                        replyTo, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!");
+                yield return new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -672,12 +668,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_enabling_an_enabled_user_account : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -708,12 +703,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_resetting_the_password : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -775,12 +769,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_resetting_the_password_twice : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -815,12 +808,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_ordinary_user_attempts_to_reset_its_own_password : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] { "admin", "other" }, "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -855,12 +847,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_changing_a_password_with_correct_current_password : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -932,12 +923,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_changing_a_password_with_incorrect_current_password : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return
                     new UserManagementMessage.Create(
-                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -993,12 +983,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_deleting_an_existing_user_account : TestFixtureWithUserManagementService
         {
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!"));
+                        Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -1056,24 +1045,23 @@ namespace EventStore.Core.Tests.Services.UserManagementService
                 ExistingEvent("$users", "$User", null, "another_user");
             }
 
-            protected override void GivenCommands()
+            protected override IEnumerable<WhenStep> GivenCommands()
             {
-                base.GivenCommands();
                 var replyTo = Envelope;
-                _users.Handle(
+                yield return 
                     new UserManagementMessage.Create(
-                        replyTo, SystemAccount.Principal, "user1", "John Doe 1", new[] {"admin1", "other"}, "Johny123!"));
-                _users.Handle(
+                        replyTo, SystemAccount.Principal, "user1", "John Doe 1", new[] {"admin1", "other"}, "Johny123!");
+                yield return 
                     new UserManagementMessage.Create(
-                        replyTo, SystemAccount.Principal, "user2", "John Doe 2", new[] {"admin2", "other"}, "Johny123!"));
-                _users.Handle(
+                        replyTo, SystemAccount.Principal, "user2", "John Doe 2", new[] {"admin2", "other"}, "Johny123!");
+                yield return 
                     new UserManagementMessage.Create(
                         replyTo, SystemAccount.Principal, "user3", "Another Doe 1", new[] {"admin3", "other"},
-                        "Johny123!"));
-                _users.Handle(
+                        "Johny123!");
+                yield return 
                     new UserManagementMessage.Create(
                         replyTo, SystemAccount.Principal, "another_user", "Another Doe 2", new[] {"admin4", "other"},
-                        "Johny123!"));
+                        "Johny123!");
             }
 
             protected override IEnumerable<WhenStep> When()

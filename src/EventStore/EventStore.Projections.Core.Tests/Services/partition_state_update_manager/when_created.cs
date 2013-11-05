@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
         [Test]
         public void handles_state_updated()
         {
-            _updateManager.StateUpdated("partition", new PartitionState("state", null, CheckpointTag.FromPosition(100, 50)), CheckpointTag.FromPosition(200, 150));
+            _updateManager.StateUpdated("partition", new PartitionState("state", null, CheckpointTag.FromPosition(0, 100, 50)), CheckpointTag.FromPosition(0, 200, 150));
         }
 
         [Test]
@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
 
         class FakeEventWriter : IEventWriter
         {
-            public void ValidateOrderAndEmitEvents(EmittedEvent[] events)
+            public void ValidateOrderAndEmitEvents(EmittedEventEnvelope[] events)
             {
                 Assert.Fail("Should not write any events");
             }

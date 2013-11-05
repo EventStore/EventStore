@@ -51,6 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             return tagger.AdjustTag(Tag);
         }
+
     }
 
     public static class CheckpointTagExtensions

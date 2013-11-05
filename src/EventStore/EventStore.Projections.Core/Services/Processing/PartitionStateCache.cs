@@ -45,10 +45,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private CheckpointTag _unlockedBefore;
         private readonly CheckpointTag _zeroPosition;
 
-        public PartitionStateCache(CheckpointTag zeroPosition, int maxCachedPartitions = 4000)
+        public PartitionStateCache(int maxCachedPartitions = 4000)
         {
-            _zeroPosition = zeroPosition;
-            _unlockedBefore = zeroPosition;
+            _zeroPosition = CheckpointTag.Empty;
+            _unlockedBefore = CheckpointTag.Empty;
             _maxCachedPartitions = maxCachedPartitions;
         }
 
@@ -140,15 +140,16 @@ namespace EventStore.Projections.Core.Services.Processing
             return stateData.Item1;
         }
 
-        public void Unlock(CheckpointTag beforeCheckpoint)
+        public void Unlock(CheckpointTag beforeCheckpoint, bool forgetUnlocked = false)
         {
             _unlockedBefore = beforeCheckpoint;
-            CleanUp();
+            CleanUp(removeAllUnlocked: forgetUnlocked);
         }
 
-        private void CleanUp()
+        private void CleanUp(bool removeAllUnlocked = false)
         {
-            while (_cacheOrder.Count > _maxCachedPartitions*5 || CachedItemCount > _maxCachedPartitions)
+            while (removeAllUnlocked || _cacheOrder.Count > _maxCachedPartitions*5
+                   || CachedItemCount > _maxCachedPartitions)
             {
                 if (_cacheOrder.Count == 0)
                     break;
@@ -179,6 +180,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     string.Format(
                         "Attempt to lock the '{0}' partition state at the position '{1}' before the unlocked position '{2}'",
                         partition, at, _unlockedBefore));
+        }
+
+        public IEnumerable<Tuple<string, PartitionState>> Enumerate()
+        {
+            return _partitionStates.Select(v => Tuple.Create(v.Key, v.Value.Item1)).ToList();
         }
     }
 }

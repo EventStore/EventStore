@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Security.Policy;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services.Http
 {
@@ -50,12 +52,22 @@ namespace EventStore.Projections.Core.Services.Http
             this.WritePendingEventsAfterCheckpoint = source.WritePendingEventsAfterCheckpoint;
             this.ReadsInProgress = source.ReadsInProgress;
             this.WritesInProgress = source.WritesInProgress;
+            this.CoreProcessingTime = source.CoreProcessingTime;
             this.PartitionsCached = source.PartitionsCached;
             var statusLocalUrl = "/projection/" + source.Name;
             this.StatusUrl = makeAbsoluteUrl(statusLocalUrl);
             this.StateUrl = makeAbsoluteUrl(statusLocalUrl + "/state");
             this.ResultUrl = makeAbsoluteUrl(statusLocalUrl + "/result");
+            this.QueryUrl = makeAbsoluteUrl(statusLocalUrl + "/query?config=yes");
+            if (source.Definition != null && !string.IsNullOrEmpty(source.Definition.ResultStreamName))
+                this.ResultStreamUrl =
+                    makeAbsoluteUrl("/streams/" + Uri.EscapeDataString(source.Definition.ResultStreamName));
+
+            this.DisableCommandUrl = makeAbsoluteUrl(statusLocalUrl + "/command/disable");
+            this.EnableCommandUrl = makeAbsoluteUrl(statusLocalUrl + "/command/enable");
         }
+
+        public long CoreProcessingTime { get; set; }
 
         public int Version { get; set; }
 
@@ -90,6 +102,14 @@ namespace EventStore.Projections.Core.Services.Http
         public string StateUrl { get; set; }
 
         public string ResultUrl { get; set; }
+
+        public string QueryUrl { get; set; }
+
+        public string ResultStreamUrl { get; set; }
+
+        public string EnableCommandUrl { get; set; }
+
+        public string DisableCommandUrl { get; set; }
 
         public string CheckpointStatus { get; set; }
 

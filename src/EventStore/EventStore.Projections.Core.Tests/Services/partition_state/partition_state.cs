@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state
             [Test, ExpectedException(typeof(ArgumentNullException))]
             public void throws_argument_null_exception_if_state_is_null()
             {
-                new PartitionState(null, "result", CheckpointTag.FromPosition(100, 50));
+                new PartitionState(null, "result", CheckpointTag.FromPosition(0, 100, 50));
             }
 
             [Test, ExpectedException(typeof(ArgumentNullException))]
@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state
             [Test]
             public void can_be_created()
             {
-                new PartitionState("state", "result", CheckpointTag.FromPosition(100, 50));
+                new PartitionState("state", "result", CheckpointTag.FromPosition(0, 100, 50));
             }
         }
 
@@ -78,16 +78,16 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state
             [Test]
             public void null_deserialization()
             {
-                var deserialized = PartitionState.Deserialize(null, CheckpointTag.FromPosition(100, 50));
+                var deserialized = PartitionState.Deserialize(null, CheckpointTag.FromPosition(0, 100, 50));
                 Assert.AreEqual("", deserialized.State);
                 Assert.IsNull(deserialized.Result);
             }
 
             private void AssertCorrect(string state, string result = null)
             {
-                var partitionState = new PartitionState(state, result, CheckpointTag.FromPosition(100, 50));
+                var partitionState = new PartitionState(state, result, CheckpointTag.FromPosition(0, 100, 50));
                 var serialized = partitionState.Serialize();
-                var deserialized = PartitionState.Deserialize(serialized, CheckpointTag.FromPosition(100, 50));
+                var deserialized = PartitionState.Deserialize(serialized, CheckpointTag.FromPosition(0, 100, 50));
 
                 Assert.AreEqual(partitionState.State, deserialized.State);
                 Assert.AreEqual(partitionState.Result, deserialized.Result);

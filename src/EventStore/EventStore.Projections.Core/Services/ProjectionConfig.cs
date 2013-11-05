@@ -41,10 +41,11 @@ namespace EventStore.Projections.Core.Services
         private readonly bool _checkpointsEnabled;
         private readonly bool _createTempStreams;
         private readonly bool _stopOnEof;
+        private readonly bool _isSlaveProjection;
 
         public ProjectionConfig(IPrincipal runAs, int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold,
             int pendingEventsThreshold, int maxWriteBatchLength, bool emitEventEnabled, bool checkpointsEnabled,
-            bool createTempStreams, bool stopOnEof)
+            bool createTempStreams, bool stopOnEof, bool isSlaveProjection)
         {
             if (checkpointsEnabled)
             {
@@ -69,6 +70,7 @@ namespace EventStore.Projections.Core.Services
             _checkpointsEnabled = checkpointsEnabled;
             _createTempStreams = createTempStreams;
             _stopOnEof = stopOnEof;
+            _isSlaveProjection = isSlaveProjection;
         }
 
         public int CheckpointHandledThreshold
@@ -116,9 +118,21 @@ namespace EventStore.Projections.Core.Services
             get { return _runAs; }
         }
 
+        public bool IsSlaveProjection
+        {
+            get { return _isSlaveProjection; }
+        }
+
         public static ProjectionConfig GetTest()
         {
-            return new ProjectionConfig(null, 1000, 1000*1000, 100, 500, true, true, false, false);
+            return new ProjectionConfig(null, 1000, 1000*1000, 100, 500, true, true, false, false, false);
+        }
+
+        public ProjectionConfig SetIsSlave()
+        {
+            return new ProjectionConfig(
+                _runAs, CheckpointHandledThreshold, CheckpointUnhandledBytesThreshold, PendingEventsThreshold,
+                MaxWriteBatchLength, EmitEventEnabled, _checkpointsEnabled, CreateTempStreams, StopOnEof, true);
         }
     }
 }

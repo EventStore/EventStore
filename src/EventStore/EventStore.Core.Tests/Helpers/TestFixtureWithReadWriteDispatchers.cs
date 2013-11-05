@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests.Bus;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
@@ -55,6 +56,7 @@ namespace EventStore.Core.Tests.Helpers
         protected TestHandler<Message> _consumer;
         protected IODispatcher _ioDispatcher;
         protected ManualQueue _queue;
+        protected ManualQueue[] _otherQueues;
         protected FakeTimeProvider _timeProvider;
         private PublishEnvelope _envelope;
 
@@ -78,7 +80,8 @@ namespace EventStore.Core.Tests.Helpers
             _envelope = null;
             _timeProvider = new FakeTimeProvider();
             _bus = new InMemoryBus("bus");
-            _queue = null;
+            _queue = GiveInputQueue();
+            _otherQueues = null;
             _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(GetInputQueue()));
             _readDispatcher = _ioDispatcher.BackwardReader;
             _writeDispatcher = _ioDispatcher.Writer;
@@ -94,14 +97,14 @@ namespace EventStore.Core.Tests.Helpers
             _bus.Subscribe(_consumer);
         }
 
-        protected virtual IPublisher GetInputQueue()
+        protected virtual ManualQueue GiveInputQueue()
         {
-            return (IPublisher) _queue ?? _bus;
+            return null;
         }
 
-        protected void SetUpManualQueue()
+        protected IPublisher GetInputQueue()
         {
-            _queue = new ManualQueue(_bus);
+            return (IPublisher) _queue ?? _bus;
         }
 
         protected void DisableTimer()
@@ -117,16 +120,47 @@ namespace EventStore.Core.Tests.Helpers
         protected void WhenLoop()
         {
             _queue.Process();
-            foreach (var message in (from steps in PreWhen().Concat(When())
-                                    from m in steps
-                                    select m))
+            var steps = PreWhen().Concat(When());
+            WhenLoop(steps);
+        }
+
+        protected void WhenLoop(IEnumerable<WhenStep> steps)
+        {
+            foreach (var step in steps)
             {
-                if (message != null)
-                    _queue.Publish(message);
-                _queue.Process();
+                if (step.Action != null)
+                {
+                    step.Action();
+                }
+                foreach (var message in step)
+                {
+                    if (message != null)
+                        _queue.Publish(message);
+                }
+                _queue.ProcessTimer();
+                if (_otherQueues != null)
+                    foreach (var other in _otherQueues)
+                        other.ProcessTimer();
+
+                var count = 1;
+                var total = 0;
+                while (count > 0)
+                {
+                    count = 0;
+                    count += _queue.ProcessNonTimer();
+                    if (_otherQueues != null)
+                        foreach (var other in _otherQueues)
+                            count += other.ProcessNonTimer();
+                    total += count;
+                    if (total > 2000)
+                        throw new Exception("Infinite loop?");
+                }
+                // process final timer messages
             }
-            // process final timer messages
             _queue.Process();
+            if (_otherQueues != null)
+                foreach (var other in _otherQueues)
+                    other.Process();
         }
 
         public static T EatException<T>(Func<T> func, T defaultValue = default(T))
@@ -143,6 +177,7 @@ namespace EventStore.Core.Tests.Helpers
 
         public sealed class WhenStep: IEnumerable<Message>
         {
+            public readonly Action Action;
             public readonly Message Message;
             public readonly IEnumerable<Message> Messages;
 
@@ -154,6 +189,16 @@ namespace EventStore.Core.Tests.Helpers
             internal WhenStep(IEnumerable<Message> messages)
             {
                 Messages = messages;
+            }
+
+            public WhenStep(params Message[] messages)
+            {
+                Messages = messages;
+            }
+
+            public WhenStep(Action action)
+            {
+                Action = action;
             }
 
             internal WhenStep()

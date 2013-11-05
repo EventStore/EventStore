@@ -42,15 +42,15 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void given()
         {
             //given
-            _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, -1));
-            _cachedAtCheckpointTag = CheckpointTag.FromPosition(1000, 900);
+            _cache = new PartitionStateCache();
+            _cachedAtCheckpointTag = CheckpointTag.FromPosition(0, 1000, 900);
             _cache.CacheAndLockPartitionState("partition", new PartitionState("data", null, _cachedAtCheckpointTag), _cachedAtCheckpointTag);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void thorws_invalid_operation_exception_if_not_allowed()
         {
-            _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(1000, 900));
+            _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(0, 1000, 900));
         }
 
         [Test]

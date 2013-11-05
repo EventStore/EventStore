@@ -37,23 +37,21 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly IEnvelope _envelope;
         protected Guid _correlationId;
         protected Guid _projectionId;
-        private PartitionStateCache _partitionStateCache;
+        private readonly IProjectionPhaseStateManager _projection;
         private PartitionState _state;
         private CheckpointTag _lastProcessedCheckpointTag;
 
         protected GetDataWorkItemBase(
-            IEnvelope envelope, Guid correlationId, Guid projectionId, CoreProjection projection,
-            PartitionStateCache partitionStateCache, string partition)
-            : base(projection, null)
+            IEnvelope envelope, Guid correlationId, Guid projectionId, IProjectionPhaseStateManager projection, string partition)
+            : base(null)
         {
             if (envelope == null) throw new ArgumentNullException("envelope");
-            if (partitionStateCache == null) throw new ArgumentNullException("partitionStateCache");
             if (partition == null) throw new ArgumentNullException("partition");
             _partition = partition;
             _envelope = envelope;
             _correlationId = correlationId;
             _projectionId = projectionId;
-            _partitionStateCache = partitionStateCache;
+            _projection = projection;
         }
 
         protected override void GetStatePartition()
@@ -63,8 +61,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void Load(CheckpointTag checkpointTag)
         {
-            _lastProcessedCheckpointTag = Projection.LastProcessedEventPosition;
-            Projection.BeginGetPartitionStateAt(
+            _lastProcessedCheckpointTag = _projection.LastProcessedEventPosition;
+            _projection.BeginGetPartitionStateAt(
                 _partition, _lastProcessedCheckpointTag, LoadCompleted, lockLoaded: false);
         }
 

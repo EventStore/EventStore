@@ -25,13 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Principal;
 using EventStore.Common.Log;
-using System.Linq;
-using EventStore.Core.Messages;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 
@@ -54,34 +54,24 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _started = false;
         private readonly CheckpointTag _zero;
 
-        private readonly RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-            _readDispatcher;
-
-        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
+        private readonly IODispatcher _ioDispatcher;
 
         private readonly ProjectionVersion _projectionVersion;
 
         private List<IEnvelope> _awaitingStreams;
 
         public ProjectionCheckpoint(
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ProjectionVersion projectionVersion, IPrincipal runAs, IProjectionCheckpointManager readyHandler,
-            CheckpointTag from, PositionTagger positionTagger, CheckpointTag zero, int maxWriteBatchLength,
-            ILogger logger = null)
+            IODispatcher ioDispatcher, ProjectionVersion projectionVersion, IPrincipal runAs,
+            IProjectionCheckpointManager readyHandler, CheckpointTag from, PositionTagger positionTagger,
+            CheckpointTag zero, int maxWriteBatchLength, ILogger logger = null)
         {
-            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
-            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
+            if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (zero == null) throw new ArgumentNullException("zero");
             if (from.CommitPosition < from.PreparePosition) throw new ArgumentException("from");
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
-            _readDispatcher = readDispatcher;
-            _writeDispatcher = writeDispatcher;
+            _ioDispatcher = ioDispatcher;
             _projectionVersion = projectionVersion;
             _runAs = runAs;
             _readyHandler = readyHandler;
@@ -103,24 +93,24 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void ValidateOrderAndEmitEvents(EmittedEvent[] events)
+        public void ValidateOrderAndEmitEvents(EmittedEventEnvelope[] events)
         {
             UpdateLastPosition(events);
             EnsureCheckpointNotRequested();
 
-            var groupedEvents = events.GroupBy(v => v.StreamId);
+            var groupedEvents = events.GroupBy(v => v.Event.StreamId);
             foreach (var eventGroup in groupedEvents)
             {
                 EmitEventsToStream(eventGroup.Key, eventGroup.ToArray());
             }
         }
 
-        private void UpdateLastPosition(EmittedEvent[] events)
+        private void UpdateLastPosition(EmittedEventEnvelope[] events)
         {
             foreach (var emittedEvent in events)
             {
-                if (emittedEvent.CausedByTag > _last) 
-                    _last = emittedEvent.CausedByTag;
+                if (emittedEvent.Event.CausedByTag > _last)
+                    _last = emittedEvent.Event.CausedByTag;
             }
         }
 
@@ -160,19 +150,24 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Checkpoint requested");
         }
 
-        private void EmitEventsToStream(string streamId, EmittedEvent[] emittedEvents)
+        private void EmitEventsToStream(string streamId, EmittedEventEnvelope[] emittedEvents)
         {
             EmittedStream stream;
             if (!_emittedStreams.TryGetValue(streamId, out stream))
             {
+                var streamMetadata = emittedEvents.Length > 0 ? emittedEvents[0].StreamMetadata : null;
+
+                var writerConfiguration = new EmittedStream.WriterConfiguration(
+                    streamMetadata, _runAs, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
+
                 stream = new EmittedStream(
-                    streamId, _projectionVersion, _runAs, _positionTagger, _zero, _from, _readDispatcher,
-                    _writeDispatcher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
+                    streamId, writerConfiguration, _projectionVersion, _positionTagger, _from, _ioDispatcher, this);
+
                 if (_started)
                     stream.Start();
                 _emittedStreams.Add(streamId, stream);
             }
-            stream.EmitEvents(emittedEvents);
+            stream.EmitEvents(emittedEvents.Select(v => v.Event).ToArray());
         }
 
         public void Handle(CoreProjectionProcessingMessage.ReadyForCheckpoint message)
@@ -219,7 +214,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_emittedStreams != null)
                 foreach (var stream in _emittedStreams.Values)
                     stream.Dispose();
-
         }
 
         public void Handle(CoreProjectionProcessingMessage.EmittedStreamAwaiting message)
@@ -237,6 +231,5 @@ namespace EventStore.Projections.Core.Services.Processing
                 foreach (var stream in awaitingStreams)
                     stream.ReplyWith(message);
         }
-
     }
 }

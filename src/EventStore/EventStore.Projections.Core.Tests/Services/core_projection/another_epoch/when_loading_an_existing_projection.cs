@@ -32,7 +32,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.another_epoch
 {
     [TestFixture]
-    public class when_loading_an_existing_projection : TestFixtureWithCoreProjectionLoaded
+    public class when_starting_an_existing_projection : TestFixtureWithCoreProjectionStarted
     {
         private string _testProjectionState = @"{""test"":1}";
 
@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.another_epo
 
 
         [Test]
-        public void should_subscribe_from_the_last_known_checkpoint_position()
+        public void should_subscribe_from_the_beginning()
         {
             Assert.AreEqual(1, _subscribeProjectionHandler.HandledMessages.Count);
             Assert.AreEqual(0, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.CommitPosition);

@@ -65,12 +65,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         }
 
         [Test, Category("v8")]
-        public void the_projection_status_is_creating()
+        public void the_projection_status_is_writing()
         {
             _manager.Handle(
                 new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, true));
             Assert.AreEqual(
-                ManagedProjectionState.Prepared,
+                ManagedProjectionState.Writing,
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections[0].
                     MasterStatus);
         }

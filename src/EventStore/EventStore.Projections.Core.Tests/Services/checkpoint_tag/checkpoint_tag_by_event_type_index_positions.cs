@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
@@ -40,25 +39,25 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
     public class checkpoint_tag_by_event_type_index_positions
     {
         private readonly CheckpointTag _a1 = CheckpointTag.FromEventTypeIndexPositions(
-            new TFPos(100, 50), new Dictionary<string, int> {{"a", 1}});
+            1, new TFPos(100, 50), new Dictionary<string, int> {{"a", 1}});
 
         private readonly CheckpointTag _a1_prime = CheckpointTag.FromEventTypeIndexPositions(
-            new TFPos(100, 50), new Dictionary<string, int> {{"a", 0}});
+            1, new TFPos(100, 50), new Dictionary<string, int> {{"a", 0}});
 
         private readonly CheckpointTag _b1 = CheckpointTag.FromEventTypeIndexPositions(
-            new TFPos(200, 150), new Dictionary<string, int> {{"b", 1}});
+            1, new TFPos(200, 150), new Dictionary<string, int> {{"b", 1}});
 
         private readonly CheckpointTag _a1b1 = CheckpointTag.FromEventTypeIndexPositions(
-            new TFPos(300, 250), new Dictionary<string, int> {{"a", 1}, {"b", 1}});
+            1, new TFPos(300, 250), new Dictionary<string, int> {{"a", 1}, {"b", 1}});
 
         private readonly CheckpointTag _a2b1 = CheckpointTag.FromEventTypeIndexPositions(
-            new TFPos(400, 350), new Dictionary<string, int> {{"a", 2}, {"b", 1}});
+            1, new TFPos(400, 350), new Dictionary<string, int> {{"a", 2}, {"b", 1}});
 
         private readonly CheckpointTag _a1b2 = CheckpointTag.FromEventTypeIndexPositions(
-            new TFPos(500, 450), new Dictionary<string, int> {{"a", 1}, {"b", 2}});
+            1, new TFPos(500, 450), new Dictionary<string, int> {{"a", 1}, {"b", 2}});
 
         private readonly CheckpointTag _a2b2 = CheckpointTag.FromEventTypeIndexPositions(
-            new TFPos(600, 550), new Dictionary<string, int> {{"a", 2}, {"b", 2}});
+            1, new TFPos(600, 550), new Dictionary<string, int> {{"a", 2}, {"b", 2}});
 
         [Test]
         public void equal_equals()

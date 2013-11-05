@@ -31,8 +31,10 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.v8;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 
@@ -42,7 +44,7 @@ namespace EventStore.Projections.Core.Services.v8
     {
         private readonly PreludeScript _prelude;
         private readonly QueryScript _query;
-        private List<EmittedEvent> _emittedEvents;
+        private List<EmittedEventEnvelope> _emittedEvents;
         private CheckpointTag _eventPosition;
         private bool _disposed;
 
@@ -76,6 +78,8 @@ namespace EventStore.Projections.Core.Services.v8
 
             [DataMember] public string eventName;
 
+            [DataMember] public bool isJson;
+
             [DataMember] public string body;
 
             [DataMember] public Dictionary<string, JRaw> metadata;
@@ -101,20 +105,21 @@ namespace EventStore.Projections.Core.Services.v8
                 throw new ArgumentException("Failed to deserialize emitted event JSON", ex);
             }
             if (_emittedEvents == null)
-                _emittedEvents = new List<EmittedEvent>();
+                _emittedEvents = new List<EmittedEventEnvelope>();
             _emittedEvents.Add(
-                new EmittedDataEvent(
-                    emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body,
-                    emittedEvent.GetExtraMetadata(), _eventPosition, expectedTag: null));
+                new EmittedEventEnvelope(
+                    new EmittedDataEvent(
+                        emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.isJson, emittedEvent.body,
+                        emittedEvent.GetExtraMetadata(), _eventPosition, expectedTag: null)));
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        private QuerySourcesDefinition GetQuerySourcesDefinition()
         {
             CheckDisposed();
             var sourcesDefinition = _query.GetSourcesDefintion();
             if (sourcesDefinition == null)
                 throw new InvalidOperationException("Invalid query.  No source definition.");
-            sourcesDefinition.ConfigureSourceProcessingStrategy(builder);
+            return sourcesDefinition;
         }
 
         public void Load(string state)
@@ -130,17 +135,17 @@ namespace EventStore.Projections.Core.Services.v8
         }
 
         public string GetStatePartition(
-            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data)
+            CheckpointTag eventPosition, string category, ResolvedEvent @event)
         {
             CheckDisposed();
-            if (eventType == null)
-                throw new ArgumentNullException("eventType");
-            if (streamId == null)
-                throw new ArgumentNullException("streamId");
+            if (@event == null) throw new ArgumentNullException("event");
             var partition = _query.GetPartition(
-                data.Trim(), // trimming data passed to a JS 
-                new string[] { streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture), metadata ?? "" });
+                @event.Data.Trim(), // trimming data passed to a JS 
+                new string[]
+                {
+                    @event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
+                    @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? ""
+                });
             if (partition == "")
                 return null;
             else 
@@ -149,7 +154,7 @@ namespace EventStore.Projections.Core.Services.v8
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
-            out EmittedEvent[] emittedEvents)
+            out EmittedEventEnvelope[] emittedEvents)
         {
             CheckDisposed();
             if (data == null)
@@ -164,6 +169,18 @@ namespace EventStore.Projections.Core.Services.v8
                         data.EventStreamId, data.EventType, category ?? "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
                         data.Metadata, partition
                     });
+            try
+            {
+                if (!string.IsNullOrEmpty(newState))
+                {
+                    var jo = newState.ParseJson<JObject>();
+                }
+
+            }
+            catch (JsonException jex)
+            {
+                Console.Error.WriteLine(newState);
+            }
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
         }
@@ -188,6 +205,11 @@ namespace EventStore.Projections.Core.Services.v8
                 _query.Dispose();
             if (_prelude != null)
                 _prelude.Dispose();
+        }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return GetQuerySourcesDefinition();
         }
     }
 }

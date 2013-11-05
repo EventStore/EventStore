@@ -9,6 +9,10 @@
 #include <vector>
 #include <string>
 
+#if __GNUC__ >= 4
+#include <memory>
+#endif
+
 #include <v8.h>
 
 // reference additional headers your program requires here

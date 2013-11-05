@@ -30,7 +30,6 @@ using System;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -54,9 +53,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", new ProjectionVersion(1, 2, 2), null, new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher,
-                _readyHandler, maxWriteBatchLength: 50);
+                "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
+                new ProjectionVersion(1, 2, 2), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1),
+                _ioDispatcher, _readyHandler);
             _stream.Start();
         }
 
@@ -65,16 +64,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(100, 50),
-                    CheckpointTag.FromPosition(40, 20))
-                    });
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 100, 50), CheckpointTag.FromPosition(0, 40, 20))
+                });
             Assert.AreEqual(
                 0,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
-                         .ExceptOfEventType(SystemEventTypes.StreamMetadata)
-                         .Count());
+                    .ExceptOfEventType(SystemEventTypes.StreamMetadata)
+                    .Count());
             Assert.AreEqual(1, _readyHandler.HandledRestartRequestedMessages.Count());
         }
 
@@ -83,15 +81,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(40, 20), null)
-                    });
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 40, 20), null)
+                });
             Assert.AreEqual(
                 1,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
-                         .ExceptOfEventType(SystemEventTypes.StreamMetadata)
-                         .Count());
+                    .ExceptOfEventType(SystemEventTypes.StreamMetadata)
+                    .Count());
         }
 
         [Test]
@@ -99,16 +97,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150),
-                    CheckpointTag.FromPosition(100, 50))
-                    });
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), CheckpointTag.FromPosition(0, 100, 50))
+                });
             Assert.AreEqual(
                 0,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
-                         .ExceptOfEventType(SystemEventTypes.StreamMetadata)
-                         .Count());
+                    .ExceptOfEventType(SystemEventTypes.StreamMetadata)
+                    .Count());
             Assert.AreEqual(1, _readyHandler.HandledRestartRequestedMessages.Count());
         }
 
@@ -117,17 +114,16 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null)
-                    });
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
+                });
             var metaData =
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
-                         .OfEventType("type")
-                         .Single()
-                         .Metadata.ParseCheckpointTagVersionExtraJson(default(ProjectionVersion));
+                    .OfEventType("type")
+                    .Single()
+                    .Metadata.ParseCheckpointTagVersionExtraJson(default(ProjectionVersion));
             Assert.AreEqual(new ProjectionVersion(1, 2, 2), metaData.Version);
         }
-
     }
 }

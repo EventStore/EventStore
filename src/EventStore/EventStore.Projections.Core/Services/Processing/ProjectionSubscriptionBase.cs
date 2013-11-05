@@ -29,6 +29,7 @@
 using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -120,12 +121,13 @@ namespace EventStore.Projections.Core.Services.Processing
                         _subscriptionId, _subscriptionMessageSequenceNumber++);
                 _publisher.Publish(convertedMessage);
                 _eventsSinceLastCheckpointSuggested++;
-                if (_eventsSinceLastCheckpointSuggested >= _checkpointProcessedEventsThreshold)
+                if (_checkpointProcessedEventsThreshold > 0
+                    && _eventsSinceLastCheckpointSuggested >= _checkpointProcessedEventsThreshold)
                     SuggestCheckpoint(message);
             }
             else
             {
-                if (_checkpointUnhandledBytesThreshold != null
+                if (_checkpointUnhandledBytesThreshold > 0
                     && (_lastPassedOrCheckpointedEventPosition != null
                         && message.Data.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
                         > _checkpointUnhandledBytesThreshold))
@@ -150,6 +152,14 @@ namespace EventStore.Projections.Core.Services.Processing
                     _subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
         }
 
+        protected void PublishStartingAt(long startingLastCommitPosition)
+        {
+            _publisher.Publish(
+                new EventReaderSubscriptionMessage.SubscriptionStarted(
+                    _subscriptionId, _positionTracker.LastTag, startingLastCommitPosition,
+                    _subscriptionMessageSequenceNumber++));
+        }
+
         private void PublishNotAuthorized()
         {
             _publisher.Publish(
@@ -167,13 +177,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsSinceLastCheckpointSuggested = 0;
         }
 
-        public IEventReader CreatePausedEventReader(IPublisher publisher, Guid eventReaderId)
+        public IEventReader CreatePausedEventReader(IPublisher publisher, IODispatcher ioDispatcher, Guid eventReaderId)
         {
             if (_eofReached)
                 throw new InvalidOperationException("Onetime projection has already reached the eof position");
             _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
             return _readerStrategy.CreatePausedEventReader(
-                eventReaderId, publisher, _positionTracker.LastTag, _stopOnEof, _stopAfterNEvents);
+                eventReaderId, publisher, ioDispatcher, _positionTracker.LastTag, _stopOnEof, _stopAfterNEvents);
         }
 
         public void Handle(ReaderSubscriptionMessage.EventReaderEof message)
@@ -189,6 +199,24 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message)
+        {
+            var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
+            
+            _publisher.Publish(
+                new EventReaderSubscriptionMessage.PartitionEofReached(
+                    _subscriptionId, eventCheckpointTag, message.Partition,
+                    _subscriptionMessageSequenceNumber++));
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionMeasured message)
+        {
+            _publisher.Publish(
+                            new EventReaderSubscriptionMessage.PartitionMeasured(
+                                _subscriptionId, message.Partition, message.Size,
+                                _subscriptionMessageSequenceNumber++));
+        }
+
         public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message)
         {
             if (_stopOnEof)
@@ -202,6 +230,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected virtual void EofReached()
         {
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderStarting message)
+        {
+            PublishStartingAt(message.LastCommitPosition);
         }
     }
 }

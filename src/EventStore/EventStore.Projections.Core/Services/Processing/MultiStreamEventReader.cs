@@ -59,10 +59,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, bool> _eofs;
         private int _deliveredEvents;
 
-        public MultiStreamEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, string[] streams,
-            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
-            bool stopOnEof = false, int? stopAfterNEvents = null)
+        public MultiStreamEventReader(IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, int phase, string[] streams, Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider, bool stopOnEof = false, int? stopAfterNEvents = null)
             : base(publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
         {
             if (streams == null) throw new ArgumentNullException("streams");
@@ -70,7 +67,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (streams.Length == 0) throw new ArgumentException("streams");
             _streams = new HashSet<string>(streams);
             _eofs = _streams.ToDictionary(v => v, v => false);
-            var positions = CheckpointTag.FromStreamPositions(fromPositions);
+            var positions = CheckpointTag.FromStreamPositions(phase, fromPositions);
             ValidateTag(positions);
             _fromPositions = positions;
             _resolveLinkTos = resolveLinkTos;

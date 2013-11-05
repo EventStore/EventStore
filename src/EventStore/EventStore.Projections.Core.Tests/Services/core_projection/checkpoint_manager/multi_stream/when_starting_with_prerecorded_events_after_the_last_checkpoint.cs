@@ -30,6 +30,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using EventStore.Core.Data;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -40,13 +42,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         TestFixtureWithMultiStreamCheckpointManager
     {
         private readonly CheckpointTag _tag1 =
-            CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 0}, {"b", 0}, {"c", 1}});
+            CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"a", 0}, {"b", 0}, {"c", 1}});
 
         private readonly CheckpointTag _tag2 =
-            CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 0}, {"c", 1}});
+            CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"a", 1}, {"b", 0}, {"c", 1}});
 
         private readonly CheckpointTag _tag3 =
-            CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 1}, {"c", 1}});
+            CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"a", 1}, {"b", 1}, {"c", 1}});
 
         protected override void Given()
         {
@@ -77,7 +79,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         protected override void When()
         {
             base.When();
-            _manager.BeginLoadState();
+            _checkpointReader.BeginLoadState();
+            var checkpointLoaded =
+                _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.CheckpointLoaded>().First();
+            _checkpointWriter.StartFrom(checkpointLoaded.CheckpointTag, checkpointLoaded.CheckpointEventNumber);
+            _manager.BeginLoadPrerecordedEvents(checkpointLoaded.CheckpointTag);
+
         }
 
         [Test]
@@ -85,7 +92,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             Assert.AreEqual(1, _projection._checkpointLoadedMessages.Count);
             Assert.AreEqual(
-                CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 0}, {"b", 0}, {"c", 0}}),
+                CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"a", 0}, {"b", 0}, {"c", 0}}),
                 _projection._checkpointLoadedMessages.Single().CheckpointTag);
             Assert.AreEqual("{}", _projection._checkpointLoadedMessages.Single().CheckpointData);
         }
@@ -95,14 +102,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             Assert.AreEqual(1, _projection._prerecordedEventsLoadedMessages.Count);
             Assert.AreEqual(
-                CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 1}, {"c", 1}}),
+                CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"a", 1}, {"b", 1}, {"c", 1}}),
                 _projection._prerecordedEventsLoadedMessages.Single().CheckpointTag);
         }
 
         [Test]
         public void sends_commited_event_received_messages_in_correct_order()
         {
-            var messages = _projection._committedEventReceivedMessages;
+            var messages = HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().ToList();
             Assert.AreEqual(3, messages.Count);
 
             var message1 = messages[0];
@@ -117,7 +124,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void sends_correct_commited_event_received_messages()
         {
-            var messages = _projection._committedEventReceivedMessages;
+            var messages = HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().ToList();
             Assert.AreEqual(3, messages.Count);
 
             var message1 = messages[0];

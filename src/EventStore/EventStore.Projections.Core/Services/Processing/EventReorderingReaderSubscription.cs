@@ -103,5 +103,10 @@ namespace EventStore.Projections.Core.Services.Processing
             // flush all available events as wqe reached eof (currently onetime projections only)
             ProcessAllFor(DateTime.MaxValue);
         }
+
+        public new void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message)
+        {
+            throw new NotSupportedException();
+        }
     }
 }

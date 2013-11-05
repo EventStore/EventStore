@@ -35,9 +35,9 @@ namespace EventStore.Projections.Core.Tests.Services
     [TestFixture]
     public class mixed_checkpoint_tags
     {
-        private readonly CheckpointTag _a = CheckpointTag.FromStreamPosition("stream1", 9);
-        private readonly CheckpointTag _b = CheckpointTag.FromStreamPosition("stream2", 15);
-        private readonly CheckpointTag _c = CheckpointTag.FromPosition(50, 29);
+        private readonly CheckpointTag _a = CheckpointTag.FromStreamPosition(0, "stream1", 9);
+        private readonly CheckpointTag _b = CheckpointTag.FromStreamPosition(0, "stream2", 15);
+        private readonly CheckpointTag _c = CheckpointTag.FromPosition(0, 50, 29);
 
         [Test]
         public void are_not_equal()

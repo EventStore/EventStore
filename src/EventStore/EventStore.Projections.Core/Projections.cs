@@ -143,6 +143,11 @@ namespace EventStore.Projections.Core
                         Forwarder.Create<CoreProjectionManagementMessage.Faulted>(_managerInputQueue));
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<CoreProjectionManagementMessage.Prepared>(_managerInputQueue));
+                    projectionNode.CoreOutput.Subscribe(
+                        Forwarder.Create<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(
+                            _managerInputQueue));
+                    projectionNode.CoreOutput.Subscribe(
+                        Forwarder.Create<ProjectionManagementMessage.ControlMessage>(_managerInputQueue));
 
                 }
                 projectionNode.CoreOutput.Subscribe<TimerMessage.Schedule>(timerService);

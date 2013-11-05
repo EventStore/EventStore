@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -45,14 +46,20 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<ReaderSubscriptionManagement.Subscribe>, 
         IHandle<ReaderSubscriptionManagement.Unsubscribe>, 
         IHandle<ReaderSubscriptionManagement.Pause>, 
-        IHandle<ReaderSubscriptionManagement.Resume>, 
+        IHandle<ReaderSubscriptionManagement.Resume>,
+        IHandle<ReaderSubscriptionManagement.SpoolStreamReading>,
+        IHandle<ReaderSubscriptionManagement.CompleteSpooledStreamReading>,
         IHandle<ReaderSubscriptionMessage.CommittedEventDistributed>, 
         IHandle<ReaderSubscriptionMessage.EventReaderIdle>,
+        IHandle<ReaderSubscriptionMessage.EventReaderStarting>,
         IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>,
-        IHandle<ReaderSubscriptionMessage.EventReaderEof>, 
+        IHandle<ReaderSubscriptionMessage.EventReaderEof>,
+        IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
+        IHandle<ReaderSubscriptionMessage.EventReaderPartitionMeasured>,
         IHandle<ReaderCoreServiceMessage.ReaderTick>
     {
         private readonly IPublisher _publisher;
+        private readonly IODispatcher _ioDispatcher;
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionCoreService>();
         private bool _stopped = true;
 
@@ -70,10 +77,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public EventReaderCoreService(
-            IPublisher publisher, int eventCacheSize,
+            IPublisher publisher, IODispatcher ioDispatcher, int eventCacheSize,
             ICheckpoint writerCheckpoint, bool runHeadingReader)
         {
             _publisher = publisher;
+            _ioDispatcher = ioDispatcher;
             if (runHeadingReader)
                 _headingEventReader = new HeadingEventReader(eventCacheSize);
             _writerCheckpoint = writerCheckpoint;
@@ -91,12 +99,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 _subscriptionEventReaders.Remove(message.SubscriptionId);
                 _headingEventReader.Unsubscribe(message.SubscriptionId);
                 var forkedEventReaderId = Guid.NewGuid();
-                var forkedEventReader = projectionSubscription.CreatePausedEventReader(_publisher, forkedEventReaderId);
+                var forkedEventReader = projectionSubscription.CreatePausedEventReader(
+                    _publisher, _ioDispatcher, forkedEventReaderId);
                 _subscriptionEventReaders.Add(message.SubscriptionId, forkedEventReaderId);
                 _eventReaderSubscriptions.Add(forkedEventReaderId, message.SubscriptionId);
                 _eventReaders.Add(forkedEventReaderId, forkedEventReader);
                 _publisher.Publish(
-                    new ReaderSubscriptionManagement.ReaderAssignedReader(message.SubscriptionId, forkedEventReaderId));
+                    new EventReaderSubscriptionMessage.ReaderAssignedReader(
+                        message.SubscriptionId, forkedEventReaderId));
             }
             else
             {
@@ -124,7 +134,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptions.Add(subscriptionId, projectionSubscription);
 
             var distibutionPointCorrelationId = Guid.NewGuid();
-            var eventReader = projectionSubscription.CreatePausedEventReader(_publisher, distibutionPointCorrelationId);
+            var eventReader = projectionSubscription.CreatePausedEventReader(
+                _publisher, _ioDispatcher, distibutionPointCorrelationId);
             _logger.Trace(
                 "The '{0}' projection subscribed to the '{1}' distribution point", subscriptionId,
                 distibutionPointCorrelationId);
@@ -132,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptionEventReaders.Add(subscriptionId, distibutionPointCorrelationId);
             _eventReaderSubscriptions.Add(distibutionPointCorrelationId, subscriptionId);
             _publisher.Publish(
-                new ReaderSubscriptionManagement.ReaderAssignedReader(
+                new EventReaderSubscriptionMessage.ReaderAssignedReader(
                     subscriptionId, distibutionPointCorrelationId));
             eventReader.Resume();
         }
@@ -148,7 +159,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _eventReaders.Remove(eventReaderId);
                 _eventReaderSubscriptions.Remove(eventReaderId);
                 _publisher.Publish(
-                    new ReaderSubscriptionManagement.ReaderAssignedReader(message.SubscriptionId, Guid.Empty));
+                    new EventReaderSubscriptionMessage.ReaderAssignedReader(message.SubscriptionId, Guid.Empty));
                 _logger.Trace(
                     "The '{0}' subscription has unsubscribed (reader: {1})", message.SubscriptionId,
                     eventReaderId);
@@ -186,6 +197,16 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptions[projectionId].Handle(message);
         }
 
+        public void Handle(ReaderSubscriptionMessage.EventReaderStarting message)
+        {
+            Guid projectionId;
+            if (_stopped)
+                return;
+            if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+                return; // unsubscribed
+            _subscriptions[projectionId].Handle(message);
+        }
+
         public void Handle(ReaderSubscriptionMessage.EventReaderEof message)
         {
             Guid projectionId;
@@ -197,6 +218,26 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _pausedSubscriptions.Add(projectionId); // it is actually disposed -- workaround
             Handle(new ReaderSubscriptionManagement.Unsubscribe(projectionId));
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message)
+        {
+            Guid projectionId;
+            if (_stopped)
+                return;
+            if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+                return; // unsubscribed
+            _subscriptions[projectionId].Handle(message);
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionMeasured message)
+        {
+            Guid projectionId;
+            if (_stopped)
+                return;
+            if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+                return; // unsubscribed
+            _subscriptions[projectionId].Handle(message);
         }
 
         public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message)
@@ -289,7 +330,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventReaders.Remove(eventReaderId);
             _eventReaderSubscriptions.Remove(eventReaderId);
             _subscriptionEventReaders[projectionId] = Guid.Empty;
-            _publisher.Publish(new ReaderSubscriptionManagement.ReaderAssignedReader(message.CorrelationId, Guid.Empty));
+            _publisher.Publish(new EventReaderSubscriptionMessage.ReaderAssignedReader(message.CorrelationId, Guid.Empty));
             return true;
         }
 
@@ -307,6 +348,20 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ReaderCoreServiceMessage.ReaderTick message)
         {
             message.Action();
+        }
+
+        public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
+        {
+            var eventReader = _subscriptionEventReaders[message.SubscriptionId];
+            var handler = (IHandle<ReaderSubscriptionManagement.SpoolStreamReading>)_eventReaders[eventReader];
+            handler.Handle(message);
+        }
+
+        public void Handle(ReaderSubscriptionManagement.CompleteSpooledStreamReading message)
+        {
+            var eventReader = _subscriptionEventReaders[message.SubscriptionId];
+            var handler = (IHandle<ReaderSubscriptionManagement.CompleteSpooledStreamReading>)_eventReaders[eventReader];
+            handler.Handle(message);
         }
     }
 }

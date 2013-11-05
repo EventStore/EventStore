@@ -161,8 +161,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             {
                 var pos = GetTfPos("stream5", 0);
                 Assert.AreEqual(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        pos, new Dictionary<string, int> {{"type1", 1}, {"type3", 1}}), _state.Position);
+                    CheckpointTag.FromEventTypeIndexPositions(0, pos, new Dictionary<string, int> {{"type1", 1}, {"type3", 1}}), _state.Position);
             }
 
         }
@@ -206,8 +205,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             {
                 var pos = GetTfPos("stream5", 0);
                 Assert.AreEqual(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        pos, new Dictionary<string, int> {{"type1", 1}, {"type3", 1}}), _state.Position);
+                    CheckpointTag.FromEventTypeIndexPositions(0, pos, new Dictionary<string, int> {{"type1", 1}, {"type3", 1}}), _state.Position);
             }
         }
 
@@ -247,8 +245,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             {
                 var pos = GetTfPos("stream2", 1);
                 Assert.That(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        pos, new Dictionary<string, int> {{"type3", 1}}) <= _state.Position);
+                    CheckpointTag.FromEventTypeIndexPositions(0, pos, new Dictionary<string, int> {{"type3", 1}}) <= _state.Position);
             }
         }
 
@@ -288,7 +285,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             public void projection_position_is_correct()
             {
                 var pos = GetTfPos("stream5", 0);
-                Assert.AreEqual(CheckpointTag.FromPosition(pos.CommitPosition, pos.PreparePosition), _state.Position);
+                Assert.AreEqual(CheckpointTag.FromPosition(0, pos.CommitPosition, pos.PreparePosition), _state.Position);
             }
         }
 
@@ -327,7 +324,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             public void projection_position_is_correct()
             {
                 Assert.AreEqual(
-                    CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"stream1", 1}, {"stream2", 1}}),
+                    CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"stream1", 1}, {"stream2", 1}}),
                     _state.Position);
             }
         }
@@ -366,7 +363,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             [Test]
             public void projection_position_is_correct()
             {
-                Assert.AreEqual(CheckpointTag.FromStreamPosition("stream2", 1), _state.Position);
+                Assert.AreEqual(CheckpointTag.FromStreamPosition(0, "stream2", 1), _state.Position);
             }
         }
 
@@ -405,7 +402,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             public void projection_position_is_correct()
             {
                 Assert.AreEqual(
-                    CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"stream2", 1}, {"stream3", 3}}),
+                    CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"stream2", 1}, {"stream3", 3}}),
                     _state.Position);
             }
         }

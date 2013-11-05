@@ -26,8 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-
 namespace EventStore.Projections.Core.Services.Processing
 {
     class ProgressWorkItem : CheckpointWorkItemBase
@@ -35,9 +33,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
         private readonly float _progress;
 
-        public ProgressWorkItem(
-            CoreProjection projection, ICoreProjectionCheckpointManager checkpointManager, float progress)
-            : base(projection, null) 
+        public ProgressWorkItem(ICoreProjectionCheckpointManager checkpointManager, float progress)
+            : base(null) 
         {
             _checkpointManager = checkpointManager;
             _progress = progress;

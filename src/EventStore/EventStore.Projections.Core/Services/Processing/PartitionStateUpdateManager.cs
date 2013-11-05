@@ -43,6 +43,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, State> _states = new Dictionary<string, State>();
         private readonly ProjectionNamesBuilder _namingBuilder;
 
+        private readonly EmittedStream.WriterConfiguration.StreamMetadata _partitionCheckpointStreamMetadata =
+            new EmittedStream.WriterConfiguration.StreamMetadata(maxCount: 2);
+
         public PartitionStateUpdateManager(ProjectionNamesBuilder namingBuilder)
         {
             if (namingBuilder == null) throw new ArgumentNullException("namingBuilder");
@@ -66,7 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_states.Count > 0)
             {
-                var list = new List<EmittedEvent>();
+                var list = new List<EmittedEventEnvelope>();
                 foreach (var entry in _states)
                 {
                     var partition = entry.Key;
@@ -75,13 +78,21 @@ namespace EventStore.Projections.Core.Services.Processing
                     var causedBy = entry.Value.PartitionState.CausedBy;
                     var expectedTag = entry.Value.ExpectedTag;
                     list.Add(
-                        new EmittedDataEvent(streamId, Guid.NewGuid(), "$Checkpoint", data, null, causedBy, expectedTag));
+                        new EmittedEventEnvelope(
+                            new EmittedDataEvent(
+                                streamId, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint, true,
+                                data, null, causedBy, expectedTag), _partitionCheckpointStreamMetadata));
                 }
                 //NOTE: order yb is required to satisfy internal emit events validation
                 // which ensures that events are ordered by causedBy tag.  
                 // it is too strong check, but ...
-                eventWriter.ValidateOrderAndEmitEvents(list.OrderBy(v => v.CausedByTag).ToArray());
+                eventWriter.ValidateOrderAndEmitEvents(list.OrderBy(v => v.Event.CausedByTag).ToArray());
             }
+        }
+
+        public void PartitionCompleted(string partition)
+        {
+            _states.Remove(partition);
         }
     }
 }

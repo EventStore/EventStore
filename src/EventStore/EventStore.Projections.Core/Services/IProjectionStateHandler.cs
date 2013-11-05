@@ -28,17 +28,19 @@
 
 using System;
 using EventStore.Core.Data;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Services
 {
-    public interface ISourceDefinitionConfigurator
+    public interface ISourceDefinitionSource
     {
-        void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder);
+        IQuerySources GetSourceDefinition();
     }
 
-    public interface IProjectionStateHandler : IDisposable, ISourceDefinitionConfigurator
+
+    public interface IProjectionStateHandler : IDisposable, ISourceDefinitionSource
     {
         void Load(string state);
         void Initialize();
@@ -48,8 +50,7 @@ namespace EventStore.Projections.Core.Services
         /// </summary>
         /// <returns>partition name</returns>
         string GetStatePartition(
-            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data);
+            CheckpointTag eventPosition, string category, ResolvedEvent data);
 
         /// <summary>
         /// Processes event and updates internal state if necessary.  
@@ -57,7 +58,7 @@ namespace EventStore.Projections.Core.Services
         /// <returns>true - if event was processed (new state must be returned) </returns>
         bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
-            out EmittedEvent[] emittedEvents);
+            out EmittedEventEnvelope[] emittedEvents);
 
         /// <summary>
         /// Transforms current state into a projection result.  Should not call any emit/linkTo etc 
@@ -68,7 +69,7 @@ namespace EventStore.Projections.Core.Services
 
     public interface IProjectionCheckpointHandler
     {
-        void ProcessNewCheckpoint(CheckpointTag checkpointPosition, out EmittedEvent[] emittedEvents);
+        void ProcessNewCheckpoint(CheckpointTag checkpointPosition, out EmittedEventEnvelope[] emittedEvents);
     }
 
     public static class ProjectionStateHandlerTestExtensions
@@ -76,7 +77,7 @@ namespace EventStore.Projections.Core.Services
         public static bool ProcessEvent(
             this IProjectionStateHandler self, string partition, CheckpointTag eventPosition, string streamId,
             string eventType, string category, Guid eventId, int eventSequenceNumber, string metadata, string data,
-            out string state, out EmittedEvent[] emittedEvents, bool isJson = true)
+            out string state, out EmittedEventEnvelope[] emittedEvents, bool isJson = true)
         {
             return self.ProcessEvent(
                 partition, eventPosition, category,
@@ -84,5 +85,12 @@ namespace EventStore.Projections.Core.Services
                     streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new TFPos(0, -1),
                     eventId, eventType, isJson, data, metadata), out state, out emittedEvents);
         }
+
+        public static string GetNativeHandlerName(this Type handlerType)
+        {
+            return "native:" + handlerType.Namespace + "." + handlerType.Name;
+        }
+
     }
+
 }

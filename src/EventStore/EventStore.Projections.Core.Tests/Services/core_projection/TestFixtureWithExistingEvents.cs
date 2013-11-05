@@ -45,9 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
     {
         protected
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
-                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+            ReaderSubscriptionDispatcher
             _subscriptionDispatcher;
 
         protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
@@ -63,17 +61,19 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void SetUp()
         {
             _subscriptionDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
-                    (_bus, v => v.SubscriptionId, v => v.SubscriptionId);
+                new ReaderSubscriptionDispatcher
+                    (_bus);
             _bus.Subscribe(
                 _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(
                 _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscriptionStarted>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
             _bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(this);
             _bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(this);
         }

@@ -48,11 +48,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         [Test]
-        public void should_subscribe_from_beginning()
+        public void should_not_subscribe()
         {
-            Assert.AreEqual(1, _subscribeProjectionHandler.HandledMessages.Count);
-            Assert.AreEqual(0, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.CommitPosition);
-            Assert.AreEqual(-1, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.PreparePosition);
+            Assert.AreEqual(0, _subscribeProjectionHandler.HandledMessages.Count);
         }
 
         [Test]

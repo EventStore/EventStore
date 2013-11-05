@@ -60,7 +60,7 @@ Properties {
     }
     else
     {
-        throw "Platform $platform is not supported." 
+        throw "Platform" + $platform + "is not supported." 
     }
 
     if ($configuration -eq "release")
@@ -112,12 +112,11 @@ Task Build-V8 {
     try {
         $gypFile = Join-Path $v8Directory (Join-Path "build" "gyp_v8")
         $commonGypiPath = Join-Path $v8Directory (Join-Path "build" "common.gypi")
-        $includeParameter = "-I$commonGypiPath"
+        $includeParameter = "" # "-I$commonGypiPath"
 
         if ($platformToolset -eq $null) {
             $platformToolset = Get-BestGuessOfPlatformToolsetOrDie($v8VisualStudioPlatform)
         }
-
         Exec { & $pythonExecutable $gypFile $includeParameter $v8PlatformParameter }
         Exec { msbuild .\build\all.sln /m /p:Configuration=$v8VisualStudioConfiguration /p:Platform=$v8VisualStudioPlatform /p:PlatformToolset=$platformToolset }
     } finally {

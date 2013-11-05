@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         public void it_can_be_created()
         {
             new EventReorderingReaderSubscription(new FakePublisher(),
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
+                Guid.NewGuid(), CheckpointTag.FromPosition(0, 0, -1),
                 CreateReaderStrategy(),
                 1000, 2000, 500);
         }
@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         public void null_publisher_throws_argument_null_exception()
         {
             new EventReorderingReaderSubscription(null,
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), 
+                Guid.NewGuid(), CheckpointTag.FromPosition(0, 0, -1), 
                 CreateReaderStrategy(),
                 1000, 2000, 500);
         }
@@ -59,16 +59,16 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         public void null_describe_source_throws_argument_null_exception()
         {
             new EventReorderingReaderSubscription(new FakePublisher(),
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
+                Guid.NewGuid(), CheckpointTag.FromPosition(0, 0, -1),
                 null, 1000, 2000, 500);
         }
 
         private IReaderStrategy CreateReaderStrategy()
         {
-            var result = new ReaderStrategy.Builder();
+            var result = new SourceDefinitionBuilder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(new RealTimeProvider(), runAs: null);
+            return ReaderStrategy.Create(0, result.Build(), new RealTimeProvider(), stopOnEof: false, runAs: null);
         }
     }
 }

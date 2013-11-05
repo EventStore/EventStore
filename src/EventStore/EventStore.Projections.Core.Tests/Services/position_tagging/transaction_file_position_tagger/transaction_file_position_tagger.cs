@@ -61,68 +61,67 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         [Test]
         public void can_be_created()
         {
-            new TransactionFilePositionTagger();
+            new TransactionFilePositionTagger(0);
         }
 
         [Test]
         public void is_message_after_checkpoint_tag_after_case()
         {
-            var t = new TransactionFilePositionTagger();
-            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPosition(20, 10), _firstEvent);
+            var t = new TransactionFilePositionTagger(0);
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPosition(0, 20, 10), _firstEvent);
             Assert.IsTrue(result);
         }
 
         [Test]
         public void is_message_after_checkpoint_tag_before_case()
         {
-            var t = new TransactionFilePositionTagger();
-            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPosition(50, 40), _firstEvent);
+            var t = new TransactionFilePositionTagger(0);
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPosition(0, 50, 40), _firstEvent);
             Assert.IsFalse(result);
         }
 
         [Test]
         public void is_message_after_checkpoint_tag_equal_case()
         {
-            var t = new TransactionFilePositionTagger();
-            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPosition(30, 20), _firstEvent);
+            var t = new TransactionFilePositionTagger(0);
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPosition(0, 30, 20), _firstEvent);
             Assert.IsFalse(result);
         }
 
         [Test]
         public void position_checkpoint_tag_is_compatible()
         {
-            var t = new TransactionFilePositionTagger();
-            Assert.IsTrue(t.IsCompatible(CheckpointTag.FromPosition(1000, 500)));
+            var t = new TransactionFilePositionTagger(0);
+            Assert.IsTrue(t.IsCompatible(CheckpointTag.FromPosition(0, 1000, 500)));
         }
 
         [Test]
         public void stream_checkpoint_tag_is_incompatible()
         {
-            var t = new TransactionFilePositionTagger();
-            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromStreamPosition("stream2", 100)));
+            var t = new TransactionFilePositionTagger(0);
+            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromStreamPosition(0, "stream2", 100)));
         }
 
         [Test]
         public void adjust_compatible_tag_returns_the_same_tag()
         {
-            var t = new TransactionFilePositionTagger();
-            var tag = CheckpointTag.FromPosition(100, 50);
+            var t = new TransactionFilePositionTagger(0);
+            var tag = CheckpointTag.FromPosition(0, 100, 50);
             Assert.AreSame(tag, t.AdjustTag(tag));
         }
 
         [Test]
         public void can_adjust_tf_position_tag()
         {
-            var t = new TransactionFilePositionTagger();
-            var tag = CheckpointTag.FromPosition(100, 50);
-            var original = CheckpointTag.FromEventTypeIndexPositions(
-                new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
+            var t = new TransactionFilePositionTagger(0);
+            var tag = CheckpointTag.FromPosition(0, 100, 50);
+            var original = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
             Assert.AreEqual(tag, t.AdjustTag(original));
         }
         [Test]
         public void zero_position_tag_is_before_first_event_possible()
         {
-            var t = new TransactionFilePositionTagger();
+            var t = new TransactionFilePositionTagger(0);
             var zero = t.MakeZeroCheckpointTag();
 
             var zeroFromEvent = t.MakeCheckpointTag(zero, _zeroEvent);
@@ -133,7 +132,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         [Test]
         public void produced_checkpoint_tags_are_correctly_ordered()
         {
-            var t = new TransactionFilePositionTagger();
+            var t = new TransactionFilePositionTagger(0);
             var zero = t.MakeZeroCheckpointTag();
 
             var zeroEvent = t.MakeCheckpointTag(zero, _zeroEvent);

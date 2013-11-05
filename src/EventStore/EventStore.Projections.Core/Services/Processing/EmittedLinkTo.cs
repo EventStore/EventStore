@@ -38,16 +38,17 @@ namespace EventStore.Projections.Core.Services.Processing
         private int? _eventNumber;
 
         public EmittedLinkTo(
-            string streamId, Guid eventId, string targetStreamId, CheckpointTag causedByTag,
-            CheckpointTag expectedTag, Action<int> onCommitted = null)
+            string streamId, Guid eventId,
+            string targetStreamId, CheckpointTag causedByTag, CheckpointTag expectedTag, Action<int> onCommitted = null)
             : base(streamId, eventId, "$>", causedByTag, expectedTag, onCommitted)
         {
             _targetStreamId = targetStreamId;
         }
 
         public EmittedLinkTo(
-            string streamId, Guid eventId, string targetStreamId, int targetEventNumber, CheckpointTag causedByTag,
-            CheckpointTag expectedTag, string originalStreamId = null)
+            string streamId, Guid eventId,
+            string targetStreamId, int targetEventNumber, CheckpointTag causedByTag, CheckpointTag expectedTag,
+            string originalStreamId = null)
             : base(streamId, eventId, "$>", causedByTag, expectedTag, null)
         {
             _eventNumber = targetEventNumber;
@@ -63,6 +64,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 return
                     _eventNumber.Value.ToString(CultureInfo.InvariantCulture) + "@" + _targetStreamId;
             }
+        }
+
+        public override bool IsJson
+        {
+            get { return false; }
         }
 
         public override bool IsReady()

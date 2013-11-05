@@ -4,7 +4,7 @@ Properties {
 
     #V8
     $v8Repository = "https://github.com/v8/v8.git"
-    $v8Tag = "3.19.7"
+    $v8Tag = "3.22.6"
     $v8Directory = Join-Path $baseDirectory "v8"
     
     #Python
@@ -14,8 +14,13 @@ Properties {
     
     #GYP
     $gypRepository = "http://gyp.googlecode.com/svn/trunk"
-    $gypRevision = "1642"
+    $gypRevision = "1746"
     $gypDirectory = Join-Path $v8Directory (Join-Path "build" "gyp")
+    
+    #ICU 
+    $icuRepository = "https://src.chromium.org/chrome/trunk/deps/third_party/icu46"
+    $icuRevision = "214189"
+    $icuDirectory = Join-Path (Join-Path $baseDirectory "v8") (Join-Path "third_party" "icu")
     
     #Cygwin
     $cygwinRepository = "http://src.chromium.org/svn/trunk/deps/third_party/cygwin"
@@ -27,6 +32,7 @@ Task Get-Dependencies {
     Get-GitRepoAtCommitOrRef -Verbose "V8" $v8Repository $v8Directory $v8Tag
     Get-SvnRepoAtRevision -Verbose "Python" $pythonRepository $pythonDirectory $pythonRevision
     Get-SvnRepoAtRevision -Verbose "GYP"  $gypRepository $gypDirectory $gypRevision
+    Get-SvnRepoAtRevision -Verbose "ICU"  $icuRepository $icuDirectory $icuRevision
     Get-SvnRepoAtRevision -Verbose "CygWin" $cygwinRepository $cygwinDirectory $cygwinRevision
 }
 

@@ -30,12 +30,14 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -50,28 +52,6 @@ namespace EventStore.Projections.Core.Tests.Services
             public List<EventReaderSubscriptionMessage.CommittedEventReceived> HandledMessages =
                 new List<EventReaderSubscriptionMessage.CommittedEventReceived>();
 
-            public List<EventReaderSubscriptionMessage.CheckpointSuggested> HandledCheckpoints =
-                new List<EventReaderSubscriptionMessage.CheckpointSuggested>();
-
-            public List<EventReaderSubscriptionMessage.ProgressChanged> HandledProgress =
-                new List<EventReaderSubscriptionMessage.ProgressChanged>();
-
-            public List<EventReaderSubscriptionMessage.NotAuthorized> HandledNotAuthorized =
-                new List<EventReaderSubscriptionMessage.NotAuthorized>();
-
-            public List<EventReaderSubscriptionMessage.EofReached> HandledEof =
-                new List<EventReaderSubscriptionMessage.EofReached>();
-
-            public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
-            {
-                HandledMessages.Add(message);
-            }
-
-            public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
-            {
-                HandledCheckpoints.Add(message);
-            }
-
             public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
             {
                 throw new NotImplementedException();
@@ -82,20 +62,6 @@ namespace EventStore.Projections.Core.Tests.Services
                 throw new NotImplementedException();
             }
 
-            public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
-            {
-                HandledProgress.Add(message);
-            }
-
-            public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
-            {
-                HandledNotAuthorized.Add(message);
-            }
-
-            public void Handle(EventReaderSubscriptionMessage.EofReached message)
-            {
-                HandledEof.Add(message);
-            }
 
             public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
             {
@@ -119,10 +85,10 @@ namespace EventStore.Projections.Core.Tests.Services
         protected EventReaderCoreService _readerService;
 
         private
-            PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
-                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+            ReaderSubscriptionDispatcher
             _subscriptionDispatcher;
+
+        private SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
         [SetUp]
         public void Setup()
@@ -131,28 +97,34 @@ namespace EventStore.Projections.Core.Tests.Services
             _bus = new InMemoryBus("temp");
             _bus.Subscribe(_consumer);
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
-            _readerService = new EventReaderCoreService(_bus, 10, writerCheckpoint, runHeadingReader: true);
+            var ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+            _readerService = new EventReaderCoreService(_bus, ioDispatcher, 10, writerCheckpoint, runHeadingReader: true);
             _subscriptionDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
-                        >(_bus, v => v.SubscriptionId, v => v.SubscriptionId);
-            _service = new ProjectionCoreService(_bus, _bus, _subscriptionDispatcher, new RealTimeProvider());
+                new ReaderSubscriptionDispatcher(_bus);
+            _spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(_bus);
+            _service = new ProjectionCoreService(
+                _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher,
+                _spoolProcessingResponseDispatcher);
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscriptionStarted>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
+            _bus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
             _readerService.Handle(new Messages.ReaderCoreServiceMessage.StartReader());
             _service.Handle(new ProjectionCoreServiceMessage.StartCore());
         }
 
         protected IReaderStrategy CreateReaderStrategy()
         {
-            var result = new ReaderStrategy.Builder();
+            var result = new SourceDefinitionBuilder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(new RealTimeProvider(), runAs: null);
+            return ReaderStrategy.Create(0, result.Build(), new RealTimeProvider(), stopOnEof: false, runAs: null);
         }
 
         protected static ResolvedEvent CreateEvent()

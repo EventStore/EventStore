@@ -84,6 +84,27 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class SubscriptionStarted : EventReaderSubscriptionMessage
+        {
+            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            private readonly long _startingLastCommitPosition;
+
+            public long StartingLastCommitPosition
+            {
+                get { return _startingLastCommitPosition; }
+            }
+
+            public SubscriptionStarted(
+                Guid subscriptionId, CheckpointTag checkpointTag, long startingLastCommitPosition,
+                long subscriptionMessageSequenceNumber, object source = null)
+                : base(subscriptionId, checkpointTag, 0f, subscriptionMessageSequenceNumber, source)
+            {
+                _startingLastCommitPosition = startingLastCommitPosition;
+            }
+        }
+
         public sealed class NotAuthorized : EventReaderSubscriptionMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
@@ -110,6 +131,52 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class PartitionEofReached : EventReaderSubscriptionMessage
+        {
+            private readonly string _partition;
+            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public string Partition
+            {
+                get { return _partition; }
+            }
+
+            public PartitionEofReached(
+                Guid subscriptionId, CheckpointTag checkpointTag, string partition,
+                long subscriptionMessageSequenceNumber, object source = null)
+                : base(subscriptionId, checkpointTag, 100.0f, subscriptionMessageSequenceNumber, source)
+            {
+                _partition = partition;
+            }
+        }
+
+        public class PartitionMeasured : EventReaderSubscriptionMessage
+        {
+            private readonly string _partition;
+            private readonly int _size;
+            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public string Partition
+            {
+                get { return _partition; }
+            }
+
+            public int Size
+            {
+                get { return _size; }
+            }
+
+            public PartitionMeasured(
+                Guid subscriptionId, string partition, int size, long subscriptionMessageSequenceNumber,
+                object source = null)
+                : base(subscriptionId, null, 100.0f, subscriptionMessageSequenceNumber, source)
+            {
+                _partition = partition;
+                _size = size;
+            }
+        }
         public class CommittedEventReceived : EventReaderSubscriptionMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
@@ -119,14 +186,23 @@ namespace EventStore.Projections.Core.Messages
                 ResolvedEvent data, Guid subscriptionId, long subscriptionMessageSequenceNumber)
             {
                 return new CommittedEventReceived(
-                    subscriptionId, null, data, 77.7f, subscriptionMessageSequenceNumber);
+                    subscriptionId, 0, null, data, 77.7f, subscriptionMessageSequenceNumber);
+            }
+
+            public static CommittedEventReceived Sample(
+                ResolvedEvent data, CheckpointTag checkpointTag, Guid subscriptionId, long subscriptionMessageSequenceNumber)
+            {
+                return new CommittedEventReceived(
+                    subscriptionId, checkpointTag, null, data, 77.7f, subscriptionMessageSequenceNumber, null);
             }
 
             private readonly ResolvedEvent _data;
 
             private readonly string _eventCategory;
 
-            private CommittedEventReceived(Guid subscriptionId, CheckpointTag checkpointTag, string eventCategory, ResolvedEvent data, float progress, long subscriptionMessageSequenceNumber, object source)
+            private CommittedEventReceived(
+                Guid subscriptionId, CheckpointTag checkpointTag, string eventCategory, ResolvedEvent data,
+                float progress, long subscriptionMessageSequenceNumber, object source)
                 : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber, source)
             {
                 if (data == null) throw new ArgumentNullException("data");
@@ -135,11 +211,11 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private CommittedEventReceived(
-                Guid subscriptionId, string eventCategory, ResolvedEvent data, float progress,
+                Guid subscriptionId, int phase, string eventCategory, ResolvedEvent data, float progress,
                 long subscriptionMessageSequenceNumber)
                 : this(
                     subscriptionId,
-                    CheckpointTag.FromPosition(data.Position.CommitPosition, data.Position.PreparePosition),
+                    CheckpointTag.FromPosition(phase, data.Position.CommitPosition, data.Position.PreparePosition),
                     eventCategory, data, progress, subscriptionMessageSequenceNumber, null)
             {
             }
@@ -162,7 +238,33 @@ namespace EventStore.Projections.Core.Messages
                     subscriptionId, checkpointTag, eventCategory, message.Data, message.Progress,
                     subscriptionMessageSequenceNumber, message.Source);
             }
+
+            public override string ToString()
+            {
+                return CheckpointTag.ToString();
+            }
         }
+
+        public class ReaderAssignedReader : EventReaderSubscriptionMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            private readonly Guid _readerId;
+
+            public ReaderAssignedReader(Guid subscriptionId, Guid readerId)
+                : base(subscriptionId, null, 0, 0, null)
+            {
+                _readerId = readerId;
+            }
+
+            public Guid ReaderId
+            {
+                get { return _readerId; }
+            }
+
+        }
+
 
         public CheckpointTag CheckpointTag
         {

@@ -35,21 +35,24 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly EventReaderSubscriptionMessage.CommittedEventReceived _message;
         private string _partition;
+        private readonly IEventProcessingProjectionPhase _projection;
         private readonly StatePartitionSelector _statePartitionSelector;
         private EventProcessedResult _eventProcessedResult;
 
         public CommittedEventWorkItem(
-            CoreProjection projection, EventReaderSubscriptionMessage.CommittedEventReceived message,
+            IEventProcessingProjectionPhase projection, EventReaderSubscriptionMessage.CommittedEventReceived message,
             StatePartitionSelector statePartitionSelector)
-            : base(projection, null)
+            : base(null)
         {
+            _projection = projection;
             _statePartitionSelector = statePartitionSelector;
             _message = message;
+            _requiresRunning = true;
         }
 
         protected override void RecordEventOrder()
         {
-            Projection.RecordEventOrder(_message.Data, _message.CheckpointTag, () => NextStage());
+            _projection.RecordEventOrder(_message.Data, _message.CheckpointTag, () => NextStage());
         }
 
         protected override void GetStatePartition()
@@ -70,7 +73,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             // we load partition state even if stopping etc.  should we skip?
-            Projection.BeginGetPartitionStateAt(
+            _projection.BeginGetPartitionStateAt(
                 _partition, _message.CheckpointTag, LoadCompleted, lockLoaded: true);
         }
 
@@ -86,7 +89,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 NextStage();
                 return;
             }
-            var eventProcessedResult = Projection.ProcessCommittedEvent(_message, _partition);
+            var eventProcessedResult = _projection.ProcessCommittedEvent(_message, _partition);
             if (eventProcessedResult != null)
                 SetEventProcessedResult(eventProcessedResult);
             NextStage();
@@ -99,7 +102,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 NextStage();
                 return;
             }
-            Projection.FinalizeEventProcessing(_eventProcessedResult, _message.CheckpointTag, _message.Progress);
+            _projection.FinalizeEventProcessing(_eventProcessedResult, _message.CheckpointTag, _message.Progress);
             NextStage();
         }
 

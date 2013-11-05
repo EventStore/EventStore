@@ -46,6 +46,7 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<ProjectionManagementMessage.Enable>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.SetRunAs>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Reset>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.StartSlaveProjections>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.RegisterSystemProjection>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Internal.RegularTimeout>(_projectionManager);
@@ -58,6 +59,7 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<CoreProjectionManagementMessage.StateReport>(_projectionManager);
                 mainBus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_projectionManager);
                 mainBus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_projectionManager);
+                mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_projectionManager);
             }
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);

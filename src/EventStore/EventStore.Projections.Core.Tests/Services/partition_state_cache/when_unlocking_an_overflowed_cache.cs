@@ -44,16 +44,16 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void setup()
         {
             //given
-            _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, -1), 10);
-            _cachedAtCheckpointTag1 = CheckpointTag.FromPosition(1000, 900);
+            _cache = new PartitionStateCache(10);
+            _cachedAtCheckpointTag1 = CheckpointTag.FromPosition(0, 1000, 900);
             for (var i = 0; i < 15; i++)
             {
-                CheckpointTag at = CheckpointTag.FromPosition(1000 + (i*100), 1000 + (i*100) - 50);
+                CheckpointTag at = CheckpointTag.FromPosition(0, 1000 + (i*100), 1000 + (i*100) - 50);
                 _cache.CacheAndLockPartitionState("partition1", new PartitionState("data1", null, at), at);
             }
 
-            _cachedAtCheckpointTag2 = CheckpointTag.FromPosition(20100, 20050);
-            _cachedAtCheckpointTag3 = CheckpointTag.FromPosition(20200, 20150);
+            _cachedAtCheckpointTag2 = CheckpointTag.FromPosition(0, 20100, 20050);
+            _cachedAtCheckpointTag3 = CheckpointTag.FromPosition(0, 20200, 20150);
             _cache.CacheAndLockPartitionState(
                 "partition1", new PartitionState("data1", null, _cachedAtCheckpointTag1), _cachedAtCheckpointTag1);
             _cache.CacheAndLockPartitionState(
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
             the_first_partition_locked_before_the_unlock_position_cannot_be_retrieved_and_relocked_at_later_position()
         {
             var data = _cache.TryGetAndLockPartitionState(
-                "partition1", CheckpointTag.FromPosition(25000, 24000));
+                "partition1", CheckpointTag.FromPosition(0, 25000, 24000));
             Assert.AreEqual("data1", data.State);
         }
 
@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void partitions_locked_at_the_unlock_position_can_be_retrieved_and_relocked_at_later_position()
         {
             var data = _cache.TryGetAndLockPartitionState(
-                "partition2", CheckpointTag.FromPosition(25000, 24000));
+                "partition2", CheckpointTag.FromPosition(0, 25000, 24000));
             Assert.AreEqual("data2", data.State);
         }
 

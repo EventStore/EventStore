@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                         Events = new[] {"type1", "type2"},
                         Options = new QuerySourcesDefinitionOptions {}
                     };
-                _fromPosition = CheckpointTag.FromEventTypeIndexPositions(new TFPos(0, -1), new Dictionary<string, int>{{"type1", -1}, {"type2", -1}});
+                _fromPosition = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(0, -1), new Dictionary<string, int>{{"type1", -1}, {"type2", -1}});
                 _maxEvents = 1; // reading the first event
             }
 
@@ -73,8 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Single();
                 Assert.AreEqual(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        _tfPos1, new Dictionary<string, int> {{"type1", 0}, {"type2", -1}}), feedPage.LastReaderPosition);
+                    CheckpointTag.FromEventTypeIndexPositions(0, _tfPos1, new Dictionary<string, int> {{"type1", 0}, {"type2", -1}}), feedPage.LastReaderPosition);
             }
         }
 
@@ -106,8 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                         Events = new[] {"type1", "type2"},
                         Options = new QuerySourcesDefinitionOptions {}
                     };
-                _fromPosition = CheckpointTag.FromEventTypeIndexPositions(
-                    new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});
+                _fromPosition = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});
                 _maxEvents = 3;
             }
 
@@ -136,8 +134,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
             {
                 var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Single();
                 Assert.AreEqual(
-                    CheckpointTag.FromEventTypeIndexPositions(
-                        _tfPos3, new Dictionary<string, int> {{"type1", 1}, {"type2", 0}}), feedPage.LastReaderPosition);
+                    CheckpointTag.FromEventTypeIndexPositions(0, _tfPos3, new Dictionary<string, int> {{"type1", 1}, {"type2", 0}}), feedPage.LastReaderPosition);
             }
 
             [Test]

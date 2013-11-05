@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Security.Principal;
+using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
@@ -190,6 +191,20 @@ namespace EventStore.Projections.Core.Messages
                 _enableRunAs = enableRunAs;
             }
 
+            public Post(
+                IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, Type handlerType, string query,
+                bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs = false)
+                : base(envelope, runAs)
+            {
+                _name = name;
+                _handlerType = "native:" + handlerType.Namespace + "." + handlerType.Name;
+                _mode = mode;
+                _query = query;
+                _enabled = enabled;
+                _checkpointsEnabled = checkpointsEnabled;
+                _emitEnabled = emitEnabled;
+                _enableRunAs = enableRunAs;
+            }
             // shortcut for posting ad-hoc JS queries
             public Post(IEnvelope envelope, RunAs runAs, string query, bool enabled)
                 : base(envelope, runAs)
@@ -759,6 +774,73 @@ namespace EventStore.Projections.Core.Messages
                 Name = name;
                 Handler = handler;
                 Query = query;
+            }
+        }
+
+        public class StartSlaveProjections : ControlMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            private readonly string _name;
+            private readonly SlaveProjectionDefinitions _slaveProjections;
+            private readonly IPublisher _resultsPublisher;
+            private readonly Guid _masterCorrelationId;
+
+            public StartSlaveProjections(
+                IEnvelope envelope, RunAs runAs, string name, SlaveProjectionDefinitions slaveProjections,
+                IPublisher resultsPublisher, Guid masterCorrelationId)
+                : base(envelope, runAs)
+            {
+                _name = name;
+                _slaveProjections = slaveProjections;
+                _resultsPublisher = resultsPublisher;
+                _masterCorrelationId = masterCorrelationId;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public SlaveProjectionDefinitions SlaveProjections
+            {
+                get { return _slaveProjections; }
+            }
+
+            public IPublisher ResultsPublisher
+            {
+                get { return _resultsPublisher; }
+            }
+
+            public Guid MasterCorrelationId
+            {
+                get { return _masterCorrelationId; }
+            }
+        }
+
+        public class SlaveProjectionsStarted : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            private readonly Guid _coreProjectionCorrelationId;
+            private readonly SlaveProjectionCommunicationChannels _slaveProjections;
+
+            public SlaveProjectionsStarted(Guid coreProjectionCorrelationId, SlaveProjectionCommunicationChannels slaveProjections)
+            {
+                _coreProjectionCorrelationId = coreProjectionCorrelationId;
+                _slaveProjections = slaveProjections;
+            }
+
+            public Guid CoreProjectionCorrelationId
+            {
+                get { return _coreProjectionCorrelationId; }
+            }
+
+            public SlaveProjectionCommunicationChannels SlaveProjections
+            {
+                get { return _slaveProjections; }
             }
         }
     }

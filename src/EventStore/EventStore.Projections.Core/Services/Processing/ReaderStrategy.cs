@@ -32,7 +32,9 @@ using System.Linq;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -44,6 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _allEvents;
         private readonly bool _includeLinks;
         private readonly HashSet<string> _events;
+        private readonly string _catalogStream;
         private readonly bool _reorderEvents;
         private readonly IPrincipal _runAs;
         private readonly int _processingLag;
@@ -53,44 +56,75 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PositionTagger _positionTagger;
         private readonly ITimeProvider _timeProvider;
 
+        private readonly int _phase;
 
-        public class Builder : QuerySourceProcessingStrategyBuilder
+        public static IReaderStrategy CreateExternallyFedReaderStrategy(
+            int phase, ITimeProvider timeProvider, IPrincipal runAs, long limitingCommitPosition)
         {
-            public IReaderStrategy Build(ITimeProvider timeProvider, IPrincipal runAs)
-            {
-                base.Validate();
-                HashSet<string> categories = ToSet(_categories);
-                HashSet<string> streams = ToSet(_streams);
-                bool includeLinks = _options.IncludeLinks;
-                HashSet<string> events = ToSet(_events);
-                bool reorderEvents = _options.ReorderEvents;
-                int processingLag = _options.ProcessingLag;
-                var readerStrategy = new ReaderStrategy(
-                    _allStreams, categories, streams, _allEvents, includeLinks, events, processingLag, reorderEvents,
-                    runAs, timeProvider);
-                return readerStrategy;
-            }
+            var readerStrategy = new ExternallyFedReaderStrategy(phase, runAs, timeProvider, limitingCommitPosition);
+            return readerStrategy;
         }
 
-        public static IReaderStrategy Create(
-            ISourceDefinitionConfigurator sources, ITimeProvider timeProvider, IPrincipal runAs)
+        public static IReaderStrategy Create(int phase, IQuerySources sources, ITimeProvider timeProvider, bool stopOnEof, IPrincipal runAs)
         {
-            var builder = new Builder();
-            sources.ConfigureSourceProcessingStrategy(builder);
-            return builder.Build(timeProvider, runAs);
+            if (!sources.AllStreams && !sources.HasCategories() && !sources.HasStreams()
+                && string.IsNullOrEmpty(sources.CatalogStream))
+                throw new InvalidOperationException("None of streams and categories are included");
+            if (!sources.AllEvents && !sources.HasEvents())
+                throw new InvalidOperationException("None of events are included");
+            if (sources.HasStreams() && sources.HasCategories())
+                throw new InvalidOperationException(
+                    "Streams and categories cannot be included in a filter at the same time");
+            if (sources.AllStreams && (sources.HasCategories() || sources.HasStreams()))
+                throw new InvalidOperationException("Both FromAll and specific categories/streams cannot be set");
+            if (sources.AllEvents && sources.HasEvents())
+                throw new InvalidOperationException("Both AllEvents and specific event filters cannot be set");
+
+            if (sources.ByStreams && sources.HasStreams())
+                throw new InvalidOperationException("foreachStream projections are not supported on stream based sources");
+
+            if ((sources.HasStreams() || sources.AllStreams) && !string.IsNullOrEmpty(sources.CatalogStream))
+                throw new InvalidOperationException("catalogStream cannot be used with streams or allStreams");
+
+            if (!string.IsNullOrEmpty(sources.CatalogStream) && !sources.ByStreams)
+                throw new InvalidOperationException("catalogStream is only supported in the byStream mode");
+
+            if (sources.ReorderEventsOption)
+            {
+                if (!string.IsNullOrEmpty(sources.CatalogStream))
+                    throw new InvalidOperationException("Event reordering cannot be used with stream catalogs");
+                if (sources.AllStreams)
+                    throw new InvalidOperationException("Event reordering cannot be used with fromAll()");
+                if (!(sources.HasStreams() && sources.Streams.Length > 1))
+                {
+                    throw new InvalidOperationException(
+                        "Event reordering is only available in fromStreams([]) projections");
+                }
+                if (sources.ProcessingLagOption < 50)
+                    throw new InvalidOperationException("Event reordering requires processing lag at least of 50ms");
+            }
+
+            var readerStrategy = new ReaderStrategy(
+                phase, sources.AllStreams, sources.Categories, sources.Streams, sources.AllEvents,
+                sources.IncludeLinksOption, sources.Events, sources.CatalogStream, sources.ProcessingLagOption,
+                sources.ReorderEventsOption, runAs, timeProvider);
+            return readerStrategy;
         }
 
         private ReaderStrategy(
-            bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, bool includeLinks,
-            HashSet<string> events, int processingLag, bool reorderEvents, IPrincipal runAs, ITimeProvider timeProvider)
+            int phase, bool allStreams, string[] categories, string[] streams, bool allEvents, bool includeLinks,
+            string[] events, string catalogStream, int? processingLag, bool reorderEvents, IPrincipal runAs,
+            ITimeProvider timeProvider)
         {
+            _phase = phase;
             _allStreams = allStreams;
-            _categories = categories;
-            _streams = streams;
+            _categories = categories != null && categories.Length > 0 ? new HashSet<string>(categories) : null;
+            _streams = streams != null && streams.Length > 0 ? new HashSet<string>(streams) : null;
             _allEvents = allEvents;
             _includeLinks = includeLinks;
-            _events = events;
-            _processingLag = processingLag;
+            _events = events != null && events.Length > 0 ? new HashSet<string>(events) : null;
+            _catalogStream = catalogStream;
+            _processingLag = processingLag.GetValueOrDefault();
             _reorderEvents = reorderEvents;
             _runAs = runAs;
 
@@ -116,6 +150,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _positionTagger; }
         }
 
+        public int Phase
+        {
+            get { return _phase; }
+        }
+
         public IReaderSubscription CreateReaderSubscription(
             IPublisher publisher, CheckpointTag fromCheckpointTag, Guid subscriptionId,
             ReaderSubscriptionOptions readerSubscriptionOptions)
@@ -135,7 +174,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public IEventReader CreatePausedEventReader(
-            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents)
+            Guid eventReaderId, IPublisher publisher, IODispatcher ioDispatcher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents)
         {
             if (_allStreams && _events != null && _events.Count >= 1)
             {
@@ -172,6 +211,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 return CreatePausedMultiStreamEventReader(
                     eventReaderId, publisher, checkpointTag, stopOnEof, stopAfterNEvents, true, _streams);
             }
+            if (!string.IsNullOrEmpty(_catalogStream))
+            {
+                return CreatePausedCatalogReader(
+                    eventReaderId, publisher, ioDispatcher, checkpointTag, stopOnEof, stopAfterNEvents, true,
+                    _catalogStream);
+            }
             throw new NotSupportedException();
         }
 
@@ -189,33 +234,35 @@ namespace EventStore.Projections.Core.Services.Processing
                 return new StreamEventFilter(_streams.First(), _allEvents, _events);
             if (_streams != null && _streams.Count > 1)
                 return new MultiStreamEventFilter(_streams, _allEvents, _events);
+            if (!string.IsNullOrEmpty(_catalogStream))
+                return new BypassingEventFilter();
             throw new NotSupportedException();
         }
 
         private PositionTagger CreatePositionTagger()
         {
             if (_allStreams && _events != null && _events.Count >= 1)
-                return new EventByTypeIndexPositionTagger(_events.ToArray());
+                return new EventByTypeIndexPositionTagger(_phase, _events.ToArray());
             if (_allStreams && _reorderEvents)
-                return new PreparePositionTagger();
+                return new PreparePositionTagger(_phase);
             if (_allStreams)
-                return new TransactionFilePositionTagger();
+                return new TransactionFilePositionTagger(_phase);
             if (_categories != null && _categories.Count == 1)
                 //TODO: '-' is a hardcoded separator
-                return new StreamPositionTagger("$ce-" + _categories.First());
+                return new StreamPositionTagger(_phase, "$ce-" + _categories.First());
             if (_categories != null)
                 throw new NotSupportedException();
             if (_streams != null && _streams.Count == 1)
-                return new StreamPositionTagger(_streams.First());
+                return new StreamPositionTagger(_phase, _streams.First());
             if (_streams != null && _streams.Count > 1)
-                return new MultiStreamPositionTagger(_streams.ToArray());
+                return new MultiStreamPositionTagger(_phase, _streams.ToArray());
+            if (!string.IsNullOrEmpty(_catalogStream))
+                return new PreTaggedPositionTagger(
+                    _phase, CheckpointTag.FromByStreamPosition(0, _catalogStream, -1, null, -1, long.MinValue));
+            //TODO: consider passing projection phase from outside (above)
             throw new NotSupportedException();
         }
 
-        private string[] GetEventIndexStreams()
-        {
-            return _events.Select(v => "$et-" + v).ToArray();
-        }
 
         private IEventReader CreatePausedStreamEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, string streamName, bool stopOnEof,
@@ -250,8 +297,27 @@ namespace EventStore.Projections.Core.Services.Processing
             var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
 
             return new MultiStreamEventReader(
-                publisher, eventReaderId, _runAs, streams.ToArray(), nextPositions, resolveLinkTos, _timeProvider,
-                stopOnEof, stopAfterNEvents);
+                publisher, eventReaderId, _runAs, Phase, 
+                streams.ToArray(), nextPositions, resolveLinkTos, _timeProvider, stopOnEof, stopAfterNEvents);
         }
+
+        private IEventReader CreatePausedCatalogReader(
+            Guid eventReaderId, IPublisher publisher, IODispatcher ioDispatcher, CheckpointTag checkpointTag,
+            bool stopOnEof, int? stopAfterNEvents, bool resolveLinkTos, string catalogStream)
+        {
+            if (!stopOnEof) throw new ArgumentException("stopOnEof must be true", "stopOnEof");
+
+            var startFromCatalogEventNumber = checkpointTag.CatalogPosition + 1; // read catalog from the next position
+            var startFromDataStreamName = checkpointTag.DataStream;
+            var startFromDataStreamEventNumber = checkpointTag.DataPosition + 1; //as it was the last read event
+            var limitingCommitPosition = checkpointTag.CommitPosition;
+
+            return new ByStreamCatalogEventReader(
+                publisher, eventReaderId, _runAs, ioDispatcher, catalogStream, startFromCatalogEventNumber,
+                startFromDataStreamName, startFromDataStreamEventNumber, limitingCommitPosition, _timeProvider,
+                resolveLinkTos, stopAfterNEvents);
+        }
+
+
     }
 }

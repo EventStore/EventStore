@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             //projection subscribes here
             _eventId = Guid.NewGuid();
-            _coreProjection.Handle(
+            _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new TFPos(120, 110), _eventId,

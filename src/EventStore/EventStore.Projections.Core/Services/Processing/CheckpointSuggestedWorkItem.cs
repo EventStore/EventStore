@@ -30,9 +30,9 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    internal class CheckpointSuggestedWorkItem : CheckpointWorkItemBase
+    public class CheckpointSuggestedWorkItem : CheckpointWorkItemBase
     {
-        private readonly CoreProjection _projection;
+        private readonly IProjectionPhaseCheckpointManager _projectionPhase;
         private readonly EventReaderSubscriptionMessage.CheckpointSuggested _message;
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
 
@@ -40,24 +40,24 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _completeRequested = false;
 
         public CheckpointSuggestedWorkItem(
-            CoreProjection projection, EventReaderSubscriptionMessage.CheckpointSuggested message,
+            IProjectionPhaseCheckpointManager projectionPhase, EventReaderSubscriptionMessage.CheckpointSuggested message,
             ICoreProjectionCheckpointManager checkpointManager)
-            : base(projection) 
+            : base() 
         {
-            _projection = projection;
+            _projectionPhase = projectionPhase;
             _message = message;
             _checkpointManager = checkpointManager;
         }
 
         protected override void WriteOutput()
         {
-            _projection.SetCurrentCheckpointSuggestedWorkItem(this);
+            _projectionPhase.SetCurrentCheckpointSuggestedWorkItem(this);
             if (_checkpointManager.CheckpointSuggested(_message.CheckpointTag, _message.Progress))
             {
-                _projection.SetCurrentCheckpointSuggestedWorkItem(null);
+                _projectionPhase.SetCurrentCheckpointSuggestedWorkItem(null);
                 _completed = true;
             }
-            _projection.NewCheckpointStarted(_message.CheckpointTag);
+            _projectionPhase.NewCheckpointStarted(_message.CheckpointTag);
             NextStage();
         }
 

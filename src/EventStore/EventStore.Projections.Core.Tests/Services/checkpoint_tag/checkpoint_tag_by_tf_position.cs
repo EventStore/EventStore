@@ -36,12 +36,12 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
     [TestFixture]
     public class checkpoint_tag_by_tf_position
     {
-        private readonly CheckpointTag _aa = CheckpointTag.FromPosition(10, 9);
-        private readonly CheckpointTag _b1 = CheckpointTag.FromPosition(20, 15);
-        private readonly CheckpointTag _b2 = CheckpointTag.FromPosition(20, 17);
-        private readonly CheckpointTag _cc = CheckpointTag.FromPosition(30, 29);
-        private readonly CheckpointTag _d1 = CheckpointTag.FromPosition(40, 35);
-        private readonly CheckpointTag _d2 = CheckpointTag.FromPosition(40, 36);
+        private readonly CheckpointTag _aa = CheckpointTag.FromPosition(1, 10, 9);
+        private readonly CheckpointTag _b1 = CheckpointTag.FromPosition(1, 20, 15);
+        private readonly CheckpointTag _b2 = CheckpointTag.FromPosition(1, 20, 17);
+        private readonly CheckpointTag _cc = CheckpointTag.FromPosition(1, 30, 29);
+        private readonly CheckpointTag _d1 = CheckpointTag.FromPosition(1, 40, 35);
+        private readonly CheckpointTag _d2 = CheckpointTag.FromPosition(1, 40, 36);
 
         [Test]
         public void equal_equals()

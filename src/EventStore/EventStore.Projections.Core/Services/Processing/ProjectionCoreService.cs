@@ -28,12 +28,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Messages;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -42,6 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionCoreServiceMessage.CoreTick>,
                                          IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
                                          IHandle<CoreProjectionManagementMessage.CreatePrepared>,
+                                         IHandle<CoreProjectionManagementMessage.CreateAndPrepareSlave>,
                                          IHandle<CoreProjectionManagementMessage.Dispose>,
                                          IHandle<CoreProjectionManagementMessage.Start>,
                                          IHandle<CoreProjectionManagementMessage.LoadStopped>,
@@ -50,14 +53,13 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<CoreProjectionManagementMessage.GetState>,
                                         IHandle<CoreProjectionManagementMessage.GetResult>,
                                          IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
-                                         IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
-                                         IHandle<ClientMessage.WriteEventsCompleted>, 
                                         IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>, 
                                         IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>, 
                                         IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>, 
                                         IHandle<CoreProjectionProcessingMessage.RestartRequested>,
-                                        IHandle<CoreProjectionProcessingMessage.Failed>
-
+                                        IHandle<CoreProjectionProcessingMessage.Failed>,
+                                        IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>
+                                        
 
     {
         private readonly IPublisher _publisher;
@@ -66,39 +68,34 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly Dictionary<Guid, CoreProjection> _projections = new Dictionary<Guid, CoreProjection>();
 
-        private readonly
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-            _readDispatcher;
+        private readonly IODispatcher _ioDispatcher;
 
-        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
-
-        private readonly PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
-            _subscriptionDispatcher;
+        private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
         private readonly ITimeProvider _timeProvider;
+        private readonly ProcessingStrategySelector _processingStrategySelector;
+
+        private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
 
         public ProjectionCoreService(
-            IPublisher inputQueue, IPublisher publisher,
-            PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
-                        >
-                subscriptionDispatcher, ITimeProvider timeProvider)
+            IPublisher inputQueue, IPublisher publisher, ReaderSubscriptionDispatcher subscriptionDispatcher,
+            ITimeProvider timeProvider, IODispatcher ioDispatcher,
+            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher)
         {
             _inputQueue = inputQueue;
             _publisher = publisher;
-            _readDispatcher =
-                new RequestResponseDispatcher
-                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
-                    publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(inputQueue));
-            _writeDispatcher =
-                new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
-                    _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+            _ioDispatcher = ioDispatcher;
+            _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
             _subscriptionDispatcher = subscriptionDispatcher;
             _timeProvider = timeProvider;
+            _processingStrategySelector = new ProcessingStrategySelector(
+                _subscriptionDispatcher, _spoolProcessingResponseDispatcher);
+        }
+
+        public ILogger Logger
+        {
+            get { return _logger; }
         }
 
         public void Handle(ProjectionCoreServiceMessage.StartCore message)
@@ -112,8 +109,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void StopProjections()
         {
-            _readDispatcher.CancelAll();
-            _writeDispatcher.CancelAll();
+            _ioDispatcher.BackwardReader.CancelAll();
+            _ioDispatcher.ForwardReader.CancelAll();
+            _ioDispatcher.Writer.CancelAll();
 
             var allProjections = _projections.Values;
             foreach (var projection in allProjections)
@@ -134,17 +132,24 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             try
             {
-                //TODO: factory method can throw!
+                //TODO: factory method can throw
                 IProjectionStateHandler stateHandler = message.HandlerFactory();
-                // constructor can fail if wrong source definition
-                ProjectionSourceDefinition sourceDefinition;
-                var projection = CoreProjection.CreateAndPrepare(
-                    message.Name, message.Version, message.ProjectionId, _publisher, stateHandler, message.Config,
-                    _readDispatcher, _writeDispatcher, _subscriptionDispatcher, _logger, _timeProvider,
-                    out sourceDefinition);
-                _projections.Add(message.ProjectionId, projection);
+                string name = message.Name;
+                var sourceDefinition = ProjectionSourceDefinition.From(
+                    name, stateHandler.GetSourceDefinition(), message.HandlerType, message.Query);
+                var projectionVersion = message.Version;
+                var projectionConfig = message.Config;
+                var namesBuilder = new ProjectionNamesBuilder(name, sourceDefinition);
+
+                var projectionProcessingStrategy = _processingStrategySelector.CreateProjectionProcessingStrategy(
+                    name, projectionVersion, namesBuilder,
+                    sourceDefinition, projectionConfig, message.HandlerFactory, stateHandler);
+
+                var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
+                CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
-                    new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
+                    new CoreProjectionManagementMessage.Prepared(
+                        message.ProjectionId, sourceDefinition, slaveProjections));
             }
             catch (Exception ex)
             {
@@ -157,21 +162,62 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             try
             {
-                //TODO: factory method can throw!
-                // constructor can fail if wrong source defintion
-                ProjectionSourceDefinition sourceDefinition;
-                var projection = CoreProjection.CreatePrepared(
-                    message.Name, message.Version, message.ProjectionId, _publisher, message.SourceDefinition, message.Config,
-                    _readDispatcher, _writeDispatcher, _subscriptionDispatcher, _logger, _timeProvider, out sourceDefinition);
-                _projections.Add(message.ProjectionId, projection);
+                var name = message.Name;
+                var sourceDefinition = ProjectionSourceDefinition.From(
+                    name, message.SourceDefinition, message.HandlerType, message.Query);
+                var projectionVersion = message.Version;
+                var projectionConfig = message.Config;
+                var namesBuilder = new ProjectionNamesBuilder(name, sourceDefinition);
+
+                var projectionProcessingStrategy = _processingStrategySelector.CreateProjectionProcessingStrategy(
+                    name, projectionVersion, namesBuilder, sourceDefinition, projectionConfig, null, null);
+
+                var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
+                CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 message.Envelope.ReplyWith(
-                    new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefinition));
+                    new CoreProjectionManagementMessage.Prepared(
+                        message.ProjectionId, sourceDefinition, slaveProjections));
             }
             catch (Exception ex)
             {
                 message.Envelope.ReplyWith(
                     new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
             }
+        }
+
+        public void Handle(CoreProjectionManagementMessage.CreateAndPrepareSlave message)
+        {
+            try
+            {
+                //TODO: factory method can throw!
+                IProjectionStateHandler stateHandler = message.HandlerFactory();
+                string name = message.Name;
+                var sourceDefinition = ProjectionSourceDefinition.From(name, stateHandler.GetSourceDefinition(), null, null);
+                var projectionVersion = message.Version;
+                var projectionConfig = message.Config.SetIsSlave();
+                var projectionProcessingStrategy =
+                    _processingStrategySelector.CreateSlaveProjectionProcessingStrategy(
+                        name, projectionVersion, sourceDefinition, projectionConfig, stateHandler,
+                        message.ResultsPublisher, message.MasterCoreProjectionId, this);
+                CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.Prepared(
+                        message.ProjectionId, sourceDefinition, slaveProjections: null));
+            }
+            catch (Exception ex)
+            {
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
+            }
+        }
+
+        private void CreateCoreProjection(
+            Guid projectionCorrelationId, IPrincipal runAs, ProjectionProcessingStrategy processingStrategy)
+        {
+            var projection = processingStrategy.Create(
+                projectionCorrelationId, _inputQueue, runAs, _publisher, _ioDispatcher, _subscriptionDispatcher,
+                _timeProvider);
+            _projections.Add(projectionCorrelationId, projection);
         }
 
         public void Handle(CoreProjectionManagementMessage.Dispose message)
@@ -229,16 +275,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 projection.UpdateStatistics();
         }
 
-        public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
-        {
-            _readDispatcher.Handle(message);
-        }
-
-        public void Handle(ClientMessage.WriteEventsCompleted message)
-        {
-            _writeDispatcher.Handle(message);
-        }
-
         public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
         {
             CoreProjection projection;
@@ -274,35 +310,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 projection.Handle(message);
         }
 
-        public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
+        public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message)
         {
-            if (_subscriptionDispatcher.Handle(message))
-                return;
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.CoreProjectionCorrelationId, out projection))
+                projection.Handle(message);
         }
-
-        public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
-        {
-            if (_subscriptionDispatcher.Handle(message))
-                return;
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.EofReached message)
-        {
-            if (_subscriptionDispatcher.Handle(message))
-                return;
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
-        {
-            if (_subscriptionDispatcher.Handle(message))
-                return;
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
-        {
-            if (_subscriptionDispatcher.Handle(message))
-                return;
-        }
-
     }
 }

@@ -53,15 +53,14 @@ namespace EventStore.Core.Tests.Helpers
             _queue.Enqueue(message);
         }
 
-        public void Process()
+        public int Process()
         {
-            if (!_timerDisabled)
-            {
-                var orderedTimerMessages = _timerQueue.OrderBy(v => v.TriggerAfter).ToArray();
-                _timerQueue.Clear();
-                foreach (var timerMessage in orderedTimerMessages)
-                    timerMessage.Reply();
-            }
+            ProcessTimer();
+            return ProcessNonTimer();
+        }
+
+        public int ProcessNonTimer()
+        {
             var count = 0;
             while (_queue.Count > 0)
             {
@@ -70,6 +69,18 @@ namespace EventStore.Core.Tests.Helpers
                 count++;
                 if (count > 1000)
                     throw new Exception("Possible infinite message loop");
+            }
+            return count;
+        }
+
+        public void ProcessTimer()
+        {
+            if (!_timerDisabled)
+            {
+                var orderedTimerMessages = _timerQueue.OrderBy(v => v.TriggerAfter).ToArray();
+                _timerQueue.Clear();
+                foreach (var timerMessage in orderedTimerMessages)
+                    timerMessage.Reply();
             }
         }
 

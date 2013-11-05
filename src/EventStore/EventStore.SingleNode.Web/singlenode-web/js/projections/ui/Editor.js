@@ -76,15 +76,50 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
             lastName = status.name;
         }
 
+        function urlChanged(url) {
+            lastStatusUrl = url;
+            lastName = "unknown";
+        }
+
         function stateChanged(state) {
-            controls.state.text(state);
+            if (controls.state) 
+                controls.state.text(state);
         }
 
         function resultChanged(state) {
-            controls.result.text(state);
+            if (controls.result)
+                controls.result.text(state);
         }
 
         function sourceChanged(source) {
+
+            window.reRenderData = reRenderData;
+
+            function reRenderData(data) {
+                renderHtmlBy(data, templateJs, controls.result_stream_container);
+            }
+
+
+            function schedule(dataUrl) {
+                setTimeout(function () {
+                    $.ajax(dataUrl, {
+                        headers: {
+                            'Accept': 'application/vnd.eventstore.atom+json',
+                        },
+                        success: function (d, statusText, jqXHR) {
+                            if (jqXHR.status == 200) {
+                                reRenderData(d);
+                            } else {
+                                schedule();
+                            }
+                        },
+                        error: function (jqXhr, status, error) {
+                            schedule(dataUrl);
+                        }
+                    });
+                }, 1000);
+            }
+
             var current = sourceEditor.getValue();
             if (current !== source.query) {
                 if (lastSource === current) {
@@ -100,7 +135,7 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
             var anyResults = false;
             if (controls.result_stream) {
                 var resultStreamName = source.definition.resultStreamName;
-                if (source.definition.definesStateTransform && resultStreamName) {
+                if (resultStreamName) {
                     controls.result_stream.attr("href", "/streams/" + resultStreamName);
                     controls.result_stream.show();
                     anyResults = true;
@@ -109,8 +144,25 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
                 }
             }
 
+            if (controls.result_stream_container) {
+
+                var resultStreamName = source.definition.resultStreamName;
+                if (resultStreamName) {
+                    var templateJs = '/web/es/js/atom/FeedElement.html';
+
+                    var dataUrl = '/streams/' + encodeURIComponent(resultStreamName) + "?embed=tryharder";
+
+                    schedule(dataUrl);
+
+                    controls.result_stream_container.show();
+                }
+                else {
+                    controls.result_stream_container.hide();
+                }
+            }
+
             if (controls.result) {
-                if (source.definition.definesStateTransform && !source.definition.byStream && !source.definition.byCustomPartitions) {
+                if (!source.definition.byStream && !source.definition.byCustomPartitions) {
                     controls.result.show();
                     anyResults = true;
                 } else {
@@ -128,14 +180,19 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
             lastEmitEnabled = source.emitEnabled;
         }
 
-        function updateAndStart() {
+        function updateIfChanged(success) {
             var current = sourceEditor.getValue();
             var emitEnabled = controls.emit && controls.emit.attr("checked");
             if (options.readonly || (lastSource === current && lastEmitEnabled === emitEnabled)) {
-                controller.start();
+                success();
             } else {
-                controller.update(current, emitEnabled, controller.start.bind(controller));
+                controller.update(current, emitEnabled, success);
             }
+        }
+
+        function updateAndStart() {
+            var success = controller.start.bind(controller);
+            updateIfChanged(success);
         }
 
         function save() {
@@ -145,7 +202,9 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
         }
 
         function debug() {
-            window.open("/web/debug-projection.htm#" + lastStatusUrl, "debug-" + lastName);
+            updateIfChanged(function () {
+                window.open("/web/debug-projection.htm#" + lastStatusUrl, "debug-" + lastName);
+            });
         }
 
         function reset() {
@@ -183,7 +242,8 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
                     statusChanged: statusChanged,
                     stateChanged: stateChanged,
                     resultChanged: resultChanged,
-                    sourceChanged: sourceChanged
+                    sourceChanged: sourceChanged,
+                    urlChanged: urlChanged,
                 });
                 bindClick(controls.start, updateAndStart);
                 bindClick(controls.stop, stop);

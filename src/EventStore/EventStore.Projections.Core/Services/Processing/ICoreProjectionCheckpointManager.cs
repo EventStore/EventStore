@@ -30,6 +30,17 @@ using System;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
+    public interface ICoreProjectionCheckpointReader
+    {
+        void BeginLoadState();
+        void Initialize();
+    }
+
+    public interface IEmittedEventWriter
+    {
+        void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId);
+    }
+
     public interface ICoreProjectionCheckpointManager
     {
         void Initialize();
@@ -38,11 +49,9 @@ namespace EventStore.Projections.Core.Services.Processing
         void Stopped();
         void GetStatistics(ProjectionStatistics info);
 
-        void NewPartition(string partition, CheckpointTag eventCheckpointTag);
-        void EventsEmitted(EmittedEvent[] scheduledWrites, Guid causedBy, string correlationId);
 
-        void StateUpdated(
-            string partition, PartitionState oldState, PartitionState newState, Guid causedBy, string correlationId);
+        void StateUpdated(string partition, PartitionState oldState, PartitionState newState);
+        void PartitionCompleted(string partition);
         void EventProcessed(CheckpointTag checkpointTag, float progress);
 
         /// <summary>
@@ -54,7 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing
         bool CheckpointSuggested(CheckpointTag checkpointTag, float progress);
         void Progress(float progress);
 
-        void BeginLoadState();
+        void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
 
         void BeginLoadPartitionStateAt(
             string statePartition, CheckpointTag requestedStateCheckpointTag,

@@ -43,12 +43,15 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected TestHandler<EventReaderSubscriptionMessage.CommittedEventReceived> _eventHandler;
         protected TestHandler<EventReaderSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
         protected TestHandler<EventReaderSubscriptionMessage.ProgressChanged> _progressHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.SubscriptionStarted> _subscriptionStartedHandler;
         protected TestHandler<EventReaderSubscriptionMessage.NotAuthorized> _notAuthorizedHandler;
         protected TestHandler<EventReaderSubscriptionMessage.EofReached> _eofHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.PartitionEofReached> _partitionEofHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.PartitionMeasured> _partitionMeasuredHandler;
         protected IReaderSubscription _subscription;
         protected IEventReader ForkedReader;
         protected InMemoryBus _bus;
-        protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
+        protected Action<SourceDefinitionBuilder> _source = null;
         protected int _checkpointUnhandledBytesThreshold;
         protected int _checkpointProcessedEventsThreshold;
         protected IReaderStrategy _readerStrategy;
@@ -64,14 +67,19 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             _eventHandler = new TestHandler<EventReaderSubscriptionMessage.CommittedEventReceived>();
             _checkpointHandler = new TestHandler<EventReaderSubscriptionMessage.CheckpointSuggested>();
             _progressHandler = new TestHandler<EventReaderSubscriptionMessage.ProgressChanged>();
+            _subscriptionStartedHandler = new TestHandler<EventReaderSubscriptionMessage.SubscriptionStarted>();
             _notAuthorizedHandler = new TestHandler<EventReaderSubscriptionMessage.NotAuthorized>();
             _eofHandler = new TestHandler<EventReaderSubscriptionMessage.EofReached>();
+            _partitionEofHandler = new TestHandler<EventReaderSubscriptionMessage.PartitionEofReached>();
+            _partitionMeasuredHandler = new TestHandler<EventReaderSubscriptionMessage.PartitionMeasured>();
 
             _bus.Subscribe(_eventHandler);
             _bus.Subscribe(_checkpointHandler);
             _bus.Subscribe(_progressHandler);
             _bus.Subscribe(_eofHandler);
-            _readerStrategy = CreateCheckpointStrategy().ReaderStrategy;
+            _bus.Subscribe(_partitionEofHandler);
+            _bus.Subscribe(_partitionMeasuredHandler);
+            _readerStrategy = CreateCheckpointStrategy();
             _subscription = CreateProjectionSubscription();
 
 
@@ -91,24 +99,24 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
 
         protected abstract void When();
 
-        protected virtual CheckpointStrategy CreateCheckpointStrategy()
+        protected virtual IReaderStrategy CreateCheckpointStrategy()
         {
-            var result = new CheckpointStrategy.Builder();
-            var readerBuilder = new ReaderStrategy.Builder();
+            var readerBuilder = new SourceDefinitionBuilder();
             if (_source != null)
             {
                 _source(readerBuilder);
-                _source(result);
             }
             else
             {
                 readerBuilder.FromAll();
                 readerBuilder.AllEvents();
-                result.FromAll();
-                result.AllEvents();
             }
             var config = ProjectionConfig.GetTest();
-            return result.Build(config, null, readerBuilder.Build(new RealTimeProvider(), runAs: null));
+            IQuerySources sources = readerBuilder.Build();
+            ITimeProvider timeProvider = new RealTimeProvider();
+            var readerStrategy = Core.Services.Processing.ReaderStrategy.Create(
+                0, sources, timeProvider, stopOnEof: false, runAs: config.RunAs);
+            return readerStrategy;
         }
     }
 }

@@ -61,9 +61,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             protected override void When()
             {
                 //projection subscribes here
-                _coreProjection.Handle(
+                _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
-                        _subscriptionId, CheckpointTag.FromEventTypeIndexPositions(new TFPos(140, 130), new Dictionary<string, int>{{"non-existing", -1}}), 55.5f, 0));
+                        _subscriptionId, CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, int>{{"non-existing", -1}}), 55.5f, 0));
             }
 
             [Test]
@@ -88,10 +88,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.FromAll();
                     source.IncludeEvent("non-existing");
                 };
-                NoStream("$projections-projection-state");
+                NoStream("$$$projections-projection-order");
                 NoStream("$projections-projection-order");
+                AllWritesToSucceed("$$$projections-projection-order");
                 AllWritesToSucceed("$projections-projection-order");
+
+                NoStream("$$$projections-projection-checkpoint");
                 NoStream("$projections-projection-checkpoint");
+                AllWritesToSucceed("$$$projections-projection-checkpoint");
+
                 NoStream(FakeProjectionStateHandler._emit1StreamId);
                 AllWritesQueueUp();
             }
@@ -99,16 +104,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             protected override void When()
             {
                 //projection subscribes here
-                _coreProjection.Handle(
+                _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
-                        CheckpointTag.FromEventTypeIndexPositions(
-                            new TFPos(140, 130), new Dictionary<string, int> {{"non-existing", -1}}), 55.5f, 0));
-                _coreProjection.Handle(
+                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, int> {{"non-existing", -1}}), 55.5f, 0));
+                _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
-                        CheckpointTag.FromEventTypeIndexPositions(
-                            new TFPos(160, 150), new Dictionary<string, int> {{"non-existing", -1}}), 55.6f, 1));
+                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(160, 150), new Dictionary<string, int> {{"non-existing", -1}}), 55.6f, 1));
             }
 
             [Test]
@@ -144,16 +147,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             protected override void When()
             {
                 //projection subscribes here
-                _coreProjection.Handle(
+                _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
-                        CheckpointTag.FromEventTypeIndexPositions(
-                            new TFPos(140, 130), new Dictionary<string, int> {{"non-existing", -1}}), 55.5f, 0));
-                _coreProjection.Handle(
+                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, int> {{"non-existing", -1}}), 55.5f, 0));
+                _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
-                        CheckpointTag.FromEventTypeIndexPositions(
-                            new TFPos(160, 150), new Dictionary<string, int> {{"non-existing", -1}}), 55.6f, 1));
+                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(160, 150), new Dictionary<string, int> {{"non-existing", -1}}), 55.6f, 1));
             }
 
             [Test]

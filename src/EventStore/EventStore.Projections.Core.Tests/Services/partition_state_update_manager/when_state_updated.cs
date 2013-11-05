@@ -36,9 +36,9 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
     public class when_state_updated
     {
         private PartitionStateUpdateManager _updateManager;
-        private CheckpointTag _zero = CheckpointTag.FromPosition(100, 50);
-        private CheckpointTag _one = CheckpointTag.FromPosition(200, 150);
-        private CheckpointTag _two = CheckpointTag.FromPosition(300, 250);
+        private CheckpointTag _zero = CheckpointTag.FromPosition(0, 100, 50);
+        private CheckpointTag _one = CheckpointTag.FromPosition(0, 200, 150);
+        private CheckpointTag _two = CheckpointTag.FromPosition(0, 300, 250);
 
         [SetUp]
         public void setup()

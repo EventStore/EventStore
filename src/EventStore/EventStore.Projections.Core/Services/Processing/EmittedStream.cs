@@ -34,6 +34,7 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
@@ -45,16 +46,12 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class EmittedStream : IDisposable, IHandle<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted>
     {
-        private readonly
-            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-            _readDispatcher;
-
-        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
+        private readonly IODispatcher _ioDispatcher;
 
 
         private readonly ILogger _logger;
         private readonly string _streamId;
+        private readonly WriterConfiguration _writerConfiguration;
         private readonly ProjectionVersion _projectionVersion;
         private readonly IPrincipal _writeAs;
         private readonly PositionTagger _positionTagger;
@@ -62,7 +59,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CheckpointTag _from;
         private readonly IEmittedStreamContainer _readyHandler;
 
-        private readonly Stack<Tuple<CheckpointTag, string, int>> _alreadyCommittedEvents = new Stack<Tuple<CheckpointTag, string, int>>();
+        private readonly Stack<Tuple<CheckpointTag, string, int>> _alreadyCommittedEvents =
+            new Stack<Tuple<CheckpointTag, string, int>>();
         private readonly Queue<EmittedEvent> _pendingWrites = new Queue<EmittedEvent>();
 
         private bool _checkpointRequested;
@@ -79,41 +77,107 @@ namespace EventStore.Projections.Core.Services.Processing
         private Event[] _submittedToWriteEvents;
         private EmittedEvent[] _submittedToWriteEmittedEvents;
         private int _lastKnownEventNumber = ExpectedVersion.Invalid;
+        private int _retrievedNextEventNumber = ExpectedVersion.Invalid;
         private readonly bool _noCheckpoints;
         private bool _disposed;
         private bool _recoveryCompleted;
-        private Event _submittedWriteMetastreamEvent;
+        private Event _submittedWriteMetaStreamEvent;
 
+
+        public class WriterConfiguration
+        {
+            private readonly IPrincipal _writeAs;
+            private readonly int _maxWriteBatchLength;
+            private readonly ILogger _logger;
+
+            private readonly int? maxCount;
+            private readonly TimeSpan? maxAge;
+
+            public class StreamMetadata
+            {
+                private readonly int? _maxCount;
+                private readonly TimeSpan? _maxAge;
+
+                public StreamMetadata(int? maxCount = null, TimeSpan? maxAge = null)
+                {
+                    _maxCount = maxCount;
+                    _maxAge = maxAge;
+                }
+
+                public int? MaxCount
+                {
+                    get { return _maxCount; }
+                }
+
+                public TimeSpan? MaxAge
+                {
+                    get { return _maxAge; }
+                }
+            }
+
+            public WriterConfiguration(
+                StreamMetadata streamMetadata, IPrincipal writeAs, int maxWriteBatchLength, ILogger logger = null)
+            {
+                _writeAs = writeAs;
+                _maxWriteBatchLength = maxWriteBatchLength;
+                _logger = logger;
+                if (streamMetadata != null)
+                {
+                    this.maxCount = streamMetadata.MaxCount;
+                    this.maxAge = streamMetadata.MaxAge;
+                }
+            }
+
+            public IPrincipal WriteAs
+            {
+                get { return _writeAs; }
+            }
+
+            public int MaxWriteBatchLength
+            {
+                get { return _maxWriteBatchLength; }
+            }
+
+            public ILogger Logger
+            {
+                get { return _logger; }
+            }
+
+            public int? MaxCount
+            {
+                get { return maxCount; }
+            }
+
+            public TimeSpan? MaxAge
+            {
+                get { return maxAge; }
+            }
+        }
 
         public EmittedStream(
-            string streamId, ProjectionVersion projectionVersion, IPrincipal writeAs, PositionTagger positionTagger,
-            CheckpointTag zeroPosition, CheckpointTag from,
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            IEmittedStreamContainer readyHandler, int maxWriteBatchLength, ILogger logger = null,
-            bool noCheckpoints = false)
+            string streamId, WriterConfiguration writerConfiguration, ProjectionVersion projectionVersion,
+            PositionTagger positionTagger, CheckpointTag @from, IODispatcher ioDispatcher,
+            IEmittedStreamContainer readyHandler, bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
+            if (writerConfiguration == null) throw new ArgumentNullException("writerConfiguration");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
-            if (zeroPosition == null) throw new ArgumentNullException("zeroPosition");
             if (@from == null) throw new ArgumentNullException("from");
-            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
-            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
+            if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
+            _writerConfiguration = writerConfiguration;
             _projectionVersion = projectionVersion;
-            _writeAs = writeAs;
+            _writeAs = writerConfiguration.WriteAs;
             _positionTagger = positionTagger;
-            _zeroPosition = zeroPosition;
+            _zeroPosition = positionTagger.MakeZeroCheckpointTag();
             _from = @from;
             _lastQueuedEventPosition = null;
-            _readDispatcher = readDispatcher;
-            _writeDispatcher = writeDispatcher;
+            _ioDispatcher = ioDispatcher;
             _readyHandler = readyHandler;
-            _maxWriteBatchLength = maxWriteBatchLength;
-            _logger = logger;
+            _maxWriteBatchLength = writerConfiguration.MaxWriteBatchLength;
+            _logger = writerConfiguration.Logger;
             _noCheckpoints = noCheckpoints;
         }
 
@@ -233,6 +297,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _awaitingListEventsCompleted = false;
 
             var newPhysicalStream = message.Events.Length == 0;
+            _retrievedNextEventNumber = newPhysicalStream
+                ? (message.StreamMetadata != null ? (message.StreamMetadata.TruncateBefore ?? 0) : 0)
+                : message.LastEventNumber + 1;
 
             if (_lastCommittedOrSubmittedEventPosition == null)
             {
@@ -343,43 +410,37 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
                 throw new Exception();
             _awaitingListEventsCompleted = true;
-            var corrId = Guid.NewGuid();
-            _readDispatcher.Publish(
-                new ClientMessage.ReadStreamEventsBackward(
-                    //TODO: reading events history in batches of 1 event (slow?)
-                    corrId, corrId, _readDispatcher.Envelope, _streamId, fromEventNumber, 1, 
-                    resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal), 
-                completed => ReadStreamEventsBackwardCompleted(completed, upTo));
+            _ioDispatcher.ReadBackward(
+                //TODO: reading events history in batches of 1 event (slow?)
+                _streamId, fromEventNumber, 1, resolveLinks: false, principal: SystemAccount.Principal,
+                action: completed => ReadStreamEventsBackwardCompleted(completed, upTo));
         }
 
         private void SubmitWriteMetadata()
         {
             if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
                 throw new Exception();
-            _submittedWriteMetastreamEvent = _streamId.StartsWith("$")
-                                                 ? new Event(
-                                                       Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
-                                                       new StreamMetadata(
-                                                           null, null, null, null, null,
-                                                           new StreamAcl(
-                                                               SystemRoles.All, null, null, SystemRoles.All,
-                                                               null)).ToJsonBytes(), null)
-                                                 : new Event(
-                                                       Guid.NewGuid(), SystemEventTypes.StreamMetadata, true,
-                                                       new StreamMetadata(
-                                                           null, null, null, null, null, new StreamAcl((string)null, null, null, null, null))
-                                                           .ToJsonBytes(), null);
+            var streamAcl = _streamId.StartsWith("$")
+                ? new StreamAcl(SystemRoles.All, null, null, SystemRoles.All, null)
+                : new StreamAcl((string)null, null, null, null, null);
+
+            var streamMetadata = new StreamMetadata(
+                _writerConfiguration.MaxCount, _writerConfiguration.MaxAge, acl: streamAcl,
+                truncateBefore: _retrievedNextEventNumber == 0 ? (int?) null : _retrievedNextEventNumber);
+
+            _submittedWriteMetaStreamEvent = new Event(
+                Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, streamMetadata.ToJsonBytes(), null);
+
             _awaitingMetadataWriteCompleted = true;
+
             PublishWriteMetaStream();
         }
 
         private void PublishWriteMetaStream()
         {
-            var corrId = Guid.NewGuid();
-            _writeDispatcher.Publish(
-                new ClientMessage.WriteEvents(
-                    corrId, corrId, _writeDispatcher.Envelope, true, SystemStreams.MetastreamOf(_streamId), ExpectedVersion.Any,
-                    _submittedWriteMetastreamEvent, _writeAs), HandleMetadataWriteCompleted);
+            _ioDispatcher.WriteEvent(
+                SystemStreams.MetastreamOf(_streamId), ExpectedVersion.Any, _submittedWriteMetaStreamEvent, _writeAs,
+                HandleMetadataWriteCompleted);
         }
 
         private void HandleMetadataWriteCompleted(ClientMessage.WriteEventsCompleted message)
@@ -431,7 +492,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 var e = _pendingWrites.Peek();
                 if (!e.IsReady())
                 {
-                    _readyHandler.Handle(new CoreProjectionProcessingMessage.EmittedStreamAwaiting(_streamId, new SendToThisEnvelope(this)));
+                    _readyHandler.Handle(
+                        new CoreProjectionProcessingMessage.EmittedStreamAwaiting(
+                            _streamId, new SendToThisEnvelope(this)));
                     _awaitingReady = true;
                     break;
                 }
@@ -451,7 +514,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _lastCommittedOrSubmittedEventPosition = causedByTag;
                 events.Add(
                     new Event(
-                        e.EventId, e.EventType, true, e.Data != null ? Helper.UTF8NoBom.GetBytes(e.Data) : null,
+                        e.EventId, e.EventType, e.IsJson, e.Data != null ? Helper.UTF8NoBom.GetBytes(e.Data) : null,
                         e.CausedByTag.ToJsonBytes(_projectionVersion, MetadataWithCausedByAndCorrelationId(e))));
                 emittedEvents.Add(e);
             }
@@ -508,11 +571,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             _awaitingWriteCompleted = true;
-            var corrId = Guid.NewGuid();
-            _writeDispatcher.Publish(
-                new ClientMessage.WriteEvents(
-                    corrId, corrId, _writeDispatcher.Envelope, false, _streamId, _lastKnownEventNumber,
-                    _submittedToWriteEvents, _writeAs), Handle);
+            _ioDispatcher.WriteEvents(_streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs, Handle);
 
         }
 

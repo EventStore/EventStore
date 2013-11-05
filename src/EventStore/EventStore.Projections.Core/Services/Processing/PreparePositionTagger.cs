@@ -33,21 +33,37 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class PreparePositionTagger : PositionTagger
     {
+        public PreparePositionTagger(int phase)
+            : base(phase)
+        {
+        }
+
         public override bool IsMessageAfterCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent)
         {
+            if (previous.Phase < Phase)
+                return true;
             return committedEvent.Data.Position.PreparePosition > previous.PreparePosition;
         }
 
         public override CheckpointTag MakeCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent)
         {
-            return CheckpointTag.FromPreparePosition(committedEvent.Data.Position.PreparePosition);
+            if (previous.Phase != Phase)
+                throw new ArgumentException(
+                    string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
+
+            return CheckpointTag.FromPreparePosition(previous.Phase, committedEvent.Data.Position.PreparePosition);
+        }
+
+        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof)
+        {
+            throw new NotImplementedException();
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()
         {
-            return CheckpointTag.FromPreparePosition(-1);
+            return CheckpointTag.FromPreparePosition(Phase, -1);
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
@@ -57,19 +73,27 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override CheckpointTag AdjustTag(CheckpointTag tag)
         {
+            if (tag.Phase != Phase)
+                throw new ArgumentException(
+                    string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, tag.Phase), "tag");
+
             if (tag.Mode_ == CheckpointTag.Mode.PreparePosition)
-                return tag; 
+                return tag;
 
             switch (tag.Mode_)
             {
                 case CheckpointTag.Mode.EventTypeIndex:
-                    throw new NotSupportedException("Conversion from EventTypeIndex to PreparePosition position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from EventTypeIndex to PreparePosition position tag is not supported");
                 case CheckpointTag.Mode.Stream:
-                    throw new NotSupportedException("Conversion from Stream to PreparePosition position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from Stream to PreparePosition position tag is not supported");
                 case CheckpointTag.Mode.MultiStream:
-                    throw new NotSupportedException("Conversion from MultiStream to PreparePosition position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from MultiStream to PreparePosition position tag is not supported");
                 case CheckpointTag.Mode.Position:
-                    throw new NotSupportedException("Conversion from Position to PreparePosition position tag is not supported");
+                    throw new NotSupportedException(
+                        "Conversion from Position to PreparePosition position tag is not supported");
                 default:
                     throw new Exception();
             }

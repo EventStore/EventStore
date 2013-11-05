@@ -33,8 +33,8 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
 using Newtonsoft.Json.Linq;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
@@ -61,16 +61,16 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _correlationId = "correlation_id";
 
             _emittedDataEvent = new EmittedDataEvent(
-                "test_stream", Guid.NewGuid(), "type", "data", null, CheckpointTag.FromPosition(200, 150), null);
+                "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null);
 
             _emittedDataEvent.SetCausedBy(_causedBy);
             _emittedDataEvent.SetCorrelationId(_correlationId);
 
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(40, 30), _readDispatcher, _writeDispatcher,
-                _readyHandler, maxWriteBatchLength: 50);
+                "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
+                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 40, 30),
+                _ioDispatcher, _readyHandler);
             _stream.Start();
             _stream.EmitEvents(new[] {_emittedDataEvent});
         }
@@ -81,8 +81,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             var writeEvents =
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
-                         .ExceptOfEventType(SystemEventTypes.StreamMetadata)
-                         .ToArray();
+                    .ExceptOfEventType(SystemEventTypes.StreamMetadata)
+                    .ToArray();
             Assert.AreEqual(1, writeEvents.Length);
             var writeEvent = writeEvents.Single();
             Assert.NotNull(writeEvent.Metadata);
@@ -90,6 +90,5 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             HelperExtensions.AssertJson(
                 new {___causedBy = _causedBy, ___correlationId = _correlationId}, metadata.ParseJson<JObject>());
         }
-
     }
 }

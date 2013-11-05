@@ -28,14 +28,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
-using System.Linq;
 using Newtonsoft.Json.Linq;
-using EventStore.Core.Util;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Other
 {
@@ -53,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Other
         [Test]
         public void position_based_checkpoint_tag()
         {
-            CheckpointTag tag = CheckpointTag.FromPosition(-1, 0);
+            CheckpointTag tag = CheckpointTag.FromPosition(1, -1, 0);
             byte[] bytes = tag.ToJsonBytes(_version);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
@@ -65,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Other
         [Test]
         public void prepare_position_based_checkpoint_tag_zero()
         {
-            CheckpointTag tag = CheckpointTag.FromPreparePosition(0);
+            CheckpointTag tag = CheckpointTag.FromPreparePosition(1, 0);
             byte[] bytes = tag.ToJsonBytes(_version);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
@@ -77,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Other
         [Test]
         public void prepare_position_based_checkpoint_tag_minus_one()
         {
-            CheckpointTag tag = CheckpointTag.FromPreparePosition(-1);
+            CheckpointTag tag = CheckpointTag.FromPreparePosition(1, -1);
             byte[] bytes = tag.ToJsonBytes(_version);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
@@ -89,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Other
         [Test]
         public void prepare_position_based_checkpoint_tag()
         {
-            CheckpointTag tag = CheckpointTag.FromPreparePosition(1234);
+            CheckpointTag tag = CheckpointTag.FromPreparePosition(1, 1234);
             byte[] bytes = tag.ToJsonBytes(_version);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
@@ -101,7 +98,7 @@ namespace EventStore.Projections.Core.Tests.Other
         [Test]
         public void stream_based_checkpoint_tag()
         {
-            CheckpointTag tag = CheckpointTag.FromStreamPosition("$ce-account", 12345);
+            CheckpointTag tag = CheckpointTag.FromStreamPosition(1, "$ce-account", 12345);
             byte[] bytes = tag.ToJsonBytes(_version);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
@@ -114,7 +111,7 @@ namespace EventStore.Projections.Core.Tests.Other
         [Test]
         public void streams_based_checkpoint_tag()
         {
-            CheckpointTag tag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"a", 1}, {"b", 2}});
+            CheckpointTag tag = CheckpointTag.FromStreamPositions(1, new Dictionary<string, int> {{"a", 1}, {"b", 2}});
             byte[] bytes = tag.ToJsonBytes(_version);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
@@ -128,7 +125,55 @@ namespace EventStore.Projections.Core.Tests.Other
         public void event_by_type_index_based_checkpoint_tag()
         {
             CheckpointTag tag = CheckpointTag.FromEventTypeIndexPositions(
-                new TFPos(100, 50), new Dictionary<string, int> {{"a", 1}, {"b", 2}});
+                0, new TFPos(100, 50), new Dictionary<string, int> {{"a", 1}, {"b", 2}});
+            byte[] bytes = tag.ToJsonBytes(_version);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
+            Console.WriteLine(instring);
+
+            CheckpointTag back = instring.ParseCheckpointTagJson();
+            Assert.AreEqual(tag, back);
+        }
+
+        [Test]
+        public void phase_based_checkpoint_tag_completed()
+        {
+            CheckpointTag tag = CheckpointTag.FromPhase(2, completed: false);
+            byte[] bytes = tag.ToJsonBytes(_version);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
+            Console.WriteLine(instring);
+
+            CheckpointTag back = instring.ParseCheckpointTagJson();
+            Assert.AreEqual(tag, back);
+        }
+
+        [Test]
+        public void phase_based_checkpoint_tag_incomplete()
+        {
+            CheckpointTag tag = CheckpointTag.FromPhase(0, completed: true);
+            byte[] bytes = tag.ToJsonBytes(_version);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
+            Console.WriteLine(instring);
+
+            CheckpointTag back = instring.ParseCheckpointTagJson();
+            Assert.AreEqual(tag, back);
+        }
+
+        [Test]
+        public void by_stream_based_checkpoint_tag()
+        {
+            CheckpointTag tag = CheckpointTag.FromByStreamPosition(0, "catalog", 1, "data", 2, 12345);
+            byte[] bytes = tag.ToJsonBytes(_version);
+            string instring = Helper.UTF8NoBom.GetString(bytes);
+            Console.WriteLine(instring);
+
+            CheckpointTag back = instring.ParseCheckpointTagJson();
+            Assert.AreEqual(tag, back);
+        }
+
+        [Test]
+        public void by_stream_based_checkpoint_tag_zero()
+        {
+            CheckpointTag tag = CheckpointTag.FromByStreamPosition(0, "catalog", -1, null, -1, 12345);
             byte[] bytes = tag.ToJsonBytes(_version);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
@@ -140,7 +185,7 @@ namespace EventStore.Projections.Core.Tests.Other
         [Test]
         public void extra_metadata_are_preserved()
         {
-            CheckpointTag tag = CheckpointTag.FromPosition(-1, 0);
+            CheckpointTag tag = CheckpointTag.FromPosition(0, -1, 0);
             var extra = new Dictionary<string, JToken> {{"$$a", new JRaw("\"b\"")}, {"$$c", new JRaw("\"d\"")}};
             byte[] bytes = tag.ToJsonBytes(_version, extra);
             string instring = Helper.UTF8NoBom.GetString(bytes);
@@ -152,7 +197,7 @@ namespace EventStore.Projections.Core.Tests.Other
             Assert.IsTrue(back.ExtraMetadata.TryGetValue("$$a", out v));
             Assert.AreEqual("b", (string) ((JValue) v).Value);
             Assert.IsTrue(back.ExtraMetadata.TryGetValue("$$c", out v));
-            Assert.AreEqual("d", (string)((JValue)v).Value);
+            Assert.AreEqual("d", (string) ((JValue) v).Value);
         }
 
         [Test]
@@ -185,7 +230,7 @@ namespace EventStore.Projections.Core.Tests.Other
             {
                 if (ReferenceEquals(null, obj)) return false;
                 if (ReferenceEquals(this, obj)) return true;
-                if (obj.GetType() != this.GetType()) return false;
+                if (obj.GetType() != GetType()) return false;
                 return Equals((TestData) obj);
             }
 

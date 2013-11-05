@@ -29,7 +29,6 @@
 using System;
 using System.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -37,6 +36,11 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class PartitionState
     {
+        public bool IsChanged(PartitionState newState)
+        {
+            return State != newState.State || Result != newState.Result;
+        }
+
         public static PartitionState Deserialize(string serializedState, CheckpointTag causedBy)
         {
             if (serializedState == null)

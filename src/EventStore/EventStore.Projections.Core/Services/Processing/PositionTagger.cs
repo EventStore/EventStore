@@ -32,10 +32,19 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class PositionTagger
     {
+        public readonly int Phase;
+
+        public PositionTagger(int phase)
+        {
+            Phase = phase;
+        }
+
         public abstract bool IsMessageAfterCheckpointTag(
             CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent);
 
         public abstract CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent);
+
+        public abstract CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof);
 
         public abstract CheckpointTag MakeZeroCheckpointTag();
 

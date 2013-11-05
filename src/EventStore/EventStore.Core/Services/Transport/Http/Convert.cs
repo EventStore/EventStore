@@ -86,6 +86,8 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
+            feed.SetHeadOfStream(headOfStream); //TODO AN: remove this ?
+            feed.SetSelfUrl(self);
 
             var prevEventNumber = Math.Min(msg.FromEventNumber, msg.LastEventNumber) + 1;
             var nextEventNumber = msg.FromEventNumber - msg.MaxCount;

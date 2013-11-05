@@ -41,9 +41,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private Guid _causedBy;
         private string _correlationId;
 
+        //TODO: stream metadata
         protected EmittedEvent(
-            string streamId, Guid eventId, string eventType, CheckpointTag causedByTag,
-            CheckpointTag expectedTag, Action<int> onCommitted = null)
+            string streamId, Guid eventId,
+            string eventType, CheckpointTag causedByTag, CheckpointTag expectedTag, Action<int> onCommitted = null)
         {
             if (causedByTag == null) throw new ArgumentNullException("causedByTag");
             StreamId = streamId;
@@ -80,6 +81,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             get { return _correlationId; }
         }
+
+        public abstract bool IsJson { get; }
 
         public abstract bool IsReady();
 

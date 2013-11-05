@@ -16,8 +16,8 @@ extern "C"
 		isolate->Enter();
 		// NOTE: this also verifies whether this build can work at all
 		{
-			v8::HandleScope scope;
-			v8::Persistent<v8::Context> context = v8::Context::New();
+			v8::HandleScope scope(v8::Isolate::GetCurrent());
+			v8::Handle<v8::Context> context = v8::Context::New(v8::Isolate::GetCurrent());
 			v8::TryCatch try_catch;
 		}
 		isolate->Exit();
@@ -32,7 +32,7 @@ extern "C"
 		js1::ModuleScript *module_script;
 
 		js1::PreludeScope prelude_scope(prelude_script);
-		v8::HandleScope scope;
+		v8::HandleScope scope(v8::Isolate::GetCurrent());
 
 
 		module_script = new js1::ModuleScript(prelude_script);
@@ -55,7 +55,7 @@ extern "C"
 		prelude_script = new js1::PreludeScript(load_module_callback, enter_calcellable_region_callback, exit_cancellable_region_callback, log_callback);
 		js1::PreludeScope prelude_scope(prelude_script);
 
-		v8::HandleScope scope;
+		v8::HandleScope scope(v8::Isolate::GetCurrent());
 
 		js1::Status status;
 		if ((status = prelude_script->compile_script(prelude, file_name)) == js1::S_OK)
@@ -81,7 +81,7 @@ extern "C"
 		js1::QueryScript *query_script;
 		js1::PreludeScope prelude_scope(prelude_script);
 
-		v8::HandleScope scope;
+		v8::HandleScope scope(v8::Isolate::GetCurrent());
 
 
 		query_script = new js1::QueryScript(prelude_script, register_command_handler_callback, reverse_command_callback);
@@ -116,7 +116,9 @@ extern "C"
 		query_script = reinterpret_cast<js1::QueryScript *>(script_handle);
 		js1::PreludeScope prelude_scope(query_script);
 
-		v8::Persistent<v8::String> result;
+		v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+
+		v8::Handle<v8::String> result;
 		js1::Status success = query_script->execute_handler(event_handler_handle, data_json, data_other, other_length, result);
 		if (success != js1::S_OK) {
 			*result_json = NULL;
@@ -127,7 +129,6 @@ extern "C"
 		if (!result.IsEmpty()) 
 		{
 			v8::String::Value * result_buffer = new v8::String::Value(result);
-			result.Dispose();
 			*result_json = **result_buffer;
 			*memory_handle = result_buffer;
 		}

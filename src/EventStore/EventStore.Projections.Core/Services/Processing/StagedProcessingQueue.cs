@@ -82,7 +82,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private TaskEntry _first;
         private TaskEntry _last;
         private int _count;
-        private int _maxStage;
+        private readonly int _maxStage;
+        public event Action EnsureTickPending;
 
         public StagedProcessingQueue(bool[] orderedStage)
         {
@@ -235,6 +236,8 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
                 EnqueueForStage(entry, readyForStage);
+            if (EnsureTickPending != null)
+                EnsureTickPending();
         }
 
         private void EnqueueForStage(TaskEntry entry, int readyForStage)

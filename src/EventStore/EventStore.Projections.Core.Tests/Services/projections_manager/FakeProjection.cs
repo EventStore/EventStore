@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -47,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             _logger("ConfigureSourceProcessingStrategy(" + builder + ")");
             builder.FromAll();
@@ -65,9 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _logger("Initialize");
         }
 
-        public string GetStatePartition(
-            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data)
+        public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             _logger("GetStatePartition(" + "..." + ")");
             throw new NotImplementedException();
@@ -75,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEvent[] emittedEvents)
+            out string newState, out EmittedEventEnvelope[] emittedEvents)
         {
             if (data.EventType == "fail" || _query == "fail")
                 throw new Exception("failed");
@@ -89,5 +88,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             throw new NotImplementedException();
         }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
+        }
+
     }
 }

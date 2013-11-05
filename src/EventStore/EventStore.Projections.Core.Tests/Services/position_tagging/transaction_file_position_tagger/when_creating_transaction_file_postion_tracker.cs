@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         [SetUp]
         public void when()
         {
-            _tagger = new TransactionFilePositionTagger();
+            _tagger = new TransactionFilePositionTagger(0);
             _positionTracker = new PositionTracker(_tagger);
         }
 
@@ -49,14 +49,14 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         public void it_can_be_updated()
         {
             // even not initialized (UpdateToZero can be removed)
-            var newTag = CheckpointTag.FromPosition(100, 50);
+            var newTag = CheckpointTag.FromPosition(0, 100, 50);
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void initial_position_cannot_be_set_twice()
         {
-            var newTag = CheckpointTag.FromPosition(100, 50);
+            var newTag = CheckpointTag.FromPosition(0, 100, 50);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void it_cannot_be_updated_forward()
         {
-            var newTag = CheckpointTag.FromPosition(100, 50);
+            var newTag = CheckpointTag.FromPosition(0, 100, 50);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 

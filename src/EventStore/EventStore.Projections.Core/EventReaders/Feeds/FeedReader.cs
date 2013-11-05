@@ -41,11 +41,15 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 {
     public class FeedReader : IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
                               IHandle<EventReaderSubscriptionMessage.EofReached>,
+                              IHandle<EventReaderSubscriptionMessage.PartitionEofReached>,
                               IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
                               IHandle<EventReaderSubscriptionMessage.NotAuthorized>
     {
         private readonly
-            PublishSubscribeDispatcher<ReaderSubscriptionManagement.Subscribe, ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage> _subscriptionDispatcher;
+            PublishSubscribeDispatcher
+                <Guid, ReaderSubscriptionManagement.Subscribe,
+                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+            _subscriptionDispatcher;
 
         private readonly IPrincipal _user;
 
@@ -63,7 +67,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 
         public static FeedReader Create(
             PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
+                <Guid, ReaderSubscriptionManagement.Subscribe,
                 ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
                 publishSubscribeDispatcher, FeedReaderMessage.ReadPage message, ITimeProvider timeProvider)
         {
@@ -74,7 +78,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 
         public FeedReader(
             PublishSubscribeDispatcher
-                <ReaderSubscriptionManagement.Subscribe,
+                <Guid, ReaderSubscriptionManagement.Subscribe,
                 ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
                 subscriptionDispatcher, IPrincipal user, QuerySourcesDefinition querySource, CheckpointTag fromPosition,
             int maxEvents, Guid requestCorrelationId, IEnvelope replyEnvelope, ITimeProvider timeProvider)
@@ -97,7 +101,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 
         public void Start()
         {
-            var readerStrategy = ReaderStrategy.Create(_querySource, _timeProvider, runAs: _user);
+            var readerStrategy = ReaderStrategy.Create(0, _querySource, _timeProvider, stopOnEof: true, runAs: _user);
             //TODO: make reader mode explicit
             var readerOptions = new ReaderSubscriptionOptions(
                 1024*1024, _maxEvents + 1, stopOnEof: true, stopAfterNEvents: _maxEvents);
@@ -118,6 +122,11 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
             _lastReaderPosition = message.CheckpointTag;
             Reply();
             Unsubscribe();
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.PartitionEofReached message)
+        {
+            _lastReaderPosition = message.CheckpointTag;
         }
 
         public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)

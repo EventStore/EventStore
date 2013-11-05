@@ -28,7 +28,7 @@
 
 using System;
 using EventStore.Core.Bus;
-using EventStore.Core.Services.TimerService;
+using EventStore.Core.Helpers;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -42,6 +42,8 @@ namespace EventStore.Projections.Core.Services.Processing
             IPublisher publisher, CheckpointTag fromCheckpointTag, Guid subscriptionId,
             ReaderSubscriptionOptions readerSubscriptionOptions);
 
-        IEventReader CreatePausedEventReader(Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents);
+        IEventReader CreatePausedEventReader(
+            Guid eventReaderId, IPublisher publisher, IODispatcher ioDispatcher, CheckpointTag checkpointTag,
+            bool stopOnEof, int? stopAfterNEvents);
     }
 }

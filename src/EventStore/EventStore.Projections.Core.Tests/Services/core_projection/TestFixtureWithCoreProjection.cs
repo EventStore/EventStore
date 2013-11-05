@@ -27,8 +27,10 @@
 // 
 
 using System;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -46,16 +48,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected FakeProjectionStateHandler _stateHandler;
         protected int _checkpointHandledThreshold = 5;
         protected int _checkpointUnhandledBytesThreshold = 10000;
-        protected Action<QuerySourceProcessingStrategyBuilder> _configureBuilderByQuerySource = null;
+        protected Action<SourceDefinitionBuilder> _configureBuilderByQuerySource = null;
         protected Guid _projectionCorrelationId;
         private bool _createTempStreams = false;
-        private bool _stopOnEof = false;
-        private ProjectionConfig _projectionConfig;
+        protected ProjectionConfig _projectionConfig;
         protected ProjectionVersion _version;
+        protected string _projectionName;
 
         protected override void Given1()
         {
             _version = new ProjectionVersion(1, 0, 0);
+            _projectionName = "projection";
         }
 
         [SetUp]
@@ -67,30 +70,90 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(_writeEventHandler);
 
 
-            _stateHandler = _stateHandler
-                            ?? new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource);
+            _stateHandler = GivenProjectionStateHandler();
             _firstWriteCorrelationId = Guid.NewGuid();
             _projectionCorrelationId = Guid.NewGuid();
-            _projectionConfig = new ProjectionConfig(null, 
-                _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
-                _createTempStreams, _stopOnEof);
-            _coreProjection = CoreProjection.CreateAndPrepare(
-                "projection", _version, _projectionCorrelationId, _bus, _stateHandler, _projectionConfig, _readDispatcher,
-                _writeDispatcher, _subscriptionDispatcher, null, _timeProvider);
+            _projectionConfig = GivenProjectionConfig();
+            var projectionProcessingStrategy = GivenProjectionProcessingStrategy();
+            _coreProjection = GivenCoreProjection(projectionProcessingStrategy);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.Failed>(_coreProjection);
-            _bus.Subscribe<EventReaderSubscriptionMessage.CommittedEventReceived>(_coreProjection);
-            _bus.Subscribe<EventReaderSubscriptionMessage.CheckpointSuggested>(_coreProjection);
-            _bus.Subscribe<EventReaderSubscriptionMessage.EofReached>(_coreProjection);
-            _bus.Subscribe<EventReaderSubscriptionMessage.ProgressChanged>(_coreProjection);
-            _bus.Subscribe<EventReaderSubscriptionMessage.NotAuthorized>(_coreProjection);
             _bus.Subscribe(new AdHocHandler<ProjectionCoreServiceMessage.CoreTick>(tick => tick.Action()));
             _bus.Subscribe(new AdHocHandler<ReaderCoreServiceMessage.ReaderTick>(tick => tick.Action()));
             PreWhen();
             When();
+        }
+
+        protected virtual CoreProjection GivenCoreProjection(ProjectionProcessingStrategy projectionProcessingStrategy)
+        {
+            return projectionProcessingStrategy.Create(
+                _projectionCorrelationId, _bus, SystemAccount.Principal, _bus, _ioDispatcher, _subscriptionDispatcher,
+                _timeProvider);
+        }
+
+        protected virtual ProjectionProcessingStrategy GivenProjectionProcessingStrategy()
+        {
+            return CreateProjectionProcessingStrategy();
+        }
+
+        protected ProjectionProcessingStrategy CreateProjectionProcessingStrategy()
+        {
+            return new ContinuousProjectionProcessingStrategy(
+                _projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
+                _subscriptionDispatcher);
+        }
+
+        protected ProjectionProcessingStrategy CreateQueryProcessingStrategy()
+        {
+            return new QueryProcessingStrategy(
+                _projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
+                _subscriptionDispatcher);
+        }
+
+        protected virtual ProjectionConfig GivenProjectionConfig()
+        {
+            return new ProjectionConfig(
+                null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, GivenPendingEventsThreshold(),
+                GivenMaxWriteBatchLength(), GivenEmitEventEnabled(), GivenCheckpointsEnabled(), _createTempStreams,
+                GivenStopOnEof(), isSlaveProjection: GivenIsSlaveProjection());
+        }
+
+        protected virtual bool GivenIsSlaveProjection()
+        {
+            return false;
+        }
+
+        protected virtual int GivenMaxWriteBatchLength()
+        {
+            return 250;
+        }
+
+        protected virtual int GivenPendingEventsThreshold()
+        {
+            return 1000;
+        }
+
+        protected virtual bool GivenStopOnEof()
+        {
+            return false;
+        }
+
+        protected virtual bool GivenCheckpointsEnabled()
+        {
+            return true;
+        }
+
+        protected virtual bool GivenEmitEventEnabled()
+        {
+            return true;
+        }
+
+        protected virtual FakeProjectionStateHandler GivenProjectionStateHandler()
+        {
+            return new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource);
         }
 
         protected new virtual void PreWhen()

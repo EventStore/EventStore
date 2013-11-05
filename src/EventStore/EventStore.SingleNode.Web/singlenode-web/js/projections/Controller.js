@@ -8,6 +8,19 @@ define(function () {
         var created = (mode === "projection") || (mode === "query" && url);
         var commandErrorHandler = null;
 
+        if (observer)
+            observer.subscribe({
+                urlChanged: function(newBaseUrl) {
+                    if (!newBaseUrl) {
+                        created = false;
+                        baseUrl = null;
+                    } else {
+                        created = true;
+                        baseUrl = newBaseUrl;
+                    }
+                }
+            });
+
         function postCommand(command, success) {
             $.ajax(baseUrl + "/command/" + command, {
                 headers: {

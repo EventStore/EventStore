@@ -28,14 +28,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
+using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using System.Linq;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_reader.catching_up
 {
@@ -68,12 +66,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 
                 _subscriptionId = Guid.NewGuid();
                 _sourceDefinition = new QuerySourcesDefinition
-                    {
-                        AllStreams = true,
-                        Events = new[] {"type1", "type2"},
-                        Options = new QuerySourcesDefinitionOptions {}
-                    };
-                _readerStrategy = ReaderStrategy.Create(_sourceDefinition, _timeProvider, runAs: null);
+                {
+                    AllStreams = true,
+                    Events = new[] {"type1", "type2"},
+                    Options = new QuerySourcesDefinitionOptions {}
+                };
+                _readerStrategy = ReaderStrategy.Create(0, _sourceDefinition, _timeProvider, stopOnEof: false, runAs: null);
                 _readerSubscriptionOptions = new ReaderSubscriptionOptions(
                     checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, stopOnEof: false,
                     stopAfterNEvents: null);
@@ -93,11 +91,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                     _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
 
                 Assert.That(
-                    (from e in receivedEvents
-                     orderby e.Data.EventSequenceNumber
-                     select e.Data.EventSequenceNumber).SequenceEqual(
-                         from e in receivedEvents
-                         select e.Data.EventSequenceNumber), "Incorrect event order received");
+                    (from e in receivedEvents orderby e.Data.EventSequenceNumber select e.Data.EventSequenceNumber)
+                        .SequenceEqual(from e in receivedEvents select e.Data.EventSequenceNumber),
+                    "Incorrect event order received");
             }
         }
 
@@ -117,13 +113,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
             protected override IEnumerable<WhenStep> When()
             {
                 var fromZeroPosition = CheckpointTag.FromEventTypeIndexPositions(
-                    new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});
+                    0, new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
                 DisableTimer();
-                yield return
-                    CreateWriteEvent("test-stream", "type1", "{Data: 3}", "{}");
+                yield return CreateWriteEvent("test-stream", "type1", "{Data: 3}", "{}");
                 _tfPos3 = _all.Last(v => v.Value.EventStreamId == "test-stream").Key;
 
                 yield return
@@ -131,8 +126,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 
                 yield return CreateWriteEvent("$et-type2", "$>", "1@test-stream", TFPosToMetadata(_tfPos2));
 
-                yield return
-                    CreateWriteEvent("$et", "$Checkpoint", TFPosToMetadata(_tfPos2), TFPosToMetadata(_tfPos2));
+                yield return CreateWriteEvent("$et", "$Checkpoint", TFPosToMetadata(_tfPos2), TFPosToMetadata(_tfPos2));
 
                 // we are still in index-based reading mode
                 Assert.IsEmpty(_consumer.HandledMessages.OfType<ClientMessage.ReadAllEventsForward>());
@@ -140,11 +134,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                 // simulate late response to the read request in this particular order
                 yield return
                     _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>()
-                             .Single(v => v.EventStreamId == "$et");
+                        .Single(v => v.EventStreamId == "$et");
 
                 yield return
                     _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
-                             .Single(v => v.EventStreamId == "$et-type2");
+                        .Single(v => v.EventStreamId == "$et-type2");
                 EnableTimer();
             }
 
@@ -174,7 +168,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
             protected override IEnumerable<WhenStep> When()
             {
                 var fromZeroPosition = CheckpointTag.FromEventTypeIndexPositions(
-                    new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});
+                    0, new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
@@ -198,6 +192,5 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                 Assert.AreEqual(1, receivedEvents.Length);
             }
         }
-
     }
 }

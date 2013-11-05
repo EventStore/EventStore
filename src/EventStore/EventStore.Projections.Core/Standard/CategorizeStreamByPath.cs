@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Core.Services;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -51,7 +53,7 @@ namespace EventStore.Projections.Core.Standard
             // we will need to declare event types we are interested in
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             builder.FromAll();
             builder.AllEvents();
@@ -65,16 +67,14 @@ namespace EventStore.Projections.Core.Standard
         {
         }
 
-        public string GetStatePartition(
-            CheckpointTag position, string streamId, string eventType, string category, Guid eventid, int sequenceNumber,
-            string metadata, string data)
+        public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             throw new NotImplementedException();
         }
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEvent[] emittedEvents)
+            out string newState, out EmittedEventEnvelope[] emittedEvents)
         {
             emittedEvents = null;
             newState = null;
@@ -89,11 +89,12 @@ namespace EventStore.Projections.Core.Standard
             var category = data.EventStreamId.Substring(0, lastSlashPos);
 
             emittedEvents = new[]
-                {
+            {
+                new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        "$category" + _separator + category, Guid.NewGuid(), "StreamCreated", data.EventStreamId, null,
-                        eventPosition, expectedTag: null)
-                };
+                        "$category" + _separator + category, Guid.NewGuid(), SystemEventTypes.StreamReference, false,
+                        data.EventStreamId, null, eventPosition, expectedTag: null))
+            };
 
             return true;
         }
@@ -105,6 +106,11 @@ namespace EventStore.Projections.Core.Standard
 
         public void Dispose()
         {
+        }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
         }
     }
 }

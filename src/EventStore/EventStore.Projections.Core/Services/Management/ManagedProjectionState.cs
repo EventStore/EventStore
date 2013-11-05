@@ -32,6 +32,7 @@ namespace EventStore.Projections.Core.Services.Management
         Creating,
         Loading,
         Loaded,
+        Writing,
         Preparing,
         Prepared,
         Stopped,

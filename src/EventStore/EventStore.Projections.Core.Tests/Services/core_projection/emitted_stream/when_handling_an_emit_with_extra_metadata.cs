@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,8 +33,8 @@ using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
 using Newtonsoft.Json.Linq;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
@@ -54,20 +55,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", new ProjectionVersion(1, 0, 0), null, new TransactionFilePositionTagger(),
-                CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(40, 30), _readDispatcher, _writeDispatcher,
-                _readyHandler, maxWriteBatchLength: 50);
+                "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
+                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 40, 30),
+                _ioDispatcher, _readyHandler);
             _stream.Start();
 
             _stream.EmitEvents(
                 new[]
-                    {
-                        new EmittedDataEvent(
-                    "test_stream", Guid.NewGuid(), "type", "data",
-                    new ExtraMetaData(new Dictionary<string, string> {{"a", "1"}, {"b", "{}"}}),
-                    CheckpointTag.FromPosition(200, 150), null)
-                    });
-
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", true, "data", new ExtraMetaData(new Dictionary<string, string> {{"a", "1"}, {"b", "{}"}}), CheckpointTag.FromPosition(0, 200, 150), null)
+                });
         }
 
         [Test]
@@ -87,8 +85,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
 
             HelperExtensions.AssertJson(new {a = 1, b = new {}}, metadata);
             var checkpoint = @event.Metadata.ParseCheckpointTagJson();
-            Assert.AreEqual(CheckpointTag.FromPosition(200, 150), checkpoint);
+            Assert.AreEqual(CheckpointTag.FromPosition(0, 200, 150), checkpoint);
         }
-
     }
 }

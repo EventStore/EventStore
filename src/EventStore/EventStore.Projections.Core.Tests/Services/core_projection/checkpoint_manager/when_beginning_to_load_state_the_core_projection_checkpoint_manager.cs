@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _exception = null;
             try
             {
-                _manager.BeginLoadState();
+                _checkpointReader.BeginLoadState();
             }
             catch (Exception ex)
             {
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void start_throws_invalid_operation_exception()
         {
-            _manager.BeginLoadState();
+            _checkpointReader.BeginLoadState();
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
@@ -81,13 +81,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void event_processed_throws_invalid_operation_exception()
         {
 //            _manager.StateUpdated("", @"{""state"":""state""}");
-            _manager.EventProcessed(CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
+            _manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 10), 77.7f);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void checkpoint_suggested_throws_invalid_operation_exception()
         {
-            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
+            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition(0, "stream", 10), 77.7f);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
@@ -99,14 +99,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void can_be_started()
         {
-            _manager.Start(CheckpointTag.FromStreamPosition("stream", 10));
+            _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10));
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cannot_be_started_from_incompatible_checkpoint_tag()
         {
             //TODO: move to when loaded
-            _manager.Start(CheckpointTag.FromStreamPosition("stream1", 10));
+            _manager.Start(CheckpointTag.FromStreamPosition(0, "stream1", 10));
         }
     }
 }

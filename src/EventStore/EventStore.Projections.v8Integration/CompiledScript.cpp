@@ -14,14 +14,6 @@ namespace js1
 	{
 	}
 
-	CompiledScript::~CompiledScript() 
-	{
-		script.Dispose();
-		context.Dispose();
-		global.Dispose();
-		last_exception.Dispose();
-	}
-
 	void CompiledScript::isolate_terminate_execution() 
 	{
 		v8::Isolate* isolate = get_isolate();
@@ -38,35 +30,43 @@ namespace js1
 			return;
 		}
 
-		if (!last_exception.IsEmpty()) 
+		if (last_exception && !last_exception->IsEmpty()) 
 		{
-			v8::HandleScope handle_scope;
+			v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 			v8::Context::Scope local(get_context());
 
-			v8::String::Value error_value(last_exception);
+			v8::String::Value error_value(v8::Handle<v8::Value>::New(v8::Isolate::GetCurrent(), *last_exception));
 			//TODO: define error codes
 			report_error_callback(1, *error_value);
 		}
 	}
 
-	v8::Persistent<v8::Context> &CompiledScript::get_context()
+	v8::Handle<v8::Context> CompiledScript::get_context()
 	{
-		return context;
+		return v8::Handle<v8::Context>::New(v8::Isolate::GetCurrent(), *context);
 	}
 
 	Status CompiledScript::compile_script(const uint16_t *script_source, const uint16_t *file_name)
 	{
-		v8::HandleScope handle_scope;
+		v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 		//TODO: why dispose? do we call caompile_script multiple times?
-		script.Dispose();
-		script.Clear();
+		script.reset();
 
-		Status status = create_global_template(global);
+		v8::Persistent<v8::ObjectTemplate> empty;
+
+		v8::Handle<v8::ObjectTemplate> global_local = v8::Handle<v8::ObjectTemplate>::New(
+			v8::Isolate::GetCurrent(), global ? *global : empty);
+
+		Status status = create_global_template(global_local);
+
 		if (status != S_OK)
 			return status;
 
-		context = v8::Context::New(NULL, global);
-		v8::Context::Scope scope(context);
+		context = std::shared_ptr<v8::Persistent<v8::Context>>(
+			new v8::Persistent<v8::Context>(v8::Isolate::GetCurrent(), 
+			v8::Context::New(v8::Isolate::GetCurrent(), NULL, global_local)));
+
+		v8::Context::Scope scope(v8::Isolate::GetCurrent(), *context);
 
 		v8::TryCatch try_catch;
 		v8::Handle<v8::Script> result = v8::Script::Compile(v8::String::New(script_source), v8::String::New(file_name));
@@ -76,15 +76,16 @@ namespace js1
 		if (result.IsEmpty())
 			return S_ERROR;
 
-		script = v8::Persistent<v8::Script>::New(result);
+		script = std::shared_ptr<v8::Persistent<v8::Script>>(
+			new v8::Persistent<v8::Script>(v8::Isolate::GetCurrent(), result));
 		return S_OK;
 	}
 
-	v8::Handle<v8::Value> CompiledScript::run_script(v8::Persistent<v8::Context> context)
+	v8::Handle<v8::Value> CompiledScript::run_script(v8::Handle<v8::Context> context)
 	{
 		v8::Context::Scope context_scope(context);
 		v8::TryCatch try_catch;
-		v8::Handle<v8::Value> result = script->Run();
+		v8::Handle<v8::Value> result = v8::Handle<v8::Script>::New(v8::Isolate::GetCurrent(), *script)->Run();
 		if (set_last_error(result.IsEmpty(), try_catch))
 			result.Clear();
 		return result;
@@ -99,14 +100,14 @@ namespace js1
 		if (is_error) 
 		{
 			Handle<Value> exception = try_catch.Exception();
-			last_exception.Dispose();
-			last_exception = v8::Persistent<v8::Value>::New(exception);
+			last_exception.reset();
+			last_exception = std::shared_ptr<v8::Persistent<v8::Value>>(
+				new v8::Persistent<v8::Value>(v8::Isolate::GetCurrent(), exception));
 			return true;
 		}
 		else 
 		{
-			last_exception.Dispose();
-			last_exception.Clear();
+			last_exception.reset();
 			return false;
 		}
 	}
@@ -114,8 +115,9 @@ namespace js1
 	void CompiledScript::set_last_error(v8::Handle<v8::String> message)
 	{
 		Handle<Value> exception = v8::Exception::Error(message);
-		last_exception.Dispose();
-		last_exception = v8::Persistent<v8::Value>::New(exception);
+		last_exception.reset();
+		last_exception = std::shared_ptr<v8::Persistent<v8::Value>>(
+			new v8::Persistent<v8::Value>(v8::Isolate::GetCurrent(), exception));
 	}
 
 	void CompiledScript::isolate_add_ref(v8::Isolate * isolate) 

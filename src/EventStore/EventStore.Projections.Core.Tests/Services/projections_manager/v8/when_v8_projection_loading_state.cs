@@ -52,9 +52,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void the_state_is_loaded()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""x"":""y""}", out state, out emittedEvents);
 
             Assert.AreEqual(_state, state);

@@ -35,17 +35,22 @@ namespace EventStore.Projections.Core.Services.Processing
     class GetResultWorkItem : GetDataWorkItemBase
     {
         public GetResultWorkItem(
-            IEnvelope envelope, Guid correlationId, Guid projectionId, CoreProjection projection,
-            PartitionStateCache partitionStateCache, string partition)
-            : base(envelope, correlationId, projectionId, projection, partitionStateCache, partition)
+            IEnvelope envelope, Guid correlationId, Guid projectionId, IProjectionPhaseStateManager projection,
+            string partition)
+            : base(envelope, correlationId, projectionId, projection, partition)
         {
         }
 
         protected override void Reply(PartitionState state, CheckpointTag checkpointTag)
         {
-            _envelope.ReplyWith(
-                new CoreProjectionManagementMessage.ResultReport(
-                    _correlationId, _projectionId, _partition, state.Result, checkpointTag));
+            if (state == null)
+                _envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.ResultReport(
+                        _correlationId, _projectionId, _partition, null, checkpointTag));
+            else
+                _envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.ResultReport(
+                        _correlationId, _projectionId, _partition, state.Result, checkpointTag));
         }
     }
 }

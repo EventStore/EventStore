@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -524,6 +525,26 @@ namespace EventStore.Core.Tests.Helpers
         protected TFPos GetTfPos(string streamId, int eventNumber)
         {
             return _all.Last(v => v.Value.EventStreamId == streamId && v.Value.EventNumber == eventNumber).Key;
+        }
+
+        public void AssertLastEvent(string streamId, string data, string message = null)
+        {
+            message = message ?? string.Format("Invalid last event in the '{0}' stream. ", streamId);
+            List<EventRecord> events;
+            Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            Assert.IsNotEmpty(events, message + "The stream is empty.");
+            var last = events[events.Count - 1];
+            Assert.AreEqual(data,Encoding.UTF8.GetString(last.Data));
+        }
+
+        public void AssertEvent(string streamId, int eventNumber, string data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AssertEmptyStream(string streamId)
+        {
+            throw new NotImplementedException();
         }
     }
 }

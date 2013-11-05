@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 #pragma warning disable 1718
 
 using EventStore.Projections.Core.Services.Processing;
@@ -35,12 +36,12 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
     [TestFixture]
     public class checkpoint_tag_by_prepare_position
     {
-        private readonly CheckpointTag _aa = CheckpointTag.FromPreparePosition(9);
-        private readonly CheckpointTag _b1 = CheckpointTag.FromPreparePosition(15);
-        private readonly CheckpointTag _b2 = CheckpointTag.FromPreparePosition(15);
-        private readonly CheckpointTag _cc = CheckpointTag.FromPreparePosition(29);
-        private readonly CheckpointTag _d1 = CheckpointTag.FromPreparePosition(35);
-        private readonly CheckpointTag _d2 = CheckpointTag.FromPreparePosition(35);
+        private readonly CheckpointTag _aa = CheckpointTag.FromPreparePosition(1, 9);
+        private readonly CheckpointTag _b1 = CheckpointTag.FromPreparePosition(1, 15);
+        private readonly CheckpointTag _b2 = CheckpointTag.FromPreparePosition(1, 15);
+        private readonly CheckpointTag _cc = CheckpointTag.FromPreparePosition(1, 29);
+        private readonly CheckpointTag _d1 = CheckpointTag.FromPreparePosition(1, 35);
+        private readonly CheckpointTag _d2 = CheckpointTag.FromPreparePosition(1, 35);
 
         [Test]
         public void equal_equals()

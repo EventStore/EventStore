@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             {
                 foreach (var m in base.When()) yield return m;
                 var readerAssignedMessage =
-                    _consumer.HandledMessages.OfType<ReaderSubscriptionManagement.ReaderAssignedReader>().LastOrDefault();
+                    _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.ReaderAssignedReader>().LastOrDefault();
                 Assert.IsNotNull(readerAssignedMessage);
                 var reader = readerAssignedMessage.ReaderId;
 

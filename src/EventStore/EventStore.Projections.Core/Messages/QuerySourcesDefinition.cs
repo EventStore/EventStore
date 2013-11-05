@@ -26,15 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
+using System.Linq;
 using System.Runtime.Serialization;
-using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
     [DataContract]
-    public class QuerySourcesDefinition: ISourceDefinitionConfigurator
+    public class QuerySourcesDefinition : IQuerySources
     {
         [DataMember(Name = "allStreams")]
         public bool AllStreams { get; set; }
@@ -44,6 +42,9 @@ namespace EventStore.Projections.Core.Messages
 
         [DataMember(Name = "streams")]
         public string[] Streams { get; set; }
+
+        [DataMember(Name = "catalogStream")]
+        public string CatalogStream { get; set; }
 
         [DataMember(Name = "allEvents")]
         public bool AllEvents { get; set; }
@@ -57,51 +58,87 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "byCustomPartitions")]
         public bool ByCustomPartitions { get; set; }
 
-        [DataMember(Name = "definesStateTransform")]
-        public bool DefinesStateTransform { get; set; }
+        [DataMember(Name = "limitingCommitPosition")]
+        public long? LimitingCommitPosition { get; set; }
+
+        bool IQuerySources.DefinesStateTransform
+        {
+            get { return Options != null && Options.DefinesStateTransform; }
+        }
+
+        bool IQuerySources.ProducesResults
+        {
+            get { return Options != null && Options.ProducesResults; }
+        }
+
+        bool IQuerySources.DefinesFold
+        {
+            get { return Options != null && Options.DefinesFold; }
+        }
+
+        bool IQuerySources.IncludeLinksOption
+        {
+            get { return Options != null && Options.IncludeLinks; }
+        }
+
+        string IQuerySources.ResultStreamNameOption
+        {
+            get { return Options != null ? Options.ResultStreamName : null; }
+        }
+
+        string IQuerySources.PartitionResultStreamNamePatternOption
+        {
+            get { return Options != null ? Options.PartitionResultStreamNamePattern : null; }
+        }
+
+        string IQuerySources.ForceProjectionNameOption
+        {
+            get { return Options != null ? Options.ForceProjectionName : null; }
+        }
+
+        bool IQuerySources.ReorderEventsOption
+        {
+            get
+            {
+                return Options != null && Options.ReorderEvents;
+            }
+        }
+
+        int? IQuerySources.ProcessingLagOption
+        {
+            get { return Options != null ? Options.ProcessingLag : null; }
+        }
 
         [DataMember(Name = "options")]
         public QuerySourcesDefinitionOptions Options { get; set; }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public static QuerySourcesDefinition From(IQuerySources sources)
         {
-            if (AllStreams)
-                builder.FromAll();
-            else
+            return new QuerySourcesDefinition
             {
-                if (Streams != null)
-                    foreach (var stream in Streams)
-                        builder.FromStream(stream);
-                if (Categories != null)
-                    foreach (var category in Categories)
-                        builder.FromCategory(category);
-            }
-            if (AllEvents)
-                builder.AllEvents();
-            else if (Events != null)
-                foreach (var @event in Events)
-                    builder.IncludeEvent(@event);
-            if (ByStreams)
-                builder.SetByStream();
-            if (ByCustomPartitions)
-                builder.SetByCustomPartitions();
-            if (Options != null)
-            {
-                if (Options.IncludeLinks)
-                    builder.SetIncludeLinks();
-                if (!String.IsNullOrWhiteSpace(Options.ResultStreamName))
-                    builder.SetResultStreamNameOption(Options.ResultStreamName);
-                if (!String.IsNullOrWhiteSpace(Options.PartitionResultStreamNamePattern))
-                    builder.SetPartitionResultStreamNamePatternOption(Options.PartitionResultStreamNamePattern);
-                if (!String.IsNullOrWhiteSpace(Options.ForceProjectionName))
-                    builder.SetForceProjectionName(Options.ForceProjectionName);
-                if (Options.ReorderEvents)
-                    builder.SetReorderEvents(true);
-                if (Options.ProcessingLag != null)
-                    builder.SetProcessingLag(Options.ProcessingLag.GetValueOrDefault());
-            }
-            if (DefinesStateTransform)
-                builder.SetDefinesStateTransform();
+                AllEvents = sources.AllEvents,
+                AllStreams = sources.AllStreams,
+                ByStreams = sources.ByStreams,
+                ByCustomPartitions = sources.ByCustomPartitions,
+                Categories = (sources.Categories ?? new string[0]).ToArray(),
+                Events = (sources.Events ?? new string[0]).ToArray(),
+                Streams = (sources.Streams ?? new string[0]).ToArray(),
+                CatalogStream = sources.CatalogStream,
+                LimitingCommitPosition = sources.LimitingCommitPosition,
+                Options =
+                    new QuerySourcesDefinitionOptions
+                    {
+                        DefinesStateTransform = sources.DefinesStateTransform,
+                        ProducesResults = sources.ProducesResults,
+                        DefinesFold = sources.DefinesFold,
+                        ForceProjectionName = sources.ForceProjectionNameOption,
+                        IncludeLinks = sources.IncludeLinksOption,
+                        PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,
+                        ProcessingLag = sources.ProcessingLagOption.GetValueOrDefault(),
+                        ReorderEvents = sources.ReorderEventsOption,
+                        ResultStreamName = sources.ResultStreamNameOption,
+                    }
+            };
         }
     }
 }

@@ -124,29 +124,52 @@ namespace EventStore.Projections.Core.Messages
 
         }
 
-        public class ReaderAssignedReader : Message
+
+        public sealed class SpoolStreamReading : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly Guid _correlationId;
-            private readonly Guid _readerId;
-
-            public ReaderAssignedReader(Guid correlationId, Guid readerId)
-            {
-                _correlationId = correlationId;
-                _readerId = readerId;
-            }
 
             public Guid CorrelationId
             {
                 get { return _correlationId; }
             }
 
-            public Guid ReaderId
+            public long LimitingCommitPosition
             {
-                get { return _readerId; }
+                get { return _limitingCommitPosition; }
+            }
+
+            public readonly Guid SubscriptionId;
+            private readonly Guid _correlationId;
+            public readonly string StreamId;
+            public readonly int CatalogSequenceNumber;
+            private readonly long _limitingCommitPosition;
+
+            public SpoolStreamReading(
+                Guid subscriptionId, Guid correlationId, string streamId, int catalogSequenceNumber,
+                long limitingCommitPosition)
+            {
+                SubscriptionId = subscriptionId;
+                _correlationId = correlationId;
+                StreamId = streamId;
+                CatalogSequenceNumber = catalogSequenceNumber;
+                _limitingCommitPosition = limitingCommitPosition;
             }
         }
+
+        public sealed class CompleteSpooledStreamReading : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid SubscriptionId;
+
+            public CompleteSpooledStreamReading(Guid subscriptionId)
+            {
+                SubscriptionId = subscriptionId;
+            }
+        }
+
     }
 }

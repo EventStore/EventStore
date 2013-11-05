@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
@@ -39,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
     public class checkpoint_tag_by_event_type_index_positions_when_updating
     {
         private readonly CheckpointTag _a1b1 = CheckpointTag.FromEventTypeIndexPositions(
-            new TFPos(100, 50), new Dictionary<string, int> {{"a", 1}, {"b", 1}});
+            1, new TFPos(100, 50), new Dictionary<string, int> {{"a", 1}, {"b", 1}});
 
         [Test]
         public void updated_tf_only_position_is_correct()
@@ -69,11 +68,8 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
         {
             var updated = _a1b1.UpdateEventTypeIndexPosition(new TFPos(200, 50), "a", 2);
             Assert.AreEqual(2, updated.Streams.Count);
-            Assert.IsTrue(
-                updated.Streams.Any(v => v.Key == "a"));
-            Assert.IsTrue(
-                updated.Streams.Any(v => v.Key == "b"));
+            Assert.IsTrue(updated.Streams.Any(v => v.Key == "a"));
+            Assert.IsTrue(updated.Streams.Any(v => v.Key == "b"));
         }
-
     }
 }

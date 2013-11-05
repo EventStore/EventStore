@@ -26,13 +26,16 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using System.Linq;
 using EventStore.Core.Bus;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
+using TestFixtureWithExistingEvents = EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader
 {
@@ -46,20 +49,21 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             EnableReadAll();
         }
 
+        protected override ManualQueue GiveInputQueue()
+        {
+            return new ManualQueue(_bus);
+        }
+
         [SetUp]
         public void Setup()
         {
-            SetUpManualQueue();
             _bus.Subscribe(_consumer);
 
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
             _readerService = new EventReaderCoreService(
-                GetInputQueue(), 10, writerCheckpoint, runHeadingReader: GivenHeadingReaderRunning());
+                GetInputQueue(), _ioDispatcher, 10, writerCheckpoint, runHeadingReader: GivenHeadingReaderRunning());
             _subscriptionDispatcher =
-                new PublishSubscribeDispatcher
-                    <ReaderSubscriptionManagement.Subscribe,
-                        ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage
-                        >(GetInputQueue(), v => v.SubscriptionId, v => v.SubscriptionId);
+                new ReaderSubscriptionDispatcher(GetInputQueue());
 
 
             _bus.Subscribe(
@@ -67,8 +71,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             _bus.Subscribe(
                 _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscriptionStarted>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
 
 
             _bus.Subscribe<ReaderCoreServiceMessage.StartReader>(_readerService);
@@ -76,12 +84,17 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             _bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_readerService);
+            _bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_readerService);
+            _bus.Subscribe<ReaderSubscriptionMessage.EventReaderStarting>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Pause>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Resume>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_readerService);
             _bus.Subscribe<ReaderSubscriptionManagement.Unsubscribe>(_readerService);
+            _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_readerService);
+            _bus.Subscribe<ReaderSubscriptionManagement.CompleteSpooledStreamReading>(_readerService);
+
 
             GivenAdditionalServices();
 
@@ -100,9 +113,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
         {
         }
 
-        protected override IPublisher GetInputQueue()
+        protected Guid GetReaderId()
         {
-            return (IPublisher) _queue ?? _bus;
+            var readerAssignedMessage =
+                _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.ReaderAssignedReader>().LastOrDefault();
+            Assert.IsNotNull(readerAssignedMessage);
+            var reader = readerAssignedMessage.ReaderId;
+            return reader;
         }
     }
 }

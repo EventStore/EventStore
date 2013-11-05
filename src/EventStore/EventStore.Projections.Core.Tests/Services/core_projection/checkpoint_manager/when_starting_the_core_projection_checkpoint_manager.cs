@@ -27,6 +27,9 @@
 // 
 
 using System;
+using System.Linq;
+using EventStore.Core.Data;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -49,8 +52,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _exception = null;
             try
             {
-                _manager.BeginLoadState();
-                _manager.Start(CheckpointTag.FromStreamPosition("stream", 10));
+                _checkpointReader.BeginLoadState();
+                var checkpointLoaded =
+                    _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.CheckpointLoaded>().First();
+                _checkpointWriter.StartFrom(checkpointLoaded.CheckpointTag, checkpointLoaded.CheckpointEventNumber);
+                _manager.BeginLoadPrerecordedEvents(checkpointLoaded.CheckpointTag);
+
+                _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10));
             }
             catch (Exception ex)
             {
@@ -67,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void start_throws_invalid_operation_exception()
         {
-            _manager.Start(CheckpointTag.FromStreamPosition("stream", 10));
+            _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10));
         }
 
         [Test]
@@ -86,27 +94,27 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void accepts_event_processed()
         {
 //            _manager.StateUpdated("", @"{""state"":""state""}");
-            _manager.EventProcessed(CheckpointTag.FromStreamPosition("stream", 11), 77.7f);
+            _manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 11), 77.7f);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void event_processed_at_the_start_position_throws_invalid_operation_exception()
         {
 //            _manager.StateUpdated("", @"{""state"":""state""}");
-            _manager.EventProcessed(CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
+            _manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 10), 77.7f);
         }
 
         [Test]
         public void accepts_checkpoint_suggested()
         {
-            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 11), 77.7f);
+            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition(0, "stream", 11), 77.7f);
             Assert.AreEqual(1, _projection._checkpointCompletedMessages.Count);
         }
 
         [Test]
         public void accepts_checkpoint_suggested_even_at_the_start_position_but_does_not_complete_it()
         {
-            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
+            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition(0, "stream", 10), 77.7f);
             Assert.AreEqual(0, _projection._checkpointCompletedMessages.Count);
         }
 

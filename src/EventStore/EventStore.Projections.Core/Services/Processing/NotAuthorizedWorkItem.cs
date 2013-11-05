@@ -33,8 +33,8 @@ namespace EventStore.Projections.Core.Services.Processing
     class NotAuthorizedWorkItem : CheckpointWorkItemBase
     {
 
-        public NotAuthorizedWorkItem(CoreProjection projection)
-            : base(projection, null)
+        public NotAuthorizedWorkItem()
+            : base(null)
         {
         }
 

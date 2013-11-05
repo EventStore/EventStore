@@ -60,11 +60,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
 
         [Test]
-        public void should_subscribe_from_the_last_known_checkpoint_position()
+        public void should_not_subscribe()
         {
-            Assert.AreEqual(1, _subscribeProjectionHandler.HandledMessages.Count);
-            Assert.AreEqual(100, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.CommitPosition);
-            Assert.AreEqual(50, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.PreparePosition);
+            Assert.AreEqual(0, _subscribeProjectionHandler.HandledMessages.Count);
         }
 
         [Test]

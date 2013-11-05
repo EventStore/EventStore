@@ -29,6 +29,7 @@
 using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
@@ -49,7 +50,7 @@ namespace EventStore.Web.Users
         {
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             builder.FromAll();
             builder.IncludeEvent("$UserCreated");
@@ -63,16 +64,14 @@ namespace EventStore.Web.Users
         {
         }
 
-        public string GetStatePartition(
-            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data)
+        public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             throw new NotImplementedException();
         }
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
-            out EmittedEvent[] emittedEvents)
+            out EmittedEventEnvelope[] emittedEvents)
         {
             if (!data.EventStreamId.StartsWith(UserStreamPrefix))
                 throw new InvalidOperationException(
@@ -89,8 +88,12 @@ namespace EventStore.Web.Users
                         "Invalid $UserCreated event found.  '{0}' login name expected, but '{1}' found", loginName,
                         userData.LoginName));
 
-            emittedEvents = new EmittedEvent[]
-                {new EmittedDataEvent(UsersStream, Guid.NewGuid(), UserEventType, loginName, null, eventPosition, null)};
+            emittedEvents = new[]
+            {
+                new EmittedEventEnvelope(
+                    new EmittedDataEvent(
+                        UsersStream, Guid.NewGuid(), UserEventType, false, loginName, null, eventPosition, null))
+            };
             newState = "";
             return true;
         }
@@ -99,5 +102,11 @@ namespace EventStore.Web.Users
         {
             throw new NotImplementedException();
         }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
+        }
+
     }
 }

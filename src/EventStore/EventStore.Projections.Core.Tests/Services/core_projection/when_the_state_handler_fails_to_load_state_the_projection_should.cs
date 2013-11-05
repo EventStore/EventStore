@@ -48,13 +48,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 @"{""c"": 100, ""p"": 50}", "{}");
             NoStream("$projections-projection-order");
             AllWritesToSucceed("$projections-projection-order");
-            _stateHandler = new FakeProjectionStateHandler(failOnLoad: true);
+        }
+
+        protected override FakeProjectionStateHandler GivenProjectionStateHandler()
+        {
+            return new FakeProjectionStateHandler(failOnLoad: true);
         }
 
         protected override void When()
         {
             //projection subscribes here
-            _coreProjection.Handle(
+            _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
                         "/event_category/1", -1, "/event_category/1", -1, false, new TFPos(120, 110),

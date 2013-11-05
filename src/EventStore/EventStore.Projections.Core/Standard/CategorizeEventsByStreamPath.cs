@@ -27,6 +27,7 @@
 // 
 using System;
 using EventStore.Core.Services;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using Microsoft.Win32;
@@ -55,7 +56,7 @@ namespace EventStore.Projections.Core.Standard
             _categoryStreamPrefix = "$ce-";
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             builder.FromAll();
             builder.AllEvents();
@@ -70,16 +71,14 @@ namespace EventStore.Projections.Core.Standard
         {
         }
 
-        public string GetStatePartition(
-            CheckpointTag position, string streamId, string eventType, string category, Guid eventid, int sequenceNumber,
-            string metadata, string data)
+        public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             throw new NotImplementedException();
         }
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEvent[] emittedEvents)
+            out string newState, out EmittedEventEnvelope[] emittedEvents)
         {
             emittedEvents = null;
             newState = null;
@@ -98,11 +97,12 @@ namespace EventStore.Projections.Core.Standard
                 linkTarget = data.EventSequenceNumber + "@" + data.EventStreamId;
 
             emittedEvents = new[]
-                {
+            {
+                new EmittedEventEnvelope(
                     new EmittedLinkToWithRecategorization(
                         _categoryStreamPrefix + category, Guid.NewGuid(), linkTarget, eventPosition, expectedTag: null,
-                        originalStreamId: data.PositionStreamId)
-                };
+                        originalStreamId: data.PositionStreamId))
+            };
 
             return true;
         }
@@ -114,6 +114,11 @@ namespace EventStore.Projections.Core.Standard
 
         public void Dispose()
         {
+        }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
         }
     }
 }

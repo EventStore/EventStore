@@ -26,19 +26,18 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
+using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager
 {
-    public class FakeCoreProjection : ICoreProjection
+    public class FakeCoreProjection : ICoreProjection,
+        ICoreProjectionForProcessingPhase,
+        IHandle<EventReaderSubscriptionMessage.ReaderAssignedReader>
     {
-        public readonly List<EventReaderSubscriptionMessage.CommittedEventReceived> _committedEventReceivedMessages =
-            new List<EventReaderSubscriptionMessage.CommittedEventReceived>();
-
-        public readonly List<EventReaderSubscriptionMessage.CheckpointSuggested> _checkpointSuggestedMessages =
-            new List<EventReaderSubscriptionMessage.CheckpointSuggested>();
-
         public readonly List<CoreProjectionProcessingMessage.CheckpointCompleted> _checkpointCompletedMessages =
             new List<CoreProjectionProcessingMessage.CheckpointCompleted>();
 
@@ -48,25 +47,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public readonly List<CoreProjectionProcessingMessage.PrerecordedEventsLoaded> _prerecordedEventsLoadedMessages =
             new List<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>();
 
-        public readonly List<EventReaderSubscriptionMessage.ProgressChanged> _progresschangedMessages =
-            new List<EventReaderSubscriptionMessage.ProgressChanged>();
-
-        public readonly List<EventReaderSubscriptionMessage.NotAuthorized> _notAuthorizedMessages =
-            new List<EventReaderSubscriptionMessage.NotAuthorized>();
-
-        public readonly List<EventReaderSubscriptionMessage.EofReached> _eofReachedMessages =
-            new List<EventReaderSubscriptionMessage.EofReached>();
-
-        public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message)
-        {
-            _committedEventReceivedMessages.Add(message);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
-        {
-            _checkpointSuggestedMessages.Add(message);
-        }
-
         public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
         {
             _checkpointCompletedMessages.Add(message);
@@ -75,21 +55,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
         {
             _checkpointLoadedMessages.Add(message);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
-        {
-            _progresschangedMessages.Add(message);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.NotAuthorized message)
-        {
-            _notAuthorizedMessages.Add(message);
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.EofReached message)
-        {
-            _eofReachedMessages.Add(message);
         }
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
@@ -105,6 +70,54 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
         {
             _prerecordedEventsLoadedMessages.Add(message);
+        }
+
+        public void CompletePhase()
+        {
+            CompletePhaseInvoked++;
+        }
+
+        public void SetFaulted(string reason)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetFaulted(Exception ex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetFaulting(string reason)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void EnsureTickPending()
+        {
+            throw new NotImplementedException();
+        }
+
+        public CheckpointTag LastProcessedEventPosition
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public int SubscribedInvoked { get; set; }
+        public int CompletePhaseInvoked { get; set; }
+
+        public void Subscribed()
+        {
+            SubscribedInvoked ++;
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.ReaderAssignedReader message)
+        {
+            throw new NotImplementedException();
         }
     }
 }
