@@ -185,7 +185,7 @@ namespace EventStore.Core
                                                         hasher,
                                                         readIndex,
                                                         Application.IsDefined(Application.AlwaysKeepScavenged),
-                                                        mergeChunks: Application.IsDefined(Application.DisableMergeChunks));
+                                                        mergeChunks: !vNodeSettings.DisableScavengeMerging);
             // ReSharper disable RedundantTypeArgumentsOfMethod
             _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
             // ReSharper restore RedundantTypeArgumentsOfMethod

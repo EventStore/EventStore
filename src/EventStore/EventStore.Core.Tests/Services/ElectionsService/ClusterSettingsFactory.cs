@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService
 				false, null, 1, false, "dns", new[] { GetLoopbackForPort(ManagerPort) },
 				TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2),
 				TimeSpan.FromSeconds(2), false, null, false, TimeSpan.FromHours(1),
-				StatsStorage.StreamAndCsv, 0, new InternalAuthenticationProviderFactory());
+				StatsStorage.StreamAndCsv, 0, new InternalAuthenticationProviderFactory(), false);
 
             return vnode;
         }

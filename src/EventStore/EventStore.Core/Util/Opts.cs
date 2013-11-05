@@ -105,6 +105,13 @@ namespace EventStore.Core.Util
         public const string NodePriorityDescr = "The node priority used during master election";
         public const int    NodePriorityDefault = 0;
 
+        public const string DisableScavengeMergeCmd = "nomerge";
+        public const string DisableScavengeMergeEnv = "NO_MERGE";
+        public const string DisableScavengeMergeJson = "noMerge";
+        public const string DisableScavengeMergeDescr = "Disables the merging of chunks when scavenge is running";
+        public static readonly bool DisableScavengeMergeDefault = false;
+
+
         public const string DbPathCmd = "d|db=";
         public const string DbPathEnv = "DB";
         public const string DbPathJson = "db";

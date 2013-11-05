@@ -146,7 +146,9 @@ namespace EventStore.SingleNode
                                                         TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
                                                         TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
                                                         TimeSpan.FromSeconds(options.StatsPeriodSec),
-                                                        StatsStorage.StreamAndCsv);
+                                                        StatsStorage.StreamAndCsv,
+                                                        false,
+                                                        options.DisableScavengeMerging);
             return vnodeSettings;
         }
 

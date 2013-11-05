@@ -48,6 +48,8 @@ namespace EventStore.Core.Settings
         public readonly TimeSpan PrepareTimeout;
         public readonly TimeSpan CommitTimeout;
 
+        public readonly bool DisableScavengeMerging;
+
         public readonly TimeSpan StatsPeriod;
         public readonly StatsStorage StatsStorage;
 
@@ -65,7 +67,8 @@ namespace EventStore.Core.Settings
                                    TimeSpan commitTimeout,
                                    TimeSpan statsPeriod, 
                                    StatsStorage statsStorage = StatsStorage.StreamAndCsv,
-                                   bool skipInitializeStandardUsersCheck = false)
+                                   bool skipInitializeStandardUsersCheck = false,
+                                   bool disableScavengeMerging = false)
         {
             Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
             Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
@@ -90,6 +93,7 @@ namespace EventStore.Core.Settings
             StatsStorage = statsStorage;
 
             SkipInitializeStandardUsersCheck = skipInitializeStandardUsersCheck;
+            DisableScavengeMerging = disableScavengeMerging;
         }
 
         public override string ToString()

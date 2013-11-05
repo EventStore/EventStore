@@ -39,8 +39,9 @@ namespace EventStore.Core.Cluster.Settings
 		public readonly StatsStorage StatsStorage;
 
 		public readonly IAuthenticationProviderFactory AuthenticationProviderFactory;
+	    public readonly bool DisableScavengeMerging;
 
-		public ClusterVNodeSettings(Guid instanceId,
+	    public ClusterVNodeSettings(Guid instanceId,
 									IPEndPoint internalTcpEndPoint,
 									IPEndPoint internalSecureTcpEndPoint,
 									IPEndPoint externalTcpEndPoint,
@@ -66,7 +67,8 @@ namespace EventStore.Core.Cluster.Settings
 									TimeSpan statsPeriod,
 									StatsStorage statsStorage,
 									int nodePriority,
-									IAuthenticationProviderFactory authenticationProviderFactory)
+									IAuthenticationProviderFactory authenticationProviderFactory,
+                                    bool disableScavengeMerging)
 		{
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -119,6 +121,7 @@ namespace EventStore.Core.Cluster.Settings
 			AuthenticationProviderFactory = authenticationProviderFactory;
 
 			NodePriority = nodePriority;
+	        DisableScavengeMerging = disableScavengeMerging;
 		}
 
 		public override string ToString()

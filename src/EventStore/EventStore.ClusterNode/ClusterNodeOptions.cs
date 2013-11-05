@@ -29,6 +29,8 @@ namespace EventStore.ClusterNode
 
         public int CommitCount { get { return _helper.Get(() => CommitCount); } }
         public int PrepareCount { get { return _helper.Get(() => PrepareCount); } }
+        
+        public bool DisableScavengeMerging { get { return _helper.Get(() => DisableScavengeMerging); } }
 
 		public bool DiscoverViaDns { get { return _helper.Get(() => DiscoverViaDns); } }
 		public string ClusterDns { get { return _helper.Get(() => ClusterDns); } }
@@ -125,6 +127,7 @@ namespace EventStore.ClusterNode
 
             _helper.Register(() => PrepareTimeoutMs, Opts.PrepareTimeoutMsCmd, Opts.PrepareTimeoutMsEnv, Opts.PrepareTimeoutMsJson, Opts.PrepareTimeoutMsDefault, Opts.PrepareTimeoutMsDescr);
             _helper.Register(() => CommitTimeoutMs, Opts.CommitTimeoutMsCmd, Opts.CommitTimeoutMsEnv, Opts.CommitTimeoutMsJson, Opts.CommitTimeoutMsDefault, Opts.CommitTimeoutMsDescr);
+            _helper.Register(() => DisableScavengeMerging, Opts.DisableScavengeMergeCmd, Opts.DisableScavengeMergeEnv, Opts.DisableScavengeMergeJson, Opts.DisableScavengeMergeDefault, Opts.DisableScavengeMergeDescr);
         }
 
         public void Parse(params string[] args)
