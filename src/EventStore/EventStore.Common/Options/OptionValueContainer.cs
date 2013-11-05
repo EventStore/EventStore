@@ -100,6 +100,11 @@ namespace EventStore.Common.Options
             _isSet = true;
         }
 
+        public bool DontParseFurther
+        {
+            get { return false; }
+        }
+
         public void ParseFromEnvironment()
         {
             if (_envVariable.IsEmptyString())

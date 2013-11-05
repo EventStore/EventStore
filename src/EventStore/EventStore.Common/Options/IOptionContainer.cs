@@ -40,6 +40,7 @@ namespace EventStore.Common.Options
         OptionOrigin Origin { get; set; }
         string OriginName { get; set; }
         string OriginOptionName { get; set; }
+        bool DontParseFurther { get; }
 
         void ParseFromEnvironment();
         void ParseFromConfig(JObject json, string configName);

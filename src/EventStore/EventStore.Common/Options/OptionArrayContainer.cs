@@ -95,6 +95,11 @@ namespace EventStore.Common.Options
             Value = _cmdLineList.ToArray();
         }
 
+        public bool DontParseFurther
+        {
+            get { return false; }
+        }
+
         public void ParseFromEnvironment()
         {
             if (_envVariable.IsEmptyString())

@@ -72,7 +72,7 @@ namespace EventStore.ClientAPI.Core
             _client = new HttpAsyncClient(log);
         }
 
-        public Task<NodeEndPoints> DiscoverAsync(IPEndPoint failedTcpEndPoint)
+        public Task<NodeEndPoints> DiscoverAsync(IPEndPoint failedTcpEndPoint )
         {
             return Task.Factory.StartNew(() =>
             {

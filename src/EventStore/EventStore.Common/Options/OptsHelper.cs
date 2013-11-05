@@ -77,7 +77,7 @@ namespace EventStore.Common.Options
         }
         
         public void Register<T>(Expression<Func<T>> member, string cmdPrototype, string envName, string jsonPath,
-                                T? @default = null, string description = null, bool hidden = false)
+                                T? @default = null, string description = null, bool hidden = false, bool stopParseIfSet=false)
             where T : struct
         {
             Ensure.NotNull(member, "member");
@@ -89,7 +89,8 @@ namespace EventStore.Common.Options
                                                      cmdPrototype,
                                                      GetEnvVarName(envName),
                                                      GetJsonPath(jsonPath),
-                                                     (bool?)(object)@default);
+                                                     (bool?)(object)@default, 
+                                                     stopParseIfSet);
                 _optionContainers.Add(optionName, option);
                 if (cmdPrototype.IsNotEmptyString())
                     _optionSet.Add(cmdPrototype, description, option.ParsingFromCmdLine, hidden);
@@ -165,6 +166,11 @@ namespace EventStore.Common.Options
         public string[] Parse(params string[] args)
         {
             var excessArguments = _optionSet.Parse(args).ToArray();
+
+            if (_optionContainers.Values.Any(optionContainer => optionContainer.DontParseFurther))
+            {
+                return excessArguments;
+            }
 
             foreach (var optionContainer in _optionContainers.Values)
             {

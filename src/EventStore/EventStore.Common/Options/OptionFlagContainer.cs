@@ -60,9 +60,11 @@ namespace EventStore.Common.Options
         private readonly string _envVariable;
         private readonly string[] _jsonPath;
         private readonly bool? _default;
+        private bool _stopIfSet;
 
-        public OptionFlagContainer(string name, string cmdPrototype, string envVariable, string[] jsonPath, bool? @default)
+        public OptionFlagContainer(string name, string cmdPrototype, string envVariable, string[] jsonPath, bool? @default, bool stopIfSet = false)
         {
+            _stopIfSet = stopIfSet;
             Ensure.NotNullOrEmpty(name, "name");
             if (jsonPath != null && jsonPath.Length == 0)
                 throw new ArgumentException("JsonPath array is empty.", "jsonPath");
@@ -88,6 +90,11 @@ namespace EventStore.Common.Options
                 throw new OptionException(string.Format("Option {0} is set more than once.", OriginOptionName), OriginOptionName);
 
             Value = flagArgName != null;
+        }
+
+        public bool DontParseFurther
+        {
+            get { return _stopIfSet && IsSet; }
         }
 
         public void ParseFromEnvironment()
