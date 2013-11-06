@@ -47,7 +47,7 @@ namespace EventStore.ClientAPI.Core
         private readonly string _clusterDns;
         private readonly int _maxDiscoverAttempts;
         private readonly int _managerExternalHttpPort;
-        private readonly IPAddress[] _fakeDnsEntries;
+        private readonly IPEndPoint[] _gossipSeeds;
 
         private readonly HttpAsyncClient _client;
         private ClusterMessages.MemberInfoDto[] _oldGossip;
@@ -57,7 +57,7 @@ namespace EventStore.ClientAPI.Core
                                             string clusterDns,
                                             int maxDiscoverAttempts, 
                                             int managerExternalHttpPort,
-                                            IPAddress[] fakeDnsEntries,
+                                            IPEndPoint[] gossipSeeds,
                                             TimeSpan gossipTimeout)
         {
             Ensure.NotNull(log, "log");
@@ -67,7 +67,7 @@ namespace EventStore.ClientAPI.Core
             _clusterDns = clusterDns;
             _maxDiscoverAttempts = maxDiscoverAttempts;
             _managerExternalHttpPort = managerExternalHttpPort;
-            _fakeDnsEntries = fakeDnsEntries;
+            _gossipSeeds = gossipSeeds;
             _gossipTimeout = gossipTimeout;
             _client = new HttpAsyncClient(log);
         }
@@ -127,11 +127,17 @@ namespace EventStore.ClientAPI.Core
         private IPEndPoint[] GetGossipCandidatesFromDns()
         {
             //_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
-
-            var ips = (_fakeDnsEntries != null && _fakeDnsEntries.Length > 0) ? _fakeDnsEntries : ResolveDns(_clusterDns);
-            var managers = ips.Select(ip => new IPEndPoint(ip, _managerExternalHttpPort)).ToArray();
-            RandomShuffle(managers, 0, managers.Length-1);
-            return managers;
+            IPEndPoint[] endpoints;
+            if(_gossipSeeds != null && _gossipSeeds.Length > 0)
+            {
+                endpoints = ResolveDns(_clusterDns).Select(x => new IPEndPoint(x, _managerExternalHttpPort)).ToArray();
+            } else
+            {
+                endpoints = _gossipSeeds;
+            }
+            
+            RandomShuffle(endpoints, 0, endpoints.Length-1);
+            return endpoints;
         }
 
         private IPAddress[] ResolveDns(string dns)

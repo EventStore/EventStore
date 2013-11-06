@@ -40,7 +40,7 @@ namespace EventStore.ClientAPI
         private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
         private int _managerExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
 
-        private IPAddress[] _fakeDnsEntries;
+        private IPEndPoint[] _gossipSeeds;
         private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 
         internal ClusterSettingsBuilder()
@@ -75,11 +75,11 @@ namespace EventStore.ClientAPI
             return this;
         }
 
-        public ClusterSettingsBuilder SetFakeDnsEntries(params IPAddress[] dnsEntries)
+        public ClusterSettingsBuilder WithGossipSeeds(params IPEndPoint[] gossipSeeds)
         {
-            if (dnsEntries == null || dnsEntries.Length == 0)
+            if (gossipSeeds == null || gossipSeeds.Length == 0)
                 throw new ArgumentException("Empty FakeDnsEntries collection.");
-            _fakeDnsEntries = dnsEntries;
+            _gossipSeeds = gossipSeeds;
             return this;
         }
 
@@ -88,7 +88,7 @@ namespace EventStore.ClientAPI
             return new ClusterSettings(builder._clusterDns,
                                        builder._maxDiscoverAttempts,
                                        builder._managerExternalHttpPort,
-                                       builder._fakeDnsEntries,
+                                       builder._gossipSeeds,
                                        builder._gossipTimeout);
         }
     }
