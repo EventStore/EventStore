@@ -1,6 +1,8 @@
 #pragma once
 #include "js1.h"
 
+#include <memory>
+
 namespace js1 {
 
 	enum Status { S_OK = 0, S_ERROR = 1, S_TERMINATED = 2};
