@@ -139,6 +139,11 @@ namespace EventStore.ClusterNode
             _node.ExternalHttpService.SetupController(new UsersWebController(_node.MainQueue));
         }
 
+        private static int GetQuorumSize(int clusterSize)
+        {
+            return clusterSize/2 + 1;
+        }
+
         private static ClusterVNodeSettings GetClusterVNodeSettings(ClusterNodeOptions options)
         {
             X509Certificate2 certificate = null;
@@ -159,7 +164,10 @@ namespace EventStore.ClusterNode
             var extTcp = new IPEndPoint(options.ExternalIp, options.ExternalTcpPort);
             var extSecTcp = options.ExternalSecureTcpPort > 0 ? new IPEndPoint(options.ExternalIp, options.ExternalSecureTcpPort) : null;
             var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] { extHttp.ToHttpUrl() };
-
+            var quorumSize = GetQuorumSize(options.ClusterSize);
+            var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
+            var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
+            Log.Info("Quorum size set to " + prepareCount);
             if (options.UseInternalSsl)
             {
                 if (ReferenceEquals(options.SslTargetHost, Opts.SslTargetHostDefault)) throw new Exception("No SSL target host specified.");
@@ -175,7 +183,7 @@ namespace EventStore.ClusterNode
 	                                        options.WorkerThreads, options.DiscoverViaDns,
 	                                        options.ClusterDns, options.GossipSeeds,
 											TimeSpan.FromMilliseconds(options.MinFlushDelayMs), options.ClusterSize,
-	                                        options.PrepareCount, options.CommitCount,
+	                                        prepareCount, commitCount,
 	                                        TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
 	                                        TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
 	                                        options.UseInternalSsl, options.SslTargetHost, options.SslValidateServer,
