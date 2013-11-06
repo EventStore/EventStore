@@ -75,6 +75,13 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+        public ClusterSettingsBuilder SetGossipPort(int gossipPort)
+        {
+            Ensure.Positive(gossipPort, "gossipPort");
+            _managerExternalHttpPort = gossipPort;
+            return this;
+        }
+
         public ClusterSettingsBuilder WithGossipSeeds(params IPEndPoint[] gossipSeeds)
         {
             if (gossipSeeds == null || gossipSeeds.Length == 0)
