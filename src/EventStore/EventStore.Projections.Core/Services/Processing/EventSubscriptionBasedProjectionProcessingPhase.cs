@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ICoreProjectionCheckpointManager checkpointManager, ProjectionConfig projectionConfig, string projectionName,
             ILogger logger, CheckpointTag zeroCheckpointTag, PartitionStateCache partitionStateCache,
             IResultWriter resultWriter, Action updateStatistics, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            IReaderStrategy readerStrategy, bool useCheckpoints, bool stopOnEof)
+            IReaderStrategy readerStrategy, bool useCheckpoints, bool stopOnEof, bool orderedPartitionProcessing)
         {
             _publisher = publisher;
             _coreProjection = coreProjection;
@@ -84,7 +84,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStateCache = partitionStateCache;
             _resultWriter = resultWriter;
             _processingQueue = new CoreProjectionQueue(
-                projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, updateStatistics);
+                projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, orderedPartitionProcessing,
+                updateStatistics);
             _processingQueue.EnsureTickPending += EnsureTickPending;
             _subscriptionDispatcher = subscriptionDispatcher;
             _readerStrategy = readerStrategy;

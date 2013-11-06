@@ -172,11 +172,14 @@ namespace EventStore.Projections.Core.Services.Processing
             var statePartitionSelector = CreateStatePartitionSelector(
                 _stateHandler, _sourceDefinition.ByCustomPartitions, _sourceDefinition.ByStreams);
 
+            var orderedPartitionProcessing = _sourceDefinition.ByStreams && _sourceDefinition.IsBiState;
+
             return new EventProcessingProjectionProcessingPhase(
                 coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics, _stateHandler,
                 partitionStateCache, _sourceDefinition.DefinesStateTransform, _name, _logger, zeroCheckpointTag,
                 checkpointManager, statePartitionSelector, subscriptionDispatcher, readerStrategy, resultWriter,
-                _projectionConfig.CheckpointsEnabled, this.GetStopOnEof(), _sourceDefinition.IsBiState);
+                _projectionConfig.CheckpointsEnabled, this.GetStopOnEof(), _sourceDefinition.IsBiState,
+                orderedPartitionProcessing: orderedPartitionProcessing);
         }
 
         private static StatePartitionSelector CreateStatePartitionSelector(
