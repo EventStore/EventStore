@@ -29,12 +29,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
+using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_state
@@ -99,5 +102,51 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
             }
         }
 
+        [TestFixture]
+        public class when_stopping : Base
+        {
+            private Guid _reader;
+
+            protected override IEnumerable<WhenStep> When()
+            {
+                foreach (var m in base.When()) yield return m;
+
+                var readerAssignedMessage =
+                    _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.ReaderAssignedReader>().LastOrDefault();
+                Assert.IsNotNull(readerAssignedMessage);
+                _reader = readerAssignedMessage.ReaderId;
+
+                yield return
+                    (ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                        _reader, new TFPos(100, 50), new TFPos(100, 50), "stream1", 1, "stream1", 1, false, Guid.NewGuid(),
+                        "type", false, Helper.UTF8NoBom.GetBytes("1"), new byte[0], 100, 33.3f));
+
+                yield return
+                    (ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                        _reader, new TFPos(200, 150), new TFPos(200, 150), "stream2", 1, "stream2", 1, false, Guid.NewGuid(),
+                        "type", false, Helper.UTF8NoBom.GetBytes("1"), new byte[0], 100, 33.3f));
+
+                yield return
+                    new ProjectionManagementMessage.Disable(
+                        new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System);
+            }
+
+            [Test]
+            public void writes_both_stream_and_shared_partition_checkpoints()
+            {
+                var writeProjectionCheckpoints =
+                    HandledMessages.OfType<ClientMessage.WriteEvents>().OfEventType("$ProjectionCheckpoint").ToArray();
+                var writeCheckpoints =
+                    HandledMessages.OfType<ClientMessage.WriteEvents>().OfEventType("$Checkpoint").ToArray();
+
+                Assert.AreEqual(1, writeProjectionCheckpoints.Length);
+                Assert.AreEqual(@"[{""data"": 2}]", Encoding.UTF8.GetString(writeProjectionCheckpoints[0].Data));
+                Assert.AreEqual(2, writeCheckpoints.Length);
+
+                Assert.That(
+                    writeCheckpoints.All(
+                        v => Encoding.UTF8.GetString(v.Data) == @"[{""data"": 1},{""data"": 1}]"));
+            }
+        }
     }
 }

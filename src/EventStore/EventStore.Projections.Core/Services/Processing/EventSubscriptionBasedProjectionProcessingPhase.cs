@@ -507,6 +507,10 @@ namespace EventStore.Projections.Core.Services.Processing
                         _resultWriter.WriteRunningResult(result);
                         _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState);
                     }
+                    if (result.NewSharedState != null)
+                    {
+                        _checkpointManager.StateUpdated("", result.OldSharedState, result.NewSharedState);
+                    }
                 }
                 _checkpointManager.EventProcessed(eventCheckpointTag, progress);
             }

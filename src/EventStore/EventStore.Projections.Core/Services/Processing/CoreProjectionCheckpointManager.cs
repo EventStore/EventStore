@@ -192,7 +192,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Stopping");
 
 
-            if (_producesRunningResults && partition != "")
+            if (_useCheckpoints && partition != "")
                 CapturePartitionStateUpdated(partition, oldState, newState);
 
             if (partition == "" && newState.State == null) // ignore non-root partitions and non-changed states
