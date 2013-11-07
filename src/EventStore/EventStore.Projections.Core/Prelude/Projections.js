@@ -77,7 +77,7 @@ var $projections = {
 
             initialize: function () {
                 var initialState = initStateHandler();
-                if (!options.biState)
+                if (!sources.options.biState)
                     projectionState = initialState;
                 else {
                     projectionState = initialState[0];
@@ -93,7 +93,7 @@ var $projections = {
             process_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition) {
                 processEvent(event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition);
                 var stateJson;
-                if (!options.biState) {
+                if (!sources.options.biState) {
                     stateJson = JSON.stringify(projectionState);
                     return stateJson;
                 } else {
@@ -253,7 +253,7 @@ var $projections = {
             var eventName = eventType;
 
             var eventHandler;
-            var state = !options.biState ? projectionState : [projectionState, projectionSharedState];
+            var state = !sources.options.biState ? projectionState : [projectionState, projectionSharedState];
 
             var index;
 
@@ -282,7 +282,7 @@ var $projections = {
             if (eventHandler !== undefined) {
                 state = callHandler(eventHandler, state, eventEnvelope);
             }
-            if (!options.biState) {
+            if (!sources.options.biState) {
                 projectionState = state;
             } else {
                 projectionState = state[0];

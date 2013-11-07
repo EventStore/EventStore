@@ -302,6 +302,7 @@
     <Compile Include="Services\projections_manager\v8\when_running_a_v8_projection_emitting_stream_links.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_a_v8_projection_with_not_passing_filter_by.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_a_v8_projection_with_transform_by.cs" />
+    <Compile Include="Services\projections_manager\v8\when_running_bi_state_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_body_reflecting_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_emitting_v8_projection.cs" />
     <Compile Include="Services\projections_manager\when_a_dsiabled_projection_has_been_loaded.cs" />

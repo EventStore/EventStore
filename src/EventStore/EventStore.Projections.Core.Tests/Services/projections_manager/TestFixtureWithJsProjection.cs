@@ -43,6 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected List<string> _logged;
         protected string _projection;
         protected string _state = null;
+        protected string _sharedState = null;
         protected IQuerySources _source;
 
         [SetUp]
@@ -62,10 +63,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                             _logged.Add(s);
                     }); // skip prelude debug output
             _source = _stateHandler.GetSourceDefinition();
+
             if (_state != null)
                 _stateHandler.Load(_state);
             else
                 _stateHandler.Initialize();
+
+            if (_sharedState != null)
+                _stateHandler.LoadShared(_sharedState);
             When();
         }
 

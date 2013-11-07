@@ -450,7 +450,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             public void source_definition_is_correct()
             {
                 Assert.AreEqual(true, _source.IsBiState);
-                //TODO: ???
             }
         }
 
