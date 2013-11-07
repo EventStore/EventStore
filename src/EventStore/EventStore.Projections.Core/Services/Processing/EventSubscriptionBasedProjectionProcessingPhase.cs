@@ -65,13 +65,15 @@ namespace EventStore.Projections.Core.Services.Processing
         protected bool _subscribed;
         protected PhaseState _state;
         protected readonly bool _stopOnEof;
+        private readonly bool _isBiState;
 
         protected EventSubscriptionBasedProjectionProcessingPhase(
             IPublisher publisher, ICoreProjectionForProcessingPhase coreProjection, Guid projectionCorrelationId,
             ICoreProjectionCheckpointManager checkpointManager, ProjectionConfig projectionConfig, string projectionName,
             ILogger logger, CheckpointTag zeroCheckpointTag, PartitionStateCache partitionStateCache,
             IResultWriter resultWriter, Action updateStatistics, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            IReaderStrategy readerStrategy, bool useCheckpoints, bool stopOnEof, bool orderedPartitionProcessing)
+            IReaderStrategy readerStrategy, bool useCheckpoints, bool stopOnEof, bool orderedPartitionProcessing,
+            bool isBiState)
         {
             _publisher = publisher;
             _coreProjection = coreProjection;
@@ -91,6 +93,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readerStrategy = readerStrategy;
             _useCheckpoints = useCheckpoints;
             _stopOnEof = stopOnEof;
+            _isBiState = isBiState;
         }
 
         public void UnlockAndForgetBefore(CheckpointTag checkpointTag)
@@ -414,29 +417,36 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected EventProcessedResult InternalCommittedEventProcessed(
             string partition, EventReaderSubscriptionMessage.CommittedEventReceived message,
-            EmittedEventEnvelope[] emittedEvents, PartitionState newPartitionState)
+            EmittedEventEnvelope[] emittedEvents, PartitionState newPartitionState,
+            PartitionState newSharedPartitionState)
         {
             if (!ValidateEmittedEvents(emittedEvents))
                 return null;
-            var oldState = _partitionStateCache.GetLockedPartitionState(partition);
 
             bool eventsWereEmitted = emittedEvents != null;
-            bool changed = oldState.IsChanged(newPartitionState);
+            var oldState = _partitionStateCache.GetLockedPartitionState(partition);
+            var oldSharedState = _isBiState ? _partitionStateCache.GetLockedPartitionState("") : null;
+            bool changed = oldState.IsChanged(newPartitionState)
+                           || (_isBiState && oldSharedState.IsChanged(newSharedPartitionState));
 
-            PartitionState partitionState1 = null;
+            PartitionState partitionState = null;
             // NOTE: projectionResult cannot change independently unless projection definition has changed
             if (changed)
             {
                 var lockPartitionStateAt = partition != "" ? message.CheckpointTag : null;
-                partitionState1 = newPartitionState;
-                _partitionStateCache.CacheAndLockPartitionState(partition, partitionState1, lockPartitionStateAt);
+                partitionState = newPartitionState;
+                _partitionStateCache.CacheAndLockPartitionState(partition, partitionState, lockPartitionStateAt);
+                if (_isBiState)
+                {
+                    _partitionStateCache.CacheAndLockPartitionState("", newSharedPartitionState, null);
+                }
             }
             if (changed || eventsWereEmitted)
             {
                 var correlationId = message.Data.IsJson ? message.Data.Metadata.ParseCheckpointTagCorrelationId() : null;
                 return new EventProcessedResult(
-                    partition, message.CheckpointTag, oldState, partitionState1, emittedEvents, message.Data.EventId,
-                    correlationId);
+                    partition, message.CheckpointTag, oldState, partitionState, oldSharedState, newSharedPartitionState,
+                    emittedEvents, message.Data.EventId, correlationId);
             }
 
             else return null;

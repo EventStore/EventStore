@@ -40,6 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly ProjectionConfig _projectionConfig;
         protected readonly IQuerySources _sourceDefinition;
         private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
+        private readonly bool _isBiState;
 
         protected EventReaderBasedProjectionProcessingStrategy(
             string name, ProjectionVersion projectionVersion, ProjectionConfig projectionConfig,
@@ -49,6 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionConfig = projectionConfig;
             _sourceDefinition = sourceDefinition;
             _subscriptionDispatcher = subscriptionDispatcher;
+            _isBiState = sourceDefinition.IsBiState;
         }
 
         public override sealed IProjectionProcessingPhase[] CreateProcessingPhases(
@@ -103,9 +105,9 @@ namespace EventStore.Projections.Core.Services.Processing
             return _sourceDefinition;
         }
 
-        public override bool GetIsPartitioned()
+        public override bool GetRequiresRootPartition()
         {
-            return _sourceDefinition.ByStreams || _sourceDefinition.ByCustomPartitions;
+            return !(_sourceDefinition.ByStreams || _sourceDefinition.ByCustomPartitions) || _isBiState;
         }
 
         public override void EnrichStatistics(ProjectionStatistics info)

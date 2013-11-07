@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _stopOnEof;
         private readonly IProjectionProcessingPhase[] _projectionProcessingPhases;
         private readonly CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
-        private readonly bool _partitionedStateState;
+        private readonly bool _requiresRootPartition;
         private readonly Action<ProjectionStatistics> _enrichStatistics;
 
         private SlaveProjectionCommunicationChannels _slaveProjections;
@@ -127,7 +127,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger = logger;
             _publisher = publisher;
             _partitionStateCache = partitionStateCache;
-            _partitionedStateState = projectionProcessingStrategy.GetIsPartitioned();
+            _requiresRootPartition = projectionProcessingStrategy.GetRequiresRootPartition();
             _isSlaveProjection = isSlaveProjection;
             var useCheckpoints = projectionProcessingStrategy.GetUseCheckpoints();
 
@@ -296,7 +296,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
                 //TODO: handle errors
                 _coreProjectionCheckpointWriter.StartFrom(checkpointTag, message.CheckpointEventNumber);
-                if (!_partitionedStateState)
+                if (_requiresRootPartition)
                     _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(message.CheckpointData, checkpointTag), null);
                 BeginPhase(projectionProcessingPhase, checkpointTag);
                 GoToState(State.StateLoaded);
@@ -490,7 +490,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointManager.Initialize();
             _checkpointReader.Initialize();
             _tickPending = false;
-            if (!_partitionedStateState)
+            if (_requiresRootPartition)
                 _partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, CheckpointTag.Empty), null);
             // NOTE: this is to workaround exception in GetState requests submitted by client
         }

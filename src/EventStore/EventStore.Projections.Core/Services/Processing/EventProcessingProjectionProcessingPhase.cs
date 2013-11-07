@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Services.Processing
             : base(
                 publisher, coreProjection, projectionCorrelationId, coreProjectionCheckpointManager, projectionConfig,
                 projectionName, logger, zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics,
-                subscriptionDispatcher, readerStrategy, useCheckpoints, stopOnEof, orderedPartitionProcessing)
+                subscriptionDispatcher, readerStrategy, useCheckpoints, stopOnEof, orderedPartitionProcessing, isBiState)
         {
 
             _projectionStateHandler = projectionStateHandler;
@@ -140,7 +140,12 @@ namespace EventStore.Projections.Core.Services.Processing
             if (hasBeenProcessed)
             {
                 var newPartitionState = new PartitionState(newState, projectionResult, message.CheckpointTag);
-                return InternalCommittedEventProcessed(partition, message, emittedEvents, newPartitionState);
+                var newSharedPartitionState = newSharedState != null
+                    ? new PartitionState(newSharedState, null, message.CheckpointTag)
+                    : null;
+
+                return InternalCommittedEventProcessed(
+                    partition, message, emittedEvents, newPartitionState, newSharedPartitionState);
             }
             return null;
         }

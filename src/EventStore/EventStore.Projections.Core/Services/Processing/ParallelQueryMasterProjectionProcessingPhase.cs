@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
             : base(
                 publisher, coreProjection, projectionCorrelationId, checkpointManager, projectionConfig, name, logger,
                 zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics, subscriptionDispatcher,
-                readerStrategy, checkpointsEnabled, stopOnEof, orderedPartitionProcessing: true)
+                readerStrategy, checkpointsEnabled, stopOnEof, orderedPartitionProcessing: true, isBiState: false)
         {
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
         }
