@@ -19,6 +19,7 @@
   <xsl:param name="defaultNamespace"/>
   <xsl:param name="import"/>
   <xsl:param name="umbrella"/>
+  <xsl:param name="umbrellaVisibility"/>
   <xsl:param name="extensibleMessages"/>
   
   <xsl:key name="fieldNames" match="//FieldDescriptorProto" use="name"/>
@@ -87,6 +88,7 @@ using <xsl:value-of select="$ns"/>;
           "import" - additional namespaces to import (semicolon delimited)
           "fixCase" - change type/member names (types/properties become PascalCase; fields become camelCase)
           "umbrella" - the name of a static class in which to wrap all messages
+          "umbrellaVisibility" - the visibility of the umbrella class
           "extensibleMessages" - whether to implement ProtoBuf.IExtensible on generated messages
       </xsl:message>
     </xsl:if>
@@ -136,7 +138,7 @@ using <xsl:value-of select="$ns"/>;
 
 namespace <xsl:value-of select="$defaultNamespace"/><!--<xsl:value-of select="translate($namespace,':-/\','__..')"/>-->
 {
-  public static partial class <xsl:value-of select="$umbrella"/>
+  <xsl:value-of select="$umbrellaVisibility"/> static partial class <xsl:value-of select="$umbrella"/>
   {</xsl:if>
 
     <xsl:apply-templates select="message_type | enum_type | service"/>
