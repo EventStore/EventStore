@@ -4,7 +4,6 @@ using System.IO;
 using System.Net;
 using EventStore.ClientAPI;
 using System.Linq;
-using EventStore.ClientAPI.Common.Log;
 
 namespace EventStore.Padmin
 {

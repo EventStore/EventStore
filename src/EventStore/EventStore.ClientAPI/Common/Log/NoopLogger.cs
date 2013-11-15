@@ -29,7 +29,7 @@ using System;
 
 namespace EventStore.ClientAPI.Common.Log
 {
-    public class NoopLogger : ILogger
+    class NoopLogger : ILogger
     {
         public void Error(string format, params object[] args)
         {

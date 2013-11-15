@@ -50,7 +50,7 @@ namespace EventStore.ClientAPI.Common
         }
     }
 
-    public static class SystemMetadata
+    static class SystemMetadata
     {
         public const string MaxAge = "$maxAge";
         public const string MaxCount = "$maxCount";
@@ -68,7 +68,7 @@ namespace EventStore.ClientAPI.Common
         public const string SystemStreamAcl = "$systemStreamAcl";
     }
 
-    public static class SystemEventTypes
+    static class SystemEventTypes
     {
         public const string StreamDeleted = "$streamDeleted";
         public const string StatsCollection = "$statsCollected";

@@ -31,7 +31,7 @@ using System.Threading;
 
 namespace EventStore.ClientAPI.Common.Log
 {
-    public class ConsoleLogger : ILogger
+    internal class ConsoleLogger : ILogger
     {
         public void Error(string format, params object[] args)
         {
@@ -62,7 +62,6 @@ namespace EventStore.ClientAPI.Common.Log
         {
             Console.WriteLine(Log("INFO", ex, format, args));
         }
-
 
         private string Log(string level, string format, params object[] args)
         {

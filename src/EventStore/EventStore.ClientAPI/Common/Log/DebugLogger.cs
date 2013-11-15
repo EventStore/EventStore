@@ -29,7 +29,7 @@ using System;
 
 namespace EventStore.ClientAPI.Common.Log
 {
-    public class DebugLogger : ILogger
+    class DebugLogger : ILogger
     {
         public void Error(string format, params object[] args)
         {

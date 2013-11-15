@@ -108,8 +108,15 @@ namespace EventStore.ClientAPI
             MetaReadRoles = metaReadRoles;
             MetaWriteRoles = metaWriteRoles;
         }
-
-        public override string ToString()
+        
+	    /// <summary>
+	    /// Returns a string that represents the current object.
+	    /// </summary>
+	    /// <returns>
+	    /// A string that represents the current object.
+	    /// </returns>
+	    /// <filterpriority>2</filterpriority>
+	    public override string ToString()
         {
             return string.Format("Read: {0}, Write: {1}, Delete: {2}, MetaRead: {3}, MetaWrite: {4}",
                                  ReadRoles == null ? "<null>" : "[" + string.Join(",", ReadRoles) + "]",

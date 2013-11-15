@@ -33,11 +33,20 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
+    /// <summary>
+    /// API for managing projections in the Event Store through C# code. Communicates
+    /// with the Event Store over the RESTful API.
+    /// </summary>
     public class ProjectionsManager
     {
         private readonly ProjectionsClient _client;
         private readonly IPEndPoint _httpEndPoint;
 
+        /// <summary>
+        /// Creates a new instance of <see cref="ProjectionsManager"/>.
+        /// </summary>
+        /// <param name="log">An instance of <see cref="ILogger"/> to use for logging.</param>
+        /// <param name="httpEndPoint">HTTP endpoint of an Event Store server.</param>
         public ProjectionsManager(ILogger log, IPEndPoint httpEndPoint)
         {
             Ensure.NotNull(log, "log");
@@ -47,24 +56,46 @@ namespace EventStore.ClientAPI
             _httpEndPoint = httpEndPoint;
         }
 
+        /// <summary>
+        /// Synchronously enables a projection.
+        /// </summary>
+        /// <param name="name">The name of the projection</param>
+        /// <param name="userCredentials">Credentials for a user with permission to enable a projection</param>
         public void Enable(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
             EnableAsync(name, userCredentials).Wait();
         }
 
+        /// <summary>
+        /// Asynchronously enables a projection 
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to enable a projection</param>
+        /// <returns>A task representing the operation.</returns>
         public Task EnableAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
             return _client.Enable(_httpEndPoint, name, userCredentials);
         }
 
+        /// <summary>
+        /// Synchronously disables a projection.
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to disable a projection.</param>
         public void Disable(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
             DisableAsync(name, userCredentials).Wait();
         }
 
+        /// <summary>
+        /// Asynchronously disables a projection.
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to disable a projection.</param>
+        /// <returns>A task representing the operation.</returns>
         public Task DisableAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
@@ -193,12 +224,23 @@ namespace EventStore.ClientAPI
             return _client.UpdateQuery(_httpEndPoint, name, query, userCredentials);
         }
 
+        /// <summary>
+        /// Synchronously deletes a projection 
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to delete a projection</param>
         public void Delete(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
             DeleteAsync(name, userCredentials).Wait();
         }
 
+        /// <summary>
+        /// Asynchronously deletes a projection 
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to delete a projection</param>
+        /// <returns>A task representing the operation.</returns>
         public Task DeleteAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
