@@ -34,7 +34,7 @@ namespace EventStore.Common.Log
 {
     public class ConsoleLogger : ILogger
     {
-        public ConsoleLogger(string name)
+        public ConsoleLogger(string name = "")
         {
         }
 
