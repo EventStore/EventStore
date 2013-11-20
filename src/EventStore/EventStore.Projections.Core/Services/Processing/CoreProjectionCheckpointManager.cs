@@ -179,6 +179,7 @@ namespace EventStore.Projections.Core.Services.Processing
             info.WritesInProgress = (_closingCheckpoint != null ? _closingCheckpoint.GetWritesInProgress() : 0)
                                     + (_currentCheckpoint != null ? _currentCheckpoint.GetWritesInProgress() : 0);
             info.CheckpointStatus = _inCheckpoint ? "Requested" : "";
+
         }
 
         public void StateUpdated(

@@ -210,6 +210,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private void GetStatistics(ProjectionStatistics info)
         {
             _checkpointManager.GetStatistics(info);
+            if (float.IsNaN(info.Progress) || float.IsNegativeInfinity(info.Progress)
+                || float.IsPositiveInfinity(info.Progress))
+            {
+                info.Progress = -2.0f;
+            }
             info.Status = _state.EnumValueName() + info.Status; 
             info.Name = _name;
             info.EffectiveName = _name;
