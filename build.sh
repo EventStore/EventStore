@@ -173,7 +173,7 @@ function buildV8() {
         echo "Unsupported platform $PLATFORM."
         exit 1
     fi
-    $make $makecall library=shared || err
+    $make $makecall werror=no library=shared || err
 
     pushd out/$makecall/lib.target > /dev/null
     cp libv8.so ../../../../src/EventStore/libs || err
