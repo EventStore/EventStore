@@ -31,6 +31,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
 {
@@ -59,7 +60,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void no_event_is_returned_when_nonexistent_stream_is_requested()
         {
             var result = ReadIndex.ReadEvent("test2", 0);
-            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadEventResult.NoStream, result.Result);
             Assert.IsNull(result.Record);
         }
 
@@ -67,7 +68,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_first_event_can_be_read()
         {
             var result = ReadIndex.ReadEvent("test1", 0);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_id1, result.Record.EventId);
         }
 
@@ -75,7 +76,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_second_event_can_be_read()
         {
             var result = ReadIndex.ReadEvent("test1", 1);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_id2, result.Record.EventId);
         }
 
@@ -83,15 +84,23 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_third_event_is_not_found()
         {
             var result = ReadIndex.ReadEvent("test1", 2);
-            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
             Assert.IsNull(result.Record);
+        }
+
+        [Test]
+        public void the_last_event_is_returned()
+        {
+            var result = ReadIndex.ReadEvent("test1", -1);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
+            Assert.AreEqual(_id2, result.Record.EventId);
         }
 
         [Test]
         public void the_stream_can_be_read_with_two_events_in_right_order_when_starting_from_specified_event_number()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test1", 1, 10);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(2, result.Records.Length);
 
             Assert.AreEqual(_id1, result.Records[1].EventId);
@@ -102,7 +111,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_stream_can_be_read_with_two_events_backward_from_end()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test1", -1, 10);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(2, result.Records.Length);
 
             Assert.AreEqual(_id1, result.Records[1].EventId);
@@ -113,7 +122,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_stream_returns_events_with_correct_pagination()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test1", 0, 10);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(1, result.Records.Length);
 
             Assert.AreEqual(_id1, result.Records[0].EventId);
@@ -123,7 +132,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_stream_returns_nothing_for_nonexistent_page()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test1", 100, 10);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(0, result.Records.Length);
         }
 
@@ -131,7 +140,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void no_events_are_return_if_event_stream_doesnt_exist()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test2", 0, 10);
-            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadStreamResult.NoStream, result.Result);
             Assert.IsNotNull(result.Records);
             Assert.IsEmpty(result.Records);
         }

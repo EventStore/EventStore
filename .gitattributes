@@ -14,6 +14,8 @@
 *.sh text
 *.txt text
 *.dat text
+*.rc text
+*.ps1 text
 
 # Declare files that will always have CRLF line endings on checkout.
 

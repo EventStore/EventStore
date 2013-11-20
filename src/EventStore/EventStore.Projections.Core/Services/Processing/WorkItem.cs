@@ -32,44 +32,68 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class WorkItem : StagedTask
     {
-        protected readonly CoreProjection Projection;
-
         private readonly int _lastStage;
-        private Action<int> _complete;
+        private Action<int, object> _complete;
         private int _onStage;
         private CheckpointTag _checkpointTag;
+        private object _lastStageCorrelationId;
+        private CoreProjectionQueue _queue;
+        protected bool _requiresRunning;
 
-        protected WorkItem(CoreProjection projection, string stream)
-            : base(stream)
+        protected WorkItem(object initialCorrelationId)
+            : base(initialCorrelationId)
         {
-            Projection = projection;
-            _lastStage = 2;
+            _lastStage = 5;
         }
 
-        public override void Process(int onStage, Action<int> readyForStage)
+        protected CoreProjectionQueue Queue
+        {
+            get { return _queue; }
+        }
+
+        public override void Process(int onStage, Action<int, object> readyForStage)
         {
             if (_checkpointTag == null)
                 throw new InvalidOperationException("CheckpointTag has not been initialized");
             _complete = readyForStage;
             _onStage = onStage;
-            Projection.EnsureTickPending();
-            switch (onStage)
+            //TODO: 
+            if (_requiresRunning && !Queue.IsRunning)
+                NextStage();
+            else
             {
-                case 0:
-                    Load(_checkpointTag);
-                    break;
-                case 1:
-                    ProcessEvent();
-                    break;
-                case 2:
-                    WriteOutput();
-                    break;
-                default:
-                    throw new NotSupportedException();
+                switch (onStage)
+                {
+                    case 0:
+                        RecordEventOrder();
+                        break;
+                    case 1:
+                        GetStatePartition();
+                        break;
+                    case 2:
+                        Load(_checkpointTag);
+                        break;
+                    case 3:
+                        ProcessEvent();
+                        break;
+                    case 4:
+                        WriteOutput();
+                        break;
+                    case 5:
+                        CompleteItem();
+                        break;
+                    default:
+                        throw new NotSupportedException();
+                }
             }
         }
 
-        protected virtual void WriteOutput()
+        protected virtual void RecordEventOrder()
+        {
+            NextStage();
+        }
+
+        protected virtual void GetStatePartition()
         {
             NextStage();
         }
@@ -84,14 +108,31 @@ namespace EventStore.Projections.Core.Services.Processing
             NextStage();
         }
 
-        protected void NextStage()
+        protected virtual void WriteOutput()
         {
-            _complete(_onStage == _lastStage ? -1 : _onStage + 1);
+            NextStage();
+        }
+
+
+        protected virtual void CompleteItem()
+        {
+            NextStage();
+        }
+
+        protected void NextStage(object newCorrelationId = null)
+        {
+            _lastStageCorrelationId = newCorrelationId ?? _lastStageCorrelationId ?? InitialCorrelationId;
+            _complete(_onStage == _lastStage ? -1 : _onStage + 1, _lastStageCorrelationId);
         }
 
         public void SetCheckpointTag(CheckpointTag checkpointTag)
         {
             _checkpointTag = checkpointTag;
+        }
+
+        public void SetProjectionQueue(CoreProjectionQueue coreProjectionQueue)
+        {
+            _queue = coreProjectionQueue;
         }
     }
 }

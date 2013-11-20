@@ -25,136 +25,79 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
-using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class ReadStreamEventsForwardOperation : IClientOperation
+    internal class ReadStreamEventsForwardOperation : OperationBase<StreamEventsSlice, ClientMessage.ReadStreamEventsCompleted>
     {
-        private readonly TaskCompletionSource<EventStreamSlice> _source;
-        private ClientMessage.ReadStreamEventsForwardCompleted _result;
-        private int _completed;
-
-        private Guid _correlationId;
-        private readonly object _corrIdLock = new object();
-
         private readonly string _stream;
-        private readonly int _start;
-        private readonly int _count;
+        private readonly int _fromEventNumber;
+        private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
+        private readonly bool _requireMaster;
 
-        public Guid CorrelationId
+        public ReadStreamEventsForwardOperation(ILogger log, TaskCompletionSource<StreamEventsSlice> source,
+                                                string stream, int fromEventNumber, int maxCount, bool resolveLinkTos,
+                                                bool requireMaster, UserCredentials userCredentials)
+            : base(log, source, TcpCommand.ReadStreamEventsForward, TcpCommand.ReadStreamEventsForwardCompleted, userCredentials)
         {
-            get
-            {
-                lock(_corrIdLock)
-                    return _correlationId;
-            }
-        }
-
-        public ReadStreamEventsForwardOperation(TaskCompletionSource<EventStreamSlice> source,
-                                                Guid corrId, 
-                                                string stream, 
-                                                int start, 
-                                                int count,
-                                                bool resolveLinkTos)
-        {
-            _source = source;
-
-            _correlationId = corrId;
             _stream = stream;
-            _start = start;
-            _count = count;
+            _fromEventNumber = fromEventNumber;
+            _maxCount = maxCount;
             _resolveLinkTos = resolveLinkTos;
+            _requireMaster = requireMaster;
         }
 
-        public void SetRetryId(Guid correlationId)
+        protected override object CreateRequestDto()
         {
-            lock (_corrIdLock)
-                _correlationId = correlationId;
+            return new ClientMessage.ReadStreamEvents(_stream, _fromEventNumber, _maxCount, _resolveLinkTos, _requireMaster);
         }
 
-        public TcpPackage CreateNetworkPackage()
+        protected override InspectionResult InspectResponse(ClientMessage.ReadStreamEventsCompleted response)
         {
-            lock (_corrIdLock)
+            switch (response.Result)
             {
-                var dto = new ClientMessage.ReadStreamEventsForward(_stream, _start, _count, _resolveLinkTos);
-                return new TcpPackage(TcpCommand.ReadStreamEventsForward, _correlationId, dto.Serialize());
+                case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.Success:
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation, "Success");
+                case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.StreamDeleted:
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation, "StreamDeleted");
+                case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.NoStream:
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation, "NoStream");
+                case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.Error:
+                    Fail(new ServerErrorException(string.IsNullOrEmpty(response.Error) ? "<no message>" : response.Error));
+                    return new InspectionResult(InspectionDecision.EndOperation, "Error");
+                case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.AccessDenied:
+                    Fail(new AccessDeniedException(string.Format("Read access denied for stream '{0}'.", _stream)));
+                    return new InspectionResult(InspectionDecision.EndOperation, "AccessDenied");
+                default:
+                    throw new Exception(string.Format("Unexpected ReadStreamResult: {0}.", response.Result));
             }
         }
 
-        public InspectionResult InspectPackage(TcpPackage package)
+        protected override StreamEventsSlice TransformResponse(ClientMessage.ReadStreamEventsCompleted response)
         {
-            try
-            {
-                if (package.Command != TcpCommand.ReadStreamEventsForwardCompleted)
-                {
-                    return new InspectionResult(InspectionDecision.NotifyError,
-                                                new CommandNotExpectedException(TcpCommand.ReadStreamEventsForwardCompleted.ToString(), 
-                                                                                package.Command.ToString()));
-                }
-
-                var data = package.Data;
-                var dto = data.Deserialize<ClientMessage.ReadStreamEventsForwardCompleted>();
-                _result = dto;
-
-                switch ((RangeReadResult)dto.Result)
-                {
-                    case RangeReadResult.Success:
-                    case RangeReadResult.StreamDeleted:
-                    case RangeReadResult.NoStream:
-                        return new InspectionResult(InspectionDecision.Succeed);
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
-            catch (Exception e)
-            {
-                return new InspectionResult(InspectionDecision.NotifyError, e);
-            }
-        }
-
-        public void Complete()
-        {
-            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
-            {
-                if (_result != null)
-                    _source.SetResult(new EventStreamSlice(StatusCode.Convert((RangeReadResult) _result.Result),
-                                                           _stream,
-                                                           _start,
-                                                           _count,
-                                                           _result.Events,
-                                                           _result.NextEventNumber,
-                                                           _result.LastEventNumber,
-                                                           _result.IsEndOfStream));
-                else
-                    _source.SetException(new NoResultException());
-            }
-        }
-
-        public void Fail(Exception exception)
-        {
-            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
-            {
-                _source.SetException(exception);
-            }
+            return new StreamEventsSlice(StatusCode.Convert(response.Result),
+                                         _stream,
+                                         _fromEventNumber,
+                                         ReadDirection.Forward,
+                                         response.Events,
+                                         response.NextEventNumber,
+                                         response.LastEventNumber,
+                                         response.IsEndOfStream);
         }
 
         public override string ToString()
         {
-            return string.Format("Stream: {0}, Start: {1}, Count: {2}, ResolveLinkTos: {3}, CorrelationId: {4}", 
-                                 _stream, 
-                                 _start, 
-                                 _count, 
-                                 _resolveLinkTos, 
-                                 CorrelationId);
+            return string.Format("Stream: {0}, FromEventNumber: {1}, MaxCount: {2}, ResolveLinkTos: {3}, RequireMaster: {4}",
+                                 _stream, _fromEventNumber, _maxCount, _resolveLinkTos, _requireMaster);
         }
     }
 }

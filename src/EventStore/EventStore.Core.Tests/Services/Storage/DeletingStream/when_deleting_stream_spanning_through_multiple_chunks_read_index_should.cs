@@ -36,14 +36,13 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
 
         protected override void WriteTestScenario()
         {
-            WriteStreamCreated("ES");
+            WriteSingleEvent("ES", 0, new string('.', 3000));
             WriteSingleEvent("ES", 1, new string('.', 3000));
             WriteSingleEvent("ES", 2, new string('.', 3000));
-            WriteSingleEvent("ES", 3, new string('.', 3000));
-            WriteSingleEvent("ES", 4, new string('.', 3000), retryOnFail: true); // chunk 2
+            WriteSingleEvent("ES", 3, new string('.', 3000), retryOnFail: true); // chunk 2
+            WriteSingleEvent("ES", 4, new string('.', 3000));
             WriteSingleEvent("ES", 5, new string('.', 3000));
-            WriteSingleEvent("ES", 6, new string('.', 3000));
-            WriteSingleEvent("ES", 7, new string('.', 3000), retryOnFail: true); // chunk 3
+            WriteSingleEvent("ES", 6, new string('.', 3000), retryOnFail: true); // chunk 3
 
             WriteDelete("ES");
         }

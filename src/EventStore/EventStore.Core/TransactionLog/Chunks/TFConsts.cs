@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
+
 namespace EventStore.Core.TransactionLog.Chunks
 {
     public static class TFConsts
@@ -33,19 +36,9 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public const int MidpointsDepth = 10;
 
-        public const int StorageReaderHandlerCount = 4;
-
-        public const int ReadIndexReaderCount = 1 /*StorageWriter*/
-                                                + 1 /*StorageChaser*/
-                                                + 1 /*Projections*/
-                                                + 1 /*Scavenging*/
-                                                + StorageReaderHandlerCount;
-
-        public const int TFChunkReaderCount = ReadIndexReaderCount + 2 /* for caching/uncaching, populating midpoints */;
-
         public const int ChunkSize = 256 * 1024 * 1024;
-        public const int CachedChunkCount = 2;
+        public const int ChunksCacheSize = 2 * (ChunkSize + ChunkHeader.Size + ChunkFooter.Size);
 
-        public const int MetadataCacheCapacity = 100000;
+	    public static TimeSpan MinFlushDelayMs = TimeSpan.FromMilliseconds(2);
     }
 }

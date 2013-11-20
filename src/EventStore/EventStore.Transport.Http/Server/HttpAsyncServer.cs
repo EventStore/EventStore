@@ -32,40 +32,43 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http.Server
 {
-    public class HttpAsyncServer
+    public sealed class HttpAsyncServer
     {
         private static readonly ILogger Logger = LogManager.GetLoggerFor<HttpAsyncServer>();
 
         public event Action<HttpAsyncServer, HttpListenerContext> RequestReceived;
-        public bool IsListening
-        {
-            get
-            {
-                return _listener != null && _listener.IsListening;
-            }
-        }
+        
+        public bool IsListening { get { return _listener.IsListening; } }
+        public readonly string[] ListenPrefixes;
 
         private readonly HttpListener _listener;
+
 
         public HttpAsyncServer(string[] prefixes)
         {
             Ensure.NotNull(prefixes, "prefixes");
 
+            ListenPrefixes = prefixes;
+
             _listener = new HttpListener();
+            _listener.Realm = "ES";
+            _listener.AuthenticationSchemes = AuthenticationSchemes.Basic | AuthenticationSchemes.Anonymous;
             foreach (var prefix in prefixes)
+            {
                 _listener.Prefixes.Add(prefix);
+            }
         }
 
         public bool TryStart()
         {
             try
             {
-                Logger.Info("Starting http server on [{0}]...", string.Join(",", _listener.Prefixes));
-
+                Logger.Info("Starting HTTP server on [{0}]...", string.Join(",", _listener.Prefixes));
                 _listener.Start();
+
                 _listener.BeginGetContext(ContextAcquired, null);
 
-                Logger.Info("http up and listening on [{0}]", string.Join(",", _listener.Prefixes));
+                Logger.Info("HTTP server is up and listening on [{0}]", string.Join(",", _listener.Prefixes));
 
                 return true;
             }
@@ -80,36 +83,77 @@ namespace EventStore.Transport.Http.Server
         {
             try
             {
-                _listener.Close();
+                var counter = 10;
+                while (_listener.IsListening && counter-- > 0)
+                {
+                    _listener.Abort();
+                    _listener.Stop();
+                    _listener.Close();
+                    if (_listener.IsListening)
+                        System.Threading.Thread.Sleep(50);
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // that's ok
             }
             catch (Exception e)
             {
-                Logger.FatalException(e, "Error while shutting down http server");
+                Logger.ErrorException(e, "Error while shutting down http server");
             }
         }
 
         private void ContextAcquired(IAsyncResult ar)
         {
-            HttpListenerContext context;
+            if (!IsListening)
+                return;
+
+            HttpListenerContext context = null;
+            bool success = false;
             try
             {
                 context = _listener.EndGetContext(ar);
-                _listener.BeginGetContext(ContextAcquired, null);
+                success = true;
             }
-            catch (HttpListenerException e)
+            catch (HttpListenerException)
             {
-                Logger.ErrorException(e, "EndGetContext/BeginGetContext error. Status : {0}",
-                                      IsListening ? "listening" : "stopped");
-                return;
+                // that's not application-level error, ignore and continue
             }
-            catch (InvalidOperationException e)
+			catch (ObjectDisposedException)
+			{
+				// that's ok, just continue
+			}
+            catch (InvalidOperationException)
             {
-                Logger.ErrorException(e, "EndGetContext/BeginGetContext error. Status : {0}",
-                                      IsListening ? "listening" : "stopped");
-                return;
+            }
+            catch (Exception e)
+            {
+                Logger.DebugException(e, "EndGetContext exception. Status : {0}.", IsListening ? "listening" : "stopped");
             }
 
-            ProcessRequest(context);
+            if (success)
+                ProcessRequest(context);
+
+            try
+            {
+                _listener.BeginGetContext(ContextAcquired, null);
+            }
+            catch (HttpListenerException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            catch (ApplicationException)
+            {
+            }
+            catch (Exception e)
+            {
+                Logger.ErrorException(e, "BeginGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
+            }
         }
 
         private void ProcessRequest(HttpListenerContext context)
@@ -118,11 +162,34 @@ namespace EventStore.Transport.Http.Server
             OnRequestReceived(context);
         }
 
-        protected virtual void OnRequestReceived(HttpListenerContext context)
+        private void OnRequestReceived(HttpListenerContext context)
         {
             var handler = RequestReceived;
             if (handler != null)
                 handler(this, context);
         }
+
+#if __MonoCS__
+       private static Func<HttpListenerRequest, HttpListenerContext> CreateGetContext()
+        {
+            var r = System.Linq.Expressions.Expression.Parameter(typeof (HttpListenerRequest), "r");
+            var piHttpListenerContext = typeof (HttpListenerRequest).GetProperty("HttpListenerContext",
+                                                                                 System.Reflection.BindingFlags.GetProperty
+                                                                                 | System.Reflection.BindingFlags.NonPublic
+                                                                                 | System.Reflection.BindingFlags.FlattenHierarchy
+                                                                                 | System.Reflection.BindingFlags.Instance);
+            var fiContext = typeof (HttpListenerRequest).GetField("context",
+                                                                  System.Reflection.BindingFlags.GetProperty
+                                                                  | System.Reflection.BindingFlags.NonPublic
+                                                                  | System.Reflection.BindingFlags.FlattenHierarchy
+                                                                  | System.Reflection.BindingFlags.Instance);
+            var body = piHttpListenerContext != null
+                           ? System.Linq.Expressions.Expression.Property(r, piHttpListenerContext)
+                           : System.Linq.Expressions.Expression.Field(r, fiContext);
+            var debugExpression = System.Linq.Expressions.Expression.Lambda<Func<HttpListenerRequest, HttpListenerContext>>(body, r);
+            return debugExpression.Compile();
+        }
+#endif
+
     }
 }

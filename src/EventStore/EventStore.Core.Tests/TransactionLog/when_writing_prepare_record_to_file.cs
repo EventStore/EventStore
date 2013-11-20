@@ -56,11 +56,12 @@ namespace EventStore.Core.Tests.TransactionLog
                                                     0,
                                                     _writerCheckpoint,
                                                     new InMemoryCheckpoint(),
-                                                    new ICheckpoint[0]));
-            _db.OpenVerifyAndClean();
+                                                    new InMemoryCheckpoint(-1),
+                                                    new InMemoryCheckpoint(-1)));
+            _db.Open();
             _writer = new TFChunkWriter(_db);
             _writer.Open();
-            _record = new PrepareLogRecord(logPosition: 0xDEAD,
+            _record = new PrepareLogRecord(logPosition: 0,
                                            eventId: _eventId,
                                            correlationId: _correlationId,
                                            transactionPosition: 0xDEAD,
@@ -97,7 +98,7 @@ namespace EventStore.Core.Tests.TransactionLog
                 Assert.True(r is PrepareLogRecord);
                 var p = (PrepareLogRecord) r;
                 Assert.AreEqual(p.RecordType, LogRecordType.Prepare);
-                Assert.AreEqual(p.LogPosition, 0xDEAD);
+                Assert.AreEqual(p.LogPosition, 0);
                 Assert.AreEqual(p.TransactionPosition, 0xDEAD);
                 Assert.AreEqual(p.TransactionOffset, 0xBEEF);
                 Assert.AreEqual(p.CorrelationId, _correlationId);
@@ -121,11 +122,8 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void trying_to_read_past_writer_checksum_returns_false()
         {
-            using (var reader = new TFChunkReader(_db, _writerCheckpoint))
-            {
-                reader.Open();
-                Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read()).Success);
-            }
+            var reader = new TFChunkReader(_db, _writerCheckpoint);
+            Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read()).Success);
         }
     }
 }

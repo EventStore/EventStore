@@ -63,16 +63,15 @@ namespace EventStore.TestClient.Commands
             var stage = Stage.AcquiringTransactionId;
             long transactionId = -1;
             var writtenEvents = 0;
-            var corrid = Guid.NewGuid();
             context.Client.CreateTcpConnection(
                     context,
                     connectionEstablished: conn =>
                     {
-                        context.Log.Info("[{0}]: Starting transaction...", conn.EffectiveEndPoint);
+                        context.Log.Info("[{0}, L{1}]: Starting transaction...", conn.RemoteEndPoint, conn.LocalEndPoint);
                         sw.Start();
                         
-                        var tranStart = new TcpClientMessageDto.TransactionStart(eventStreamId, expectedVersion, true);
-                        var package = new TcpPackage(TcpCommand.TransactionStart, corrid, tranStart.Serialize());
+                        var tranStart = new TcpClientMessageDto.TransactionStart(eventStreamId, expectedVersion, false);
+                        var package = new TcpPackage(TcpCommand.TransactionStart, Guid.NewGuid(), tranStart.Serialize());
                         conn.EnqueueSend(package.AsByteArray());
                     },
                     handlePackage: (conn, pkg) =>
@@ -88,9 +87,9 @@ namespace EventStore.TestClient.Commands
                                 }
 
                                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionStartCompleted>();
-                                if ((OperationErrorCode)dto.ErrorCode != OperationErrorCode.Success)
+                                if (dto.Result != TcpClientMessageDto.OperationResult.Success)
                                 {
-                                    var msg = string.Format("Error while starting transaction: {0} ({1}).", dto.Error, (OperationErrorCode)dto.ErrorCode);
+                                    var msg = string.Format("Error while starting transaction: {0} ({1}).", dto.Message, dto.Result);
                                     context.Log.Info(msg);
                                     context.Fail(reason: msg);
                                 }
@@ -103,18 +102,18 @@ namespace EventStore.TestClient.Commands
                                     stage = Stage.Writing;
                                     for (int i = 0; i < eventsCnt; ++i)
                                     {
-                                        var writeDto = new TcpClientMessageDto.TransactionWrite(transactionId,
-                                                eventStreamId,
-                                                new[] 
-                                                { 
-                                                        new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray() ,
-                                                                                   "TakeSomeSpaceEvent",
-                                                                                   false,
-                                                                                   Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()),
-                                                                                   Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()))
-                                                },
-                                                true);
-                                        var package = new TcpPackage(TcpCommand.TransactionWrite, corrid, writeDto.Serialize());
+                                        var writeDto = new TcpClientMessageDto.TransactionWrite(
+                                            transactionId,
+                                            new[] 
+                                            { 
+                                                new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray() ,
+                                                                                 "TakeSomeSpaceEvent",
+                                                                                 0,0,
+                                                                                 Common.Utils.Helper.UTF8NoBom.GetBytes(Guid.NewGuid().ToString()),
+                                                                                 Common.Utils.Helper.UTF8NoBom.GetBytes(Guid.NewGuid().ToString()))
+                                            },
+                                            false);
+                                        var package = new TcpPackage(TcpCommand.TransactionWrite, Guid.NewGuid(), writeDto.Serialize());
                                         conn.EnqueueSend(package.AsByteArray());
                                     }
                                 }
@@ -130,9 +129,9 @@ namespace EventStore.TestClient.Commands
                                 }
 
                                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionWriteCompleted>();
-                                if ((OperationErrorCode)dto.ErrorCode != OperationErrorCode.Success)
+                                if (dto.Result != TcpClientMessageDto.OperationResult.Success)
                                 {
-                                    var msg = string.Format("Error while writing transactional event: {0} ({1}).", dto.Error, (OperationErrorCode)dto.ErrorCode);
+                                    var msg = string.Format("Error while writing transactional event: {0} ({1}).", dto.Message, dto.Result);
                                     context.Log.Info(msg);
                                     context.Fail(reason: msg);
                                 }
@@ -144,8 +143,8 @@ namespace EventStore.TestClient.Commands
                                         context.Log.Info("Written all events. Committing...");
 
                                         stage = Stage.Committing;
-                                        var commitDto = new TcpClientMessageDto.TransactionCommit(transactionId, eventStreamId, true);
-                                        var package = new TcpPackage(TcpCommand.TransactionCommit, corrid, commitDto.Serialize());
+                                        var commitDto = new TcpClientMessageDto.TransactionCommit(transactionId, false);
+                                        var package = new TcpPackage(TcpCommand.TransactionCommit, Guid.NewGuid(), commitDto.Serialize());
                                         conn.EnqueueSend(package.AsByteArray());
                                     }
                                 }
@@ -162,9 +161,9 @@ namespace EventStore.TestClient.Commands
                                 sw.Stop();
 
                                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionCommitCompleted>();
-                                if ((OperationErrorCode)dto.ErrorCode != OperationErrorCode.Success)
+                                if (dto.Result != TcpClientMessageDto.OperationResult.Success)
                                 {
-                                    var msg = string.Format("Error while committing transaction: {0} ({1}).", dto.Error, (OperationErrorCode)dto.ErrorCode);
+                                    var msg = string.Format("Error while committing transaction: {0} ({1}).", dto.Message, dto.Result);
                                     context.Log.Info(msg);
                                     context.Log.Info("Transaction took: {0}.", sw.Elapsed);
                                     context.Fail(reason: msg);
@@ -173,7 +172,7 @@ namespace EventStore.TestClient.Commands
                                 {
                                     context.Log.Info("Successfully committed transaction [{0}]!", dto.TransactionId);
                                     context.Log.Info("Transaction took: {0}.", sw.Elapsed);
-                                    PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
+                                    PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)Math.Round(sw.Elapsed.TotalMilliseconds));
                                     context.Success();
                                 }
                                 conn.Close();
@@ -184,14 +183,7 @@ namespace EventStore.TestClient.Commands
                         }
 
                     },
-                    connectionClosed: (connection, error) =>
-                    {
-                        if (error == SocketError.Success && stage == Stage.Done)
-                            context.Success();
-                        else
-                            context.Fail();
-                    });
-
+                    connectionClosed: (connection, error) => context.Fail(reason: "Connection was closed prematurely."));
             context.WaitForCompletion();
             return true;
         }
@@ -200,8 +192,7 @@ namespace EventStore.TestClient.Commands
         {
             AcquiringTransactionId,
             Writing,
-            Committing,
-            Done
+            Committing
         }
     }
 }

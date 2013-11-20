@@ -31,7 +31,6 @@ namespace EventStore.ClientAPI.Transport.Http
     {
         public const string Any = "*/*";
 
-        public const string Json = "application/json";
         public const string Xml = "text/xml";
         public const string PlainText = "text/plain";
         public const string Html = "text/html";

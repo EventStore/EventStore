@@ -24,43 +24,25 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using NUnit.Framework;
 
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
+using System.Reflection;
+using System.Runtime.InteropServices;
+
 [assembly: AssemblyTitle("EventStore.Core.Tests")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Eleks")]
+[assembly: AssemblyCompany("Event Store LLP")]
 [assembly: AssemblyProduct("EventStore.Core.Tests")]
-[assembly: AssemblyCopyright("Copyright © Eleks 2012")]
+[assembly: AssemblyCopyright("Copyright © Event Store LLP. All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
-// Setting ComVisible to false makes the types in this assembly not visible 
-// to COM components.  If you need to access a type in this assembly from 
-// COM, set the ComVisible attribute to true on that type.
-[assembly: ComVisible(false)]
+//NOTE: Do not change these, they will be modified during the build by TeamCity.
+[assembly: AssemblyVersion("0.0.0.0")]
+[assembly: AssemblyFileVersion("0.0.0.0")]
 
-// The following GUID is for the ID of the typelib if this project is exposed to COM
+[assembly: ComVisible(false)]
 [assembly: Guid("1596e010-9891-4859-b842-b91aa7eab42d")]
 
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Build and Revision Numbers 
-// by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
-
-[assembly: Category("All")]
+[assembly: NUnit.Framework.Category("All")]
+[assembly: NUnit.Framework.Timeout(30 * 60 * 1000)]

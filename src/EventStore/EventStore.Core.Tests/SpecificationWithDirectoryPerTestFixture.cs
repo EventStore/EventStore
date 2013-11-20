@@ -33,11 +33,12 @@ namespace EventStore.Core.Tests
 {
     public class SpecificationWithDirectoryPerTestFixture
     {
-        protected string PathName;
+        protected internal string PathName;
 
         protected string GetTempFilePath()
         {
-            return Path.Combine(PathName, Guid.NewGuid().ToString());
+            var typeName = GetType().Name.Length > 30 ? GetType().Name.Substring(0, 30) : GetType().Name;
+            return Path.Combine(PathName, string.Format("{0}-{1}", Guid.NewGuid(), typeName));
         }
 
         protected string GetFilePathFor(string fileName)
@@ -48,7 +49,8 @@ namespace EventStore.Core.Tests
         [TestFixtureSetUp]
         public virtual void TestFixtureSetUp()
         {
-            PathName = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            var typeName = GetType().Name.Length > 30 ? GetType().Name.Substring(0, 30) : GetType().Name;
+            PathName = Path.Combine(Path.GetTempPath(), string.Format("{0}-{1}", Guid.NewGuid(), typeName));
             Directory.CreateDirectory(PathName);
         }
 

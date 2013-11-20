@@ -27,47 +27,95 @@
 // 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Services.Monitoring
 {
+    [Flags]
+    public enum StatsStorage
+    {
+        None = 0x0,       // only for tests
+        Stream = 0x1,
+        Csv = 0x2,
+        StreamAndCsv = Stream | Csv
+    }
+
     public class MonitoringService : IHandle<SystemMessage.SystemInit>,
+                                     IHandle<SystemMessage.StateChangeMessage>,
                                      IHandle<SystemMessage.BecomeShuttingDown>,
+                                     IHandle<SystemMessage.BecomeShutdown>,
+                                     IHandle<ClientMessage.WriteEventsCompleted>,
                                      IHandle<MonitoringMessage.GetFreshStats>
     {
         private static readonly ILogger RegularLog = LogManager.GetLogger("REGULAR-STATS-LOGGER");
         private static readonly ILogger Log = LogManager.GetLoggerFor<MonitoringService>();
 
-        private readonly IPublisher _servicesBus;
-        private readonly int _statsCollectionPeriodMs;
-        private readonly Timer _timer;
-        private readonly SystemStatsHelper _systemStats;
-        private string _lastWrittenCsvHeader;
+        private static readonly string StreamMetadata = string.Format("{{\"$maxAge\":{0}}}", (int)TimeSpan.FromDays(10).TotalSeconds);
+        public static readonly TimeSpan MemoizePeriod = TimeSpan.FromSeconds(1);
+        private static readonly IEnvelope NoopEnvelope = new NoopEnvelope();
 
+        private readonly IQueuedHandler _monitoringQueue;
+        private readonly IPublisher _statsCollectionBus;
+        private readonly IPublisher _mainBus;
+        private readonly ICheckpoint _writerCheckpoint;
+        private readonly string _dbPath;
+        private readonly StatsStorage _statsStorage;
+        private readonly long _statsCollectionPeriodMs;
+        private SystemStatsHelper _systemStats;
+
+        private string _lastWrittenCsvHeader;
         private DateTime _lastStatsRequestTime = DateTime.UtcNow;
         private StatsContainer _memoizedStats;
-        private const int _memoizedSeconds = 1;
+        private readonly Timer _timer;
+        private readonly string _nodeStatsStream;
+        private bool _statsStreamCreated;
+        private Guid _streamMetadataWriteCorrId;
 
-        public MonitoringService(IPublisher inputBus, IPublisher servicesBus, ICheckpoint writerCheckpoint, string dbPath, TimeSpan statsCollectionPeriod)
+        public MonitoringService(IQueuedHandler monitoringQueue,
+                                 IPublisher statsCollectionBus,
+                                 IPublisher mainBus,
+                                 ICheckpoint writerCheckpoint,
+                                 string dbPath,
+                                 TimeSpan statsCollectionPeriod,
+                                 IPEndPoint nodeEndpoint,
+                                 StatsStorage statsStorage)
         {
-            Ensure.NotNull(inputBus, "inputBus");
-            Ensure.NotNull(servicesBus, "servicesBus");
+            Ensure.NotNull(monitoringQueue, "monitoringQueue");
+            Ensure.NotNull(statsCollectionBus, "statsCollectionBus");
+            Ensure.NotNull(mainBus, "mainBus");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
+            Ensure.NotNullOrEmpty(dbPath, "dbPath");
+            Ensure.NotNull(nodeEndpoint, "nodeEndpoint");
 
-            _servicesBus = servicesBus;
-            _statsCollectionPeriodMs = (int)statsCollectionPeriod.TotalMilliseconds;
-            _timer = new Timer(OnTimerTicked, null, Timeout.Infinite, Timeout.Infinite);
-            _systemStats = new SystemStatsHelper(Log, writerCheckpoint, dbPath);
+            _monitoringQueue = monitoringQueue;
+            _statsCollectionBus = statsCollectionBus;
+            _mainBus = mainBus;
+            _writerCheckpoint = writerCheckpoint;
+            _dbPath = dbPath;
+            _statsStorage = statsStorage;
+            _statsCollectionPeriodMs = statsCollectionPeriod > TimeSpan.Zero ? (long)statsCollectionPeriod.TotalMilliseconds : Timeout.Infinite;
+            _nodeStatsStream = string.Format("{0}-{1}", SystemStreams.StatsStreamPrefix, nodeEndpoint);
+            _timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
         }
 
-        private void OnTimerTicked(object state)
+        public void Handle(SystemMessage.SystemInit message)
+        {
+            _systemStats = new SystemStatsHelper(Log, _writerCheckpoint, _dbPath);
+            _timer.Change(_statsCollectionPeriodMs, Timeout.Infinite);
+        }
+
+        public void OnTimerTick(object state)
         {
             CollectRegularStats();
             _timer.Change(_statsCollectionPeriodMs, Timeout.Infinite);
@@ -77,40 +125,155 @@ namespace EventStore.Core.Services.Monitoring
         {
             try
             {
-                var stats = GetStats();
+                var stats = CollectStats();
                 if (stats != null)
                 {
                     var rawStats = stats.GetStats(useGrouping: false, useMetadata: false);
 
-                    var header = StatsCsvEncoder.GetHeader(rawStats);
-                    if (header != _lastWrittenCsvHeader)
-                    {
-                        _lastWrittenCsvHeader = header;
-                        RegularLog.Info(Environment.NewLine);
-                        RegularLog.Info(header);
-                    }
+                    if ((_statsStorage & StatsStorage.Csv) != 0)
+                        SaveStatsToCsvFile(rawStats);
 
-                    var line = StatsCsvEncoder.GetLine(rawStats);
-                    RegularLog.Info(line);
+                    if ((_statsStorage & StatsStorage.Stream) != 0)
+                    {
+                        if (_statsStreamCreated)
+                            SaveStatsToStream(rawStats);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Log.ErrorException(ex, "error on regular stats collection");
+                Log.ErrorException(ex, "Error on regular stats collection.");
             }
         }
 
-
-        public void Handle(SystemMessage.SystemInit message)
+        private StatsContainer CollectStats()
         {
-            _timer.Change(_statsCollectionPeriodMs, Timeout.Infinite);
+            var statsContainer = new StatsContainer();
+            try
+            {
+                statsContainer.Add(_systemStats.GetSystemStats());
+                _statsCollectionBus.Publish(new MonitoringMessage.InternalStatsRequest(new StatsCollectorEnvelope(statsContainer)));
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorException(ex, "Error while collecting stats");
+                statsContainer = null;
+            }
+
+            return statsContainer;
+        }
+
+        private void SaveStatsToCsvFile(Dictionary<string, object> rawStats)
+        {
+            var header = StatsCsvEncoder.GetHeader(rawStats);
+            if (header != _lastWrittenCsvHeader)
+            {
+                _lastWrittenCsvHeader = header;
+                RegularLog.Info(Environment.NewLine);
+                RegularLog.Info(header);
+            }
+
+            var line = StatsCsvEncoder.GetLine(rawStats);
+            RegularLog.Info(line);
+        }
+
+        private void SaveStatsToStream(Dictionary<string, object> rawStats)
+        {
+            var data = rawStats.ToJsonBytes();
+            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.StatsCollection, true, data, null);
+            var corrId = Guid.NewGuid();
+            var msg = new ClientMessage.WriteEvents(corrId, corrId, NoopEnvelope, false, _nodeStatsStream, 
+                                                    ExpectedVersion.Any, new[]{evnt}, SystemAccount.Principal);
+            _mainBus.Publish(msg);
+        }
+
+        public void Handle(SystemMessage.StateChangeMessage message)
+        {
+            if ((_statsStorage & StatsStorage.Stream) == 0)
+                return;
+
+            if (_statsStreamCreated)
+                return;
+
+            switch (message.State)
+            {
+                case VNodeState.CatchingUp:
+                case VNodeState.Clone:
+                case VNodeState.Slave:
+                case VNodeState.Master:
+                {
+                    SetStatsStreamMetadata();
+                    break;
+                }
+            }
         }
 
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
-            _timer.Change(Timeout.Infinite, Timeout.Infinite);
-            _timer.Dispose();
-            _systemStats.Dispose();
+            try
+            {
+                _timer.Dispose();
+                _systemStats.Dispose();
+            }
+            catch (ObjectDisposedException)
+            {
+                // ok, no problem if already disposed
+            }
+            
+        }
+
+        public void Handle(SystemMessage.BecomeShutdown message)
+        {
+            _monitoringQueue.RequestStop();
+        }
+
+        private void SetStatsStreamMetadata()
+        {
+            var metadata = Helper.UTF8NoBom.GetBytes(StreamMetadata);
+            _streamMetadataWriteCorrId = Guid.NewGuid();
+            _mainBus.Publish(
+                new ClientMessage.WriteEvents(
+                    _streamMetadataWriteCorrId, _streamMetadataWriteCorrId, new PublishEnvelope(_monitoringQueue),
+                    false, SystemStreams.MetastreamOf(_nodeStatsStream), ExpectedVersion.NoStream,
+                    new[]{new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata, null)},
+                    SystemAccount.Principal));
+        }
+
+        public void Handle(ClientMessage.WriteEventsCompleted message)
+        {
+            if (message.CorrelationId != _streamMetadataWriteCorrId)
+                return;
+            switch (message.Result)
+            {
+                case OperationResult.Success:
+                case OperationResult.WrongExpectedVersion: // already created
+                {
+                    Log.Trace("Created stats stream '{0}', code = {1}", _nodeStatsStream, message.Result);
+                    _statsStreamCreated = true;
+                    break;
+                }
+                case OperationResult.PrepareTimeout:
+                case OperationResult.CommitTimeout:
+                case OperationResult.ForwardTimeout:
+                {
+                    Log.Debug("Failed to create stats stream '{0}'. Reason : {1}({2}). Retrying...", _nodeStatsStream, message.Result, message.Message);
+                    SetStatsStreamMetadata();
+                    break;
+                }
+                case OperationResult.AccessDenied:
+                {
+                    // can't do anything about that right now
+                    break;
+                }
+                case OperationResult.StreamDeleted:
+                case OperationResult.InvalidTransaction: // should not happen at all
+                {
+                    Log.Error("Monitoring service got unexpected response code when trying to create stats stream ({0}).", message.Result);
+                    break;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         public void Handle(MonitoringMessage.GetFreshStats message)
@@ -120,17 +283,20 @@ namespace EventStore.Core.Services.Monitoring
                 StatsContainer stats;
                 if (!TryGetMemoizedStats(out stats))
                 {
-                    stats = GetStats();
+                    stats = CollectStats();
                     if (stats != null)
-                        MemoizeStats(stats);
+                    {
+                        _memoizedStats = stats;
+                        _lastStatsRequestTime = DateTime.UtcNow;
+                    }
                 }
-            
+
                 Dictionary<string, object> selectedStats = null;
                 if (stats != null)
                 {
                     selectedStats = stats.GetStats(message.UseGrouping, message.UseMetadata);
                     if (message.UseGrouping)
-                        selectedStats = message.StatsSelector(selectedStats) ;
+                        selectedStats = message.StatsSelector(selectedStats);
                 }
 
                 message.Envelope.ReplyWith(
@@ -144,41 +310,13 @@ namespace EventStore.Core.Services.Monitoring
 
         private bool TryGetMemoizedStats(out StatsContainer stats)
         {
-            if (_memoizedStats == null || (DateTime.UtcNow - _lastStatsRequestTime).TotalSeconds > _memoizedSeconds)
+            if (_memoizedStats == null || DateTime.UtcNow - _lastStatsRequestTime > MemoizePeriod)
             {
                 stats = null;
                 return false;
             }
-            else
-            {
-                stats = _memoizedStats;
-                return true;
-            }
-        }
-
-        private void MemoizeStats(StatsContainer stats)
-        {
-            Ensure.NotNull(stats, "stats");
-
-            _memoizedStats = stats;
-            _lastStatsRequestTime = DateTime.UtcNow;
-        }
-
-        private StatsContainer GetStats()
-        {
-            var statsContainer = new StatsContainer();
-            try
-            {
-                statsContainer.Add(_systemStats.GetSystemStats());
-                _servicesBus.Publish(new MonitoringMessage.InternalStatsRequest(new StatsCollectorEnvelope(statsContainer)));
-            }
-            catch (Exception ex)
-            {
-                Log.ErrorException(ex, "Error while collecting stats");
-                statsContainer = null;
-            }
-
-            return statsContainer;
+            stats = _memoizedStats;
+            return true;
         }
     }
 }

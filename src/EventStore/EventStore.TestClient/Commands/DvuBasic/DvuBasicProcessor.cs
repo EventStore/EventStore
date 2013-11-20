@@ -33,7 +33,6 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Tcp;
@@ -42,13 +41,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
 {
     public class DvuBasicProcessor : ICmdProcessor
     {
-        public string Keyword
-        {
-            get
-            {
-                return "verify";
-            }
-        }
+        public string Keyword { get { return "verify"; } }
 
         public string Usage
         {
@@ -65,14 +58,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             }
         }
 
-        public IEnumerable<string> AvailableProducers
-        {
-            get
-            {
-                yield return "bank";
-            }
-        }
-
+        public IEnumerable<string> AvailableProducers { get { yield return "bank"; } }
         public IBasicProducer[] Producers { get; set; }
 
         private int _writers;
@@ -99,64 +85,48 @@ namespace EventStore.TestClient.Commands.DvuBasic
             if (args.Length > 0)
             {
                 int writersArg;
-                if (int.TryParse(args[0], out writersArg))
-                {
-                    writers = writersArg;
-                    int readersArg;
-                    if (int.TryParse(args[1], out readersArg))
-                    {
-                        readers = readersArg;
-                        int eventsArg;
-                        if (int.TryParse(args[2], out eventsArg))
-                        {
-                            events = eventsArg;
-                            int streamsArg;
-                            if (int.TryParse(args[3], out streamsArg))
-                            {
-                                streams = streamsArg;
-                                string[] producersArg;
+                int readersArg;
+                int eventsArg;
+                int streamsArg;
 
-                                if ((producersArg = args[4].Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)).Length > 0)
-                                {
-                                    producersArg = producersArg.Select(p => p.Trim().ToLower()).Distinct().ToArray();
-                                    if (producersArg.Any(p => !AvailableProducers.Contains(p)))
-                                    {
-                                        context.Log.Error("Invalid producers argument. Pass comma-separated subset of [{0}]",
-                                                          string.Join(",", AvailableProducers));
-                                        return false;
-                                    }
-
-                                    producers = producersArg;
-                                }
-                                else
-                                {
-                                    context.Log.Error("Invalid argument value for <plugins>");
-                                    return false;
-                                }
-                            }
-                            else
-                            {
-                                context.Log.Error("Invalid argument value for <streams>");
-                                return false;
-                            }
-                        }
-                        else
-                        {
-                            context.Log.Error("Invalid argument value for <events>");
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        context.Log.Error("Invalid argument value for <readers>");
-                        return false;
-                    }
-                }
-                else
+                if (!int.TryParse(args[0], out writersArg))
                 {
                     context.Log.Error("Invalid argument value for <writers>");
                     return false;
                 }
+                if (!int.TryParse(args[1], out readersArg))
+                {
+                    context.Log.Error("Invalid argument value for <readers>");
+                    return false;
+                }
+                if (!int.TryParse(args[2], out eventsArg))
+                {
+                    context.Log.Error("Invalid argument value for <events>");
+                    return false;
+                }
+                if (!int.TryParse(args[3], out streamsArg))
+                {
+                    context.Log.Error("Invalid argument value for <streams>");
+                    return false;
+                }
+                string[] producersArg = args[4].Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Trim().ToLower()).Distinct().ToArray();
+                if (producersArg.Length <= 0)
+                {
+                    context.Log.Error("Invalid argument value for <plugins>");
+                    return false;
+                }
+                if (producersArg.Any(p => !AvailableProducers.Contains(p)))
+                {
+                    context.Log.Error("Invalid producers argument. Pass comma-separated subset of [{0}]",
+                                      string.Join(",", AvailableProducers));
+                    return false;
+                }
+                writers = writersArg;
+                readers = readersArg;
+                events = eventsArg;
+                streams = streamsArg;
+                producers = producersArg;
             }
 
             _writers = writers;
@@ -170,8 +140,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 Producers = new IBasicProducer[] {new BankAccountBasicProducer()};
                 return true;
             }
-            else
-                return false;
+            return false;
         }
 
         private bool Run(CommandProcessorContext context, int writers, int readers, int events, int streams)
@@ -180,8 +149,12 @@ namespace EventStore.TestClient.Commands.DvuBasic
 
             _streams = new string[streams * Producers.Length];
             for (var i = 0; i < Producers.Length; i++)
-                for (var j = i * streams; j < streams * (i + 1); j++)
-                    _streams[j] = StreamNamesGenerator.GenerateName(Producers[i].Name, j - i * streams);
+            {
+                for (var j = i*streams; j < streams*(i + 1); j++)
+                {
+                    _streams[j] = StreamNamesGenerator.GenerateName(Producers[i].Name, j - i*streams);
+                }
+            }
 
             _heads = Enumerable.Repeat(-1, streams * Producers.Length).ToArray();
 
@@ -190,50 +163,56 @@ namespace EventStore.TestClient.Commands.DvuBasic
 
         private bool Verify(CommandProcessorContext context, int writers, int readers, int events)
         {
-            var readStatusses = Enumerable.Range(0, readers).Select(x => new Status(context.Log)).ToList();
-            var readNotifications = new List<AutoResetEvent>();
-            for (int i = 0; i < readers; i++)
-                readNotifications.Add(new AutoResetEvent(false));
+            var readStatuses = Enumerable.Range(0, readers).Select(x => new Status(context.Log)).ToArray();
+            var readNotifications = Enumerable.Range(0, readers).Select(x => new ManualResetEventSlim(false)).ToArray();
+            var writeStatuses = Enumerable.Range(0, writers).Select(x => new Status(context.Log)).ToArray();
+            var writeNotifications = Enumerable.Range(0, writers).Select(x => new ManualResetEventSlim(false)).ToArray();
+
             for (int i = 0; i < readers; i++)
             {
                 var i1 = i;
-                new Thread(() => Read(readStatusses[i1], i1, context, readNotifications[i1])) { IsBackground = true }.Start();
+                var thread = new Thread(() => Read(readStatuses[i1], i1, context, readNotifications[i1]));
+                thread.IsBackground = true;
+                thread.Start();
             }
 
-            var writeStatusses = Enumerable.Range(0, writers).Select(x => new Status(context.Log)).ToList();
-            var writeNotifications = new List<AutoResetEvent>();
-            for (int i = 0; i < writers; i++)
-                writeNotifications.Add(new AutoResetEvent(false));
             for (int i = 0; i < writers; i++)
             {
                 var i1 = i;
-                new Thread(() => Write(writeStatusses[i1], i1, context, events / writers, writeNotifications[i1])) { IsBackground = true }.Start();
+                var thread = new Thread(() => Write(writeStatuses[i1], i1, context, events / writers, writeNotifications[i1]));
+                thread.IsBackground = true;
+                thread.Start();
             }
 
-            writeNotifications.ForEach(w => w.WaitOne());
+            foreach (var writeNotification in writeNotifications)
+            {
+                writeNotification.Wait();
+            }
             _stopReading = true;
-            readNotifications.ForEach(r => r.WaitOne());
+            foreach (var readNotification in readNotifications)
+            {
+                readNotification.Wait();
+            }
 
             context.Log.Info("dvub finished execution : ");
 
             var writersTable = new ConsoleTable("WRITER ID", "Status");
-            writeStatusses.ForEach(ws =>
+            
+            foreach (var ws in writeStatuses)
             {
-                writersTable.AppendRow(ws.ThreadId.ToString(),
-                                       ws.Success ? "Success" : "Fail");
-            });
+                writersTable.AppendRow(ws.ThreadId.ToString(), ws.Success ? "Success" : "Fail");
+            }
 
             var readersTable = new ConsoleTable("READER ID", "Status");
-            readStatusses.ForEach(rs =>
+            foreach (var rs in readStatuses) 
             {
-                readersTable.AppendRow(rs.ThreadId.ToString(),
-                                       rs.Success ? "Success" : "Fail");
-            });
+                readersTable.AppendRow(rs.ThreadId.ToString(), rs.Success ? "Success" : "Fail");
+            }
 
             context.Log.Info(writersTable.CreateIndentedTable());
             context.Log.Info(readersTable.CreateIndentedTable());
 
-            var success = writeStatusses.All(s => s.Success) && readStatusses.All(s => s.Success);
+            var success = writeStatuses.All(s => s.Success) && readStatuses.All(s => s.Success);
             if (success)
                 context.Success();
             else
@@ -241,7 +220,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             return success;
         }
 
-        private void Write(Status status, int writerIdx, CommandProcessorContext context, int requests, AutoResetEvent finish)
+        private void Write(Status status, int writerIdx, CommandProcessorContext context, int requests, ManualResetEventSlim finish)
         {
             TcpTypedConnection<byte[]> connection;
             var iteration = new AutoResetEvent(false);
@@ -251,7 +230,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             var prepareTimeouts = 0;
             var commitTimeouts = 0;
             var forwardTimeouts = 0;
-            var wrongExpctdVersions = 0;
+            var wrongExpectedVersion = 0;
             var streamsDeleted = 0;
 
             var failed = 0;
@@ -264,33 +243,33 @@ namespace EventStore.TestClient.Commands.DvuBasic
             Action<TcpTypedConnection<byte[]>, TcpPackage> packageHandler = (conn, pkg) =>
             {
                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-                switch ((OperationErrorCode)dto.ErrorCode)
+                switch (dto.Result)
                 {
-                    case OperationErrorCode.Success:
+                    case TcpClientMessageDto.OperationResult.Success:
                         lock (_heads)
                         {
                             var currentHead = _heads[streamIdx];
-                            Ensure.Equal(currentHead, head);
+                            Ensure.Equal(currentHead, head, "currentHead");
                             _heads[streamIdx]++;
                         }
                         break;
-                    case OperationErrorCode.PrepareTimeout:
+                    case TcpClientMessageDto.OperationResult.PrepareTimeout:
                         prepareTimeouts++;
                         failed++;
                         break;
-                    case OperationErrorCode.CommitTimeout:
+                    case TcpClientMessageDto.OperationResult.CommitTimeout:
                         commitTimeouts++;
                         failed++;
                         break;
-                    case OperationErrorCode.ForwardTimeout:
+                    case TcpClientMessageDto.OperationResult.ForwardTimeout:
                         forwardTimeouts++;
                         failed++;
                         break;
-                    case OperationErrorCode.WrongExpectedVersion:
-                        wrongExpctdVersions++;
+                    case TcpClientMessageDto.OperationResult.WrongExpectedVersion:
+                        wrongExpectedVersion++;
                         failed++;
                         break;
-                    case OperationErrorCode.StreamDeleted:
+                    case TcpClientMessageDto.OperationResult.StreamDeleted:
                         streamsDeleted++;
                         failed++;
                         break;
@@ -301,7 +280,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 sent++;
                 if (sent % 1000 == 0)
                     status.ReportWritesProgress(writerIdx, sent, prepareTimeouts, commitTimeouts, forwardTimeouts,
-                                                wrongExpctdVersions, streamsDeleted, failed, requests);
+                                                wrongExpectedVersion, streamsDeleted, failed, requests);
                 if (sent == requests)
                     finish.Set();
 
@@ -325,11 +304,15 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 {
                     head = _heads[streamIdx];
                 }
-                var evnt = CreateEvent(_streams[streamIdx], head + 2);
-                var write = new TcpClientMessageDto.WriteEvents(_streams[streamIdx],
-                                                             head == -1 ? head : head + 1,
-                                                             new[] { ClientEventUtil.FromDataEvent(evnt) },
-                                                             true);
+                var evnt = CreateEvent(_streams[streamIdx], head + 1);
+                var write = new TcpClientMessageDto.WriteEvents(
+                    _streams[streamIdx],
+                    head,
+                    new[] 
+                    { 
+                        new TcpClientMessageDto.NewEvent(evnt.EventId.ToByteArray(), evnt.EventType,evnt.IsJson ? 1 : 0, 0, evnt.Data, evnt.Metadata) 
+                    },
+                    false);
 
                 var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                 connection.EnqueueSend(package.AsByteArray());
@@ -337,12 +320,12 @@ namespace EventStore.TestClient.Commands.DvuBasic
             }
 
             status.ReportWritesProgress(writerIdx, sent, prepareTimeouts, commitTimeouts, forwardTimeouts,
-                                        wrongExpctdVersions, streamsDeleted, failed, requests);
+                                        wrongExpectedVersion, streamsDeleted, failed, requests);
             status.FinilizeStatus(writerIdx, failed != sent);
             connection.Close();
         }
 
-        private void Read(Status status, int readerIdx, CommandProcessorContext context, AutoResetEvent finishedEvent)
+        private void Read(Status status, int readerIdx, CommandProcessorContext context, ManualResetEventSlim finishedEvent)
         {
             TcpTypedConnection<byte[]> connection;
             var iteration = new AutoResetEvent(false);
@@ -358,10 +341,10 @@ namespace EventStore.TestClient.Commands.DvuBasic
             Action<TcpTypedConnection<byte[]>, TcpPackage> packageReceived = (conn, pkg) =>
             {
                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
-                switch ((SingleReadResult)dto.Result)
+                switch ((ReadEventResult)dto.Result)
                 {
-                    case SingleReadResult.Success:
-                        if (Equal(_streams[streamIdx], eventidx, dto.EventType, dto.Data))
+                    case ReadEventResult.Success:
+                        if (Equal(_streams[streamIdx], eventidx, dto.Event.Event.EventType, dto.Event.Event.Data))
                         {
                             successes++;
                             if (successes % 1000 == 0)
@@ -373,9 +356,11 @@ namespace EventStore.TestClient.Commands.DvuBasic
                             status.ReportReadError(readerIdx, _streams[streamIdx], eventidx);
                         }
                         break;
-                    case SingleReadResult.NotFound:
-                    case SingleReadResult.NoStream:
-                    case SingleReadResult.StreamDeleted:
+                    case ReadEventResult.NotFound:
+                    case ReadEventResult.NoStream:
+                    case ReadEventResult.StreamDeleted:
+                    case ReadEventResult.Error:
+                    case ReadEventResult.AccessDenied:
                         fails++;
                         status.ReportNotFoundOnRead(readerIdx, _streams[streamIdx], eventidx);
                         break;
@@ -407,7 +392,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                     eventidx = NextRandomEventVersion(rnd, head);
                     var stream = _streams[streamIdx];
                     var corrid = Guid.NewGuid();
-                    var read = new TcpClientMessageDto.ReadEvent(stream, eventidx, resolveLinkTos: false);
+                    var read = new TcpClientMessageDto.ReadEvent(stream, eventidx, resolveLinkTos: false, requireMaster: false);
                     var package = new TcpPackage(TcpCommand.ReadEvent, corrid, read.Serialize());
 
                     connection.EnqueueSend(package.AsByteArray());

@@ -26,16 +26,21 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
+using System.Linq;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_starting_a_new_projection : TestFixtureWithCoreProjection
+    public class when_starting_a_new_projection : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {
-            NoStream("$projections-projection-state");
+            NoStream("$projections-projection-result");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
         }
 
@@ -52,15 +57,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         [Test]
-        public void should_subscribe_non_null_subscriber()
+        public void should_publish_started_message()
         {
-            Assert.NotNull(_subscribeProjectionHandler.HandledMessages[0].Subscriber);
-        }
-
-        [Test]
-        public void should_initialize_projection_state_handler()
-        {
-            Assert.AreEqual(1, _stateHandler._initializeCalled);
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
+            var startedMessage = _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Single();
+            Assert.AreEqual(_projectionCorrelationId, startedMessage.ProjectionId);
         }
     }
 }

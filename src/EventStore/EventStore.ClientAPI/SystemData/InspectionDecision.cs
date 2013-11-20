@@ -30,9 +30,10 @@ namespace EventStore.ClientAPI.SystemData
 {
     internal enum InspectionDecision
     {
-        Succeed,
+        DoNothing,
+        EndOperation,
         Retry,
         Reconnect,
-        NotifyError
+        Subscribed
     }
 }

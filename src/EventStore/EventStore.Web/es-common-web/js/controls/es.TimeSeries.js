@@ -29,31 +29,33 @@
                             .click(handleZoom);
             container[0].asZoomable = asZoomable;
             container[0].asSelectable = asSelectable;
-            
 
-            initData();
+            initData(new Date());
+
             var graph = createGraphInternal(container, seriesData, width, height);
-            $(document).on(updateEventName, function (event, data) {
-                onNewData(data);
+            $(document).on(updateEventName, function (event, data, timeStamp) {
+                onNewData(data, timeStamp);
                 graph.update();
             });
         }
 
-        function initData() {
+        function initData(timeStamp) {
             // fills data with n initial values so that it looks like chart is floating to the left, not transforming
-            for (var i = maxLength - 1; i > 0; i--) {
-                seriesData.push({ x: (new Date()).getTime() / 1000 - i, y: 0 });
+            for (var i = Math.min(maxLength, 50) - 1; i > 0; i--) {
+                seriesData.push({ x: (timeStamp).getTime() / 1000 - i, y: 0 });
             };
         };
 
-        function onNewData(data) {
+        function onNewData(data, timeStamp) {
             try {
                 var ownData = getData(data);
             } catch (e) {
                 return;
             }
 
-            var newPoint = { x: (new Date()).getTime() / 1000, y: ownData };
+            timeStamp = timeStamp || new Date();
+
+            var newPoint = { x: timeStamp.getTime() / 1000, y: ownData };
             seriesData.push(newPoint);
 
             if (seriesData.length > maxLength) {

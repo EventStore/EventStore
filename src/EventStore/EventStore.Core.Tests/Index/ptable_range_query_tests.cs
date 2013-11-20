@@ -25,7 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.IO;
 using System.Linq;
 using EventStore.Core.Index;
 using NUnit.Framework;
@@ -41,7 +40,7 @@ namespace EventStore.Core.Tests.Index
         {
             base.TestFixtureSetUp();
 
-            var table = new HashListMemTable(maxSize: 2000);
+            var table = new HashListMemTable(maxSize: 50);
             table.Add(0x0101, 0x0001, 0x0001);
             table.Add(0x0105, 0x0001, 0x0002);
             table.Add(0x0102, 0x0001, 0x0003);

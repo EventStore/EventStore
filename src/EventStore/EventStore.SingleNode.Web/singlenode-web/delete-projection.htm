@@ -20,10 +20,10 @@
                 </div>
             </div>
             <div class="control-group">
-                <label class="control-label" for="projection-state">
+                <label class="control-label" for="projection-result">
                     <strong>State</strong></label>
                 <div class="controls">
-                    <div id="projection-state">
+                    <div id="projection-result">
                     </div>
                 </div>
             </div>
@@ -105,7 +105,7 @@
                 });
 
                 function successState(data, status, xhr) {
-                    $("#projection-state").text(JSON.stringify(data));
+                    $("#projection-result").text(JSON.stringify(data));
                 }
 
                 function errorState(xhr, status) {

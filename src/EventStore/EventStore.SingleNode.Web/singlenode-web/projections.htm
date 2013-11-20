@@ -16,7 +16,7 @@
 		
 		.content table td { word-wrap: break-word; }
 		.content table .name { width: 150px; }
-		.content table .status { width: 125px; }
+		.content table .status { width: 75px; }
 		.content table .mode { width: 70px; }
 		.content table .progress { width: 50px; }
 		.content table .position { width: 165px; }
@@ -26,6 +26,7 @@
 		.content table .writes { width: 60px; }
 		.content table .partitions { width: 65px; }
 		.content table .processed { width: 75px; }
+		.content table .per-second { width: 75px; }
 		.content table .buffered { width: 60px; }
 		.content table td {vertical-align: middle;}
     </style>
@@ -38,11 +39,13 @@
             <div class="span12">
                 <div id="commands-container">
                     <ul style="display: inline;">
-                        <li><a id="command-disable-all">
-                            <img src="/web/es/img/stop_btn.png" title="Disable & Stop All" alt="Disable & Stop All" /> Disable & Stop All
-                        </a></li>
-                        <li><a id="command-enable-all">
-                            <img src="/web/es/img/start_btn.png" title="Enable & Start All" alt="Enable & Start All" /> Enable & Start All</a>
+                        <li><a id="command-disable-all" class='btn'>
+                            Disable All</a></li>
+                        <li><a id="command-enable-all" class='btn'>
+                                Enable All</a>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="include-queries"/> Include Queries
                         </li>
                     </ul>
                 </div>
@@ -57,11 +60,11 @@
                     <th class="c progress">% Done</th>
                     <th class="c position">Position</th>
                     <th class="c checkpoint">Last Checkpoint</th>
-                    <th class="c checkpoint-status">Checkpoint Status</th>
                     <th class="c read-writes">Reads / Writes In-Progress</th>
-                    <th class="c writes">Writes Pending</th>
+                    <th class="c writes">Write Queues</th>
                     <th class="c partitions">Partitions Cached</th>
-                    <th class="c processed">Processed (since restart)</th>
+                    <th class="c processed">Processed</th>
+                    <th class="c per-second">per Second</th>
                     <th class="c buffered">Buffered Events</th>
                 </tr>
             </thead>
@@ -71,22 +74,22 @@
         <script id="projectionTemplate" type="text/x-jsrender">
         <tr>
           <td class="name"><a href="view-projection.htm#{{>statusUrl}}">{{>name}}</a></td>
-          <td>{{>status}}</td>
+          <td>{{>status}}{{>checkpointStatus}}</td>
           <td>{{>mode}}</td>
           <td class="r">{{>progress.toFixed(1)}}%</td>
           <td class="r">{{>~addSpace(position)}}</td>
           <td class="r">{{>~addSpace(lastCheckpoint)}}</td>
-          <td>{{>checkpointStatus}}</td>
           <td class="r">{{>readsInProgress}} / {{>writesInProgress}}</td>
-          <td class="r">{{>writePendingEventsBeforeCheckpoint}} / {{>writePendingEventsAfterCheckpoint}}</td>
+          <td class="r">{{>writePendingEventsAfterCheckpoint}} / {{>writePendingEventsBeforeCheckpoint}}</td>
           <td class="r">{{>partitionsCached}}</td>
           <td class="r">{{>eventsProcessedAfterRestart}}</td>
+          <td class="r">{{>eventsPerSecond}}({{>averageCoreProcessingTime}})</td>
           <td class="r">{{>bufferedEvents}}</td>
         </tr>
         </script>
         <div>
             <header>
-                <a href="new-projection.htm">New Projection</a>
+                <a href="new-projection.htm" class='btn btn-success'>New Projection</a>
             </header>
         </div>
         <script id="r-body">
@@ -99,6 +102,8 @@
 
             $(function() {
 
+                $.templates("projectionTemplate", "#projectionTemplate");
+
                 requestList();
 
                 $("#command-disable-all").click(onDisableAll);
@@ -106,18 +111,22 @@
                     
                 function onDisableAll(ev) {
                     ev.preventDefault();
-                    postToEachProjection("/command/disable");
+					if (!confirm('Are you sure you want to disable & stop all projections?'))
+						return false;
+					postToEachProjection("/command/disable");
                     return false;
                 }
                 
                 function onEnableAll(ev) {
                     ev.preventDefault();
+					if (!confirm('Are you sure you want to enable & start all projections?'))
+						return false;
                     postToEachProjection("/command/enable");
                     return false;
                 }
 
                 function postToEachProjection(relativeUrl) {
-                    $.ajax("/projections/any", {
+                    $.ajax("/projections/all-non-transient", {
                         headers: {
                             Accept: "application/json",
                         },
@@ -149,9 +158,13 @@
                                     Accept: "application/json",
                                 },
                                 type: "POST",
-                                success: function() {
+                                success: function(a,b,c) {
+									var d = 5; // let it be here temporarily, debugging rare bug
                                 },
                                 error: function(xhr, status, error) {
+									var errorText = $.trim(xhr.responseText).toLowerCase();
+									if (errorText === 'not disabled' || errorText === 'not enabled')
+										return;
                                     var err = es.util.formatError("Error when posting to projection '" + projection.name + "'", xhr);
                                     errors.push(err);
                                 }
@@ -170,9 +183,16 @@
                     }
                 }
             });
-            
+
+            var lastTimestamp = null;
+            var lastRequest = {};
+
             function requestList() {
-                $.ajax("/projections/any", {
+                var includeQueries = $("#include-queries").attr("checked");
+
+                var requestUrl = includeQueries ? "/projections/any" : "/projections/all-non-transient";
+
+                $.ajax(requestUrl, {
                     headers: {
                         Accept: "application/json",
                     },
@@ -185,8 +205,22 @@
                     data.projections.sort(function(a, b) {
                         return a.name.localeCompare(b.name);
                     });
+                    var current = {};
+                    var currentTime = new Date();
+                    for (var i = 0; i < data.projections.length; i++) {
+                        current[data.projections[i].name] = data.projections[i];
+                        if (lastRequest[data.projections[i].name] !== undefined && lastTimestamp != null) {
+                            var eventsProcessed = data.projections[i].eventsProcessedAfterRestart - lastRequest[data.projections[i].name].eventsProcessedAfterRestart;
+                            var elapsedTime = currentTime - lastTimestamp;
+                            data.projections[i].eventsPerSecond =
+                            (1000.0 * eventsProcessed / elapsedTime).toFixed(1);
+                            data.projections[i].averageCoreProcessingTime =
+                                ((data.projections[i].coreProcessingTime - lastRequest[data.projections[i].name].coreProcessingTime) * 100.0 / elapsedTime).toFixed(1) + "%";
+                        }
+                    }
+                    lastRequest = current;
+                    lastTimestamp = currentTime;
 
-                    $.templates("projectionTemplate", "#projectionTemplate");
 
                     $("#projections").html(
                         $.render.projectionTemplate(data.projections, {
@@ -196,11 +230,11 @@
                         })
                     );
 
-                    setTimeout(requestList, 1000);
+                    setTimeout(requestList, 2000);
                 }
 
                 function error(xhr, status) {
-                    setTimeout(requestList, 1000);
+                    setTimeout(requestList, 2000);
                 }
             }
         })();

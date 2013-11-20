@@ -27,7 +27,7 @@
 // 
 
 using System;
-using EventStore.Projections.Core.Services;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -35,14 +35,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_filter
 {
     public class TestFixtureWithEventFilter
     {
-        protected CheckpointStrategy.Builder _builder;
+        protected SourceDefinitionBuilder _builder;
         protected EventFilter _ef;
         protected Exception _exception;
 
         [SetUp]
         public void Setup()
         {
-            _builder = new CheckpointStrategy.Builder();
+            _builder = new SourceDefinitionBuilder();
             Given();
             When();
         }
@@ -56,7 +56,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_filter
             _ef = null;
             try
             {
-                _ef = _builder.Build(ProjectionMode.Persistent).EventFilter;
+                var sources = _builder.Build();
+                _ef = ReaderStrategy.Create(0, sources, new RealTimeProvider(), stopOnEof: false, runAs: null).EventFilter;
             }
             catch (Exception ex)
             {

@@ -49,18 +49,14 @@ namespace EventStore.BufferManagement
     {
         private const int TrialsCount = 100;
 
-        private static BufferManager _defaultBufferManager = null;
+        private static BufferManager _defaultBufferManager;
 
         private readonly int _segmentChunks;
         private readonly int _chunkSize;
         private readonly int _segmentSize;
         private readonly bool _allowedToCreateMemory;
 
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentStack<ArraySegment<byte>> _buffers = new Common.ConcurrentCollections.ConcurrentStack<ArraySegment<byte>>();
-#else
-        private readonly System.Collections.Concurrent.ConcurrentStack<ArraySegment<byte>> _buffers = new System.Collections.Concurrent.ConcurrentStack<ArraySegment<byte>>();
-#endif
+        private readonly Common.Concurrent.ConcurrentStack<ArraySegment<byte>> _buffers = new Common.Concurrent.ConcurrentStack<ArraySegment<byte>>();
 
         private readonly List<byte[]> _segments;
         private readonly object _creatingNewSegmentLock = new object();
@@ -90,6 +86,11 @@ namespace EventStore.BufferManagement
             if (manager == null) 
                 throw new ArgumentNullException("manager");
             _defaultBufferManager = manager;
+        }
+
+        public int ChunkSize
+        {
+            get { return _chunkSize; }
         }
 
         public int SegmentsCount

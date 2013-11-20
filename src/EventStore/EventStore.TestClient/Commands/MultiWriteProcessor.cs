@@ -28,8 +28,8 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Sockets;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
@@ -43,8 +43,8 @@ namespace EventStore.TestClient.Commands
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
-            var eventStreamId = "test-stream";
             const string data = "test-data";
+            var eventStreamId = "test-stream";
             var writeCount = 10;
             var expectedVersion = ExpectedVersion.Any;
 
@@ -60,61 +60,51 @@ namespace EventStore.TestClient.Commands
             }
 
             context.IsAsync();
-            var writeDto = new TcpClientMessageDto.WriteEvents(
-                eventStreamId,
-                expectedVersion,
-                Enumerable.Range(0, writeCount).Select(x =>
-                                                       new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
-                                                                                  "type",
-                                                                                  false,
-                                                                                  Encoding.UTF8.GetBytes(data),
-                                                                                  new byte[0])).ToArray(),
-                true);
-
-            var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
-
             var sw = new Stopwatch();
-
             context.Client.CreateTcpConnection(
                 context,
                 connectionEstablished: conn =>
                 {
-                    context.Log.Info("[{0}]: Writing...", conn.EffectiveEndPoint);
+                    context.Log.Info("[{0}, L{1}]: Writing...", conn.RemoteEndPoint, conn.LocalEndPoint);
+                    var writeDto = new TcpClientMessageDto.WriteEvents(
+                        eventStreamId,
+                        expectedVersion,
+                        Enumerable.Range(0, writeCount).Select(x => new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+                                                                                                     "type",
+                                                                                                     0,0,
+                                                                                                     Helper.UTF8NoBom.GetBytes(data),
+                                                                                                     new byte[0])).ToArray(),
+                        false);
+                    var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize()).AsByteArray();
                     sw.Start();
-                    conn.EnqueueSend(package.AsByteArray());
+                    conn.EnqueueSend(package);
                 },
                 handlePackage: (conn, pkg) =>
                 {
+                    sw.Stop();
+                    context.Log.Info("Write request took: {0}.", sw.Elapsed);
+
                     if (pkg.Command != TcpCommand.WriteEventsCompleted)
                     {
                         context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
                         return;
                     }
 
-                    sw.Stop();
-
                     var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-                    if (dto.ErrorCode == (int)OperationErrorCode.Success)
+                    if (dto.Result == TcpClientMessageDto.OperationResult.Success)
                     {
-                        context.Log.Info("Successfully written {0} events. CorrelationId: {1}.", writeCount, package.CorrelationId);
-                        PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
+                        context.Log.Info("Successfully written {0} events.", writeCount);
+                        PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)Math.Round(sw.Elapsed.TotalMilliseconds));
+                        context.Success();
                     }
                     else
                     {
-                        context.Log.Info("Error while writing: {0}. CorrelationId: {1}.", dto.Error, package.CorrelationId);
+                        context.Log.Info("Error while writing: {0}.", dto.Result);
+                        context.Fail();
                     }
-                    context.Log.Info("Write request took: {0}.", sw.Elapsed);
-                    
                     conn.Close();
-                    context.Success();
                 },
-                connectionClosed:(connection, error) =>
-                    {
-                        if (error == SocketError.Success)
-                            context.Success();
-                        else
-                            context.Fail();
-                    });
+                connectionClosed: (connection, error) => context.Fail(reason: "Connection was closed prematurely."));
 
             context.WaitForCompletion();
             return true;

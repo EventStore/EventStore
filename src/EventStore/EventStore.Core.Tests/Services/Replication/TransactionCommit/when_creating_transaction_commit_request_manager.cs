@@ -36,24 +36,27 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
     [TestFixture]
     public class when_creating_transaction_commit_request_manager
     {
+        protected static readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
+        protected static readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
+
         [Test]
         public void null_publisher_throws_argument_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => new TransactionCommitTwoPhaseRequestManager(null, 3, 3));
+            Assert.Throws<ArgumentNullException>(() => new TransactionCommitTwoPhaseRequestManager(null, 3, 3, PrepareTimeout, CommitTimeout));
         }
 
         [Test]
         public void zero_prepare_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new TransactionCommitTwoPhaseRequestManager(new FakePublisher(), 0, 3));
+                () => new TransactionCommitTwoPhaseRequestManager(new FakePublisher(), 0, 3, PrepareTimeout, CommitTimeout));
         }
 
         [Test]
         public void zero_commit_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new TransactionCommitTwoPhaseRequestManager(new FakePublisher(), 3, 0));
+                () => new TransactionCommitTwoPhaseRequestManager(new FakePublisher(), 3, 0, PrepareTimeout, CommitTimeout));
         }
 
 
@@ -61,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
         public void negative_commit_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new TransactionCommitTwoPhaseRequestManager(new FakePublisher(), 3, -1));
+                () => new TransactionCommitTwoPhaseRequestManager(new FakePublisher(), 3, -1, PrepareTimeout, CommitTimeout));
         }
 
 
@@ -69,7 +72,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
         public void negative_prepare_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new TransactionCommitTwoPhaseRequestManager(new FakePublisher(), -1, 3));
+                () => new TransactionCommitTwoPhaseRequestManager(new FakePublisher(), -1, 3, PrepareTimeout, CommitTimeout));
         }
     }
 }

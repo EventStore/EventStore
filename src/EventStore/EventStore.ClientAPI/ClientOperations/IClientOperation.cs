@@ -33,13 +33,13 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal interface IClientOperation
     {
-        Guid CorrelationId { get; }
-        void SetRetryId(Guid correlationId);
-
-        TcpPackage CreateNetworkPackage();
+        TcpPackage CreateNetworkPackage(Guid correlationId);
         InspectionResult InspectPackage(TcpPackage package);
-
-        void Complete();
         void Fail(Exception exception);
+    }
+
+    internal interface ISubscription: IClientOperation
+    {
+        
     }
 }

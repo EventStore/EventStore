@@ -25,27 +25,29 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
+using EventStore.Common.Utils;
+using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
     public class SendOverTcpEnvelope : IEnvelope
     {
-        private readonly WeakReference _manager;
+        private readonly IPublisher _networkSendQueue;
+        private readonly TcpConnectionManager _manager;
 
-        public SendOverTcpEnvelope(TcpConnectionManager manager)
+        public SendOverTcpEnvelope(TcpConnectionManager manager, IPublisher networkSendQueue)
         {
-            if (manager == null)
-                throw new ArgumentNullException("manager");
-            _manager = new WeakReference(manager);
+            Ensure.NotNull(manager, "manager");
+            Ensure.NotNull(networkSendQueue, "networkSendQueue");
+            _networkSendQueue = networkSendQueue;
+            _manager = manager;
         }
 
         public void ReplyWith<T>(T message) where T : Message
         {
-            var man = _manager.Target as TcpConnectionManager;
-            if (man != null)
-                man.SendMessage(message);
+            _networkSendQueue.Publish(new TcpMessage.TcpSend(_manager, message));
         }
     }
 }

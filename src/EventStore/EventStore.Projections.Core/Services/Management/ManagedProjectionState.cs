@@ -31,11 +31,15 @@ namespace EventStore.Projections.Core.Services.Management
     {
         Creating,
         Loading,
-        Stopped,
-        Faulted,
+        Loaded,
+        Writing,
         Preparing,
         Prepared,
+        Stopped,
+        Completed,
+        Faulted,
         Starting,
+        LoadingState,
         Running,
         Stopping,
     }

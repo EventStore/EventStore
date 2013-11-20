@@ -28,7 +28,7 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Common;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Bus
@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Bus
             _bus = null;
         }
 
-        [Test]
+        [Test, Ignore("We don't check each message for null for performance reasons.")]
         public void null_message_app_should_throw()
         {
             Assert.Throws<ArgumentNullException>(() => _bus.Publish(null));

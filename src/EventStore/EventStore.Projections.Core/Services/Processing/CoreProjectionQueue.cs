@@ -27,6 +27,8 @@
 // 
 
 using System;
+using System.Net.Configuration;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 
@@ -34,18 +36,33 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class CoreProjectionQueue
     {
+        private readonly ILogger _logger = LogManager.GetLoggerFor<CoreProjectionQueue>();
         private readonly StagedProcessingQueue _queuePendingEvents =
             new StagedProcessingQueue(
-                new[] {false /* load foreach state */, false /* process Js */, true /* write emits */});
+                new[]
+                    {
+                        true /* record event order - async with ordered output*/, 
+                        true /* get state partition - ordered as it may change correlation id - sync */, 
+                        false /* load foreach state - async- unordered completion*/, 
+                        false /* process Js - unordered - inherently unordered completion*/, 
+                        true /* write emits - ordered - async ordered completion*/, 
+                        false /* complete item */ 
+                    });
 
         private readonly IPublisher _publisher;
         private readonly Guid _projectionCorrelationId;
         private readonly int _pendingEventsThreshold;
         private readonly Action _updateStatistics;
 
-        private QueueState _queueState;
         private CheckpointTag _lastEnqueuedEventTag;
+        private bool _justInitialized;
         private bool _subscriptionPaused;
+
+        public event Action EnsureTickPending
+        {
+            add { _queuePendingEvents.EnsureTickPending += value; }
+            remove { _queuePendingEvents.EnsureTickPending -= value; }
+        }
 
         public CoreProjectionQueue(
             Guid projectionCorrelationId, IPublisher publisher, int pendingEventsThreshold,
@@ -57,20 +74,17 @@ namespace EventStore.Projections.Core.Services.Processing
             _updateStatistics = updateStatistics;
         }
 
-        public void Initialize()
+        public bool IsRunning
         {
-            _queueState = default(QueueState);
-            _lastEnqueuedEventTag = default(CheckpointTag);
-            _subscriptionPaused = false;
-
-            _queuePendingEvents.Initialize();
+            get { return _isRunning; }
         }
 
-        public void ProcessEvent()
+        public bool ProcessEvent()
         {
-            if (_queueState == QueueState.Running)
-                if (_queuePendingEvents.Count > 0)
-                    ProcessOneEvent();
+            var processed = false;
+            if (_queuePendingEvents.Count > 0)
+                processed = ProcessOneEventBatch();
+            return processed;
         }
 
         public int GetBufferedEventCount()
@@ -78,102 +92,116 @@ namespace EventStore.Projections.Core.Services.Processing
             return _queuePendingEvents.Count;
         }
 
-        public void SetRunning()
-        {
-            _queueState = QueueState.Running;
-            ResumeSubscription();
-        }
-
-        public void SetPaused()
-        {
-            _queueState = QueueState.Paused;
-            PauseSubscription();
-        }
-
-        public void SetStopped()
-        {
-            _queueState = QueueState.Stopped;
-            // unsubscribe?
-        }
-
         public void EnqueueTask(WorkItem workItem, CheckpointTag workItemCheckpointTag, bool allowCurrentPosition = false)
         {
-            if (_queueState == QueueState.Stopped)
-                throw new InvalidOperationException("Queue is Stopped");
             ValidateQueueingOrder(workItemCheckpointTag, allowCurrentPosition);
+            workItem.SetProjectionQueue(this);
             workItem.SetCheckpointTag(workItemCheckpointTag);
             _queuePendingEvents.Enqueue(workItem);
         }
 
         public void EnqueueOutOfOrderTask(WorkItem workItem)
         {
+            if (_lastEnqueuedEventTag == null)
+                throw new InvalidOperationException(
+                    "Cannot enqueue an out-of-order task.  The projection position is currently unknown.");
+            workItem.SetProjectionQueue(this);
             workItem.SetCheckpointTag(_lastEnqueuedEventTag);
             _queuePendingEvents.Enqueue(workItem);
         }
 
         public void InitializeQueue(CheckpointTag zeroCheckpointTag)
         {
+            _subscriptionPaused = false;
+            _unsubscribed = false;
+            _lastReportedStatisticsTimeStamp = default(DateTime);
+            _unsubscribed = false;
+            _subscriptionId = Guid.Empty;
+
+            _queuePendingEvents.Initialize();
+
             _lastEnqueuedEventTag = zeroCheckpointTag;
+            _justInitialized = true;
         }
 
         public string GetStatus()
         {
-            return (_subscriptionPaused && _queueState != QueueState.Paused ? "/Subscription Paused" : "");
+            return (_subscriptionPaused ? "/Paused" : "");
         }
 
         private void ValidateQueueingOrder(CheckpointTag eventTag, bool allowCurrentPosition = false)
         {
-            if (eventTag < _lastEnqueuedEventTag || (!allowCurrentPosition && eventTag <= _lastEnqueuedEventTag))
+            if (eventTag < _lastEnqueuedEventTag || (!(allowCurrentPosition || _justInitialized) && eventTag <= _lastEnqueuedEventTag))
                 throw new InvalidOperationException(
                     string.Format(
                         "Invalid order.  Last known tag is: '{0}'.  Current tag is: '{1}'", _lastEnqueuedEventTag,
                         eventTag));
+            _justInitialized = _justInitialized && (eventTag == _lastEnqueuedEventTag);
             _lastEnqueuedEventTag = eventTag;
         }
 
         private void PauseSubscription()
         {
-            if (!_subscriptionPaused)
+            if (_subscriptionId == Guid.Empty)
+                throw new InvalidOperationException("Not subscribed");
+            if (!_subscriptionPaused && !_unsubscribed)
             {
                 _subscriptionPaused = true;
                 _publisher.Publish(
-                    new ProjectionSubscriptionManagement.Pause(_projectionCorrelationId));
+                    new ReaderSubscriptionManagement.Pause(_subscriptionId));
             }
         }
 
         private void ResumeSubscription()
         {
-            if (_subscriptionPaused && _queueState == QueueState.Running)
+            if (_subscriptionId == Guid.Empty)
+                throw new InvalidOperationException("Not subscribed");
+            if (_subscriptionPaused && !_unsubscribed)
             {
                 _subscriptionPaused = false;
                 _publisher.Publish(
-                    new ProjectionSubscriptionManagement.Resume(_projectionCorrelationId));
+                    new ReaderSubscriptionManagement.Resume(_subscriptionId));
             }
         }
 
         private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
+        private bool _unsubscribed;
+        private Guid _subscriptionId;
+        private bool _isRunning;
 
-        private void ProcessOneEvent()
+        private bool ProcessOneEventBatch()
         {
-            int pendingEventsCount = _queuePendingEvents.Count;
-            if (pendingEventsCount > _pendingEventsThreshold)
+            if (_queuePendingEvents.Count > _pendingEventsThreshold)
                 PauseSubscription();
-            if (_subscriptionPaused && pendingEventsCount < _pendingEventsThreshold/2)
+            var processed = _queuePendingEvents.Process(max: 30);
+            if (_subscriptionPaused && _queuePendingEvents.Count < _pendingEventsThreshold / 2)
                 ResumeSubscription();
-            _queuePendingEvents.Process();
 
             if (_updateStatistics != null
                 && ((_queuePendingEvents.Count == 0)
                     || (DateTime.UtcNow - _lastReportedStatisticsTimeStamp).TotalMilliseconds > 500))
                 _updateStatistics();
             _lastReportedStatisticsTimeStamp = DateTime.UtcNow;
+            return processed;
         }
 
-        private enum QueueState
+        public void Unsubscribed()
         {
-            Stopped,
-            Paused,
-            Running
+            _unsubscribed = true;
+        }
+
+        public void Subscribed(Guid currentSubscriptionId)
+        {
+            if (_unsubscribed)
+                throw new InvalidOperationException("Unsubscribed");
+            if (_subscriptionId != Guid.Empty)
+                throw new InvalidOperationException("Already subscribed");
+            _subscriptionId = currentSubscriptionId;
+        }
+
+        public void SetIsRunning(bool isRunning)
+        {
+            _isRunning = isRunning;
         }
     }
 }

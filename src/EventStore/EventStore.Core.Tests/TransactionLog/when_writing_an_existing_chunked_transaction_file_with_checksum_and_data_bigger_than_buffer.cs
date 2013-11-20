@@ -27,9 +27,9 @@
 // 
 using System;
 using System.IO;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -43,11 +43,11 @@ namespace EventStore.Core.Tests.TransactionLog
         private readonly Guid _eventId = Guid.NewGuid();
         private InMemoryCheckpoint _checkpoint;
 
-        [Test, Ignore("On MONO something strange is happening when the record size is > 4096 bytes, the first bytes are not written into file. Will have to debug later.")]
+        [Test]
         public void a_record_can_be_written()
         {
-            var filename = Path.Combine(PathName, "prefix.tf0");
-            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, 0);
+            var filename = GetFilePathFor("chunk-000000.000000");
+            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid());
             var chunkBytes = chunkHeader.AsByteArray();
             var buf = new byte[ChunkHeader.Size + ChunkFooter.Size + chunkHeader.ChunkSize];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
@@ -55,18 +55,19 @@ namespace EventStore.Core.Tests.TransactionLog
 
             _checkpoint = new InMemoryCheckpoint(137);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        chunkHeader.ChunkSize,
                                                        0,
                                                        _checkpoint,
                                                        new InMemoryCheckpoint(),
-                                                       new ICheckpoint[0]));
-            db.OpenVerifyAndClean();
+                                                       new InMemoryCheckpoint(-1),
+                                                       new InMemoryCheckpoint(-1)));
+            db.Open();
 
             var bytes = new byte[3994]; // this gives exactly 4097 size of record, with 3993 (rec size 4096) everything works fine!
             new Random().NextBytes(bytes);
             var writer = new TFChunkWriter(db);
-            var record = new PrepareLogRecord(logPosition: 123,
+            var record = new PrepareLogRecord(logPosition: 137,
                                               correlationId: _correlationId,
                                               eventId: _eventId,
                                               transactionPosition: 789,

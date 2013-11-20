@@ -29,9 +29,6 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -53,10 +50,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _bus, _readyHandler, 50);
+            _readyHandler = new TestCheckpointManagerMessageHandler();
+            ;
+            _stream = new EmittedStream(
+                "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
+                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher, _readyHandler);
             _stream.EmitEvents(
-                new[] { new EmittedEvent("test", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(200, 150), null) });
+                new[]
+                {
+                    new EmittedDataEvent(
+                        "test", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
+                });
         }
 
         [Test]

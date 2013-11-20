@@ -25,17 +25,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using EventStore.Core.Index;
+using EventStore.Core.Tests.Fakes;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class table_index_with_two_ptables_and_memtable_on_range_query  :SpecificationWithDirectoryPerTestFixture
+    public class table_index_with_two_ptables_and_memtable_on_range_query : SpecificationWithDirectoryPerTestFixture
     {
         private TableIndex _tableIndex;
         private string _indexDir;
@@ -45,12 +45,14 @@ namespace EventStore.Core.Tests.Index
         {
             base.TestFixtureSetUp();
 
-            _indexDir = base.PathName;
+            _indexDir = PathName;
+            var fakeReader = new TFReaderLease(new FakeTfReader());
             _tableIndex = new TableIndex(_indexDir,
-                                         () => new HashListMemTable(maxSize: 2000),
+                                         () => new HashListMemTable(maxSize: 10),
+                                         () => fakeReader,
                                          maxSizeForMemory: 2,
                                          maxTablesPerLevel: 2);
-            _tableIndex.Initialize();
+            _tableIndex.Initialize(long.MaxValue);
 
             // ptable level 2
             _tableIndex.Add(0, 0xDEAD, 0, 0xFF00); 
@@ -81,13 +83,20 @@ namespace EventStore.Core.Tests.Index
         [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
-            _tableIndex.ClearAll();
+            _tableIndex.Close();
 
             base.TestFixtureTearDown();
         }
 
         [Test]
         public void should_not_return_latest_entry_for_nonexisting_stream()
+        {
+            IndexEntry entry;
+            Assert.IsFalse(_tableIndex.TryGetLatestEntry(0xFEED, out entry));
+        }
+
+        [Test]
+        public void should_not_return_oldest_entry_for_nonexisting_stream()
         {
             IndexEntry entry;
             Assert.IsFalse(_tableIndex.TryGetLatestEntry(0xFEED, out entry));
@@ -151,6 +160,42 @@ namespace EventStore.Core.Tests.Index
             Assert.AreEqual(0xABBA, entry.Stream);
             Assert.AreEqual(1, entry.Version);
             Assert.AreEqual(0xFF03, entry.Position);
+        }
+
+        [Test]
+        public void should_return_correct_oldest_entries_for_each_stream()
+        {
+            IndexEntry entry;
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xDEAD, out entry));
+            Assert.AreEqual(0xDEAD, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0xFF00, entry.Position);
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xBEEF, out entry));
+            Assert.AreEqual(0xBEEF, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0xFF00, entry.Position);
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xABBA, out entry));
+            Assert.AreEqual(0xABBA, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0xFF00, entry.Position);
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xADA, out entry));
+            Assert.AreEqual(0xADA, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0xFF00, entry.Position);
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xCEED, out entry));
+            Assert.AreEqual(0xCEED, entry.Stream);
+            Assert.AreEqual(10, entry.Version);
+            Assert.AreEqual(0xFFF1, entry.Position);
+
+            Assert.IsTrue(_tableIndex.TryGetOldestEntry(0xBABA, out entry));
+            Assert.AreEqual(0xBABA, entry.Stream);
+            Assert.AreEqual(0, entry.Version);
+            Assert.AreEqual(0xFF00, entry.Position);
         }
 
         [Test]

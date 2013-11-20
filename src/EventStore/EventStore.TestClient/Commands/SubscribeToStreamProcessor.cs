@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
 using EventStore.Core.Messages;
@@ -42,6 +43,8 @@ namespace EventStore.TestClient.Commands
         {
             context.IsAsync();
 
+            var streamByCorrId = new Dictionary<Guid, string>();
+
             var connection = context.Client.CreateTcpConnection(
                     context,
                     connectionEstablished: conn =>
@@ -51,6 +54,13 @@ namespace EventStore.TestClient.Commands
                     {
                         switch (pkg.Command)
                         {
+                            case TcpCommand.SubscriptionConfirmation:
+                            {
+                                var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionConfirmation>();
+                                context.Log.Info("Subscription to <{0}> WAS CONFIRMED! Subscribed at {1} ({2})", 
+                                                 streamByCorrId[pkg.CorrelationId], dto.LastCommitPosition, dto.LastEventNumber);
+                                break;
+                            }
                             case TcpCommand.StreamEventAppeared:
                             {
                                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.StreamEventAppeared>();
@@ -60,23 +70,17 @@ namespace EventStore.TestClient.Commands
                                                  + "\tEventType:     {2}\n"
                                                  + "\tData:          {3}\n"
                                                  + "\tMetadata:      {4}\n",
-                                                 dto.EventStreamId,
-                                                 dto.EventNumber,
-                                                 dto.EventType,
-                                                 Encoding.UTF8.GetString(dto.Data ?? new byte[0]),
-                                                 Encoding.UTF8.GetString(dto.Metadata ?? new byte[0]));
+                                                 dto.Event.Event.EventStreamId,
+                                                 dto.Event.Event.EventNumber,
+                                                 dto.Event.Event.EventType,
+                                                 Common.Utils.Helper.UTF8NoBom.GetString(dto.Event.Event.Data ?? new byte[0]),
+                                                 Common.Utils.Helper.UTF8NoBom.GetString(dto.Event.Event.Metadata ?? new byte[0]));
                                 break;
                             }
                             case TcpCommand.SubscriptionDropped:
                             {
-                                var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
-                                context.Log.Error("Subscription to <{0}> WAS DROPPED!", dto.EventStreamId);
-                                break;
-                            }
-                            case TcpCommand.SubscriptionToAllDropped:
-                            {
-                                var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionToAllDropped>();
-                                context.Log.Error("Subscription to ALL WAS DROPPED!");
+                                pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
+                                context.Log.Error("Subscription to <{0}> WAS DROPPED!", streamByCorrId[pkg.CorrelationId]);
                                 break;
                             }
                             default:
@@ -95,16 +99,20 @@ namespace EventStore.TestClient.Commands
             if (args.Length == 0)
             {
                 context.Log.Info("SUBSCRIBING TO ALL STREAMS...");
-                var cmd = new TcpClientMessageDto.SubscribeToAllStreams();
-                connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToAllStreams, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
+                var cmd = new TcpClientMessageDto.SubscribeToStream(string.Empty, resolveLinkTos: false);
+                Guid correlationId = Guid.NewGuid();
+                streamByCorrId[correlationId] = "$all";
+                connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, correlationId, cmd.Serialize()).AsByteArray());
             }
             else
             {
                 foreach (var stream in args)
                 {
                     context.Log.Info("SUBSCRIBING TO STREAM <{0}>...", stream);
-                    var cmd = new TcpClientMessageDto.SubscribeToStream(stream);
-                    connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
+                    var cmd = new TcpClientMessageDto.SubscribeToStream(stream, resolveLinkTos: false);
+                    var correlationId = Guid.NewGuid();
+                    streamByCorrId[correlationId] = stream;
+                    connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, correlationId, cmd.Serialize()).AsByteArray());
                 }
             }
 

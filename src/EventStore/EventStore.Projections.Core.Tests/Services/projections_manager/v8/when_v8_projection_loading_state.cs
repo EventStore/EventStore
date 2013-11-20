@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -38,21 +39,22 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         protected override void Given()
         {
             _projection = @"
-                fromAll();
-                on_any(function(state, event) {
-                    return state;
+                fromAll().when({$any: 
+                    function(state, event) {
+                        return state;
+                    }
                 });
             ";
             _state = @"{""A"":""A"",""B"":""B""}";
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void the_state_is_loaded()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""x"":""y""}", out state, out emittedEvents);
 
             Assert.AreEqual(_state, state);

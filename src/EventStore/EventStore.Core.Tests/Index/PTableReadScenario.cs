@@ -25,18 +25,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.IO;
-using System.Linq;
+
 using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
 {
-    public abstract class PTableReadScenario
+    public abstract class PTableReadScenario: SpecificationWithFile
     {
         private readonly int _midpointCacheDepth;
 
-        private string _filename;
         protected PTable PTable;
 
         protected PTableReadScenario(int midpointCacheDepth)
@@ -45,23 +43,25 @@ namespace EventStore.Core.Tests.Index
         }
 
         [SetUp]
-        public void Setup()
+        public override void SetUp()
         {
-            _filename = Path.GetRandomFileName();
-            var table = new HashListMemTable(maxSize: 2000);
+            base.SetUp();
+
+            var table = new HashListMemTable(maxSize: 50);
 
             AddItemsForScenario(table);
 
-            PTable = PTable.FromMemtable(table, _filename, cacheDepth: _midpointCacheDepth);
+            PTable = PTable.FromMemtable(table, Filename, cacheDepth: _midpointCacheDepth);
+        }
+
+        [TearDown]
+        public override void TearDown()
+        {
+            PTable.Dispose();
+            
+            base.TearDown();
         }
 
         protected abstract void AddItemsForScenario(IMemTable memTable);
-
-        [TearDown]
-        public void Teardown()
-        {
-            PTable.Dispose();
-            File.Delete(_filename);
-        }
     }
 }

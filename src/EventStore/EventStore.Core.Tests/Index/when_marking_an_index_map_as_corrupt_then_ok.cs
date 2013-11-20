@@ -25,7 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
 using System.IO;
 using EventStore.Core.Index;
 using NUnit.Framework;
@@ -33,36 +32,26 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class when_marking_an_index_map_as_corrupt_then_ok
+    public class when_marking_an_index_map_as_corrupt_then_ok: SpecificationWithDirectoryPerTestFixture
     {
-        private readonly string _file = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        private IndexMap _map;
-
-        [SetUp]
-        public void Setup()
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
         {
-            _map = IndexMap.FromFile(_file, x => false);
-            var directory = new FileInfo(_file).DirectoryName;
-            _map.EnterUnsafeState(directory);
-            _map.LeaveUnsafeState(directory);
+            base.TestFixtureSetUp();
+            TableIndex.EnterUnsafeState(PathName);
+            TableIndex.LeaveUnsafeState(PathName);
         }
 
         [Test]
         public void the_file_does_not_exist()
         {
-            Assert.IsFalse(File.Exists(Path.Combine(Path.GetTempPath(), "merging.m")));
+            Assert.IsFalse(File.Exists(GetFilePathFor("merging.m")));
         }
 
         [Test]
         public void the_map_says_its_not_in_corrupted_state()
         {
-            Assert.IsFalse(_map.IsCorrupt(Path.GetTempPath()));
-        }
-
-        [TearDown]
-        public void teardown()
-        {
-            File.Delete(Path.Combine(Path.GetTempPath(), "merging.m"));
+            Assert.IsFalse(TableIndex.IsCorrupt(PathName));
         }
     }
 }

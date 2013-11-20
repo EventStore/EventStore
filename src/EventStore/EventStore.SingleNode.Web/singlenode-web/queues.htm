@@ -4,77 +4,176 @@
     <title>Queues</title>
     <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
     <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/lib/sprintf-0.7-beta1.js" type="text/javascript"></script>
     <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
     <script id="r-head">
         es.tmpl.renderHead();
-    </script>
+    </script>  
+    <style>
+        .queue-stats th {
+            text-align: center;
+        }
+        .queue-stats td {
+            text-align: right;
+        }
+        .queue-stats td.queuename {
+            text-align: left;
+        }
+
+        .queue-stats tr.group {
+            cursor: pointer;
+            padding-left: 25px;
+            font-style: italic;
+            font-weight: bold;
+        }
+
+        .queue-stats tr.queue.inGroup.hidden {
+            display: none;
+        }
+
+        .queue-stats tr.queue.inGroup td.queuename {
+            padding-left: 25px;
+        }
+
+        .queue-stats tr:nth-child(odd) td {
+            background-color: #f9f9f9;
+        }
+
+        .queue-stats tr:nth-child(even) td {
+            background-color: #ffffff;
+        }
+
+        .queue-stats tr:nth-child(odd).queue.inGroup td {
+            background-color: #f5f5f5;
+        }
+
+        .queue-stats tr:nth-child(even).queue.inGroup td {
+            background-color: #fafafa;
+        }
+
+        .queue-stats tr:nth-child(odd).group td {
+            background-color: #f1f1f1;
+        }
+
+        .queue-stats tr:nth-child(even).group td {
+            background-color: #f6f6f6;
+        }
+
+        .queue-stats tr.busy {
+            color: #CC0000;
+            font-weight: bold;
+        }
+
+        .queue-stats tr.idle {
+            color: #777;
+        }
+    </style>
 </head>
 <body>
     <div id="content">
-        <h1>
-            Queues</h1>
+        <h1>Queues</h1>
         <div class="row">
             <div class="span6 offset3">
-                <div class="error label label-important" style="display: none">
+                <div class="error head-error label label-important" style="display: none">
                 </div>
             </div>
         </div>
+        <a id="snapshot" class="btn" href="#">Snapshot</a><br/><br/>
         <div class="queue-stats-container">
-            <table class="table table-bordered table-striped queue-stats">
+        </div>
+        <div id="queue-stats-plaintext">
+        </div>
+
+        <script id="queuesTable" type="text/x-jsrender">
+             <table class="table table-bordered table-striped queue-stats" style="table-layout: fixed; ">
                 <thead>
                     <tr>
-                        <th>
-                            Name
-                        </th>
-                        <th>
-                            Length
-                        </th>
-                        <th>
-                            Avg (items/s)
-                        </th>
-                        <th>
-                            Avg Proccessing Time (ms/item)
-                        </th>
-                        <th>
-                            Idle Time %
-                        </th>
-                        <th>
-                            Peak
-                        </th>
-                        <th>
-                            Max Peak
-                        </th>
-                        <th>
-                            Total Processed
-                        </th>
+                        <th style="width: 120px;">Name</th>
+                        <th style="width: 50px;">Length</th>
+                        <th style="width: 50px;">Avg,</br>items/s</th>
+                        <th style="width: 50px;">Avg Time,</br>ms/item</th>
+                        <th style="width: 50px;">Busy, %</th>
+                        <th style="width: 50px;">Peak</th>
+                        <th style="width: 50px;">Max Peak</th>
+                        <th style="width: 60px;">Total</br>Processed</th>
+                        <th style="width: 250px;">Current/Last Message</th>
                     </tr>
                 </thead>
                 <tbody class="stats-body">
+                    {{for queues}}
+                    <tr data-queuename="{{>queueName}}" 
+                        {{if groupName}}data-groupname="{{>groupName}}"{{/if}} 
+                        class="{{if isGroup}}group{{else}}queue{{/if}} {{if groupName}}inGroup{{/if}} {{if isHidden}}hidden{{/if}} {{>busy}}">
+                      <td class='queuename'>{{>queueName}}</td>
+                      <td>{{>length}}</td>
+                      <td>{{>avgItemsPerSecond}}</td>
+                      <td>{{>avgProcessingTime.toFixed(3)}}</td>
+                      <td>{{>~max(0, ~min(100, 100 - idleTimePercent)).toFixed(1)}}</td>
+                      <td>{{>lengthCurrentTryPeak}}</td>
+                      <td>{{>lengthLifetimePeak}}</td>
+                      <td>{{>totalItemsProcessed}}</td>
+                      <td style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{if isGroup}}n/a{{else}}{{>inProgressMessage}} / {{>lastProcessedMessage}}{{/else}}</td>
+                    </tr>
+                    {{/for}}
                 </tbody>
             </table>
-        </div>
-        <!--                
-            <div class="queue-stats-container"></div>-->
-        <script id="statsTemplate" type="text/x-jsrender">
-        <tr data-queuename="{{>queueName}}">
-          <td class='queuename'>{{>queueName}}</td>
-          <td>{{>length}}</td>
-          <td>{{>avgItemsPerSecond}}</td>
-          <td>{{>~format(avgProcessingTime, 3)}}</td>
-          <td>{{>~format(idleTimePercent, 1)}}</td>
-          <td>{{>lengthCurrentTryPeak}}</td>
-          <td>{{>lengthLifetimePeak}}</td>
-          <td>{{>totalItemsProcessed}}</td>
-        </tr>
         </script>
+
+        <script id="queuesTablePlainText" type="text/x-jsrender">
+<pre>
+Snapshot taken at: {{>~timestamp()}}
+{{>~sprintf("%-30s  %8s  %13s  %18s  %8s  %8s  %9s  %16s  %35s", "Name", "Length", "Avg, items/s", "Avg Time, ms/item", "Busy, %", "Peak", "Max Peak", "Total processed", "Current/Last message")}}
+{{>~sprintf("%'=30s  %'=8s  %'=13s  %'=18s  %'=8s  %'=8s  %'=9s  %'=16s  %'=35s", "=", "=", "=", "=", "=", "=", "=", "=", "=")}}
+{{for queues}}{{>~sprintf("%-30s  %8s  %13d  %18.3f  %8.1f  %8d  %9d  %16d  %35s", 
+                          queueName, 
+                          length, 
+                          avgItemsPerSecond, 
+                          avgProcessingTime, 
+                          ~max(0, ~min(100, 100 - idleTimePercent)),
+                          lengthCurrentTryPeak, 
+                          lengthLifetimePeak,
+                          totalItemsProcessed,
+                          isGroup ? "n/a" : inProgressMessage + " / " + lastProcessedMessage)}}
+{{/for}}
+</pre>
+        </script>
+
         <script id="r-body">
             es.tmpl.renderBody();
         </script>
     </div>
     
     <script type="text/javascript">
+        $.views.helpers({
+            sprintf: sprintf,
+            max: Math.max,
+            min: Math.min,
+            timestamp: function() {
+                return new Date();
+            }
+        });
+
+        $.templates({
+            queuesTable: "#queuesTable",
+            queuesTablePlainText: "#queuesTablePlainText",
+        });
+
         (function () {
+            var shownGroups = {};
+            var currentQueues = [];
+
             $(function () {
+                $("#snapshot").click(function () {
+                    $("#queue-stats-plaintext").html($.render.queuesTablePlainText({ queues: currentQueues }));
+                    selectText("queue-stats-plaintext");
+                    
+                    var container = $("body"),
+                        scrollTo = $('#queue-stats-plaintext');
+
+                    container.scrollTop(scrollTo.offset().top - container.offset().top + container.scrollTop());
+                    return false;
+                });
+
                 requestStats();
             });
 
@@ -91,24 +190,75 @@
             function success(data, status, xhr) {
                 hideErrorMessage();
 
+                var groups = {};
                 var queues = [];
-                for (var queue in data.es.queue) {
-                    queues.push(data.es.queue[queue]);
+                for (var queueName in data.es.queue) {
+                    var queue = data.es.queue[queueName];
+                    if (queue.groupName) {
+                        var group;
+                        if (!(queue.groupName in groups)) {
+                            group = {
+                                queueName: queue.groupName,
+                                groupName: queue.groupName,
+                                length: 0,
+                                avgItemsPerSecond: 0,
+                                avgProcessingTime: 0.0,
+                                idleTimePercent: 0.0,
+                                lengthCurrentTryPeak: 0,
+                                lengthLifetimePeak: 0,
+                                totalItemsProcessed: 0,
+                                groupQueues: 0,
+                                isGroup: true
+                            };
+                            queues.push(group);
+                            groups[queue.groupName] = group;
+                        }
+                        group = groups[queue.groupName];
+
+                        group.length += queue.length;
+                        group.avgItemsPerSecond += queue.avgItemsPerSecond;
+                        group.avgProcessingTime = (group.avgProcessingTime * group.groupQueues + queue.avgProcessingTime) / (group.groupQueues + 1);
+                        group.idleTimePercent = (group.idleTimePercent * group.groupQueues + queue.idleTimePercent) / (group.groupQueues + 1);
+                        group.busy = group.idleTimePercent < 30 ? "busy" : (group.idleTimePercent > 90 ? "idle" : "normal");
+                        group.lengthCurrentTryPeak = Math.max(group.lengthCurrentTryPeak, queue.lengthCurrentTryPeak);
+                        group.lengthLifetimePeak = Math.max(group.lengthLifetimePeak, queue.lengthLifetimePeak);
+                        group.totalItemsProcessed += queue.totalItemsProcessed;
+                        group.groupQueues += 1;
+                        
+                        queue.isHidden = !(queue.groupName in shownGroups);
+                    }
+
+                    queue.busy = queue.idleTimePercent < 30 ? "busy" : (queue.idleTimePercent > 90 ? "idle" : "normal");
+
+                    queues.push(queue);
                 }
 
-                buildTable(queues);
-                delayedRequestList();
-            }
+                currentQueues = queues;
 
-            function buildTable(queues) {
-                $.templates("statsTemplate", "#statsTemplate");
-                $(".stats-body").html(
-                          $.render.statsTemplate(queues, {
-                              format: function (v, eps) {
-                                  return format(v, eps);
-                              }
-                          })
-                      );
+                function onGroupClick() {
+                    var groupName = $(this).data("groupname");
+
+                    if (groupName in shownGroups) {
+                        delete shownGroups[groupName];
+                    } else {
+                        shownGroups[groupName] = true;
+                    }
+
+                    for (var queueName in data.es.queue) {
+                        var queue = data.es.queue[queueName];
+                        if (queue.groupName && !queue.isGroup) {
+                            queue.isHidden = !(queue.groupName in shownGroups);
+                        }
+                    }
+
+                    $(".queue-stats-container").html($.render.queuesTable({ queues: queues }));
+                    $(".queue-stats-container tr.group").click(onGroupClick);
+                }
+
+                $(".queue-stats-container").html($.render.queuesTable({ queues: queues }));
+                $(".queue-stats-container tr.group").click(onGroupClick);
+                
+                delayedRequestList();
             }
 
             function error(xhr, status) {
@@ -122,30 +272,33 @@
 
             function showErrorMessage(xhr) {
                 var msg = (xhr.status === 0)
-                          ? "cannot connect to server"
-                          : "error: " + error;
+                    ? "cannot connect to server"
+                    : "error: " + error;
                 $(".error").text(msg).show();
             }
 
             function hideErrorMessage() {
                 $(".error").hide();
             }
-
-            function format(number, precision) {
-                if (precision < 1) {
-                    throw "precision must be positive number";
-                }
-
-                var divide = Math.pow(10, precision);
-
-                var temp = Math.floor(number * divide);
-                if (temp == Infinity) {
-                    return number;
-                }
-
-                return temp / divide;
-            };
         })();
+        
+        function selectText(element) {
+            var doc = document
+              , text = doc.getElementById(element)
+              , range
+              , selection;
+            if (doc.body.createTextRange) { //ms
+                range = doc.body.createTextRange();
+                range.moveToElementText(text);
+                range.select();
+            } else if (window.getSelection) { //all others
+                selection = window.getSelection();
+                range = doc.createRange();
+                range.selectNodeContents(text);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
     </script>
 </body>
 </html>

@@ -1,3 +1,8 @@
 js1.*
 libjs1.*
 libv8.*
+libicui18n.*
+libicuuc.*
+/include
+/win32
+/x64

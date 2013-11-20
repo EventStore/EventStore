@@ -27,9 +27,9 @@
 // 
 using System;
 using System.IO;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -46,8 +46,8 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_record_can_be_written()
         {
-            var filename = Path.Combine(PathName, "prefix.tf0");
-            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, 0);
+            var filename = GetFilePathFor("chunk-000000.000000");
+            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, chunkId: Guid.NewGuid());
             var chunkBytes = chunkHeader.AsByteArray();
             var bytes = new byte[ChunkHeader.Size + 10000 + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, bytes, 0, chunkBytes.Length);
@@ -55,15 +55,16 @@ namespace EventStore.Core.Tests.TransactionLog
 
             _checkpoint = new InMemoryCheckpoint(137);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
                                                        0,
                                                        _checkpoint,
                                                        new InMemoryCheckpoint(),
-                                                       new ICheckpoint[0]));
-            db.OpenVerifyAndClean();
+                                                       new InMemoryCheckpoint(-1),
+                                                       new InMemoryCheckpoint(-1)));
+            db.Open();
             var tf = new TFChunkWriter(db);
-            var record = new PrepareLogRecord(logPosition: 0,
+            var record = new PrepareLogRecord(logPosition: _checkpoint.Read(),
                                               correlationId: _correlationId,
                                               eventId: _eventId,
                                               expectedVersion: 1234,
@@ -77,12 +78,10 @@ namespace EventStore.Core.Tests.TransactionLog
                                               metadata: new byte[] { 7, 17 });
             long tmp;
             tf.Write(record, out tmp);
-            //tf.Flush();
             tf.Close();
             db.Dispose();
 
             Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix() + 137, _checkpoint.Read()); //137 is fluff assigned to beginning of checkpoint
-            //TODO actually read the event
             using (var filestream = File.Open(filename, FileMode.Open, FileAccess.Read))
             {
                 filestream.Seek(ChunkHeader.Size + 137 + sizeof(int), SeekOrigin.Begin);

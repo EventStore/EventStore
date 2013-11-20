@@ -50,6 +50,11 @@ namespace EventStore.Core.Services.TimerService
             _timeProvider = timeProvider;
         }
 
+        public void Stop()
+        {
+            Dispose();
+        }
+
         public void Schedule(TimeSpan after, Action<IScheduler, object> callback, object state)
         {
             lock (_queueLock)

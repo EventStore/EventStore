@@ -29,17 +29,20 @@
 using System;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
     public class when_receiving_a_committed_event_the_projection_with_partitioned_state_should :
-        TestFixtureWithCoreProjection
+        TestFixtureWithCoreProjectionStarted
     {
         private Guid _eventId;
 
@@ -50,11 +53,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.FromAll();
                     source.AllEvents();
                     source.SetByStream();
+                    source.SetDefinesStateTransform();
                 };
             TicksAreHandledImmediately();
-            NoStream("$projections-projection-state");
-            NoStream("$projections-projection-checkpoint");
-            NoStream("$projections-projection-account-01-state");
+            AllWritesSucceed();
+            NoOtherStreams();
         }
 
         protected override void When()
@@ -62,41 +65,45 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             //projection subscribes here
             _eventId = Guid.NewGuid();
             _consumer.HandledMessages.Clear();
-            _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "account-01", -1, false,
-                       new Event(
-                           _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata")), 0));
+            _bus.Publish(
+                EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
+                    new ResolvedEvent(
+                        "account-01", -1, "account-01", -1, false, new TFPos(120, 110), _eventId,
+                        "handle_this_type", false, "data", "metadata"), _subscriptionId, 0));
         }
 
         [Test]
         public void request_partition_state_from_the_correct_stream()
         {
             // 1 - for load state
-            // 2 - by emitted stream to ensure idempotency
             Assert.AreEqual(
-                2,
-                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>().Count(
-                    v => v.EventStreamId == "$projections-projection-account-01-state"));
+                1,
+                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>()
+                         .Count(v => v.EventStreamId == "$projections-projection-account-01-checkpoint"));
         }
 
         [Test]
         public void update_state_snapshot_is_written_to_the_correct_stream()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
-            var message = _writeEventHandler.HandledMessages[0];
-            Assert.AreEqual("$projections-projection-account-01-state", message.EventStreamId);
+            var writeEvents =
+                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "Result")).ToList();
+            Assert.AreEqual(1, writeEvents.Count);
+
+            var message = writeEvents[0];
+            Assert.AreEqual("$projections-projection-account-01-result", message.EventStreamId);
         }
 
         [Test]
         public void update_state_snapshot_at_correct_position()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
+            var writeEvents =
+                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "Result")).ToList();
+            Assert.AreEqual(1, writeEvents.Count);
 
-            var metedata = _writeEventHandler.HandledMessages[0].Events[0].Metadata.ParseJson<CheckpointTag>();
+            var metedata = writeEvents[0].Events[0].Metadata.ParseCheckpointTagVersionExtraJson(default(ProjectionVersion));
 
-            Assert.AreEqual(120, metedata.CommitPosition);
-            Assert.AreEqual(110, metedata.PreparePosition);
+            Assert.AreEqual(120, metedata.Tag.CommitPosition);
+            Assert.AreEqual(110, metedata.Tag.PreparePosition);
         }
 
         [Test]
@@ -109,6 +116,22 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             //TODO: support sequence numbers here
             Assert.AreEqual("metadata", _stateHandler._lastProcessedMetadata);
             Assert.AreEqual("data", _stateHandler._lastProcessedData);
+        }
+
+        [Test]
+        public void register_new_partition_state_stream()
+        {
+            var writes =
+                _writeEventHandler.HandledMessages.Where(v => v.EventStreamId == "$projections-projection-partitions")
+                                  .ToArray();
+            Assert.AreEqual(1, writes.Length);
+            var write = writes[0];
+
+            Assert.AreEqual(1, write.Events.Length);
+
+            var @event = write.Events[0];
+
+            Assert.AreEqual("account-01", Helper.UTF8NoBom.GetString(@event.Data));
         }
     }
 }

@@ -35,43 +35,38 @@ namespace EventStore.Core.TransactionLog.LogRecords
     {
         public const byte CommitRecordVersion = 0;
 
-        public readonly long LogPosition;
         public readonly long TransactionPosition;
-        public readonly int EventNumber;
+        public readonly int FirstEventNumber;
         public readonly long SortKey;
         public readonly Guid CorrelationId;
         public readonly DateTime TimeStamp;
-
-        public override long Position
-        {
-            get { return LogPosition; }
-        }
 
         public CommitLogRecord(long logPosition,
                                Guid correlationId,
                                long transactionPosition,
                                DateTime timeStamp,
-                               int eventNumber)
-            : base(LogRecordType.Commit, CommitRecordVersion)
+                               int firstEventNumber)
+            : base(LogRecordType.Commit, CommitRecordVersion, logPosition)
         {
-            Ensure.Nonnegative(logPosition, "logPosition");
             Ensure.NotEmptyGuid(correlationId, "correlationId");
             Ensure.Nonnegative(transactionPosition, "TransactionPosition");
-            Ensure.Nonnegative(eventNumber, "eventNumber");
+            Ensure.Nonnegative(firstEventNumber, "eventNumber");
 
-            LogPosition = logPosition;
             TransactionPosition = transactionPosition;
-            EventNumber = eventNumber;
+            FirstEventNumber = firstEventNumber;
             SortKey = logPosition;
             CorrelationId = correlationId;
             TimeStamp = timeStamp;
         }
 
-        internal CommitLogRecord(BinaryReader reader, byte version): base(LogRecordType.Commit, version)
+        internal CommitLogRecord(BinaryReader reader, byte version, long logPosition): base(LogRecordType.Commit, version, logPosition)
         {
-            LogPosition = reader.ReadInt64();
+            if (version != CommitRecordVersion)
+                throw new ArgumentException(
+                    string.Format("CommitRecord version {0} is incorrect. Supported version: {1}.", version, CommitRecordVersion));
+
             TransactionPosition = reader.ReadInt64();
-            EventNumber = reader.ReadInt32();
+            FirstEventNumber = reader.ReadInt32();
             SortKey = reader.ReadInt64();
             CorrelationId = new Guid(reader.ReadBytes(16));
             TimeStamp = new DateTime(reader.ReadInt64());
@@ -81,9 +76,8 @@ namespace EventStore.Core.TransactionLog.LogRecords
         {
             base.WriteTo(writer);
 
-            writer.Write(LogPosition);
             writer.Write(TransactionPosition);
-            writer.Write(EventNumber);
+            writer.Write(FirstEventNumber);
             writer.Write(SortKey);
             writer.Write(CorrelationId.ToByteArray());
             writer.Write(TimeStamp.Ticks);
@@ -95,7 +89,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             if (ReferenceEquals(this, other)) return true;
             return other.LogPosition == LogPosition
                    && other.TransactionPosition == TransactionPosition
-                   && other.EventNumber == EventNumber
+                   && other.FirstEventNumber == FirstEventNumber
                    && other.SortKey == SortKey
                    && other.CorrelationId == CorrelationId
                    && other.TimeStamp.Equals(TimeStamp);
@@ -115,7 +109,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             {
                 int result = LogPosition.GetHashCode();
                 result = (result * 397) ^ TransactionPosition.GetHashCode();
-                result = (result * 397) ^ EventNumber.GetHashCode();
+                result = (result * 397) ^ FirstEventNumber.GetHashCode();
                 result = (result * 397) ^ SortKey.GetHashCode();
                 result = (result * 397) ^ CorrelationId.GetHashCode();
                 result = (result * 397) ^ TimeStamp.GetHashCode();
@@ -137,13 +131,13 @@ namespace EventStore.Core.TransactionLog.LogRecords
         {
             return string.Format("LogPosition: {0}, "
                                  + "TransactionPosition: {1}, "
-                                 + "EventNumber: {2}"
+                                 + "FirstEventNumber: {2}, "
                                  + "SortKey: {3}, "
                                  + "CorrelationId: {4}, " 
                                  + "TimeStamp: {5}",
                                  LogPosition,
                                  TransactionPosition,
-                                 EventNumber,
+                                 FirstEventNumber,
                                  SortKey,
                                  CorrelationId,
                                  TimeStamp);

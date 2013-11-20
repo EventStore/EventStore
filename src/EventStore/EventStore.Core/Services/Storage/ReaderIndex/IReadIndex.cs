@@ -25,30 +25,41 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System.Security.Principal;
 using EventStore.Core.Data;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
     public interface IReadIndex
     {
         long LastCommitPosition { get; }
+        IIndexWriter IndexWriter { get; }
 
-        void Build();
-        void Commit(CommitLogRecord record);
+        void Init(long buildToPosition);
         ReadIndexStats GetStatistics();
         
-        ReadEventResult ReadEvent(string streamId, int eventNumber);
-        ReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
-        ReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount);
+        IndexReadEventResult ReadEvent(string streamId, int eventNumber);
+        IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
+        IndexReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount);
+        /// <summary>
+        /// Returns event records in the sequence they were committed into TF.
+        /// Positions is specified as pre-positions (pointer at the beginning of the record).
+        /// </summary>
         IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
+        /// <summary>
+        /// Returns event records in the reverse sequence they were committed into TF.
+        /// Positions is specified as post-positions (pointer after the end of record).
+        /// </summary>
         IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
 
         bool IsStreamDeleted(string streamId);
-        int GetLastStreamEventNumber(string streamId);
-        CommitCheckResult CheckCommitStartingAt(long prepareStartPosition);
-        int GetLastTransactionOffset(long writerCheckpoint, long transactionId);
-       
+        int GetStreamLastEventNumber(string streamId);
+        StreamMetadata GetStreamMetadata(string streamId);
+
+        string GetEventStreamIdByTransactionId(long transactionId);
+        StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
+
         void Close();
         void Dispose();
     }

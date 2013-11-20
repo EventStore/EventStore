@@ -31,6 +31,6 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class StatePartitionSelector
     {
-        public abstract string GetStatePartition(ProjectionSubscriptionMessage.CommittedEventReceived @event);
+        public abstract string GetStatePartition(EventReaderSubscriptionMessage.CommittedEventReceived @event);
     }
 }

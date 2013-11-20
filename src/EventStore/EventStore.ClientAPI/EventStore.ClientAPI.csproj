@@ -18,23 +18,24 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\..\bin\eventstore\debug\anycpu\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>..\..\..\bin\eventstore\debug\anycpu\EventStore.ClientAPI.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\bin\eventstore\release\anycpu\</OutputPath>
-    <DefineConstants>
-    </DefineConstants>
+    <DefineConstants>CLIENTAPI</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>..\..\..\bin\eventstore\release\anycpu\EventStore.ClientAPI.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>..\..\..\bin\eventstore\debug\x86\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;CLIENTAPI</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <CodeAnalysisLogFile>bin\Debug\EventStore.ClientAPI.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
@@ -50,8 +51,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>..\..\..\bin\eventstore\release\x86\</OutputPath>
-    <DefineConstants>
-    </DefineConstants>
+    <DefineConstants>CLIENTAPI</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -67,6 +67,10 @@
     <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="protobuf-net">
       <HintPath>..\libs\protobuf-v2\protobuf-net.dll</HintPath>
     </Reference>
@@ -78,60 +82,91 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AllEventsSlice.cs" />
     <Compile Include="ClientOperations\CommitTransactionOperation.cs" />
+    <Compile Include="ClientOperations\ReadEventOperation.cs" />
+    <Compile Include="ClientOperations\SubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\OperationBase.cs" />
     <Compile Include="ClientOperations\ReadAllEventsBackwardOperation.cs" />
     <Compile Include="ClientOperations\ReadAllEventsForwardOperation.cs" />
     <Compile Include="ClientOperations\ReadStreamEventsBackwardOperation.cs" />
     <Compile Include="ClientOperations\StartTransactionOperation.cs" />
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
-    <Compile Include="Common\Log\DefaultLogger.cs" />
-    <Compile Include="Common\Utils\Tasks.cs" />
-    <Compile Include="Connection\ClusterExplorer.cs" />
-    <Compile Include="Connection\ProjectionsManager.cs" />
-    <Compile Include="Connection\Subscription.cs" />
-    <Compile Include="Connection\SubscriptionsChannel.cs" />
-    <Compile Include="Connection\WorkItem.cs" />
+    <Compile Include="Common\Concurrent\ConcurrentQueue.cs" />
+    <Compile Include="Common\Concurrent\ConcurrentStack.cs" />
+    <Compile Include="Common\Log\ConsoleLogger.cs" />
+    <Compile Include="Common\Log\NoopLogger.cs" />
+    <Compile Include="Common\Log\DebugLogger.cs" />
+    <Compile Include="Common\SpinLock2.cs" />
+    <Compile Include="Common\SystemNames.cs" />
+    <Compile Include="Common\Utils\Helper.cs" />
+    <Compile Include="Common\Utils\Json.cs" />
+    <Compile Include="ConnectionSettings.cs" />
+    <Compile Include="ConnectionSettingsBuilder.cs" />
+    <Compile Include="ClusterSettings.cs" />
+    <Compile Include="ClusterSettingsBuilder.cs" />
+    <Compile Include="WriteResult.cs" />
+    <Compile Include="SystemSettings.cs" />
+    <Compile Include="EventReadResult.cs" />
+    <Compile Include="Core\EventStoreConnectionLogicHandler.cs" />
+    <Compile Include="Core\IEndPointDiscoverer.cs" />
+    <Compile Include="Core\OperationsManager.cs" />
+    <Compile Include="Core\StaticEndPointDiscoverer.cs" />
+    <Compile Include="Core\SubscriptionsManager.cs" />
+    <Compile Include="EventStoreClusterConnection.cs" />
+    <Compile Include="EventStoreNodeConnection.cs" />
+    <Compile Include="Exceptions\ClusterException.cs" />
+    <Compile Include="Exceptions\NotAuthenticatedException.cs" />
+    <Compile Include="IEventStoreConnection.cs" />
+    <Compile Include="Core\IEventStoreTransactionConnection.cs" />
+    <Compile Include="StreamAcl.cs" />
+    <Compile Include="SubscriptionDropReason.cs" />
+    <Compile Include="Exceptions\AccessDeniedException.cs" />
+    <Compile Include="StreamMetadata.cs" />
+    <Compile Include="Core\ClusterDnsEndPointDiscoverer.cs" />
+    <Compile Include="Core\Messages.cs" />
+    <Compile Include="Core\SimpleQueuedHandler.cs" />
+    <Compile Include="Consts.cs" />
+    <Compile Include="EventStoreConnection.cs" />
+    <Compile Include="EventStoreCatchUpSubscription.cs" />
+    <Compile Include="Empty.cs" />
+    <Compile Include="EventData.cs" />
+    <Compile Include="EventStoreSubscription.cs" />
+    <Compile Include="Exceptions\EventStoreConnectionException.cs" />
+    <Compile Include="Exceptions\ServerErrorException.cs" />
+    <Compile Include="ProjectionsClient.cs" />
+    <Compile Include="ReadDirection.cs" />
+    <Compile Include="ResolvedEvent.cs" />
     <Compile Include="Exceptions\CannotEstablishConnectionException.cs" />
     <Compile Include="Exceptions\ProjectionCommandFailedException.cs" />
     <Compile Include="Exceptions\InvalidTransactionException.cs" />
     <Compile Include="Exceptions\StreamDeletedException.cs" />
     <Compile Include="Exceptions\WrongExpectedVersionException.cs" />
-    <Compile Include="IEvent.cs" />
     <Compile Include="EventStoreTransaction.cs" />
-    <Compile Include="EventStreamSlice.cs" />
+    <Compile Include="StreamEventsSlice.cs" />
     <Compile Include="Exceptions\CommandNotExpectedException.cs" />
-    <Compile Include="Exceptions\ConnectionClosingException.cs" />
-    <Compile Include="Exceptions\ConnectionFailedException.cs" />
+    <Compile Include="Exceptions\ConnectionClosedException.cs" />
     <Compile Include="Exceptions\NoResultException.cs" />
     <Compile Include="Exceptions\OperationTimedOutException.cs" />
     <Compile Include="Exceptions\RetriesLimitReachedException.cs" />
-    <Compile Include="ClientOperations\CreateStreamOperation.cs" />
     <Compile Include="Common\Log\LogManager.cs" />
-    <Compile Include="Common\Utils\BytesFormatter.cs" />
-    <Compile Include="Common\ConcurrentCollections\ConcurrentQueue.cs" />
-    <Compile Include="Common\ConcurrentCollections\ConcurrentStack.cs" />
     <Compile Include="ClientOperations\DeleteStreamOperation.cs" />
     <Compile Include="ClientOperations\IClientOperation.cs" />
     <Compile Include="ClientOperations\ReadStreamEventsForwardOperation.cs" />
     <Compile Include="Common\Utils\Ensure.cs" />
     <Compile Include="ILogger.cs" />
-    <Compile Include="IProjectionsManagement.cs" />
-    <Compile Include="AllEventsSlice.cs" />
     <Compile Include="Messages\ClientMessagesExtensions.cs" />
     <Compile Include="Messages\ClusterMessages.cs" />
     <Compile Include="Position.cs" />
+    <Compile Include="ProjectionsManager.cs" />
     <Compile Include="RecordedEvent.cs" />
     <Compile Include="SliceReadStatus.cs" />
     <Compile Include="StreamPosition.cs" />
+    <Compile Include="SystemData\UserCredentials.cs" />
     <Compile Include="SystemData\StatusCode.cs" />
-    <Compile Include="SystemData\EndpointsPair.cs" />
     <Compile Include="ExpectedVersion.cs" />
     <Compile Include="SystemData\InspectionResult.cs" />
-    <Compile Include="SystemData\OperationErrorCode.cs" />
-    <Compile Include="SystemData\PrepareFlags.cs" />
     <Compile Include="SystemData\InspectionDecision.cs" />
-    <Compile Include="SystemData\RangeReadResult.cs" />
-    <Compile Include="SystemData\SingleReadResult.cs" />
     <Compile Include="SystemData\TcpCommand.cs" />
     <Compile Include="SystemData\TcpPackage.cs" />
     <Compile Include="Transport.Http\AsyncStreamCopier.cs" />
@@ -141,7 +176,6 @@
     <Compile Include="Transport.Http\HttpMethod.cs" />
     <Compile Include="Transport.Http\HttpResponse.cs" />
     <Compile Include="Transport.Http\HttpStatusCode.cs" />
-    <Compile Include="Transport.Http\IOStreams.cs" />
     <Compile Include="Transport.Http\IPEndpointExtensions.cs" />
     <Compile Include="Transport.Http\WebRequestExtensions.cs" />
     <Compile Include="Messages\ClientMessage.cs" />
@@ -150,10 +184,11 @@
     <Compile Include="Transport.Tcp\TcpConfiguratin.cs" />
     <Compile Include="Transport.Tcp\TcpConnection.cs" />
     <Compile Include="Transport.Tcp\LengthPrefixFramer.cs" />
+    <Compile Include="Transport.Tcp\TcpConnectionLockless.cs" />
     <Compile Include="Transport.Tcp\TcpConnectionMonitor.cs" />
-    <Compile Include="Transport.Tcp\TcpConnector.cs" />
-    <Compile Include="Transport.Tcp\TcpTypedConnection.cs" />
-    <Compile Include="EventStoreConnection.cs" />
+    <Compile Include="Transport.Tcp\TcpConnectionSsl.cs" />
+    <Compile Include="Transport.Tcp\TcpStats.cs" />
+    <Compile Include="Transport.Tcp\TcpPackageConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Transport.Tcp\TcpClientConnector.cs" />
     <Compile Include="Transport.Tcp\IMonitoredTcpConnection.cs" />
@@ -162,13 +197,31 @@
     <Compile Include="Transport.Tcp\TcpConnectionBase.cs" />
     <Compile Include="ClientOperations\AppendToStreamOperation.cs" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <PreBuildEvent>
+$(MSBuildProjectDirectory)\..\Scripts\version\update-version.cmd $(MSBuildProjectDirectory)
+    </PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
+    <PreBuildEvent>
+$(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProjectDirectory)
+    </PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent />
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
+  -->
   <Target Name="BeforeBuild">
+    <Message Text="BeforeBuild -- DefineConstants: $(DefineConstants)" />
+    <Message Text="BeforeBuild -- AppendedDefineConstants: $(AppendedDefineConstants)" />
+    <CreateProperty Value="$(DefineConstants);$(AppendedDefineConstants)">
+      <Output TaskParameter="Value" PropertyName="DefineConstants" />
+    </CreateProperty>
+    <Message Text="BeforeBuild -- after merge - DefineConstants: $(DefineConstants)" />
   </Target>
   <Target Name="AfterBuild">
   </Target>
-  -->
 </Project>

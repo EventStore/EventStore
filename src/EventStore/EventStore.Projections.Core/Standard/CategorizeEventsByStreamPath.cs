@@ -26,9 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
+using EventStore.Core.Services;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using Microsoft.Win32;
 
 namespace EventStore.Projections.Core.Standard
 {
@@ -54,10 +56,11 @@ namespace EventStore.Projections.Core.Standard
             _categoryStreamPrefix = "$ce-";
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             builder.FromAll();
             builder.AllEvents();
+            builder.SetIncludeLinks();
         }
 
         public void Load(string state)
@@ -68,31 +71,54 @@ namespace EventStore.Projections.Core.Standard
         {
         }
 
+        public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
-            EventPosition position, CheckpointTag eventPosition, string streamId, string eventType, string category1, Guid eventId, int sequenceNumber, string metadata,
-            string data, out string newState, out EmittedEvent[] emittedEvents)
+            string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
+            out string newState, out EmittedEventEnvelope[] emittedEvents)
         {
             emittedEvents = null;
             newState = null;
-            if (streamId.StartsWith(_categoryStreamPrefix))
+            if (data.PositionStreamId.StartsWith("$"))
                 return false;
-            var lastSlashPos = streamId.LastIndexOf(_separator);
+            var lastSlashPos = data.PositionStreamId.LastIndexOf(_separator);
             if (lastSlashPos < 0)
                 return true; // handled but not interesting to us
 
-            var category = streamId.Substring(0, lastSlashPos);
+            var category = data.PositionStreamId.Substring(0, lastSlashPos);
+
+            string linkTarget;
+            if (data.EventType == SystemEventTypes.LinkTo) 
+                linkTarget = data.Data;
+            else 
+                linkTarget = data.EventSequenceNumber + "@" + data.EventStreamId;
 
             emittedEvents = new[]
-                {
-                    new EmittedEvent(
-                        _categoryStreamPrefix + category, Guid.NewGuid(), "$>", sequenceNumber + "@" + streamId, eventPosition, expectedTag: null)
-                };
+            {
+                new EmittedEventEnvelope(
+                    new EmittedLinkToWithRecategorization(
+                        _categoryStreamPrefix + category, Guid.NewGuid(), linkTarget, eventPosition, expectedTag: null,
+                        originalStreamId: data.PositionStreamId))
+            };
 
             return true;
         }
 
+        public string TransformStateToResult()
+        {
+            throw new NotImplementedException();
+        }
+
         public void Dispose()
         {
+        }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
         }
     }
 }

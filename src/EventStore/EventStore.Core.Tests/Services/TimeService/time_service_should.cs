@@ -31,7 +31,7 @@ using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Tests.Common;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.TimeService
@@ -82,6 +82,9 @@ namespace EventStore.Core.Tests.Services.TimeService
 
     public class TestResponseMessage : Message
     {
+        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+        public override int MsgTypeId { get { return TypeId; } }
+
         public int Id { get; set; }
 
         public TestResponseMessage(int id)

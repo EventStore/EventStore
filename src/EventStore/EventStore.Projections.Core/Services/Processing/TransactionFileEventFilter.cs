@@ -32,14 +32,17 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class TransactionFileEventFilter : EventFilter
     {
-        public TransactionFileEventFilter(bool allEvents, HashSet<string> events)
+        private readonly bool _includeLinks;
+
+        public TransactionFileEventFilter(bool allEvents, HashSet<string> events, bool includeLinks = false)
             : base(allEvents, events)
         {
+            _includeLinks = includeLinks;
         }
 
-        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId)
+        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
         {
-            return !resolvedFromLinkTo;
+            return _includeLinks || !resolvedFromLinkTo;
         }
 
         public override string GetCategory(string positionStreamId)

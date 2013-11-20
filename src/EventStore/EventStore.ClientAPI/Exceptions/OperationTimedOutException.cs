@@ -31,7 +31,7 @@ using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class OperationTimedOutException : Exception
+    public class OperationTimedOutException : EventStoreConnectionException
     {
         public OperationTimedOutException()
         {

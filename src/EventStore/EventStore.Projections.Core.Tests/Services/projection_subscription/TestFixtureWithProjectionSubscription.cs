@@ -28,8 +28,8 @@
 
 using System;
 using EventStore.Core.Bus;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -39,32 +39,58 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
 {
     public abstract class TestFixtureWithProjectionSubscription
     {
-        private Guid _projectionCorrelationId;
-        protected TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
-        protected TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
-        protected TestHandler<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
-        protected IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed> _subscription;
-        protected EventDistributionPoint _forkedDistributionPoint;
-        protected FakePublisher _bus;
-        protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
-        private int _checkpointUnhandledBytesThreshold;
+        protected Guid _projectionCorrelationId;
+        protected TestHandler<EventReaderSubscriptionMessage.CommittedEventReceived> _eventHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.ProgressChanged> _progressHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.SubscriptionStarted> _subscriptionStartedHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.NotAuthorized> _notAuthorizedHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.EofReached> _eofHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.PartitionEofReached> _partitionEofHandler;
+        protected TestHandler<EventReaderSubscriptionMessage.PartitionMeasured> _partitionMeasuredHandler;
+        protected IReaderSubscription _subscription;
+        protected IEventReader ForkedReader;
+        protected InMemoryBus _bus;
+        protected Action<SourceDefinitionBuilder> _source = null;
+        protected int _checkpointUnhandledBytesThreshold;
+        protected int _checkpointProcessedEventsThreshold;
+        protected IReaderStrategy _readerStrategy;
 
         [SetUp]
         public void setup()
         {
             _checkpointUnhandledBytesThreshold = 1000;
+            _checkpointProcessedEventsThreshold = 2000;
             Given();
-            _bus = new FakePublisher();
+            _bus = new InMemoryBus("bus");
             _projectionCorrelationId = Guid.NewGuid();
-            _eventHandler = new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>();
-            _checkpointHandler = new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>();
-            _progressHandler = new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>();
-            _subscription = new ProjectionSubscription(
-                _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler, _progressHandler,
-                CreateCheckpointStrategy(), _checkpointUnhandledBytesThreshold);
+            _eventHandler = new TestHandler<EventReaderSubscriptionMessage.CommittedEventReceived>();
+            _checkpointHandler = new TestHandler<EventReaderSubscriptionMessage.CheckpointSuggested>();
+            _progressHandler = new TestHandler<EventReaderSubscriptionMessage.ProgressChanged>();
+            _subscriptionStartedHandler = new TestHandler<EventReaderSubscriptionMessage.SubscriptionStarted>();
+            _notAuthorizedHandler = new TestHandler<EventReaderSubscriptionMessage.NotAuthorized>();
+            _eofHandler = new TestHandler<EventReaderSubscriptionMessage.EofReached>();
+            _partitionEofHandler = new TestHandler<EventReaderSubscriptionMessage.PartitionEofReached>();
+            _partitionMeasuredHandler = new TestHandler<EventReaderSubscriptionMessage.PartitionMeasured>();
+
+            _bus.Subscribe(_eventHandler);
+            _bus.Subscribe(_checkpointHandler);
+            _bus.Subscribe(_progressHandler);
+            _bus.Subscribe(_eofHandler);
+            _bus.Subscribe(_partitionEofHandler);
+            _bus.Subscribe(_partitionMeasuredHandler);
+            _readerStrategy = CreateCheckpointStrategy();
+            _subscription = CreateProjectionSubscription();
 
 
             When();
+        }
+
+        protected virtual IReaderSubscription CreateProjectionSubscription()
+        {
+            return new ReaderSubscription(
+                _bus, _projectionCorrelationId, _readerStrategy.PositionTagger.MakeZeroCheckpointTag(), _readerStrategy,
+                _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold);
         }
 
         protected virtual void Given()
@@ -73,19 +99,24 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
 
         protected abstract void When();
 
-        private CheckpointStrategy CreateCheckpointStrategy()
+        protected virtual IReaderStrategy CreateCheckpointStrategy()
         {
-            var result = new CheckpointStrategy.Builder();
+            var readerBuilder = new SourceDefinitionBuilder();
             if (_source != null)
             {
-                _source(result);
+                _source(readerBuilder);
             }
             else
             {
-                result.FromAll();
-                result.AllEvents();
+                readerBuilder.FromAll();
+                readerBuilder.AllEvents();
             }
-            return result.Build(ProjectionMode.Persistent);
+            var config = ProjectionConfig.GetTest();
+            IQuerySources sources = readerBuilder.Build();
+            ITimeProvider timeProvider = new RealTimeProvider();
+            var readerStrategy = Core.Services.Processing.ReaderStrategy.Create(
+                0, sources, timeProvider, stopOnEof: false, runAs: config.RunAs);
+            return readerStrategy;
         }
     }
 }

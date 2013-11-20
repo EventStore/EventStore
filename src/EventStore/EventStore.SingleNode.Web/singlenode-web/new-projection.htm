@@ -4,42 +4,111 @@
     <title>New Projection</title>
     <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
     <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/js/projections/lib/ace/ace.js" type="text/javascript"></script>
     <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
     <script id="r-head">
         es.tmpl.renderHead();
     </script>
+    <style>
+        .container
+        {
+            width: inherit;
+            margin-left: 50px;
+            margin-right: 50px;
+        }
+    </style>
 </head>
 <body>
     <div id="content">
-        <h1>
-            New Projection</h1>
+        <h1>New Projection</h1>
         <div class="form-horizontal">
             <div class="control-group">
                 <label class="control-label" for="name">
                     <strong>Name</strong></label>
                 <div class="controls">
-                    <input id="name" type="text"  />
+                    <input id="name" type="text" />
                 </div>
             </div>
             <div class="control-group">
                 <label class="control-label" for="source">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <textarea id="source">
-    fromAll().whenAny(function(state,event) { return state; });
-                    </textarea>
+                    <div class="uneditable-input" style="position: relative; display: block; width: 100%; height: 400px;">
+                        <div id="ace-source" style="position: absolute; left: 0px; right: 0px; top: 0px; bottom: 0px;" spellcheck="false" wrap="off">
+    // NOTE: this sample projection immediately stops in one-time mode unless you have 
+    // either event_type1 or event_type1 events in the store
+    options({
+
+                // reorderEvents: false,          // enables event reordering in a multi-stream projection
+                                                  // event reordering attempts to feed the projection with events in a 
+                                                  // their natural order
+                // processingLag: 0,              // processing lag in ms allowing event reordering to happen
+    });
+
+    fromAll() 
+    // fromStream('streamId') | fromStreams(['sream1', 'stream2']) | fromCategory('category')
+       //NOTE: fromCategory requires $by_category standard projection to be enabled
+
+    // .foreachStream() | .partitionBy(function(e) { return e.body.useId; })
+
+    .when({
+        $init: function () {
+            return { count1: 0, count2: 0, }; // initial state
+        },
+      
+        event_type1: function(s, e) {
+            //  emit('streamId', 'eventType', {/* event body */} [, {/* optional event metadata */}]);
+            //  linkTo('streamId', e [, {/* optional link-to-event metadata */}]);
+            //  copyTo('streamId', e);
+            s.count1 += 1;
+            return s;
+        },
+                        
+        event_type2: function(s, e) {
+            s.count2 += 1;
+            return s;
+        },
+                        
+                        
+        /* $any: function (s, e) ... // NOTE: $any is exclusive and cannot be used in combination with 
+                                     // other event filters
+        */
+    })
+    // .filterBy(f)/transformBy(f)
+    // .outputTo(name[, namePattern]) // defines a name for the output stream               
+                        
+    //NOTE: filterBy(), transformBy(), emit(), linkTo(), copyTo() require "emit enabled" (see checkbox below)
+                            
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="control-group">
                 <label class="control-label" for="mode">
                     <strong>Select Mode</strong></label>
                 <div class="controls">
-                    <select id="mode" >
+                    <select id="mode">
                         <option selected="selected" value="onetime">One-Time</option>
-                        <option value="adhoc">Ad-Hoc</option>
                         <option value="continuous">Continuous</option>
-                        <option value="persistent">Persistent</option>
                     </select>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="emit"><strong>Checkpoints Enabled</strong></label>
+                <div class="controls">
+                    <input type="checkbox" id="checkpoints" />
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="emit"><strong>Emit Enabled</strong></label>
+                <div class="controls">
+                    <input type="checkbox" id="emit" />
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="enabled"><strong>Enabled</strong></label>
+                <div class="controls">
+                    <input type="checkbox" id="enabled" checked="checked" />
                 </div>
             </div>
             <div class="control-group">
@@ -49,29 +118,61 @@
                 </div>
             </div>
         </div>
-        
-       <div>
-          <header>
-            <a href="post-standard-projection.htm">You can also post a standard projection</a>
-          </header>
-      </div>
-      <script id="r-body">
-          es.tmpl.renderBody();
-      </script>
+
+        <div>
+            <header>
+                <a href="post-standard-projection.htm">You can also post a standard projection</a>
+            </header>
+        </div>
+        <script id="r-body">
+            es.tmpl.renderBody();
+        </script>
     </div>
 
-    
+
 
     <script type="text/javascript">
-        $(function(){
+        $(function () {
+
+            var aceEditor = ace.edit("ace-source");
+            aceEditor.setTheme("ace/theme/chrome");
+            aceEditor.getSession().setMode("ace/mode/javascript");
+
+            aceEditor.attr = $("#ace-source").attr.bind($("#ace-source"));
+            aceEditor.removeAttr = $("#ace-source").removeAttr.bind($("#ace-source"));
+
+            var storedCheckpoints = false;
+            $("#mode").change(function () {
+                if ($("#mode").val() == "continuous") {
+                    storedCheckpoints = $("#checkpoints").attr("checked");
+                    $("#checkpoints").attr("checked", "checked");
+                    $("#checkpoints").attr("disabled", "disabled");
+                } else {
+                    if (storedCheckpoints)
+                        $("#checkpoints").attr("checked", storedCheckpoints);
+                    else
+                        $("#checkpoints").removeAttr("checked");
+                    $("#checkpoints").removeAttr("disabled");
+                }
+            });
+
             $("#post").click(function () {
-                
+
                 var name = $("#name").val();
-                $.ajax("/projections/" + $("#mode").val() + (name == "" ? "" : "?name=" + name), {
+
+                var params = $.param({
+                    name: name,
+                    emit: $("#emit").attr("checked") ? "yes" : "no",
+                    checkpoints: $("#checkpoints").attr("checked") ? "yes" : "no",
+                    enabled: $("#enabled").attr("checked") ? "yes" : "no",
+                });
+                var url = "/projections/" + $("#mode").val() + "?" + params;
+
+                $.ajax(url, {
                     headers: {
                         Accept: "application/json",
                     },
-                    data: $('#source').val(),
+                    data: aceEditor.getValue(),
                     type: 'POST',
                     success: on_posted,
                     error: function (xhr) {
@@ -79,7 +180,7 @@
                         alert(msg);
                     }
                 });
-                
+
                 function on_posted(data, textStatus, jqXHR) {
                     var statusUrl = jqXHR.getResponseHeader('Location');
                     window.location = "view-projection.htm#" + statusUrl;

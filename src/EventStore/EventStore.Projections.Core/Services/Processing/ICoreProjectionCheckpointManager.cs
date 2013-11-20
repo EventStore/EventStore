@@ -26,10 +26,21 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Collections.Generic;
+using System;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
+    public interface ICoreProjectionCheckpointReader
+    {
+        void BeginLoadState();
+        void Initialize();
+    }
+
+    public interface IEmittedEventWriter
+    {
+        void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId);
+    }
+
     public interface ICoreProjectionCheckpointManager
     {
         void Initialize();
@@ -37,13 +48,28 @@ namespace EventStore.Projections.Core.Services.Processing
         void Stopping();
         void Stopped();
         void GetStatistics(ProjectionStatistics info);
-        void RequestCheckpointToStop();
 
-        void EventProcessed(
-            string state, List<EmittedEvent[]> scheduledWrites, CheckpointTag checkpointTag, float progress);
 
-        void CheckpointSuggested(CheckpointTag checkpointTag, float progress);
+        void StateUpdated(string partition, PartitionState oldState, PartitionState newState);
+        void PartitionCompleted(string partition);
+        void EventProcessed(CheckpointTag checkpointTag, float progress);
+
+        /// <summary>
+        /// Suggests a checkpoint which may complete immediately or be delayed
+        /// </summary>
+        /// <param name="checkpointTag"></param>
+        /// <param name="progress"></param>
+        /// <returns>true - if checkpoint has been completed (or skipped)</returns>
+        bool CheckpointSuggested(CheckpointTag checkpointTag, float progress);
         void Progress(float progress);
-        void BeginLoadState();
+
+        void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
+
+        void BeginLoadPartitionStateAt(
+            string statePartition, CheckpointTag requestedStateCheckpointTag,
+            Action<PartitionState> loadCompleted);
+
+        void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action committed);
+        CheckpointTag LastProcessedEventPosition { get; }
     }
 }

@@ -26,10 +26,15 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Linq;
+using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests.Services.TimeService;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Tests.Services.core_projection;
@@ -40,23 +45,26 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     [TestFixture]
     public class when_starting_the_projection_manager_with_existing_projection : TestFixtureWithExistingEvents
     {
+        private new ITimeProvider _timeProvider;
         private ProjectionManager _manager;
 
         protected override void Given()
         {
-            ExistingEvent("$projections-$all", "ProjectionCreated", null, "projection1");
+            ExistingEvent("$projections-$all", "$ProjectionCreated", null, "projection1");
             ExistingEvent(
-                "$projections-projection1", "ProjectionUpdated", null,
+                "$projections-projection1", "$ProjectionUpdated", null,
                 @"{""Query"":""fromAll(); on_any(function(){});log('hello-from-projection-definition');"", ""Mode"":""3"", ""Enabled"":true, ""HandlerType"":""JS""}");
         }
+
 
         [SetUp]
         public void setup()
         {
-            _manager = new ProjectionManager(_bus, _bus, new IPublisher[]{_bus});
+            _timeProvider = new FakeTimeProvider();
+            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, _timeProvider, RunProjections.All);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
-            _manager.Handle(new SystemMessage.BecomeWorking());
+            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
         }
 
         [TearDown]

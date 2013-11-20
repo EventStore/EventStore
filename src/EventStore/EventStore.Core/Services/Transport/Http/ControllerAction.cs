@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http;
 
@@ -42,21 +44,19 @@ namespace EventStore.Core.Services.Transport.Http
         public ControllerAction(string uriTemplate, 
                                 string httpMethod, 
                                 ICodec[] requestCodecs, 
-                                ICodec[] responseCodecs, 
-                                ICodec defaultResponseCodec)
+                                ICodec[] responseCodecs)
         {
             Ensure.NotNull(uriTemplate, "uriTemplate");
             Ensure.NotNull(httpMethod, "httpMethod");
             Ensure.NotNull(requestCodecs, "requestCodecs");
             Ensure.NotNull(responseCodecs, "responseCodecs");
-            Ensure.NotNull(defaultResponseCodec, "defaultResponseCodec");
 
             UriTemplate = uriTemplate;
             HttpMethod = httpMethod;
 
             SupportedRequestCodecs = requestCodecs;
             SupportedResponseCodecs = responseCodecs;
-            DefaultResponseCodec = defaultResponseCodec;
+            DefaultResponseCodec = responseCodecs.Length > 0 ? responseCodecs[0] : null;
         }
 
         public bool Equals(ControllerAction other)
@@ -91,4 +91,5 @@ namespace EventStore.Core.Services.Transport.Http
                                  DefaultResponseCodec);
         }
     }
+
 }

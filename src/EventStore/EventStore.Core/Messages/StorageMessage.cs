@@ -26,10 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Net;
+using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages
@@ -42,7 +43,6 @@ namespace EventStore.Core.Messages
             IEnvelope Envelope { get; }
             string EventStreamId { get; }
             int ExpectedVersion { get; }
-            bool AllowImplicitStreamCreation { get; }
         }
 
         public interface IFlushableMessage
@@ -56,55 +56,50 @@ namespace EventStore.Core.Messages
 
         public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
+
             public string EventStreamId { get; private set; }
             public int ExpectedVersion { get; private set; }
             public readonly Event[] Events;
 
-            public bool AllowImplicitStreamCreation { get; private set; }
             public readonly DateTime LiveUntil;
 
-            public WritePrepares(Guid correlationId, 
-                                 IEnvelope envelope, 
-                                 string eventStreamId, 
-                                 int expectedVersion, 
-                                 Event[] events, 
-                                 bool allowImplicitStreamCreation,
-                                 DateTime liveUntil)
+            public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion,
+                                 Event[] events, DateTime liveUntil)
             {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.NotNull(eventStreamId, "eventStreamId");
-                Ensure.NotNull(events, "events");
-                
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
                 Events = events;
 
-                AllowImplicitStreamCreation = allowImplicitStreamCreation;
                 LiveUntil = liveUntil;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("WRITE_PREPARES: CorrelationId: {0}, EventStreamId: {1}, ExpectedVersion: {2}, LiveUntil: {3}", CorrelationId, EventStreamId, ExpectedVersion, LiveUntil);
             }
         }
 
         public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
             public string EventStreamId { get; private set; }
             public int ExpectedVersion { get; private set; }
+            public readonly bool HardDelete;
 
-            public bool AllowImplicitStreamCreation { get; private set; }
             public readonly DateTime LiveUntil;
 
-            public WriteDelete(Guid correlationId, 
-                               IEnvelope envelope, 
-                               string eventStreamId, 
-                               int expectedVersion, 
-                               bool allowImplicitStreamCreation, 
-                               DateTime liveUntil)
+            public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, bool hardDelete, DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -114,42 +109,42 @@ namespace EventStore.Core.Messages
                 Envelope = envelope;
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
+                HardDelete = hardDelete;
 
-                AllowImplicitStreamCreation = allowImplicitStreamCreation;
                 LiveUntil = liveUntil;
             }
         }
 
         public class WriteCommit : Message, IFlushableMessage, IMasterWriteMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
-            public readonly long PrepareStartPosition;
+            public readonly long TransactionPosition;
 
-            public WriteCommit(Guid correlationId, IEnvelope envelope, long prepareStartPosition)
+            public WriteCommit(Guid correlationId, IEnvelope envelope, long transactionPosition)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
-                PrepareStartPosition = prepareStartPosition;
+                TransactionPosition = transactionPosition;
             }
         }
 
         public class WriteTransactionStart : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
             public string EventStreamId { get; private set; }
             public int ExpectedVersion { get; private set; }
 
-            public bool AllowImplicitStreamCreation { get; private set; }
             public readonly DateTime LiveUntil;
 
-            public WriteTransactionStart(Guid correlationId, 
-                                         IEnvelope envelope, 
-                                         string eventStreamId, 
-                                         int expectedVersion, 
-                                         bool allowImplicitStreamCreation,
-                                         DateTime liveUntil)
+            public WriteTransactionStart(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -160,52 +155,45 @@ namespace EventStore.Core.Messages
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
 
-                AllowImplicitStreamCreation = allowImplicitStreamCreation;
                 LiveUntil = liveUntil;
             }
         }
 
         public class WriteTransactionData : Message, IFlushableMessage, IMasterWriteMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long TransactionId;
-            public readonly string EventStreamId;
             public readonly Event[] Events;
 
-            public WriteTransactionData(Guid correlationId, 
-                                        IEnvelope envelope, 
-                                        long transactionId, 
-                                        string eventStreamId, 
-                                        Event[] events)
+            public WriteTransactionData(Guid correlationId, IEnvelope envelope, long transactionId, Event[] events)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 TransactionId = transactionId;
-                EventStreamId = eventStreamId;
                 Events = events;
             }
         }
 
         public class WriteTransactionPrepare : Message, IFlushableMessage, IMasterWriteMessage
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long TransactionId;
-            public readonly string EventStreamId;
 
             public readonly DateTime LiveUntil;
 
-            public WriteTransactionPrepare(Guid correlationId, 
-                                           IEnvelope envelope, 
-                                           long transactionId, 
-                                           string eventStreamId,
-                                           DateTime liveUntil)
+            public WriteTransactionPrepare(Guid correlationId, IEnvelope envelope, long transactionId, DateTime liveUntil)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 TransactionId = transactionId;
-                EventStreamId = eventStreamId;
 
                 LiveUntil = liveUntil;
             }
@@ -213,12 +201,18 @@ namespace EventStore.Core.Messages
 
         public class PrepareAck : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
             public readonly long LogPosition;
-            public readonly PrepareFlags Flags; 
+            public readonly PrepareFlags Flags;
 
             public PrepareAck(Guid correlationId, long logPosition, PrepareFlags flags)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.Nonnegative(logPosition, "logPosition");
+
                 CorrelationId = correlationId;
                 LogPosition = logPosition;
                 Flags = flags;
@@ -227,208 +221,85 @@ namespace EventStore.Core.Messages
 
         public class CommitAck : Message
         {
-            public readonly Guid CorrelationId;
-            public readonly long TransactionPosition;
-            public readonly int EventNumber;
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
-            public CommitAck(Guid correlationId, long transactionPosition, int eventNumber)
+            public readonly Guid CorrelationId;
+            public readonly long LogPosition;
+            public readonly long TransactionPosition;
+            public readonly int FirstEventNumber;
+            public readonly int LastEventNumber;
+
+            public CommitAck(Guid correlationId, long logPosition, long transactionPosition, int firstEventNumber, int lastEventNumber)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.Nonnegative(logPosition, "logPosition");
                 Ensure.Nonnegative(transactionPosition, "transactionPosition");
-                Ensure.Nonnegative(eventNumber, "eventNumber");
+                if (firstEventNumber < -1)
+                    throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
+                if (lastEventNumber - firstEventNumber + 1 < 0)
+                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
 
                 CorrelationId = correlationId;
+                LogPosition = logPosition;
                 TransactionPosition = transactionPosition;
-                EventNumber = eventNumber;
+                FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
             }
         }
 
         public class EventCommited: Message
         {
-            public readonly long CommitPosition;
-            public readonly int EventNumber;
-            public readonly PrepareLogRecord Prepare;
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
-            public EventCommited(long commitPosition, int eventNumber, PrepareLogRecord prepare)
+            public readonly long CommitPosition;
+            public readonly EventRecord Event;
+
+            public EventCommited(long commitPosition, EventRecord @event)
             {
                 CommitPosition = commitPosition;
-                EventNumber = eventNumber;
-                Prepare = prepare;
-            }
-        }
-
-        public class CreateStreamRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly string EventStreamId;
-            public readonly bool IsJson;
-            public readonly byte[] Metadata;
-
-            public CreateStreamRequestCreated(Guid correlationId,
-                                              IEnvelope envelope,
-                                              string eventStreamId,
-                                              bool isJson,
-                                              byte[] metadata)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-                Ensure.NotNull(metadata, "metadata");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-                EventStreamId = eventStreamId;
-                IsJson = isJson;
-                Metadata = metadata;
-            }
-        }
-
-        public class WriteRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-
-            public readonly string EventStreamId;
-            public readonly int ExpectedVersion;
-
-            public readonly Event[] Events;
-
-            public WriteRequestCreated(Guid correlationId, 
-                                       IEnvelope envelope,
-                                       string eventStreamId,
-                                       int expectedVersion,
-                                       Event[] events)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-                Ensure.NotNull(events, "events");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-
-                EventStreamId = eventStreamId;
-                ExpectedVersion = expectedVersion;
-
-                Events = events;
-            }
-        }
-
-        public class TransactionStartRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly string EventStreamId;
-            public readonly int ExpectedVersion;
-
-            public TransactionStartRequestCreated(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-                EventStreamId = eventStreamId;
-                ExpectedVersion = expectedVersion;
-            }
-        }
-
-        public class TransactionWriteRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly long TransactionId;
-            public readonly string EventStreamId;
-            public readonly Event[] Events;
-
-            public TransactionWriteRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId, string eventStreamId, Event[] events)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.Nonnegative(transactionId, "transactionId");
-                Ensure.NotNull(eventStreamId, "eventStreamId");
-                Ensure.NotNull(events, "events");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-                TransactionId = transactionId;
-                EventStreamId = eventStreamId;
-                Events = events;
-            }
-        }
-
-        public class TransactionCommitRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly long TransactionId;
-            public readonly string EventStreamId;
-
-            public TransactionCommitRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId, string eventStreamId)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.Nonnegative(transactionId, "transactionId");
-                Ensure.NotNull(eventStreamId, "eventStreamID");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-                TransactionId = transactionId;
-                EventStreamId = eventStreamId;
-            }
-        }
-
-        public class DeleteStreamRequestCreated : Message
-        {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-
-            public readonly string EventStreamId;
-            public readonly int ExpectedVersion;
-
-            public DeleteStreamRequestCreated(Guid correlationId,
-                                              IEnvelope envelope,
-                                              string eventStreamId,
-                                              int expectedVersion)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(envelope, "envelope");
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-
-                CorrelationId = correlationId;
-                Envelope = envelope;
-
-                EventStreamId = eventStreamId;
-                ExpectedVersion = expectedVersion;
+                Event = @event;
             }
         }
 
         public class AlreadyCommitted: Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
 
             public readonly string EventStreamId;
-            public readonly int StartEventNumber;
-            public readonly int EndEventNumber;
+            public readonly int FirstEventNumber;
+            public readonly int LastEventNumber;
 
-            public AlreadyCommitted(Guid correlationId, string eventStreamId, int startEventNumber, int endEventNumber)
+            public AlreadyCommitted(Guid correlationId, string eventStreamId, int firstEventNumber, int lastEventNumber)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-                Ensure.Nonnegative(startEventNumber, "startEventNumber");
-                if (endEventNumber < startEventNumber)
-                    throw new ArgumentOutOfRangeException("endEventNumber", "EndEventNumber is less than StartEventNumber");
+                Ensure.Nonnegative(firstEventNumber, "FirstEventNumber");
+                if (lastEventNumber < firstEventNumber)
+                    throw new ArgumentOutOfRangeException("lastEventNumber", "LastEventNumber is less than FirstEventNumber");
 
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
-                StartEventNumber = startEventNumber;
-                EndEventNumber = endEventNumber;
+                FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("EventStreamId: {0}, CorrelationId: {1}, FirstEventNumber: {2}, LastEventNumber: {3}",
+                                     EventStreamId, CorrelationId, FirstEventNumber, LastEventNumber);
             }
         }
 
         public class InvalidTransaction : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
 
             public InvalidTransaction(Guid correlationId)
@@ -439,6 +310,9 @@ namespace EventStore.Core.Messages
 
         public class WrongExpectedVersion : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
 
             public WrongExpectedVersion(Guid correlationId)
@@ -450,6 +324,9 @@ namespace EventStore.Core.Messages
 
         public class StreamDeleted : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
 
             public StreamDeleted(Guid correlationId)
@@ -461,6 +338,9 @@ namespace EventStore.Core.Messages
 
         public class RequestCompleted : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
             public readonly bool Success;
 
@@ -472,39 +352,65 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class PreparePhaseTimeout : Message
+        public class RequestManagerTimerTick: Message
         {
-            public readonly Guid CorrelationId;
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
-            public PreparePhaseTimeout(Guid correlationId)
+            public DateTime UtcNow { get { return _now ?? DateTime.UtcNow; } }
+            private readonly DateTime? _now;
+
+            public RequestManagerTimerTick()
             {
-                CorrelationId = correlationId;
+            }
+
+            public RequestManagerTimerTick(DateTime now)
+            {
+                _now = now;
             }
         }
 
-        public class CommitPhaseTimeout : Message
+        public class CheckStreamAccess: ClientMessage.ReadRequestMessage
         {
-            public readonly Guid CorrelationId;
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
-            public CommitPhaseTimeout(Guid correlationId)
+            public readonly string EventStreamId;
+            public readonly long? TransactionId;
+            public readonly StreamAccessType AccessType;
+
+            public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, long? transactionId, 
+                                     StreamAccessType accessType, IPrincipal user)
+                : base(correlationId, correlationId, envelope, user)
             {
-                CorrelationId = correlationId;
+                if (eventStreamId == null && transactionId == null)
+                    throw new ArgumentException("Neither eventStreamId nor transactionId is specified.");
+
+                EventStreamId = eventStreamId;
+                TransactionId = transactionId;
+                AccessType = accessType;
             }
         }
 
-        public class ForwardingTimeout : Message
+        public class CheckStreamAccessCompleted: ClientMessage.ReadResponseMessage
         {
-            public readonly Guid ForwardingId;
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
-            public readonly Message TimeoutMessage;
+            public readonly string EventStreamId;
+            public readonly long? TransactionId;
+            public readonly StreamAccessType AccessType;
+            public readonly StreamAccess AccessResult;
 
-            public ForwardingTimeout(Guid forwardingId, Guid correlationId, Message timeoutMessage)
+            public CheckStreamAccessCompleted(Guid correlationId, string eventStreamId, long? transactionId, 
+                                              StreamAccessType accessType, StreamAccess accessResult)
             {
-                Ensure.NotNull(timeoutMessage, "timeoutMessage");
-
-                ForwardingId = forwardingId;
                 CorrelationId = correlationId;
-                TimeoutMessage = timeoutMessage;
+                EventStreamId = eventStreamId;
+                TransactionId = transactionId;
+                AccessType = accessType;
+                AccessResult = accessResult;
             }
         }
     }

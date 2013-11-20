@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_first_stream_is_not_in_index_yet()
         {
             var result = ReadIndex.ReadEvent("test1", 0);
-            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadEventResult.NoStream, result.Result);
             Assert.IsNull(result.Record);
         }
 
@@ -65,7 +65,15 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_second_stream_is_not_in_index_yet()
         {
             var result = ReadIndex.ReadEvent("test2", 0);
-            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadEventResult.NoStream, result.Result);
+            Assert.IsNull(result.Record);
+        }
+
+        [Test]
+        public void the_last_event_is_not_returned_for_stream()
+        {
+            var result = ReadIndex.ReadEvent("test2", -1);
+            Assert.AreEqual(ReadEventResult.NoStream, result.Result);
             Assert.IsNull(result.Record);
         }
 
@@ -77,7 +85,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         }
 
         [Test]
-        public void read_all_events_backward_returns_no_events_()
+        public void read_all_events_backward_returns_no_events()
         {
             var result = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10);
             Assert.AreEqual(0, result.Records.Count);

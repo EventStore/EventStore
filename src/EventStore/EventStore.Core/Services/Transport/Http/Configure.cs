@@ -27,250 +27,388 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Text;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Transport.Http;
-using EventStore.Transport.Http.EntityManagement;
+using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.Transport.Http.Controllers;
+using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Transport.Http
 {
     public static class Configure
     {
-        private const int MaxPossibleAge = 31556926;
-        private const int MinPossibleAge = 1;
+        private const int MaxPossibleAge = 31536000;
 
-        public static ResponseConfiguration Ok(HttpEntity entity, Message message)
+        public static ResponseConfiguration Ok(string contentType)
         {
-            return new ResponseConfiguration(HttpStatusCode.OK, "OK", entity.ResponseCodec.ContentType);
+            return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType, Helper.UTF8NoBom);
         }
 
-        public static ResponseConfiguration OkCache(HttpEntity entity, Message message, int seconds)
+        public static ResponseConfiguration Ok(string contentType, 
+                                               Encoding encoding,
+                                               string etag,
+                                               int? cacheSeconds,
+                                               bool isCachePublic,
+                                               params KeyValuePair<string, string>[] headers)
         {
-            return OkCache(entity.ResponseCodec.ContentType, seconds);
+            var headrs = new List<KeyValuePair<string, string>>(headers);
+            headrs.Add(new KeyValuePair<string, string>(
+                "Cache-Control",
+                cacheSeconds.HasValue 
+                    ? string.Format("max-age={0}, {1}", cacheSeconds, isCachePublic ? "public" : "private")
+                    : "max-age=0, no-cache, must-revalidate"));
+            headrs.Add(new KeyValuePair<string, string>("Vary", "Accept"));
+            if (etag.IsNotEmptyString())
+                headrs.Add(new KeyValuePair<string, string>("ETag", string.Format("\"{0}\"", etag)));
+            return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType, encoding, headrs);
         }
 
-        public static ResponseConfiguration OkCache(string contentType, int seconds)
+        public static ResponseConfiguration TemporaryRedirect(Uri originalUrl, string targetHost, int targetPort)
         {
-            // note MM: in old browsers Expires header maybe be required
-            return new ResponseConfiguration(HttpStatusCode.OK,
-                                             "OK",
-                                             contentType,
-                                             new KeyValuePair<string, string>("Cache-Control", string.Format("max-age={0}", seconds)));
+            var srcBase = new Uri(string.Format("{0}://{1}:{2}/", originalUrl.Scheme, originalUrl.Host, originalUrl.Port), UriKind.Absolute);
+            var targetBase = new Uri(string.Format("{0}://{1}:{2}/", originalUrl.Scheme, targetHost, targetPort), UriKind.Absolute);
+            var forwardUri = new Uri(targetBase, srcBase.MakeRelativeUri(originalUrl));
+            return new ResponseConfiguration(HttpStatusCode.TemporaryRedirect, "Temporary Redirect", "text/plain", Helper.UTF8NoBom,
+                                             new KeyValuePair<string, string>("Location", forwardUri.ToString()));
         }
 
-        public static ResponseConfiguration OkNoCache(HttpEntity entity, Message message, params KeyValuePair<string, string>[] headers)
+        public static ResponseConfiguration NotFound()
         {
-            return OkNoCache(entity.ResponseCodec.ContentType, headers);
+            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", "text/plain", Helper.UTF8NoBom);
         }
 
-        public static ResponseConfiguration OkNoCache(string contentType, params KeyValuePair<string, string>[] headers)
+        public static ResponseConfiguration NotFound(string etag, int? cacheSeconds, bool isCachePublic, string contentType)
         {
-            return new ResponseConfiguration(HttpStatusCode.OK,
-                                             "OK",
-                                             contentType,
-                                             new List<KeyValuePair<string, string>>(headers)
-                                             {
-                                                 new KeyValuePair<string, string>("Cache-Control",
-                                                                                  string.Format("no-cache, max-age={0}", 0)),
-                                                 new KeyValuePair<string, string>("Expires", "-1")
-                                             }.ToArray());
+            var headrs = new List<KeyValuePair<string, string>>();
+            headrs.Add(new KeyValuePair<string, string>(
+                "Cache-Control", 
+                cacheSeconds.HasValue
+                    ? string.Format("max-age={0}, {1}", cacheSeconds, isCachePublic ? "public" : "private")
+                    : "max-age=0, no-cache, must-revalidate"));
+            headrs.Add(new KeyValuePair<string, string>("Vary", "Accept"));
+            if (etag.IsNotEmptyString())
+                headrs.Add(new KeyValuePair<string, string>("ETag", string.Format("\"{0}\"", etag)));
+            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", contentType, Helper.UTF8NoBom, headrs);
         }
 
-        public static ResponseConfiguration NotFound(HttpEntity entity, Message message)
+        public static ResponseConfiguration Gone(string description = null)
         {
-            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", null);
+            return new ResponseConfiguration(HttpStatusCode.Gone, description ?? "Deleted", "text/plain", Helper.UTF8NoBom);
         }
 
-        public static ResponseConfiguration Gone(HttpEntity entity, Message message)
+        public static ResponseConfiguration NotModified()
         {
-            return new ResponseConfiguration(HttpStatusCode.Gone, "Deleted", null);
+            return new ResponseConfiguration(HttpStatusCode.NotModified, "Not Modified", "text/plain", Helper.UTF8NoBom);
         }
 
-        public static ResponseConfiguration InternalServerEror(HttpEntity entity, Message message)
+        public static ResponseConfiguration BadRequest(string description = null)
         {
-            return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Internal Server Error", null);
+            return new ResponseConfiguration(HttpStatusCode.BadRequest, description ?? "Bad Request", "text/plain", Helper.UTF8NoBom);
         }
 
-        public static ResponseConfiguration ReadEventCompleted(HttpEntity entity, Message message)
+        public static ResponseConfiguration InternalServerError(string description = null)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
+            return new ResponseConfiguration(HttpStatusCode.InternalServerError, description ?? "Internal Server Error", "text/plain", Helper.UTF8NoBom);
+        }
 
-            var completed = message as ClientMessage.ReadEventCompleted;
-            if (completed == null)
-                return InternalServerEror(entity, message);
+        public static ResponseConfiguration ServiceUnavailable(string description = null)
+        {
+            return new ResponseConfiguration(HttpStatusCode.ServiceUnavailable, description ?? "Service Unavailable", "text/plain", Helper.UTF8NoBom);
+        }
+        
+        public static ResponseConfiguration NotImplemented(string description = null)
+        {
+            return new ResponseConfiguration(HttpStatusCode.NotImplemented, description ?? "Not Implemented", "text/plain", Helper.UTF8NoBom);
+        }
 
-            switch (completed.Result)
+        public static ResponseConfiguration Unauthorized(string description = null)
+        {
+            return new ResponseConfiguration(HttpStatusCode.Unauthorized, description ?? "Unauthorized", "text/plain", Helper.UTF8NoBom);
+        }
+
+        public static ResponseConfiguration EventEntry(HttpResponseConfiguratorArgs entity, Message message, bool headEvent)
+        {
+            var msg = message as ClientMessage.ReadEventCompleted;
+            if (msg != null)
             {
-                case SingleReadResult.Success:
-                    return OkCache(entity, message, MaxPossibleAge);
-                case SingleReadResult.NotFound:
-                case SingleReadResult.NoStream:
-                    return NotFound(entity, completed);
-                case SingleReadResult.StreamDeleted:
-                    return Gone(entity, completed);
+                switch (msg.Result)
+                {
+                    case ReadEventResult.Success:
+                        var codec = entity.ResponseCodec;
+                        if (headEvent)
+                        {
+                            var etag = GetPositionETag(msg.Record.OriginalEventNumber, codec.ContentType);
+                            var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
+                            return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
+                        }
+                        return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
+                    case ReadEventResult.NotFound:
+                    case ReadEventResult.NoStream:
+                        return NotFound();
+                    case ReadEventResult.StreamDeleted:
+                        return Gone();
+                    case ReadEventResult.Error:
+                        return InternalServerError(msg.Error);
+                    case ReadEventResult.AccessDenied:
+                        return Unauthorized();
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            var notHandled = message as ClientMessage.NotHandled;
+            if (notHandled != null)
+                return HandleNotHandled(entity.RequestedUrl, notHandled);
+            return InternalServerError();
+        }
+
+        public static ResponseConfiguration EventMetadata(HttpResponseConfiguratorArgs entity)
+        {
+            return NotImplemented();
+        }
+
+        public static ResponseConfiguration GetStreamEventsBackward(HttpResponseConfiguratorArgs entity, Message message, bool headOfStream)
+        {
+            var msg = message as ClientMessage.ReadStreamEventsBackwardCompleted;
+            if (msg != null)
+            {
+                switch (msg.Result)
+                {
+                    case ReadStreamResult.Success:
+                        var codec = entity.ResponseCodec;
+                        if (msg.LastEventNumber >= msg.FromEventNumber && !headOfStream)
+                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
+                        var etag = GetPositionETag(msg.LastEventNumber, codec.ContentType);
+                        var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
+                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
+                    case ReadStreamResult.NoStream:
+                        return NotFound();
+                    case ReadStreamResult.StreamDeleted:
+                        return Gone();
+                    case ReadStreamResult.NotModified:
+                        return NotModified();
+                    case ReadStreamResult.Error:
+                        return InternalServerError(msg.Error);
+                    case ReadStreamResult.AccessDenied:
+                        return Unauthorized();
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            var notHandled = message as ClientMessage.NotHandled;
+            if (notHandled != null)
+                return HandleNotHandled(entity.RequestedUrl, notHandled);
+            return InternalServerError();
+        }
+
+        public static ResponseConfiguration GetStreamEventsForward(HttpResponseConfiguratorArgs entity, Message message)
+        {
+            var msg = message as ClientMessage.ReadStreamEventsForwardCompleted;
+            if (msg != null)
+            {
+                switch (msg.Result)
+                {
+                    case ReadStreamResult.Success:
+                        var codec = entity.ResponseCodec;
+                        var etag = GetPositionETag(msg.LastEventNumber, codec.ContentType);
+                        var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
+                        //if (msg.IsEndOfStream && msg.Events.Length == 0)
+                        //    return NotFound(etag, cacheSeconds, isPublic, "text/html");
+                        if (msg.LastEventNumber >= msg.FromEventNumber + msg.MaxCount)
+                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
+                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
+                    case ReadStreamResult.NoStream:
+                        return NotFound();
+                    case ReadStreamResult.StreamDeleted:
+                        return Gone();
+                    case ReadStreamResult.NotModified:
+                        return NotModified();
+                    case ReadStreamResult.Error:
+                        return InternalServerError(msg.Error);
+                    case ReadStreamResult.AccessDenied:
+                        return Unauthorized();
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            var notHandled = message as ClientMessage.NotHandled;
+            if (notHandled != null)
+                return HandleNotHandled(entity.RequestedUrl, notHandled);
+            return InternalServerError();
+        }
+
+        public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
+        {
+            var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
+            if (msg != null)
+            {
+                switch (msg.Result)
+                {
+                    case ReadAllResult.Success:
+                        var codec = entity.ResponseCodec;
+                        if (!headOfTf && msg.CurrentPos.CommitPosition <= msg.TfLastCommitPosition)
+                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
+                        var etag = GetPositionETag(msg.TfLastCommitPosition, codec.ContentType);
+                        var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
+                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
+                    case ReadAllResult.NotModified:
+                        return NotModified();
+                    case ReadAllResult.Error:
+                        return InternalServerError(msg.Error);
+                    case ReadAllResult.AccessDenied:
+                        return Unauthorized();
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            var notHandled = message as ClientMessage.NotHandled;
+            if (notHandled != null)
+                return HandleNotHandled(entity.RequestedUrl, notHandled);
+            return InternalServerError();
+        }
+
+        public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
+        {
+            var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
+            if (msg != null)
+            {
+                switch (msg.Result)
+                {
+                    case ReadAllResult.Success:
+                        var codec = entity.ResponseCodec;
+                        if (!headOfTf && msg.Events.Length == msg.MaxCount)
+                            return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
+                        var etag = GetPositionETag(msg.TfLastCommitPosition, codec.ContentType);
+                        var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
+                        //if (!headOfTf && msg.Events.Length == 0)
+                        //    return NotFound(etag, cacheSeconds, isPublic, "text/plain");
+                        return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
+                    case ReadAllResult.NotModified:
+                        return NotModified();
+                    case ReadAllResult.Error:
+                        return InternalServerError(msg.Error);
+                    case ReadAllResult.AccessDenied:
+                        return Unauthorized();
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            var notHandled = message as ClientMessage.NotHandled;
+            if (notHandled != null)
+                return HandleNotHandled(entity.RequestedUrl, notHandled);
+            return InternalServerError();
+        }
+
+        private static string GetPositionETag(long position, string contentType)
+        {
+            return string.Format("{0}{1}{2}", position, AtomController.ETagSeparator, contentType.GetHashCode());
+        }
+
+        private static int? GetCacheSeconds(StreamMetadata metadata)
+        {
+            return metadata != null && metadata.CacheControl.HasValue
+                           ? (int) metadata.CacheControl.Value.TotalSeconds
+                           : (int?) null;
+        }
+
+        public static ResponseConfiguration WriteEventsCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)
+        {
+            var msg = message as ClientMessage.WriteEventsCompleted;
+            if (msg != null)
+            {
+                switch (msg.Result)
+                {
+                    case OperationResult.Success:
+                        var location = HostName.Combine(entity.RequestedUrl, "/streams/{0}/{1}",
+                                                        Uri.EscapeDataString(eventStreamId), msg.FirstEventNumber);
+                        return new ResponseConfiguration(HttpStatusCode.Created, "Created", "text/plain", Helper.UTF8NoBom,
+                                                         new KeyValuePair<string, string>("Location", location));
+                    case OperationResult.PrepareTimeout:
+                    case OperationResult.CommitTimeout:
+                    case OperationResult.ForwardTimeout:
+                        return InternalServerError("Write timeout");
+                    case OperationResult.WrongExpectedVersion:
+                        return BadRequest("Wrong expected EventNumber");
+                    case OperationResult.StreamDeleted:
+                        return Gone("Stream deleted");
+                    case OperationResult.InvalidTransaction:
+                        return InternalServerError("Invalid transaction");
+                    case OperationResult.AccessDenied:
+                        return Unauthorized();
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            var notHandled = message as ClientMessage.NotHandled;
+            if (notHandled != null)
+                return HandleNotHandled(entity.RequestedUrl, notHandled);
+            return InternalServerError();
+        }
+
+        public static ResponseConfiguration DeleteStreamCompleted(HttpResponseConfiguratorArgs entity, Message message)
+        {
+            var msg = message as ClientMessage.DeleteStreamCompleted;
+            if (msg != null)
+            {
+                switch (msg.Result)
+                {
+                    case OperationResult.Success:
+                        return new ResponseConfiguration(HttpStatusCode.NoContent, "Stream deleted", "text/plain", Helper.UTF8NoBom);
+                    case OperationResult.PrepareTimeout:
+                    case OperationResult.CommitTimeout:
+                    case OperationResult.ForwardTimeout:
+                        return InternalServerError("Delete timeout");
+                    case OperationResult.WrongExpectedVersion:
+                        return BadRequest("Wrong expected EventNumber");
+                    case OperationResult.StreamDeleted:
+                        return Gone("Stream deleted");
+                    case OperationResult.InvalidTransaction:
+                        return InternalServerError("Invalid transaction");
+                    case OperationResult.AccessDenied:
+                        return Unauthorized();
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            var notHandled = message as ClientMessage.NotHandled;
+            if (notHandled != null)
+                return HandleNotHandled(entity.RequestedUrl, notHandled);
+            return InternalServerError();
+        }
+
+        private static ResponseConfiguration HandleNotHandled(Uri requestedUri, ClientMessage.NotHandled notHandled)
+        {
+            switch (notHandled.Reason)
+            {
+                case TcpClientMessageDto.NotHandled.NotHandledReason.NotReady:
+                    return ServiceUnavailable("Server Is Not Ready");
+                case TcpClientMessageDto.NotHandled.NotHandledReason.TooBusy:
+                    return ServiceUnavailable("Server Is Too Busy");
+                case TcpClientMessageDto.NotHandled.NotHandledReason.NotMaster:
+                {
+                    var masterInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.MasterInfo;
+                    if (masterInfo == null)
+                        return InternalServerError("No master info available in response");
+                    return TemporaryRedirect(requestedUri, masterInfo.ExternalHttpAddress, masterInfo.ExternalHttpPort);
+                }
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    return InternalServerError(string.Format("Unknown not handled reason: {0}", notHandled.Reason));
             }
         }
 
-        public static ResponseConfiguration ReadStreamEventsBackwardCompleted(HttpEntity entity, Message message)
+        public static ResponseConfiguration GetFreshStatsCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
-
-            var completed = message as ClientMessage.ReadStreamEventsBackwardCompleted;
-            if (completed == null)
-                return InternalServerEror(entity, message);
-
-            switch (completed.Result)
-            {
-                case RangeReadResult.Success:
-                    return OkCache(entity, message, MinPossibleAge);
-                case RangeReadResult.NoStream:
-                    return NotFound(entity, completed);
-                case RangeReadResult.StreamDeleted:
-                    return Gone(entity, completed);
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        public static ResponseConfiguration WriteEventsCompleted(HttpEntity entity, Message message)
-        {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.WriteEventsCompleted));
-
-            var completed = message as ClientMessage.WriteEventsCompleted;
-            if (completed == null)
-                return InternalServerEror(entity, message);
-
-            switch (completed.ErrorCode)
-            {
-                case OperationErrorCode.Success:
-                    return new ResponseConfiguration(HttpStatusCode.Created,
-                                                     "Created",
-                                                     null,
-                                                     new KeyValuePair<string, string>("Location",
-                                                                                      HostName.Combine(entity.UserHostName,
-                                                                                                  "/streams/{0}/{1}",
-                                                                                                  completed.EventStreamId,
-                                                                                                  completed.EventNumber == 0 ? 1 : completed.EventNumber)));
-                case OperationErrorCode.PrepareTimeout:
-                case OperationErrorCode.CommitTimeout:
-                case OperationErrorCode.ForwardTimeout:
-                    return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Write timeout", null);
-                case OperationErrorCode.WrongExpectedVersion:
-                    return new ResponseConfiguration(HttpStatusCode.BadRequest, "Wrong expected eventNumber", null);
-                case OperationErrorCode.StreamDeleted:
-                    return new ResponseConfiguration(HttpStatusCode.Gone, "Stream deleted", null);
-                case OperationErrorCode.InvalidTransaction:
-                    return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Invalid transaction", null);
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        public static ResponseConfiguration GetFreshStatsCompleted(HttpEntity entity, Message message)
-        {
-            Debug.Assert(message.GetType() == typeof(MonitoringMessage.GetFreshStatsCompleted));
-
             var completed = message as MonitoringMessage.GetFreshStatsCompleted;
             if (completed == null)
-                return InternalServerEror(entity, message);
+                return InternalServerError();
 
-            return completed.Success ? OkNoCache(entity, message) : NotFound(entity, message);
-        }
-
-        public static ResponseConfiguration CreateStreamCompleted(HttpEntity entity, Message message)
-        {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
-
-            var completed = message as ClientMessage.CreateStreamCompleted;
-            if (completed == null)
-                return InternalServerEror(entity, message);
-
-            switch (completed.ErrorCode)
-            {
-                case OperationErrorCode.Success:
-                    return new ResponseConfiguration(HttpStatusCode.Created,
-                                                     "Stream created",
-                                                     null,
-                                                     new KeyValuePair<string, string>("Location",
-                                                                                      HostName.Combine(entity.UserHostName,
-                                                                                                  "/streams/{0}",
-                                                                                                  completed.EventStreamId)));
-                case OperationErrorCode.PrepareTimeout:
-                case OperationErrorCode.CommitTimeout:
-                case OperationErrorCode.ForwardTimeout:
-                    return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Create timeout", null);
-                case OperationErrorCode.WrongExpectedVersion:
-                case OperationErrorCode.StreamDeleted:
-                case OperationErrorCode.InvalidTransaction:
-                    return new ResponseConfiguration(HttpStatusCode.BadRequest,
-                                                     string.Format("Error code : {0}. Reason : {1}", completed.ErrorCode, completed.Error),
-                                                     null);
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        public static ResponseConfiguration DeleteStreamCompleted(HttpEntity entity, Message message)
-        {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.DeleteStreamCompleted));
-
-            var completed = message as ClientMessage.DeleteStreamCompleted;
-            if (completed == null)
-                return InternalServerEror(entity, message);
-
-            switch (completed.ErrorCode)
-            {
-                case OperationErrorCode.Success:
-                    return new ResponseConfiguration(HttpStatusCode.NoContent, "Stream deleted", null);
-                case OperationErrorCode.PrepareTimeout:
-                case OperationErrorCode.CommitTimeout:
-                case OperationErrorCode.ForwardTimeout:
-                    return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Delete timeout", null);
-                case OperationErrorCode.WrongExpectedVersion:
-                case OperationErrorCode.StreamDeleted:
-                case OperationErrorCode.InvalidTransaction:
-                    return new ResponseConfiguration(HttpStatusCode.BadRequest,
-                                                     string.Format("Error code : {0}. Reason : {1}", completed.ErrorCode, completed.Error),
-                                                     null);
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        public static ResponseConfiguration ListStreamsCompletedServiceDoc(HttpEntity entity, Message message)
-        {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ListStreamsCompleted));
-
-            var completed = message as ClientMessage.ListStreamsCompleted;
-            return completed != null && completed.Success
-                       ? Ok(entity, message)
-                       : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Couldn't get streams list. Try turning projection 'Index By Streams' on", null);
-        }
-
-        public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpEntity entity, Message message)
-        {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
-
-            var completed = message as ClientMessage.ReadAllEventsBackwardCompleted;
-            return completed != null
-                       ? OkCache(entity,message, MinPossibleAge)
-                       : new ResponseConfiguration(HttpStatusCode.InternalServerError,
-                                                   "Failed to read all events backward", null);
-        }
-
-        public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpEntity entity, Message message)
-        {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
-
-            var completed = message as ClientMessage.ReadAllEventsForwardCompleted;
-            return completed != null
-                       ? OkCache(entity, message, MinPossibleAge)
-                       : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Failed to read all events forward", null);
+            var cacheSeconds = (int)MonitoringService.MemoizePeriod.TotalSeconds;
+            return completed.Success
+                ? Ok(entity.ResponseCodec.ContentType, Helper.UTF8NoBom, null, cacheSeconds, isCachePublic: true)
+                : NotFound();
         }
     }
 }

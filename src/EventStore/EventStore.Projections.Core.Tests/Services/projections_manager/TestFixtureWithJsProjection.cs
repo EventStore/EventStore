@@ -28,9 +28,10 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Tests;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
@@ -42,10 +43,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected List<string> _logged;
         protected string _projection;
         protected string _state = null;
-        protected SourceRecorder _source;
+        protected IQuerySources _source;
 
         [SetUp]
-        public void setup()
+        public void Setup()
         {
             _state = null;
             _projection = null;
@@ -53,67 +54,35 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _logged = new List<string>();
             _stateHandlerFactory = new ProjectionStateHandlerFactory();
             _stateHandler = _stateHandlerFactory.Create(
-                "JS", _projection, s =>
+                "JS", _projection, logger: s =>
                     {
-                        if (!s.StartsWith("P:")) _logged.Add(s);
-                        else Console.WriteLine(s);
+                        if (s.StartsWith("P:"))
+                            Console.WriteLine(s);
+                        else
+                            _logged.Add(s);
                     }); // skip prelude debug output
-            _source = new SourceRecorder();
-            _stateHandler.ConfigureSourceProcessingStrategy(_source);
+            _source = _stateHandler.GetSourceDefinition();
             if (_state != null)
                 _stateHandler.Load(_state);
             else
                 _stateHandler.Initialize();
+            When();
+        }
+
+        protected virtual void When()
+        {
         }
 
         protected abstract void Given();
 
         [TearDown]
-        public void teardown()
+        public void Teardown()
         {
             if (_stateHandler != null)
                 _stateHandler.Dispose();
             _stateHandler = null;
             GC.Collect(2, GCCollectionMode.Forced);
             GC.WaitForPendingFinalizers();
-        }
-    }
-
-    public class SourceRecorder : QuerySourceProcessingStrategyBuilder
-    {
-        public bool AllStreams
-        {
-            get { return _allStreams; }
-        }
-
-        public List<string> Categories
-        {
-            get { return _categories; }
-        }
-
-        public List<string> Streams
-        {
-            get { return _streams; }
-        }
-
-        public bool AllEvents1
-        {
-            get { return _allEvents; }
-        }
-
-        public List<string> Events
-        {
-            get { return _events; }
-        }
-
-        public bool ByStream
-        {
-            get { return _byStream; }
-        }
-
-        public QuerySourceOptions Options 
-        {
-            get { return _options; }
         }
     }
 }

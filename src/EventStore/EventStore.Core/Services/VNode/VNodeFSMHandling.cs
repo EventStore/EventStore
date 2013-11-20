@@ -26,7 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using EventStore.Core.Cluster;
+using EventStore.Common.Utils;
+using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.VNode
@@ -88,6 +90,12 @@ namespace EventStore.Core.Services.VNode
                     _stateDef.FSM.AddHandler<TMessage>(state, (s, m) => { throw new NotSupportedException(); });
             }
             return _stateDef;
+        }
+
+        public VNodeFSMStatesDefinition ForwardTo(IPublisher publisher)
+        {
+            Ensure.NotNull(publisher, "publisher");
+            return Do(publisher.Publish);
         }
     }
 }

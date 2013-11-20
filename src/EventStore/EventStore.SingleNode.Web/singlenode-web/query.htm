@@ -1,0 +1,133 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Query</title>
+    <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/lib/require-full.js" type="text/javascript"></script>
+    <script src="/web/es/js/projections/lib/ace/ace.js" type="text/javascript"></script>
+    <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
+    <script src='/web/es/js/atom/render.js'></script>
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>
+</head>
+<body>
+    <div id="content">
+        <h1>Query</h1>
+        <h3><span id="status"></span></h3>
+        <div id="message" class="error head-error" style="display: none;"></div>
+        <div class="row">
+            <div class="span12">
+                <div id="commands-container">
+                    <ul style="display: inline;">
+                        <li><a href="#" id="btn-run" class="btn btn-success">Run</a></li>
+                        <li><a href="#" id="btn-break" class="btn btn-danger">Break</a></li>
+                        <li>     </li>
+                        <li><a href="#" id="btn-debug" class="btn btn-info">Debug</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: table; width: 100%; position: relative; bottom: 0px;">
+            <div style="display: table-row">
+                <div style="display: table-cell; width: 66%;">
+                    <div style="margin: 0px 5px 20px 5px">
+                        
+                        <label class="control-label" for="ace-source">
+                            <strong>Source</strong></label>
+                        <div class="uneditable-input" style="position: relative; display: block; height: 500px; margin-bottom: 0px; ">
+                            <div id="ace-source" style="position: absolute; left: 0px; right: 0px; top: 0px; bottom: 0px;" spellcheck="false" wrap="off">
+    // NOTE: this sample query immediately stops unless you have 
+    // either event_type1 or event_type1 events in the store
+    options({
+                // reorderEvents: false,          // enables event reordering in a multi-stream projection
+                                                  // event reordering atempts to feed the projection with events in a 
+                                                  // their natural order
+                // processingLag: 0,              // processing lag in ms allowing event reordering to happen
+    });
+
+    fromAll() 
+    // fromStream('streamId') | fromStreams(['sream1', 'stream2']) | fromCategory('category')
+       //NOTE: fromCategory requires $by_category standard projection to be enabled
+
+    // .foreachStream() | .partitionBy(function(e) { return e.body.useId; })
+
+    .when({
+        $init: function () {
+            return { count1: 0, count2: 0, }; // initial state
+        },
+      
+        event_type1: function(s, e) {
+            s.count1 += 1;
+            return s;
+        },
+                        
+        event_type2: function(s, e) {
+            s.count2 += 1;
+            return s;
+        },
+                        
+                        
+        /* $any: function (s, e) ... // NOTE: $any is exclusive and cannot be used in combination with 
+                                     // other event filters
+        */
+    })
+                                
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div style="display: table-cell; width: 34%;">
+                    <div style="margin: 0px 5px 20px 5px">
+                        
+                        <label class="control-label" for="state">
+                            <strong>State</strong></label>
+
+                        <pre id="state" style="position: relative; display: block; height: 500px; padding: 4px 6px 4px 6px; margin: 0 0 0 0"></pre>
+                        
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div id="result_stream_container"></div>
+        <script id="r-body">
+            es.tmpl.renderBody();
+        </script>
+    </div>
+    <script type="text/javascript">
+        require.config({ baseUrl: "/web/es/js" });
+        require(['projections/Observer', 'projections/Controller', 'projections/ui/Editor', 'projections/ui/Ace'],
+            function (observer, controller, editor, aceEditor) {
+                $(function() {
+                    var controls = {
+                        status: $("#status"),
+                        source: $("#ace-source"),
+                        state: $("#state"),
+                        result_stream_container: $("#result_stream_container"),
+                        message: $("#message"),
+                        start: $("#btn-run"),
+                        stop: $("#btn-break"),
+                        save: $("#btn-save"),
+                        debug: $("#btn-debug"),
+                    };
+                    var url = window.location.hash.substr(1);
+                    var sourceEdit = aceEditor.createAceEditor($("#ace-source"));
+                    var projectionEditor;
+                    if (url) {
+                        projectionEditor = editor.openQuery(url, sourceEdit, controls, {});
+                    } else {
+                        projectionEditor = editor.createQuery(sourceEdit, controls, {});
+                    }
+                    projectionEditor.bind();
+                });
+        });
+
+    </script>
+</body>
+</html>

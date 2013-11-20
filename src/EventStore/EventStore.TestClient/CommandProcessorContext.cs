@@ -48,9 +48,10 @@ namespace EventStore.TestClient
         public readonly ILogger Log;
         public readonly Client Client;
 
-        private readonly ManualResetEvent _doneEvent;
+        private readonly ManualResetEventSlim _doneEvent;
+        private int _completed;
 
-        public CommandProcessorContext(Client client, ILogger log, ManualResetEvent doneEvent)
+        public CommandProcessorContext(Client client, ILogger log, ManualResetEventSlim doneEvent)
         {
             Client = client;
             Log = log;
@@ -59,12 +60,15 @@ namespace EventStore.TestClient
 
         public void Completed(int exitCode = (int)Common.Utils.ExitCode.Success, Exception error = null, string reason = null)
         {
-            ExitCode = exitCode;
+            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
+            {
+                ExitCode = exitCode;
 
-            Error = error;
-            Reason = reason;
+                Error = error;
+                Reason = reason;
 
-            _doneEvent.Set();
+                _doneEvent.Set();
+            }
         }
 
         public void Fail(Exception exc = null, string reason = null)
@@ -85,10 +89,10 @@ namespace EventStore.TestClient
         public void WaitForCompletion()
         {
             if (Client.Options.Timeout < 0)
-                _doneEvent.WaitOne();
+                _doneEvent.Wait();
             else
             {
-                if (!_doneEvent.WaitOne(Client.Options.Timeout*1000))
+                if (!_doneEvent.Wait(Client.Options.Timeout*1000))
                     throw new TimeoutException("Command didn't finished within timeout.");
             }
         }

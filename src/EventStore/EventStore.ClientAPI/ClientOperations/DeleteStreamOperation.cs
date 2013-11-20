@@ -27,138 +27,75 @@
 //  
 
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
-using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class DeleteStreamOperation : IClientOperation
+    internal class DeleteStreamOperation : OperationBase<object, ClientMessage.DeleteStreamCompleted>
     {
-        private readonly TaskCompletionSource<object> _source;
-        private ClientMessage.DeleteStreamCompleted _result;
-        private int _completed;
-
-        private Guid _correlationId;
-        private readonly object _corrIdLock = new object();
-
-        private readonly bool _forward;
+        private readonly bool _requireMaster;
         private readonly string _stream;
         private readonly int _expectedVersion;
+        private readonly bool _hardDelete;
 
-        public Guid CorrelationId
+        public DeleteStreamOperation(ILogger log, TaskCompletionSource<object> source,
+                                     bool requireMaster, string stream, int expectedVersion, bool hardDelete,
+                                     UserCredentials userCredentials)
+            :base(log, source, TcpCommand.DeleteStream, TcpCommand.DeleteStreamCompleted, userCredentials)
         {
-            get
-            {
-                lock (_corrIdLock)
-                    return _correlationId;
-            }
-        }
-
-        public DeleteStreamOperation(TaskCompletionSource<object> source,
-                                     Guid correlationId, 
-                                     bool forward,
-                                     string stream, 
-                                     int expectedVersion)
-        {
-            _source = source;
-
-            _correlationId = correlationId;
-            _forward = forward;
+            _requireMaster = requireMaster;
             _stream = stream;
             _expectedVersion = expectedVersion;
+            _hardDelete = hardDelete;
         }
 
-        public TcpPackage CreateNetworkPackage()
+        protected override object CreateRequestDto()
         {
-            lock (_corrIdLock)
+            return new ClientMessage.DeleteStream(_stream, _expectedVersion, _requireMaster, _hardDelete);
+        }
+
+        protected override InspectionResult InspectResponse(ClientMessage.DeleteStreamCompleted response)
+        {
+            switch (response.Result)
             {
-                var dto = new ClientMessage.DeleteStream(_stream, _expectedVersion, _forward);
-                return new TcpPackage(TcpCommand.DeleteStream, _correlationId, dto.Serialize());
+                case ClientMessage.OperationResult.Success:
+                    Succeed();
+                    return new InspectionResult(InspectionDecision.EndOperation, "Success");
+                case ClientMessage.OperationResult.PrepareTimeout:
+                    return new InspectionResult(InspectionDecision.Retry, "PrepareTimeout");
+                case ClientMessage.OperationResult.CommitTimeout:
+                    return new InspectionResult(InspectionDecision.Retry, "CommitTimeout");
+                case ClientMessage.OperationResult.ForwardTimeout:
+                    return new InspectionResult(InspectionDecision.Retry, "ForwardTimeout");
+                case ClientMessage.OperationResult.WrongExpectedVersion:
+                    var err = string.Format("Delete stream failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}.", _stream, _expectedVersion);
+                    Fail(new WrongExpectedVersionException(err));
+                    return new InspectionResult(InspectionDecision.EndOperation, "WrongExpectedVersion");
+                case ClientMessage.OperationResult.StreamDeleted:
+                    Fail(new StreamDeletedException(_stream));
+                    return new InspectionResult(InspectionDecision.EndOperation, "StreamDeleted");
+                case ClientMessage.OperationResult.InvalidTransaction:
+                    Fail(new InvalidTransactionException());
+                    return new InspectionResult(InspectionDecision.EndOperation, "InvalidTransaction");
+                case ClientMessage.OperationResult.AccessDenied:
+                    Fail(new AccessDeniedException(string.Format("Write access denied for stream '{0}'.", _stream)));
+                    return new InspectionResult(InspectionDecision.EndOperation, "AccessDenied");
+                default:
+                    throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }
         }
 
-        public void SetRetryId(Guid corrId)
+        protected override object TransformResponse(ClientMessage.DeleteStreamCompleted response)
         {
-            lock (_corrIdLock)
-                _correlationId = corrId;
-        }
-
-        public InspectionResult InspectPackage(TcpPackage package)
-        {
-            try
-            {
-                if (package.Command == TcpCommand.DeniedToRoute)
-                {
-                    var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
-                    return new InspectionResult(InspectionDecision.Reconnect,
-                                                data: new EndpointsPair(route.ExternalTcpEndPoint,
-                                                                        route.ExternalHttpEndPoint));
-                }
-                if (package.Command != TcpCommand.DeleteStreamCompleted)
-                {
-                    return new InspectionResult(InspectionDecision.NotifyError,
-                                                new CommandNotExpectedException(TcpCommand.DeleteStreamCompleted.ToString(), 
-                                                                                package.Command.ToString()));
-                }
-
-                var data = package.Data;
-                var dto = data.Deserialize<ClientMessage.DeleteStreamCompleted>();
-                _result = dto;
-
-                switch ((OperationErrorCode)dto.ErrorCode)
-                {
-                    case OperationErrorCode.Success:
-                        return new InspectionResult(InspectionDecision.Succeed);
-                    case OperationErrorCode.PrepareTimeout:
-                    case OperationErrorCode.CommitTimeout:
-                    case OperationErrorCode.ForwardTimeout:
-                        return new InspectionResult(InspectionDecision.Retry);
-                    case OperationErrorCode.WrongExpectedVersion:
-                        var err = string.Format("Delete stream failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}, CorrID: {2}.",
-                                                _stream,
-                                                _expectedVersion,
-                                                CorrelationId);
-                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
-                    case OperationErrorCode.StreamDeleted:
-                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
-                    case OperationErrorCode.InvalidTransaction:
-                        return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
-            catch (Exception e)
-            {
-                return new InspectionResult(InspectionDecision.NotifyError, e);
-            }
-        }
-
-        public void Complete()
-        {
-            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
-            {
-                if (_result != null)
-                    _source.SetResult(null);
-                else
-                    _source.SetException(new NoResultException());
-            }
-        }
-
-        public void Fail(Exception exception)
-        {
-            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
-            {
-                _source.SetException(exception);
-            }
+            return null;
         }
 
         public override string ToString()
         {
-            return string.Format("Stream: {0}, ExpectedVersion: {1}, CorrelationId: {2}", _stream, _expectedVersion, CorrelationId);
+            return string.Format("Stream: {0}, ExpectedVersion: {1}.", _stream, _expectedVersion);
         }
     }
 }

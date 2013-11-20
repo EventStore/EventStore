@@ -26,14 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Net;
 
 namespace EventStore.Transport.Tcp
 {
     public interface IMonitoredTcpConnection
     {
-        IPEndPoint EndPoint { get; }
-
         bool IsReadyForSend { get; }
         bool IsReadyForReceive { get; }
         bool IsInitialized { get; } 
@@ -46,9 +43,9 @@ namespace EventStore.Transport.Tcp
         DateTime? LastSendStarted { get; }
         DateTime? LastReceiveStarted { get; }
 
-        uint PendingSendBytes { get; }
-        uint InSendBytes { get; }
-        uint PendingReceivedBytes { get; }
+        int PendingSendBytes { get; }
+        int InSendBytes { get; }
+        int PendingReceivedBytes { get; }
 
         long TotalBytesSent { get; }
         long TotalBytesReceived { get; }

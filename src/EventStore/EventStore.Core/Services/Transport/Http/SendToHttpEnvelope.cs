@@ -26,8 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using EventStore.Common.Log;
+using System.Text;
 using EventStore.Common.Utils;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
@@ -35,25 +36,59 @@ using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http
 {
+    public class HttpResponseConfiguratorArgs
+    {
+        public readonly Uri RequestedUrl;
+        public readonly ICodec ResponseCodec;
+
+        public HttpResponseConfiguratorArgs(Uri requestedUrl, ICodec responseCodec)
+        {
+            RequestedUrl = requestedUrl;
+            ResponseCodec = responseCodec;
+        }
+
+        public static implicit operator HttpResponseConfiguratorArgs(HttpEntityManager entity)
+        {
+            return new HttpResponseConfiguratorArgs(entity.RequestedUrl, entity.ResponseCodec);
+        }
+    }
+
+    public class HttpResponseFormatterArgs
+    {
+        public readonly Uri RequestedUrl;
+        public readonly ICodec ResponseCodec;
+
+        public HttpResponseFormatterArgs(Uri requestedUrl, ICodec responseCodec)
+        {
+            RequestedUrl = requestedUrl;
+            ResponseCodec = responseCodec;
+        }
+
+        public static implicit operator HttpResponseFormatterArgs(HttpEntityManager entity)
+        {
+            return new HttpResponseFormatterArgs(entity.RequestedUrl, entity.ResponseCodec);
+        }
+    }
+
     public class SendToHttpEnvelope : IEnvelope
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<SendToHttpEnvelope>();
+        private readonly IPublisher _networkSendQueue;
+        private readonly HttpEntityManager _entity;
+        private readonly Func<HttpResponseFormatterArgs, Message, string> _formatter;
+        private readonly Func<HttpResponseConfiguratorArgs, Message, ResponseConfiguration> _configurator;
 
-        private readonly HttpEntity _entity;
-
-        private readonly Func<HttpEntity, Message, string> _formatter;
-        private readonly Func<HttpEntity, Message, ResponseConfiguration> _configurator;
- 
-        public SendToHttpEnvelope(HttpEntity entity, 
-                                  Func<HttpEntity, Message, string> formatter, 
-                                  Func<HttpEntity, Message, ResponseConfiguration> configurator)
+        public SendToHttpEnvelope(IPublisher networkSendQueue, 
+                                  HttpEntityManager entity,
+                                  Func<HttpResponseFormatterArgs, Message, string> formatter,
+                                  Func<HttpResponseConfiguratorArgs, Message, ResponseConfiguration> configurator)
         {
+            Ensure.NotNull(networkSendQueue, "networkSendQueue");
             Ensure.NotNull(entity, "entity");
             Ensure.NotNull(formatter, "formatter");
             Ensure.NotNull(configurator, "configurator");
 
+            _networkSendQueue = networkSendQueue;
             _entity = entity;
-
             _formatter = formatter;
             _configurator = configurator;
         }
@@ -61,40 +96,9 @@ namespace EventStore.Core.Services.Transport.Http
         public void ReplyWith<T>(T message) where T : Message
         {
             Ensure.NotNull(message, "message");
-
-            var deniedToHandle = message as HttpMessage.DeniedToHandle;
-            if (deniedToHandle != null)
-            {
-                Deny(deniedToHandle);
-                return;
-            }
-
-            var response = _formatter(_entity, message);
-            var config = _configurator(_entity,  message);
-
-            _entity.Manager.Reply(response,
-                                  config.Code,
-                                  config.Description,
-                                  config.Type,
-                                  config.Headers,
-                                  exc => Log.ErrorException(exc, "Error occurred while replying to http request (envelope)"));
-        }
-
-        private void Deny(HttpMessage.DeniedToHandle deniedToHandle)
-        {
-            int code;
-            switch (deniedToHandle.Reason)
-            {
-                case DenialReason.ServerTooBusy:
-                    code = HttpStatusCode.InternalServerError;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-            _entity.Manager.Reply(code,
-                                  deniedToHandle.Details,
-                                  exc => Log.ErrorException(exc, "Error occurred while replying to http request (envelope)"));
+            var responseConfiguration = _configurator(_entity, message);
+            var data = _formatter(_entity, message);
+            _networkSendQueue.Publish(new HttpMessage.HttpSend(_entity, responseConfiguration, data, message));
         }
     }
 
@@ -106,15 +110,19 @@ namespace EventStore.Core.Services.Transport.Http
 
         private readonly IEnvelope _httpEnvelope;
 
-        public SendToHttpEnvelope(HttpEntity entity, Func<ICodec, TExpectedResponseMessage, string> formatter, Func<ICodec, TExpectedResponseMessage, ResponseConfiguration> configurator, IEnvelope notMatchingEnvelope)
+        public SendToHttpEnvelope(IPublisher networkSendQueue, 
+                                  HttpEntityManager entity, 
+                                  Func<ICodec, TExpectedResponseMessage, string> formatter, 
+                                  Func<ICodec, TExpectedResponseMessage, ResponseConfiguration> configurator,
+                                  IEnvelope notMatchingEnvelope)
         {
             _formatter = formatter;
             _configurator = configurator;
             _notMatchingEnvelope = notMatchingEnvelope;
-            _httpEnvelope = new SendToHttpEnvelope(entity, Formatter, Configurator);
+            _httpEnvelope = new SendToHttpEnvelope(networkSendQueue, entity, Formatter, Configurator);
         }
 
-        private ResponseConfiguration Configurator(HttpEntity http, Message message)
+        private ResponseConfiguration Configurator(HttpResponseConfiguratorArgs http, Message message)
         {
             try
             {
@@ -123,11 +131,11 @@ namespace EventStore.Core.Services.Transport.Http
             catch (InvalidCastException)
             {
                 //NOTE: using exceptions to allow handling errors in debugger
-                return new ResponseConfiguration(500, "Internal server error", "text/plain");
+                return new ResponseConfiguration(500, "Internal server error", "text/plain", Helper.UTF8NoBom);
             }
         }
 
-        private string Formatter(HttpEntity http, Message message)
+        private string Formatter(HttpResponseFormatterArgs http, Message message)
         {
             try
             {

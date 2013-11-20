@@ -28,7 +28,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Core.Cluster;
+using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.VNode
@@ -101,13 +102,12 @@ namespace EventStore.Core.Services.VNode
             return new VNodeFSMStatesDefinition(this, states);
         }
 
-        public VNodeFSMStatesDefinition InOtherStates()
+        public VNodeFSMStatesDefinition InAllStatesExcept(VNodeState[] states)
         {
-            var unspecifiedStates = _handlers.Select((x, i) => x == null ? i : -1)
-                .Where(x => x >= 0)
-                .Cast<VNodeState>()
-                .ToArray();
-            return new VNodeFSMStatesDefinition(this, unspecifiedStates);
+            Ensure.Positive(states.Length, "states.Length");
+
+            var s = Enum.GetValues(typeof (VNodeState)).Cast<VNodeState>().Except(states).ToArray();
+            return new VNodeFSMStatesDefinition(this, s);
         }
 
         public VNodeFSM Build()

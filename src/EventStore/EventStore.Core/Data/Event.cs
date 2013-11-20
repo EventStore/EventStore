@@ -26,19 +26,26 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Text;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Data
 {
     public class Event
     {
-        public static readonly byte[] Empty = new byte[0];
-
         public readonly Guid EventId;
         public readonly string EventType;
         public readonly bool IsJson;
 
         public readonly byte[] Data;
         public readonly byte[] Metadata;
+
+        public Event(Guid eventId, string eventType, bool isJson, string data, string metadata)
+            : this(
+                eventId, eventType, isJson, Helper.UTF8NoBom.GetBytes(data),
+                metadata != null ? Helper.UTF8NoBom.GetBytes(metadata) : null)
+        {
+        }
 
         public Event(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata)
         {
@@ -51,8 +58,8 @@ namespace EventStore.Core.Data
             EventType = eventType;
             IsJson = isJson;
 
-            Data = data ?? Empty;
-            Metadata = metadata ?? Empty;
+            Data = data ?? Empty.ByteArray;
+            Metadata = metadata ?? Empty.ByteArray;
         }
     }
 }

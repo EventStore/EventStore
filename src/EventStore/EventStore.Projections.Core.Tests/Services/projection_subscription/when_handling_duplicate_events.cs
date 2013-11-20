@@ -39,17 +39,17 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected override void When()
         {
             _subscription.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false,
-                    new Event(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                    Guid.NewGuid(), new TFPos(200, 150), "test-stream", 1, false, Guid.NewGuid(),
+                    "bad-event-type", false, new byte[0], new byte[0]));
             _subscription.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(100, 50), "test-stream", 0, false,
-                    new Event(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                    Guid.NewGuid(), new TFPos(100, 50), "test-stream", 0, false, Guid.NewGuid(),
+                    "bad-event-type", false, new byte[0], new byte[0]));
             _subscription.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false,
-                    new Event(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
+                    Guid.NewGuid(), new TFPos(200, 150), "test-stream", 1, false, Guid.NewGuid(),
+                    "bad-event-type", false, new byte[0], new byte[0]));
         }
 
         [Test]

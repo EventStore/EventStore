@@ -27,14 +27,15 @@ namespace js1 {
 		};
 
 		virtual ~QueryScript();
+		virtual void report_errors(REPORT_ERROR_CALLBACK report_error_callback);
 
-		bool compile_script(const uint16_t *query_source, const uint16_t *file_name);
-		v8::Handle<v8::Value> run();
-		v8::Persistent<v8::String> execute_handler(void* event_handler_handle, const uint16_t *data_json, const uint16_t *data_other[], int32_t other_length);
-
+		Status compile_script(const uint16_t *query_source, const uint16_t *file_name);
+		Status try_run();
+		Status execute_handler(void* event_handler_handle, const uint16_t *data_json, 
+			const uint16_t *data_other[], int32_t other_length, v8::Handle<v8::String> &result);
 	protected:
 		virtual v8::Isolate *get_isolate();
-		virtual v8::Persistent<v8::ObjectTemplate> create_global_template();
+		virtual Status create_global_template(v8::Handle<v8::ObjectTemplate> &result);
 
 	private:
 		v8::Isolate *isolate;
@@ -44,11 +45,11 @@ namespace js1 {
 
 		PreludeScript *prelude;
 
-		v8::Handle<v8::Value> on(const v8::Arguments& args);
-		v8::Handle<v8::Value> notify(const v8::Arguments& args);
+		void on(const v8::FunctionCallbackInfo<v8::Value>& info);
+		void notify(const v8::FunctionCallbackInfo<v8::Value>& info);
 
-		static v8::Handle<v8::Value> on_callback(const v8::Arguments& args); 
-		static v8::Handle<v8::Value> notify_callback(const v8::Arguments& args); 
+		static void on_callback(const v8::FunctionCallbackInfo<v8::Value>& info); 
+		static void notify_callback(const v8::FunctionCallbackInfo<v8::Value>& info); 
 
 	};
 }

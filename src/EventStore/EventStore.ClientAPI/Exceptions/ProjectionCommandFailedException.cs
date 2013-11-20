@@ -31,7 +31,7 @@ using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class ProjectionCommandFailedException : Exception
+    public class ProjectionCommandFailedException : EventStoreConnectionException
     {
         public ProjectionCommandFailedException()
         {

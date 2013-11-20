@@ -26,11 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class RetriesLimitReachedException : Exception
+    public class RetriesLimitReachedException : EventStoreConnectionException
     {
         public RetriesLimitReachedException(int retries) 
             : base(string.Format("Reached retries limit : {0}", retries))

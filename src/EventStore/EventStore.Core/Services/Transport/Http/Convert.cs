@@ -26,257 +26,254 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Transport.Http;
+using EventStore.Core.Messages;
+using EventStore.Core.Services.Transport.Http.Controllers;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Transport.Http.Atom;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Services.Transport.Http
 {
     public static class Convert
     {
-        public static ServiceDocument ToServiceDocument(IEnumerable<string> userStreams, 
-                                                        IEnumerable<string> systemStreams,
-                                                        string userHostName)
+        private static readonly string AllEscaped = Uri.EscapeDataString("$all");
+        public static FeedElement ToStreamEventForwardFeed(ClientMessage.ReadStreamEventsForwardCompleted msg, Uri requestedUrl, EmbedLevel embedContent)
         {
-            if (userStreams == null || systemStreams == null || userHostName == null)
-                return null;
+            Ensure.NotNull(msg, "msg");
 
-            var document = new ServiceDocument();
-
-            var userWorkspace = new WorkspaceElement();
-            userWorkspace.SetTitle("User event streams");
-
-            var systemWorkspace = new WorkspaceElement();
-            systemWorkspace.SetTitle("System event streams");
-
-            foreach (var userStream in userStreams)
-            {
-                var collection = new CollectionElement();
-
-                collection.SetTitle(userStream);
-                collection.SetUri(HostName.Combine(userHostName, "/streams/{0}", userStream));
-
-                collection.AddAcceptType(ContentType.Xml);
-                collection.AddAcceptType(ContentType.Atom);
-                collection.AddAcceptType(ContentType.Json);
-                collection.AddAcceptType(ContentType.AtomJson);
-
-                userWorkspace.AddCollection(collection);
-            }
-
-            foreach (var systemStream in systemStreams)
-            {
-                var collection = new CollectionElement();
-
-                collection.SetTitle(systemStream);
-                collection.SetUri(HostName.Combine(userHostName, "/streams/{0}", systemStream));
-
-                collection.AddAcceptType(ContentType.Xml);
-                collection.AddAcceptType(ContentType.Atom);
-                collection.AddAcceptType(ContentType.Json);
-                collection.AddAcceptType(ContentType.AtomJson);
-
-                systemWorkspace.AddCollection(collection);
-            }
-
-            document.AddWorkspace(userWorkspace);
-            document.AddWorkspace(systemWorkspace);
-
-            return document;
-        }
-
-        public static FeedElement ToFeed(string eventStreamId, 
-                                         int start, 
-                                         int count, 
-                                         DateTime updateTime,
-                                         EventRecord[] items, 
-                                         Func<EventRecord, string, EntryElement> itemToEntry,
-                                         string userHostName)
-        {
-            if (string.IsNullOrEmpty(eventStreamId) || items == null || userHostName == null)
-                return null;
-            if (start == -1)
-                start = GetActualStart(items);
-
-            var self = HostName.Combine(userHostName, "/streams/{0}", eventStreamId);
+            string escapedStreamId = Uri.EscapeDataString(msg.EventStreamId);
+            var self = HostName.Combine(requestedUrl, "/streams/{0}", escapedStreamId);
             var feed = new FeedElement();
-            feed.SetTitle(string.Format("Event stream '{0}'", eventStreamId));
+            feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
+            feed.StreamId = msg.EventStreamId;
             feed.SetId(self);
-            feed.SetUpdated(updateTime);
+            feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
 
-            feed.AddLink(self, "self", null);
-            feed.AddLink(HostName.Combine(userHostName,
-                                          "/streams/{0}/range/{1}/{2}",
-                                          eventStreamId,
-                                          AtomSpecs.FeedPageSize - 1,
-                                          AtomSpecs.FeedPageSize),
-                         "first",
-                         null);
-            feed.AddLink(HostName.Combine(userHostName,
-                                          "/streams/{0}/range/{1}/{2}",
-                                          eventStreamId,
-                                          PrevStart(start),
-                                          AtomSpecs.FeedPageSize),
-                         "prev",
-                         null);
-            feed.AddLink(HostName.Combine(userHostName,
-                                          "/streams/{0}/range/{1}/{2}",
-                                          eventStreamId,
-                                          NextStart(start),
-                                          AtomSpecs.FeedPageSize),
-                         "next",
-                         null);
+            var prevEventNumber = Math.Min(msg.FromEventNumber + msg.MaxCount - 1, msg.LastEventNumber) + 1;
+            var nextEventNumber = msg.FromEventNumber - 1;
 
-            foreach (var item in items)
+            feed.AddLink("self", self);
+            feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", escapedStreamId, msg.MaxCount));
+            if (nextEventNumber >= 0)
             {
-                feed.AddEntry(itemToEntry(item, userHostName));
+                feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, 0, msg.MaxCount));
+                feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber, msg.MaxCount));
+            }
+            if (!msg.IsEndOfStream || msg.Events.Length > 0)
+                feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
+            feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", escapedStreamId));
+            for (int i = msg.Events.Length - 1; i >= 0; --i)
+            {
+                feed.AddEntry(ToEntry(msg.Events[i], requestedUrl, embedContent));
+            }
+
+            return feed;
+        }
+
+        public static FeedElement ToStreamEventBackwardFeed(ClientMessage.ReadStreamEventsBackwardCompleted msg, Uri requestedUrl, EmbedLevel embedContent, bool headOfStream)
+        {
+            Ensure.NotNull(msg, "msg");
+
+            string escapedStreamId = Uri.EscapeDataString(msg.EventStreamId);
+            var self = HostName.Combine(requestedUrl, "/streams/{0}", escapedStreamId);
+            var feed = new FeedElement();
+            feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
+            feed.StreamId = msg.EventStreamId;
+            feed.SetId(self);
+            feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetAuthor(AtomSpecs.Author);
+            feed.SetHeadOfStream(headOfStream); //TODO AN: remove this ?
+            feed.SetSelfUrl(self);
+
+            var prevEventNumber = Math.Min(msg.FromEventNumber, msg.LastEventNumber) + 1;
+            var nextEventNumber = msg.FromEventNumber - msg.MaxCount;
+
+            feed.AddLink("self", self);
+            feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", escapedStreamId, msg.MaxCount));
+            if (!msg.IsEndOfStream)
+            {
+                if (nextEventNumber < 0) throw new Exception(string.Format("nextEventNumber is negative: {0} while IsEndOfStream", nextEventNumber));
+                feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, 0, msg.MaxCount));
+                feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber, msg.MaxCount));
+            }
+            feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
+            feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", escapedStreamId));
+            for (int i = 0; i < msg.Events.Length; ++i)
+            {
+                feed.AddEntry(ToEntry(msg.Events[i], requestedUrl, embedContent));
+            }
+
+            return feed;
+        }
+
+        public static FeedElement ToAllEventsForwardFeed(ClientMessage.ReadAllEventsForwardCompleted msg, Uri requestedUrl, EmbedLevel embedContent)
+        {
+            var self = HostName.Combine(requestedUrl, "/streams/{0}", AllEscaped);
+            var feed = new FeedElement();
+            feed.SetTitle("All events");
+            feed.SetId(self);
+            feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[msg.Events.Length - 1].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetAuthor(AtomSpecs.Author);
+
+            feed.AddLink("self", self);
+            feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllEscaped, msg.MaxCount));
+            if (msg.CurrentPos.CommitPosition != 0)
+            {
+                feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, new TFPos(0, 0).AsString(), msg.MaxCount));
+                feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllEscaped, msg.PrevPos.AsString(), msg.MaxCount));
+            }
+            if (!msg.IsEndOfStream || msg.Events.Length > 0)
+                feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, msg.NextPos.AsString(), msg.MaxCount));
+            feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", AllEscaped));
+            for (int i = msg.Events.Length - 1; i >= 0; --i)
+            {
+                feed.AddEntry(ToEntry(new ResolvedEvent(msg.Events[i].Event, msg.Events[i].Link), requestedUrl, embedContent));
             }
             return feed;
         }
 
-        public static FeedElement ToAllEventsBackwardFeed(ReadAllResult result,
-                                                          Func<EventRecord, string, EntryElement> itemToEntry,
-                                                          string userHostName)
+        public static FeedElement ToAllEventsBackwardFeed(ClientMessage.ReadAllEventsBackwardCompleted msg, Uri requestedUrl, EmbedLevel embedContent)
         {
-            var self = HostName.Combine(userHostName, "/streams/$all");
+            var self = HostName.Combine(requestedUrl, "/streams/{0}", AllEscaped);
             var feed = new FeedElement();
             feed.SetTitle(string.Format("All events"));
             feed.SetId(self);
-
-            var items = result.Records.Select(rer => rer.Event).ToList();
-
-            feed.SetUpdated(items.Any() ? items.First().TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
 
-            feed.AddLink(self, "self", null);
-            feed.AddLink(HostName.Combine(userHostName,
-                                          "/streams/$all/{0}",
-                                          result.MaxCount),
-                         "first",
-                         null);
-            feed.AddLink(HostName.Combine(userHostName,
-                                          "/streams/$all/after/{0}/{1}",
-                                          new TFPos(0, 0).AsString(),
-                                          result.MaxCount),
-                         "last",
-                         null);
-            feed.AddLink(HostName.Combine(userHostName,
-                                          "/streams/$all/after/{0}/{1}",
-                                          result.PrevPos.AsString(),
-                                          result.MaxCount),
-                         "prev",
-                         null);
-            feed.AddLink(HostName.Combine(userHostName,
-                                          "/streams/$all/before/{0}/{1}",
-                                          result.NextPos.AsString(),
-                                          result.MaxCount),
-                         "next",
-                         null);
-
-            foreach (var item in items)
+            feed.AddLink("self", self);
+            feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllEscaped, msg.MaxCount));
+            if (!msg.IsEndOfStream)
             {
-                feed.AddEntry(itemToEntry(item, userHostName));
+                feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, new TFPos(0, 0).AsString(), msg.MaxCount));
+                feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllEscaped, msg.NextPos.AsString(), msg.MaxCount));
+            }
+            feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, msg.PrevPos.AsString(), msg.MaxCount));
+            feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", AllEscaped));
+            for (int i = 0; i < msg.Events.Length; ++i)
+            {
+                feed.AddEntry(ToEntry(new ResolvedEvent(msg.Events[i].Event, msg.Events[i].Link), requestedUrl, embedContent));
             }
             return feed;
         }
 
-        public static FeedElement ToAllEventsForwardFeed(ReadAllResult result,
-                                                         Func<EventRecord, string, EntryElement> itemToEntry,
-                                                         string userHostName)
+        public static EntryElement ToEntry(ResolvedEvent eventLinkPair, Uri requestedUrl, EmbedLevel embedContent, bool singleEntry = false)
         {
-            var self = HostName.Combine(userHostName, "/streams/$all");
-            var feed = new FeedElement();
-            feed.SetTitle(string.Format("All events"));
-            feed.SetId(self);
-
-            var items = result.Records.Select(rer => rer.Event).OrderByDescending(re => re.TimeStamp).ToList();
-
-            feed.SetUpdated(items.Any() ? items.First().TimeStamp : DateTime.MinValue.ToUniversalTime());
-            feed.SetAuthor(AtomSpecs.Author);
-
-            feed.AddLink(self, "self", null);
-            feed.AddLink(HostName.Combine(userHostName,
-                                          "/streams/$all/{0}",
-                                          result.MaxCount),
-                         "first",
-                         null);
-            feed.AddLink(HostName.Combine(userHostName,
-                                          "/streams/$all/after/{0}/{1}",
-                                          new TFPos(0, 0).AsString(),
-                                          result.MaxCount),
-                         "last",
-                         null);
-            feed.AddLink(HostName.Combine(userHostName,
-                                          "/streams/$all/after/{0}/{1}",
-                                          result.NextPos.AsString(),
-                                          result.MaxCount),
-                         "prev",
-                         null);
-            feed.AddLink(HostName.Combine(userHostName,
-                                          "/streams/$all/before/{0}/{1}",
-                                          result.PrevPos.AsString(),
-                                          result.MaxCount),
-                         "next",
-                         null);
-            foreach (var item in items)
-            {
-                feed.AddEntry(itemToEntry(item, userHostName));
-            }
-            return feed;
-        }
-
-        private static int PrevStart(int currentStart)
-        {
-            return currentStart + AtomSpecs.FeedPageSize;
-        }
-
-        private static int NextStart(int currentStart)
-        {
-            var prevStart = currentStart - AtomSpecs.FeedPageSize;
-            return prevStart >= 0 ? prevStart : 0;
-        }
-
-        private static int GetActualStart(EventRecord[] items)
-        {
-            return items.Max(e => e.EventNumber);
-        }
-
-        public static EntryElement ToEntry(EventRecord evnt, string userHostName)
-        {
-            if (evnt == null || userHostName == null)
+            if (eventLinkPair.Event == null || requestedUrl == null)
                 return null;
 
-            var entry = new EntryElement();
+            var evnt = eventLinkPair.Event;
 
-            entry.SetTitle(string.Format("{0} #{1}", evnt.EventStreamId, evnt.EventNumber));
+            EntryElement entry;
+            if (embedContent > EmbedLevel.Content)
+            {
+                var richEntry = new RichEntryElement();
+                entry = richEntry;
 
-            entry.SetId(HostName.Combine(userHostName, "/streams/{0}/{1}", evnt.EventStreamId, evnt.EventNumber));
+                richEntry.EventType = evnt.EventType;
+                richEntry.EventNumber = evnt.EventNumber;
+                richEntry.StreamId = evnt.EventStreamId;
+                richEntry.PositionEventNumber = eventLinkPair.OriginalEvent.EventNumber;
+                richEntry.PositionStreamId = eventLinkPair.OriginalEvent.EventStreamId;
+                richEntry.IsJson = (evnt.Flags & PrepareFlags.IsJson) != 0;
+                if (embedContent >= EmbedLevel.Body)
+                {
+                    if (richEntry.IsJson)
+                    {
+                        if (embedContent >= EmbedLevel.PrettyBody)
+                        {
+                            try
+                            {
+                                richEntry.Data = Helper.UTF8NoBom.GetString(evnt.Data);
+                                // next step may fail, so we have already assigned body
+                                richEntry.Data = FormatJson(Helper.UTF8NoBom.GetString(evnt.Data));
+                            }
+                            catch
+                            {
+                                // ignore - we tried
+                            }
+                        }
+                        else
+                            richEntry.Data = Helper.UTF8NoBom.GetString(evnt.Data);
+                    }
+                    else if (embedContent >= EmbedLevel.TryHarder)
+                    {
+                        try
+                        {
+                            richEntry.Data = Helper.UTF8NoBom.GetString(evnt.Data);
+                            // next step may fail, so we have already assigned body
+                            richEntry.Data = FormatJson(richEntry.Data);
+                            // it is json if successed
+                            richEntry.IsJson = true;
+                        }
+                        catch 
+                        {
+                            // ignore - we tried
+                        }
+                    }
+                    // metadata
+                    if (embedContent >= EmbedLevel.PrettyBody)
+                    {
+                        try
+                        {
+                            richEntry.MetaData = Helper.UTF8NoBom.GetString(evnt.Metadata);
+                            richEntry.IsMetaData = richEntry.MetaData.IsNotEmptyString();
+                            // next step may fail, so we have already assigned body
+                            richEntry.MetaData = FormatJson(richEntry.MetaData);
+                        }
+                        catch
+                        {
+                            // ignore - we tried
+                        }
+                        var lnk = eventLinkPair.Link;
+                        if (lnk != null)
+                        {
+                            try
+                            {
+                                richEntry.LinkMetaData = Helper.UTF8NoBom.GetString(lnk.Metadata);
+                                richEntry.IsLinkMetaData = richEntry.LinkMetaData.IsNotEmptyString();
+                                // next step may fail, so we have already assigned body
+                                richEntry.LinkMetaData = FormatJson(richEntry.LinkMetaData);
+                            }
+                            catch
+                            {
+                                // ignore - we tried
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                entry = new EntryElement();
+            }
+
+            var escapedStreamId = Uri.EscapeDataString(evnt.EventStreamId);
+            entry.SetTitle(evnt.EventNumber + "@" + evnt.EventStreamId);
+            entry.SetId(HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, evnt.EventNumber));
             entry.SetUpdated(evnt.TimeStamp);
-
             entry.SetAuthor(AtomSpecs.Author);
-            entry.SetSummary(string.Format("Entry #{0}", evnt.EventNumber));
-
-            entry.AddLink(HostName.Combine(userHostName, "/streams/{0}/{1}", evnt.EventStreamId, evnt.EventNumber), "edit", null);
-
-            entry.AddLink(
-                HostName.Combine(userHostName, "/streams/{0}/event/{1}?format=text", evnt.EventStreamId, evnt.EventNumber),
-                null,
-                ContentType.PlainText);
-            entry.AddLink(
-                HostName.Combine(userHostName, "/streams/{0}/event/{1}?format=json", evnt.EventStreamId, evnt.EventNumber),
-                "alternate",
-                ContentType.Json);
-            entry.AddLink(
-                HostName.Combine(userHostName, "/streams/{0}/event/{1}?format=xml", evnt.EventStreamId, evnt.EventNumber),
-                "alternate",
-                ContentType.Xml);
+            entry.SetSummary(evnt.EventType);
+            if ((singleEntry || embedContent == EmbedLevel.Content) && ((evnt.Flags & PrepareFlags.IsJson) != 0))
+                entry.SetContent(AutoEventConverter.CreateDataDto(eventLinkPair));
+            entry.AddLink("edit", HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, evnt.EventNumber));
+            entry.AddLink("alternate", HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, evnt.EventNumber));
 
             return entry;
         }
+
+        private static string FormatJson(string unformattedjson)
+        {
+            if (string.IsNullOrEmpty(unformattedjson))
+                return unformattedjson;
+            var jo = JObject.Parse(unformattedjson);
+            var json = JsonConvert.SerializeObject(jo, Formatting.Indented);
+            return json;
+        }
     }
+
 }

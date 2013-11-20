@@ -27,120 +27,132 @@
 // 
 
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
+using EventStore.Core.Helpers;
+using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     //TODO: replace Console.WriteLine with logging
     //TODO: separate check-pointing from projection handling
+
     public class CoreProjection : IDisposable,
                                   ICoreProjection,
+                                  ICoreProjectionForProcessingPhase,
                                   IHandle<CoreProjectionManagementMessage.GetState>,
-                                  IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
-                                  IHandle<CoreProjectionProcessingMessage.PauseRequested>,
-                                  IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>,
-                                  IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>,
-                                  IHandle<ProjectionSubscriptionMessage.ProgressChanged>
+                                  IHandle<CoreProjectionManagementMessage.GetResult>,
+                                  IHandle<PartitionProcessingResult>,
+                                  IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>
     {
-        internal const string ProjectionsStreamPrefix = "$projections-";
-        private const string ProjectionsStateStreamSuffix = "-state";
-        internal const string ProjectionCheckpointStreamSuffix = "-checkpoint";
-
         [Flags]
         private enum State : uint
         {
             Initial = 0x80000000,
-            LoadStateRequsted = 0x1,
-            StateLoadedSubscribed = 0x2,
-            Running = 0x08,
-            Paused = 0x10,
-            Resumed = 0x20,
+            StartSlaveProjectionsRequested = 0x1,
+            LoadStateRequested = 0x2,
+            StateLoaded = 0x4,
+            Subscribed = 0x8,
+            Running = 0x10,
             Stopping = 0x40,
             Stopped = 0x80,
             FaultedStopping = 0x100,
             Faulted = 0x200,
-            Subscribed = StateLoadedSubscribed | Running | Paused | Resumed
+            CompletingPhase = 0x400,
+            PhaseCompleted = 0x800,
         }
 
         private readonly string _name;
-        private readonly string _stateStreamNamePattern;
-        private readonly string _stateStreamName;
+        private readonly ProjectionVersion _version;
 
         private readonly IPublisher _publisher;
 
-        private readonly Guid _projectionCorrelationId;
-        private readonly ProjectionConfig _projectionConfig;
-        private readonly CheckpointStrategy _checkpointStrategy;
+        private readonly ProjectionProcessingStrategy _projectionProcessingStrategy;
+        internal readonly Guid _projectionCorrelationId;
+        private readonly IPublisher _inputQueue;
+        private readonly IPrincipal _runAs;
+
         private readonly ILogger _logger;
 
-        private readonly IProjectionStateHandler _projectionStateHandler;
         private State _state;
 
         private string _faultedReason;
 
-        private readonly
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-            _readDispatcher;
-
-        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
-
-        private string _handlerPartition;
         private readonly PartitionStateCache _partitionStateCache;
-        private readonly CoreProjectionQueue _processingQueue;
-        private readonly ICoreProjectionCheckpointManager _checkpointManager;
+        private ICoreProjectionCheckpointManager _checkpointManager;
+        private readonly ICoreProjectionCheckpointReader _checkpointReader;
+        private readonly bool _isSlaveProjection;
 
         private bool _tickPending;
-        private int _readRequestsInProgress;
-        private long _expectedSubscriptionMessageSequenceNumber = -1;
-        private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
-        private bool _subscribed;
+
+        private bool _startOnLoad;
+        private bool _completed;
+
+        private CheckpointSuggestedWorkItem _checkpointSuggestedWorkItem;
+        private IProjectionProcessingPhase _projectionProcessingPhase;
+        private readonly bool _stopOnEof;
+        private readonly IProjectionProcessingPhase[] _projectionProcessingPhases;
+        private readonly CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
+        private readonly bool _partitionedStateState;
+        private readonly Action<ProjectionStatistics> _enrichStatistics;
+
+        private SlaveProjectionCommunicationChannels _slaveProjections;
+        //NOTE: this is only for slave projections (TBD)
+
 
         public CoreProjection(
-            string name, Guid projectionCorrelationId, IPublisher publisher,
-            IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig,
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ILogger logger = null)
+            ProjectionProcessingStrategy projectionProcessingStrategy, ProjectionVersion version,
+            Guid projectionCorrelationId, IPublisher inputQueue, IPrincipal runAs, IPublisher publisher, IODispatcher ioDispatcher,
+            ReaderSubscriptionDispatcher subscriptionDispatcher, ILogger logger, ProjectionNamesBuilder namingBuilder, CoreProjectionCheckpointWriter coreProjectionCheckpointWriter,
+            PartitionStateCache partitionStateCache, string effectiveProjectionName, ITimeProvider timeProvider, bool isSlaveProjection)
         {
-            if (name == null) throw new ArgumentNullException("name");
-            if (name == "") throw new ArgumentException("name");
             if (publisher == null) throw new ArgumentNullException("publisher");
-            if (projectionStateHandler == null) throw new ArgumentNullException("projectionStateHandler");
-            _projectionStateHandler = projectionStateHandler;
+            if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
+            if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
+
+            _projectionProcessingStrategy = projectionProcessingStrategy;
             _projectionCorrelationId = projectionCorrelationId;
-
-            var namingBuilder = new ProjectionNamesBuilder();
-            _projectionStateHandler.ConfigureSourceProcessingStrategy(namingBuilder);
-
-            _name = namingBuilder.ForceProjectionName ?? name;
-            //TODO: move into name builder
-            _stateStreamNamePattern = namingBuilder.StateStreamName ?? ProjectionsStreamPrefix + _name + "-{0}" + ProjectionsStateStreamSuffix;
-            _stateStreamName = namingBuilder.StateStreamName ?? ProjectionsStreamPrefix + _name + ProjectionsStateStreamSuffix; 
-            _projectionConfig = projectionConfig;
+            _inputQueue = inputQueue;
+            _runAs = runAs;
+            _name = effectiveProjectionName;
+            _version = version;
+            _stopOnEof = projectionProcessingStrategy.GetStopOnEof();
             _logger = logger;
             _publisher = publisher;
-            _readDispatcher = readDispatcher;
-            _writeDispatcher = writeDispatcher;
-            var builder = new CheckpointStrategy.Builder();
-            _projectionStateHandler.ConfigureSourceProcessingStrategy(builder);
-            _checkpointStrategy = builder.Build(_projectionConfig.Mode);
-            _partitionStateCache = new PartitionStateCache();
-            _processingQueue = new CoreProjectionQueue(
-                projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
-            _checkpointManager = this._checkpointStrategy.CreateCheckpointManager(
-                this, projectionCorrelationId, this._publisher, this._readDispatcher,
-                this._writeDispatcher, this._projectionConfig, this._name, _stateStreamName);
+            _partitionStateCache = partitionStateCache;
+            _partitionedStateState = projectionProcessingStrategy.GetIsPartitioned();
+            _isSlaveProjection = isSlaveProjection;
+            var useCheckpoints = projectionProcessingStrategy.GetUseCheckpoints();
+
+            _coreProjectionCheckpointWriter = coreProjectionCheckpointWriter;
+
+            _projectionProcessingPhases = projectionProcessingStrategy.CreateProcessingPhases(
+                publisher, projectionCorrelationId, partitionStateCache, UpdateStatistics, this, namingBuilder,
+                timeProvider, ioDispatcher, coreProjectionCheckpointWriter);
+
+
+            //NOTE: currently assuming the first checkpoint manager to be able to load any state
+            _checkpointReader = new CoreProjectionCheckpointReader(
+                publisher, _projectionCorrelationId, ioDispatcher, namingBuilder.MakeCheckpointStreamName(), _version,
+                useCheckpoints);
+            _enrichStatistics = projectionProcessingStrategy.EnrichStatistics;
             GoToState(State.Initial);
+        }
+
+        private void BeginPhase(IProjectionProcessingPhase processingPhase, CheckpointTag startFrom)
+        {
+            _projectionProcessingPhase = processingPhase;
+            _checkpointManager = processingPhase.CheckpointManager;
+
+            _projectionProcessingPhase.InitializeFromCheckpoint(startFrom);
+            _checkpointManager.Start(startFrom);
         }
 
         internal void UpdateStatistics()
@@ -154,16 +166,40 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Start()
         {
             EnsureState(State.Initial);
-            GoToState(State.LoadStateRequsted);
+            _startOnLoad = true;
+
+            var slaveProjectionDefinitions = _projectionProcessingStrategy.GetSlaveProjections();
+            if (slaveProjectionDefinitions != null)
+            {
+                GoToState(State.StartSlaveProjectionsRequested);
+            }
+            else
+            {
+                GoToState(State.LoadStateRequested);
+            }
+        }
+
+        public void LoadStopped()
+        {
+            _startOnLoad = false;
+            EnsureState(State.Initial);
+            GoToState(State.LoadStateRequested);
         }
 
         public void Stop()
         {
-            EnsureState(State.LoadStateRequsted | State.StateLoadedSubscribed | State.Paused | State.Resumed | State.Running);
-            if (_state == State.LoadStateRequsted)
-                GoToState(State.Stopped);
-            else
-                GoToState(State.Stopping);
+            EnsureState(State.LoadStateRequested | State.StateLoaded | State.Subscribed | State.Running | State.PhaseCompleted);
+            try
+            {
+                if (_state == State.LoadStateRequested || _state == State.PhaseCompleted)
+                    GoToState(State.Stopped);
+                else
+                    GoToState(State.Stopping);
+            }
+            catch (Exception ex)
+            {
+                SetFaulted(ex);
+            }
         }
 
         public void Kill()
@@ -171,114 +207,68 @@ namespace EventStore.Projections.Core.Services.Processing
             SetFaulted("Killed");
         }
 
-        private PartitionStateCache.State GetProjectionState()
-        {
-            //TODO: separate requesting valid only state (not catching-up, non-stopped etc)
-            //EnsureState(State.StateLoadedSubscribed | State.Stopping | State.Subscribed | State.Paused | State.Resumed | State.Running);
-            return _partitionStateCache.GetLockedPartitionState("");
-        }
-
         private void GetStatistics(ProjectionStatistics info)
         {
             _checkpointManager.GetStatistics(info);
-            info.Status = _state.EnumVaueName() + info.Status + _processingQueue.GetStatus();
-            info.Mode = _projectionConfig.Mode;
+            info.Status = _state.EnumValueName() + info.Status; 
             info.Name = _name;
+            info.EffectiveName = _name;
+            info.ProjectionId = _version.ProjectionId;
+            info.Epoch = _version.Epoch;
+            info.Version = _version.Version;
             info.StateReason = "";
-            info.BufferedEvents = _processingQueue.GetBufferedEventCount();
+            info.BufferedEvents = 0; 
             info.PartitionsCached = _partitionStateCache.CachedItemCount;
-            info.ReadsInProgress += _readRequestsInProgress;
+            _enrichStatistics(info);
+            if (_projectionProcessingPhase != null)
+                _projectionProcessingPhase.GetStatistics(info);
         }
 
-        public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
+        public void CompletePhase()
         {
-            if (IsOutOfOrderSubscriptionMessage(message))
+            if (_state != State.Running)
                 return;
-            RegisterSubscriptionMessage(message);
-
-            EnsureState(
-                State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
-            try
-            {
-                if (_state == State.Running || _state == State.Paused)
-                {
-                    CheckpointTag eventTag = message.CheckpointTag;
-                    string partition = _checkpointStrategy.StatePartitionSelector.GetStatePartition(message);
-                    var committedEventWorkItem = new CommittedEventWorkItem(this, message, partition);
-                    _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
-                }
-                _processingQueue.ProcessEvent();
-            }
-            catch (Exception ex)
-            {
-                SetFaulted(ex);
-            }
-        }
-
-        public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
-        {
-            if (IsOutOfOrderSubscriptionMessage(message))
-                return;
-            RegisterSubscriptionMessage(message);
-
-            EnsureState(
-                State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
-            try
-            {
-                if (_state == State.Running || _state == State.Paused)
-                {
-                    var progressWorkItem = new ProgressWorkItem(this, _checkpointManager, message.Progress);
-                    _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
-                }
-                _processingQueue.ProcessEvent();
-            }
-            catch (Exception ex)
-            {
-                SetFaulted(ex);
-            }
-        }
-
-        public void Handle(ProjectionSubscriptionMessage.CheckpointSuggested message)
-        {
-            if (IsOutOfOrderSubscriptionMessage(message))
-                return;
-            RegisterSubscriptionMessage(message);
-
-            EnsureState(
-                State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
-            try
-            {
-                if ((_state == State.Running || _state == State.Paused) && _projectionConfig.CheckpointsEnabled)
-                {
-                    CheckpointTag checkpointTag = message.CheckpointTag;
-                    var checkpointSuggestedWorkItem = new CheckpointSuggestedWorkItem(this, message, _checkpointManager);
-                    _processingQueue.EnqueueTask(checkpointSuggestedWorkItem, checkpointTag);
-                }
-                _processingQueue.ProcessEvent();
-            }
-            catch (Exception ex)
-            {
-                SetFaulted(ex);
-            }
+            if (!_stopOnEof)
+                throw new InvalidOperationException("!_projectionConfig.StopOnEof");
+            _completed = true;
+            _checkpointManager.Progress(100.0f);
+            GoToState(State.CompletingPhase);
         }
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
+            if (_state == State.LoadStateRequested || _state == State.StateLoaded)
+            {
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.StateReport(
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, state: null, position: null,
+                        exception: new Exception("Not yet available")));
+                return;
+            }
+
             EnsureState(
-                State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
-            try
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
+                | State.CompletingPhase | State.PhaseCompleted);
+
+            _projectionProcessingPhase.Handle(message);
+        }
+
+        public void Handle(CoreProjectionManagementMessage.GetResult message)
+        {
+            if (_state == State.LoadStateRequested || _state == State.StateLoaded)
             {
-                if (_state == State.Running || _state == State.Paused)
-                {
-                    var getStateWorkItem = new GetStateWorkItem(message.Envelope, message.CorrelationId, this, _partitionStateCache, message.Partition);
-                    _processingQueue.EnqueueOutOfOrderTask(getStateWorkItem);
-                }
-                _processingQueue.ProcessEvent();
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.ResultReport(
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, result: null, position: null,
+                        exception: new Exception("Not yet available")));
+                return;
             }
-            catch (Exception ex)
-            {
-                SetFaulted(ex);
-            }
+
+            EnsureState(
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
+                | State.CompletingPhase | State.PhaseCompleted);
+
+            _projectionProcessingPhase.Handle(message);
         }
 
         public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
@@ -286,17 +276,46 @@ namespace EventStore.Projections.Core.Services.Processing
             CheckpointCompleted(message.CheckpointTag);
         }
 
-        public void Handle(CoreProjectionProcessingMessage.PauseRequested message)
-        {
-            Pause();
-        }
-
         public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
         {
-            EnsureState(State.LoadStateRequsted);
+            EnsureState(State.LoadStateRequested);
             try
             {
-                OnLoadStateCompleted(message.CheckpointTag, message.CheckpointData);
+                var checkpointTag = message.CheckpointTag;
+                var phase = checkpointTag == null ? 0 : checkpointTag.Phase;
+                var projectionProcessingPhase = _projectionProcessingPhases[phase];
+                if (checkpointTag == null)
+                    checkpointTag = projectionProcessingPhase.MakeZeroCheckpointTag();
+                checkpointTag = projectionProcessingPhase.AdjustTag(checkpointTag);
+                //TODO: initialize projection state here (test it)
+                //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
+                //TODO: handle errors
+                _coreProjectionCheckpointWriter.StartFrom(checkpointTag, message.CheckpointEventNumber);
+                if (!_partitionedStateState)
+                    _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(message.CheckpointData, checkpointTag), null);
+                BeginPhase(projectionProcessingPhase, checkpointTag);
+                GoToState(State.StateLoaded);
+                if (_startOnLoad)
+                {
+                    if (_slaveProjections != null)
+                        _projectionProcessingPhase.AssignSlaves(_slaveProjections);
+                    _projectionProcessingPhase.Subscribe(checkpointTag, fromCheckpoint: true);
+                }
+                else
+                    GoToState(State.Stopped);
+            }
+            catch (Exception ex)
+            {
+                SetFaulted(ex);
+            }
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
+        {
+            EnsureState(State.StateLoaded);
+            try
+            {
+                _projectionProcessingPhase.Handle(message);
             }
             catch (Exception ex)
             {
@@ -309,72 +328,129 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger.Info(
                 "Projection '{0}'({1}) restart has been requested due to: '{2}'", _name, _projectionCorrelationId,
                 message.Reason);
-            //
+            if (_state != State.Running)
+            {
+                SetFaulted(
+                    string.Format(
+                        "A concurrency violation detected, but the projection is not running. Current state is: {0}.  The reason for the restart is: '{1}' ",
+                        _state, message.Reason));
+                return;
+            }
+
+                //
             EnsureUnsubscribed();
+            StopSlaveProjections(); 
             GoToState(State.Initial);
             Start();
+            
         }
 
-        private void EnsureUnsubscribed()
+        public void Handle(CoreProjectionProcessingMessage.Failed message)
         {
-            if (_subscribed)
+            SetFaulted(message.Reason);
+        }
+
+        public void EnsureUnsubscribed()
+        {
+
+            if (_projectionProcessingPhase != null)
+                _projectionProcessingPhase.EnsureUnsubscribed();
+        }
+
+
+        private void StopSlaveProjections()
+        {
+            //TODO: encapsulate into StopSlaveProjections message?
+            var slaveProjections = _slaveProjections;
+            if (slaveProjections != null)
             {
-                _subscribed = false;
-                _publisher.Publish(new ProjectionSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
+                _slaveProjections = null;
+                foreach (var group in slaveProjections.Channels)
+                {
+                    foreach (var channel in group.Value)
+                    {
+                        _publisher.Publish(
+                            new ProjectionManagementMessage.Delete(
+                                new NoopEnvelope(), channel.ManagedProjectionName,
+                                ProjectionManagementMessage.RunAs.System, true, true));
+                    }
+                }
+
             }
         }
+
 
         private void GoToState(State state)
         {
-            var wasStopped = _state == State.Stopped || _state == State.Faulted;
-            var wasStopping = _state == State.Stopping || _state == State.FaultedStopping;
-            var wasStarted = _state == State.StateLoadedSubscribed || _state == State.Paused || _state == State.Resumed
-                             || _state == State.Running || _state == State.Stopping || _state == State.FaultedStopping;
+            var wasStopped = _state == State.Stopped || _state == State.Faulted || _state == State.PhaseCompleted;
+            var wasStopping = _state == State.Stopping || _state == State.FaultedStopping
+                              || _state == State.CompletingPhase;
+            var wasStarted = _state == State.Subscribed || _state == State.Running || _state == State.Stopping
+                             || _state == State.FaultedStopping || _state == State.CompletingPhase;
+            var wasRunning = _state == State.Running;
+            var wasFaulted = _state == State.Faulted || _state == State.FaultedStopping;
+
             _state = state; // set state before transition to allow further state change
-            switch (state)
-            {
-                case State.Running:
-                    _processingQueue.SetRunning();
-                    break;
-                case State.Paused:
-                    _processingQueue.SetPaused();
-                    break;
-                default:
-                    _processingQueue.SetStopped();
-                    break;
-            }
             switch (state)
             {
                 case State.Stopped:
                 case State.Faulted:
+                case State.PhaseCompleted:
                     if (wasStarted && !wasStopped)
                         _checkpointManager.Stopped();
                     break;
                 case State.Stopping:
                 case State.FaultedStopping:
+                case State.CompletingPhase:
                     if (wasStarted && !wasStopping)
                         _checkpointManager.Stopping();
                     break;
             }
+
+
+            if (_projectionProcessingPhase != null) // null while loading state
+                switch (state)
+                {
+                    case State.Running:
+                        if (!wasRunning)
+                            _projectionProcessingPhase.SetProjectionState(PhaseState.Running);
+                        break;
+                    case State.Faulted:
+                    case State.FaultedStopping:
+                        if (wasRunning)
+                            _projectionProcessingPhase.SetProjectionState(PhaseState.Stopped);
+                        break;
+                    case State.Stopped:
+                    case State.Stopping:
+                    case State.CompletingPhase:
+                    case State.PhaseCompleted:
+                        if (wasRunning)
+                            _projectionProcessingPhase.SetProjectionState(PhaseState.Stopped);
+                        break;
+                    default:
+                        _projectionProcessingPhase.SetProjectionState(PhaseState.Unknown);
+                        break;
+
+                }
             switch (state)
             {
                 case State.Initial:
                     EnterInitial();
                     break;
-                case State.LoadStateRequsted:
+                case State.StartSlaveProjectionsRequested:
+                    EnterStartSlaveProjectionsRequested();
+                    break;
+                case State.LoadStateRequested:
                     EnterLoadStateRequested();
                     break;
-                case State.StateLoadedSubscribed:
-                    EnterStateLoadedSubscribed();
+                case State.StateLoaded:
+                    EnterStateLoaded();
+                    break;
+                case State.Subscribed:
+                    EnterSubscribed();
                     break;
                 case State.Running:
                     EnterRunning();
-                    break;
-                case State.Paused:
-                    EnterPaused();
-                    break;
-                case State.Resumed:
-                    EnterResumed();
                     break;
                 case State.Stopping:
                     EnterStopping();
@@ -388,42 +464,66 @@ namespace EventStore.Projections.Core.Services.Processing
                 case State.Faulted:
                     EnterFaulted();
                     break;
+                case State.CompletingPhase:
+                    EnterCompletingPhase();
+                    break;
+                case State.PhaseCompleted:
+                    EnterPhaseCompleted();
+                    break;
                 default:
                     throw new Exception();
             }
+            UpdateStatistics();
         }
 
         private void EnterInitial()
         {
-            _handlerPartition = null;
-            foreach (var requestId in _loadStateRequests)
-                _readDispatcher.Cancel(requestId);
-            _loadStateRequests.Clear();
+            _completed = false;
             _partitionStateCache.Initialize();
-            _processingQueue.Initialize();
+            _projectionProcessingPhase = null;
+            _checkpointManager = _projectionProcessingPhases[0].CheckpointManager;
             _checkpointManager.Initialize();
+            _checkpointReader.Initialize();
             _tickPending = false;
-            _partitionStateCache.CacheAndLockPartitionState("", new PartitionStateCache.State("", null), null);
-            _expectedSubscriptionMessageSequenceNumber = -1; // this is to be overridden when subscribing
+            if (!_partitionedStateState)
+                _partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, CheckpointTag.Empty), null);
             // NOTE: this is to workaround exception in GetState requests submitted by client
+        }
+
+        private void EnterStartSlaveProjectionsRequested()
+        {
+            _publisher.Publish(new ProjectionManagementMessage.StartSlaveProjections(
+                        new PublishEnvelope(_inputQueue), new ProjectionManagementMessage.RunAs(_runAs), _name,
+                        _projectionProcessingStrategy.GetSlaveProjections(), _inputQueue, _projectionCorrelationId));
+
         }
 
         private void EnterLoadStateRequested()
         {
-            _checkpointManager.BeginLoadState();
+            _checkpointReader.BeginLoadState();
         }
 
-        private void EnterStateLoadedSubscribed()
+        private void EnterStateLoaded()
         {
-            GoToState(State.Running);
+        }
+
+        private void EnterSubscribed()
+        {
+            if (_startOnLoad)
+            {
+                GoToState(State.Running);
+            }
+            else
+                GoToState(State.Stopped);
         }
 
         private void EnterRunning()
         {
             try
             {
-                UpdateStatistics();
-                _processingQueue.ProcessEvent();
+                _publisher.Publish(
+                    new CoreProjectionManagementMessage.Started(_projectionCorrelationId));
+                _projectionProcessingPhase.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -431,186 +531,51 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void EnterPaused()
-        {
-        }
-
-        private void EnterResumed()
-        {
-            GoToState(State.Running);
-        }
-
         private void EnterStopping()
         {
             EnsureUnsubscribed();
-            // core projection may be stopped to change its configuration
-            // it is important to checkpoint it so no writes pending remain when stopped
-            _checkpointManager.RequestCheckpointToStop(); // should always report completed even if skipped
         }
 
         private void EnterStopped()
         {
-            _publisher.Publish(new CoreProjectionManagementMessage.Stopped(_projectionCorrelationId));
+            EnsureUnsubscribed();
+            StopSlaveProjections(); 
+            _publisher.Publish(new CoreProjectionManagementMessage.Stopped(_projectionCorrelationId, _completed));
         }
 
         private void EnterFaultedStopping()
         {
             EnsureUnsubscribed();
-            // checkpoint last known correct state on fault
-            _checkpointManager.RequestCheckpointToStop(); // should always report completed even if skipped
         }
 
         private void EnterFaulted()
         {
             EnsureUnsubscribed();
+            StopSlaveProjections(); 
             _publisher.Publish(
                 new CoreProjectionManagementMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }
 
-        private bool IsOutOfOrderSubscriptionMessage(ProjectionSubscriptionMessage message)
+        private void EnterCompletingPhase()
         {
-            return _expectedSubscriptionMessageSequenceNumber != message.SubscriptionMessageSequenceNumber;
         }
 
-        private void RegisterSubscriptionMessage(ProjectionSubscriptionMessage message)
+        private void EnterPhaseCompleted()
         {
-            _expectedSubscriptionMessageSequenceNumber = message.SubscriptionMessageSequenceNumber + 1;
-        }
-
-        private void SetHandlerState(string partition)
-        {
-            if (_handlerPartition == partition)
-                return;
-            var newState = _partitionStateCache.GetLockedPartitionState(partition);
-            _handlerPartition = partition;
-            if (newState != null && !string.IsNullOrEmpty(newState.Data))
-                _projectionStateHandler.Load(newState.Data);
+            var completedPhaseIndex = _checkpointManager.LastProcessedEventPosition.Phase;
+            if (completedPhaseIndex == _projectionProcessingPhases.Length - 1)
+            {
+                Stop();
+            }
             else
-                _projectionStateHandler.Initialize();
-        }
-
-        private void LoadProjectionStateFaulted(string newState, Exception ex)
-        {
-            _faultedReason =
-                string.Format(
-                    "Cannot load the {0} projection state.\r\nHandler: {1}\r\nState:\r\n\r\n{2}\r\n\r\nMessage:\r\n\r\n{3}",
-                    _name, GetHandlerTypeName(), newState, ex.Message);
-            if (_logger != null)
-                _logger.ErrorException(ex, _faultedReason);
-            GoToState(State.Faulted);
-        }
-
-        private string GetHandlerTypeName()
-        {
-            return _projectionStateHandler.GetType().Namespace + "." + _projectionStateHandler.GetType().Name;
-        }
-
-        private void TryResume()
-        {
-            GoToState(State.Resumed);
-        }
-
-        internal void ProcessCommittedEvent(
-            CommittedEventWorkItem committedEventWorkItem, ProjectionSubscriptionMessage.CommittedEventReceived message,
-            string partition)
-        {
-
-            EnsureState(State.Running);
-            InternalProcessCommittedEvent(committedEventWorkItem, partition, message);
-        }
-
-        private void InternalProcessCommittedEvent(
-            CommittedEventWorkItem committedEventWorkItem, string partition,
-            ProjectionSubscriptionMessage.CommittedEventReceived message)
-        {
-            string newState = null;
-            EmittedEvent[] emittedEvents = null;
-
-            //TODO: not emitting (optimized) projection handlers can skip serializing state on each processed event
-            bool hasBeenProcessed;
-            try
             {
-                hasBeenProcessed = ProcessEventByHandler(partition, message, out newState, out emittedEvents);
+                var nextPhase = _projectionProcessingPhases[completedPhaseIndex + 1];
+                var nextPhaseZeroPosition = nextPhase.MakeZeroCheckpointTag();
+                BeginPhase(nextPhase, nextPhaseZeroPosition);
+                if (_slaveProjections != null)
+                    _projectionProcessingPhase.AssignSlaves(_slaveProjections);
+                _projectionProcessingPhase.Subscribe(nextPhaseZeroPosition, fromCheckpoint: false);
             }
-            catch (Exception ex)
-            {
-                ProcessEventFaulted(
-                    string.Format(
-                        "The {0} projection failed to process an event.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
-                        _name, GetHandlerTypeName(), message.Position, ex.Message), ex);
-                newState = null;
-                emittedEvents = null;
-                hasBeenProcessed = false;
-            }
-            newState = newState ?? "";
-            if (hasBeenProcessed)
-            {
-                if (!ProcessEmittedEvents(committedEventWorkItem, emittedEvents))
-                    return;
-
-                var oldState = _partitionStateCache.GetLockedPartitionState(partition);
-                if (oldState.Data != newState)
-                    // ensure state actually changed
-                {
-                    var lockPartitionStateAt = partition != "" ? message.CheckpointTag : null;
-                    _partitionStateCache.CacheAndLockPartitionState(partition, new PartitionStateCache.State(newState, message.CheckpointTag), lockPartitionStateAt);
-                    if (_projectionConfig.PublishStateUpdates)
-                        EmitStateUpdated(committedEventWorkItem, partition, newState, message.CheckpointTag, oldState.CausedBy);
-                }
-            }
-        }
-
-        private bool ProcessEmittedEvents(CommittedEventWorkItem committedEventWorkItem, EmittedEvent[] emittedEvents)
-        {
-            if (_projectionConfig.EmitEventEnabled && _checkpointStrategy.IsEmiEnabled())
-                EmitEmittedEvents(committedEventWorkItem, emittedEvents);
-            else if (emittedEvents != null && emittedEvents.Length > 0)
-            {
-                ProcessEventFaulted("'emit' is not allowed by the projection/configuration/mode");
-                return false;
-            }
-            return true;
-        }
-
-        private bool ProcessEventByHandler(
-            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, out string newState,
-            out EmittedEvent[] emittedEvents)
-        {
-            SetHandlerState(partition);
-            return _projectionStateHandler.ProcessEvent(
-                message.Position, message.CheckpointTag, message.EventStreamId, message.Data.EventType,
-                message.EventCategory, message.Data.EventId, message.EventSequenceNumber,
-                Encoding.UTF8.GetString(message.Data.Metadata), Encoding.UTF8.GetString(message.Data.Data), out newState,
-                out emittedEvents);
-        }
-
-        private void EmitEmittedEvents(CommittedEventWorkItem committedEventWorkItem, EmittedEvent[] emittedEvents)
-        {
-            bool result = emittedEvents != null && emittedEvents.Length > 0;
-            if (result)
-                committedEventWorkItem.ScheduleEmitEvents(emittedEvents);
-        }
-
-        private void EmitStateUpdated(CommittedEventWorkItem committedEventWorkItem, string partition, string newState, CheckpointTag eventTag, CheckpointTag expectedTag)
-        {
-            committedEventWorkItem.ScheduleEmitEvents(
-                new[]
-                    {
-                        new EmittedEvent(MakePartitionStateStreamName(partition), Guid.NewGuid(), "StateUpdated", newState, eventTag, expectedTag)
-                    });
-        }
-
-        private void ProcessEventFaulted(string faultedReason, Exception ex = null)
-        {
-            _faultedReason = faultedReason;
-            if (_logger != null)
-            {
-                if (ex != null)
-                    _logger.ErrorException(ex, _faultedReason);
-                else
-                    _logger.Error(_faultedReason);
-            }
-            GoToState(State.FaultedStopping);
         }
 
         private void EnsureState(State expectedStates)
@@ -627,12 +592,16 @@ namespace EventStore.Projections.Core.Services.Processing
             // ignore any ticks received when not pending. this may happen when restart requested
             if (!_tickPending)
                 return;
-            EnsureState(State.Running | State.Paused | State.Stopping | State.FaultedStopping | State.Faulted);
-            // we may get into faulted any time, so it is allowed
+            // process messages in almost all states as we now ignore work items when processing
+
+            EnsureState(
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
+                | State.CompletingPhase | State.PhaseCompleted);
+
             try
             {
                 _tickPending = false;
-                _processingQueue.ProcessEvent();
+                _projectionProcessingPhase.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -640,180 +609,110 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void OnLoadStateCompleted(CheckpointTag checkpointTag, string checkpointData)
-        {
-            if (checkpointTag == null)
-            {
-                var zeroTag = _checkpointStrategy.PositionTagger.MakeZeroCheckpointTag();
-                InitializeProjectionFromCheckpoint("", zeroTag);
-            }
-            else
-            {
-                InitializeProjectionFromCheckpoint(checkpointData, checkpointTag);
-            }
-        }
-
-        private void InitializeProjectionFromCheckpoint(string state, CheckpointTag checkpointTag)
-        {
-            EnsureState(State.Initial | State.LoadStateRequsted);
-            //TODO: initialize projection state here (test it)
-            //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
-            _partitionStateCache.CacheAndLockPartitionState("", new PartitionStateCache.State(state, checkpointTag), null);
-            _checkpointManager.Start(checkpointTag);
-            try
-            {
-                SetHandlerState("");
-                GoToState(State.StateLoadedSubscribed);
-            }
-            catch (Exception ex)
-            {
-                LoadProjectionStateFaulted(state, ex);
-                return;
-            }
-            _processingQueue.InitializeQueue(_checkpointStrategy.PositionTagger.MakeZeroCheckpointTag());
-            _expectedSubscriptionMessageSequenceNumber = 0;
-            _subscribed = true;
-            _publisher.Publish(
-                new ProjectionSubscriptionManagement.Subscribe(
-                    _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,
-                    _projectionConfig.CheckpointUnhandledBytesThreshold));
-            _publisher.Publish(new CoreProjectionManagementMessage.Started(_projectionCorrelationId));
-        }
-
-        internal void BeginStatePartitionLoad(string statePartition, CheckpointTag eventCheckpointTag, Action loadCompleted)
-        {
-            if (statePartition == "") // root is always cached
-            {
-                loadCompleted();
-                return;
-            }
-            var state = _partitionStateCache.TryGetAndLockPartitionState(statePartition, eventCheckpointTag);
-            if (state != null)
-                loadCompleted();
-            else
-            {
-                string partitionStateStreamName = MakePartitionStateStreamName(statePartition);
-                _readRequestsInProgress++;
-                var requestId = _readDispatcher.Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, -1, 1, resolveLinks: false), m => OnLoadStatePartitionCompleted(statePartition, m, loadCompleted, eventCheckpointTag));
-                if (requestId != Guid.Empty)
-                    _loadStateRequests.Add(requestId);
-            }
-        }
-
-        private string MakePartitionStateStreamName(string statePartition)
-        {
-            return string.IsNullOrEmpty(statePartition)
-                       ? _stateStreamName
-                       : string.Format(_stateStreamNamePattern, statePartition);
-        }
-
-        private void OnLoadStatePartitionCompleted(
-            string partition,
-            ClientMessage.ReadStreamEventsBackwardCompleted message, Action loadCompleted, CheckpointTag eventCheckpointTag)
-        {
-            //NOTE: the following remove may do nothing in tests as completed is raised before we return from publish. 
-            _loadStateRequests.Remove(message.CorrelationId);
-
-            _readRequestsInProgress--;
-            if (message.Events.Length == 1)
-            {
-                EventRecord @event = message.Events[0].Event;
-                if (@event.EventType == "StateUpdated")
-                {
-                    var checkpointTag = @event.Metadata.ParseJson<CheckpointTag>();
-                    // always recovery mode? skip until state before current event
-                    //TODO: skip event processing in case we know i has been already processed
-                    CheckpointTag eventPositionTag = eventCheckpointTag;
-                    if (checkpointTag < eventPositionTag)
-                    {
-                        _partitionStateCache.CacheAndLockPartitionState(
-                            partition, new PartitionStateCache.State(Encoding.UTF8.GetString(@event.Data), checkpointTag), eventPositionTag);
-                        loadCompleted();
-                        EnsureTickPending();
-                        return;
-                    }
-                }
-            }
-            if (message.NextEventNumber == -1)
-            {
-                _partitionStateCache.CacheAndLockPartitionState(partition, new PartitionStateCache.State("", _checkpointStrategy.PositionTagger.MakeZeroCheckpointTag()), eventCheckpointTag);
-                loadCompleted();
-                EnsureTickPending();
-                return;
-            }
-            string partitionStateStreamName = MakePartitionStateStreamName(partition);
-            _readRequestsInProgress++;
-            var requestId = _readDispatcher.Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, message.NextEventNumber, 1, resolveLinks: false), m => OnLoadStatePartitionCompleted(partition, m, loadCompleted, eventCheckpointTag));
-            if (requestId != Guid.Empty)
-                _loadStateRequests.Add(requestId);
-        }
 
         public void Dispose()
         {
-            if (_projectionStateHandler != null)
-                _projectionStateHandler.Dispose();
+            EnsureUnsubscribed();
+            StopSlaveProjections();
+            if (_projectionProcessingPhase != null)
+                _projectionProcessingPhase.Dispose();
         }
 
-        internal void EnsureTickPending()
+        public void EnsureTickPending()
         {
+            // ticks are requested when an async operation is completed or when an item is being processed
+            // thus, the tick message is removed from the queue when it does not process any work item (and 
+            // it is renewed therefore)
             if (_tickPending)
                 return;
-            if (_state == State.Running || _state == State.Stopping || _state == State.FaultedStopping)
-            {
-                _tickPending = true;
-                _publisher.Publish(new ProjectionCoreServiceMessage.Tick(Tick));
-            }
+            _tickPending = true;
+            _publisher.Publish(new ProjectionCoreServiceMessage.CoreTick(Tick));
         }
 
-        private void SetFaulted(Exception ex)
+        public void SetFaulted(Exception ex)
         {
             SetFaulted(ex.Message);
         }
 
-        private void SetFaulted(string reason)
+        public void SetFaulted(string reason)
         {
-            _faultedReason = reason;
-            GoToState(State.Faulted);
+            if (_state != State.FaultedStopping && _state != State.Faulted)
+                _faultedReason = reason;
+            if (_state != State.Faulted)
+                GoToState(State.Faulted);
+        }
+
+        public void SetFaulting(string reason)
+        {
+            if (_state != State.FaultedStopping && _state != State.Faulted)
+            {
+                _faultedReason = reason;
+                GoToState(State.FaultedStopping);
+            }
         }
 
         private void CheckpointCompleted(CheckpointTag lastCompletedCheckpointPosition)
         {
+            CompleteCheckpointSuggestedWorkItem();
             // all emitted events caused by events before the checkpoint position have been written  
             // unlock states, so the cache can be clean up as they can now be safely reloaded from the ES
             _partitionStateCache.Unlock(lastCompletedCheckpointPosition);
 
             switch (_state)
             {
-                case State.Paused:
-                    TryResume();
-                    break;
                 case State.Stopping:
                     GoToState(State.Stopped);
                     break;
                 case State.FaultedStopping:
                     GoToState(State.Faulted);
                     break;
+                case State.CompletingPhase:
+                    GoToState(State.PhaseCompleted);
+                    break;
             }
         }
 
-        private void Pause()
+        public void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem)
         {
-            if (_state != State.Stopping && _state != State.FaultedStopping)
-                // stopping projection is already paused
-                GoToState(State.Paused);
+            if (_checkpointSuggestedWorkItem != null && checkpointSuggestedWorkItem != null)
+                throw new InvalidOperationException("Checkpoint in progress");
+            if (_checkpointSuggestedWorkItem == null && checkpointSuggestedWorkItem == null)
+                throw new InvalidOperationException("No checkpoint in progress");
+            _checkpointSuggestedWorkItem = checkpointSuggestedWorkItem;
         }
 
-        internal void FinalizeEventProcessing(
-            List<EmittedEvent[]> scheduledWrites, CheckpointTag eventCheckpointTag, float progress)
+        private void CompleteCheckpointSuggestedWorkItem()
         {
-            if (_state != State.Faulted && _state != State.FaultedStopping)
+            var workItem = _checkpointSuggestedWorkItem;
+            if (workItem != null)
             {
-                EnsureState(State.Running);
-                //TODO: move to separate projection method and cache result in work item
-                var checkpointTag = eventCheckpointTag;
-                _checkpointManager.EventProcessed(
-                    GetProjectionState().Data, scheduledWrites, checkpointTag, progress);
+                _checkpointSuggestedWorkItem = null; 
+                workItem.CheckpointCompleted();
+                EnsureTickPending();
             }
         }
+
+
+        public CheckpointTag LastProcessedEventPosition
+        {
+            get { return _checkpointManager.LastProcessedEventPosition; }
+        }
+
+        public void Subscribed()
+        {
+            GoToState(State.Subscribed);
+        }
+
+        public void Handle(PartitionProcessingResult message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message)
+        {
+            _slaveProjections = message.SlaveProjections;
+            GoToState(State.LoadStateRequested);
+        }
+
     }
 }

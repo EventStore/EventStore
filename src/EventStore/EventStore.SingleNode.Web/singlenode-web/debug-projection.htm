@@ -1,0 +1,85 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Debug Projection</title>
+    <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/lib/require-full.js" type="text/javascript"></script>
+    <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
+
+
+
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>
+
+    <style type="text/css">
+        #status
+        {
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <h1>Debug Projection<span id="status"></span>
+            <button id="run-butto2" class="btn run-button" disabled="disabled">
+                Run</button>
+        </h1>
+        <div>
+            <div style="display: table; width: 100%;">
+                <div style="display: table-row">
+                    <div style="display: table-cell; width: 50%;">
+                        <label class="control-label" for="source">
+                            <strong>Source</strong></label>
+                        <div>
+                            <textarea id="source" style="display: block; width: 95%; height: 450px" spellcheck="false"></textarea>
+                        </div>
+                        <button id="update-button" class="btn">
+                            Update</button>
+                        <button id="run-button" class="btn run-button" disabled="disabled">
+                            Run</button>
+                    </div>
+                    <div style="display: table-cell; width: 50%;">
+                        <label class="control-label" for="projection-debug-result"><strong>State</strong> (<span id="partition"></span>)</label> 
+                        <div style="margin: 0px 5px 20px 5px">
+                            <textarea id="projection-debug-result" style="display: block; width: 100%; height: 120px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px" class="source-code" spellcheck="false">
+                            </textarea>
+                        </div>
+                        <label class="control-label" for="projection-debug-events"><strong>Events</strong></label>
+                        <div style="margin: 0px 5px 20px 5px">
+                            <textarea id="projection-debug-events" style="display: block; width: 100%; height: 280px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px" class="source-code" spellcheck="false">
+                            </textarea>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div>
+            </div>
+            <div>
+                <h3>Instructions</h3>
+                <ol>
+                    <li>Make sure you use the Google Chrome browser</li>
+                    <li>Open a debugger (Ctrl+Shift+J)</li>
+                    <li>Check the debugger console for errors (occured while running the projection defintion or while loading state and events)</li>
+                    <li>Click the 'Run' button above</li>
+                    <li>Watch for errors in the debugger console</li>
+                    <li>Check the debugging status on ot top</li>
+                    <li>Execution will stop on 'debugger' statement immeditaly before invoking your event handler</li>
+                </ol>
+                <p>Any log output and emitted events will appear in the log window below</p>
+            </div>
+            <div>
+                <iframe id="script-placeholder"></iframe>
+            </div>
+        </div>
+
+        <script id="r-body">
+            es.tmpl.renderBody();
+        </script>
+    </div>
+
+    <script type="text/javascript" src="js/es.debug.projection.js"></script>
+</body>
+</html>

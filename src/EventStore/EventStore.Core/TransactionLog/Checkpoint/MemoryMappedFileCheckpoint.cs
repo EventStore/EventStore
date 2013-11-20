@@ -30,51 +30,56 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Threading;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.TransactionLog.Checkpoint
 {
-    //GFY I somehow doubt MemoryMappedFile is supported in mono but worth benchmarking to see if its better in windows.
     public class MemoryMappedFileCheckpoint : ICheckpoint
     {
-        [DllImport("kernel32.dll")]
-        static extern bool FlushFileBuffers(IntPtr hFile);
-
-        public string Name
-        {
-            get { return _name; }
-        }
+        public string Name { get { return _name; } }
 
         private readonly string _filename;
         private readonly string _name;
         private readonly bool _cached;
+        private readonly FileStream _fileStream;
         private readonly MemoryMappedFile _file;
         private long _last;
         private long _lastFlushed;
         private readonly MemoryMappedViewAccessor _accessor;
 
-        public MemoryMappedFileCheckpoint(string filename)
-            : this(filename, Guid.NewGuid().ToString(), false)
+        private readonly object _flushLocker = new object();
+
+        public MemoryMappedFileCheckpoint(string filename): this(filename, Guid.NewGuid().ToString(), false)
         {
         }
 
-        public MemoryMappedFileCheckpoint(string filename, string name, bool cached, bool mustExist = false)
+        public MemoryMappedFileCheckpoint(string filename, string name, bool cached, bool mustExist = false, long initValue = 0)
         {
             _filename = filename;
             _name = name;
             _cached = cached;
-            var filestream = new FileStream(_filename,
-                                            mustExist ? FileMode.Open : FileMode.OpenOrCreate,
-                                            FileAccess.ReadWrite,
-                                            FileShare.ReadWrite);
-            _file = MemoryMappedFile.CreateFromFile(filestream,
+            var old = File.Exists(_filename);
+            _fileStream = new FileStream(_filename,
+                                         mustExist ? FileMode.Open : FileMode.OpenOrCreate,
+                                         FileAccess.ReadWrite,
+                                         FileShare.ReadWrite);
+            _fileStream.SetLength(sizeof(long));
+            _file = MemoryMappedFile.CreateFromFile(_fileStream,
                                                     Guid.NewGuid().ToString(),
-                                                    8,
+                                                    sizeof(long),
                                                     MemoryMappedFileAccess.ReadWrite,
                                                     new MemoryMappedFileSecurity(),
                                                     HandleInheritability.None,
                                                     false);
-            _accessor = _file.CreateViewAccessor(0, 8);
-            _last = _lastFlushed = ReadCurrent();
+            _accessor = _file.CreateViewAccessor(0, sizeof(long));
+
+            if (old)
+                _last = _lastFlushed = ReadCurrent();
+            else
+            {
+                _last = initValue;
+                Flush();
+            }
         }
 
         public void Close()
@@ -98,9 +103,16 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _accessor.Write(0, last);
             _accessor.Flush();
 
-            FlushFileBuffers(_file.SafeMemoryMappedFileHandle.DangerousGetHandle());
+            _fileStream.FlushToDisk();
+//            if (!FileStreamExtensions.FlushFileBuffers(_fileHandle))
+//                throw new Exception(string.Format("FlushFileBuffers failed with err: {0}", Marshal.GetLastWin32Error()));
 
             Interlocked.Exchange(ref _lastFlushed, last);
+
+            lock (_flushLocker)
+            {
+                Monitor.PulseAll(_flushLocker);
+            }
         }
 
         public long Read()
@@ -116,6 +128,14 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         public long ReadNonFlushed()
         {
             return Interlocked.Read(ref _last);
+        }
+
+        public bool WaitForFlush(TimeSpan timeout)
+        {
+            lock (_flushLocker)
+            {
+                return Monitor.Wait(_flushLocker, timeout);
+            }
         }
 
         public void Dispose()

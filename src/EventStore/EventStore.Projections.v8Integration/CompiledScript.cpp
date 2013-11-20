@@ -14,79 +14,110 @@ namespace js1
 	{
 	}
 
-	CompiledScript::~CompiledScript() 
+	void CompiledScript::isolate_terminate_execution() 
 	{
-		script.Dispose();
-		context.Dispose();
-		global.Dispose();
-		last_exception.Dispose();
+		v8::Isolate* isolate = get_isolate();
+		v8::V8::TerminateExecution(isolate);
 	}
 
 	void CompiledScript::report_errors(REPORT_ERROR_CALLBACK report_error_callback)
 	{
-		v8::HandleScope handle_scope;
-		v8::Context::Scope local(get_context());
-
-		if (!last_exception.IsEmpty()) 
+		v8::Isolate* isolate = get_isolate();
+		if (v8::V8::IsDead() || v8::V8::IsExecutionTerminating(isolate)) 
 		{
-			v8::String::Value error_value(last_exception);
+			//TODO: define error codes
+			report_error_callback(2, NULL);
+			return;
+		}
+
+		if (last_exception && !last_exception->IsEmpty()) 
+		{
+			v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+			v8::Context::Scope local(get_context());
+
+			v8::String::Value error_value(v8::Handle<v8::Value>::New(v8::Isolate::GetCurrent(), *last_exception));
 			//TODO: define error codes
 			report_error_callback(1, *error_value);
 		}
 	}
 
-	v8::Persistent<v8::Context> &CompiledScript::get_context()
+	v8::Handle<v8::Context> CompiledScript::get_context()
 	{
-		return context;
+		return v8::Handle<v8::Context>::New(v8::Isolate::GetCurrent(), *context);
 	}
 
-	bool CompiledScript::compile_script(const uint16_t *script_source, const uint16_t *file_name)
+	Status CompiledScript::compile_script(const uint16_t *script_source, const uint16_t *file_name)
 	{
-		v8::HandleScope handle_scope;
-		script.Dispose();
-		script.Clear();
+		v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+		//TODO: why dispose? do we call caompile_script multiple times?
+		script.reset();
 
-		global = create_global_template();
-		context = v8::Context::New(NULL, global);
-		v8::Context::Scope scope(context);
+		v8::Persistent<v8::ObjectTemplate> empty;
+
+		v8::Handle<v8::ObjectTemplate> global_local = v8::Handle<v8::ObjectTemplate>::New(
+			v8::Isolate::GetCurrent(), global ? *global : empty);
+
+		Status status = create_global_template(global_local);
+
+		if (status != S_OK)
+			return status;
+
+		context = std::shared_ptr<v8::Persistent<v8::Context>>(
+			new v8::Persistent<v8::Context>(v8::Isolate::GetCurrent(), 
+			v8::Context::New(v8::Isolate::GetCurrent(), NULL, global_local)));
+
+		v8::Context::Scope scope(v8::Isolate::GetCurrent(), *context);
 
 		v8::TryCatch try_catch;
 		v8::Handle<v8::Script> result = v8::Script::Compile(v8::String::New(script_source), v8::String::New(file_name));
-		set_last_error(result.IsEmpty(), try_catch);
+		if (set_last_error(result.IsEmpty(), try_catch))
+			return S_ERROR;
 
-		script = v8::Persistent<v8::Script>::New(result);
-		return !script.IsEmpty();
+		if (result.IsEmpty())
+			return S_ERROR;
+
+		script = std::shared_ptr<v8::Persistent<v8::Script>>(
+			new v8::Persistent<v8::Script>(v8::Isolate::GetCurrent(), result));
+		return S_OK;
 	}
 
-	v8::Handle<v8::Value> CompiledScript::run_script(v8::Persistent<v8::Context> context)
+	v8::Handle<v8::Value> CompiledScript::run_script(v8::Handle<v8::Context> context)
 	{
 		v8::Context::Scope context_scope(context);
 		v8::TryCatch try_catch;
-		v8::Handle<v8::Value> result = script->Run();
-		set_last_error(result.IsEmpty(), try_catch);
+		v8::Handle<v8::Value> result = v8::Handle<v8::Script>::New(v8::Isolate::GetCurrent(), *script)->Run();
+		if (set_last_error(result.IsEmpty(), try_catch))
+			result.Clear();
 		return result;
 	}
 
-	void CompiledScript::set_last_error(bool is_error, v8::TryCatch &try_catch)
+	bool CompiledScript::set_last_error(bool is_error, v8::TryCatch &try_catch)
 	{
+		if (!is_error && !try_catch.Exception().IsEmpty()) {
+			set_last_error(v8::String::New("Caught exception which was not indicated as an error"));
+			return true;
+		}
 		if (is_error) 
 		{
 			Handle<Value> exception = try_catch.Exception();
-			last_exception.Dispose();
-			last_exception = v8::Persistent<v8::Value>::New(exception);
+			last_exception.reset();
+			last_exception = std::shared_ptr<v8::Persistent<v8::Value>>(
+				new v8::Persistent<v8::Value>(v8::Isolate::GetCurrent(), exception));
+			return true;
 		}
 		else 
 		{
-			last_exception.Dispose();
-			last_exception.Clear();
+			last_exception.reset();
+			return false;
 		}
 	}
 
 	void CompiledScript::set_last_error(v8::Handle<v8::String> message)
 	{
 		Handle<Value> exception = v8::Exception::Error(message);
-		last_exception.Dispose();
-		last_exception = v8::Persistent<v8::Value>::New(exception);
+		last_exception.reset();
+		last_exception = std::shared_ptr<v8::Persistent<v8::Value>>(
+			new v8::Persistent<v8::Value>(v8::Isolate::GetCurrent(), exception));
 	}
 
 	void CompiledScript::isolate_add_ref(v8::Isolate * isolate) 

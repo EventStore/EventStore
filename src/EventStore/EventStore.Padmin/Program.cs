@@ -9,8 +9,8 @@ namespace EventStore.Padmin
 {
     public class Program
     {
-        private static readonly Dictionary<string, Action<EventStoreConnection, string[]>> Commands =
-            new Dictionary<string, Action<EventStoreConnection, string[]>>();
+        private static readonly Dictionary<string, Action<ProjectionsManager, string[]>> Commands =
+            new Dictionary<string, Action<ProjectionsManager, string[]>>();
   
         public static int Main(string[] args)
         {
@@ -32,20 +32,20 @@ namespace EventStore.Padmin
             Log("commands available : ");
             Log(Environment.NewLine);
 
-            Log("enable <projection-name>");
-            Log("disable <projection-name>");
+            Log("enable <projection-name> [<login> <password>]");
+            Log("disable <projection-name> [<login> <password>]");
 
-            Log("create <onetime | adhoc | continuous | persistent> <projection-name> <query file>");
-            Log("list <all | onetime | adhoc | continuous | persistent>");
+            Log("create <onetime | adhoc | continuous | persistent> <projection-name> <query file> [<login> <password>]");
+            Log("list <all | onetime | adhoc | continuous | persistent> [<login> <password>]");
 
-            Log("status <projection-name>");
-            Log("state <projection-name>");
-            Log("statistics <projection-name>");
+            Log("status <projection-name> [<login> <password>]");
+            Log("state <projection-name> [<login> <password>]");
+            Log("statistics <projection-name> [<login> <password>]");
 
-            Log("show-query <projection-name>");
-            Log("update-query <projection-name> <query file>");
+            Log("show-query <projection-name> [<login> <password>]");
+            Log("update-query <projection-name> <query file> [<login> <password>]");
 
-            Log("delete <projection-name>");
+            Log("delete <projection-name> [<login> <password>]");
         }
 
         private static void RegisterCommands()
@@ -73,15 +73,12 @@ namespace EventStore.Padmin
                 Log("Loading config values...");
 
                 var ip = IPAddress.Parse(config["ip"]);
-                var port = int.Parse(config["tcp-port"]);
-                var tcpEndPoint = new IPEndPoint(ip, port);
+                var port = int.Parse(config["http-port"]);
+                var endPoint = new IPEndPoint(ip, port);
 
-                using (var store = EventStoreConnection.Create())
-                {
-                    store.Connect(tcpEndPoint);
-                    Execute(store, args);
-                    return true;
-                }
+                var manager = new ProjectionsManager(new ConsoleLogger(), endPoint);
+                Execute(manager, args);
+                return true;
             }
             catch (Exception e)
             {
@@ -90,15 +87,15 @@ namespace EventStore.Padmin
             }
         }
 
-        private static void Execute(EventStoreConnection store, string[] args)
+        private static void Execute(ProjectionsManager manager, string[] args)
         {
             var command = args[0].Trim().ToLower();
             var commandArgs = args.Skip(1).ToArray();
 
-            Action<EventStoreConnection, string[]> executor;
+            Action<ProjectionsManager, string[]> executor;
 
             if(Commands.TryGetValue(command, out executor))
-                executor(store, commandArgs);
+                executor(manager, commandArgs);
             else
                 Log("{0} is not a recognized command", args[0]);
         }
@@ -124,7 +121,7 @@ namespace EventStore.Padmin
             }
             catch (Exception e)
             {
-                Log("Config file failed to load ({0})" +
+                Log("Config file failed to load ({0}).\n" +
                     "Should be located near exe file, named 'padmin.esconfig', key=value formatted). Using defaults",
                     e.Message);
 
@@ -138,8 +135,8 @@ namespace EventStore.Padmin
         {
             if (!config.ContainsKey("ip"))
                 config["ip"] = "127.0.0.1";
-            if (!config.ContainsKey("tcp-port"))
-                config["tcp-port"] = "1113";
+            if (!config.ContainsKey("http-port"))
+                config["http-port"] = "2113";
         }
 
         private static void Log(string format, params object[] args)

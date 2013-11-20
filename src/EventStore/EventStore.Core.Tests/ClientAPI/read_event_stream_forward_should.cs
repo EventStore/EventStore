@@ -25,24 +25,46 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
+using System.Globalization;
 using System.Linq;
 using EventStore.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
-    internal class read_event_stream_forward_should
+    [TestFixture, Category("LongRunning")]
+    public class read_event_stream_forward_should: SpecificationWithDirectoryPerTestFixture
     {
+        private MiniNode _node;
+
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
+        {
+            base.TestFixtureSetUp();
+            _node = new MiniNode(PathName);
+            _node.Start();
+        }
+
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
+        {
+            _node.Shutdown();
+            base.TestFixtureTearDown();
+        }
+
         [Test]
         [Category("Network")]
         public void throw_if_count_le_zero()
         {
             const string stream = "read_event_stream_forward_should_throw_if_count_le_zero";
-            using (var store = EventStoreConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                Assert.Throws<ArgumentOutOfRangeException>(() => store.ReadEventStreamForwardAsync(stream, 0, 0));
+                store.Connect();
+                Assert.Throws<ArgumentOutOfRangeException>(() => store.ReadStreamEventsForwardAsync(stream, 0, 0, resolveLinkTos: false));
             }
         }
 
@@ -51,10 +73,10 @@ namespace EventStore.Core.Tests.ClientAPI
         public void throw_if_start_lt_zero()
         {
             const string stream = "read_event_stream_forward_should_throw_if_start_lt_zero";
-            using (var store = EventStoreConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                Assert.Throws<ArgumentOutOfRangeException>(() => store.ReadEventStreamForwardAsync(stream, -1, 1));
+                store.Connect();
+                Assert.Throws<ArgumentOutOfRangeException>(() => store.ReadStreamEventsForwardAsync(stream, -1, 1, resolveLinkTos: false));
             }
         }
 
@@ -63,10 +85,10 @@ namespace EventStore.Core.Tests.ClientAPI
         public void notify_using_status_code_if_stream_not_found()
         {
             const string stream = "read_event_stream_forward_should_notify_using_status_code_if_stream_not_found";
-            using (var store = EventStoreConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var read = store.ReadEventStreamForwardAsync(stream, 0, 1);
+                store.Connect();
+                var read = store.ReadStreamEventsForwardAsync(stream, 0, 1, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Status, Is.EqualTo(SliceReadStatus.StreamNotFound));
@@ -78,15 +100,13 @@ namespace EventStore.Core.Tests.ClientAPI
         public void notify_using_status_code_if_stream_was_deleted()
         {
             const string stream = "read_event_stream_forward_should_notify_using_status_code_if_stream_was_deleted";
-            using (var store = EventStoreConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                store.Connect();
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
-                var read = store.ReadEventStreamForwardAsync(stream, 0, 1);
+                var read = store.ReadStreamEventsForwardAsync(stream, 0, 1, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Status, Is.EqualTo(SliceReadStatus.StreamDeleted));
@@ -95,34 +115,14 @@ namespace EventStore.Core.Tests.ClientAPI
 
         [Test]
         [Category("Network")]
-        public void return_single_event_when_called_on_empty_stream()
+        public void return_no_events_when_called_on_empty_stream()
         {
             const string stream = "read_event_stream_forward_should_return_single_event_when_called_on_empty_stream";
-            using (var store = EventStoreConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
+                store.Connect();
 
-                var read = store.ReadEventStreamForwardAsync(stream, 0, 1);
-                Assert.DoesNotThrow(read.Wait);
-
-                Assert.That(read.Result.Events.Length, Is.EqualTo(1));
-            }
-        }
-
-        [Test]
-        [Category("Network")]
-        public void return_empty_slice_when_called_on_empty_stream_starting_at_position_1()
-        {
-            const string stream = "read_event_stream_forward_should_return_empty_slice_when_called_on_empty_stream_starting_at_position_1";
-            using (var store = EventStoreConnection.Create())
-            {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
-
-                var read = store.ReadEventStreamForwardAsync(stream, 1, 1);
+                var read = store.ReadStreamEventsForwardAsync(stream, 0, 1, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(0));
@@ -134,16 +134,16 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_empty_slice_when_called_on_non_existing_range()
         {
             const string stream = "read_event_stream_forward_should_return_empty_slice_when_called_on_non_existing_range";
-            using (var store = EventStoreConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
+                store.Connect();
 
-                var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())));
+                var write10 = store.AppendToStreamAsync(stream, 
+                                                        ExpectedVersion.EmptyStream, 
+                                                        Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString(CultureInfo.InvariantCulture))));
                 Assert.DoesNotThrow(write10.Wait);
 
-                var read = store.ReadEventStreamForwardAsync(stream, 11, 5);
+                var read = store.ReadStreamEventsForwardAsync(stream, 11, 5, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(0));
@@ -152,19 +152,19 @@ namespace EventStore.Core.Tests.ClientAPI
 
         [Test]
         [Category("Network")]
-        public void return_partial_slice_if_no_enough_events_in_stream()
+        public void return_partial_slice_if_not_enough_events_in_stream()
         {
             const string stream = "read_event_stream_forward_should_return_partial_slice_if_no_enough_events_in_stream";
-            using (var store = EventStoreConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
+                store.Connect();
 
-                var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())));
+                var write10 = store.AppendToStreamAsync(stream, 
+                                                        ExpectedVersion.EmptyStream,
+                                                        Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString(CultureInfo.InvariantCulture))));
                 Assert.DoesNotThrow(write10.Wait);
 
-                var read = store.ReadEventStreamForwardAsync(stream, 10, 5);
+                var read = store.ReadStreamEventsForwardAsync(stream, 9, 5, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(1));
@@ -176,16 +176,16 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_partial_slice_when_got_int_max_value_as_maxcount()
         {
             const string stream = "read_event_stream_forward_should_return_partial_slice_when_got_int_max_value_as_maxcount";
-            using (var store = EventStoreConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
+                store.Connect();
 
-                var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())));
+                var write10 = store.AppendToStreamAsync(stream, 
+                                                        ExpectedVersion.EmptyStream,
+                                                        Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString())));
                 Assert.DoesNotThrow(write10.Wait);
 
-                var read = store.ReadEventStreamForwardAsync(stream, StreamPosition.FirstClientEvent, int.MaxValue);
+                var read = store.ReadStreamEventsForwardAsync(stream, StreamPosition.Start, int.MaxValue, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(10));
@@ -197,20 +197,18 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_events_in_same_order_as_written()
         {
             const string stream = "read_event_stream_forward_should_return_events_in_same_order_as_written";
-            using (var store = EventStoreConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
+                store.Connect();
 
-                var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())).ToArray();
+                var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
                 var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write10.Wait);
 
-                var read = store.ReadEventStreamForwardAsync(stream, StreamPosition.FirstClientEvent, testEvents.Length);
+                var read = store.ReadStreamEventsForwardAsync(stream, StreamPosition.Start, testEvents.Length, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(TestEventsComparer.Equal(testEvents, read.Result.Events));
+                Assert.That(EventDataComparer.Equal(testEvents, read.Result.Events.Select(x => x.Event).ToArray()));
             }
         }
 
@@ -219,20 +217,18 @@ namespace EventStore.Core.Tests.ClientAPI
         public void be_able_to_read_single_event_from_arbitrary_position()
         {
             const string stream = "read_event_stream_forward_should_be_able_to_read_from_arbitrary_position";
-            using (var store = EventStoreConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
+                store.Connect();
 
-                var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())).ToArray();
+                var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
                 var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write10.Wait);
 
-                var read = store.ReadEventStreamForwardAsync(stream, 5, 1);
+                var read = store.ReadStreamEventsForwardAsync(stream, 5, 1, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(TestEventsComparer.Equal(testEvents[4], read.Result.Events.Single()));
+                Assert.That(EventDataComparer.Equal(testEvents[5], read.Result.Events.Single().Event));
             }
         }
 
@@ -241,20 +237,19 @@ namespace EventStore.Core.Tests.ClientAPI
         public void be_able_to_read_slice_from_arbitrary_position()
         {
             const string stream = "read_event_stream_forward_should_be_able_to_read_slice_from_arbitrary_position";
-            using (var store = EventStoreConnection.Create())
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
+                store.Connect();
 
-                var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())).ToArray();
+                var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
                 var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write10.Wait);
 
-                var read = store.ReadEventStreamForwardAsync(stream, 5, 2);
+                var read = store.ReadStreamEventsForwardAsync(stream, 5, 2, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(TestEventsComparer.Equal(testEvents.Skip(4).Take(2).ToArray(), read.Result.Events));
+                Assert.That(EventDataComparer.Equal(testEvents.Skip(5).Take(2).ToArray(), 
+                                                    read.Result.Events.Select(x => x.Event).ToArray()));
             }
         }
     }

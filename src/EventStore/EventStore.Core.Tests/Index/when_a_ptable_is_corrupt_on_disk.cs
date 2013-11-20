@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using System.IO;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
@@ -33,24 +35,26 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class when_a_ptable_is_corrupt_on_disk
+    public class when_a_ptable_is_corrupt_on_disk: SpecificationWithDirectory
     {
         private string _filename;
         private PTable _table;
         private string _copiedfilename;
 
         [SetUp]
-        public void setup()
+        public override void SetUp()
         {
-            _filename = Path.GetRandomFileName();
-            _copiedfilename = Path.GetRandomFileName();
-            var mtable = new HashListMemTable(maxSize: 2000);
+            base.SetUp();
+
+            _filename = GetTempFilePath();
+            _copiedfilename = GetTempFilePath();
+            var mtable = new HashListMemTable(maxSize: 10);
             mtable.Add(0x0101, 0x0001, 0x0001);
             mtable.Add(0x0105, 0x0001, 0x0002);
             _table = PTable.FromMemtable(mtable, _filename);
+            _table.Dispose();
             File.Copy(_filename, _copiedfilename);
-            _table.MarkForDestruction();
-            using(var f = new FileStream(_copiedfilename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+            using (var f = new FileStream(_copiedfilename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 f.Seek(130, SeekOrigin.Begin);
                 f.WriteByte(0x22);
@@ -58,20 +62,20 @@ namespace EventStore.Core.Tests.Index
             _table = PTable.FromFile(_copiedfilename);
         }
 
+        [TearDown]
+        public override void TearDown()
+        {
+            _table.MarkForDestruction();
+            _table.WaitForDisposal(1000);
+
+            base.TearDown();
+        }
+
         [Test]
         public void the_hash_is_invalid()
         {
             var exc = Assert.Throws<CorruptIndexException>(() => _table.VerifyFileHash());
             Assert.IsInstanceOf<HashValidationException>(exc.InnerException);
-        }
-
-        [TearDown]
-        public void Teardown()
-        {
-            _table.MarkForDestruction();
-            _table.WaitForDestroy(1000);
-            File.Delete(_filename);
-            File.Delete(_copiedfilename);
         }
     }
 }

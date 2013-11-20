@@ -1,0 +1,295 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Cluster Gossip</title>
+    <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/lib/sprintf-0.7-beta1.js" type="text/javascript"></script>
+    <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>    
+    <script src="/web/es/lib/jquery/jquery.dateFormat-1.0.js" type="text/javascript"></script>
+    <style>
+        table, tr, th, td
+        {
+            border-collapse: collapse;
+        }
+        .es-gossip-table
+        {
+            margin: 0;
+        }
+        .es-gossip-table th, .es-gossip-table td
+        {
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+        .es-gossip-table td.actions
+        {
+            width: 90px;
+        }
+
+        .es-gossip-table td.manager {
+            color: lightgray;
+        }
+
+        .es-gossip-table td.master {
+            font-weight: bold;
+        }
+
+        .es-gossip-table tr.dead td, .es-gossip-table tr.dead td a {
+            color: rgba(255, 0, 0, 0.7);
+            text-decoration: none;
+        }
+
+        .es-gossip-table tr.dead td {
+            background-color: rgba(255, 10, 10, 0.1) !important;
+        }
+
+        .es-last-updated {
+            text-align: right;
+            margin: 5px 1px;
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <h1>Cluster Gossip</h1>            
+        <div class="row">
+            <div class="span6 offset3">
+                <div class="error head-error label label-important" style="display: none">
+                </div>
+            </div>
+        </div>
+        
+        <a id="snapshot" class="btn" href="#">Snapshot</a><br/><br/>
+        <div id="gossip-container">
+        </div>
+        <div id="gossip-plaintext">
+        </div>
+
+        <script id="gossipTable" type="text/x-jsrender">
+            <table class="table table-bordered table-striped es-gossip-table">
+                <thead>
+                    <tr>
+                        <th>Internal Tcp</th>
+                        <th>External Tcp</th>
+                        <th>Internal Http</th>
+                        <th>External Http</th>
+                        <th>Status</th>
+                        <th>State</th>
+                        <th>Timestamp (UTC)</th>
+                        <th>Checkpoints</th>
+                        <th>Actions</th> 
+                    </tr>
+                </thead>
+                <tbody id="cluster-info">
+                    {{for members}}
+                    <tr class='{{>~status(isAlive).toLowerCase()}} {{>state.toLowerCase()}}'>
+                      <td>{{>~endpoint(internalTcpIp, internalTcpPort)}} ({{>internalSecureTcpPort || 'n/a'}})</td>
+                      <td>{{>~endpoint(externalTcpIp, externalTcpPort)}} ({{>externalSecureTcpPort || 'n/a'}})</td>
+                      <td>{{>~endpoint(internalHttpIp, internalHttpPort)}}</td>
+                      <td>{{>~endpoint(externalHttpIp, externalHttpPort)}}</td>
+                      <td>{{>~status(isAlive)}}</td>
+                      <td class='{{>state.toLowerCase()}}'>{{>state}}</td>
+                      <td>{{>~date(timeStamp)}}</td>
+                      <td>
+                          {{if state=='Manager'}}
+                          n/a
+                          {{else}}
+                          L{{>lastCommitPosition}} / W{{>writerCheckpoint}} / C{{>chaserCheckpoint}}<br/>
+                          E{{>epochNumber}}@{{>epochPosition}}:{{{>epochId}}}
+                          {{/else}}
+                      </td>
+                      <td class='actions'>{{:~getLinks(internalHttpIp, internalHttpPort, externalHttpIp, externalHttpPort)}}</td>
+                    </tr>
+                    {{/for}}
+                </tbody>
+            </table>  
+            <div class="es-last-updated">Last updated: <span class="es-last-updated-time">{{>~timestamp()}}</span></div>
+        </script>
+
+        <script id="gossipTablePlainText" type="text/x-jsrender">
+<pre>
+Snapshot taken at: {{>~timestamp()}}
+{{>~sprintf("%-30s  %-30s  %-22s  %-22s  %-6s  %-12s  %-19s  %-90s", "Internal Tcp", "External Tcp", "Internal Http", "External Http", "Status", "State", "Timestamp (UTC)", "Checkpoints")}}
+{{>~sprintf("%'=30s  %'=30s  %'=22s  %'=22s  %'=6s  %'=12s  %'=19s  %'=90s", "=", "=", "=", "=", "=", "=", "=", "=")}}
+{{for members}}{{>~sprintf("%-30s  %-30s  %-22s  %-22s  %-6s  %-12s  %19s  %-90s", 
+                           ~endpoint(internalTcpIp, internalTcpPort) + ' (' + (internalSecureTcpPort || 'n/a') + ')',
+                           ~endpoint(externalTcpIp, externalTcpPort) + ' (' + (externalSecureTcpPort || 'n/a') + ')',
+                           ~endpoint(internalHttpIp, internalHttpPort), 
+                           ~endpoint(externalHttpIp, externalHttpPort), 
+                           ~status(isAlive), 
+                           state,
+                           ~date(timeStamp),
+                           state == 'Manager'
+                                ? 'n/a'
+                                : ~sprintf('L%d/W%d/C%d/E%d@%d:{%s}', lastCommitPosition, writerCheckpoint, chaserCheckpoint,
+                                                                      epochNumber, epochPosition, epochId))
+                }}
+{{/for}}
+</pre>
+        </script>
+        
+        <script id="r-body">
+            es.tmpl.renderBody();
+        </script>    
+        
+        <script type="text/javascript">
+            (function () {
+                $.views.helpers({
+                    sprintf: sprintf,
+                    max: Math.max,
+                    min: Math.min,
+                    endpoint: endpoint,
+                    status: status,
+                    getLinks: getLinks,
+                    date: date,
+                    timestamp: function () {
+                        return new Date();
+                    }
+                });
+
+                $.templates({
+                    gossipTable: "#gossipTable",
+                    gossipTablePlainText: "#gossipTablePlainText",
+                });
+
+                var timeFormatStr = 'yyyy-MM-dd HH:mm:ss';
+                var currentGossip = {};
+                
+                $(function () {
+                    $("#snapshot").click(function () {
+                        $("#gossip-plaintext").html($.render.gossipTablePlainText(currentGossip));
+                        selectText("gossip-plaintext");
+
+                        var container = $("body"),
+                            scrollTo = $('#gossip-plaintext');
+
+                        container.scrollTop(scrollTo.offset().top - container.offset().top + container.scrollTop());
+                        return false;
+                    });
+
+                    requestGossip();
+                });
+
+                function requestGossip() {
+                    $.ajax("/gossip", {
+                        headers: {
+                            Accept: "application/json"
+                        },
+                        success: success,
+                        error: error
+                    });
+                }
+
+                function success(data, status, xhr) {
+                    hideErrorMessage();
+                    delayedRequestList();
+
+                    var members = data.members;
+                    sortMembers(members);
+                    currentGossip = {
+                        members: members,
+                        timestamp: $.format.date(new Date(), timeFormatStr)
+                    };
+                    buildTable(currentGossip);
+                }
+
+                 function sortMembers(members) {
+                     members.sort(function (a, b) {
+                         if (a.internalHttpIp !== b.internalHttpIp) {
+                             return a.internalHttpIp < b.internalHttpIp ? -1 : 1;
+                         }
+                         return a.internalHttpPort < b.internalHttpPort ? -1 : 1;
+                     });
+                 }
+
+                 function buildTable(gossipInfo) {
+                     $("#gossip-container").html($.render.gossipTable(gossipInfo));
+                 }
+
+                 function error(xhr, status) {
+                     showErrorMessage(xhr);
+                     delayedRequestList();
+                 }
+
+                 function delayedRequestList() {
+                     setTimeout(requestGossip, 1000);
+                 }
+
+                 function showErrorMessage(xhr) {
+                     var msg = xhr.responseText || "couldn't connect to manager";
+                     $(".error").text(msg).show();
+                 }
+
+                 function hideErrorMessage() {
+                     $(".error").hide();
+                 }
+
+                 function endpoint(ip, port) {
+                     if (!ip && !port) {
+                         return "n/a";
+                     }
+                     return [ip, ":", port].join('');
+                 }
+
+                 function status(isAlive) {
+                     return isAlive ? "Alive" : "Dead";
+                 }
+
+                 function date(d) {
+                     // opera dont get it // newDate("2011-06-21T14:27:28.593Z")
+
+                     var a = d.split(/[^0-9]/);
+                     var parsedDate = new Date(a[0], a[1] - 1, a[2], a[3], a[4], a[5]);
+
+                     return $.format.date(parsedDate, timeFormatStr);
+                 }
+
+                 function getLinks(intIp, intPort, extIp, extPort) {
+
+                     var intBaseUrl = getBaseUrl(intIp, intPort);
+                     var extBaseUrl = getBaseUrl(extIp, extPort);
+
+                     var ping = getLink(extBaseUrl, "ping", "Ping");
+                     var web = getLink(extBaseUrl, "", "Web Site");
+                     var gossip = getLink(intBaseUrl, "gossip", "Show Gossip");
+
+                     var br = "<br/>";
+                     return [ping, br, web, br, gossip].join('');
+
+                     function getBaseUrl(ip, port) {
+                         var baseUrl = ["http://", ip, ":", port, "/"].join('');
+                         return baseUrl;
+                     }
+
+                     function getLink(base, ref, text) {
+                         return ["<a href='", base, ref, "'>", text, "</a>"].join('');
+                     }
+                 }
+
+                 function selectText(element) {
+                     var doc = document
+                       , text = doc.getElementById(element)
+                       , range
+                       , selection;
+                     if (doc.body.createTextRange) { //ms
+                         range = doc.body.createTextRange();
+                         range.moveToElementText(text);
+                         range.select();
+                     } else if (window.getSelection) { //all others
+                         selection = window.getSelection();
+                         range = doc.createRange();
+                         range.selectNodeContents(text);
+                         selection.removeAllRanges();
+                         selection.addRange(range);
+                     }
+                 }
+             })();
+    </script>
+    </div>
+</body>
+</html>
+                                                  
+                                                 

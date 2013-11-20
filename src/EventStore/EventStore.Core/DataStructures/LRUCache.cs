@@ -48,9 +48,7 @@ namespace EventStore.Core.DataStructures
 
         public LRUCache(int maxCount)
         {
-            if (maxCount <= 0)
-                throw new ArgumentOutOfRangeException("maxCount");
-
+            Ensure.Nonnegative(maxCount, "maxCount");
             _maxCount = maxCount;
         }
 
@@ -72,7 +70,7 @@ namespace EventStore.Core.DataStructures
             }
         }
 
-        public void Put(TKey key, TValue value)
+        public TValue Put(TKey key, TValue value)
         {
             lock (_lock)
             {
@@ -93,14 +91,25 @@ namespace EventStore.Core.DataStructures
                     _orderList.Remove(node);
                 }
                 _orderList.AddLast(node);
+                return value;
             }
         }
 
-        public void Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory)
+        public void Remove(TKey key)
         {
-            Ensure.NotNull(addFactory, "addFactory");
-            Ensure.NotNull(updateFactory, "updateFactory");
+            lock (_lock)
+            {
+                LinkedListNode<LRUItem> node;
+                if (_items.TryGetValue(key, out node))
+                {
+                    _orderList.Remove(node);
+                    _items.Remove(key);
+                }
+            }
+        }
 
+        public TValue Put<T>(TKey key, T userData, Func<TKey, T, TValue> addFactory, Func<TKey, TValue, T, TValue> updateFactory)
+        {
             lock (_lock)
             {
                 LinkedListNode<LRUItem> node;
@@ -108,7 +117,7 @@ namespace EventStore.Core.DataStructures
                 {
                     node = GetNode();
                     node.Value.Key = key;
-                    node.Value.Value = addFactory(key);
+                    node.Value.Value = addFactory(key, userData);
 
                     EnsureCapacity();
 
@@ -116,16 +125,17 @@ namespace EventStore.Core.DataStructures
                 }
                 else
                 {
-                    node.Value.Value = updateFactory(key, node.Value.Value);
+                    node.Value.Value = updateFactory(key, node.Value.Value, userData);
                     _orderList.Remove(node);
                 }
                 _orderList.AddLast(node);
+                return node.Value.Value;
             }
         }
 
         private void EnsureCapacity()
         {
-            while (_items.Count >= _maxCount)
+            while (_items.Count > 0 && _items.Count >= _maxCount)
             {
                 var node = _orderList.First;
                 _orderList.Remove(node);

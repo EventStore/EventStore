@@ -32,40 +32,25 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class GetStateWorkItem : WorkItem
+    class GetStateWorkItem : GetDataWorkItemBase
     {
-        private readonly string _partition;
-        private readonly IEnvelope _envelope;
-        private readonly Guid _projectionId;
-        private readonly PartitionStateCache _partitionStateCache;
-
-        public GetStateWorkItem(IEnvelope envelope, 
-                                Guid projectionId, 
-                                CoreProjection projection, 
-                                PartitionStateCache partitionStateCache,
-                                string partition)
-            : base(projection, string.Empty)
+        public GetStateWorkItem(
+            IEnvelope envelope, Guid correlationId, Guid projectionId, IProjectionPhaseStateManager projection,
+            string partition)
+            : base(envelope, correlationId, projectionId, projection, partition)
         {
-            if (envelope == null) throw new ArgumentNullException("envelope");
-            if (partitionStateCache == null) throw new ArgumentNullException("partitionStateCache");
-            if (partition == null) throw new ArgumentNullException("partition");
-            _partition = partition;
-            _envelope = envelope;
-            _projectionId = projectionId;
-            _partitionStateCache = partitionStateCache;
         }
 
-        protected override void Load(CheckpointTag checkpointTag)
+        protected override void Reply(PartitionState state, CheckpointTag checkpointTag)
         {
-            Projection.BeginStatePartitionLoad(_partition, checkpointTag, LoadCompleted);
-        }
-
-        private void LoadCompleted()
-        {
-            var projectionState = _partitionStateCache.GetLockedPartitionState(_partition).Data;
-            _envelope.ReplyWith(
-                new CoreProjectionManagementMessage.StateReport(_projectionId, _partition, projectionState));
-            NextStage();
+            if (state == null)
+                _envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.StateReport(
+                        _correlationId, _projectionId, _partition, null, checkpointTag));
+            else
+                _envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.StateReport(
+                        _correlationId, _projectionId, _partition, state.State, checkpointTag));
         }
     }
 }

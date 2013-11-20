@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
-using System.IO;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -55,15 +54,16 @@ namespace EventStore.Core.Tests.TransactionLog
                                                     0,
                                                     _writerCheckpoint,
                                                     new InMemoryCheckpoint(),
-                                                    new ICheckpoint[0]));
-            _db.OpenVerifyAndClean();
+                                                    new InMemoryCheckpoint(-1),
+                                                    new InMemoryCheckpoint(-1)));
+            _db.Open();
             _writer = new TFChunkWriter(_db);
             _writer.Open();
-            _record = new CommitLogRecord(logPosition: 0xFEED,
+            _record = new CommitLogRecord(logPosition: 0,
                                           correlationId: _eventId,
                                           transactionPosition: 4321,
                                           timeStamp: new DateTime(2012, 12, 21),
-                                          eventNumber: 10);
+                                          firstEventNumber: 10);
             long newPos;
             _writer.Write(_record, out newPos);
             _writer.Flush();
@@ -88,7 +88,7 @@ namespace EventStore.Core.Tests.TransactionLog
                 Assert.True(r is CommitLogRecord);
                 var c = (CommitLogRecord) r;
                 Assert.AreEqual(c.RecordType, LogRecordType.Commit);
-                Assert.AreEqual(c.LogPosition, 0xFEED);
+                Assert.AreEqual(c.LogPosition, 0);
                 Assert.AreEqual(c.CorrelationId, _eventId);
                 Assert.AreEqual(c.TransactionPosition, 4321);
                 Assert.AreEqual(c.TimeStamp, new DateTime(2012, 12, 21));
@@ -104,11 +104,8 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void trying_to_read_past_writer_checksum_returns_false()
         {
-            using (var reader = new TFChunkReader(_db, _writerCheckpoint))
-            {
-                reader.Open();
-                Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read()).Success);
-            }
+            var reader = new TFChunkReader(_db, _writerCheckpoint);
+            Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read()).Success);
         }
     }
 }

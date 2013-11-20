@@ -36,31 +36,47 @@ namespace EventStore.Core.TransactionLog.LogRecords
     public enum PrepareFlags: ushort
     {
         None = 0x00,
-        Data = 0x01,                // prepare contains data
-        TransactionBegin = 0x02,    // prepare starts transaction
-        TransactionEnd = 0x04,      // prepare ends transaction
-        StreamDelete = 0x08,        // prepare deletes stream
+        Data = 0x01,                      // prepare contains data
+        TransactionBegin = 0x02,          // prepare starts transaction
+        TransactionEnd = 0x04,            // prepare ends transaction
+        StreamDelete = 0x08,              // prepare deletes stream
 
-        IsCommited = 0x10,          // prepare should be considered committed immediately, no commit will follow in TF
-        //Snapshot = 0x20,          // prepare belongs to snapshot stream, only last event in stream will be kept after scavenging
-        
-        //Update = 0x80,            // prepare updates previous instance of the same event, DANGEROUS!
-        IsJson = 0x100,             // indicates data & metadata are valid json
+        IsCommitted = 0x20,              // prepare should be considered committed immediately, no commit will follow in TF
+        //Update = 0x30,                  // prepare updates previous instance of the same event, DANGEROUS!
+
+        IsJson = 0x100,                   // indicates data & metadata are valid json
 
         // aggregate flag set
         DeleteTombstone = TransactionBegin | TransactionEnd | StreamDelete,
         SingleWrite = Data | TransactionBegin | TransactionEnd
     }
 
+    public static class PrepareFlagsExtensions
+    {
+        public static bool HasAllOf(this PrepareFlags flags, PrepareFlags flagSet)
+        {
+            return (flags & flagSet) == flagSet;
+        }
+
+        public static bool HasAnyOf(this PrepareFlags flags, PrepareFlags flagSet)
+        {
+            return (flags & flagSet) != 0;
+        }
+
+        public static bool HasNoneOf(this PrepareFlags flags, PrepareFlags flagSet)
+        {
+            return (flags & flagSet) == 0;
+        }
+    }
+
     public class PrepareLogRecord: LogRecord, IEquatable<PrepareLogRecord>
     {
         public const byte PrepareRecordVersion = 0;
 
-        public readonly long LogPosition;
         public readonly PrepareFlags Flags;
         public readonly long TransactionPosition;
         public readonly int TransactionOffset;
-        public readonly int ExpectedVersion;
+        public readonly int ExpectedVersion;            // if IsCommitted is set, this is final EventNumber
         public readonly string EventStreamId;
 
         public readonly Guid EventId;
@@ -69,11 +85,6 @@ namespace EventStore.Core.TransactionLog.LogRecords
         public readonly string EventType;
         public readonly byte[] Data;
         public readonly byte[] Metadata;
-
-        public override long Position
-        {
-            get { return LogPosition; }
-        }
 
         public long InMemorySize
         {
@@ -109,9 +120,8 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                 string eventType, 
                                 byte[] data,
                                 byte[] metadata)
-            : base(LogRecordType.Prepare, PrepareRecordVersion)
+            : base(LogRecordType.Prepare, PrepareRecordVersion, logPosition)
         {
-            Ensure.Nonnegative(logPosition, "logPosition");
             Ensure.NotEmptyGuid(correlationId, "correlationId");
             Ensure.NotEmptyGuid(eventId, "eventId");
             Ensure.Nonnegative(transactionPosition, "transactionPosition");
@@ -122,7 +132,6 @@ namespace EventStore.Core.TransactionLog.LogRecords
                 throw new ArgumentOutOfRangeException("expectedVersion");
             Ensure.NotNull(data, "data");
 
-            LogPosition = logPosition;
             Flags = flags;
             TransactionPosition = transactionPosition;
             TransactionOffset = transactionOffset;
@@ -137,9 +146,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
             Metadata = metadata ?? NoData;
         }
 
-        internal PrepareLogRecord(BinaryReader reader, byte version): base(LogRecordType.Prepare, version)
+        internal PrepareLogRecord(BinaryReader reader, byte version, long logPosition): base(LogRecordType.Prepare, version, logPosition)
         {
-            LogPosition = reader.ReadInt64();
+            if (version != PrepareRecordVersion)
+                throw new ArgumentException(string.Format(
+                    "PrepareRecord version {0} is incorrect. Supported version: {1}.", version, PrepareRecordVersion));
+
             Flags = (PrepareFlags) reader.ReadUInt16();
             TransactionPosition = reader.ReadInt64();
             TransactionOffset = reader.ReadInt32();
@@ -161,7 +173,6 @@ namespace EventStore.Core.TransactionLog.LogRecords
         {
             base.WriteTo(writer);
 
-            writer.Write(LogPosition);
             writer.Write((ushort) Flags);
             writer.Write(TransactionPosition);
             writer.Write(TransactionOffset);

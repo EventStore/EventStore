@@ -41,19 +41,20 @@ namespace EventStore.Core.Tests.TransactionLog
         public void with_a_writer_checksum_of_zero_the_first_chunk_is_created_with_correct_name()
         {
             var config = new TFChunkDbConfig(PathName,
-                                             new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(0),
                                              new InMemoryCheckpoint(0),
-                                             new ICheckpoint[0]);
+                                             new InMemoryCheckpoint(-1),
+                                             new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
-            db.OpenVerifyAndClean();
+            db.Open();
             db.Dispose();
 
             Assert.AreEqual(1, Directory.GetFiles(PathName).Length);
-            Assert.IsTrue(File.Exists(Path.Combine(PathName, "prefix.tf0")));
-            var fileInfo = new FileInfo(Path.Combine(PathName, "prefix.tf0"));
+            Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
+            var fileInfo = new FileInfo(GetFilePathFor("chunk-000000.000000"));
             Assert.AreEqual(10000 + ChunkHeader.Size + ChunkFooter.Size, fileInfo.Length);
         }
     }

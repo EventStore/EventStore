@@ -30,6 +30,7 @@ using System;
 using System.Net;
 using System.Threading;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using EventStore.Common.Utils;
@@ -46,7 +47,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         public http_service_should()
         {
-            _serverEndPoint = new IPEndPoint(IPAddress.Loopback, 7777);
+            var port = PortsHelper.GetAvailablePort(IPAddress.Loopback);
+            _serverEndPoint = new IPEndPoint(IPAddress.Loopback, port);
             _portableServer = new PortableServer(_serverEndPoint);
         }
 
@@ -62,6 +64,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _portableServer.TearDown();
         }
 
+        [TestFixtureTearDown]
+        public void TestFixtureTearDown()
+        {
+            PortsHelper.ReturnPort(_serverEndPoint.Port);            
+        }
+
         [Test]
         [Category("Network")]
         public void start_after_system_message_system_init_published()
@@ -73,14 +81,24 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         [Test]
         [Category("Network")]
-        public void ignore_any_shutdown_messages()
+        public void ignore_shutdown_message_that_does_not_cause_process_exit()
         {
             _portableServer.Publish(new SystemMessage.SystemInit());
             Assert.IsTrue(_portableServer.IsListening);
 
-            _portableServer.Publish(new SystemMessage.BecomeShutdown());
-            _portableServer.Publish(new SystemMessage.BecomeShuttingDown());
+            _portableServer.Publish(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), exitProcess: false));
             Assert.IsTrue(_portableServer.IsListening);
+        }
+
+        [Test]
+        [Category("Network")]
+        public void react_to_shutdown_message_that_cause_process_exit()
+        {
+            _portableServer.Publish(new SystemMessage.SystemInit());
+            Assert.IsTrue(_portableServer.IsListening);
+
+            _portableServer.Publish(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), exitProcess: true));
+            Assert.IsFalse(_portableServer.IsListening);
         }
 
         [Test]
@@ -100,6 +118,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             {
                 var i1 = i;
                 _portableServer.BuiltInClient.Get(_serverEndPoint.ToHttpUrl(requests[i]),
+                            TimeSpan.FromMilliseconds(10000),
                             response =>
                                 {
                                     successes[i1] = response.HttpStatusCode == (int) HttpStatusCode.NotFound;

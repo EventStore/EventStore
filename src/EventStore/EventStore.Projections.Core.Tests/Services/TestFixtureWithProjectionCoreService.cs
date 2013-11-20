@@ -30,13 +30,18 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services
 {
@@ -44,31 +49,10 @@ namespace EventStore.Projections.Core.Tests.Services
     {
         public class TestCoreProjection : ICoreProjection
         {
-            public List<ProjectionSubscriptionMessage.CommittedEventReceived> HandledMessages =
-                new List<ProjectionSubscriptionMessage.CommittedEventReceived>();
-
-            public List<ProjectionSubscriptionMessage.CheckpointSuggested> HandledCheckpoints =
-                new List<ProjectionSubscriptionMessage.CheckpointSuggested>();
-
-            public List<ProjectionSubscriptionMessage.ProgressChanged> HandledProgress =
-                new List<ProjectionSubscriptionMessage.ProgressChanged>();
-
-            public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
-            {
-                HandledMessages.Add(message);
-            }
-
-            public void Handle(ProjectionSubscriptionMessage.CheckpointSuggested message)
-            {
-                HandledCheckpoints.Add(message);
-            }
+            public List<EventReaderSubscriptionMessage.CommittedEventReceived> HandledMessages =
+                new List<EventReaderSubscriptionMessage.CommittedEventReceived>();
 
             public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void Handle(CoreProjectionProcessingMessage.PauseRequested message)
             {
                 throw new NotImplementedException();
             }
@@ -78,12 +62,18 @@ namespace EventStore.Projections.Core.Tests.Services
                 throw new NotImplementedException();
             }
 
-            public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
-            {
-                HandledProgress.Add(message);
-            }
 
             public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Handle(CoreProjectionProcessingMessage.Failed message)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
             {
                 throw new NotImplementedException();
             }
@@ -92,6 +82,13 @@ namespace EventStore.Projections.Core.Tests.Services
         protected TestHandler<Message> _consumer;
         protected InMemoryBus _bus;
         protected ProjectionCoreService _service;
+        protected EventReaderCoreService _readerService;
+
+        private
+            ReaderSubscriptionDispatcher
+            _subscriptionDispatcher;
+
+        private SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
         [SetUp]
         public void Setup()
@@ -99,21 +96,42 @@ namespace EventStore.Projections.Core.Tests.Services
             _consumer = new TestHandler<Message>();
             _bus = new InMemoryBus("temp");
             _bus.Subscribe(_consumer);
-            _service = new ProjectionCoreService(_bus, _bus, 10, new InMemoryCheckpoint(1000));
-            _service.Handle(new ProjectionCoreServiceMessage.Start());
+            ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
+            var ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+            _readerService = new EventReaderCoreService(_bus, ioDispatcher, 10, writerCheckpoint, runHeadingReader: true);
+            _subscriptionDispatcher =
+                new ReaderSubscriptionDispatcher(_bus);
+            _spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(_bus);
+            _service = new ProjectionCoreService(
+                _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher,
+                _spoolProcessingResponseDispatcher);
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscriptionStarted>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
+            _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
+            _bus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
+            _readerService.Handle(new Messages.ReaderCoreServiceMessage.StartReader());
+            _service.Handle(new ProjectionCoreServiceMessage.StartCore());
         }
 
-        protected CheckpointStrategy CreateCheckpointStrategy()
+        protected IReaderStrategy CreateReaderStrategy()
         {
-            var result = new CheckpointStrategy.Builder();
+            var result = new SourceDefinitionBuilder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(ProjectionMode.Persistent);
+            return ReaderStrategy.Create(0, result.Build(), new RealTimeProvider(), stopOnEof: false, runAs: null);
         }
 
-        protected static Event CreateEvent()
+        protected static ResolvedEvent CreateEvent()
         {
-            return new Event(Guid.NewGuid(), "t", false, new byte[0], new byte[0]);
+            return new ResolvedEvent(
+                "test", -1, "test", -1, false, new TFPos(10, 5), new TFPos(10, 5), Guid.NewGuid(), "t", false,
+                new byte[0], new byte[0], null, default(DateTime));
         }
     }
 }

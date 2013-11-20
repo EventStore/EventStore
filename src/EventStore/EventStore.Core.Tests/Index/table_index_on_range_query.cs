@@ -25,29 +25,29 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using System.IO;
 using System.Linq;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class table_index_on_range_query  :SpecificationWithDirectory
+    public class table_index_on_range_query  :SpecificationWithDirectoryPerTestFixture
     {
         private TableIndex _tableIndex;
-        private string _indexDir;
 
-        [SetUp]
-        public override void SetUp()
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
         {
-            base.SetUp();
+            base.TestFixtureSetUp();
 
-            _indexDir = base.PathName;
-            _tableIndex = new TableIndex(_indexDir, () => new HashListMemTable(), maxSizeForMemory: 2000);
-            _tableIndex.Initialize();
+            _tableIndex = new TableIndex(PathName,
+                                         () => new HashListMemTable(maxSize: 40),
+                                         () => { throw new InvalidOperationException(); },
+                                         maxSizeForMemory: 20);
+            _tableIndex.Initialize(long.MaxValue);
 
             _tableIndex.Add(0, 0xDEAD, 0, 0xFF00);
             _tableIndex.Add(0, 0xDEAD, 1, 0xFF01); 
@@ -66,12 +66,11 @@ namespace EventStore.Core.Tests.Index
             _tableIndex.Add(0, 0xADA, 0, 0xFF00);
         }
 
-        [TearDown]
-        public override void TearDown()
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
         {
-            _tableIndex.ClearAll();
-
-            base.TearDown();
+            _tableIndex.Close();
+            base.TestFixtureTearDown();
         }
 
         [Test]

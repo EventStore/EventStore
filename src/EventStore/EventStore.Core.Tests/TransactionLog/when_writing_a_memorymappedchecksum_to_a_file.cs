@@ -32,7 +32,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog
 {
-    [TestFixture, Platform("NET")]
+    [TestFixture]
     public class when_writing_a_memorymappedchecksum_to_a_file : SpecificationWithFile
     {
         [Test]

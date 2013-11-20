@@ -36,18 +36,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal class ProjectionWrongTagCheck : ProjectionsKillScenario
     {
-        private readonly TimeSpan _iterationSleepInterval = TimeSpan.FromMinutes(10);
         private TimeSpan _executionPeriod;
 
-        public ProjectionWrongTagCheck(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath)
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
+        public ProjectionWrongTagCheck(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath, NodeConnectionInfo customNode)
+            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath, customNode)
         {
             _executionPeriod = executionPeriod;
-        }
-
-        protected override TimeSpan IterationSleepInterval
-        {
-            get { return _iterationSleepInterval; }
         }
 
         private int _iterationCode = 0;
@@ -63,14 +57,20 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected override void RunInternal()
         {
+            var nodeProcessId = StartNode();
+            EnableProjectionByCategory();
+            KillNode(nodeProcessId);
+
             var stopWatch = Stopwatch.StartNew();
 
             while (stopWatch.Elapsed < _executionPeriod)
             {
-                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
+                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
                            GetIterationCode(),
                            (int)stopWatch.Elapsed.TotalMinutes,
-                           _executionPeriod.TotalMinutes);
+                           _executionPeriod.TotalMinutes,
+                           GetType().Name);
+
                 Log.Info(msg);
                 Log.Info("##teamcity[message '{0}']", msg);
 
@@ -90,12 +90,10 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var writeTask = WriteData();
 
-            var expectedEventsPerStream = EventsPerStream.ToString();
+            var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
 
             var successTask = Task.Factory.StartNew<bool>(() =>
             {
-                var store = GetConnection();
-
                 var success = true;
                 var stopWatch = new Stopwatch();
                 
@@ -116,11 +114,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         stopWatch.Start();
                     }
 
-                    var count1 = GetProjectionStateValue(store, sumCheckForBankAccount0, "success", int.Parse, -1);
+                    var count1 = GetProjectionStateValue(sumCheckForBankAccount0, "success", int.Parse, -1);
                     for (var i = 0; i < 5; ++i)
                     {
                         Thread.Sleep(TimeSpan.FromSeconds(1));
-                        var count2 = GetProjectionStateValue(store, sumCheckForBankAccount0, "success", int.Parse, -1);
+                        var count2 = GetProjectionStateValue(sumCheckForBankAccount0, "success", int.Parse, -1);
 
                         if (count1 > count2)
                         {
@@ -138,11 +136,14 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     if (!success)
                         break;
 
-                    if (CheckProjectionState(store, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream))
+                    if (CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion))
                         break;
                 }
 
                 KillNode(nodeProcessId);
+
+                if (!success)
+                    throw new ApplicationException(string.Format("Projection {0} has not completed with expected result {1} in time.", sumCheckForBankAccount0, lastExpectedEventVersion));
 
                 return success;
 

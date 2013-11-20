@@ -28,81 +28,98 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager
 {
-    public class RequestManagementService : IHandle<StorageMessage.CreateStreamRequestCreated>, 
-                                            IHandle<StorageMessage.WriteRequestCreated>, 
-                                            IHandle<StorageMessage.DeleteStreamRequestCreated>,
-                                            IHandle<StorageMessage.TransactionStartRequestCreated>,
-                                            IHandle<StorageMessage.TransactionWriteRequestCreated>,
-                                            IHandle<StorageMessage.TransactionCommitRequestCreated>,
+    public interface IRequestManager: IHandle<StorageMessage.RequestManagerTimerTick>
+    {
+    }
+
+    public class RequestManagementService : IHandle<SystemMessage.SystemInit>,
+                                            IHandle<ClientMessage.WriteEvents>, 
+                                            IHandle<ClientMessage.DeleteStream>,
+                                            IHandle<ClientMessage.TransactionStart>,
+                                            IHandle<ClientMessage.TransactionWrite>,
+                                            IHandle<ClientMessage.TransactionCommit>,
                                             IHandle<StorageMessage.RequestCompleted>,
+                                            IHandle<StorageMessage.CheckStreamAccessCompleted>,
                                             IHandle<StorageMessage.AlreadyCommitted>,
                                             IHandle<StorageMessage.PrepareAck>,
                                             IHandle<StorageMessage.CommitAck>,
                                             IHandle<StorageMessage.WrongExpectedVersion>,
                                             IHandle<StorageMessage.InvalidTransaction>,
                                             IHandle<StorageMessage.StreamDeleted>,
-                                            IHandle<StorageMessage.PreparePhaseTimeout>,
-                                            IHandle<StorageMessage.CommitPhaseTimeout>
+                                            IHandle<StorageMessage.RequestManagerTimerTick>
     {
         private readonly IPublisher _bus;
-        private readonly Dictionary<Guid, object> _currentRequests = new Dictionary<Guid, object>();
+        private readonly TimerMessage.Schedule _tickRequestMessage;
+        private readonly Dictionary<Guid, IRequestManager> _currentRequests = new Dictionary<Guid, IRequestManager>();
 
         private readonly int _prepareCount;
         private readonly int _commitCount;
+        private readonly TimeSpan _prepareTimeout;
+        private readonly TimeSpan _commitTimeout;
 
-        public RequestManagementService(IPublisher bus, int prepareCount, int commitCount)
+        public RequestManagementService(IPublisher bus, int prepareCount, int commitCount, TimeSpan prepareTimeout, TimeSpan commitTimeout)
         {
+            Ensure.NotNull(bus, "bus");
+            Ensure.Nonnegative(prepareCount, "prepareCount");
+            Ensure.Nonnegative(commitCount, "commitCount");
+
             _bus = bus;
+            _tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
+                                                               new PublishEnvelope(bus),
+                                                               new StorageMessage.RequestManagerTimerTick());
+
             _prepareCount = prepareCount;
             _commitCount = commitCount;
+            _prepareTimeout = prepareTimeout;
+            _commitTimeout = commitTimeout;
         }
 
-        public void Handle(StorageMessage.CreateStreamRequestCreated message)
+        public void Handle(SystemMessage.SystemInit message)
         {
-            var manager = new CreateStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
-            _currentRequests.Add(message.CorrelationId, manager);
+            _bus.Publish(_tickRequestMessage);   
+        }
+
+        public void Handle(ClientMessage.WriteEvents message)
+        {
+            var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
+            _currentRequests.Add(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 
-        public void Handle(StorageMessage.WriteRequestCreated message)
+        public void Handle(ClientMessage.DeleteStream message)
         {
-            var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
-            _currentRequests.Add(message.CorrelationId, manager);
+            var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
+            _currentRequests.Add(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 
-        public void Handle(StorageMessage.DeleteStreamRequestCreated message)
+        public void Handle(ClientMessage.TransactionStart message)
         {
-            var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
-            _currentRequests.Add(message.CorrelationId, manager);
-            manager.Handle(message);
-        }
-
-        public void Handle(StorageMessage.TransactionStartRequestCreated message)
-        {
-            var manager = new SingleAckRequestManager(_bus);
-            _currentRequests.Add(message.CorrelationId, manager);
+            var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
+            _currentRequests.Add(message.InternalCorrId, manager);
             manager.Handle(message);
         }
         
-        public void Handle(StorageMessage.TransactionWriteRequestCreated message)
+        public void Handle(ClientMessage.TransactionWrite message)
         {
-            var manager = new SingleAckRequestManager(_bus);
-            _currentRequests.Add(message.CorrelationId, manager);
+            var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
+            _currentRequests.Add(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 
-        public void Handle(StorageMessage.TransactionCommitRequestCreated message)
+        public void Handle(ClientMessage.TransactionCommit message)
         {
-            var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
-            _currentRequests.Add(message.CorrelationId, manager);
+            var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
+            _currentRequests.Add(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 
@@ -110,6 +127,11 @@ namespace EventStore.Core.Services.RequestManager
         {
             if (!_currentRequests.Remove(message.CorrelationId))
                 throw new InvalidOperationException("Should never complete request twice.");
+        }
+
+        public void Handle(StorageMessage.CheckStreamAccessCompleted message)
+        {
+            DispatchInternal(message.CorrelationId, message);
         }
 
         public void Handle(StorageMessage.AlreadyCommitted message)
@@ -142,19 +164,18 @@ namespace EventStore.Core.Services.RequestManager
             DispatchInternal(message.CorrelationId, message);
         }
 
-        public void Handle(StorageMessage.PreparePhaseTimeout message)
+        public void Handle(StorageMessage.RequestManagerTimerTick message)
         {
-            DispatchInternal(message.CorrelationId, message);
-        }
-
-        public void Handle(StorageMessage.CommitPhaseTimeout message)
-        {
-            DispatchInternal(message.CorrelationId, message);
+            foreach (var currentRequest in _currentRequests)
+            {
+                currentRequest.Value.Handle(message);
+            }
+            _bus.Publish(_tickRequestMessage);
         }
 
         private void DispatchInternal<T>(Guid correlationId, T message) where T : Message
         {
-            object manager;
+            IRequestManager manager;
             if (_currentRequests.TryGetValue(correlationId, out manager))
             {
                 var x = manager as IHandle<T>;

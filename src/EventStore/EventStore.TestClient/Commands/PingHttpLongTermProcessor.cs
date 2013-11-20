@@ -93,13 +93,13 @@ namespace EventStore.TestClient.Commands
 
             var requestsCnt = 0;
 
+            int sent = 0;
+            int received = 0;
+
             var watchLockRoot = new object();
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < clientsCnt; i++)
             {
-                int sent = 0;
-                int received = 0;
-
                 threads.Add(new Thread(() =>
                 {
                     var client = new HttpAsyncClient();
@@ -156,7 +156,9 @@ namespace EventStore.TestClient.Commands
 
                         var url = context.Client.HttpEndpoint.ToHttpUrl("/ping");
 
-                        client.Get(url,
+                        client.Get(url, 
+                                   null,
+                                   TimeSpan.FromMilliseconds(10000),
                                    succHandler,
                                    exc => context.Log.ErrorException(exc, "Error during GET."));
 
@@ -165,8 +167,10 @@ namespace EventStore.TestClient.Commands
                         Thread.Sleep(sleepTime);
                         sentCount -= 1;
 
-                        while (sent - received > context.Client.Options.PingWindow)
+                        while (sent - received > context.Client.Options.PingWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }

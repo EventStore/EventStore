@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -36,11 +38,19 @@ namespace EventStore.Projections.Core.Services
 
         public string Status { get; set; }
 
+        public bool Enabled { get; set; }
+
         public ManagedProjectionState MasterStatus { get; set; }
 
         public string StateReason { get; set; }
 
         public string Name { get; set; }
+
+        public int ProjectionId { get; set; }
+
+        public int Epoch { get; set; }
+
+        public int Version { get; set; }
 
         public ProjectionMode Mode { get; set; }
 
@@ -65,6 +75,12 @@ namespace EventStore.Projections.Core.Services
         public int ReadsInProgress { get; set; }
 
         public int WritesInProgress { get; set; }
+
+        public string EffectiveName { get; set; }
+
+        public ProjectionSourceDefinition Definition { get; set; }
+
+        public long CoreProcessingTime { get; set; }
 
         public ProjectionStatistics Clone()
         {

@@ -30,10 +30,11 @@ using System.Net;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Cluster;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.VNode
 {
@@ -49,22 +50,33 @@ namespace EventStore.Core.Services.VNode
 
         private readonly IPublisher _outputBus;
         private readonly IPEndPoint _httpEndPoint;
+        private readonly TFChunkDb _db;
+        private readonly SingleVNode _node;
 
         private VNodeState _state = VNodeState.Initializing;
         private QueuedHandler _mainQueue;
         private readonly VNodeFSM _fsm;
 
-        private bool _storageReaderInitialized;
-        private bool _storageWriterInitialized;
-        private int _serviceShutdownsToExpect = 4;
+        private int _serviceInitsToExpect = 1 /* StorageChaser */
+                                          + 1 /* StorageReader */
+                                          + 1 /* StorageWriter */;
+        private int _serviceShutdownsToExpect = 1 /* StorageChaser */ 
+                                              + 1 /* StorageReader */ 
+                                              + 1 /* StorageWriter */ 
+                                              + 1 /* HttpService*/;
+        private bool _exitProcessOnShutdown;
 
-        public SingleVNodeController(IPublisher outputBus, IPEndPoint httpEndPoint)
+        public SingleVNodeController(IPublisher outputBus, IPEndPoint httpEndPoint, TFChunkDb db, SingleVNode node)
         {
             Ensure.NotNull(outputBus, "outputBus");
             Ensure.NotNull(httpEndPoint, "httpEndPoint");
+            Ensure.NotNull(db, "db");
+            Ensure.NotNull(node, "node");
 
             _outputBus = outputBus;
             _httpEndPoint = httpEndPoint;
+            _db = db;
+            _node = node;
 
             _fsm = CreateFSM();
         }
@@ -80,35 +92,67 @@ namespace EventStore.Core.Services.VNode
         {
             var stm = new VNodeFSMBuilder(() => _state)
                 .InAnyState()
+                    .When<SystemMessage.StateChangeMessage>()
+                        .Do(m => Application.Exit(ExitCode.Error, string.Format("{0} message was unhandled in {1}.", m.GetType().Name, GetType().Name)))
+
+                .InState(VNodeState.Initializing)
                     .When<SystemMessage.SystemInit>().Do(Handle)
                     .When<SystemMessage.SystemStart>().Do(Handle)
-                    .When<SystemMessage.BecomeShuttingDown>().Do(Handle)
-                    .When<SystemMessage.BecomeWorking>().Do(Handle)
-                    .When<SystemMessage.BecomeShutdown>().Do(Handle)
-                .InState(VNodeState.Initializing)
-                    .When<SystemMessage.StorageReaderInitializationDone>().Do(Handle)
-                    .When<SystemMessage.StorageWriterInitializationDone>().Do(Handle)
-                    .When<ClientMessage.ReadRequestMessage>().Ignore()
-                    .When<ClientMessage.WriteRequestMessage>().Ignore()
-                    .WhenOther().Do(m => _outputBus.Publish(m))
+                    .When<SystemMessage.BecomePreMaster>().Do(Handle)
+                    .When<SystemMessage.ServiceInitialized>().Do(Handle)
+                    .When<ClientMessage.ScavengeDatabase>().Ignore()
+                    .WhenOther().ForwardTo(_outputBus)
+
+                .InStates(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)
+                    .When<ClientMessage.ReadRequestMessage>().Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
+                .InAllStatesExcept(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)
+                    .When<ClientMessage.ReadRequestMessage>().ForwardTo(_outputBus)
+
+                .InAllStatesExcept(VNodeState.PreMaster)
+                    .When<SystemMessage.WaitForChaserToCatchUp>().Ignore()
+                    .When<SystemMessage.ChaserCaughtUp>().Ignore()
+
+                .InState(VNodeState.PreMaster)
+                    .When<SystemMessage.BecomeMaster>().Do(Handle)
+                    .When<SystemMessage.WaitForChaserToCatchUp>().ForwardTo(_outputBus)
+                    .When<SystemMessage.ChaserCaughtUp>().Do(Handle)
+                    .WhenOther().ForwardTo(_outputBus)
+
                 .InState(VNodeState.Master)
-                    .When<ClientMessage.CreateStream>().Do(Handle)
-                    .When<ClientMessage.WriteEvents>().Do(Handle)
-                    .When<ClientMessage.TransactionStart>().Do(Handle)
-                    .When<ClientMessage.TransactionWrite>().Do(Handle)
-                    .When<ClientMessage.TransactionCommit>().Do(Handle)
-                    .When<ClientMessage.DeleteStream>().Do(Handle)
-                    .WhenOther().Do(m => _outputBus.Publish(m))
-                .InStates(VNodeState.Initializing, VNodeState.Master)
+                    .When<ClientMessage.WriteEvents>().ForwardTo(_outputBus)
+                    .When<ClientMessage.TransactionStart>().ForwardTo(_outputBus)
+                    .When<ClientMessage.TransactionWrite>().ForwardTo(_outputBus)
+                    .When<ClientMessage.TransactionCommit>().ForwardTo(_outputBus)
+                    .When<ClientMessage.DeleteStream>().ForwardTo(_outputBus)
+                    .When<StorageMessage.WritePrepares>().ForwardTo(_outputBus)
+                    .When<StorageMessage.WriteDelete>().ForwardTo(_outputBus)
+                    .When<StorageMessage.WriteTransactionStart>().ForwardTo(_outputBus)
+                    .When<StorageMessage.WriteTransactionData>().ForwardTo(_outputBus)
+                    .When<StorageMessage.WriteTransactionPrepare>().ForwardTo(_outputBus)
+                    .When<StorageMessage.WriteCommit>().ForwardTo(_outputBus)
+                    .WhenOther().ForwardTo(_outputBus)
+
+                .InAllStatesExcept(VNodeState.Master)
+                    .When<ClientMessage.WriteRequestMessage>().Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
+                    .When<StorageMessage.WritePrepares>().Ignore()
+                    .When<StorageMessage.WriteDelete>().Ignore()
+                    .When<StorageMessage.WriteTransactionStart>().Ignore()
+                    .When<StorageMessage.WriteTransactionData>().Ignore()
+                    .When<StorageMessage.WriteTransactionPrepare>().Ignore()
+                    .When<StorageMessage.WriteCommit>().Ignore()
+
+                .InAllStatesExcept(VNodeState.ShuttingDown, VNodeState.Shutdown)
                     .When<ClientMessage.RequestShutdown>().Do(Handle)
+                    .When<SystemMessage.BecomeShuttingDown>().Do(Handle)
+
+                .InState(VNodeState.ShuttingDown)
+                    .When<SystemMessage.BecomeShutdown>().Do(Handle)
+                    .When<SystemMessage.ShutdownTimeout>().Do(Handle)
+
                 .InStates(VNodeState.ShuttingDown, VNodeState.Shutdown)
                     .When<SystemMessage.ServiceShutdown>().Do(Handle)
-                // TODO AN reply with correct status code, that system is shutting down (or already shut down)
-                    .When<ClientMessage.ReadRequestMessage>().Ignore()
-                    .When<ClientMessage.WriteRequestMessage>().Ignore()
-                    .WhenOther().Do(m => _outputBus.Publish(m))
-                .InState(VNodeState.ShuttingDown)
-                    .When<SystemMessage.ShutdownTimeout>().Do(Handle)
+                    .WhenOther().ForwardTo(_outputBus)
+
                 .Build();
             return stm;
         }
@@ -120,150 +164,122 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(SystemMessage.SystemInit message)
         {
-            Log.Info("========= SystemInit: SingleVNodeController =========");
+            Log.Info("========== [{0}] SYSTEM INIT...", _httpEndPoint);
             _outputBus.Publish(message);
         }
 
         private void Handle(SystemMessage.SystemStart message)
         {
-            Log.Info("========= SystemStart: SingleVNodeController =========");
+            Log.Info("========== [{0}] SYSTEM START....", _httpEndPoint);
             _outputBus.Publish(message);
-
-            _mainQueue.Publish(new SystemMessage.BecomeWorking());
+            _fsm.Handle(new SystemMessage.BecomePreMaster(Guid.NewGuid()));
         }
 
-        private void Handle(SystemMessage.BecomeWorking message)
+        private void Handle(SystemMessage.BecomePreMaster message)
         {
-            Log.Info("[{0}] IS WORKING!!! SPARTA!!!111", _httpEndPoint);
+            Log.Info("========== [{0}] PRE-MASTER STATE, WAITING FOR CHASER TO CATCH UP...", _httpEndPoint);
+            _state = VNodeState.PreMaster;
+            _mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(Guid.NewGuid(), TimeSpan.Zero));
+            _outputBus.Publish(message);
+        }
 
+        private void Handle(SystemMessage.BecomeMaster message)
+        {
+            Log.Info("========== [{0}] IS WORKING!!! SPARTA!!!", _httpEndPoint);
             _state = VNodeState.Master;
-
             _outputBus.Publish(message);
         }
 
         private void Handle(SystemMessage.BecomeShuttingDown message)
         {
-            Log.Info("[{0}] IS SHUTTING DOWN!!! FAREWELL, WORLD...", _httpEndPoint);
+            if (_state == VNodeState.ShuttingDown || _state == VNodeState.Shutdown)
+                return;
 
+            Log.Info("========== [{0}] IS SHUTTING DOWN!!! FAREWELL, WORLD...", _httpEndPoint);
+            _exitProcessOnShutdown = message.ExitProcess;
             _state = VNodeState.ShuttingDown;
-
-            _mainQueue.Publish(TimerMessage.Schedule.Create(ShutdownTimeout,
-                                                            new PublishEnvelope(_mainQueue),
-                                                            new SystemMessage.ShutdownTimeout()));
+            _mainQueue.Publish(TimerMessage.Schedule.Create(ShutdownTimeout, new PublishEnvelope(_mainQueue), new SystemMessage.ShutdownTimeout()));
             _outputBus.Publish(message);
         }
 
         private void Handle(SystemMessage.BecomeShutdown message)
         {
-            Log.Info("[{0}] IS SHUT DOWN!!! SWEET DREAMS!!!111", _httpEndPoint);
-
+            Log.Info("========== [{0}] IS SHUT DOWN!!! SWEET DREAMS!!!", _httpEndPoint);
             _state = VNodeState.Shutdown;
-
-            _outputBus.Publish(message);
+            try
+            {
+                _outputBus.Publish(message);
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Error when publishing {0}.", message);
+            }
+            if (_exitProcessOnShutdown)
+            {
+                try
+                {
+                    _node.WorkersHandler.Stop();
+                    _mainQueue.RequestStop();
+                }
+                catch (Exception exc)
+                {
+                    Log.ErrorException(exc, "Error when stopping workers/main queue.");
+                }
+                Application.Exit(ExitCode.Success, "Shutdown with exiting from process was requested.");
+            }
         }
 
-        private void Handle(SystemMessage.StorageReaderInitializationDone message)
+        private void Handle(SystemMessage.ServiceInitialized message)
         {
-            _storageReaderInitialized = true;
+            Log.Info("========== [{0}] Service '{1}' initialized.", _httpEndPoint, message.ServiceName);
+            _serviceInitsToExpect -= 1;
             _outputBus.Publish(message);
-
-            CheckInitializationDone();
-        }
-
-        private void Handle(SystemMessage.StorageWriterInitializationDone message)
-        {
-            _storageWriterInitialized = true;
-            _outputBus.Publish(message);
-
-            CheckInitializationDone();
-        }
-
-        private void CheckInitializationDone()
-        {
-            if (_storageReaderInitialized && _storageWriterInitialized)
+            if (_serviceInitsToExpect == 0)
                 _mainQueue.Publish(new SystemMessage.SystemStart());
         }
 
-        private void Handle(ClientMessage.CreateStream message)
+        private void Handle(SystemMessage.ChaserCaughtUp message)
         {
-            _outputBus.Publish(new StorageMessage.CreateStreamRequestCreated(message.CorrelationId,
-                                                                             message.Envelope,
-                                                                             message.EventStreamId,
-                                                                             message.IsJson,
-                                                                             message.Metadata));
+            _outputBus.Publish(message);
+            _fsm.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));   
         }
 
-        private void Handle(ClientMessage.WriteEvents message)
+        private void DenyRequestBecauseNotReady(IEnvelope envelope, Guid correlationId)
         {
-            _outputBus.Publish(new StorageMessage.WriteRequestCreated(message.CorrelationId,
-                                                                      message.Envelope,
-                                                                      message.EventStreamId,
-                                                                      message.ExpectedVersion,
-                                                                      message.Events));
-        }
-
-        private void Handle(ClientMessage.TransactionStart message)
-        {
-            _outputBus.Publish(new StorageMessage.TransactionStartRequestCreated(message.CorrelationId,
-                                                                                 message.Envelope,
-                                                                                 message.EventStreamId,
-                                                                                 message.ExpectedVersion));
-        }
-
-        private void Handle(ClientMessage.TransactionWrite message)
-        {
-            _outputBus.Publish(new StorageMessage.TransactionWriteRequestCreated(message.CorrelationId,
-                                                                                 message.Envelope,
-                                                                                 message.TransactionId,
-                                                                                 message.EventStreamId,
-                                                                                 message.Events));
-        }
-
-        private void Handle(ClientMessage.TransactionCommit message)
-        {
-            _outputBus.Publish(new StorageMessage.TransactionCommitRequestCreated(message.CorrelationId,
-                                                                                  message.Envelope,
-                                                                                  message.TransactionId,
-                                                                                  message.EventStreamId));
-        }
-
-        private void Handle(ClientMessage.DeleteStream message)
-        {
-            _outputBus.Publish(new StorageMessage.DeleteStreamRequestCreated(message.CorrelationId,
-                                                                             message.Envelope,
-                                                                             message.EventStreamId,
-                                                                             message.ExpectedVersion));
+            envelope.ReplyWith(new ClientMessage.NotHandled(correlationId, TcpClientMessageDto.NotHandled.NotHandledReason.NotReady, null));
         }
 
         private void Handle(ClientMessage.RequestShutdown message)
         {
-            _mainQueue.Publish(new SystemMessage.BecomeShuttingDown());
+            _fsm.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), message.ExitProcess));
         }
 
         private void Handle(SystemMessage.ServiceShutdown message)
         {
-            Log.Info("Service [{0}] has shut down.", message.ServiceName);
+            Log.Info("========== [{0}] Service '{1}' has shut down.", _httpEndPoint, message.ServiceName);
 
-            --_serviceShutdownsToExpect;
+            _serviceShutdownsToExpect -= 1;
             if (_serviceShutdownsToExpect == 0)
             {
-                Log.Info("========== All Services Shutdown: SingleVNodeController =========");
+                Log.Info("========== [{0}] All Services Shutdown.", _httpEndPoint);
                 Shutdown();
             }
         }
 
         private void Handle(SystemMessage.ShutdownTimeout message)
         {
-            if (_state != VNodeState.ShuttingDown)
-                return;
+            if (_state != VNodeState.ShuttingDown) throw new Exception();
 
-            Log.Info("========== Shutdown Timeout: SingleVNodeController =========");
+            Log.Info("========== [{0}] Shutdown Timeout.", _httpEndPoint);
             Shutdown();
         }
 
         private void Shutdown()
         {
-            _mainQueue.Publish(new SystemMessage.BecomeShutdown());
+            if (_state != VNodeState.ShuttingDown) throw new Exception();
+
+            _db.Close();
+            _fsm.Handle(new SystemMessage.BecomeShutdown(Guid.NewGuid()));
         }
     }
 }

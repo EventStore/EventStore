@@ -33,15 +33,17 @@ namespace EventStore.TestClient.Commands.DvuBasic
         {
             object accountObject = null;
 
+            var internalCounter = version + 1;
+            
             {
                 const int checkpointVersion = 10;
 
-                var checkPointModVersion = version % checkpointVersion;
+                var checkPointModVersion = internalCounter % checkpointVersion;
                 if (checkPointModVersion == 0)
                 {
-                    int otherCheckPointsCount = version / checkpointVersion;
+                    int otherCheckPointsCount = internalCounter / checkpointVersion;
 
-                    var elementsCount = version / 2;
+                    var elementsCount = internalCounter / 2;
 
                     var creditedSum = ComputeSum(20, elementsCount, 20) - ComputeSum(100, otherCheckPointsCount, 100);
                     var debitedSum = ComputeSum(10, elementsCount, 20);
@@ -52,15 +54,15 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 }
                 else
                 {
-                    var modVersion = version % 2;
+                    var modVersion = internalCounter % 2;
                     if (modVersion == 0)
                     {
-                        var credited = new AccountCredited(version * 10);
+                        var credited = new AccountCredited(internalCounter * 10, internalCounter % 17);
                         accountObject = credited;
                     }
                     else
                     {
-                        var debited = new AccountDebited(version * 10);
+                        var debited = new AccountDebited(internalCounter * 10, internalCounter % 17);
                         accountObject = debited;
                     }
                 }

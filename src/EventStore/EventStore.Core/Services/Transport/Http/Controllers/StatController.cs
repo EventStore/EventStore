@@ -30,8 +30,8 @@ using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
@@ -39,38 +39,29 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     public class StatController : CommunicationController
     {
         private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml };
-        private static readonly ICodec DefaultResponseCodec = Codec.Json;
+        
+        private readonly IPublisher _networkSendQueue;
 
-        public StatController(IPublisher publisher)
+        public StatController(IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
         {
+            _networkSendQueue = networkSendQueue;
         }
 
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
+        protected override void SubscribeCore(IHttpService service)
         {
             Ensure.NotNull(service, "service");
-            Ensure.NotNull(pipe, "pipe");
 
-            service.RegisterControllerAction(new ControllerAction("/stats",
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  SupportedCodecs,
-                                                                  DefaultResponseCodec),
-                                             OnGetFreshStats);
-            service.RegisterControllerAction(new ControllerAction("/stats/{*statPath}",
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  SupportedCodecs,
-                                                                  DefaultResponseCodec),
-                                             OnGetFreshStats);
+            service.RegisterAction(new ControllerAction("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
+            service.RegisterAction(new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
         }
 
-        private void OnGetFreshStats(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetFreshStats(HttpEntityManager entity, UriTemplateMatch match)
         {
-            var envelope = new SendToHttpEnvelope(
-                    entity,
-                    Format.GetFreshStatsCompleted,
-                    Configure.GetFreshStatsCompleted);
+            var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                  entity,
+                                                  Format.GetFreshStatsCompleted,
+                                                  Configure.GetFreshStatsCompleted);
 
             var statPath = match.BoundVariables["statPath"];
             var statSelector = GetStatSelector(statPath);
@@ -85,7 +76,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             if (!useGrouping && !string.IsNullOrEmpty(statPath))
             {
-                base.SendBadRequest(entity, "Dynamic stats selection works only with grouping enabled");
+                SendBadRequest(entity, "Dynamic stats selection works only with grouping enabled");
                 return;
             }
              

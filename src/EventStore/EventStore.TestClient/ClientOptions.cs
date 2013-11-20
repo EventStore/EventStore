@@ -25,10 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.Collections.Generic;
-using EventStore.Common.CommandLine;
-using EventStore.Common.CommandLine.lib;
+using System.Net;
+using EventStore.Common.Options;
+using EventStore.Core.Util;
 
 namespace EventStore.TestClient
 {
@@ -36,72 +35,59 @@ namespace EventStore.TestClient
     /// Data contract for the command-line options accepted by test client.
     /// This contract is handled by CommandLine project for .NET
     /// </summary>
-    public sealed class ClientOptions : EventStoreCmdLineOptionsBase
+    public sealed class ClientOptions : IOptions
     {
-        [Option("i", "ip", DefaultValue = "127.0.0.1", HelpText = "IP address of server")]
-        public string Ip { get; set; }
+	    private const string DefaultJsonConfigFileName = "testclient-config.json";
 
-        [Option("t", "tcp-port", DefaultValue = 1113, HelpText = "TCP port on server")]
-        public int TcpPort { get; set; }
+        public bool ShowHelp { get { return _helper.Get(() => ShowHelp); } }
+        public bool ShowVersion { get { return _helper.Get(() => ShowVersion); } }
+        public string LogsDir { get { return _helper.Get(() => LogsDir); } }
+        public string[] Defines { get { return _helper.Get(() => Defines); } }
 
-        [Option("h", "http-port", DefaultValue = 2113, HelpText = "HTPP port on server")]
-        public int HttpPort { get; set; }
+        public IPAddress Ip { get { return _helper.Get(() => Ip); } }
+        public int TcpPort { get { return _helper.Get(() => TcpPort); } }
+        public int HttpPort { get { return _helper.Get(() => HttpPort); } }
+        public int Timeout { get { return _helper.Get(() => Timeout); } }
+        public int ReadWindow { get { return _helper.Get(() => ReadWindow); } }
+        public int WriteWindow { get { return _helper.Get(() => WriteWindow); } }
+        public int PingWindow { get { return _helper.Get(() => PingWindow); } }
+        public bool Force { get { return _helper.Get(() => Force); } }
+        public string[] Command { get; private set; }
 
-        [Option(null, "timeout", DefaultValue = -1, HelpText = "Timeout for command execution in seconds, -1 for infinity")]
-        public int Timeout { get; set; }
+        private readonly OptsHelper _helper;
 
-        [Option("r", "read-window", DefaultValue = 50, HelpText = "The difference between sent/received read commands")]
-        public int ReadWindow { get; set; }
-
-        [Option("w", "write-window", DefaultValue = 50, HelpText = "The difference between sent/received write commands")]
-        public int WriteWindow { get; set; }
-
-        [Option("p", "ping-window", DefaultValue = 50, HelpText = "The difference between sent/received ping commands")]
-        public int PingWindow { get; set; }
-
-        [ValueList(typeof(List<string>), MaximumElements = -1)]
-        public IList<string> Command { get; set; }
-
-        [HelpOption]
-        public override string GetUsage()
+        public ClientOptions()
         {
-            var help = new HelpText
-            {
-                Heading = "EventStore.Client",
-                AddDashesToOption = true
-            };
+			_helper = new OptsHelper(null, Opts.EnvPrefix, DefaultJsonConfigFileName);
 
-            HandleParsingErrorsInHelp(help);
-            help.AddPreOptionsLine("Usage: EventStore.Client -i 127.0.0.1 -t 1113 -h 2113");
-            help.AddOptions(this);
+            _helper.Register(() => ShowHelp, Opts.ShowHelpCmd, Opts.ShowHelpEnv, Opts.ShowHelpJson, Opts.ShowHelpDefault, Opts.ShowHelpDescr);
+            _helper.Register(() => ShowVersion, Opts.ShowVersionCmd, Opts.ShowVersionEnv, Opts.ShowVersionJson, Opts.ShowVersionDefault, Opts.ShowVersionDescr);
+            _helper.RegisterRef(() => LogsDir, Opts.LogsCmd, Opts.LogsEnv, Opts.LogsJson, Opts.LogsDefault, Opts.LogsDescr);
+            _helper.RegisterArray(() => Defines, Opts.DefinesCmd, Opts.DefinesEnv, ",", Opts.DefinesJson, Opts.DefinesDefault, Opts.DefinesDescr, hidden: true);
 
-            return help;
+            _helper.RegisterRef(() => Ip, "i|ip=", null, null, IPAddress.Loopback, "IP address of server.");
+            _helper.Register(() => TcpPort, "t|tcp-port=", null, null, 1113, "TCP port on server.");
+            _helper.Register(() => HttpPort, "h|http-port=", null, null, 2113, "HTPP port on server.");
+            _helper.Register(() => Timeout, "timeout=", null, null, -1, "Timeout for command execution in seconds, -1 for infinity.");
+            _helper.Register(() => ReadWindow, "r|read-window=", null, null, 2000, "The difference between sent/received read commands.");
+            _helper.Register(() => WriteWindow, "w|write-window=", null, null, 2000, "The difference between sent/received write commands.");
+            _helper.Register(() => PingWindow, "p|ping-window=", null, null, 2000, "The difference between sent/received ping commands.");
+            _helper.Register(() => Force, "f|force", null, null, false, "Force usage on non-recommended environments such as Boehm GC");
         }
 
-        private void HandleParsingErrorsInHelp(HelpText help)
+        public string GetUsage()
         {
-            if (this.LastPostParsingState.Errors.Count > 0)
-            {
-                var errors = help.RenderParsingErrorsText(this, 2); // indent with two spaces
-                if (!string.IsNullOrEmpty(errors))
-                {
-                    help.AddPreOptionsLine(string.Concat(Environment.NewLine, "ERROR(S):"));
-                    help.AddPreOptionsLine(errors);
-                }
-            }
+            return "Usage: EventStore.Client -i 127.0.0.1 -t 1113 -h 2113\n\n" + _helper.GetUsage();
         }
 
-        public override IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
+        public void Parse(params string[] args)
         {
-            foreach (var pair in base.GetLoadedOptionsPairs())
-                yield return pair;
-            yield return new KeyValuePair<string, string>("IP", Ip);
-            yield return new KeyValuePair<string, string>("TCP PORT", TcpPort.ToString());
-            yield return new KeyValuePair<string, string>("HTTP PORT", HttpPort.ToString());
-            yield return new KeyValuePair<string, string>("TIMEOUT", Timeout.ToString());
-            yield return new KeyValuePair<string, string>("READ WINDOW", ReadWindow.ToString());
-            yield return new KeyValuePair<string, string>("WRITE WINDOW", WriteWindow.ToString());
-            yield return new KeyValuePair<string, string>("PING WINDOW", PingWindow.ToString());
+            Command = _helper.Parse(args);
+        }
+
+        public string DumpOptions()
+        {
+            return _helper.DumpOptions();
         }
     }
 }

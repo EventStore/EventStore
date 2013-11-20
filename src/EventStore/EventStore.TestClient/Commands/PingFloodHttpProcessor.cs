@@ -28,7 +28,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net;
 using System.Threading;
 using EventStore.Transport.Http;
 using EventStore.Common.Utils;
@@ -38,26 +37,13 @@ namespace EventStore.TestClient.Commands
 {
     public class PingFloodHttpProcessor : ICmdProcessor
     {
-        public string Usage
-        {
-            get
-            {
-                return string.Format("{0} [<clients> <messages>]", Keyword);
-            }
-        }
-
-        public string Keyword
-        {
-            get
-            {
-                return "PINGFLH";
-            }
-        }
+        public string Usage { get { return string.Format("{0} [<clients> <messages>]", Keyword); } }
+        public string Keyword { get { return "PINGFLH"; } }
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
             int clientsCnt = 1;
-            int requestsCnt = 100 * 1000;
+            long requestsCnt = 100 * 1000;
             if (args.Length > 0)
             {
                 if (args.Length != 2)
@@ -65,7 +51,7 @@ namespace EventStore.TestClient.Commands
                 try
                 {
                     clientsCnt = int.Parse(args[0]);
-                    requestsCnt = int.Parse(args[1]);
+                    requestsCnt = long.Parse(args[1]);
                 }
                 catch
                 {
@@ -77,86 +63,71 @@ namespace EventStore.TestClient.Commands
             return true;
         }
 
-        private void PingFlood(CommandProcessorContext context, int clientsCnt, int requestsCnt)
+        private void PingFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt)
         {
             context.IsAsync();
 
             var threads = new List<Thread>();
-            var autoResetEvent = new AutoResetEvent(false);
-
-            var all = 0;
-
+            var doneEvent = new ManualResetEventSlim(false);
+            long all = 0;
+            long succ = 0;
+            long fail = 0;
             for (int i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-
-                int sent = 0;
-                int received = 0;
-
+                long received = 0;
+                long sent = 0;
                 threads.Add(new Thread(() =>
                 {
                     var client = new HttpAsyncClient();
                     var url = context.Client.HttpEndpoint.ToHttpUrl("/ping");
 
-                    Action<HttpResponse> onsuccess = response =>
+                    Action<HttpResponse> onSuccess = response =>
                     {
                         Interlocked.Increment(ref received);
-                        var pongs = Interlocked.Increment(ref all);
-
-                        if (pongs%1000 == 0)
-                            Console.Write('.');
-
-                        if (pongs == requestsCnt)
-                            autoResetEvent.Set();
+                        if (Interlocked.Increment(ref succ) % 1000 == 0) Console.Write('.');
+                        if (Interlocked.Increment(ref all) == requestsCnt)
+                            doneEvent.Set();
                     };
 
                     Action<Exception> onException = e =>
                     {
                         context.Log.ErrorException(e, "Error during GET");
-                        var pongs = Interlocked.Increment(ref all);
-                        if (pongs == requestsCnt)
-                        {
-                            autoResetEvent.Set();
-                        }
+                        Interlocked.Increment(ref received);
+                        if (Interlocked.Increment(ref fail) % 1000 == 0) Console.Write('#');
+                        if (Interlocked.Increment(ref all) == requestsCnt)
+                            doneEvent.Set();
                     };
 
                     for (int j = 0; j < count; ++j)
                     {
-                        client.Get(url, onsuccess, onException);
-                        Interlocked.Increment(ref sent);
-                        while (sent - received > context.Client.Options.PingWindow)
+                        client.Get(url, TimeSpan.FromMilliseconds(10000), onSuccess, onException);
+                        var localSent = Interlocked.Increment(ref sent);
+                        while (localSent - Interlocked.Read(ref received) > context.Client.Options.PingWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
-                }));
+                }) { IsBackground = true });
             }
 
             var sw = Stopwatch.StartNew();
-            foreach (var thread in threads)
-            {
-                thread.IsBackground = true;
-                thread.Start();
-            }
-
-            autoResetEvent.WaitOne();
+            threads.ForEach(thread => thread.Start());
+            doneEvent.Wait();
             sw.Stop();
 
-            var reqPerSec = (requestsCnt + 0.0) / sw.ElapsedMilliseconds * 1000;
-            context.Log.Info("{0} requests completed in {1}ms ({2:0.00} reqs per sec).",
-                             requestsCnt,
-                             sw.ElapsedMilliseconds,
-                             reqPerSec);
+            var reqPerSec = (all + 0.0) / sw.ElapsedMilliseconds * 1000;
+            context.Log.Info("{0} requests completed in {1}ms ({2:0.00} reqs per sec).", all, sw.ElapsedMilliseconds, reqPerSec);
+            PerfUtils.LogData(Keyword,
+                              PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
+                                            PerfUtils.Col("requestsCnt", requestsCnt),
+                                            PerfUtils.Col("ElapsedMilliseconds", sw.ElapsedMilliseconds)));
+            PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt), (int)reqPerSec);
 
-            PerfUtils.LogData(
-                    Keyword,
-                    PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
-                            PerfUtils.Col("requestsCnt", requestsCnt),
-                            PerfUtils.Col("ElapsedMilliseconds", sw.ElapsedMilliseconds))
-                );
-
-            PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt),
-                                    (int)reqPerSec);
-
-            context.Success();
+            if (Interlocked.Read(ref succ) == requestsCnt)
+                context.Success();
+            else
+                context.Fail();
         }
     }
 }

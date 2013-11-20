@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -26,11 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
-using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    class TcpStats
+    internal class TcpStats
     {
         public readonly int Connections;
         public readonly long SentBytesTotal;
@@ -43,12 +42,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
         public readonly long InSend;
         public readonly long PendingReceived;
         public readonly TimeSpan MeasureTime;
-
-        public readonly string SentBytesTotalFriendly;
-        public readonly string ReceivedBytesTotalFriendly;
-        public readonly string SendingSpeedFriendly;
-        public readonly string ReceivingSpeedFriendly;
-        public readonly string MeasureTimeFriendly;
 
         public TcpStats(int connections,
                         long sentBytesTotal,
@@ -69,14 +62,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
             InSend = inSend;
             PendingReceived = pendingReceived;
             MeasureTime = measureTime;
-            SendingSpeed = (MeasureTime.TotalSeconds < 0.00001) ? 0 : SentBytesSinceLastRun / MeasureTime.TotalSeconds;
-            ReceivingSpeed = (MeasureTime.TotalSeconds < 0.00001) ? 0 : ReceivedBytesSinceLastRun / MeasureTime.TotalSeconds;
-
-            SentBytesTotalFriendly = SentBytesTotal.ToFriendlySizeString();
-            ReceivedBytesTotalFriendly = ReceivedBytesTotal.ToFriendlySizeString();
-            SendingSpeedFriendly = SendingSpeed.ToFriendlySpeedString();
-            ReceivingSpeedFriendly = ReceivingSpeed.ToFriendlySpeedString();
-            MeasureTimeFriendly = string.Format(@"{0:s\.fff}s", MeasureTime);
+            SendingSpeed = MeasureTime.TotalSeconds < 0.00001 ? 0 : SentBytesSinceLastRun / MeasureTime.TotalSeconds;
+            ReceivingSpeed = MeasureTime.TotalSeconds < 0.00001 ? 0 : ReceivedBytesSinceLastRun / MeasureTime.TotalSeconds;
         }
     }
 }

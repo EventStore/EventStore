@@ -28,7 +28,9 @@
 
 using System;
 using System.Linq;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -44,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             AllWritesSucceed();
             base.Given();
-            this._checkpointHandledThreshold = 2;
+            this._checkpointHandledThreshold = 2; //NOTE: does not play any role anymore here
         }
 
         protected override void When()
@@ -53,14 +55,19 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _exception = null;
             try
             {
-                _manager.BeginLoadState();
-                _manager.Start(CheckpointTag.FromStreamPosition("stream", 10));
-                _manager.EventProcessed(
-                    @"{""state"":""state1""}", null, CheckpointTag.FromStreamPosition("stream", 11), 77.7f);
-                _manager.EventProcessed(
-                    @"{""state"":""state2""}", null, CheckpointTag.FromStreamPosition("stream", 12), 77.8f);
+                _checkpointReader.BeginLoadState();
+                var checkpointLoaded =
+                    _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.CheckpointLoaded>().First();
+                _checkpointWriter.StartFrom(checkpointLoaded.CheckpointTag, checkpointLoaded.CheckpointEventNumber);
+                _manager.BeginLoadPrerecordedEvents(checkpointLoaded.CheckpointTag);
+
+                _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10));
+//                _manager.StateUpdated("", @"{""state"":""state1""}");
+                _manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 11), 77.7f);
+//                _manager.StateUpdated("", @"{""state"":""state2""}");
+                _manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 12), 77.8f);
+                _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition(0, "stream", 12), 77.8f);
                 _manager.Stopping();
-                _manager.RequestCheckpointToStop();
             }
             catch (Exception ex)
             {
@@ -78,7 +85,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void only_one_checkpoint_has_been_written()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+            Assert.AreEqual(
+                1,
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+                    .ToStream("$projections-projection-checkpoint")
+                    .Count());
         }
     }
 }

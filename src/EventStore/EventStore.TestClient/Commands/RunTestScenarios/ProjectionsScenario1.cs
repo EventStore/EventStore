@@ -32,7 +32,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {
@@ -53,7 +52,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var slices = Split(streams, 3);
 
             const string countItemsProjectionName = "CountItems";
-            var store = GetConnection();
+            var projectionManager = GetProjectionsManager();
 
             const string countItemsProjection = @"
                 fromAll().whenAny(
@@ -64,7 +63,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         return state;
                     });
 ";
-            store.Projections.CreateAdHoc(countItemsProjectionName, countItemsProjection);
+            projectionManager.CreateContinuous(countItemsProjectionName, countItemsProjection);
 
             var w1 = Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream);
             var w2 = Write(WriteMode.Bucket, slices[1], EventsPerStream);
@@ -79,7 +78,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var stopWatch = Stopwatch.StartNew();
             while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(1000 + 10 * streams.Length * EventsPerStream))
             {
-                state = store.Projections.GetState(countItemsProjectionName);
+                state = projectionManager.GetState(countItemsProjectionName);
                 Log.Info("Raw state: {0}", state);
                 if (state.Contains(expectedAllEventsCount))
                 {

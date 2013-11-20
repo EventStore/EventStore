@@ -25,10 +25,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
 using System.IO;
 using System.Linq;
 using EventStore.Core.Index;
+using EventStore.Core.Tests.Fakes;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
@@ -49,12 +50,15 @@ namespace EventStore.Core.Tests.Index
             _filename = GetTempFilePath();
             _mergeFile = GetTempFilePath();
 
-            _map = IndexMap.FromFile(_filename, x => false, maxTablesPerLevel: 2);
-            var memtable = new HashListMemTable(maxSize: 2000);
+            _map = IndexMap.FromFile(_filename, maxTablesPerLevel: 2);
+            var memtable = new HashListMemTable(maxSize: 10);
             memtable.Add(0, 1, 0);
-            _result = _map.AddFile(PTable.FromMemtable(memtable, GetTempFilePath()), 123, 321, new GuidFilenameProvider(PathName));
+
+            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()),
+                                     123, 321, _ => true, new GuidFilenameProvider(PathName));
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddFile(PTable.FromMemtable(memtable, GetTempFilePath()), 100, 400, new FakeFilenameProvider(_mergeFile));
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()),
+                                                  100, 400, _ => true, new FakeFilenameProvider(_mergeFile));
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
         }
 

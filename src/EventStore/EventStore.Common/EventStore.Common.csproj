@@ -44,29 +44,48 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="NLog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c">
       <HintPath>..\libs\NLog.dll</HintPath>
     </Reference>
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandLine\ConfigurationManager.cs" />
-    <Compile Include="CommandLine\EventStoreCmdLineOptionsBase.cs" />
-    <Compile Include="CommandLine\lib\CommandLine.cs" />
-    <Compile Include="CommandLine\lib\CommandLineText.cs" />
-    <Compile Include="ConcurrentCollections\ConcurrentQueue.cs" />
-    <Compile Include="ConcurrentCollections\ConcurrentStack.cs" />
-    <Compile Include="Configuration\Constants.cs" />
+    <Compile Include="Concurrent\ConcurrentQueue.cs" />
+    <Compile Include="Concurrent\ConcurrentStack.cs" />
+    <Compile Include="Locks\SpinLock2.cs" />
     <Compile Include="Exceptions\ApplicationInitializationException.cs" />
+    <Compile Include="Log\ConsoleLogger.cs" />
     <Compile Include="Log\LazyLogger.cs" />
-    <Compile Include="Settings\ApplicationSettings.cs" />
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\LogManager.cs" />
+    <Compile Include="Log\NLogDirectoryLayoutRendered.cs" />
     <Compile Include="Log\NLogger.cs" />
+    <Compile Include="Options\IOptionContainer.cs" />
+    <Compile Include="Options\IOptions.cs" />
+    <Compile Include="Options\IPAddressTypeConverter.cs" />
+    <Compile Include="Options\IPEndPointTypeConverter.cs" />
+    <Compile Include="Options\OptionArrayContainer.cs" />
+    <Compile Include="Options\OptionContainerHelpers.cs" />
+    <Compile Include="Options\OptionFlagContainer.cs" />
+    <Compile Include="Options\OptionInfo.cs" />
+    <Compile Include="Options\OptionOrigin.cs" />
+    <Compile Include="Options\Options.cs" />
+    <Compile Include="Options\OptionValueContainer.cs" />
+    <Compile Include="Options\OptsHelper.cs" />
+    <Compile Include="Options\RunProjectionsTypeConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utils\Application.cs" />
+    <Compile Include="Utils\FileStreamExtensions.cs" />
+    <Compile Include="Utils\Empty.cs" />
+    <Compile Include="Utils\IPEndPointComparer.cs" />
+    <Compile Include="Utils\Json.cs" />
+    <Compile Include="Utils\ShellExecutor.cs" />
     <Compile Include="Utils\StringExtensions.cs" />
     <Compile Include="Utils\Helper.cs" />
     <Compile Include="Utils\HostName.cs" />
@@ -75,11 +94,27 @@
     <Compile Include="Utils\EnumerableExtensions.cs" />
     <Compile Include="Utils\IPEndpointExtensions.cs" />
     <Compile Include="Utils\Ensure.cs" />
-    <Compile Include="Settings\VNodeSettings.cs" />
     <Compile Include="Utils\Runtime.cs" />
+    <Compile Include="Utils\Version.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="Log\NLog.config" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <PreBuildEvent>powershell.exe $(MSBuildProjectDirectory)\..\Scripts\version\updateCommitHash.ps1 $(MSBuildProjectDirectory)\Properties\AssemblyInfo.cs</PreBuildEvent>
+    <PostBuildEvent>powershell.exe $(MSBuildProjectDirectory)\..\Scripts\version\resetCommitHash.ps1 $(MSBuildProjectDirectory)\Properties\AssemblyInfo.cs</PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
+    <PreBuildEvent>$(MSBuildProjectDirectory)/../Scripts/version/updateCommitHash.sh $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs</PreBuildEvent>
+    <PostBuildEvent>$(MSBuildProjectDirectory)/../Scripts/version/resetCommitHash.sh $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs</PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent />
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent />
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

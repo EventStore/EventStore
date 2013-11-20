@@ -27,7 +27,6 @@
 // 
 using System;
 using System.IO;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -48,13 +47,14 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             _checkpoint = new InMemoryCheckpoint(0);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        1000,
                                                        0,
                                                        _checkpoint,
                                                        new InMemoryCheckpoint(),
-                                                       new ICheckpoint[0]));
-            db.OpenVerifyAndClean();
+                                                       new InMemoryCheckpoint(-1),
+                                                       new InMemoryCheckpoint(-1)));
+            db.Open();
             var tf = new TFChunkWriter(db);
             tf.Open();
             var record = new PrepareLogRecord(logPosition: 0,
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.TransactionLog
             db.Dispose();
 
             Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), _checkpoint.Read());
-            using (var filestream = File.Open(Path.Combine(PathName, "prefix.tf0"), FileMode.Open, FileAccess.Read))
+            using (var filestream = File.Open(GetFilePathFor("chunk-000000.000000"), FileMode.Open, FileAccess.Read))
             {
                 filestream.Position = ChunkHeader.Size;
 

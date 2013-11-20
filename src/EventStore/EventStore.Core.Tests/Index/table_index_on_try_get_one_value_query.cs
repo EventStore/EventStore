@@ -25,29 +25,33 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.IO;
+
 using System.Linq;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.Tests.Fakes;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class table_index_on_try_get_one_value_query  :SpecificationWithDirectory
+    public class table_index_on_try_get_one_value_query: SpecificationWithDirectoryPerTestFixture
     {
         private TableIndex _tableIndex;
         private string _indexDir;
 
-        [SetUp]
-        public override void SetUp()
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
         {
-            base.SetUp();
+            base.TestFixtureSetUp();
 
-            _indexDir = base.PathName;
-            _tableIndex = new TableIndex(_indexDir, () => new HashListMemTable(), maxSizeForMemory: 5);
-            _tableIndex.Initialize();
+            _indexDir = PathName;
+            var fakeReader = new TFReaderLease(new FakeTfReader());
+            _tableIndex = new TableIndex(_indexDir,
+                                         () => new HashListMemTable(maxSize: 10),
+                                         () => fakeReader,
+                                         maxSizeForMemory: 5);
+            _tableIndex.Initialize(long.MaxValue);
 
             _tableIndex.Add(0, 0xDEAD, 0, 0xFF00);
             _tableIndex.Add(0, 0xDEAD, 1, 0xFF01); 
@@ -69,12 +73,12 @@ namespace EventStore.Core.Tests.Index
         }
 
 
-        [TearDown]
-        public override void TearDown()
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
         {
-            _tableIndex.ClearAll();
+            _tableIndex.Close();
 
-            base.TearDown();
+            base.TestFixtureTearDown();
         }
 
         [Test]

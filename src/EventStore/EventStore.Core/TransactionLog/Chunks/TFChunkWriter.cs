@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Diagnostics;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -36,13 +35,12 @@ namespace EventStore.Core.TransactionLog.Chunks
     public class TFChunkWriter: ITransactionFileWriter
     {
         public ICheckpoint Checkpoint { get { return _writerCheckpoint; } }
-        public TFChunk CurrentChunk { get { return _writerChunk; } }
+        public TFChunk.TFChunk CurrentChunk { get { return _currentChunk; } }
 
         private readonly TFChunkDb _db;
         private readonly ICheckpoint _writerCheckpoint;
 
-        private long _writerPos;
-        private TFChunk _writerChunk;
+        private TFChunk.TFChunk _currentChunk;
  
         public TFChunkWriter(TFChunkDb db)
         {
@@ -50,9 +48,8 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             _db = db;
             _writerCheckpoint = db.Config.WriterCheckpoint;
-            _writerPos = _writerCheckpoint.Read();
-            _writerChunk = db.Manager.GetChunkFor(_writerPos);
-            if (_writerChunk == null)
+            _currentChunk = db.Manager.GetChunkFor(_writerCheckpoint.Read());
+            if (_currentChunk == null)
                 throw new InvalidOperationException("No chunk given for existing position.");
         }
 
@@ -63,47 +60,39 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public bool Write(LogRecord record, out long newPos)
         {
-            var chunkNum = (int)(_writerPos / _db.Config.ChunkSize);
-            var chunkPos = _writerPos % _db.Config.ChunkSize;
-
-            var result = _writerChunk.TryAppend(record);
+            var result = _currentChunk.TryAppend(record);
             if (result.Success)
-            {
-                Debug.Assert(result.OldPosition == chunkPos);
-                _writerPos = chunkNum * (long)_db.Config.ChunkSize + result.NewPosition;
-                _writerCheckpoint.Write(_writerPos);
-            }
+                _writerCheckpoint.Write(result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition);
             else
-            {
                 CompleteChunk(); // complete updates checkpoint internally
-            }
-            newPos = _writerPos;
+            newPos = _writerCheckpoint.ReadNonFlushed();
             return result.Success;
         }
 
         public void CompleteChunk()
         {
-            _writerChunk.Flush();
-            _writerChunk.Complete();
-            _writerCheckpoint.Flush(); //flush our checkpoint
+            var chunk = _currentChunk;
+            _currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
 
-            _writerChunk = _db.Manager.AddNewChunk();
-            _writerPos = _writerChunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize;
-            
-            _writerCheckpoint.Write(_writerPos);
+            chunk.Complete();
+
+            _writerCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
+            _writerCheckpoint.Flush();
+
+            _currentChunk = _db.Manager.AddNewChunk();
         }
 
-        public void CompleteRawChunk(TFChunk rawChunk)
+        public void CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk)
         {
-            rawChunk.Flush();
+            _currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
+
             rawChunk.CompleteRaw();
-            _db.Manager.AddReplicatedChunk(rawChunk, verifyHash: true);
+            _db.Manager.SwitchChunk(rawChunk, verifyHash: true, removeChunksWithGreaterNumbers: true);
 
-            _writerChunk = _db.Manager.AddNewChunk();
-            _writerPos = _writerChunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize;
-
-            _writerCheckpoint.Write(_writerPos);
+            _writerCheckpoint.Write(rawChunk.ChunkHeader.ChunkEndPosition);
             _writerCheckpoint.Flush();
+
+            _currentChunk = _db.Manager.AddNewChunk();
         }
 
         public void Dispose()
@@ -118,7 +107,9 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void Flush()
         {
-            _writerChunk.Flush();
+            if (_currentChunk == null) // the last chunk allocation failed
+                return;
+            _currentChunk.Flush();
             _writerCheckpoint.Flush();
         }
     }

@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Net;
 using System.Net.Sockets;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
@@ -35,36 +34,54 @@ namespace EventStore.Core.Messages
 {
     public static class TcpMessage
     {
+        public class TcpSend: Message, IQueueAffineMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public int QueueId { get { return ConnectionManager.GetHashCode(); } }
+
+            public readonly TcpConnectionManager ConnectionManager;
+            public readonly Message Message;
+
+            public TcpSend(TcpConnectionManager connectionManager, Message message)
+            {
+                ConnectionManager = connectionManager;
+                Message = message;
+            }
+        }
+
         public class Heartbeat: Message
         {
-            public readonly IPEndPoint EndPoint;
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly int MessageNumber;
 
-            public Heartbeat(IPEndPoint endPoint, int messageNumber)
+            public Heartbeat(int messageNumber)
             {
-                if (endPoint == null) 
-                    throw new ArgumentNullException("endPoint");
-                EndPoint = endPoint;
                 MessageNumber = messageNumber;
             }
         }
 
         public class HeartbeatTimeout: Message
         {
-            public readonly IPEndPoint EndPoint;
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly int MessageNumber;
 
-            public HeartbeatTimeout(IPEndPoint endPoint, int messageNumber)
+            public HeartbeatTimeout(int messageNumber)
             {
-                if (endPoint == null) 
-                    throw new ArgumentNullException("endPoint");
-                EndPoint = endPoint;
                 MessageNumber = messageNumber;
             }
         }
 
         public class PongMessage: Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly Guid CorrelationId;
             public readonly byte[] Payload;
 
@@ -77,6 +94,9 @@ namespace EventStore.Core.Messages
 
         public class ConnectionEstablished: Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly TcpConnectionManager Connection;
 
             public ConnectionEstablished(TcpConnectionManager connection)
@@ -87,6 +107,9 @@ namespace EventStore.Core.Messages
 
         public class ConnectionClosed: Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             public readonly TcpConnectionManager Connection;
             public readonly SocketError SocketError;
 
@@ -94,6 +117,34 @@ namespace EventStore.Core.Messages
             {
                 Connection = connection;
                 SocketError = socketError;
+            }
+        }
+
+        public class NotAuthenticated : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+            public readonly string Reason;
+
+            public NotAuthenticated(Guid correlationId, string reason)
+            {
+                CorrelationId = correlationId;
+                Reason = reason;
+            }
+        }
+
+        public class Authenticated : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+
+            public Authenticated(Guid correlationId)
+            {
+                CorrelationId = correlationId;
             }
         }
     }

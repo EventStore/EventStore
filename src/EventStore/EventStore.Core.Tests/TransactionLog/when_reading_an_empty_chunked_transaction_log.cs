@@ -47,12 +47,13 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        10000,
                                                        0,
                                                        writerchk,
-                                                       new InMemoryCheckpoint()));
-            db.OpenVerifyAndClean();
+                                                       new InMemoryCheckpoint(),
+                                                       new InMemoryCheckpoint(-1),
+                                                       new InMemoryCheckpoint(-1)));
+            db.Open();
 
-            var reader = new TFChunkSequentialReader(db, writerchk, 0);
-            LogRecord record;
-            Assert.IsFalse(reader.TryReadNext(out record));
+            var reader = new TFChunkReader(db, writerchk, 0);
+            Assert.IsFalse(reader.TryReadNext().Success);
 
             db.Close();
         }
@@ -66,16 +67,17 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        10000,
                                                        0,
                                                        writerchk,
-                                                       new InMemoryCheckpoint()));
-            db.OpenVerifyAndClean();
+                                                       new InMemoryCheckpoint(),
+                                                       new InMemoryCheckpoint(-1),
+                                                       new InMemoryCheckpoint(-1)));
+            db.Open();
 
             var writer = new TFChunkWriter(db);
             writer.Open();
 
-            var reader = new TFChunkSequentialReader(db, writerchk, 0);
+            var reader = new TFChunkReader(db, writerchk, 0);
 
-            LogRecord record;
-            Assert.IsFalse(reader.TryReadNext(out record));
+            Assert.IsFalse(reader.TryReadNext().Success);
 
             var rec = LogRecord.SingleWrite(0, Guid.NewGuid(), Guid.NewGuid(), "ES", -1, "ET", new byte[] { 7 }, null);
             long tmp;
@@ -83,10 +85,10 @@ namespace EventStore.Core.Tests.TransactionLog
             writer.Flush();
             writer.Close();
 
-            Assert.IsTrue(reader.TryReadNext(out record));
-            Assert.AreEqual(rec, record);
+            var res = reader.TryReadNext();
+            Assert.IsTrue(res.Success);
+            Assert.AreEqual(rec, res.LogRecord);
 
-            reader.Close();
             db.Close();
         }
     }

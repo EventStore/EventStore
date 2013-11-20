@@ -27,25 +27,30 @@
 // 
 
 using System;
-using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Messages
 {
-    public static class ProjectionCoreServiceMessage
+    public static partial class ProjectionCoreServiceMessage
     {
-        public class Start : Message
+        public class StartCore : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
         }
 
-        public class Stop : Message
+        public class StopCore : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
         }
 
         public class Connected : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly TcpConnectionManager _connection;
 
             public Connected(TcpConnectionManager connection)
@@ -59,11 +64,14 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class Tick : Message
+        public class CoreTick : Message
         {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
             private readonly Action _action;
 
-            public Tick(Action action)
+            public CoreTick(Action action)
             {
                 _action = action;
             }
@@ -74,99 +82,5 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-
-        public class CommittedEventDistributed : Message
-        {
-            private readonly Guid _correlationId;
-            private readonly Event _data;
-            private readonly string _eventStreamId;
-            private readonly int _eventSequenceNumber;
-            private readonly bool _resolvedLinkTo;
-            private readonly string _positionStreamId;
-            private readonly int _positionSequenceNumber;
-            private readonly EventPosition _position;
-            private readonly long? _safeTransactionFileReaderJoinPosition;
-            private readonly float _progress;
-
-            //NOTE: committed event with null event _data means - end of the source reached.  
-            // Current last available TF commit position is in _position.CommitPosition
-            // TODO: separate message?
-
-            public CommittedEventDistributed(
-                Guid correlationId, EventPosition position, string positionStreamId, int positionSequenceNumber,
-                string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data,
-                long? safeTransactionFileReaderJoinPosition, float progress)
-            {
-                _correlationId = correlationId;
-                _data = data;
-                _safeTransactionFileReaderJoinPosition = safeTransactionFileReaderJoinPosition;
-                _progress = progress;
-                _position = position;
-                _positionStreamId = positionStreamId;
-                _positionSequenceNumber = positionSequenceNumber;
-                _eventStreamId = eventStreamId;
-                _eventSequenceNumber = eventSequenceNumber;
-                _resolvedLinkTo = resolvedLinkTo;
-            }
-
-            public CommittedEventDistributed(
-                Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
-                bool resolvedLinkTo, Event data)
-                : this(
-                    correlationId, position, eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber,
-                    resolvedLinkTo, data, position.PreparePosition, 11.1f)
-            {
-            }
-
-            public Event Data
-            {
-                get { return _data; }
-            }
-
-            public EventPosition Position
-            {
-                get { return _position; }
-            }
-
-            public string EventStreamId
-            {
-                get { return _eventStreamId; }
-            }
-
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
-            }
-
-            public int EventSequenceNumber
-            {
-                get { return _eventSequenceNumber; }
-            }
-
-            public string PositionStreamId
-            {
-                get { return _positionStreamId; }
-            }
-
-            public int PositionSequenceNumber
-            {
-                get { return _positionSequenceNumber; }
-            }
-
-            public bool ResolvedLinkTo
-            {
-                get { return _resolvedLinkTo; }
-            }
-
-            public long? SafeTransactionFileReaderJoinPosition
-            {
-                get { return _safeTransactionFileReaderJoinPosition; }
-            }
-
-            public float Progress
-            {
-                get { return _progress; }
-            }
-        }
     }
 }

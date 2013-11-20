@@ -35,18 +35,18 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class saving_empty_index_to_a_file: SpecificationWithDirectory
+    public class saving_empty_index_to_a_file: SpecificationWithDirectoryPerTestFixture
     {
         private string _filename;
         private IndexMap _map;
 
-        [SetUp]
-        public override void SetUp()
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
         {
-            base.SetUp();
+            base.TestFixtureSetUp();
             
             _filename = GetFilePathFor("indexfile");
-            _map = IndexMap.FromFile(_filename, x => false);
+            _map = IndexMap.FromFile(_filename);
             _map.SaveToFile(_filename);
         }
 
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void saved_file_could_be_read_correctly_and_without_errors()
         {
-            var map = IndexMap.FromFile(_filename, x => false);
+            var map = IndexMap.FromFile(_filename);
 
             Assert.AreEqual(-1, map.PrepareCheckpoint);
             Assert.AreEqual(-1, map.CommitCheckpoint);

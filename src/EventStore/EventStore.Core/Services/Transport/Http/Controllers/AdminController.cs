@@ -29,8 +29,9 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Http.Codecs;
+using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
@@ -39,29 +40,64 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<AdminController>();
 
-        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml };
-        private static readonly ICodec DefaultResponseCodec = Codec.Json;
+        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml };
 
         public AdminController(IPublisher publisher) : base(publisher)
         {
         }
 
-        protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
+        protected override void SubscribeCore(IHttpService service)
         {
-            service.RegisterControllerAction(new ControllerAction("/shutdown",
-                                                                  HttpMethod.Post,
-                                                                  SupportedCodecs,
-                                                                  SupportedCodecs,
-                                                                  DefaultResponseCodec),
-                                             OnPostShutdown);
+            service.RegisterAction(new ControllerAction("/admin/halt", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostHalt);
+            service.RegisterAction(new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostShutdown);
+            service.RegisterAction(new ControllerAction("/admin/scavenge", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
         }
 
-        private void OnPostShutdown(HttpEntity entity, UriTemplateMatch match)
+        private void OnPostHalt(HttpEntityManager entity, UriTemplateMatch match)
         {
-            Publish(new ClientMessage.RequestShutdown());
-            entity.Manager.Reply(HttpStatusCode.OK,
-                                 "OK",
-                                 e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
+            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
+            {
+                Log.Info("Request shut down of node because halt command has been received.");
+                Publish(new ClientMessage.RequestShutdown(exitProcess: false));
+                entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
+            }
+            else
+            {
+                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+            }
+        }
+
+        private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
+            {
+                Log.Info("Request shut down of node because shutdown command has been received.");
+                Publish(new ClientMessage.RequestShutdown(exitProcess: true));
+                entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
+            }
+            else
+            {
+                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+            }
+        }
+
+        private void OnPostScavenge(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
+            {
+                Log.Info("Request scavenging because /admin/scavenge request has been received.");
+                Publish(new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.Empty, entity.User));
+                entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
+            }
+            else
+            {
+                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+            }
+        }
+
+        private void LogReplyError(Exception exc)
+        {
+            Log.Debug("Error while closing http connection (admin controller): {0}.", exc.Message);
         }
     }
 }

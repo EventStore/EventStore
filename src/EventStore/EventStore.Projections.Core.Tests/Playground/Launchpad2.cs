@@ -31,11 +31,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using EventStore.Common.Utils;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Playground
 {
-    [TestFixture]
+    [TestFixture, Explicit, Category("Manual")]
     public class Launchpad2 : LaunchpadBase
     {
         private IDisposable _vnodeProcess;
@@ -48,7 +49,8 @@ namespace EventStore.Projections.Core.Tests.Playground
         [SetUp]
         public void Setup()
         {
-            AllocConsole(); // this is required to keep console open after executeassemly has exited
+            if (!OS.IsUnix)
+                AllocConsole(); // this is required to keep console open after executeassemly has exited
 
             _binFolder = AppDomain.CurrentDomain.BaseDirectory;
             _dbPath = Path.Combine(_binFolder, DateTime.UtcNow.Ticks.ToString());
@@ -79,13 +81,13 @@ namespace EventStore.Projections.Core.Tests.Playground
             _clientProcess = _launch(clientExecutable, clientCommandLine, _environment);
         }
 
-        [Test, Ignore]
+        [Test]
         public void RunSingle()
         {
             Thread.Sleep(60000);
         }
 
-        [Test, Ignore]
+        [Test]
         public void RunSingleAndFlood()
         {
             Thread.Sleep(4000);

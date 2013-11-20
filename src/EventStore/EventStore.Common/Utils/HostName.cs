@@ -32,32 +32,26 @@ namespace EventStore.Common.Utils
 {
     public class HostName
     {
-        public static string Combine(string hostName, string relativeUri, params object[] arg)
+        public static string Combine(Uri requestedUrl, string relativeUri, params object[] arg)
         {
             try
             {
-                return CombineHostNameAndPath(hostName, relativeUri, arg);
+                return CombineHostNameAndPath(requestedUrl, relativeUri, arg);
             }
             catch (Exception e)
             {
                 Debug.WriteLine("Failed to combine hostname with relative path: {0}", e.Message);
-                return hostName;
+                return relativeUri;
             }
         }
 
-        private static string CombineHostNameAndPath(string hostName,
+        private static string CombineHostNameAndPath(Uri requestedUrl,
                                                      string relativeUri,
                                                      object[] arg)
         {
+            //TODO: encode???
             var path = string.Format(relativeUri, arg);
-
-            if (hostName.Contains(":"))
-            {
-                var parts = hostName.Split(new[] {":"}, StringSplitOptions.RemoveEmptyEntries);
-                return new Uri(new UriBuilder(Uri.UriSchemeHttp, parts[0], Int32.Parse(parts[1])).Uri, path).ToString();
-            }
-
-            return new Uri(new UriBuilder(Uri.UriSchemeHttp, hostName).Uri, path).ToString();
+            return new UriBuilder(requestedUrl.Scheme, requestedUrl.Host, requestedUrl.Port, path).Uri.AbsoluteUri;
         }
     }
 }

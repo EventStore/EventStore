@@ -27,14 +27,16 @@
 // 
 
 using System;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Standard
 {
-    public class IndexEventsByEventType : IProjectionStateHandler
+    public class IndexEventsByEventType : IProjectionStateHandler, IProjectionCheckpointHandler
     {
         private readonly string _indexStreamPrefix;
+        private readonly string _indexCheckpointStream;
 
         public IndexEventsByEventType(string source, Action<string> logger)
         {
@@ -46,9 +48,10 @@ namespace EventStore.Projections.Core.Standard
             }
             // we will need to declare event types we are interested in
             _indexStreamPrefix = "$et-";
+            _indexCheckpointStream = "$et";
         }
 
-        public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
+        public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             builder.FromAll();
             builder.AllEvents();
@@ -62,30 +65,57 @@ namespace EventStore.Projections.Core.Standard
         {
         }
 
+        public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
-            EventPosition position, CheckpointTag eventPosition, string streamId, string eventType, string category1,
-            Guid eventId, int sequenceNumber, string metadata, string data, out string newState,
-            out EmittedEvent[] emittedEvents)
+            string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
+            out string newState, out EmittedEventEnvelope[] emittedEvents)
         {
             emittedEvents = null;
             newState = null;
-            if (streamId.StartsWith(_indexStreamPrefix))
+            if (data.EventStreamId != data.PositionStreamId)
                 return false;
-            if (eventType == "$>")
+            if (data.EventType == "$>")
                 return false;
 
             emittedEvents = new[]
-                {
-                    new EmittedEvent(
-                        _indexStreamPrefix + eventType, Guid.NewGuid(), "$>", sequenceNumber + "@" + streamId,
-                        eventPosition, expectedTag: null)
-                };
+            {
+                new EmittedEventEnvelope(
+                    new EmittedDataEvent(
+                        _indexStreamPrefix + data.EventType, Guid.NewGuid(), "$>", false,
+                        data.EventSequenceNumber + "@" + data.EventStreamId, null, eventPosition, expectedTag: null))
+            };
 
             return true;
+        }
+
+        public string TransformStateToResult()
+        {
+            throw new NotImplementedException();
         }
 
         public void Dispose()
         {
         }
+
+        public void ProcessNewCheckpoint(CheckpointTag checkpointPosition, out EmittedEventEnvelope[] emittedEvents)
+        {
+            emittedEvents = new[]
+            {
+                new EmittedEventEnvelope(
+                    new EmittedDataEvent(
+                        _indexCheckpointStream, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint,
+                        true, checkpointPosition.ToJsonString(), null, checkpointPosition, expectedTag: null))
+            };
+        }
+
+        public IQuerySources GetSourceDefinition()
+        {
+            return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
+        }
+
     }
 }

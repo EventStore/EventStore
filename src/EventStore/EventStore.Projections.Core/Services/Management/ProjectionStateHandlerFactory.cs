@@ -27,12 +27,15 @@
 // 
 using System;
 using EventStore.Projections.Core.Services.v8;
+using System.Linq;
 
 namespace EventStore.Projections.Core.Services.Management
 {
     public class ProjectionStateHandlerFactory
     {
-        public IProjectionStateHandler Create(string factoryType, string source, Action<string> logger = null)
+        public IProjectionStateHandler Create(
+            string factoryType, string source, Action<int, Action> cancelCallbackFactory = null,
+            Action<string> logger = null)
         {
             var colonPos = factoryType.IndexOf(':');
             string kind = null;
@@ -47,17 +50,29 @@ namespace EventStore.Projections.Core.Services.Management
                 kind = factoryType;
             }
 
+            IProjectionStateHandler result;
             switch (kind.ToLowerInvariant())
             {
                 case "js":
-                    return new DefaultV8ProjectionStateHandler(source, logger);
+                    result = new DefaultV8ProjectionStateHandler(source, logger, cancelCallbackFactory);
+                    break;
                 case "native":
                     var type = Type.GetType(rest);
+                    if (type == null)
+                    {
+                        //TODO: explicitly list all the assemblies to look for handlers
+                        type =
+                            AppDomain.CurrentDomain.GetAssemblies()
+                                     .Select(v => v.GetType(rest))
+                                     .FirstOrDefault(v => v != null);
+                    }
                     var handler = Activator.CreateInstance(type, source, logger);
-                    return (IProjectionStateHandler)handler;
+                    result = (IProjectionStateHandler)handler;
+                    break;
                 default:
                     throw new NotSupportedException(string.Format("'{0}' handler type is not supported", factoryType));
             }
+            return result;
         }
 
     }

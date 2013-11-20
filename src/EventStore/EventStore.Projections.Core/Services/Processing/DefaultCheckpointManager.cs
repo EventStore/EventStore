@@ -27,170 +27,189 @@
 // 
 
 using System;
-using System.Linq;
-using System.Text;
+using System.Collections.Generic;
+using System.Security.Principal;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class DefaultCheckpointManager : CoreProjectionCheckpointManager
+    public class DefaultCheckpointManager : CoreProjectionCheckpointManager,
+        IHandle<CoreProjectionCheckpointWriterMessage.CheckpointWritten>,
+        IHandle<CoreProjectionCheckpointWriterMessage.RestartRequested>
     {
-        private readonly string _projectionCheckpointStreamId;
-        private int _inCheckpointWriteAttempt;
-        private int _lastWrittenCheckpointEventNumber;
-        private int _nextStateIndexToRequest;
-        private Event _checkpointEventToBePublished;
-        private CheckpointTag _requestedCheckpointPosition;
-        private Guid _writeRequestId;
-        private Guid _readRequestId;
+        private readonly IPrincipal _runAs;
+        private readonly CheckpointTag _zeroTag;
+        private int _readRequestsInProgress;
+        private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
+
+        protected readonly ProjectionVersion _projectionVersion;
+        protected readonly IODispatcher _ioDispatcher;
+        private readonly PositionTagger _positionTagger;
+        private readonly CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
+        private PartitionStateUpdateManager _partitionStateUpdateManager;
+
 
         public DefaultCheckpointManager(
-            ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ProjectionConfig projectionConfig, string projectionCheckpointStreamId, string name,
-            PositionTagger positionTagger)
+            IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
+            IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
+            ProjectionNamesBuilder namingBuilder, bool useCheckpoints, bool producesRunningResults, bool definesFold,
+            CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
             : base(
-                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig, name, positionTagger)
+                publisher, projectionCorrelationId, projectionConfig, name, positionTagger, namingBuilder,
+                useCheckpoints, producesRunningResults)
         {
-            if (projectionCheckpointStreamId == null) throw new ArgumentNullException("projectionCheckpointStreamId");
-            if (projectionCheckpointStreamId == "") throw new ArgumentException("projectionCheckpointStreamId");
-            _projectionCheckpointStreamId = projectionCheckpointStreamId;
+            if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
+            _projectionVersion = projectionVersion;
+            _runAs = runAs;
+            _ioDispatcher = ioDispatcher;
+            _positionTagger = positionTagger;
+            _coreProjectionCheckpointWriter = coreProjectionCheckpointWriter;
+            _zeroTag = positionTagger.MakeZeroCheckpointTag();
         }
 
         protected override void BeginWriteCheckpoint(
             CheckpointTag requestedCheckpointPosition, string requestedCheckpointState)
         {
             _requestedCheckpointPosition = requestedCheckpointPosition;
-            _inCheckpointWriteAttempt = 1;
-            //TODO: pass correct expected version
-            _checkpointEventToBePublished = new Event(
-                Guid.NewGuid(), "ProjectionCheckpoint", false,
-                requestedCheckpointState == null ? null : Encoding.UTF8.GetBytes(requestedCheckpointState),
-                requestedCheckpointPosition.ToJsonBytes());
-            PublishWriteCheckpointEvent();
+            _coreProjectionCheckpointWriter.BeginWriteCheckpoint(
+                new SendToThisEnvelope(this), requestedCheckpointPosition, requestedCheckpointState);
         }
 
-        private void WriteCheckpointEventCompleted(ClientMessage.WriteEventsCompleted message)
+        public override void RecordEventOrder(
+            ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action committed)
         {
-            EnsureStarted();
-            if (_inCheckpointWriteAttempt == 0)
-                throw new InvalidOperationException();
-            if (message.ErrorCode == OperationErrorCode.Success)
-            {
-                if (_logger != null)
-                    _logger.Trace(
-                        "Checkpoint has be written for projection {0} at sequence number {1} (current)", _name,
-                        message.EventNumber);
-                _lastWrittenCheckpointEventNumber = message.EventNumber
-                                                    + (_lastWrittenCheckpointEventNumber == ExpectedVersion.NoStream
-                                                       // account for StreamCreated
-                                                           ? 1
-                                                           : 0);
-
-                _inCheckpointWriteAttempt = 0;
-                CheckpointWritten();
-            }
-            else
-            {
-                if (_logger != null)
-                    _logger.Info(
-                        "Failed to write projection checkpoint to stream {0}. Error: {1}", message.EventStreamId,
-                        Enum.GetName(typeof (OperationErrorCode), message.ErrorCode));
-                switch (message.ErrorCode)
-                {
-                    case OperationErrorCode.WrongExpectedVersion:
-                        RequestRestart("Checkpoint stream has been written to from the outside");
-                        break;
-                    case OperationErrorCode.PrepareTimeout:
-                    case OperationErrorCode.ForwardTimeout:
-                    case OperationErrorCode.CommitTimeout:
-                        if (_logger != null) _logger.Info("Retrying write checkpoint to {0}", message.EventStreamId);
-                        _inCheckpointWriteAttempt++;
-                        PublishWriteCheckpointEvent();
-                        break;
-                    default:
-                        throw new NotSupportedException("Unsupported error code received");
-                }
-            }
+            committed();
         }
 
-        private void PublishWriteCheckpointEvent()
+        public override void PartitionCompleted(string partition)
         {
-            if (_logger != null)
-                _logger.Trace(
-                    "Writing checkpoint for {0} at {1} with expected version number {2}", _name,
-                    _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
-            _writeRequestId = _writeDispatcher.Publish(
-                new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, true, _projectionCheckpointStreamId,
-                    _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished), WriteCheckpointEventCompleted);
+            _partitionStateUpdateManager.PartitionCompleted(partition);
         }
 
         public override void Initialize()
         {
             base.Initialize();
-            _writeDispatcher.Cancel(_writeRequestId);
-            _readDispatcher.Cancel(_readRequestId);
-            _inCheckpointWriteAttempt = 0;
-            _lastWrittenCheckpointEventNumber = 0;
-            _nextStateIndexToRequest = 0;
-            _checkpointEventToBePublished = null;
+            _partitionStateUpdateManager = null;
+            foreach (var requestId in _loadStateRequests)
+                _ioDispatcher.BackwardReader.Cancel(requestId);
+            _loadStateRequests.Clear();
+            _coreProjectionCheckpointWriter.Initialize();
             _requestedCheckpointPosition = null;
+            _readRequestsInProgress = 0;
         }
 
         public override void GetStatistics(ProjectionStatistics info)
         {
             base.GetStatistics(info);
-            info.WritesInProgress = ((_inCheckpointWriteAttempt != 0) ? 1 : 0) + info.WritesInProgress;
-            info.CheckpointStatus = _inCheckpointWriteAttempt > 0
-                                        ? "Writing (" + _inCheckpointWriteAttempt + ")"
-                                        : info.CheckpointStatus;
+            info.ReadsInProgress += _readRequestsInProgress;
+            _coreProjectionCheckpointWriter.GetStatistics(info);
         }
 
-        protected override void BeforeBeginLoadState()
+        public override void BeginLoadPartitionStateAt(
+            string statePartition, CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted)
         {
-            _lastWrittenCheckpointEventNumber = ExpectedVersion.NoStream;
-            _nextStateIndexToRequest = -1; // from the end
+            var stateEventType = ProjectionNamesBuilder.EventType_PartitionCheckpoint;
+            var partitionCheckpointStreamName = _namingBuilder.MakePartitionCheckpointStreamName(statePartition);
+            _readRequestsInProgress++;
+            var requestId = _ioDispatcher.ReadBackward(
+                partitionCheckpointStreamName, -1, 1, false, SystemAccount.Principal,
+                m =>
+                    OnLoadPartitionStateReadStreamEventsBackwardCompleted(
+                        m, requestedStateCheckpointTag, loadCompleted, partitionCheckpointStreamName, stateEventType));
+            if (requestId != Guid.Empty)
+                _loadStateRequests.Add(requestId);
         }
 
-        protected override void RequestLoadState()
+        private void OnLoadPartitionStateReadStreamEventsBackwardCompleted(
+            ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag requestedStateCheckpointTag,
+            Action<PartitionState> loadCompleted, string partitionStreamName, string stateEventType)
         {
-            const int recordsToRequest = 10;
-            _readRequestId = _readDispatcher.Publish(
-                new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), _readDispatcher.Envelope, _projectionCheckpointStreamId, _nextStateIndexToRequest,
-                    recordsToRequest, resolveLinks: false), OnLoadStateReadRequestCompleted);
-        }
+            //NOTE: the following remove may do nothing in tests as completed is raised before we return from publish. 
+            _loadStateRequests.Remove(message.CorrelationId);
 
-        private void OnLoadStateReadRequestCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message)
-        {
-            string checkpointData = null;
-            CheckpointTag checkpointTag = null;
-            int checkpointEventNumber = -1;
-            if (message.Events.Length > 0)
+            _readRequestsInProgress--;
+            if (message.Events.Length == 1)
             {
-                EventRecord checkpoint = message.Events.FirstOrDefault(v => v.Event.EventType == "ProjectionCheckpoint").Event;
-                if (checkpoint != null)
+                EventRecord @event = message.Events[0].Event;
+                if (@event.EventType == stateEventType)
                 {
-                    checkpointData = Encoding.UTF8.GetString(checkpoint.Data);
-                    checkpointTag = checkpoint.Metadata.ParseJson<CheckpointTag>();
-                    checkpointEventNumber = checkpoint.EventNumber;
+                    var parsed = @event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
+                    if (parsed.Version.ProjectionId != _projectionVersion.ProjectionId
+                        || _projectionVersion.Epoch > parsed.Version.Version)
+                    {
+                        var state = new PartitionState("", null, _zeroTag);
+                        loadCompleted(state);
+                        return;
+                    }
+                    else
+                    {
+                        var loadedStateCheckpointTag = parsed.AdjustBy(_positionTagger, _projectionVersion);
+                        // always recovery mode? skip until state before current event
+                        //TODO: skip event processing in case we know i has been already processed
+                        if (loadedStateCheckpointTag < requestedStateCheckpointTag)
+                        {
+                            var state = PartitionState.Deserialize(
+                                Helper.UTF8NoBom.GetString(@event.Data), loadedStateCheckpointTag);
+                            loadCompleted(state);
+                            return;
+                        }
+                    }
                 }
             }
-
-            if (checkpointTag == null && message.NextEventNumber != -1)
+            if (message.NextEventNumber == -1)
             {
-                _nextStateIndexToRequest = message.NextEventNumber;
-                RequestLoadState();
+                var state = new PartitionState("", null, _zeroTag);
+                loadCompleted(state);
                 return;
             }
-            _lastWrittenCheckpointEventNumber = checkpointEventNumber;
-            CheckpointLoaded(checkpointTag, checkpointData);
+            _readRequestsInProgress++;
+            var requestId = _ioDispatcher.ReadBackward(
+                partitionStreamName, message.NextEventNumber, 1, false, SystemAccount.Principal,
+                m =>
+                    OnLoadPartitionStateReadStreamEventsBackwardCompleted(
+                        m, requestedStateCheckpointTag, loadCompleted, partitionStreamName, stateEventType));
+            if (requestId != Guid.Empty)
+                _loadStateRequests.Add(requestId);
+        }
+
+        protected override ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition)
+        {
+            return new ProjectionCheckpoint(
+                _ioDispatcher, _projectionVersion, _runAs, this, checkpointPosition, _positionTagger, _zeroTag,
+                _projectionConfig.MaxWriteBatchLength, _logger);
+        }
+
+        public void Handle(CoreProjectionCheckpointWriterMessage.CheckpointWritten message)
+        {
+            CheckpointWritten(message.Position);
+        }
+
+        public void Handle(CoreProjectionCheckpointWriterMessage.RestartRequested message)
+        {
+            RequestRestart(message.Reason);
+        }
+
+        protected override void CapturePartitionStateUpdated(string partition, PartitionState oldState, PartitionState newState)
+        {
+            if (_partitionStateUpdateManager == null)
+                _partitionStateUpdateManager = new PartitionStateUpdateManager(_namingBuilder);
+            _partitionStateUpdateManager.StateUpdated(partition, newState, oldState.CausedBy);
+        }
+
+        protected override void EmitPartitionCheckpoints()
+        {
+            if (_partitionStateUpdateManager != null)
+            {
+                _partitionStateUpdateManager.EmitEvents(_currentCheckpoint);
+                _partitionStateUpdateManager = null;
+            }
         }
     }
 }

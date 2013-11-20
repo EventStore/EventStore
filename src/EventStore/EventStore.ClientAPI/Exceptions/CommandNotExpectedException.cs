@@ -26,14 +26,17 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
-
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class CommandNotExpectedException : Exception
+    public class CommandNotExpectedException : EventStoreConnectionException
     {
         public CommandNotExpectedException(string expected, string actual)
             : base(string.Format("Expected : {0}. Actual : {1}.", expected, actual))
+        {
+        }
+
+        public CommandNotExpectedException(string unexpectedCommand)
+            : base(string.Format("Unexpected command: {0}.", unexpectedCommand))
         {
         }
     }

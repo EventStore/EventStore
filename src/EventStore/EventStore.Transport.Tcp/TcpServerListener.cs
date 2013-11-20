@@ -40,7 +40,7 @@ namespace EventStore.Transport.Tcp
         private readonly IPEndPoint _serverEndPoint;
         private readonly Socket _listeningSocket;
         private readonly SocketArgsPool _acceptSocketArgsPool;
-        private Action<TcpConnection> _onConnectionAccepted;
+        private Action<IPEndPoint, Socket> _onSocketAccepted;
 
         public TcpServerListener(IPEndPoint serverEndPoint)
         {
@@ -62,13 +62,13 @@ namespace EventStore.Transport.Tcp
             return socketArgs;
         }
 
-        public void StartListening(Action<TcpConnection> callback)
+        public void StartListening(Action<IPEndPoint, Socket> callback, string securityType)
         {
             Ensure.NotNull(callback, "callback");
 
-            _onConnectionAccepted = callback;
+            _onSocketAccepted = callback;
 
-            Log.Info("Starting TCP listening on TCP endpoint: {0}.", _serverEndPoint);
+            Log.Info("Starting {0} TCP listening on TCP endpoint: {1}.", securityType, _serverEndPoint);
             try
             {
                 _listeningSocket.Bind(_serverEndPoint);
@@ -128,7 +128,12 @@ namespace EventStore.Transport.Tcp
 
         private void HandleBadAccept(SocketAsyncEventArgs socketArgs)
         {
-            Helper.EatException(() => socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
+            Helper.EatException(
+                () =>
+                    {
+                        if (socketArgs.AcceptSocket != null) // avoid annoying exceptions
+                            socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs);
+                    });
             socketArgs.AcceptSocket = null;
             _acceptSocketArgsPool.Return(socketArgs);
         }
@@ -145,8 +150,7 @@ namespace EventStore.Transport.Tcp
                 return;
             }
 
-            var tcpConnection = TcpConnection.CreateAcceptedTcpConnection(socketEndPoint, socket);
-            _onConnectionAccepted(tcpConnection);
+            _onSocketAccepted(socketEndPoint, socket);
         }
 
         public void Stop()

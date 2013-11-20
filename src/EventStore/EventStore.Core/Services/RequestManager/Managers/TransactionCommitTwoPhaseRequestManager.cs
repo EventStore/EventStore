@@ -28,50 +28,52 @@
 
 using System;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.TransactionCommitRequestCreated>
+    public class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
+                                                           IHandle<ClientMessage.TransactionCommit>
     {
-        public TransactionCommitTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
-            base(publisher, prepareCount, commitCount)
-        {}
+        private long _transactionId;
 
-        public void Handle(StorageMessage.TransactionCommitRequestCreated request)
+        public TransactionCommitTwoPhaseRequestManager(IPublisher publisher, 
+                                                       int prepareCount, 
+                                                       int commitCount, 
+                                                       TimeSpan prepareTimeout, 
+                                                       TimeSpan commitTimeout)
+            : base(publisher, prepareCount, commitCount, prepareTimeout, commitTimeout)
         {
-            if (_initialized)
-                throw new InvalidOperationException();
-
-            _initialized = true;
-            _responseEnvelope = request.Envelope;
-            _correlationId = request.CorrelationId;
-            _preparePos = request.TransactionId;
-            _eventStreamId = request.EventStreamId;
-
-            Publisher.Publish(new StorageMessage.WriteTransactionPrepare(request.CorrelationId,
-                                                                             _publishEnvelope,
-                                                                             request.TransactionId,
-                                                                             request.EventStreamId,
-                                                                             liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
-            Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
-                                                           _publishEnvelope,
-                                                           new StorageMessage.PreparePhaseTimeout(_correlationId)));
         }
 
-        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
+        public void Handle(ClientMessage.TransactionCommit request)
         {
-            base.CompleteSuccessRequest(correlationId, eventStreamId, startEventNumber);
-            var responseMsg = new ClientMessage.TransactionCommitCompleted(correlationId, _preparePos, OperationErrorCode.Success, null);
-            _responseEnvelope.ReplyWith(responseMsg);
+            _transactionId = request.TransactionId;
+            InitTwoPhase(request.Envelope, request.InternalCorrId, request.CorrelationId,
+                         request.TransactionId, request.User, StreamAccessType.Write);
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
+        protected override void OnSecurityAccessGranted(Guid internalCorrId)
         {
-            base.CompleteFailedRequest(correlationId, eventStreamId, errorCode, error);
-            var responseMsg = new ClientMessage.TransactionCommitCompleted(correlationId, _preparePos, errorCode, error);
-            _responseEnvelope.ReplyWith(responseMsg);
+            Publisher.Publish(
+                new StorageMessage.WriteTransactionPrepare(
+                    internalCorrId, PublishEnvelope, _transactionId, liveUntil: NextTimeoutTime - TimeoutOffset));
+        }
+
+        protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber)
+        {
+            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber);
+            var responseMsg = new ClientMessage.TransactionCommitCompleted(ClientCorrId, _transactionId, firstEventNumber, lastEventNumber);
+            ResponseEnvelope.ReplyWith(responseMsg);
+        }
+
+        protected override void CompleteFailedRequest(OperationResult result, string error)
+        {
+            base.CompleteFailedRequest(result, error);
+            var responseMsg = new ClientMessage.TransactionCommitCompleted(ClientCorrId, _transactionId, result, error);
+            ResponseEnvelope.ReplyWith(responseMsg);
         }
 
     }

@@ -26,52 +26,89 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Collections.Generic;
+using System;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     class CommittedEventWorkItem : WorkItem
     {
-        private readonly ProjectionSubscriptionMessage.CommittedEventReceived _message;
-        private readonly string _partition;
-        private List<EmittedEvent[]> _scheduledWrites;
+        private readonly EventReaderSubscriptionMessage.CommittedEventReceived _message;
+        private string _partition;
+        private readonly IEventProcessingProjectionPhase _projection;
+        private readonly StatePartitionSelector _statePartitionSelector;
+        private EventProcessedResult _eventProcessedResult;
 
         public CommittedEventWorkItem(
-            CoreProjection projection, ProjectionSubscriptionMessage.CommittedEventReceived message, string partition)
-            : base(projection, message.EventStreamId)
+            IEventProcessingProjectionPhase projection, EventReaderSubscriptionMessage.CommittedEventReceived message,
+            StatePartitionSelector statePartitionSelector)
+            : base(null)
         {
+            _projection = projection;
+            _statePartitionSelector = statePartitionSelector;
             _message = message;
-            _partition = partition;
+            _requiresRunning = true;
+        }
+
+        protected override void RecordEventOrder()
+        {
+            _projection.RecordEventOrder(_message.Data, _message.CheckpointTag, () => NextStage());
+        }
+
+        protected override void GetStatePartition()
+        {
+            _partition = _statePartitionSelector.GetStatePartition(_message);
+            if (_partition == null)
+                // skip processing of events not mapped to any partition
+                NextStage();
+            else
+                NextStage(_partition);
         }
 
         protected override void Load(CheckpointTag checkpointTag)
         {
-            Projection.BeginStatePartitionLoad(_partition, _message.CheckpointTag, LoadCompleted);
+            if (_partition == null)
+            {
+                NextStage();
+                return;
+            }
+            // we load partition state even if stopping etc.  should we skip?
+            _projection.BeginGetPartitionStateAt(
+                _partition, _message.CheckpointTag, LoadCompleted, lockLoaded: true);
         }
 
-        private void LoadCompleted()
+        private void LoadCompleted(PartitionState state)
         {
             NextStage();
         }
 
         protected override void ProcessEvent()
         {
-            Projection.ProcessCommittedEvent(this, _message, _partition);
+            if (_partition == null)
+            {
+                NextStage();
+                return;
+            }
+            var eventProcessedResult = _projection.ProcessCommittedEvent(_message, _partition);
+            if (eventProcessedResult != null)
+                SetEventProcessedResult(eventProcessedResult);
             NextStage();
         }
 
         protected override void WriteOutput()
         {
-            Projection.FinalizeEventProcessing(_scheduledWrites, _message.CheckpointTag, _message.Progress);
+            if (_partition == null)
+            {
+                NextStage();
+                return;
+            }
+            _projection.FinalizeEventProcessing(_eventProcessedResult, _message.CheckpointTag, _message.Progress);
             NextStage();
         }
 
-        public void ScheduleEmitEvents(EmittedEvent[] emittedEvents)
+        private void SetEventProcessedResult(EventProcessedResult eventProcessedResult)
         {
-            if (_scheduledWrites == null)
-                _scheduledWrites = new List<EmittedEvent[]>();
-            _scheduledWrites.Add(emittedEvents);
+            _eventProcessedResult = eventProcessedResult;
         }
     }
 }

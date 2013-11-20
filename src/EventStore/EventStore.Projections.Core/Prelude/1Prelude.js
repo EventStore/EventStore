@@ -1,4 +1,32 @@
-﻿"use strict";
+﻿// Copyright (c) 2012, Event Store LLP
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+// Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+// Neither the name of the Event Store LLP nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 
+"use strict";
+
 // these $ globals are defined by external environment
 // they are redefined here to make R# like tools understand them
 var _log = $log;
@@ -29,45 +57,8 @@ var projections = initializeProjections();
 
 function scope($on, $notify) {
     var eventProcessor = projections.createEventProcessor(log, $notify);
-    var commandHandlers = {
-            initialize: function() {
-                return eventProcessor.commandHandlers.initialize_raw();
-            }, 
-        
-            process_event: function(json, streamId, eventType, category, sequenceNumber, metadata, log_position) {
-                return eventProcessor.commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata, log_position);
-            }, 
-
-            get_state: function() {
-                var stateJson = JSON.stringify(eventProcessor.commandHandlers.get_state_raw());
-                return stateJson;
-            }, 
-        
-            set_state: function(json) {
-                var projectionState = JSON.parse(json);
-                return eventProcessor.commandHandlers.set_state_raw(projectionState);
-            }, 
-        
-            get_statistics: function() {
-                return JSON.stringify(eventProcessor.commandHandlers.get_statistics_raw());
-            }, 
-        
-            get_sources: function() {
-                return JSON.stringify(eventProcessor.commandHandlers.get_sources_raw());
-            }
-    };
-
-    // this is the only way to pass parameters to the system module
-
-    function registerCommandHandlers($on) {
-        for (var name in commandHandlers) {
-            $on(name, commandHandlers[name]);
-        }
-    }
-
-    registerCommandHandlers($on);
-
-
+    eventProcessor.register_comand_handlers($on);
+    
     function queryLog(message) {
         _log(message);
     }
@@ -78,90 +69,179 @@ function scope($on, $notify) {
             if (name == 0 || name === "$init") {
                 eventProcessor.on_init_state(handlers[name]);
             }
+            else if (name === "$any") {
+                eventProcessor.on_any(handlers[name]);
+            }
             else {
-                eventProcessor.on_pure(name, handlers[name]);
+                eventProcessor.on_event(name, handlers[name]);
             }
         }
+    }
+
+
+    function $defines_state_transform() {
+        eventProcessor.$defines_state_transform();
+    }
+
+    function transformBy(by) {
+        eventProcessor.chainTransformBy(by);
+        return {
+            transformBy: transformBy,
+            filterBy: filterBy,
+            outputState: outputState,
+            outputTo: outputTo,
+        };
+    }
+
+    function filterBy(by) {
+        eventProcessor.chainTransformBy(function (s) {
+            var result = by(s);
+            return result ? s : null;
+        });
+        return {
+            transformBy: transformBy,
+            filterBy: filterBy,
+            outputState: outputState,
+            outputTo: outputTo,
+        };
+    }
+
+    function outputTo(resultStream, partitionResultStreamPattern) {
+        eventProcessor.$defines_state_transform();
+        eventProcessor.options({
+            resultStreamName: resultStream,
+            partitionResultStreamNamePattern: partitionResultStreamPattern,
+        });
+    }
+
+    function outputState() {
+        eventProcessor.$outputState();
+        return {
+            transformBy: transformBy,
+            filterBy: filterBy,
+            outputTo: outputTo,
+        };
+    }
+
+    function when(handlers) {
+        translateOn(handlers);
+        return {
+            $defines_state_transform: $defines_state_transform,
+            transformBy: transformBy,
+            filterBy: filterBy,
+            outputTo: outputTo,
+        };
+    }
+
+    function whenAny(handler) {
+        eventProcessor.on_any(handler);
+        return {
+            $defines_state_transform: $defines_state_transform,
+            transformBy: transformBy,
+            filterBy: filterBy,
+            outputState: outputState,
+            outputTo: outputTo,
+        };
+    }
+
+    function foreachStream() {
+        eventProcessor.byStream();
+        return {
+            when: when,
+            whenAny: whenAny,
+        };
+    }
+
+    function partitionBy(byHandler) {
+        eventProcessor.partitionBy(byHandler);
+        return {
+            when: when,
+            whenAny: whenAny,
+        };
     }
 
     function fromCategory(category) {
         eventProcessor.fromCategory(category);
         return {
-            foreachStream: function () {
-                eventProcessor.byStream();
-                return {
-                    when: function (handlers) {
-                        translateOn(handlers);
-                    },
-                    whenAny: function (handler) {
-                        eventProcessor.on_any(handler);
-                    }
-                };
-            },
-            when: function (handlers) {
-                translateOn(handlers);
-            },
-            whenAny: function (handler) {
-                eventProcessor.on_any(handler);
-            }
+            partitionBy: partitionBy,
+            foreachStream: foreachStream,
+            when: when,
+            whenAny: whenAny,
+            outputState: outputState,
         };
     }
 
     function fromAll() {
         eventProcessor.fromAll();
         return {
-            foreachStream: function () {
-                eventProcessor.byStream();
-                return {
-                    when: function (handlers) {
-                        translateOn(handlers);
-                    },
-                    whenAny: function (handler) {
-                        eventProcessor.on_any(handler);
-                    }
-                };
-            },
-            when: function (handlers) {
-                translateOn(handlers);
-            },
-            whenAny: function (handler) {
-                eventProcessor.on_any(handler);
-            }
+            partitionBy: partitionBy,
+            when: when,
+            whenAny: whenAny,
+            foreachStream: foreachStream,
+            outputState: outputState,
         };
     }
 
     function fromStream(stream) {
         eventProcessor.fromStream(stream);
         return {
-            when: function (handlers) {
-                translateOn(handlers);
-            },
-            whenAny: function (handler) {
-                eventProcessor.on_any(handler);
-            }
+            partitionBy: partitionBy,
+            when: when,
+            whenAny: whenAny,
+            outputState: outputState,
+        };
+    }
+
+    function fromStreamCatalog(streamCatalog) {
+        eventProcessor.fromStreamCatalog(streamCatalog);
+        return {
+            foreachStream: foreachStream,
         };
     }
 
     function fromStreams(streams) {
-        for (var i = 0; i < streams.length; i++) 
-            eventProcessor.fromStream(streams[i]);
+        var arr = Array.isArray(streams) ? streams : arguments;
+        for (var i = 0; i < arr.length; i++) 
+            eventProcessor.fromStream(arr[i]);
+ 
         return {
-            when: function (handlers) {
-                translateOn(handlers);
-            },
-            whenAny: function (handler) {
-                eventProcessor.on_any(handler);
-            }
+            partitionBy: partitionBy,
+            when: when,
+            whenAny: whenAny,
+            outputState: outputState,
         };
     }
 
-    function emit(streamId, eventName, eventBody) {
-        var message = { streamId: streamId, eventName: eventName , body: JSON.stringify(eventBody) };
+    function emit(streamId, eventName, eventBody, metadata) {
+        var message = { streamId: streamId, eventName: eventName , body: JSON.stringify(eventBody), metadata: metadata, isJson: true };
         eventProcessor.emit(message);
     }
 
-    function linkTo(streamId, event) {
-        var message = { streamId: streamId, eventName: "$>", body: event.sequenceNumber + "@" + event.streamId };
+    function linkTo(streamId, event, metadata) {
+        var message = { streamId: streamId, eventName: "$>", body: event.sequenceNumber + "@" + event.streamId, metadata: metadata, isJson: false };
+        eventProcessor.emit(message);
+    }
+
+    function copyTo(streamId, event, metadata) {
+        var m = {};
+
+        var em = event.metadata;
+        if (em)
+            for (var p1 in em)
+                if (p1.indexOf("$") !== 0 || p1 === "$correlationId")
+                    m[p1] = em[p1];
+
+        if (metadata) 
+            for (var p2 in metadata)
+                if (p2.indexOf("$") !== 0)
+                    m[p2] = metadata[p2];
+
+        var message = { streamId: streamId, eventName: event.eventType, body: event.bodyRaw, metadata: m };
+        eventProcessor.emit(message);
+    }
+
+    function linkStreamTo(streamId, linkedStreamId, metadata) {
+        var message = { streamId: streamId, eventName: "$@", body: linkedStreamId, metadata: metadata, isJson: false };
         eventProcessor.emit(message);
     }
 
@@ -179,9 +259,13 @@ function scope($on, $notify) {
         fromCategory: fromCategory,
         fromStream: fromStream,
         fromStreams: fromStreams,
+        fromStreamCatalog: fromStreamCatalog,
+
         options: options,
         emit: emit, 
-        linkTo: linkTo, 
+        linkTo: linkTo,
+        copyTo: copyTo,
+        linkStreamTo: linkStreamTo,
         require: modules.require,
     };
 };

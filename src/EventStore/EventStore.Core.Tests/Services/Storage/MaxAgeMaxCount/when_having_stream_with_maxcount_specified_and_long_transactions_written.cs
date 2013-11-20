@@ -30,6 +30,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 {
@@ -42,12 +43,12 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         {
             const string metadata = @"{""$maxCount"":2}";
 
-            _records = new EventRecord[10]; // 1 + 3 + 2 + 4
-            _records[0] = WriteStreamCreated("ES", metadata);
+            _records = new EventRecord[9]; // 3 + 2 + 4
+            WriteStreamMetadata("ES", 0, metadata);
 
-            WriteTransaction(0, 3);
-            WriteTransaction(3, 2);
-            WriteTransaction(3 + 2, 4);
+            WriteTransaction(-1, 3);
+            WriteTransaction(2, 2);
+            WriteTransaction(-1 + 3 + 2, 4);
         }
 
         private void WriteTransaction(int expectedVersion, int transactionLength)
@@ -66,10 +67,10 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         public void forward_range_read_returns_last_transaction_events_and_doesnt_return_expired_ones()
         {
             var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(2, result.Records.Length);
-            Assert.AreEqual(_records[8], result.Records[0]);
-            Assert.AreEqual(_records[9], result.Records[1]);
+            Assert.AreEqual(_records[7], result.Records[0]);
+            Assert.AreEqual(_records[8], result.Records[1]);
         }
     }
 }

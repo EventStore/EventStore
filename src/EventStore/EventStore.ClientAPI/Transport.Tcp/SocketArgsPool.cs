@@ -28,24 +28,15 @@
 
 using System;
 using System.Net.Sockets;
-using System.Threading;
-using Collections = System.Collections;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
     internal class SocketArgsPool
     {
-        private readonly string _name;
+        public readonly string Name;
         private readonly Func<SocketAsyncEventArgs> _socketArgsCreator;
 
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Common.ConcurrentCollections.ConcurrentStack<SocketAsyncEventArgs>();
-#else
-        private readonly Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
-#endif
-
-        private int _getArgs = 0;
-        private int _returnedArgs = 0;
+        private readonly Common.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Common.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
 
         public SocketArgsPool(string name, int initialCount, Func<SocketAsyncEventArgs> socketArgsCreator)
         {
@@ -54,7 +45,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             if (initialCount < 0)
                 throw new ArgumentOutOfRangeException("initialCount");
 
-            _name = name;
+            Name = name;
             _socketArgsCreator = socketArgsCreator;
 
             for (int i = 0; i < initialCount; ++i)
@@ -65,23 +56,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         public SocketAsyncEventArgs Get()
         {
-            var getArgs = Interlocked.Increment(ref _getArgs);
-            //if (getArgs % 100 == 0) { 
-            //    Console.WriteLine("SocketAsyncEventArgs get from {0}: {1}", _name, getArgs);
-
             SocketAsyncEventArgs result;
             if (_socketArgsPool.TryPop(out result))
                 return result;
-
             return _socketArgsCreator();
         }
 
         public void Return(SocketAsyncEventArgs socketArgs)
         {
-            var retArgs = Interlocked.Increment(ref _returnedArgs);
-            //if (retArgs % 100 == 0)
-            //    Console.WriteLine("SocketAsyncEventArgs return from {0}: {1}", _name, retArgs);
-
             _socketArgsPool.Push(socketArgs);
         }
     }

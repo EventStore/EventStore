@@ -47,11 +47,11 @@ namespace EventStore.TestClient
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<Client>();
 
+        public readonly bool InteractiveMode;
+
         public readonly ClientOptions Options;
         public readonly IPEndPoint TcpEndpoint;
         public readonly IPEndPoint HttpEndpoint;
-
-        private readonly bool _interactiveMode;
 
         private readonly BufferManager _bufferManager = new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
         private readonly TcpClientConnector _connector = new TcpClientConnector();
@@ -62,11 +62,10 @@ namespace EventStore.TestClient
         {
             Options = options;
 
-            var ipAddr = IPAddress.Parse(options.Ip);
-            TcpEndpoint = new IPEndPoint(ipAddr, options.TcpPort);
-            HttpEndpoint = new IPEndPoint(ipAddr, options.HttpPort);
+            TcpEndpoint = new IPEndPoint(options.Ip, options.TcpPort);
+            HttpEndpoint = new IPEndPoint(options.Ip, options.HttpPort);
 
-            _interactiveMode = options.Command.IsEmpty();
+            InteractiveMode = options.Command.IsEmpty();
 
             RegisterProcessors();
         }
@@ -82,11 +81,10 @@ namespace EventStore.TestClient
 
             _commands.Register(new PingFloodHttpProcessor());
 
-            _commands.Register(new CreateStreamProcessor());
-
             _commands.Register(new WriteProcessor());
             _commands.Register(new WriteJsonProcessor());
             _commands.Register(new WriteFloodProcessor());
+            _commands.Register(new WriteFloodClientApiProcessor());
             _commands.Register(new WriteFloodWaitingProcessor());
 
             _commands.Register(new MultiWriteProcessor());
@@ -119,42 +117,46 @@ namespace EventStore.TestClient
             _commands.Register(new ScavengeProcessor());
 
             _commands.Register(new TcpSanitazationCheckProcessor());
+
+            _commands.Register(new SubscriptionStressTestProcessor());
         }
 
         public int Run()
         {
-            if (!_interactiveMode)
+            if (!InteractiveMode)
                 return Execute(Options.Command.ToArray());
 
-            Thread.Sleep(100);
-            Console.Write(">>> ");
-            
-            string line;
-            while ((line = Console.ReadLine()) != null)
+            new Thread(() =>
             {
-                try
-                {
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
+                Thread.Sleep(100);
+                Console.Write(">>> ");
 
+                string line;
+                while ((line = Console.ReadLine()) != null)
+                {
                     try
                     {
-                        var args = ParseCommandLine(line);
-                        Execute(args);
-                    }
-                    catch (Exception exc)
-                    {
-                        Log.ErrorException(exc, "Error during executing command.");
-                    }
-                }
-                finally
-                {
-                    Thread.Sleep(100);
-                    Console.Write(">>> ");
-                }
-            }
+                        if (string.IsNullOrWhiteSpace(line))
+                            continue;
 
-            return -1;
+                        try
+                        {
+                            var args = ParseCommandLine(line);
+                            Execute(args);
+                        }
+                        catch (Exception exc)
+                        {
+                            Log.ErrorException(exc, "Error during executing command.");
+                        }
+                    }
+                    finally
+                    {
+                        Thread.Sleep(100);
+                        Console.Write(">>> ");
+                    }
+                }
+            }) { IsBackground = true, Name = "Client Main Loop Thread" }.Start();
+            return 0;
         }
 
         private static string[] ParseCommandLine(string line)
@@ -166,7 +168,7 @@ namespace EventStore.TestClient
         {
             Log.Info("Processing command: {0}.", string.Join(" ", args));
 
-            var context = new CommandProcessorContext(this, Log, new ManualResetEvent(true));
+            var context = new CommandProcessorContext(this, Log, new ManualResetEventSlim(true));
 
             int exitCode;
             if (_commands.TryProcess(context, args, out exitCode))
@@ -185,25 +187,33 @@ namespace EventStore.TestClient
                                               bool failContextOnError = true,
                                               IPEndPoint tcpEndPoint = null)
         {
-            var connectionCreatedEvent = new AutoResetEvent(false);
+            var connectionCreatedEvent = new ManualResetEventSlim(false);
             Connection typedConnection = null;
 
             var connection = _connector.ConnectTo(
+                Guid.NewGuid(),
                 tcpEndPoint ?? TcpEndpoint,
+                TcpConnectionManager.ConnectionTimeout,
                 conn =>
                 {
-                    Log.Info("Connected to [{0}].", conn.EffectiveEndPoint);
-                    if (connectionEstablished != null)
+                    // we execute callback on ThreadPool because on FreeBSD it can be called synchronously
+                    // causing deadlock
+                    ThreadPool.QueueUserWorkItem(_ => 
                     {
-                        connectionCreatedEvent.WaitOne(500);
-                        connectionEstablished(typedConnection);
-                    }
+                        if (!InteractiveMode)
+                            Log.Info("TcpTypedConnection: connected to [{0}, L{1}, {2:B}].", conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId);
+                        if (connectionEstablished != null)
+                        {
+                            if (!connectionCreatedEvent.Wait(10000))
+                                throw new Exception("TcpTypedConnection: creation took too long!");
+                            connectionEstablished(typedConnection);
+                        }
+                    });
                 },
                 (conn, error) =>
                 {
-                    var message = string.Format("Connection to [{0}] failed. Error: {1}.",
-                                                conn.EffectiveEndPoint,
-                                                error);
+                    var message = string.Format("TcpTypedConnection: connection to [{0}, L{1}, {2:B}] failed. Error: {3}.",
+                                                conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId, error);
                     Log.Error(message);
 
                     if (connectionClosed != null)
@@ -211,15 +221,19 @@ namespace EventStore.TestClient
 
                     if (failContextOnError)
                         context.Fail(reason: string.Format("Socket connection failed with error {0}.", error));
-                });
+                },
+                verbose: !InteractiveMode);
 
             typedConnection = new Connection(connection, new RawMessageFormatter(_bufferManager), new LengthPrefixMessageFramer());
             typedConnection.ConnectionClosed +=
                 (conn, error) =>
                 {
-                    Log.Info("Connection [{0}] was closed {1}",
-                                conn.EffectiveEndPoint,
-                                error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
+                    if (!InteractiveMode || error != SocketError.Success)
+                    {
+                        Log.Info("TcpTypedConnection: connection [{0}, L{1}] was closed {2}",
+                                 conn.RemoteEndPoint, conn.LocalEndPoint,
+                                 error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
+                    }
 
                     if (connectionClosed != null)
                         connectionClosed(conn, error);
@@ -250,10 +264,10 @@ namespace EventStore.TestClient
                     catch (Exception ex)
                     {
                         Log.InfoException(ex,
-                                          "[{0}] ERROR for {1}. Connection will be closed.",
-                                          conn.EffectiveEndPoint,
+                                          "TcpTypedConnection: [{0}, L{1}] ERROR for {2}. Connection will be closed.",
+                                          conn.RemoteEndPoint, conn.LocalEndPoint,
                                           validPackage ? package.Command as object : "<invalid package>");
-                        conn.Close();
+                        conn.Close(ex.Message);
 
                         if (failContextOnError)
                             context.Fail(ex);

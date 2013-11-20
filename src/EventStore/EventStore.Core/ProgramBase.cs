@@ -28,23 +28,24 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using EventStore.Common.CommandLine;
-using EventStore.Common.CommandLine.lib;
-using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
-using System.Linq;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core
 {
-    public abstract class ProgramBase<TOptions> where TOptions : EventStoreCmdLineOptionsBase, new()
+    public abstract class ProgramBase<TOptions> where TOptions : IOptions, new()
     {
-        private static readonly ILogger Log = LogManager.GetLogger("ProgramBase");
+// ReSharper disable StaticFieldInGenericType
+        protected static readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
+// ReSharper restore StaticFieldInGenericType
 
         private int _exitCode;
         private readonly ManualResetEventSlim _exitEvent = new ManualResetEventSlim(false);
@@ -58,33 +59,49 @@ namespace EventStore.Core
 
         public int Run(string[] args)
         {
-            if (args.Length == 1 && (args[0] == "--help" || args[0] == "/?"))
-            {
-                Console.WriteLine(new TOptions().GetUsage());
-                return 0;
-            }
-
+            var options = new TOptions();
             try
             {
                 Application.RegisterExitAction(Exit);
 
-                var options = new TOptions();
-                if (!CommandLineParser.Default.ParseArguments(args, options, Console.Error, Constants.EnvVarPrefix))
-                    throw new ApplicationInitializationException("Error while parsing options");
+                options.Parse(args);
+                if (options.ShowHelp)
+                {
+                    Console.WriteLine("Options:");
+                    Console.WriteLine(options.GetUsage());
+                }
+                else if (options.ShowVersion)
+                {
+                    Console.WriteLine("EventStore version {0} ({1}/{2}, {3})",
+                                      VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
+                    Application.ExitSilent(0, "Normal exit.");
+                }
+                else
+                {
+                    Init(options);
+                    CommitSuicideIfInBoehmOrOnBadVersionsOfMono(options);
+                    Create(options);
+                    Start();
 
-                Init(options);
-                Create(options);
-                Start();
-
-                _exitEvent.Wait();
+                    _exitEvent.Wait();
+                }
+            }
+            catch (OptionException exc)
+            {
+                Console.Error.WriteLine("Error while parsing options:");
+                Console.Error.WriteLine(FormatExceptionMessage(exc));
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("Options:");
+                Console.Error.WriteLine(options.GetUsage());
             }
             catch (ApplicationInitializationException ex)
             {
+                Log.FatalException(ex, "Application initialization error: {0}", FormatExceptionMessage(ex));
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
             catch (Exception ex)
             {
-                Log.ErrorException(ex, "Unhandled exception while starting application: {0}", FormatExceptionMessage(ex));
+                Log.FatalException(ex, "Unhandled exception while starting application:\n{0}", FormatExceptionMessage(ex));
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
             finally
@@ -92,30 +109,63 @@ namespace EventStore.Core
                 Log.Flush();
             }
 
+            Application.ExitSilent(_exitCode, "Normal exit.");
             return _exitCode;
         }
 
-        private void Exit(ExitCode exitCode)
+        private void CommitSuicideIfInBoehmOrOnBadVersionsOfMono(TOptions options)
         {
-            _exitCode = (int)exitCode;
+            if(!options.Force)
+            {
+                if(GC.MaxGeneration == 0)
+                {
+                    Application.Exit(3, "Appears that we are running in mono with boehm GC this is generally not a good idea, please run with sgen instead." + 
+                        "to run with sgen use mono --gc=sgen. If you really want to run with boehm GC you can use --force to override this error.");
+                }
+                if(OS.IsUnix && !OS.GetRuntimeVersion().StartsWith("3"))
+                {
+                    Application.Exit(4, "Appears that we are running in linux with a version 2 build of mono. This is generally not a good idea." +
+                        "We recommend running with 3.0 or higher (3.2 especially). If you really want to run with this version of mono use --force to override this error.");
+                }
+            }
+        }
+
+        private void Exit(int exitCode)
+        {
+            LogManager.Finish();
+
+            _exitCode = exitCode;
             _exitEvent.Set();
+        }
+
+        protected virtual void OnProgramExit()
+        {
         }
 
         private void Init(TOptions options)
         {
+            Application.AddDefines(options.Defines);
+
             var projName = Assembly.GetEntryAssembly().GetName().Name.Replace(".", " - ");
             var componentName = GetComponentName(options);
 
             Console.Title = string.Format("{0}, {1}", projName, componentName);
 
-            LogManager.Init(componentName, options.LogsDir.IsNotEmptyString() ? options.LogsDir : GetLogsDirectory(options));
-            var logger = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
+            string logsDirectory = Path.GetFullPath(options.LogsDir.IsNotEmptyString() ? options.LogsDir : GetLogsDirectory(options));
+            LogManager.Init(componentName, logsDirectory);
 
-            var logsDirectory = string.Format("LOGS DIRECTORY : {0}", LogManager.LogsDirectory);
-            var systemInfo = string.Format("{0} {1}", OS.IsLinux ? "Linux" : "Windows", Runtime.IsMono ? "MONO" : ".NET");
-            var startInfo = string.Join(Environment.NewLine, 
-                                        options.GetLoadedOptionsPairs().Select(pair => string.Format("{0} : {1}", pair.Key, pair.Value)));
-            logger.Info(string.Format("{0}\n{1}\n{2}", logsDirectory, systemInfo, startInfo));
+            Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
+                     + "{5,-25} {6} ({7})\n"
+                     + "{8,-25} {9} ({10}-bit)\n"
+                     + "{11,-25} {12}\n"
+                     + "{13,-25} {14}\n\n"
+                     + "{15}",
+                     "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
+                     "OS:", OS.OsFlavor, Environment.OSVersion,
+                     "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
+                     "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
+                     "LOGS:", LogManager.LogsDirectory,
+                     options.DumpOptions());
         }
 
         private string FormatExceptionMessage(Exception ex)
@@ -132,34 +182,81 @@ namespace EventStore.Core
             return msg;
         }
 
-        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int chunksToCache)
+        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize, bool inMemDb)
         {
-            if (!Directory.Exists(dbPath)) // mono crashes without this check
-                Directory.CreateDirectory(dbPath);
-
             ICheckpoint writerChk;
             ICheckpoint chaserChk;
+            ICheckpoint epochChk;
+            ICheckpoint truncateChk;
 
-            var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
-            var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
-            if (Runtime.IsMono)
+            if (inMemDb)
             {
-                writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-                chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+                writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
+                chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
+                epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
+                truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
             }
             else
             {
-                writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-                chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+                if (!Directory.Exists(dbPath)) // mono crashes without this check
+                    Directory.CreateDirectory(dbPath);
+
+                var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
+                var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
+                var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
+                var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
+                if (Runtime.IsMono)
+                {
+                    writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+                    chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+                    epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
+                    truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
+                }
+                else
+                {
+                    writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+                    chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+                    epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
+                    truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
+                }
             }
+            var cache = cachedChunks >= 0
+                                ? cachedChunks*(long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
+                                : chunksCacheSize;
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
                                                  TFConsts.ChunkSize,
-                                                 chunksToCache,
+                                                 cache,
                                                  writerChk,
                                                  chaserChk,
-                                                 new[] {writerChk, chaserChk});
+                                                 epochChk,
+                                                 truncateChk,
+                                                 inMemDb);
             return nodeConfig;
+        }
+
+        protected static X509Certificate2 LoadCertificateFromFile(string path, string password)
+        {
+            return new X509Certificate2(path, password);
+        }
+
+        protected static X509Certificate2 LoadCertificateFromStore(string storeName, string certName)
+        {
+            var store = new X509Store(storeName);
+            try
+            {
+                store.Open(OpenFlags.OpenExistingOnly);
+            }
+            catch (Exception exc)
+            {
+                throw new Exception(string.Format("Couldn't open certificates store '{0}'.", storeName), exc);
+            }
+            foreach (var cert in store.Certificates)
+            {
+                if (cert.Subject == certName)
+                    return cert;
+            }
+            throw new ArgumentException(string.Format("Certificate '{0}' not found in storage '{1}'.", certName, storeName));
         }
     }
 }

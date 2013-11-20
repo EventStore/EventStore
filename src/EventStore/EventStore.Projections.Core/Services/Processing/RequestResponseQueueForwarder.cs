@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messaging;
@@ -48,44 +47,47 @@ namespace EventStore.Projections.Core.Services.Processing
             _externalRequestQueue = externalRequestQueue;
         }
 
-        public void Handle(ClientMessage.ReadEvent message)
+        public void Handle(ClientMessage.ReadEvent msg)
         {
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadEvent(
-                    message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.EventStreamId, message.EventNumber, message.ResolveLinkTos));
+                    msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
+                    msg.EventStreamId, msg.EventNumber, msg.ResolveLinkTos, msg.RequireMaster, msg.User));
         }
 
-        public void Handle(ClientMessage.WriteEvents message)
+        public void Handle(ClientMessage.WriteEvents msg)
         {
             _externalRequestQueue.Publish(
                 new ClientMessage.WriteEvents(
-                    message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope), true, 
-                    message.EventStreamId, message.ExpectedVersion, message.Events));
+                    msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), false, 
+                    msg.EventStreamId, msg.ExpectedVersion, msg.Events, msg.User));
         }
 
-        public void Handle(ClientMessage.ReadStreamEventsBackward message)
+        public void Handle(ClientMessage.ReadStreamEventsBackward msg)
         {
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.EventStreamId, message.FromEventNumber, message.MaxCount, message.ResolveLinks));
+                    msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
+                    msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.ResolveLinkTos, msg.RequireMaster,
+                    msg.ValidationStreamVersion, msg.User));
         }
 
-        public void Handle(ClientMessage.ReadStreamEventsForward message)
+        public void Handle(ClientMessage.ReadStreamEventsForward msg)
         {
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadStreamEventsForward(
-                    message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.EventStreamId, message.FromEventNumber, message.MaxCount, message.ResolveLinks));
+                    msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
+                    msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.ResolveLinkTos, msg.RequireMaster,
+                    msg.ValidationStreamVersion, msg.User));
         }
 
-        public void Handle(ClientMessage.ReadAllEventsForward message)
+        public void Handle(ClientMessage.ReadAllEventsForward msg)
         {
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadAllEventsForward(
-                    message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.CommitPosition, message.PreparePosition, message.MaxCount, message.ResolveLinks));
+                    msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
+                    msg.CommitPosition, msg.PreparePosition, msg.MaxCount, msg.ResolveLinkTos, msg.RequireMaster,
+                    msg.ValidationTfLastCommitPosition, msg.User));
         }
     }
 }

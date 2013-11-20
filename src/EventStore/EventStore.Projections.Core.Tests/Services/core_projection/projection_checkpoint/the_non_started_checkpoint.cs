@@ -27,8 +27,6 @@
 // 
 
 using System;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -43,14 +41,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
+            _readyHandler = new TestCheckpointManagerMessageHandler();
+            _checkpoint = new ProjectionCheckpoint(
+                _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
+                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0),
+                CheckpointTag.FromPosition(0, 0, -1), 250);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void prepare_throws_invalid_operation_exception()
         {
-            _checkpoint.Prepare(CheckpointTag.FromPosition(200, 150));
+            _checkpoint.Prepare(CheckpointTag.FromPosition(0, 200, 150));
         }
     }
 }

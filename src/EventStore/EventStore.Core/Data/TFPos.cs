@@ -26,12 +26,14 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Diagnostics.Contracts;
 
 namespace EventStore.Core.Data
 {
-    public struct TFPos : IEquatable<TFPos>
+    public struct TFPos : IEquatable<TFPos>, IComparable<TFPos>
     {
         public static readonly TFPos Invalid = new TFPos(-1, -1);
+        public static readonly TFPos HeadOfTf = new TFPos(-1, -1);
 
         public readonly long CommitPosition;
         public readonly long PreparePosition;
@@ -42,6 +44,7 @@ namespace EventStore.Core.Data
             PreparePosition = preparePosition;
         }
 
+        [Pure]
         public string AsString()
         {
             return string.Format("{0:X16}{1:X16}", CommitPosition, PreparePosition);
@@ -61,6 +64,15 @@ namespace EventStore.Core.Data
                 return false;
             pos = new TFPos(commitPos, preparePos);
             return true;
+        }
+
+        public int CompareTo(TFPos other)
+        {
+            if (CommitPosition < other.CommitPosition)
+                return -1;
+            if (CommitPosition > other.CommitPosition)
+                return 1;
+            return PreparePosition.CompareTo(other.PreparePosition);
         }
 
         public bool Equals(TFPos other)

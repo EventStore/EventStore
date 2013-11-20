@@ -36,21 +36,21 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal class LoopingProjectionKillScenario : ProjectionsKillScenario
     {
-        private static readonly TimeSpan _iterationSleepInterval = TimeSpan.FromMinutes(10);
         private TimeSpan _executionPeriod;
 
-        public LoopingProjectionKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath) 
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
+        private int _iterationCode;
+        private readonly TimeSpan _iterationLoopDuration;
+        private readonly TimeSpan _firstKillInterval;
+
+        public LoopingProjectionKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath, NodeConnectionInfo customNode)
+            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath, customNode)
         {
             _executionPeriod = executionPeriod;
+
+            _iterationLoopDuration = TimeSpan.FromMilliseconds(10 * (Streams * EventsPerStream + Streams) + 20 * 1000);
+            _firstKillInterval = TimeSpan.FromSeconds(_iterationLoopDuration.TotalSeconds / 2);
         }
 
-        protected override TimeSpan IterationSleepInterval
-        {
-            get { return _iterationSleepInterval; }
-        }
-
-        private int _iterationCode = 0;
         protected override int GetIterationCode()
         {
             return _iterationCode;
@@ -64,72 +64,83 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         protected override void RunInternal()
         {
             var nodeProcessId = StartNode();
+            EnableProjectionByCategory();
 
             var stopWatch = Stopwatch.StartNew();
 
             while (stopWatch.Elapsed < _executionPeriod)
             {
 
-                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
+                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
                                         GetIterationCode(),
                                         (int)stopWatch.Elapsed.TotalMinutes,
-                                        _executionPeriod.TotalMinutes);
+                                        _executionPeriod.TotalMinutes,
+                                        GetType().Name);
                 Log.Info(msg);
                 Log.Info("##teamcity[message '{0}']", msg);
 
                 var iterationTask = RunIteration();
 
-                Thread.Sleep(TimeSpan.FromMinutes(0.5));
+                Thread.Sleep(_firstKillInterval);
 
                 KillNode(nodeProcessId);
                 nodeProcessId = StartNode();
 
-                iterationTask.Wait();
+                if (!iterationTask.Wait(_iterationLoopDuration))
+                    throw new TimeoutException("Iteration execution timeout.");
+
+                if (iterationTask.Result != true)
+                    throw new ApplicationException("Iteration faulted.", iterationTask.Exception);
 
                 SetNextIterationCode();
             }
         }
 
-        private Task RunIteration()
+        private Task<bool> RunIteration()
         {
             var countItem = CreateCountItem();
             var sumCheckForBankAccount0 = CreateSumCheckForBankAccount0();
 
             var writeTask = WriteData();
 
-            var expectedAllEventsCount = (Streams * EventsPerStream + Streams).ToString();
-            var expectedEventsPerStream = EventsPerStream.ToString();
+            var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
+            var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
 
-            var store = GetConnection();
-
-            var successTask = Task.Factory.StartNew<bool>(() => 
+            var successTask = Task.Factory.StartNew(() =>
+            {
+                var success = false;
+                var stopWatch = new Stopwatch();
+                while (stopWatch.Elapsed < _iterationLoopDuration)
                 {
-                    var success = false;
-                    var stopWatch = new Stopwatch();
-                    while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(10 * (Streams * EventsPerStream + Streams)))
+                    if (writeTask.IsFaulted)
+                        throw new ApplicationException("Failed to write data");
+
+                    if (writeTask.IsCompleted && !stopWatch.IsRunning)
                     {
-                        if (writeTask.IsFaulted)
-                            throw new ApplicationException("Failed to write data");
-
-                        if (writeTask.IsCompleted && !stopWatch.IsRunning)
-                        {
-                            stopWatch.Start();
-                        }
-
-                        success = CheckProjectionState(store, countItem, "count", x => x == expectedAllEventsCount)
-                                  && CheckProjectionState(store, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
-
-                        if (success)
-                            break;
-
-                        Thread.Sleep(500);
-
+                        stopWatch.Start();
                     }
-                    return success;
-                    
-                });
 
-            return Task.Factory.ContinueWhenAll(new [] { writeTask, successTask }, tasks => { Log.Info("Iteration {0} tasks completed", GetIterationCode()); Task.WaitAll(tasks); Log.Info("Iteration {0} successfull", GetIterationCode()); });
+                    success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
+                              && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
+
+                    if (success)
+                        break;
+
+                    Thread.Sleep(4000);
+                }
+
+                if (! CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount))
+                    Log.Error("Projection '{0}' has not completed with expected result {1} in time. ", countItem, expectedAllEventsCount);
+
+                if (!CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion))
+                    Log.Error("Projection '{0}' has not completed with expected result {1} in time.", sumCheckForBankAccount0, lastExpectedEventVersion);
+
+                return success;
+            });
+
+            writeTask.Wait();
+
+            return successTask;
         }
     }
 }

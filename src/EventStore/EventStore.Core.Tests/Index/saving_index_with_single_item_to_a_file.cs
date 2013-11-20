@@ -35,7 +35,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class saving_index_with_single_item_to_a_file: SpecificationWithDirectory
+    public class saving_index_with_single_item_to_a_file: SpecificationWithDirectoryPerTestFixture
     {
         private string _filename;
         private IndexMap _map;
@@ -43,32 +43,33 @@ namespace EventStore.Core.Tests.Index
         private string _mergeFile;
         private MergeResult _result;
 
-        [SetUp]
-        public override void SetUp()
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
         {
-            base.SetUp();
+            base.TestFixtureSetUp();
 
             _filename = GetFilePathFor("indexfile");
             _tablename = GetTempFilePath();
             _mergeFile = GetFilePathFor("outputfile");
 
-            _map = IndexMap.FromFile(_filename, x => false);
-            var memtable = new HashListMemTable(maxSize: 2000);
+            _map = IndexMap.FromFile(_filename);
+            var memtable = new HashListMemTable(maxSize: 10);
             memtable.Add(0, 2, 7);
             var table = PTable.FromMemtable(memtable, _tablename);
-            _result = _map.AddFile(table, 7, 11, new FakeFilenameProvider(_mergeFile));
+            _result = _map.AddPTable(table, 7, 11, _ => true, new FakeFilenameProvider(_mergeFile));
             _result.MergedMap.SaveToFile(_filename);
             _result.ToDelete.ForEach(x => x.Dispose());
             _result.MergedMap.InOrder().ToList().ForEach(x => x.Dispose());
             table.Dispose();
         }
 
-        [TearDown]
-        public override void TearDown()
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
         {
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
             _result.MergedMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
-            base.TearDown();
+            _result.MergedMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(1000));
+            base.TestFixtureTearDown();
         }
 
         [Test]
@@ -102,7 +103,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void saved_file_could_be_read_correctly_and_without_errors()
         {
-            var map = IndexMap.FromFile(_filename, x => false);
+            var map = IndexMap.FromFile(_filename);
             map.InOrder().ToList().ForEach(x => x.Dispose());
 
             Assert.AreEqual(7, map.PrepareCheckpoint);

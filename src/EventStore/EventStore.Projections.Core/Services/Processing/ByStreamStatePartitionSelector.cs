@@ -26,14 +26,28 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using EventStore.Projections.Core.Messages;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ByStreamStatePartitionSelector : StatePartitionSelector
     {
-        public override string GetStatePartition(ProjectionSubscriptionMessage.CommittedEventReceived @event)
+        public override string GetStatePartition(EventReaderSubscriptionMessage.CommittedEventReceived @event)
         {
-            return @event.EventStreamId;
+
+            if (@event.Data.ResolvedLinkTo && @event.Data.PositionMetadata != null)
+            {
+                var extra = @event.Data.PositionMetadata.ParseCheckpointExtraJson();
+                JToken v;
+                if (extra != null && extra.TryGetValue("$o", out v))
+                {
+                    //TODO: handle exceptions properly
+                    var originalStream = (string) ((JValue) v).Value;
+                    return originalStream;
+                }
+            }
+
+            return @event.Data.EventStreamId;
         }
     }
 }

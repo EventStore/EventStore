@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_creating_chunked_transaction_chaser
+    public class when_creating_chunked_transaction_chaser: SpecificationWithDirectory
     {
         [Test]
         public void a_null_file_config_throws_argument_null_exception()
@@ -48,26 +48,28 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_null_writer_checksum_throws_argument_null_exception()
         {
-            var db = new TFChunkDb(new TFChunkDbConfig(Path.GetTempPath(),
-                                                       new PrefixFileNamingStrategy(Path.GetTempPath(), "prefix.tf"),
+            var db = new TFChunkDb(new TFChunkDbConfig(PathName,
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
                                                        0,
                                                        new InMemoryCheckpoint(),
                                                        new InMemoryCheckpoint(),
-                                                       new ICheckpoint[0]));
+                                                       new InMemoryCheckpoint(-1),
+                                                       new InMemoryCheckpoint(-1)));
             Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, null, new InMemoryCheckpoint()));
         }
 
         [Test]
         public void a_null_chaser_checksum_throws_argument_null_exception()
         {
-            var db = new TFChunkDb(new TFChunkDbConfig(Path.GetTempPath(),
-                                                       new PrefixFileNamingStrategy(Path.GetTempPath(), "prefix.tf"),
+            var db = new TFChunkDb(new TFChunkDbConfig(PathName,
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
                                                        0,
                                                        new InMemoryCheckpoint(),
                                                        new InMemoryCheckpoint(),
-                                                       new ICheckpoint[0]));
+                                                       new InMemoryCheckpoint(-1),
+                                                       new InMemoryCheckpoint(-1)));
             Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, new InMemoryCheckpoint(), null));
         }
     }

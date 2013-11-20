@@ -36,7 +36,7 @@ namespace EventStore.Core.DataStructures
     public class PairingHeap<T>
     {
 #if USE_POOL
-        private static readonly ObjectPool<HeapNode> NodePool = new ObjectPool<HeapNode>(50000, () => new HeapNode());
+        private readonly ObjectPool<HeapNode> _nodePool = new ObjectPool<HeapNode>(100, () => new HeapNode());
 #endif
         public int Count { get { return _count; } }
 
@@ -102,7 +102,7 @@ namespace EventStore.Core.DataStructures
         public void Add(T x)
         {
 #if USE_POOL
-            var newNode = NodePool.Get();
+            var newNode = _nodePool.Get();
 #else
             var newNode = new HeapNode();
 #endif
@@ -130,7 +130,7 @@ namespace EventStore.Core.DataStructures
 #if USE_POOL
             oldRoot.Next = null;
             oldRoot.SubHeaps = null;
-            NodePool.Return(oldRoot);
+            _nodePool.Return(oldRoot);
 #endif
             return res;
         }
@@ -188,5 +188,46 @@ namespace EventStore.Core.DataStructures
             public HeapNode SubHeaps;
             public HeapNode Next;
         }
+
+#if USE_POOL
+        private class ObjectPool<TItem> where TItem : class
+        {
+            private readonly Common.Concurrent.ConcurrentQueue<TItem> _items = new Common.Concurrent.ConcurrentQueue<TItem>();
+
+            private readonly int _count;
+            private readonly Func<TItem> _creator;
+
+            public ObjectPool(int count, Func<TItem> creator)
+            {
+                if (count < 0)
+                    throw new ArgumentOutOfRangeException();
+                if (creator == null)
+                    throw new ArgumentNullException("creator");
+
+                _count = count;
+                _creator = creator;
+
+                for (int i = 0; i < count; ++i)
+                {
+                    _items.Enqueue(creator());
+                }
+            }
+
+            public TItem Get()
+            {
+                TItem res;
+                if (_items.TryDequeue(out res))
+                    return res;
+                return _creator();
+            }
+
+            public void Return(TItem item)
+            {
+                if (_items.Count < _count)
+                    _items.Enqueue(item);
+            }
+        }
+#endif
+    
     }
 }

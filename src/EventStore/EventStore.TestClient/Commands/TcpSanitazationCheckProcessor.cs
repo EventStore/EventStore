@@ -64,7 +64,6 @@ namespace EventStore.TestClient.Commands
 
             var commandsToCkeck = new[]
                                       {
-                                          (byte) TcpCommand.CreateStream,
                                           (byte) TcpCommand.WriteEvents,
                                           (byte) TcpCommand.TransactionStart,
                                           (byte) TcpCommand.TransactionWrite,
@@ -98,14 +97,15 @@ namespace EventStore.TestClient.Commands
                 else
                     Console.WriteLine("{0} Starting step {1} (RANDOM BYTES) {0}", new string('#', 20), step);
 
-                var connection = context.Client.CreateTcpConnection(context,
-                                                                    (conn, package) =>
-                                                                    {
-                                                                        if (package.Command != TcpCommand.BadRequest)
-                                                                            context.Fail(null, string.Format("Bad request expected, got {0}!", package.Command));
-                                                                    },
-                                                                    conn => established.Set(),
-                                                                    (conn, err) => dropped.Set());
+                var connection = context.Client.CreateTcpConnection(
+                    context,
+                    (conn, package) =>
+                    {
+                        if (package.Command != TcpCommand.BadRequest)
+                            context.Fail(null, string.Format("Bad request expected, got {0}!", package.Command));
+                    },
+                    conn => established.Set(),
+                    (conn, err) => dropped.Set());
 
                 established.WaitOne();
                 connection.EnqueueSend(pkg);

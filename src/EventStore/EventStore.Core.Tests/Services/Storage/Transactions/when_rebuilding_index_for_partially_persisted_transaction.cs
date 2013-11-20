@@ -29,11 +29,13 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -53,20 +55,21 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
 
             ReadIndex.Close();
             ReadIndex.Dispose();
-            TableIndex.ClearAll(removeFiles: false);
+            TableIndex.Close(removeFiles: false);
 
-            TableIndex = new TableIndex(Path.Combine(PathName, "index"),
-                                        () => new HashListMemTable(maxSize: 2000),
+            var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 2, () => new TFChunkReader(Db, WriterCheckpoint));
+            TableIndex = new TableIndex(GetFilePathFor("index"),
+                                        () => new HashListMemTable(maxSize: MaxEntriesInMemTable*2),
+                                        () => new TFReaderLease(readers),
                                         maxSizeForMemory: MaxEntriesInMemTable);
-
             ReadIndex = new ReadIndex(new NoopPublisher(),
-                                      2,
-                                      () => new TFChunkSequentialReader(Db, WriterChecksum, 0),
-                                      () => new TFChunkReader(Db, WriterChecksum),
+                                      readers,
                                       TableIndex,
                                       new ByLengthHasher(),
-                                      new NoLRUCache<string, StreamCacheInfo>());
-            ReadIndex.Build();
+                                      0,
+                                      additionalCommitChecks: true, 
+                                      metastreamMaxCount: 1);
+            ReadIndex.Init(ChaserCheckpoint.Read());
         }
 
         protected override void WriteTestScenario()
@@ -86,8 +89,8 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             for (int i = 0; i < 15; ++i)
             {
                 var result = ReadIndex.ReadEvent("ES", i);
-                Assert.AreEqual(SingleReadResult.Success, result.Result);
-                Assert.AreEqual(Encoding.UTF8.GetBytes("data" + i), result.Record.Data);
+                Assert.AreEqual(ReadEventResult.Success, result.Result);
+                Assert.AreEqual(Helper.UTF8NoBom.GetBytes("data" + i), result.Record.Data);
             }
         }
     }

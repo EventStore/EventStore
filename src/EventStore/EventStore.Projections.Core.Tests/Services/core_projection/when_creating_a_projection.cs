@@ -27,9 +27,12 @@
 // 
 
 using System;
-using EventStore.Core.Messages;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -39,103 +42,160 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     [TestFixture]
     public class when_creating_a_projection
     {
-        private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
-            ProjectionMode.AdHoc, 5, 10, 1000, 250, true, true, true);
-
-        private
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-            _readDispatcher;
-
-        private RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
-
         [SetUp]
         public void Setup()
         {
-            _readDispatcher =
-                new RequestResponseDispatcher
-                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
-                    new FakePublisher(), v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(new FakePublisher()));
-            _writeDispatcher =
-                new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
-                    new FakePublisher(), v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(new FakePublisher()));
+            var fakePublisher = new FakePublisher();
+            _ioDispatcher = new IODispatcher(fakePublisher, new PublishEnvelope(fakePublisher));
+
+            _subscriptionDispatcher =
+                new ReaderSubscriptionDispatcher(new FakePublisher());
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
-        public void a_null_name_throws_argument_null_excveption()
-        {
-            var p = new CoreProjection(
-                null, Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(), _defaultProjectionConfig,
-                _readDispatcher, _writeDispatcher);
-        }
+        private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
+            null, 5, 10, 1000, 250, true, true, true, true, false);
 
-        [Test, ExpectedException(typeof (ArgumentException))]
-        public void an_empty_name_throws_argument_exception()
-        {
-            var p = new CoreProjection(
-                "", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(), _defaultProjectionConfig,
-                _readDispatcher, _writeDispatcher);
-        }
+        private IODispatcher _ioDispatcher;
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
-        public void a_null_publisher_throws_exception()
-        {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), null, new FakeProjectionStateHandler(), _defaultProjectionConfig,
-                _readDispatcher, _writeDispatcher);
-        }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
-        public void a_null_projection_handler_throws_argument_null_exception()
-        {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), null, _defaultProjectionConfig, _readDispatcher,
-                _writeDispatcher);
-        }
-
-        [Test, ExpectedException(typeof (ArgumentOutOfRangeException))]
-        public void a_negative_checkpoint_handled_interval_throws_argument_out_of_range_exception()
-        {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(),
-                new ProjectionConfig(ProjectionMode.AdHoc, -1, 10, 1000, 250, true, true, true), _readDispatcher,
-                _writeDispatcher);
-        }
-
-        [Test, ExpectedException(typeof (ArgumentOutOfRangeException))]
-        public void a_zero_checkpoint_handled_threshold_throws_argument_out_of_range_exception()
-        {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(),
-                new ProjectionConfig(ProjectionMode.AdHoc, 0, 10, 1000, 250, true, true, true), _readDispatcher,
-                _writeDispatcher);
-        }
+        private
+            ReaderSubscriptionDispatcher
+            _subscriptionDispatcher;
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void a_checkpoint_threshold_less_tan_checkpoint_handled_threshold_throws_argument_out_of_range_exception(
             )
         {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(),
-                new ProjectionConfig(ProjectionMode.AdHoc, 10, 5, 1000, 250, true, true, true), _readDispatcher,
-                _writeDispatcher);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false, false);
+            new ContinuousProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, projectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
+        }
+
+        [Test, ExpectedException(typeof (ArgumentOutOfRangeException))]
+        public void a_negative_checkpoint_handled_interval_throws_argument_out_of_range_exception()
+        {
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false, false);
+            new ContinuousProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, projectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
-        public void a_null_read_dispatcher__throws_argument_null_exception()
+        public void a_null_io_dispatcher__throws_argument_null_exception()
         {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(),
-                _defaultProjectionConfig, null, _writeDispatcher);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            new ContinuousProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, _defaultProjectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), null,
+                    _subscriptionDispatcher, new RealTimeProvider());
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
-        public void a_null_write_dispatcher__throws_argument_null_exception()
+        public void a_null_name_throws_argument_null_excveption()
         {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(),
-                _defaultProjectionConfig, _readDispatcher, null);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            new ContinuousProjectionProcessingStrategy(
+                null, version, projectionStateHandler, _defaultProjectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
+        }
+
+        [Test, ExpectedException(typeof (ArgumentNullException))]
+        public void a_null_publisher_throws_exception()
+        {
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            new ContinuousProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, _defaultProjectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, null, _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
+        }
+
+        [Test, ExpectedException(typeof(ArgumentNullException))]
+        public void a_null_input_queue_throws_exception()
+        {
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            new ContinuousProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, _defaultProjectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), null, SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
+        }
+
+        [Test]
+        public void a_null_run_as_does_not_throw_exception()
+        {
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            new ContinuousProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, _defaultProjectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), new FakePublisher(), null, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
+        }
+
+        [Test, ExpectedException(typeof(ArgumentNullException))]
+        public void a_null_subscription_dispatcher__throws_argument_null_exception()
+        {
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            new ContinuousProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, _defaultProjectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    null, new RealTimeProvider());
+        }
+
+        [Test, ExpectedException(typeof (ArgumentNullException))]
+        public void a_null_time_provider__throws_argument_null_exception()
+        {
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            new ContinuousProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, _defaultProjectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, null);
+        }
+
+        [Test, ExpectedException(typeof (ArgumentOutOfRangeException))]
+        public void a_zero_checkpoint_handled_threshold_throws_argument_out_of_range_exception()
+        {
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false, false);
+            new ContinuousProjectionProcessingStrategy(
+                "projection", version, projectionStateHandler, projectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
+        }
+
+        [Test, ExpectedException(typeof (ArgumentException))]
+        public void an_empty_name_throws_argument_exception()
+        {
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var version = new ProjectionVersion(1, 0, 0);
+            new ContinuousProjectionProcessingStrategy(
+                "", version, projectionStateHandler, _defaultProjectionConfig,
+                projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher).Create(
+                    Guid.NewGuid(), new FakePublisher(), SystemAccount.Principal, new FakePublisher(), _ioDispatcher,
+                    _subscriptionDispatcher, new RealTimeProvider());
         }
     }
 }

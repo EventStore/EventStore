@@ -25,8 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.Collections.Generic;
-using System.Linq;
+
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -35,50 +34,44 @@ namespace EventStore.Core.TransactionLog.Chunks
 {
     public class TFChunkDbConfig
     {
-        public IEnumerable<ICheckpoint> Checkpoints { get { return _namedCheckpoints.Values; } }
-
         public readonly string Path;
         public readonly int ChunkSize;
-        public readonly int CachedChunkCount;
+        public readonly long MaxChunksCacheSize;
         public readonly ICheckpoint WriterCheckpoint;
         public readonly ICheckpoint ChaserCheckpoint;
+        public readonly ICheckpoint EpochCheckpoint;
+        public readonly ICheckpoint TruncateCheckpoint;
         public readonly IFileNamingStrategy FileNamingStrategy;
-
-        private readonly IDictionary<string, ICheckpoint> _namedCheckpoints;
+        public readonly bool InMemDb;
 
         public TFChunkDbConfig(string path, 
                                IFileNamingStrategy fileNamingStrategy, 
                                int chunkSize,
-                               int cachedChunkCount,
+                               long maxChunksCacheSize,
                                ICheckpoint writerCheckpoint, 
                                ICheckpoint chaserCheckpoint,
-                               params ICheckpoint[] namedCheckpoints)
+                               ICheckpoint epochCheckpoint,
+                               ICheckpoint truncateCheckpoint,
+                               bool inMemDb = false)
         {
             Ensure.NotNullOrEmpty(path, "path");
             Ensure.NotNull(fileNamingStrategy, "fileNamingStrategy");
             Ensure.Positive(chunkSize, "chunkSize");
-            Ensure.Nonnegative(cachedChunkCount, "cachedChunkCount");
+            Ensure.Nonnegative(maxChunksCacheSize, "maxChunksCacheSize");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
-            Ensure.NotNull(namedCheckpoints, "namedCheckpoints");
-
-//            if ((chunkSize & (chunkSize-1)) != 0)
-//                throw new ArgumentException("Segment size should be the power of 2.", "chunkSize");
+            Ensure.NotNull(epochCheckpoint, "epochCheckpoint");
+            Ensure.NotNull(truncateCheckpoint, "truncateCheckpoint");
             
             Path = path;
             ChunkSize = chunkSize;
-            CachedChunkCount = cachedChunkCount;
+            MaxChunksCacheSize = maxChunksCacheSize;
             WriterCheckpoint = writerCheckpoint;
             ChaserCheckpoint = chaserCheckpoint;
+            EpochCheckpoint = epochCheckpoint;
+            TruncateCheckpoint = truncateCheckpoint;
             FileNamingStrategy = fileNamingStrategy;
-            _namedCheckpoints = namedCheckpoints.ToDictionary(x => x.Name);
-        }
-
-        public ICheckpoint GetNamedCheckpoint(string name)
-        {
-            ICheckpoint item;
-            _namedCheckpoints.TryGetValue(name, out item);
-            return item;
+            InMemDb = inMemDb;
         }
     }
 }

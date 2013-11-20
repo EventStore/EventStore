@@ -13,35 +13,43 @@ namespace js1
 
 	ModuleScript::~ModuleScript()
 	{
-		module_object.Dispose();
 		isolate_release(isolate);
 	}
 
-	bool ModuleScript::compile_script(const uint16_t *source, const uint16_t *file_name)
+	Status ModuleScript::compile_script(const uint16_t *source, const uint16_t *file_name)
 	{
 		return CompiledScript::compile_script(source, file_name);
 	}
 
-	void ModuleScript::run()
+	Status ModuleScript::try_run()
 	{
 		v8::Context::Scope context_scope(get_context());
-		module_object.Dispose();
-		module_object.Clear();
+		module_object.reset();
 
+		if (prelude != NULL)
+			if (!prelude->enter_cancellable_region()) 
+				return S_TERMINATED;
 		v8::Handle<v8::Value> result = run_script(get_context());
+		if (prelude != NULL) 
+			if (!prelude->exit_cancellable_region())
+				return S_TERMINATED;
+
 		if (result->IsObject())
 		{
-			module_object = v8::Persistent<v8::Object>::New(result.As<v8::Object>());
+			module_object = std::shared_ptr<v8::Persistent<v8::Object>>(
+				new v8::Persistent<v8::Object>(v8::Isolate::GetCurrent(), result.As<v8::Object>()));
 		}
 		else 
 		{
 			set_last_error(v8::String::New("Module script must return an object"));
+			return S_ERROR;
 		}
+		return S_OK;
 	}
 
 	v8::Handle<v8::Object> ModuleScript::get_module_object()
 	{
-		return module_object;
+		return v8::Handle<v8::Object>::New(v8::Isolate::GetCurrent(), *module_object);
 	}
 
 	v8::Isolate *ModuleScript::get_isolate()
@@ -49,18 +57,19 @@ namespace js1
 		return isolate;
 	}
 
-	v8::Persistent<v8::ObjectTemplate> ModuleScript::create_global_template() 
+	Status ModuleScript::create_global_template(v8::Handle<v8::ObjectTemplate> &result) 
 	{
 
 		if (prelude == NULL) 
 		{
 			// prelude can be NULL if $load_module invoked from the prelude defintion itself
-			return v8::Persistent<v8::ObjectTemplate>::New(v8::ObjectTemplate::New());
+			result = v8::ObjectTemplate::New();
+			return S_OK;
 		}
 
 		//TODO: make sure prelude script handles module requests (i.e. without any parameters)
 		std::vector<v8::Handle<v8::Value> > arguments(0);
-		return prelude->get_template(arguments);
+		return prelude->get_template(arguments, result);
 	}
 
 }

@@ -28,6 +28,7 @@
 
 using System;
 using System.Globalization;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -39,42 +40,42 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         protected override void Given()
         {
             _projection = @"
-                fromAll().whenAny(
+                fromAll().when({$any: 
                     function(state, event) {
                         state.count = state.count + 1;
                         log(state.count);
                         return state;
-                    });
+                    }});
             ";
             _state = @"{""count"": 0}";
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_counts_events()
         {
             string state;
-            EmittedEvent[] emittedEvents;
+            EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
-                new EventPosition(10, 5), CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                "", CheckpointTag.FromPosition(0, 10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
             _stateHandler.ProcessEvent(
-                new EventPosition(20, 15), CheckpointTag.FromPosition(20, 15), "stream1", "type1", "category", Guid.NewGuid(), 1, "metadata",
+                "", CheckpointTag.FromPosition(0, 20, 15), "stream1", "type1", "category", Guid.NewGuid(), 1, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
             Assert.AreEqual(2, _logged.Count);
             Assert.AreEqual(@"1", _logged[0]);
             Assert.AreEqual(@"2", _logged[1]);
         }
 
-        [Test, Ignore]
+        [Test, Category("v8"), Category("Manual"), Explicit]
         public void can_handle_million_events()
         {
             for (var i = 0; i < 1000000; i++)
             {
                 _logged.Clear();
                 string state;
-                EmittedEvent[] emittedEvents;
+                EmittedEventEnvelope[] emittedEvents;
                 _stateHandler.ProcessEvent(
-                    new EventPosition(i * 10, i * 10 - 5), CheckpointTag.FromPosition(i * 10, i * 10 - 5), "stream" + i, "type" + i, "category", Guid.NewGuid(), 0,
+                    "", CheckpointTag.FromPosition(0, i * 10, i * 10 - 5), "stream" + i, "type" + i, "category", Guid.NewGuid(), 0,
                     "metadata", @"{""a"":""" + i + @"""}", out state, out emittedEvents);
                 Assert.AreEqual(1, _logged.Count);
                 Assert.AreEqual((i + 1).ToString(CultureInfo.InvariantCulture), _logged[_logged.Count - 1]);

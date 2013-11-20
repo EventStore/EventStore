@@ -1,0 +1,168 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Projections</title>
+    <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>
+    <style type="text/css">
+        .content table
+        {
+            table-layout: fixed;
+        }
+
+            .content table .r
+            {
+                text-align: right;
+            }
+
+            .content table .c
+            {
+                text-align: center;
+            }
+
+            .content table thead th
+            {
+                vertical-align: middle;
+            }
+
+            .content table td
+            {
+                word-wrap: break-word;
+            }
+
+            .content table .name
+            {
+                width: 150px;
+            }
+
+            .content table .status
+            {
+                width: 75px;
+            }
+
+            .content table .mode
+            {
+                width: 70px;
+            }
+
+            .content table .progress
+            {
+                width: 50px;
+            }
+
+            .content table .position
+            {
+                width: 165px;
+            }
+
+            .content table .checkpoint
+            {
+                width: 165px;
+            }
+
+            .content table .checkpoint-status
+            {
+                width: 75px;
+            }
+
+            .content table .read-writes
+            {
+                width: 75px;
+            }
+
+            .content table .writes
+            {
+                width: 60px;
+            }
+
+            .content table .partitions
+            {
+                width: 65px;
+            }
+
+            .content table .processed
+            {
+                width: 75px;
+            }
+
+            .content table .per-second
+            {
+                width: 75px;
+            }
+
+            .content table .buffered
+            {
+                width: 60px;
+            }
+
+            .content table td
+            {
+                vertical-align: middle;
+            }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <h1>Streams</h1>
+        <div class="form-horizontal">
+            <input type="text" id="stream-name" value="$all" />
+            <input type="button" id="browse-steram" value="Go" />
+        </div>
+        <div style="display: table; width: 90%;">
+            <div style="display: table-row">
+                <div style="display: table-cell; width: 50%;">
+                    <div style="padding: 0px 10px 0px 0px">
+                        <h3>Recently Created Streams</h3>
+                        <div id="recent-streams"></div>
+                    </div>
+                </div>
+                <div style="display: table-cell; width: 50%">
+                    <div style="padding: 0px 0px 0px 10px">
+                        <h3>Recently Changed Streams</h3>
+                        <div id="recent-events"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script id="r-body">
+            es.tmpl.renderBody();
+        </script>
+        <script id="streams-template" type="text/x-jsrender">
+            <table class="table table-bordered table-striped">
+            {{for streams}}
+            <tr><td>
+            <a href="/streams/{{attr:streamId}}">{{:streamId}}</a>
+            </td></tr>
+            {{/for}}
+            </table>
+        </script>
+    </div>
+    <script>
+        $(function () {
+            $.getJSON("/streams/$streams/head/50?embed=rich", null, function (data) {
+                var streams = [];
+                for (var i = 0; i < data.entries.length; i++)
+                    streams.push({ streamId: data.entries[i].streamId });
+                $("#recent-streams").html($("#streams-template").render({ streams: streams }));
+            });
+            $.getJSON("/streams/$all/head/100?embed=rich", null, function (data) {
+                var streams = {};
+                for (var i = 0; i < data.entries.length; i++) {
+                    streams[data.entries[i].streamId] = { streamId: data.entries[i].streamId };
+                }
+                var streamsArray = [];
+                for (var p in streams)
+                    streamsArray.push(streams[p]);
+                $("#recent-events").html($("#streams-template").render({ streams: streamsArray }));
+            });
+            $("#browse-steram").click(function () {
+                window.location.href = "/streams/" + encodeURIComponent($("#stream-name").val());
+            });
+        });
+    </script>
+</body>
+</html>

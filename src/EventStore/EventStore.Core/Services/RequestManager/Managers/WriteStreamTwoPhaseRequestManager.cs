@@ -29,52 +29,50 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.WriteRequestCreated>
+    public class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
+                                                     IHandle<ClientMessage.WriteEvents>
     {
-        public WriteStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
-            base(publisher, prepareCount, commitCount)
-        {}
+        private ClientMessage.WriteEvents _request;
 
-        public void Handle(StorageMessage.WriteRequestCreated request)
+        public WriteStreamTwoPhaseRequestManager(IPublisher publisher, 
+                                                 int prepareCount, 
+                                                 int commitCount,
+                                                 TimeSpan prepareTimeout,
+                                                 TimeSpan commitTimeout)
+                : base(publisher, prepareCount, commitCount, prepareTimeout, commitTimeout)
         {
-            if (_initialized)
-                throw new InvalidOperationException();
-
-            _initialized = true;
-            _responseEnvelope = request.Envelope;
-            _correlationId = request.CorrelationId;
-            _eventStreamId = request.EventStreamId;
-
-            Publisher.Publish(new StorageMessage.WritePrepares(request.CorrelationId,
-                                                                   _publishEnvelope,
-                                                                   request.EventStreamId,
-                                                                   request.ExpectedVersion,
-                                                                   request.Events,
-                                                                   allowImplicitStreamCreation: true,
-                                                                   liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
-            Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
-                                                           _publishEnvelope,
-                                                           new StorageMessage.PreparePhaseTimeout(_correlationId)));
         }
 
-        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
+        public void Handle(ClientMessage.WriteEvents request)
         {
-            base.CompleteSuccessRequest(correlationId, eventStreamId, startEventNumber);
-            var responseMsg = new ClientMessage.WriteEventsCompleted(
-                correlationId, eventStreamId, startEventNumber);
-            _responseEnvelope.ReplyWith(responseMsg);
+            _request = request;
+            InitNoPreparePhase(request.Envelope, request.InternalCorrId, request.CorrelationId,
+                               request.EventStreamId, request.User, StreamAccessType.Write);
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
+        protected override void OnSecurityAccessGranted(Guid internalCorrId)
         {
-            base.CompleteFailedRequest(correlationId, eventStreamId, errorCode, error);
-            var responseMsg = new ClientMessage.WriteEventsCompleted(
-                correlationId, eventStreamId, errorCode, error);
-            _responseEnvelope.ReplyWith(responseMsg);
+            Publisher.Publish(
+                new StorageMessage.WritePrepares(
+                    internalCorrId, PublishEnvelope, _request.EventStreamId, _request.ExpectedVersion, _request.Events,
+                    liveUntil: NextTimeoutTime - TimeoutOffset));
+            _request = null;
+        }
+
+        protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber)
+        {
+            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber);
+            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, firstEventNumber, lastEventNumber));
+        }
+
+        protected override void CompleteFailedRequest(OperationResult result, string error)
+        {
+            base.CompleteFailedRequest(result, error);
+            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, result, error));
         }
 
     }

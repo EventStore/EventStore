@@ -27,31 +27,43 @@
 // 
 using System;
 using System.IO;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 
 namespace EventStore.Core.TransactionLog.LogRecords
 {
+    public enum LogRecordType
+    {
+        Prepare = 0,
+        Commit = 1,
+        System = 2
+    }
+
     public abstract class LogRecord
     {
-        public static readonly byte[] NoData = new byte[0];
+        public static readonly byte[] NoData = Empty.ByteArray;
 
         public readonly LogRecordType RecordType;
         public readonly byte Version;
-
-        public abstract long Position { get; }
+        public readonly long LogPosition;
 
         public static LogRecord ReadFrom(BinaryReader reader)
         {
             var recordType = (LogRecordType)reader.ReadByte();
             var version = reader.ReadByte();
+            var logPosition = reader.ReadInt64();
+
+            Ensure.Nonnegative(logPosition, "logPosition");
 
             switch (recordType)
             {
                 case LogRecordType.Prepare:
-                    return new PrepareLogRecord(reader, version);
+                    return new PrepareLogRecord(reader, version, logPosition);
                 case LogRecordType.Commit:
-                    return new CommitLogRecord(reader, version);
+                    return new CommitLogRecord(reader, version, logPosition);
+                case LogRecordType.System:
+                    return new SystemLogRecord(reader, version, logPosition);
                 default:
                     throw new ArgumentOutOfRangeException("recordType");
             }
@@ -59,10 +71,11 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
         public static PrepareLogRecord Prepare(long logPosition, Guid correlationId, Guid eventId, long transactionPos, int transactionOffset,
                                                string eventStreamId, int expectedVersion, PrepareFlags flags, string eventType, 
-                                               byte[] data, byte[] metadata)
+                                               byte[] data, byte[] metadata, DateTime? timeStamp = null)
         {
             return new PrepareLogRecord(logPosition, correlationId, eventId, transactionPos, transactionOffset, 
-                                        eventStreamId, expectedVersion, DateTime.UtcNow, flags, eventType, data, metadata);
+                                        eventStreamId, expectedVersion, timeStamp ?? DateTime.UtcNow, flags, eventType,
+                                        data, metadata);
         }
 
         public static CommitLogRecord Commit(long logPosition, Guid correlationId, long startPosition, int eventNumber)
@@ -72,11 +85,11 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
         public static PrepareLogRecord SingleWrite(long logPosition, Guid correlationId, Guid eventId, string eventStreamId, 
                                                    int expectedVersion, string eventType, byte[] data, byte[] metadata, 
-                                                   DateTime? timestamp = null)
+                                                   DateTime? timestamp = null, PrepareFlags? additionalFlags = null)
         {
             return new PrepareLogRecord(logPosition, correlationId, eventId, logPosition, 0, eventStreamId, expectedVersion, 
                                         timestamp ?? DateTime.UtcNow, 
-                                        PrepareFlags.Data | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, 
+                                        PrepareFlags.Data | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | (additionalFlags ?? PrepareFlags.None), 
                                         eventType, data, metadata);
         }
 
@@ -86,12 +99,10 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                         DateTime.UtcNow, PrepareFlags.TransactionBegin, null, NoData, NoData);
         }
 
-        public static PrepareLogRecord TransactionWrite(long logPosition, Guid correlationId, Guid eventId, long transactionPos, 
-                                                        int transactionOffset, string eventStreamId, string eventType, 
-                                                        byte[] data, byte[] metadata)
+        public static PrepareLogRecord TransactionWrite(long logPosition, Guid correlationId, Guid eventId, long transactionPos, int transactionOffset, string eventStreamId, string eventType, byte[] data, byte[] metadata, bool isJson)
         {
             return new PrepareLogRecord(logPosition, correlationId, eventId, transactionPos, transactionOffset,
-                                        eventStreamId, ExpectedVersion.Any, DateTime.UtcNow, PrepareFlags.Data, 
+                                        eventStreamId, ExpectedVersion.Any, DateTime.UtcNow, PrepareFlags.Data | (isJson ? PrepareFlags.IsJson : PrepareFlags.None), 
                                         eventType, data, metadata);
         }
 
@@ -101,33 +112,28 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                         DateTime.UtcNow, PrepareFlags.TransactionEnd, null, NoData, NoData);
         }
 
-        public static PrepareLogRecord DeleteTombstone(long logPosition, Guid correlationId, string eventStreamId, int expectedVersion)
+        public static PrepareLogRecord DeleteTombstone(long logPosition, Guid correlationId, Guid eventId,
+                                                       string eventStreamId, int expectedVersion, PrepareFlags additionalFlags = PrepareFlags.None)
         {
-            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), logPosition, 0, eventStreamId, 
+            return new PrepareLogRecord(logPosition, correlationId, eventId, logPosition, 0, eventStreamId, 
                                         expectedVersion, DateTime.UtcNow, 
-                                        PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, 
+                                        PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | additionalFlags, 
                                         SystemEventTypes.StreamDeleted, NoData, NoData);
         }
 
-        public static PrepareLogRecord StreamCreated(long logPosition, Guid correlationId, long transactionPos, 
-                                                     string eventStreamId, byte[] metadata, DateTime? timestamp = null)
+        protected LogRecord(LogRecordType recordType, byte version, long logPosition)
         {
-            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionPos, 0, eventStreamId, 
-                                        ExpectedVersion.NoStream, timestamp ?? DateTime.UtcNow, 
-                                        PrepareFlags.Data | PrepareFlags.TransactionBegin, 
-                                        SystemEventTypes.StreamCreated, NoData, metadata);
-        }
-
-        protected LogRecord(LogRecordType recordType, byte version)
-        {
+            Ensure.Nonnegative(logPosition, "logPosition");
             RecordType = recordType;
             Version = version;
+            LogPosition = logPosition;
         }
 
         public virtual void WriteTo(BinaryWriter writer)
         {
             writer.Write((byte) RecordType);
             writer.Write(Version);
+            writer.Write(LogPosition);
         }
 
         public int GetSizeWithLengthPrefixAndSuffix()

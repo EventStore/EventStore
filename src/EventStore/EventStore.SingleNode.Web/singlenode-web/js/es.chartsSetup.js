@@ -83,7 +83,7 @@ $(function () {
                 className: timeSeriesClass,
                 titleClassName: chartTitleClass,
                 appendTo: appendToSelector,
-                maxLength: 20,
+                maxLength: 5000,
                 zoomer: sets.zoomer
             });
         }
@@ -111,7 +111,7 @@ $(function () {
             // no matter what - repoll after a while
             setTimeout(function () {
                 poll();
-            }, 1000);
+            }, 2000);
 
             $.ajax("/stats?group=false", {
                 headers: {

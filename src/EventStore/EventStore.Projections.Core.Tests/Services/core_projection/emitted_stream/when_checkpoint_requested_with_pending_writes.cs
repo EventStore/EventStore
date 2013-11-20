@@ -29,8 +29,6 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -46,31 +44,40 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         protected override void Given()
         {
             base.Given();
-            NoStream("test");
+            AllWritesSucceed();
+            NoOtherStreams();
         }
 
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _bus, _readyHandler, 50);
+            _readyHandler = new TestCheckpointManagerMessageHandler();
+            ;
+            _stream = new EmittedStream(
+                "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
+                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher, _readyHandler);
             _stream.Start();
             _stream.EmitEvents(
-                new[] { new EmittedEvent("test", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(100, 50), null) });
+                new[]
+                {
+                    new EmittedDataEvent(
+                        "test", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 100, 50), null)
+                });
             _stream.Checkpoint();
         }
 
         [Test]
         public void does_not_publish_ready_for_checkpoint_immediately()
         {
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.ReadyForCheckpoint>().Count());
+            Assert.AreEqual(
+                0, _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.ReadyForCheckpoint>().Count());
         }
 
         [Test]
         public void publishes_ready_for_checkpoint_on_handling_last_write_events_completed()
         {
             var msg = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First();
-            _stream.Handle(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, msg.EventStreamId, 0));
+            _bus.Publish(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, 0, 0));
             Assert.AreEqual(
                 1, _readyHandler.HandledMessages.OfType<CoreProjectionProcessingMessage.ReadyForCheckpoint>().Count());
         }

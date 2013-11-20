@@ -46,4 +46,4 @@ namespace EventStore.Projections.Core.Messaging
             _publisher.Publish(new UnwrapEnvelopeMessage(() => _nestedEnevelop.ReplyWith(message)));
         }
     }
-}
+}    

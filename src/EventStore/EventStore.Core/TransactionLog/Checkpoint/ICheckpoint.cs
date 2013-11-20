@@ -38,5 +38,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 
         long Read();
         long ReadNonFlushed();
+
+        bool WaitForFlush(TimeSpan timeout);
     }
 }

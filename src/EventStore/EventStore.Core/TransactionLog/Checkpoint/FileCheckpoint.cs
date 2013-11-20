@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using System.Threading;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.TransactionLog.Checkpoint
 {
@@ -44,12 +45,14 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         private readonly BinaryWriter _writer;
         private readonly BinaryReader _reader;
 
+        private readonly object _flushLocker = new object();
+
         public FileCheckpoint(string filename)
             : this(filename, Guid.NewGuid().ToString())
         {
         }
 
-        public FileCheckpoint(string filename, string name, bool cached = false, bool mustExist = false)
+        public FileCheckpoint(string filename, string name, bool cached = false, bool mustExist = false, long initValue = 0)
         {
             _filename = filename;
             _name = name;
@@ -64,7 +67,12 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _reader = new BinaryReader(_fileStream);
             _writer = new BinaryWriter(_fileStream);
             if (old)
-                _lastFlushed = _last = ReadCurrent();
+                _last = _lastFlushed = ReadCurrent();
+            else
+            {
+                _last = initValue;
+                Flush();
+            }
         }
 
         private long ReadCurrent()
@@ -100,11 +108,13 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _fileStream.Seek(0, SeekOrigin.Begin);
             _writer.Write(last);
 
-            _fileStream.Flush(flushToDisk: true);
-#if LESS_THAN_NET_4_0
-            Win32.FlushFileBuffers(_fileStream.SafeFileHandle);
-#endif
+            _fileStream.FlushToDisk();
             Interlocked.Exchange(ref _lastFlushed, last);
+
+            lock (_flushLocker)
+            {
+                Monitor.PulseAll(_flushLocker);
+            }
         }
 
         public long Read()
@@ -115,6 +125,14 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         public long ReadNonFlushed()
         {
             return Interlocked.Read(ref _last);
+        }
+
+        public bool WaitForFlush(TimeSpan timeout)
+        {
+            lock (_flushLocker)
+            {
+                return Monitor.Wait(_flushLocker, timeout);
+            }
         }
 
         public void Dispose()

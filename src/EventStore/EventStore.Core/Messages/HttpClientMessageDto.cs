@@ -30,47 +30,44 @@ using System;
 using System.Text;
 using System.Xml.Serialization;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages
 {
     public static class HttpClientMessageDto
     {
-        #region HTTP DTO
-
         public class ClientEventDynamic
         {
-            public Guid EventId { get; set; }
-            public string EventType { get; set; }
+            public Guid eventId { get; set; }
+            public string eventType { get; set; }
 
-            public object Data { get; set; }
-            public object Metadata { get; set; }
+            public object data { get; set; }
+            public object metadata { get; set; }
         }
 
         public class WriteEventsDynamic
         {
-            public int ExpectedVersion { get; set; }
-            public ClientEventDynamic[] Events { get; set; }
+            public ClientEventDynamic[] events { get; set; }
 
             public WriteEventsDynamic()
             {
             }
 
-            public WriteEventsDynamic(int expectedVersion, ClientEventDynamic[] events)
+            public WriteEventsDynamic(ClientEventDynamic[] events)
             {
-                ExpectedVersion = expectedVersion;
-                Events = events;
+                this.events = events;
             }
         }
 
         [XmlType(TypeName = "event")]
         public class ClientEventText
         {
-            public Guid EventId { get; set; }
-            public string EventType { get; set; }
+            public Guid eventId { get; set; }
+            public string eventType { get; set; }
 
-            public string Data { get; set; }
-            public string Metadata { get; set; }
+            public string data { get; set; }
+            public string metadata { get; set; }
 
             public ClientEventText()
             {
@@ -81,123 +78,69 @@ namespace EventStore.Core.Messages
                 Ensure.NotEmptyGuid(eventId, "eventId");
                 Ensure.NotNull(data, "data");
 
-                EventId = eventId;
-                EventType = eventType;
+                this.eventId = eventId;
+                this.eventType = eventType;
 
-                Data = data;
-                Metadata = metadata;
+                this.data = data;
+                this.metadata = metadata;
             }
 
-            public ClientEventText(Guid eventId, string eventType, byte[] data, byte[] metaData)
+            public ClientEventText(Guid eventId, string eventType, byte[] data, byte[] metadata)
             {
                 Ensure.NotEmptyGuid(eventId, "eventId");
                 Ensure.NotNull(data, "data");
 
-                EventId = eventId;
-                EventType = eventType;
+                this.eventId = eventId;
+                this.eventType = eventType;
 
-                Data = Encoding.UTF8.GetString(data ?? LogRecord.NoData);
-                Metadata = Encoding.UTF8.GetString(metaData ?? LogRecord.NoData);
+                this.data = Helper.UTF8NoBom.GetString(data ?? LogRecord.NoData);
+                this.metadata = Helper.UTF8NoBom.GetString(metadata ?? LogRecord.NoData);
             }
         }
 
-        [XmlRoot(ElementName = "write-events")]
-        public class WriteEventsText
-        {
-            public int ExpectedVersion { get; set; }
-            public ClientEventText[] Events { get; set; }
-
-            public WriteEventsText()
-            {
-            }
-
-            public WriteEventsText(int expectedVersion, ClientEventText[] events)
-            {
-                Ensure.NotNull(events, "events");
-                Ensure.Positive(events.Length, "events.Length");
-
-                ExpectedVersion = expectedVersion;
-                Events = events;
-            }
-        }
-
-        [XmlRoot(ElementName = "read-event-result")]
+        [XmlRoot(ElementName = "event")]
         public class ReadEventCompletedText
         {
-            public string EventStreamId { get; set; }
-            public int EventNumber { get; set; }
-            public string EventType { get; set; }
-            public object Data { get; set; }
-            public object Metadata { get; set; }
+            public string eventStreamId { get; set; }
+            public int eventNumber { get; set; }
+            public string eventType { get; set; }
+            public object data { get; set; }
+            public object metadata { get; set; }
 
             public ReadEventCompletedText()
             {
             }
 
-            public ReadEventCompletedText(ClientMessage.ReadEventCompleted message)
+            public ReadEventCompletedText(ResolvedEvent evnt)
             {
-                if (message.Record != null)
+                if (evnt.Event != null)
                 {
-                    EventStreamId = message.Record.EventStreamId;
-                    EventNumber = message.Record.EventNumber;
-                    EventType = message.Record.EventType;
+                    eventStreamId = evnt.Event.EventStreamId;
+                    eventNumber = evnt.Event.EventNumber;
+                    eventType = evnt.Event.EventType;
 
-                    Data = Encoding.UTF8.GetString(message.Record.Data ?? new byte[0]);
-                    Metadata = Encoding.UTF8.GetString(message.Record.Metadata ?? new byte[0]);
+                    data = Helper.UTF8NoBom.GetString(evnt.Event.Data ?? Empty.ByteArray);
+                    metadata = Helper.UTF8NoBom.GetString(evnt.Event.Metadata ?? Empty.ByteArray);
                 }
                 else
                 {
-                    EventStreamId = null;
-                    EventNumber = Core.Data.EventNumber.Invalid;
-                    EventType = null;
-                    Data = null;
-                    Metadata = null;
+                    eventStreamId = null;
+                    eventNumber = EventNumber.Invalid;
+                    eventType = null;
+                    data = null;
+                    metadata = null;
                 }
             }
 
             public override string ToString()
             {
-                return string.Format("EventStreamId: {0}, EventNumber: {1}, EventType: {2}, Data: {3}, Metadata: {4}",
-                                     EventStreamId,
-                                     EventNumber,
-                                     EventType,
-                                     Data,
-                                     Metadata);
+                return string.Format("eventStreamId: {0}, eventNumber: {1}, eventType: {2}, data: {3}, metadata: {4}",
+                                     eventStreamId,
+                                     eventNumber,
+                                     eventType,
+                                     data,
+                                     metadata);
             }
         }
-
-        [XmlRoot(ElementName = "create-stream")]
-        public class CreateStreamText
-        {
-            public string EventStreamId { get; set; }
-            public string Metadata { get; set; }
-
-            public CreateStreamText()
-            {
-            }
-
-            public CreateStreamText(string eventStreamId, string metadata)
-            {
-                EventStreamId = eventStreamId;
-                Metadata = metadata;
-            }
-        }
-
-        [XmlRoot(ElementName = "delete-stream")]
-        public class DeleteStreamText
-        {
-            public int ExpectedVersion { get; set; }
-
-            public DeleteStreamText()
-            {
-            }
-
-            public DeleteStreamText(int expectedVersion)
-            {
-                ExpectedVersion = expectedVersion;
-            }
-        }
-
-        #endregion
     }
 }

@@ -28,10 +28,27 @@
 using System;
 using System.Linq;
 using System.Threading;
+using EventStore.Common.Utils;
 using NLog;
+using NLog.Conditions;
 
 namespace EventStore.Common.Log
 {
+    public static class NLoggerHelperMethods
+    {
+        [ConditionMethod("is-dot-net")]
+        public static bool IsDotNet()
+        {
+            return !Runtime.IsMono;
+        }
+
+        [ConditionMethod("is-mono")]
+        public static bool IsMono()
+        {
+            return Runtime.IsMono;
+        }
+    }
+
     public class NLogger : ILogger
     {
         private readonly Logger _logger;
@@ -43,16 +60,7 @@ namespace EventStore.Common.Log
 
         public void Flush(TimeSpan? maxTimeToWait = null)
         {
-            var config = NLog.LogManager.Configuration;
-            if (config == null)
-                return;
-            var asyncs = config.AllTargets.OfType<NLog.Targets.Wrappers.AsyncTargetWrapper>().ToArray();
-            var countdown = new CountdownEvent(asyncs.Length);
-            foreach (var wrapper in asyncs)
-            {
-                wrapper.Flush(x => countdown.Signal());
-            }
-            countdown.Wait(maxTimeToWait ?? TimeSpan.FromMilliseconds(500));
+            FlushLog(maxTimeToWait);
         }
 
         public void Fatal(string text)
@@ -157,5 +165,42 @@ namespace EventStore.Common.Log
         {
             _logger.TraceException(string.Format(format, args), exc);
         }
+
+        public static void FlushLog(TimeSpan? maxTimeToWait = null)
+        {
+            var config = NLog.LogManager.Configuration;
+            if (config == null)
+                return;
+            var asyncs = config.AllTargets.OfType<NLog.Targets.Wrappers.AsyncTargetWrapper>().ToArray();
+            var countdown = new CountdownEvent(asyncs.Length);
+            foreach (var wrapper in asyncs)
+            {
+                wrapper.Flush(x => countdown.Signal());
+            }
+            countdown.Wait(maxTimeToWait ?? TimeSpan.FromMilliseconds(500));
+        }
+
+/*
+        public static void InitTestLayout()
+        {
+            var config = new LoggingConfiguration();
+
+            var consoleTarget = new ConsoleTarget();
+            consoleTarget.Layout = @"[${pad:padCharacter=0:padding=5:inner=${processid}},"
+                                 + @"${pad:padCharacter=0:padding=2:inner=${threadid}}," 
+                                 + @"${date:universalTime=true:format=HH\:mm\:ss\.fff}] "
+                                 + @"${message}${onexception:${newline}EXCEPTION OCCURED:${newline}${exception:format=message}}";
+
+            //var consoleAsyncTarget = new NLog.Targets.Wrappers.AsyncTargetWrapper(consoleTarget);
+
+            config.AddTarget("consoleAsync", consoleTarget);
+            config.LoggingRules.Add(new LoggingRule("*", LogLevel.Trace, consoleTarget));
+
+            NLog.LogManager.Configuration = config;
+
+            var logger = NLog.LogManager.GetLogger("TestsLayoutLogger");
+            logger.Info("Tests layout is set.");
+        }
+*/
     }
 }

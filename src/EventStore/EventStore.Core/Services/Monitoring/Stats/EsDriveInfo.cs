@@ -40,11 +40,8 @@ namespace EventStore.Core.Services.Monitoring.Stats
     {
         public readonly string DiskName;
         public readonly long TotalBytes;
-        public readonly string TotalBytesFriendly;
         public readonly long AvailableBytes;
-        public readonly string AvailableBytesFriendly;
         public readonly long UsedBytes;
-        public readonly string UsedBytesFriendly;
         public readonly string Usage;
 
         public static EsDriveInfo FromDirectory(string path, ILogger log)
@@ -52,9 +49,9 @@ namespace EventStore.Core.Services.Monitoring.Stats
             try
             {
                 string driveName;
-                if (OS.IsLinux)
+                if (OS.IsUnix)
                 {
-                    driveName = GetDirectoryRootInLinux(path, log);
+                    driveName = GetDirectoryRootInUnix(path, log);
                     if (driveName == null)
                         return null;
                 }
@@ -69,7 +66,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
             }
             catch (Exception ex)
             {
-                log.DebugException(ex, "Error while reading drive info for path {0}", path);
+                log.Debug("Error while reading drive info for path {0}. Message: {1}.", path, ex.Message);
                 return null;
             }
         }
@@ -78,17 +75,14 @@ namespace EventStore.Core.Services.Monitoring.Stats
         {
             DiskName = diskName;
             TotalBytes = totalBytes;
-            TotalBytesFriendly = TotalBytes.ToFriendlySizeString();
             AvailableBytes = availableBytes;
-            AvailableBytesFriendly = AvailableBytes.ToFriendlySizeString();
             UsedBytes = TotalBytes - AvailableBytes;
-            UsedBytesFriendly = UsedBytes.ToFriendlySizeString();
             Usage = TotalBytes != 0
                     ? (UsedBytes * 100 / TotalBytes).ToString(CultureInfo.InvariantCulture) + "%"
                     : "0%";
         }
 
-        private static string GetDirectoryRootInLinux(string directory, ILogger log)
+        private static string GetDirectoryRootInUnix(string directory, ILogger log)
         {
             // http://unix.stackexchange.com/questions/11311/how-do-i-find-on-which-physical-device-a-folder-is-located
 
@@ -99,17 +93,18 @@ namespace EventStore.Core.Services.Monitoring.Stats
 
             try
             {
-                var driveInfo = ShellExecutor.GetOutput("df", directory);
+                if(!Directory.Exists(directory)) return null;
+                var driveInfo = ShellExecutor.GetOutput("df", string.Format("-P {0}", directory));
                 var driveInfoLines = driveInfo.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                if(driveInfoLines.Length == 0) return null;
                 var ourline = driveInfoLines[1];
-                var spaces = new Regex(@"[\s\t]+", RegexOptions.Compiled);
-                var trimmedLine = spaces.Replace(ourline, " ");
+                var trimmedLine = SystemStatsHelper.SpacesRegex.Replace(ourline, " ");
                 var driveName = trimmedLine.Split(' ')[5]; //we choose the 'mounted on' column
                 return driveName;
             }
             catch (Exception ex)
             {
-                log.DebugException(ex, "couldn't get drive name for directory {0} on linux", directory);
+                log.DebugException(ex, "Couldn't get drive name for directory '{0}' on Unix.", directory);
                 return null;
             }
         }

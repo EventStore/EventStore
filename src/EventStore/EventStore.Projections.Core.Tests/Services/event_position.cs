@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using EventStore.Core.Data;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services
@@ -34,12 +35,12 @@ namespace EventStore.Projections.Core.Tests.Services
     [TestFixture]
     public class event_position
     {
-        private readonly EventPosition _aa = new EventPosition(10, 9);
-        private readonly EventPosition _b1 = new EventPosition(20, 15);
-        private readonly EventPosition _b2 = new EventPosition(20, 17);
-        private readonly EventPosition _cc = new EventPosition(30, 29);
-        private readonly EventPosition _d1 = new EventPosition(40, 35);
-        private readonly EventPosition _d2 = new EventPosition(40, 36);
+        private readonly TFPos _aa = new TFPos(10, 9);
+        private readonly TFPos _b1 = new TFPos(20, 15);
+        private readonly TFPos _b2 = new TFPos(20, 17);
+        private readonly TFPos _cc = new TFPos(30, 29);
+        private readonly TFPos _d1 = new TFPos(40, 35);
+        private readonly TFPos _d2 = new TFPos(40, 36);
 
         [Test]
         public void equal_equals()

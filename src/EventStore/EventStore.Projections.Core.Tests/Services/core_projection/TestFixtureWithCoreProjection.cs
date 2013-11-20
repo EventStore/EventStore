@@ -27,8 +27,10 @@
 // 
 
 using System;
+using EventStore.Common.Log;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -40,43 +42,124 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     public abstract class TestFixtureWithCoreProjection : TestFixtureWithExistingEvents
     {
         protected CoreProjection _coreProjection;
-        protected TestHandler<ProjectionSubscriptionManagement.Subscribe> _subscribeProjectionHandler;
+        protected TestHandler<ReaderSubscriptionManagement.Subscribe> _subscribeProjectionHandler;
         protected TestHandler<ClientMessage.WriteEvents> _writeEventHandler;
-        protected readonly string _lastSeenEvent = Guid.NewGuid().ToString("D");
-
         protected Guid _firstWriteCorrelationId;
         protected FakeProjectionStateHandler _stateHandler;
         protected int _checkpointHandledThreshold = 5;
         protected int _checkpointUnhandledBytesThreshold = 10000;
-        protected Action<QuerySourceProcessingStrategyBuilder> _configureBuilderByQuerySource = null;
-        private Guid _projectionCorrelationId;
-        private ProjectionMode _projectionMode = ProjectionMode.Persistent;
+        protected Action<SourceDefinitionBuilder> _configureBuilderByQuerySource = null;
+        protected Guid _projectionCorrelationId;
+        private bool _createTempStreams = false;
+        protected ProjectionConfig _projectionConfig;
+        protected ProjectionVersion _version;
+        protected string _projectionName;
 
+        protected override void Given1()
+        {
+            _version = new ProjectionVersion(1, 0, 0);
+            _projectionName = "projection";
+        }
 
-        //TODO: move this to base class
         [SetUp]
         public void setup()
         {
-            _subscribeProjectionHandler = new TestHandler<ProjectionSubscriptionManagement.Subscribe>();
+            _subscribeProjectionHandler = new TestHandler<ReaderSubscriptionManagement.Subscribe>();
             _writeEventHandler = new TestHandler<ClientMessage.WriteEvents>();
             _bus.Subscribe(_subscribeProjectionHandler);
             _bus.Subscribe(_writeEventHandler);
 
 
-            _stateHandler = _stateHandler
-                            ?? new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource);
+            _stateHandler = GivenProjectionStateHandler();
             _firstWriteCorrelationId = Guid.NewGuid();
             _projectionCorrelationId = Guid.NewGuid();
-            _coreProjection = new CoreProjection(
-                "projection", _projectionCorrelationId, _bus, _stateHandler,
-                new ProjectionConfig(
-                    _projectionMode, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
-                    true), _readDispatcher, _writeDispatcher);
-            _coreProjection.Start();
-
+            _projectionConfig = GivenProjectionConfig();
+            var projectionProcessingStrategy = GivenProjectionProcessingStrategy();
+            _coreProjection = GivenCoreProjection(projectionProcessingStrategy);
+            _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_coreProjection);
+            _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_coreProjection);
+            _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_coreProjection);
+            _bus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_coreProjection);
+            _bus.Subscribe<CoreProjectionProcessingMessage.Failed>(_coreProjection);
+            _bus.Subscribe(new AdHocHandler<ProjectionCoreServiceMessage.CoreTick>(tick => tick.Action()));
+            _bus.Subscribe(new AdHocHandler<ReaderCoreServiceMessage.ReaderTick>(tick => tick.Action()));
+            PreWhen();
             When();
         }
 
-        protected abstract void When();
+        protected virtual CoreProjection GivenCoreProjection(ProjectionProcessingStrategy projectionProcessingStrategy)
+        {
+            return projectionProcessingStrategy.Create(
+                _projectionCorrelationId, _bus, SystemAccount.Principal, _bus, _ioDispatcher, _subscriptionDispatcher,
+                _timeProvider);
+        }
+
+        protected virtual ProjectionProcessingStrategy GivenProjectionProcessingStrategy()
+        {
+            return CreateProjectionProcessingStrategy();
+        }
+
+        protected ProjectionProcessingStrategy CreateProjectionProcessingStrategy()
+        {
+            return new ContinuousProjectionProcessingStrategy(
+                _projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
+                _subscriptionDispatcher);
+        }
+
+        protected ProjectionProcessingStrategy CreateQueryProcessingStrategy()
+        {
+            return new QueryProcessingStrategy(
+                _projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
+                _subscriptionDispatcher);
+        }
+
+        protected virtual ProjectionConfig GivenProjectionConfig()
+        {
+            return new ProjectionConfig(
+                null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, GivenPendingEventsThreshold(),
+                GivenMaxWriteBatchLength(), GivenEmitEventEnabled(), GivenCheckpointsEnabled(), _createTempStreams,
+                GivenStopOnEof(), isSlaveProjection: GivenIsSlaveProjection());
+        }
+
+        protected virtual bool GivenIsSlaveProjection()
+        {
+            return false;
+        }
+
+        protected virtual int GivenMaxWriteBatchLength()
+        {
+            return 250;
+        }
+
+        protected virtual int GivenPendingEventsThreshold()
+        {
+            return 1000;
+        }
+
+        protected virtual bool GivenStopOnEof()
+        {
+            return false;
+        }
+
+        protected virtual bool GivenCheckpointsEnabled()
+        {
+            return true;
+        }
+
+        protected virtual bool GivenEmitEventEnabled()
+        {
+            return true;
+        }
+
+        protected virtual FakeProjectionStateHandler GivenProjectionStateHandler()
+        {
+            return new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource);
+        }
+
+        protected new virtual void PreWhen()
+        {
+        }
+
+        protected new abstract void When();
     }
 }

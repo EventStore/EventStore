@@ -29,50 +29,55 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.DeleteStreamRequestCreated>
+    public class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
+                                                      IHandle<ClientMessage.DeleteStream>
     {
-        public DeleteStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
-            base(publisher, prepareCount, commitCount)
-        {}
-        public void Handle(StorageMessage.DeleteStreamRequestCreated request)
-        {
-            if (_initialized)
-                throw new InvalidOperationException();
+        private string _eventStreamId;
+        private int _expectedVersion;
+        private bool _hardDelete;
 
-            _initialized = true;
-            _responseEnvelope = request.Envelope;
-            _correlationId = request.CorrelationId;
+        public DeleteStreamTwoPhaseRequestManager(IPublisher publisher,  
+                                                  int prepareCount, 
+                                                  int commitCount, 
+                                                  TimeSpan prepareTimeout,
+                                                  TimeSpan commitTimeout) 
+            : base(publisher, prepareCount, commitCount, prepareTimeout, commitTimeout)
+        {
+        }
+
+        public void Handle(ClientMessage.DeleteStream request)
+        {
             _eventStreamId = request.EventStreamId;
-
-            Publisher.Publish(new StorageMessage.WriteDelete(request.CorrelationId,
-                                                                 _publishEnvelope,
-                                                                 request.EventStreamId,
-                                                                 request.ExpectedVersion,
-                                                                 allowImplicitStreamCreation: true,
-                                                                 liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
-            Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
-                                                      _publishEnvelope,
-                                                      new StorageMessage.PreparePhaseTimeout(_correlationId)));
+            _expectedVersion = request.ExpectedVersion;
+            _hardDelete = request.HardDelete;
+            InitNoPreparePhase(request.Envelope, request.InternalCorrId, request.CorrelationId, request.EventStreamId,
+                               request.User, StreamAccessType.Delete);
         }
-        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
+
+        protected override void OnSecurityAccessGranted(Guid internalCorrId)
         {
-            base.CompleteSuccessRequest(correlationId, eventStreamId, startEventNumber);
-            var responseMsg = new ClientMessage.DeleteStreamCompleted(
-                correlationId, eventStreamId, OperationErrorCode.Success, null);
-            _responseEnvelope.ReplyWith(responseMsg);
+            Publisher.Publish(
+                new StorageMessage.WriteDelete(
+                    internalCorrId, PublishEnvelope, _eventStreamId, _expectedVersion, _hardDelete,
+                    liveUntil: NextTimeoutTime - TimeoutOffset));
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
+        protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber)
         {
-            base.CompleteFailedRequest(correlationId, eventStreamId, errorCode, error);
-            var responseMsg = new ClientMessage.DeleteStreamCompleted(
-                correlationId, eventStreamId, errorCode, error);
-            _responseEnvelope.ReplyWith(responseMsg);
+            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber);
+            var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, OperationResult.Success, null);
+            ResponseEnvelope.ReplyWith(responseMsg);
         }
 
+        protected override void CompleteFailedRequest(OperationResult result, string error)
+        {
+            base.CompleteFailedRequest(result, error);
+            var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, result, error);
+            ResponseEnvelope.ReplyWith(responseMsg);
+        }
     }
 }

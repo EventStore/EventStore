@@ -26,70 +26,71 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.Net;
+using System.Security.Principal;
 using EventStore.Common.Utils;
-using Uri = System.Uri;
+using EventStore.Transport.Http.Codecs;
 
 namespace EventStore.Transport.Http.EntityManagement
 {
-    public class HttpEntityReceivedComparer : IComparer<HttpEntity>
-    {
-        public int Compare(HttpEntity x, HttpEntity y)
-        {
-            return x.Received.CompareTo(y.Received);
-        }
-    }
-
     public class HttpEntity
     {
-        public readonly HttpEntityManager Manager;
+        public readonly Uri RequestedUrl;
 
-        public readonly DateTime Received;
-        public readonly string UserHostName;
+        public readonly HttpListenerRequest Request;
+        internal readonly HttpListenerResponse Response;
+        public readonly IPrincipal User;
 
-        public readonly ICodec RequestCodec;
-        public readonly ICodec ResponseCodec;
-
-        internal HttpListenerContext Context;
-        internal HttpListenerRequest Request;
-        internal HttpListenerResponse Response;
-
-        public Uri RequestBaseUri 
+        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response, IPrincipal user)
         {
-            get { return Request.Url; }
-        }
-
-        public HttpEntity(DateTime received,
-                          string userHostName,
-                          ICodec requestCodec,
-                          ICodec responseCodec,
-                          HttpListenerContext context,
-                          HttpListenerRequest request,
-                          HttpListenerResponse response,
-                          string[] allowedMethods,
-                          Action<HttpEntity> onRequestSatisfied)
-        {
-            Ensure.NotNull(userHostName, "userHostName");
-            Ensure.NotNull(requestCodec, "requestCodec");
-            Ensure.NotNull(responseCodec, "responseCodec");
-            Ensure.NotNull(context, "context");
             Ensure.NotNull(request, "request");
             Ensure.NotNull(response, "response");
-            Ensure.NotNull(allowedMethods, "allowedMethods");
-            Ensure.NotNull(onRequestSatisfied, "onRequestSatisfied");
 
-            Received = received;
-            UserHostName = userHostName;
+            RequestedUrl = request.Url;
 
-            RequestCodec = requestCodec;
-            ResponseCodec = responseCodec;
-
-            Context = context;
             Request = request;
             Response = response;
+            User = user;
+        }
 
-            Manager = new HttpEntityManager(this, allowedMethods, onRequestSatisfied);
+        private HttpEntity(IPrincipal user)
+        {
+            RequestedUrl = null;
+
+            Request = null;
+            Response = null;
+            User = user;
+        }
+
+        private HttpEntity(HttpEntity httpEntity, IPrincipal user)
+        {
+            RequestedUrl = httpEntity.RequestedUrl;
+
+            Request = httpEntity.Request;
+            Response = httpEntity.Response;
+            User = user;
+            
+        }
+
+        public HttpEntityManager CreateManager(
+            ICodec requestCodec, ICodec responseCodec, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
+        {
+            return new HttpEntityManager(this, allowedMethods, onRequestSatisfied, requestCodec, responseCodec);
+        }
+
+        public HttpEntityManager CreateManager()
+        {
+            return new HttpEntityManager(this, Empty.StringArray, entity => { }, Codec.NoCodec, Codec.NoCodec);
+        }
+
+        public HttpEntity SetUser(IPrincipal user)
+        {
+            return new HttpEntity(this, user);
+        }
+
+        public static HttpEntity Test(IPrincipal user)
+        {
+            return new HttpEntity(user);
         }
     }
 }

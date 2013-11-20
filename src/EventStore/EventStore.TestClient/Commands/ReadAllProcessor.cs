@@ -27,9 +27,8 @@
 // 
 using System;
 using System.Diagnostics;
-using System.Net.Sockets;
 using System.Text;
-using EventStore.Core.Data;
+using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 
@@ -37,7 +36,7 @@ namespace EventStore.TestClient.Commands
 {
     internal class ReadAllProcessor : ICmdProcessor
     {
-        public string Usage { get { return "RDALL [[F|B] [<commit pos> <prepare pos>]]"; } }
+        public string Usage { get { return "RDALL [[F|B] [<commit pos> <prepare pos> [<only-if-master>]]]"; } }
         public string Keyword { get { return "RDALL"; } }
 
         public bool Execute(CommandProcessorContext context, string[] args)
@@ -46,10 +45,12 @@ namespace EventStore.TestClient.Commands
             long commitPos = 0;
             long preparePos = 0;
             bool posOverriden = false;
+            bool resolveLinkTos = false;
+            bool requireMaster = false;
 
             if (args.Length > 0)
             {
-                if (args.Length != 1 && args.Length != 3)
+                if (args.Length != 1 && args.Length != 3 && args.Length != 4)
                     return false;
 
                 if (args[0].ToUpper() == "F")
@@ -59,12 +60,15 @@ namespace EventStore.TestClient.Commands
                 else
                     return false;
 
-                if (args.Length == 3)
+                if (args.Length >= 3)
                 {
                     posOverriden = true;
                     if (!long.TryParse(args[1], out commitPos) || !long.TryParse(args[2], out preparePos))
                         return false;
                 }
+                if (args.Length >= 4)
+                    requireMaster = bool.Parse(args[3]);
+
             }
 
             if (!posOverriden)
@@ -77,97 +81,55 @@ namespace EventStore.TestClient.Commands
 
             int total = 0;
             var sw = new Stopwatch();
+            var tcpCommand = forward ? TcpCommand.ReadAllEventsForward : TcpCommand.ReadAllEventsBackward;
 
             context.Client.CreateTcpConnection(
                 context,
                 connectionEstablished: conn =>
                 {
-                    context.Log.Info("[{0}]: Reading all {0}...", conn.EffectiveEndPoint, forward ? "FORWARD" : "BACKWARD");
-                    sw.Start();
+                    context.Log.Info("[{0}, L{1}]: Reading all {2}...", conn.RemoteEndPoint, conn.LocalEndPoint, forward ? "FORWARD" : "BACKWARD");
 
-                    var readDto = forward
-                                    ? (object)new TcpClientMessageDto.ReadAllEventsForward(commitPos, preparePos, 10, false)
-                                    : new TcpClientMessageDto.ReadAllEventsBackward(commitPos, preparePos, 10, false);
-                    var package = new TcpPackage(forward ? TcpCommand.ReadAllEventsForward : TcpCommand.ReadAllEventsBackward,
-                                                 Guid.NewGuid(),
-                                                 readDto.Serialize());
-                    conn.EnqueueSend(package.AsByteArray());
+                    var readDto = new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, resolveLinkTos, requireMaster);
+                    var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
+                    sw.Start();
+                    conn.EnqueueSend(package);
                 },
                 handlePackage: (conn, pkg) =>
                 {
-                    TcpClientMessageDto.EventLinkPair[] records;
-                    long nextCommitPos;
-                    long nextPreparePos;
-
-                    if (forward)
+                    if (pkg.Command != tcpCommand)
                     {
-                        if (pkg.Command != TcpCommand.ReadAllEventsForwardCompleted)
-                        {
-                            context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
-                            return;
-                        }
-
-                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsForwardCompleted>();
-                        records = dto.Events;
-                        nextCommitPos = dto.NextCommitPosition;
-                        nextPreparePos = dto.NextPreparePosition;
-                    }
-                    else
-                    {
-                        if (pkg.Command != TcpCommand.ReadAllEventsBackwardCompleted)
-                        {
-                            context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
-                            return;
-                        }
-
-                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsBackwardCompleted>();
-                        records = dto.Events;
-                        nextCommitPos = dto.NextCommitPosition;
-                        nextPreparePos = dto.NextPreparePosition;
+                        context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
+                        return;
                     }
 
-                    if (records == null || records.Length == 0)
+                    var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
+                    if (dto.Events.IsEmpty())
                     {
                         sw.Stop();
-                        context.Log.Info("=== Reading ALL {2} completed in {0}. Total read: {1}",
-                                         sw.Elapsed,
-                                         total,
-                                         forward ? "FORWARD" : "BACKWARD");
-                        conn.Close();
+                        context.Log.Info("=== Reading ALL {2} completed in {0}. Total read: {1}", sw.Elapsed, total, forward ? "FORWARD" : "BACKWARD");
                         context.Success();
+                        conn.Close();
                         return;
                     }
                     var sb = new StringBuilder();
-                    for (int i = 0; i < records.Length; ++i)
+                    for (int i = 0; i < dto.Events.Length; ++i)
                     {
-                        var evnt = records[i].Event;
+                        var evnt = dto.Events[i].Event;
                         sb.AppendFormat("\n{0}:\tStreamId: {1},\n\tEventNumber: {2},\n\tData:\n{3},\n\tEventType: {4}\n",
                                         total,
                                         evnt.EventStreamId,
                                         evnt.EventNumber,
-                                        Encoding.UTF8.GetString(evnt.Data),
+                                        Helper.UTF8NoBom.GetString(evnt.Data),
                                         evnt.EventType);
                         total += 1;
                     }
-                    context.Log.Info("Next {0} events read:\n{1}", records.Length, sb.ToString());
+                    context.Log.Info("Next {0} events read:\n{1}", dto.Events.Length, sb.ToString());
 
-                    var readDto = forward
-                                    ? (object)new TcpClientMessageDto.ReadAllEventsForward(nextCommitPos, nextPreparePos, 10, false)
-                                    : new TcpClientMessageDto.ReadAllEventsBackward(nextCommitPos, nextPreparePos, 10, false);
-                    var package = new TcpPackage(forward ? TcpCommand.ReadAllEventsForward : TcpCommand.ReadAllEventsBackward,
-                                                 Guid.NewGuid(),
-                                                 readDto.Serialize());
-                    conn.EnqueueSend(package.AsByteArray());
-
-
+                    var readDto = new TcpClientMessageDto.ReadAllEvents(dto.NextCommitPosition, dto.NextPreparePosition, 10, resolveLinkTos, requireMaster);
+                    var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
+                    conn.EnqueueSend(package);
                 },
-                connectionClosed: (connection, error) =>
-                {
-                    if (error == SocketError.Success)
-                        context.Success();
-                    else
-                        context.Fail();
-                });
+                connectionClosed: (connection, error) => context.Fail(reason: "Connection was closed prematurely."));
 
             context.WaitForCompletion();
             return true;

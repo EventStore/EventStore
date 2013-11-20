@@ -25,44 +25,59 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
-    internal class deleting_stream
+    [TestFixture, Category("LongRunning")]
+    public class deleting_stream : SpecificationWithDirectoryPerTestFixture
     {
+        private MiniNode _node;
+
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
+        {
+            base.TestFixtureSetUp();
+            _node = new MiniNode(PathName);
+            _node.Start();
+        }
+
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
+        {
+            _node.Shutdown();
+            base.TestFixtureTearDown();
+        }
+
         [Test]
         [Category("Network")]
-        public void which_already_exists_should_success_when_passed_empty_stream_expected_version()
+        public void which_doesnt_exists_should_success_when_passed_empty_stream_expected_version()
         {
             const string stream = "which_already_exists_should_success_when_passed_empty_stream_expected_version";
-            using (var connection = EventStoreConnection.Create())
+            using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
-
-                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                connection.Connect();
+                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
             }
         }
 
         [Test]
         [Category("Network")]
-        public void which_already_exists_should_success_when_passed_any_for_expected_version()
+        public void which_doesnt_exists_should_success_when_passed_any_for_expected_version()
         {
             const string stream = "which_already_exists_should_success_when_passed_any_for_expected_version";
-            using (var connection = EventStoreConnection.Create())
+            using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
+                connection.Connect();
 
-                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any);
+                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
             }
         }
@@ -72,46 +87,28 @@ namespace EventStore.Core.Tests.ClientAPI
         public void with_invalid_expected_version_should_fail()
         {
             const string stream = "with_invalid_expected_version_should_fail";
-            using (var connection = EventStoreConnection.Create())
+            using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
+                connection.Connect();
 
-                var delete = connection.DeleteStreamAsync(stream, 1);
+                var delete = connection.DeleteStreamAsync(stream, 1, hardDelete: true);
                 Assert.That(() => delete.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }
 
         [Test]
         [Category("Network")]
-        public void which_does_not_exist_should_fail()
-        {
-            const string stream = "which_does_not_exist_should_fail";
-            using (var connection = EventStoreConnection.Create())
-            {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any);
-                Assert.Inconclusive();
-                //Assert.That(() => delete.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
-            }
-        }
-
-        [Test]
-        [Category("Network")]
-        public void which_was_allready_deleted_should_fail()
+        public void which_was_already_deleted_should_fail()
         {
             const string stream = "which_was_allready_deleted_should_fail";
-            using (var connection = EventStoreConnection.Create())
+            using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
+                connection.Connect();
 
-                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
 
-                var secondDelete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any);
+                var secondDelete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any, hardDelete: true);
                 Assert.That(() => secondDelete.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
             }
         }

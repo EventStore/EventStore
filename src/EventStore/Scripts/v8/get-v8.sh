@@ -27,7 +27,7 @@ function get-dependencies() {
 pushd $(dirname $0) || err
 cd ../.. || err
 
-get-v8 a8140cb930617054ed0487e6e1287c81cd51718e || err
+get-v8 3.17.11 || err
 get-dependencies || err
 
 popd || er

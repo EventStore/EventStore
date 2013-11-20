@@ -26,10 +26,15 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Linq;
+using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests.Services.TimeService;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Tests.Services.core_projection;
@@ -42,20 +47,23 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         TestFixtureWithExistingEvents
     {
         private ProjectionManager _manager;
+        private new ITimeProvider _timeProvider;
 
         protected override void Given()
         {
-            ExistingEvent("$projections-$all", "ProjectionCreated", null, "projection1");
+            ExistingEvent("$projections-$all", "$ProjectionCreated", null, "projection1");
             NoStream("$projections-projection1");
         }
+
 
         [SetUp]
         public void setup()
         {
-            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] { _bus });
+            _timeProvider = new FakeTimeProvider();
+            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] { _bus }, _timeProvider, RunProjections.All);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
-            _manager.Handle(new SystemMessage.BecomeWorking());
+            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
         }
 
         [TearDown]

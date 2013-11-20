@@ -26,20 +26,25 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Text;
+using System.Collections.Generic;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EmittedEvent
+    public abstract class EmittedEvent
     {
         public readonly string StreamId;
         public readonly Guid EventId;
         public readonly string EventType;
         private readonly CheckpointTag _causedByTag;
         private readonly CheckpointTag _expectedTag;
-        private readonly byte[]  _data;
+        private readonly Action<int> _onCommitted;
+        private Guid _causedBy;
+        private string _correlationId;
 
-        public EmittedEvent(string streamId, Guid eventId, string eventType, string data, CheckpointTag causedByTag, CheckpointTag expectedTag)
+        //TODO: stream metadata
+        protected EmittedEvent(
+            string streamId, Guid eventId,
+            string eventType, CheckpointTag causedByTag, CheckpointTag expectedTag, Action<int> onCommitted = null)
         {
             if (causedByTag == null) throw new ArgumentNullException("causedByTag");
             StreamId = streamId;
@@ -47,13 +52,10 @@ namespace EventStore.Projections.Core.Services.Processing
             EventType = eventType;
             _causedByTag = causedByTag;
             _expectedTag = expectedTag;
-            _data = data == null ? null : Encoding.UTF8.GetBytes(data);
+            _onCommitted = onCommitted;
         }
 
-        public byte[] Data
-        {
-            get { return _data; }
-        }
+        public abstract string Data { get; }
 
         public CheckpointTag CausedByTag
         {
@@ -63,6 +65,40 @@ namespace EventStore.Projections.Core.Services.Processing
         public CheckpointTag ExpectedTag
         {
             get { return _expectedTag; }
+        }
+
+        public Action<int> OnCommitted
+        {
+            get { return _onCommitted; }
+        }
+
+        public Guid CausedBy
+        {
+            get { return _causedBy; }
+        }
+
+        public string CorrelationId
+        {
+            get { return _correlationId; }
+        }
+
+        public abstract bool IsJson { get; }
+
+        public abstract bool IsReady();
+
+        public virtual IEnumerable<KeyValuePair<string, string>> ExtraMetaData()
+        {
+            return null;
+        }
+
+        public void SetCausedBy(Guid causedBy)
+        {
+            _causedBy = causedBy;
+        }
+
+        public void SetCorrelationId(string correlationId)
+        {
+            _correlationId = correlationId;
         }
     }
 }

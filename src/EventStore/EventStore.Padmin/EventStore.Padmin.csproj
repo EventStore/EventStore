@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Command.cs" />
+    <Compile Include="ConsoleLogger.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -60,6 +61,10 @@
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
       <Project>{c7c0a3c2-a0eb-4ff4-a0cd-67eadf3f553f}</Project>
       <Name>EventStore.ClientAPI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
+      <Project>{b4c9be3d-43b1-4049-a23a-5dc53db3f0b0}</Project>
+      <Name>EventStore.Common</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

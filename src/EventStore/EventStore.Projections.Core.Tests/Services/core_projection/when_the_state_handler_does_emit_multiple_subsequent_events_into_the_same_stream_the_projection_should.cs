@@ -29,44 +29,44 @@
 using System;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
     public class when_the_state_handler_does_emit_multiple_subsequent_events_into_the_same_stream_the_projection_should :
-        TestFixtureWithCoreProjection
+        TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {
             ExistingEvent(
-                "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", "{}");
+                "$projections-projection-result", "Result", @"{""c"": 100, ""p"": 50}", "{}");
             ExistingEvent(
-                "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", "{}");
-            NoStream(FakeProjectionStateHandler._emit2StreamId);
+                "$projections-projection-checkpoint", "$ProjectionCheckpoint",
+                @"{""c"": 100, ""p"": 50}", "{}");
+            AllWritesSucceed();
+            NoOtherStreams();
         }
 
         protected override void When()
         {
             //projection subscribes here
-            _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                       new Event(
-                           Guid.NewGuid(), "emit22_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata")), 0));
+            _bus.Publish(
+                EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
+                    new ResolvedEvent(
+                        "/event_category/1", -1, "/event_category/1", -1, false, new TFPos(120, 110),
+                        Guid.NewGuid(), "emit22_type", false, "data",
+                        "metadata"), _subscriptionId, 0));
         }
 
 
         [Test]
         public void write_events_in_a_single_transaction()
         {
-            Assert.AreEqual(2, _writeEventHandler.HandledMessages.Count);
             Assert.IsTrue(_writeEventHandler.HandledMessages.Any(v => v.Events.Length == 2));
         }
 
@@ -82,11 +82,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             Assert.AreEqual(
                 FakeProjectionStateHandler._emit1Data,
-                Encoding.UTF8.GetString(
+                Helper.UTF8NoBom.GetString(
                     _writeEventHandler.HandledMessages.Single(v => v.EventStreamId == "/emit2").Events[0].Data));
             Assert.AreEqual(
                 FakeProjectionStateHandler._emit2Data,
-                Encoding.UTF8.GetString(
+                Helper.UTF8NoBom.GetString(
                     _writeEventHandler.HandledMessages.Single(v => v.EventStreamId == "/emit2").Events[1].Data));
         }
     }

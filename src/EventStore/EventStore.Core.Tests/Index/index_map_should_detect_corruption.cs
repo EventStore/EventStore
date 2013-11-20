@@ -30,6 +30,8 @@ using System.IO;
 using System.Linq;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
+using EventStore.Core.Tests.Fakes;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
@@ -46,16 +48,16 @@ namespace EventStore.Core.Tests.Index
         {
             base.SetUp();
 
-            _indexMapFileName = Path.Combine(PathName, "index.map");
-            _ptableFileName = Path.Combine(PathName, "ptable");
+            _indexMapFileName = GetFilePathFor("index.map");
+            _ptableFileName = GetFilePathFor("ptable");
 
-            var indexMap = IndexMap.FromFile(_indexMapFileName, x => false, maxTablesPerLevel: 2);
-            var memtable = new HashListMemTable(maxSize: 2000);
+            var indexMap = IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2);
+            var memtable = new HashListMemTable(maxSize: 10);
             memtable.Add(0,0,0);
             memtable.Add(1,1,100);
             _ptable = PTable.FromMemtable(memtable, _ptableFileName);
 
-            indexMap = indexMap.AddFile(_ptable, 0, 0, new GuidFilenameProvider(PathName)).MergedMap;
+            indexMap = indexMap.AddPTable(_ptable, 0, 0, _ => true, new GuidFilenameProvider(PathName)).MergedMap;
             indexMap.SaveToFile(_indexMapFileName);
         }
 
@@ -74,7 +76,7 @@ namespace EventStore.Core.Tests.Index
             _ptable = null;
             File.Delete(_ptableFileName);
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -83,7 +85,7 @@ namespace EventStore.Core.Tests.Index
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, lines.Skip(1));
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -92,7 +94,7 @@ namespace EventStore.Core.Tests.Index
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, lines.Where((x,i) => i != 1));
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -100,7 +102,7 @@ namespace EventStore.Core.Tests.Index
         {
             File.WriteAllText(_indexMapFileName, "");
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -108,7 +110,7 @@ namespace EventStore.Core.Tests.Index
         {
             File.WriteAllText(_indexMapFileName, "alkfjasd;lkf\nasdfasdf\n");
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -123,7 +125,7 @@ namespace EventStore.Core.Tests.Index
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -132,7 +134,7 @@ namespace EventStore.Core.Tests.Index
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], string.Format("0,{0}", _ptableFileName)});
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -141,7 +143,7 @@ namespace EventStore.Core.Tests.Index
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], _ptableFileName });
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -150,7 +152,7 @@ namespace EventStore.Core.Tests.Index
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], "0,0" });
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -164,7 +166,7 @@ namespace EventStore.Core.Tests.Index
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -182,7 +184,7 @@ namespace EventStore.Core.Tests.Index
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -197,7 +199,7 @@ namespace EventStore.Core.Tests.Index
                 fs.WriteByte(123);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -215,7 +217,7 @@ namespace EventStore.Core.Tests.Index
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
 
         [Test]
@@ -233,7 +235,7 @@ namespace EventStore.Core.Tests.Index
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, x => false, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
         }
     }
 }

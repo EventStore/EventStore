@@ -1,6 +1,8 @@
+*.nupkg
 /Logs
 /Data
 /Data-logs
+/src/EventStore/v8
 /v8/
 ipch/
 *.o
@@ -14,6 +16,9 @@ ipch/
 /src/Public/v8/
 /src/Public/ipch/
 /research/ci/CompatibilityInfo
+
+src/EventStore/EventStore.Common/Properties/AssemblyVersion.cs
+src/EventStore/EventStore.ClientAPI/Properties/AssemblyVersion.cs
 
 *.o
 *.ii
@@ -78,3 +83,6 @@ NDependOut
 _dotCover.*
 
 */es-logs
+
+# Mac
+.DS_Store
