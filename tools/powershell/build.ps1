@@ -60,8 +60,8 @@ $libsDirectory = Join-Path $srcDirectory "libs"
 
 #Source scripts
 
-. (Join-Path $baseDirectory (Join-Path "tools" (Join-Path "powershell" "build-functions.ps1")))
-Import-Module (Join-Path $baseDirectory (Join-Path "tools" (Join-Path "powershell" "EnvironmentVars.dll")))
+. "build-functions.ps1"
+Import-Module "EnvironmentVars.dll"
 
 #Set up based on platform, configuration and version
 if ($platform -eq "x64") {
@@ -125,6 +125,33 @@ if ($Defines -eq "") {
 } else {
     $definesCommandLine = "/p:AppendedDefineConstants=$Defines"
 }
+
+Function Write-Info {
+    Param([string]$message)
+    Process {
+        Write-Host $message -ForegroundColor Cyan
+    }
+}
+
+Write-Info "Build Configuration"
+Write-Info "-------------------"
+
+Wirte-Info "Build Type: $BuildType"
+Write-Info "Platform: $Platform"
+Write-Info "Configuration: $Configuration"
+Write-Info "Version: $Version"
+
+if ($SpecificVisualStudioVersion -eq "") {
+    Write-Info "Visual Studio Version will be autodetected"
+} else {
+    Write-Info "Specific Visual Studio Version: $SpecificVisualStudioVersion"
+}
+
+Write-Info "Additional Defines: $Defines"
+
+Write-Host ""
+Write-Host ""
+
 
 if ($BuildType -ne "quick") {
     #Get dependencies if necessary
