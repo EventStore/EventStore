@@ -22,7 +22,7 @@ $companyName = "Event Store LLP"
 $copyright = "Copyright 2012 Event Store LLP. All rights reserved."
 
 #Dependency Repositories and Directories
-$baseDirectory = Resolve-Path (Join-Path (Resolve-Path .) "..\..\")
+$baseDirectory = Resolve-Path .
 $srcDirectory = Join-Path $baseDirectory (Join-Path "src" "EventStore")
 $libsDirectory = Join-Path $srcDirectory "libs"
 
@@ -60,8 +60,9 @@ $libsDirectory = Join-Path $srcDirectory "libs"
 
 #Source scripts
 
-. "build-functions.ps1"
-Import-Module "EnvironmentVars.dll"
+$buildScriptDir = Join-Path $baseDirectory (Join-Path "tools" "powershell")
+. (Join-Path $buildScriptDir "build-functions.ps1")
+Import-Module (Join-Path $buildScriptDir "EnvironmentVars.dll")
 
 #Set up based on platform, configuration and version
 if ($platform -eq "x64") {
@@ -136,7 +137,7 @@ Function Write-Info {
 Write-Info "Build Configuration"
 Write-Info "-------------------"
 
-Wirte-Info "Build Type: $BuildType"
+Write-Info "Build Type: $BuildType"
 Write-Info "Platform: $Platform"
 Write-Info "Configuration: $Configuration"
 Write-Info "Version: $Version"
