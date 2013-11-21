@@ -22,7 +22,7 @@ $companyName = "Event Store LLP"
 $copyright = "Copyright 2012 Event Store LLP. All rights reserved."
 
 #Dependency Repositories and Directories
-$baseDirectory = Resolve-Path .
+$baseDirectory = Resolve-Path (Join-Path (Resolve-Path .) "..\..\")
 $srcDirectory = Join-Path $baseDirectory (Join-Path "src" "EventStore")
 $libsDirectory = Join-Path $srcDirectory "libs"
 
