@@ -1,18 +1,19 @@
 [CmdletBinding()]
 Param(
     [Parameter(Position=0, HelpMessage="Build Type (quick, full)")]
-    [string]$BuildType = "quick",
-    [Parameter(Position=1, HelpMessage="Configuration (debug, release)")]
+    [ValidateSet('quick', 'clean-all', 'full')]
+    [string]$Target = "quick",
+    [Parameter(HelpMessage="Configuration (debug, release)")]
     [string]$Configuration = "release",
-    [Parameter(Position=2, HelpMessage="Platform (x64, x86)")]
+    [Parameter(HelpMessage="Platform (x64, x86)")]
     [string]$Platform = "x64",
-    [Parameter(Position=3, HelpMessage="Assembly version number (x.y.z.0 where x.y.z is the semantic version)")]
+    [Parameter(HelpMessage="Assembly version number (x.y.z.0 where x.y.z is the semantic version)")]
     [string]$Version = "0.0.0.0",
-    [Parameter(Position=4, HelpMessage="Version of Visual Studio to use (2010, 2012, 2013, WindowsSDK7.1)")]
+    [Parameter(HelpMessage="Version of Visual Studio to use (2010, 2012, 2013, WindowsSDK7.1)")]
     [string]$SpecificVisualStudioVersion = "",
-    [Parameter(Position=5, HelpMessage="True to force network use when connectivity not detected")]
+    [Parameter(HelpMessage="True to force network use when connectivity not detected")]
     [bool]$ForceNetwork = $false,
-    [Parameter(Position=6, HelpMessage="Defined symbols to pass to MsBuild")]
+    [Parameter(HelpMessage="Defined symbols to pass to MsBuild")]
     [string]$Defines = ""
 )
 
@@ -63,6 +64,47 @@ $libsDirectory = Join-Path $srcDirectory "libs"
 $buildScriptDir = Join-Path $baseDirectory (Join-Path "tools" "powershell")
 . (Join-Path $buildScriptDir "build-functions.ps1")
 Import-Module (Join-Path $buildScriptDir "EnvironmentVars.dll")
+
+#Clean if neccessary
+Function Clean-All() {
+    Push-Location $baseDirectory
+    Write-Info "Cleaning everything including dependency checkouts)"
+    Exec { git clean --quiet -xdf }
+    Pop-Location
+}
+
+Function Clean-Output() {
+    Push-Location $baseDirectory
+    Remove-Item -ErrorAction SilentlyContinue -Recurse -Force .\bin
+    Pop-Location
+}
+
+Function Test-CanRunQuickBuild() {
+    $js1Dir = Join-Path $libsDirectory $platform
+    $js1Path = Join-Path $js1Dir "js1.dll"
+
+    write-host $js1path
+
+    if ((Test-Path $js1Path) -eq $false) {
+        Write-Info "Cannot run a 'quick' build - js1.dll is not found at $js1Dir"
+        return $false
+    } else {
+        Write-Info "Using js1.dll from a previous build, it is likely that the commit hash and version in js1.dll is wrong."
+        return $true
+    }
+}
+
+if ($Target -eq "clean-all") {
+    Clean-All
+    exit
+}
+
+if (($Target -eq "quick") -and ((Test-CanRunQuickBuild) -eq $false)) {
+    Write-Info "Running full build instead"
+    $Target = "full"
+}
+
+Clean-Output
 
 #Set up based on platform, configuration and version
 if ($platform -eq "x64") {
@@ -127,17 +169,10 @@ if ($Defines -eq "") {
     $definesCommandLine = "/p:AppendedDefineConstants=$Defines"
 }
 
-Function Write-Info {
-    Param([string]$message)
-    Process {
-        Write-Host $message -ForegroundColor Cyan
-    }
-}
-
 Write-Info "Build Configuration"
 Write-Info "-------------------"
 
-Write-Info "Build Type: $BuildType"
+Write-Info "Target: $Target"
 Write-Info "Platform: $Platform"
 Write-Info "Configuration: $Configuration"
 Write-Info "Version: $Version"
@@ -153,8 +188,9 @@ Write-Info "Additional Defines: $Defines"
 Write-Host ""
 Write-Host ""
 
+Clean-Output
 
-if ($BuildType -ne "quick") {
+if ($Target -eq "full") {
     #Get dependencies if necessary
     if ($ForceNetwork -or (Test-ShouldTryNetworkAccess))
     {
@@ -179,7 +215,8 @@ if ($BuildType -ne "quick") {
             Assert ($false) "No network connectivity is detected and the required dependencies are not available. Specify ForceNetwork = '$true' if you want to try anyway."
         }
     } else {
-        Write-Host "All dependencies already met."
+        Write-Info "All dependencies already met."
+        Write-Host ""
     }
 }
 
@@ -190,10 +227,10 @@ try {
         #Set up Visual Studio environment
         if ($SpecificVisualStudioVersion -eq "") {
             $visualStudioVersion = Get-GuessedVisualStudioVersion
-            Write-Host "No specific version of Visual Studio specified, using $visualStudioVersion"
+            Write-Info "No specific version of Visual Studio provided, using $visualStudioVersion"
         } else {
             $visualStudioVersion = $SpecificVisualStudioVersion
-            Write-Host "Visual Studio $VisualStudioVersion specified as parameter"
+            Write-Info "Visual Studio $VisualStudioVersion specified as parameter"
         }
 
         Import-VisualStudioVars -VisualStudioVersion $visualStudioVersion
@@ -202,24 +239,14 @@ try {
         $branchName = Get-GitBranchOrTag
 
         #Build V8
-        if ($BuildType -eq "quick") {
-            #Fail is JS1 is not available
-            $js1Dir = Join-Path $libsDirectory $platform
-            $js1Path = Join-Path $js1Dir "js1.dll"
-
-            if ((Test-Path $js1Path) -eq $false) {
-                throw "Cannot run a 'quick' build - js1.dll is not found at $js1Dir"
-            } else {
-                Write-Host "Using js1.dll from a previous build, it is likely that the commit hash and version in js1.dll is wrong."
-            }
-        } else {
+        if ($Target -eq "full") {
             #Build V8 and JS1
             Push-Location $v8Directory
 
             $pythonExecutable = Join-Path $pythonDirectory "python.exe"
             $gypFile = Join-Path $v8Directory (Join-Path "build" "gyp_v8")
 
-            if ($VisualStudioVersion -eq "WindowSDK7.1") {
+            if ($VisualStudioVersion -eq "WindowsSDK7.1") {
                 $vsVersionParameter = "-Gmsvs_version=2010"   
             } else {
                 $vsVersionParameter = "-Gmsvs_version=$VisualStudioVersion"

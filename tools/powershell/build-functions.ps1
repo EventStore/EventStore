@@ -1,5 +1,12 @@
 ﻿#Functions
 
+Function Write-Info {
+    Param([string]$message)
+    Process {
+        Write-Host $message -ForegroundColor Cyan
+    }
+}
+
 #Borrowed from psake
 Function Exec
 {
