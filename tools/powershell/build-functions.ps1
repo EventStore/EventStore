@@ -145,7 +145,7 @@ Function Import-VisualStudioVars
     Param
     (
         [Parameter(Mandatory = $true, Position = 0)]
-        [ValidateSet('2010', '2012', '2013', 'WindowsSDK7.1')]
+        [ValidateSet('2010', '2012', '2013', 'Windows7.1SDK')]
         [string]$VisualStudioVersion,
         [Parameter(Position = 1)]
         [string]$Architecture = 'amd64',
@@ -172,7 +172,7 @@ Function Import-VisualStudioVars
                 Invoke-BatchFile (Join-Path $env:VS120COMNTOOLS "..\..\VC\vcvarsall.bat") -Parameters $Architecture -RedirectStdErrToNull $false
             }
 
-            'WindowsSDK7.1' {
+            'Windows7.1SDK' {
                 if ($Architecture -eq "amd64") {
                     $architectureParameter = "/x64"
                 } elseif ($Architecture -eq "x86") {
@@ -205,7 +205,7 @@ Function Import-VisualStudioVars
 Function Get-GuessedVisualStudioVersion {
     #Platform SDK (since it seems to set VS100COMNTOOLS even without Visual Studio 2010 installed)
     if (Test-Path (Join-Path $env:ProgramFiles "Microsoft SDKs\Windows\v7.1\Bin\setenv.cmd")) {
-        return 'WindowsSDK7.1'
+        return 'Windows7.1SDK'
     }
 
     #Visual Studio's, newest versions first
@@ -240,8 +240,8 @@ Function Get-PlatformToolsetForVisualStudioVersion {
             return "v110"
         } elseif($VisualStudioVersion -eq "2010") {
             return "V100"
-        } elseif($VisualStudioVersion -eq "WindowsSDK7.1") {
-            return "V100"
+        } elseif($VisualStudioVersion -eq "Windows7.1SDK") {
+            return "Windows7.1SDK"
         } else {
             throw "Can'find the platform toolset for Visual Studio version $VisualStudioVersion"
         }

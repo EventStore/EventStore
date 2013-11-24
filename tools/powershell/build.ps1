@@ -9,7 +9,7 @@ Param(
     [string]$Platform = "x64",
     [Parameter(HelpMessage="Assembly version number (x.y.z.0 where x.y.z is the semantic version)")]
     [string]$Version = "0.0.0.0",
-    [Parameter(HelpMessage="Version of Visual Studio to use (2010, 2012, 2013, WindowsSDK7.1)")]
+    [Parameter(HelpMessage="Version of Visual Studio to use (2010, 2012, 2013, Windows7.1SDK)")]
     [string]$SpecificVisualStudioVersion = "",
     [Parameter(HelpMessage="True to force network use when connectivity not detected")]
     [bool]$ForceNetwork = $false,
@@ -246,7 +246,7 @@ try {
             $pythonExecutable = Join-Path $pythonDirectory "python.exe"
             $gypFile = Join-Path $v8Directory (Join-Path "build" "gyp_v8")
 
-            if ($VisualStudioVersion -eq "WindowsSDK7.1") {
+            if ($VisualStudioVersion -eq "Windows7.1SDK") {
                 $vsVersionParameter = "-Gmsvs_version=2010"   
             } else {
                 $vsVersionParameter = "-Gmsvs_version=$VisualStudioVersion"
