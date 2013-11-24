@@ -68,12 +68,19 @@ Import-Module (Join-Path $buildScriptDir "EnvironmentVars.dll")
 #Clean if neccessary
 Function Clean-All() {
     Push-Location $baseDirectory
-    Write-Info "Cleaning everything including dependency checkouts)"
+    Write-Info "Cleaning everything including dependency checkouts"
     Exec { git clean --quiet -xdf }
     Pop-Location
 }
 
-Function Clean-Output() {
+Function Clean() {
+    Push-Location $baseDirectory
+    Write-Info "Cleaning all output"
+    Exec { git clean --quiet --exclude .\v8 -xdf }
+    Pop-Location
+}
+
+Function Clean-OutputOnly() {
     Push-Location $baseDirectory
     Remove-Item -ErrorAction SilentlyContinue -Recurse -Force .\bin
     Pop-Location
@@ -99,12 +106,17 @@ if ($Target -eq "clean-all") {
     exit
 }
 
+if ($Target -eq "clean") {
+    Clean
+    exit
+}
+
 if (($Target -eq "quick") -and ((Test-CanRunQuickBuild) -eq $false)) {
     Write-Info "Running full build instead"
     $Target = "full"
 }
 
-Clean-Output
+Clean-OutputOnly
 
 #Set up based on platform, configuration and version
 if ($platform -eq "x64") {
@@ -188,8 +200,6 @@ Write-Info "Additional Defines: $Defines"
 Write-Host ""
 Write-Host ""
 
-Clean-Output
-
 if ($Target -eq "full") {
     #Get dependencies if necessary
     if ($ForceNetwork -or (Test-ShouldTryNetworkAccess))
@@ -262,26 +272,49 @@ try {
 
             #Copy V8 to libs
             $v8IncludeDestination = Join-Path $libsDirectory "include"
-            $v8LibsSource = Join-Path $v8OutputDirectory "*.lib"
-            $v8IncludeSource = Join-Path $v8Directory (Join-Path "include" "*.h")
-    
-            New-Item -ItemType Container -Path $v8LibsDestination -ErrorAction SilentlyContinue
-            Copy-Item $v8LibsSource $v8LibsDestination -Recurse -Force -ErrorAction Stop
-            New-Item -ItemType Container -Path $v8IncludeDestination -ErrorAction SilentlyContinue
-            Copy-Item $v8IncludeSource $v8IncludeDestination -Recurse -Force -ErrorAction Stop
+            $v8IncludeSource = Join-Path $v8Directory "include"
+            
+            $shouldCreateV8IncludeDestination = $true
+            if (Test-Path $v8IncludeDestination) {
+                #If this isn't a junction, we should delete it
+                if ((Test-DirectoryIsJunctionPoint $v8IncludeDestination) -eq $false) {
+                    Remove-Item -Recurse -Force $v8IncludeDestination
+                    $shouldCreateV8IncludeDestination = $true
+                } else {
+                    $shouldCreateV8IncludeDestination = $fase
+                }
+ 
+            }
+
+            if ($shouldCreateV8IncludeDestination) {
+                $createV8IncludeDestination = "mklink /J $v8IncludeDestination $v8IncludeSource"
+                Exec { & cmd /c $createV8IncludeDestination }
+            }
+
+            
+            $v8LibsDestination = Join-Path $libsDirectory $platform            
+            
+            Remove-Item -Recurse -Force $v8LibsDestination -ErrorAction SilentlyContinue
+            New-Item -ItemType Container -Path $v8LibsDestination
 
             Push-Location $v8LibsDestination
+            $v8Libs = Get-ChildItem -Filter "*.lib" $v8OutputDirectory
+            foreach ($lib in $v8Libs) {
+                $fullName = $lib.FullName
+                if ($lib.Name.Contains($platform)) {
+                    $withoutPlatform = $lib.Name.Replace(".$platform", "")
+                    $createLibHardLink = "mklink /H $withoutPlatform $fullName"
 
-            #V8 build changed at some point to include the platform in the
-            # name of the lib file. Where we use V8 we still use the old names
-            # so rename here if necessary.
-            foreach ($libFile in Get-ChildItem) {
-                $newName = $libFile.Name.Replace(".x64.lib", ".lib")
-                if ($newName -ne $libFile.Name) {
-                    if (Test-Path $newName) {
-                        Remove-Item $newName -Force
-                    }
-                    Rename-Item -Path $libFile -NewName $newName
+                    Write-Host $createLibHardLink
+
+                    Exec { & cmd /c $createLibHardLink }
+                } else {
+                    $name = $lib.Name
+                    $createLibHardLink = "mklink /H $name $fullName"
+                    
+                    Write-Host $createLibHardLink
+                    
+                    Exec { & cmd /c $createLibHardLink }
                 }
             }
             Pop-Location

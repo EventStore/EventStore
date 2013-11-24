@@ -34,6 +34,18 @@ Function Assert
     }
 }
 
+Function Test-DirectoryIsJunctionPoint {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [ValidateScript({Test-Path $_ -PathType Container})]
+        [string]$Path
+    )
+    Process {
+        return (Get-Item $Path).Attributes.ToString().Contains("ReparsePoint")
+    }
+}
+
 Function Test-ShouldTryNetworkAccess {
     #Opaque GUID from - http://blogs.microsoft.co.il/blogs/scriptfanatic/archive/2010/03/09/quicktip-how-do-you-check-internet-connectivity.aspx
     $hasNetwork = [Activator]::CreateInstance([Type]::GetTypeFromCLSID([Guid]'{DCB00C01-570F-4A9B-8D69-199FDBA5723B}')).IsConnectedToInternet
