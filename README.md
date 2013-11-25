@@ -12,7 +12,7 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 
 Binaries are available from http://geteventstore.com, however if you want to build it from source, instructions for Windows and Linux are below. 
 
-###Debug Builds on Windows / .NET
+###Windows/.NET
 
 ####Prerequisites
 
@@ -59,7 +59,7 @@ scripts. *There is a batch file in the root of the repository named
 PowerShell if you run it as Administrator. Obviously you may want to audit what
 the script does before executing it on your machine!*
 
-###Debug Builds on Linux (Ubuntu 12.04) / Mono
+###Linux/Mono
 
 ####Prerequisites
 
