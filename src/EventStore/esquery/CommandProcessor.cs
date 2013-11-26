@@ -115,9 +115,13 @@ namespace esquery
                 var completed = json["status"].Value<string>().StartsWith("Completed");   
                 var faultReason = json["stateReason"].Value<string>();
                 var streamurl = json["resultStreamUrl"];
+                var cancelurl = json["disableCommandUrl"];
                 Uri resulturi = null;
                 if(streamurl != null)
                     resulturi = new Uri(streamurl.Value<string>());
+                Uri canceluri = null;
+                if(cancelurl != null)
+                    canceluri = new Uri(cancelurl.Value<string>());
                 var progress = json["progress"].Value<decimal>();
                
                 return new QueryInformation() {
@@ -125,7 +129,8 @@ namespace esquery
                     FaultReason = faultReason, 
                     ResultUri = resulturi, 
                     Progress=progress, 
-                    Completed=completed
+                    Completed=completed,
+                    CancelUri = canceluri
                 };
             }
         }
@@ -287,6 +292,13 @@ namespace esquery
 
         private static void Cancel(QueryInformation queryInformation)
         {
+            if (queryInformation.CancelUri == null) return;
+            var request = WebRequest.Create(queryInformation.CancelUri);
+            request.Method = "POST";
+            request.ContentLength = 0;
+            
+            using (var response = (HttpWebResponse)request.GetResponse())
+            {}
         }
 
         private static AppendResult Append(Uri baseUri, string stream, string eventType, string data)
@@ -371,6 +383,7 @@ namespace esquery
         public decimal Progress;
         public Uri ResultUri;
         public bool Completed;
+        public Uri CancelUri;
     }
 
     class ErrorResult 
