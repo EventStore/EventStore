@@ -84,6 +84,9 @@ namespace esquery
                 if(TryValidatePassword(baseuri, cred))
                 {
                     return cred;
+                } else
+                {
+                    Console.WriteLine("Invalid username/password");
                 }
             }
             Environment.Exit(1);
@@ -105,9 +108,10 @@ namespace esquery
                     return response.StatusCode != HttpStatusCode.Unauthorized;
                 }
             }
-            catch(Exception ex)
+            catch (WebException ex)
             {
-                return false;
+                var response = (HttpWebResponse)ex.Response;
+                return response.StatusCode != HttpStatusCode.Unauthorized;
             }
         }
 
