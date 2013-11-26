@@ -59,22 +59,56 @@ namespace esquery
         
         private static Args ReadArgs(string[] args)
         {
+            var baseuri = new Uri("http://127.0.0.1:2113/");
+            
             if (args.Length == 1)
             {
                 Console.WriteLine("Server set to: " + args[0]);
-                return new Args(false, new Uri(args[0]), GetNetworkCredential());
+                baseuri = new Uri(args[0]);
+                return new Args(false, baseuri, GetValidatedNetworkCredential(baseuri));
             }
             Console.WriteLine("No server set defaulting to http://127.0.0.1:2113/");
-            return new Args(true, new Uri("http://127.0.0.1:2113/"), GetNetworkCredential());
+            return new Args(true, baseuri, GetValidatedNetworkCredential(baseuri));
         }
 
-        private static NetworkCredential GetNetworkCredential()
+        private static NetworkCredential GetValidatedNetworkCredential(Uri baseuri)
         {
-            Console.Write("username:");
-            var username = Console.ReadLine();
-            Console.Write("password:");
-            var password = ReadPassword();
-            return new NetworkCredential(username, password);
+            for (int i = 0; i < 5; i++)
+            {
+                Console.Write("username:");
+                var username = Console.ReadLine();
+                Console.Write("password:");
+                var password = ReadPassword();
+                
+                var cred = new NetworkCredential(username, password);
+                if(TryValidatePassword(baseuri, cred))
+                {
+                    return cred;
+                }
+            }
+            Environment.Exit(1);
+            return null;
+        }
+
+        private static bool TryValidatePassword(Uri baseuri, NetworkCredential cred)
+        {
+            
+            var request = WebRequest.Create(baseuri.AbsoluteUri +"projections/transient?enabled=yes");
+            request.Method = "POST";
+            request.ContentType = "application/json";
+            request.ContentLength = 0;
+            request.Credentials = cred;
+            try
+            {
+                using (var response = (HttpWebResponse) request.GetResponse())
+                {
+                    return response.StatusCode != HttpStatusCode.Unauthorized;
+                }
+            }
+            catch(Exception ex)
+            {
+                return false;
+            }
         }
 
         private static SecureString ReadPassword()
