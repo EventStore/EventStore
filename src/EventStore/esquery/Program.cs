@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Security;
 using System.Text;
 
 namespace esquery
@@ -61,10 +62,46 @@ namespace esquery
             if (args.Length == 1)
             {
                 Console.WriteLine("Server set to: " + args[0]);
-                return new Args(false, new Uri(args[0]), new NetworkCredential("admin", "changeit"));
+                return new Args(false, new Uri(args[0]), GetNetworkCredential());
             }
             Console.WriteLine("No server set defaulting to http://127.0.0.1:2113/");
-            return new Args(true, new Uri("http://127.0.0.1:2113/"), new NetworkCredential("admin", "changeit"));
+            return new Args(true, new Uri("http://127.0.0.1:2113/"), GetNetworkCredential());
+        }
+
+        private static NetworkCredential GetNetworkCredential()
+        {
+            Console.Write("username:");
+            var username = Console.ReadLine();
+            Console.Write("password:");
+            var password = ReadPassword();
+            return new NetworkCredential(username, password);
+        }
+
+        private static SecureString ReadPassword()
+        {
+            var ret = new SecureString();
+            while (true)
+            {
+                var info = Console.ReadKey(true);
+                if (info.Key == ConsoleKey.Enter)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine();
+                    return ret;
+                }
+                if (info.Key == ConsoleKey.Backspace)
+                {
+                    if (ret.Length > 0)
+                    {
+                        ret.RemoveAt(ret.Length - 1);
+                    }
+                }
+                else
+                {
+                    ret.AppendChar(info.KeyChar);
+                }
+            }
+            return ret;
         }
 
         static void Main(string[] args)
