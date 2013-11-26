@@ -47,7 +47,7 @@ namespace esquery
                     case "append":
                         var append = EatFirstN(3, command);
                         if (append.Count != 4) return new InvalidCommandResult(command);
-                        return Append(append[1], append[2], append[3]);
+                        return Append(state.Args.BaseUri, append[1], append[2], append[3]);
                     case "h":
                     case "help":
                         return new HelpCommandResult();
@@ -212,7 +212,6 @@ namespace esquery
                     var request = (HttpWebRequest) WebRequest.Create(new Uri(c["uri"].Value<string>()));
                     request.Credentials = credential;
                     request.Accept = "application/json";
-                    request.Headers.Add("ES-LongPoll", "30"); //add long polling
                     using (var response = request.GetResponse())
                     {
                         return new StreamReader(response.GetResponseStream()).ReadToEnd();
@@ -278,7 +277,6 @@ namespace esquery
                         Console.WriteLine("\nCancelling query.");
                         return new SubscriptionCancelledResult();
                     }
-                    Thread.Sleep(500);
                 }
             }
             catch(Exception ex)
@@ -291,10 +289,10 @@ namespace esquery
         {
         }
 
-        private static AppendResult Append(string stream, string eventType, string data)
+        private static AppendResult Append(Uri baseUri, string stream, string eventType, string data)
         {
             var message = "[{'eventType':'" + eventType + "', 'eventId' :'" + Guid.NewGuid() + "', 'data' : " + data +"}]";
-            var request = WebRequest.Create("http://127.0.0.1:2113/streams/" + stream);
+            var request = WebRequest.Create(baseUri.AbsoluteUri + stream);
             request.Method = "POST";
             request.ContentType = "application/json";
             request.ContentLength = message.Length;
