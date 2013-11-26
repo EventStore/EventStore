@@ -24,7 +24,6 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
 using System;
 using System.Collections.Generic;
@@ -160,19 +159,18 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 _connections[i] = EventStoreConnection.Create(
                       ConnectionSettings.Create()
-                                        .DisableVerboseLogging()
                                         .UseCustomLogger(ApiLogger)
                                         .LimitConcurrentOperationsTo(MaxConcurrentRequests)
                                         .LimitRetriesForOperationTo(maxReconnections)
                                         .LimitReconnectionsTo(maxOperationRetries)
-                                        .FailOnNoServerResponse()
-                                        .OnClosed((c, s) => Log.Debug("[SCENARIO] {0} closed.", c.ConnectionName))
-                                        .OnConnected((c, ep) => Log.Debug("[SCENARIO] {0} connected to [{1}].", c.ConnectionName, ep))
-                                        .OnDisconnected((c, ep) => Log.Debug("[SCENARIO] {0} disconnected from [{1}].", c.ConnectionName, ep))
-                                        .OnErrorOccurred((c, e) => Log.DebugException(e, "[SCENARIO] {0} error occurred.", c.ConnectionName))
-                                        .OnReconnecting(c => Log.Debug("[SCENARIO] {0} reconnecting.", c.ConnectionName)),
+                                        .FailOnNoServerResponse(),
                     new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.TcpPort),
                     string.Format("ESConn-{0}", i));
+                _connections[i].Closed += (s, e) => Log.Debug("[SCENARIO] {0} closed.", e.Connection.ConnectionName);
+                _connections[i].Connected += (s, e) => Log.Debug("[SCENARIO] {0} connected to [{1}].", e.Connection.ConnectionName, e.RemoteEndPoint);
+                _connections[i].Disconnected += (s, e) => Log.Debug("[SCENARIO] {0} disconnected from [{1}].", e.Connection.ConnectionName, e.RemoteEndPoint);
+                _connections[i].Reconnecting += (s, e) => Log.Debug("[SCENARIO] {0} reconnecting.", e.Connection.ConnectionName);
+                _connections[i].ErrorOccurred += (s, e) => Log.DebugException(e.Exception, "[SCENARIO] {0} error occurred.", e.Connection.ConnectionName);
                 _connections[i].Connect();
             } 
             RunInternal();   

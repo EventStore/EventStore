@@ -10,6 +10,7 @@ ipch/
 *.s
 *.sdf
 *.opensdf
+*.DotSettings
 *.DotSettings.user
 *.DotSettings.personal/Logs
 /Data

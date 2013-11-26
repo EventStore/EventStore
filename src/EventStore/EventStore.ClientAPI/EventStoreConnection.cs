@@ -32,6 +32,9 @@ using EventStore.ClientAPI.Core;
 
 namespace EventStore.ClientAPI
 {
+    /// <summary>
+    /// Contains factory methods for building connections to an Event Store server.
+    /// </summary>
     public static class EventStoreConnection
     {
         /// <summary>
@@ -71,7 +74,15 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNull(connectionSettings, "connectionSettings");
             Ensure.NotNull(clusterSettings, "clusterSettings");
-            return new EventStoreClusterConnection(connectionSettings, clusterSettings, connectionName);
+
+            var endPointDiscoverer = new ClusterDnsEndPointDiscoverer(connectionSettings.Log,
+                                                                      clusterSettings.ClusterDns,
+                                                                      clusterSettings.MaxDiscoverAttempts,
+                                                                      clusterSettings.ManagerExternalHttpPort,
+                                                                      clusterSettings.GossipSeeds,
+                                                                      clusterSettings.GossipTimeout);
+
+            return new EventStoreNodeConnection(connectionSettings, endPointDiscoverer, connectionName);
         }
     }
 }

@@ -24,9 +24,8 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+
 using System;
-using System.Net;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
@@ -57,13 +56,6 @@ namespace EventStore.ClientAPI
         private string _targetHost;
         private bool _validateServer;
 
-        private Action<IEventStoreConnection, Exception> _errorOccurred;
-        private Action<IEventStoreConnection, string> _closed;
-        private Action<IEventStoreConnection, IPEndPoint> _connected;
-        private Action<IEventStoreConnection, IPEndPoint> _disconnected;
-        private Action<IEventStoreConnection> _reconnecting;
-        private Action<IEventStoreConnection, string> _authenticationFailed;
-
         private bool _failOnNoServerResponse;
         private TimeSpan _heartbeatInterval = TimeSpan.FromMilliseconds(750);
         private TimeSpan _heartbeatTimeout = TimeSpan.FromMilliseconds(1500);
@@ -71,15 +63,6 @@ namespace EventStore.ClientAPI
 
         internal ConnectionSettingsBuilder()
         {
-        }
-
-        /// <summary>
-        /// Configures the connection not to output log messages. This is the default.
-        /// </summary>
-        public ConnectionSettingsBuilder DoNotLog()
-        {
-            _log = new NoopLogger();
-            return this;
         }
 
         /// <summary>
@@ -120,16 +103,6 @@ namespace EventStore.ClientAPI
         public ConnectionSettingsBuilder EnableVerboseLogging()
         {
             _verboseLogging = true;
-            return this;
-        }
-
-        /// <summary>
-        /// Turns off excessive <see cref="EventStoreConnection"/> internal logic logging.
-        /// </summary>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder DisableVerboseLogging()
-        {
-            _verboseLogging = false;
             return this;
         }
 
@@ -272,7 +245,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Sets the default <see cref="UserCredentials"> to be used for this connection.
+        /// Sets the default <see cref="UserCredentials"/> to be used for this connection.
         /// If user credentials are not given for an operation, these credentials will be used.
         /// </summary>
         /// <param name="userCredentials"></param>
@@ -299,103 +272,12 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Use an unencrypted TCP connection. This should generally not be used with authentication
-        /// as it will send usernames and passwords over the network as plaintext.
-        /// </summary>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder UseNormalConnection()
-        {
-            _useSslConnection = false;
-            _targetHost = null;
-            _validateServer = true;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets handler of internal connection errors.
-        /// </summary>
-        /// <param name="handler"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder OnErrorOccurred(Action<IEventStoreConnection, Exception> handler)
-        {
-            _errorOccurred = handler;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets handler of <see cref="EventStoreConnection"/> closing. For all disconnections
-        /// use the OnDisconnected handler.
-        /// </summary>
-        /// <param name="handler"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder OnClosed(Action<IEventStoreConnection, string> handler)
-        {
-            _closed = handler;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets handler called when connection is established.
-        /// </summary>
-        /// <param name="handler"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder OnConnected(Action<IEventStoreConnection, IPEndPoint> handler)
-        {
-            _connected = handler;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets handler called when connection is dropped.
-        /// This happens on all disconnections. Closed in when the connection is explicitly closed.
-        /// </summary>
-        /// <param name="handler"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder OnDisconnected(Action<IEventStoreConnection, IPEndPoint> handler)
-        {
-            _disconnected = handler;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets handler called when reconnection attempt is made.
-        /// </summary>
-        /// <param name="handler"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder OnReconnecting(Action<IEventStoreConnection> handler)
-        {
-            _reconnecting = handler;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets handler called when authentication failure occurs.
-        /// </summary>
-        /// <param name="handler"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder OnAuthenticationFailed(Action<IEventStoreConnection, string> handler)
-        {
-            _authenticationFailed = handler;
-            return this;
-        }
-
-        /// <summary>
         /// Marks that no response from server should cause an error on the request
         /// </summary>
         /// <returns></returns>
         public ConnectionSettingsBuilder FailOnNoServerResponse()
         {
             _failOnNoServerResponse = true;
-            return this;
-        }
-
-        /// <summary>
-        /// Marks that no response from server for request should result in a retry
-        /// </summary>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder DoNotFailOnNoServerResponse()
-        {
-            _failOnNoServerResponse = false;
             return this;
         }
 
@@ -432,6 +314,12 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+        /// <summary>
+        /// Convert the mutable <see cref="ConnectionSettingsBuilder"/> object to an immutable
+        /// <see cref="ConnectionSettings"/> object.
+        /// </summary>
+        /// <param name="builder">The <see cref="ConnectionSettingsBuilder"/> to convert.</param>
+        /// <returns>An immutable <see cref="ConnectionSettings"/> object with the values specified by the builder.</returns>
         public static implicit operator ConnectionSettings(ConnectionSettingsBuilder builder)
         {
             return new ConnectionSettings(builder._log,
@@ -448,12 +336,6 @@ namespace EventStore.ClientAPI
                                           builder._useSslConnection,
                                           builder._targetHost,
                                           builder._validateServer,
-                                          builder._errorOccurred,
-                                          builder._closed,
-                                          builder._connected,
-                                          builder._disconnected,
-                                          builder._reconnecting,
-                                          builder._authenticationFailed,
                                           builder._failOnNoServerResponse,
                                           builder._heartbeatInterval,
                                           builder._heartbeatTimeout,

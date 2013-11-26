@@ -59,7 +59,6 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                                              .SetDefaultUserCredentials(userCredentials)
                                              .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .EnableVerboseLogging()
-                                             //.DisableVerboseLogging()
                                              .LimitReconnectionsTo(10)
                                              .LimitRetriesForOperationTo(100)
                                              .SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))

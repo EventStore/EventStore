@@ -46,6 +46,7 @@ namespace EventStore.ClientAPI.Core
 
         private readonly IEventStoreConnection _esConnection;
         private readonly ConnectionSettings _settings;
+
         private readonly SimpleQueuedHandler _queue = new SimpleQueuedHandler();
         private readonly Timer _timer;
         private IEndPointDiscoverer _endPointDiscoverer;
@@ -60,6 +61,7 @@ namespace EventStore.ClientAPI.Core
 
         private ConnectionState _state = ConnectionState.Init;
         private ConnectingPhase _connectingPhase = ConnectingPhase.Invalid;
+        private int _wasConnected;
 
         private int _packageNumber;
         private TcpPackageConnection _connection;
@@ -79,7 +81,7 @@ namespace EventStore.ClientAPI.Core
             _queue.RegisterHandler<CloseConnectionMessage>(msg => CloseConnection(msg.Reason, msg.Exception));
 
             _queue.RegisterHandler<StartOperationMessage>(msg => StartOperation(msg.Operation, msg.MaxRetries, msg.Timeout));
-            _queue.RegisterHandler<StartSubscriptionMessage>(msg => StartSubscription(msg));
+            _queue.RegisterHandler<StartSubscriptionMessage>(StartSubscription);
 
             _queue.RegisterHandler<EstablishTcpConnectionMessage>(msg => EstablishTcpConnection(msg.EndPoints));
             _queue.RegisterHandler<TcpConnectionEstablishedMessage>(msg => TcpConnectionEstablished(msg.Connection));
@@ -211,13 +213,12 @@ namespace EventStore.ClientAPI.Core
             _subscriptions.CleanUp();
             CloseTcpConnection(reason);
 
-            LogInfo("closed. Reason: {0}.", reason);
+            LogInfo("Closed. Reason: {0}.", reason);
 
-            if (exception != null && _settings.ErrorOccurred != null)
-                _settings.ErrorOccurred(_esConnection, exception);
+            if (exception != null)
+                RaiseErrorOccurred(exception);
 
-            if (_settings.Closed != null)
-                _settings.Closed(_esConnection, reason);
+            RaiseClosed(reason);
         }
 
         private void CloseTcpConnection(string reason)
@@ -253,8 +254,10 @@ namespace EventStore.ClientAPI.Core
             _subscriptions.PurgeSubscribedAndDroppedSubscriptions(_connection.ConnectionId);
             _reconnInfo = new ReconnectionInfo(_reconnInfo.ReconnectionAttempt, _stopwatch.Elapsed);
 
-            if (_settings.Disconnected != null)
-                _settings.Disconnected(_esConnection, connection.RemoteEndPoint);
+            if (Interlocked.CompareExchange(ref _wasConnected, 0, 1) == 1)
+            {
+                RaiseDisconnected(connection.RemoteEndPoint);
+            }
         }
 
         private void TcpConnectionEstablished(TcpPackageConnection connection)
@@ -295,8 +298,9 @@ namespace EventStore.ClientAPI.Core
             _state = ConnectionState.Connected;
             _connectingPhase = ConnectingPhase.Connected;
 
-            if (_settings.Connected != null)
-                _settings.Connected(_esConnection, _connection.RemoteEndPoint);
+            Interlocked.CompareExchange(ref _wasConnected, 1, 0);
+
+            RaiseConnectedEvent(_connection.RemoteEndPoint);
 
             if (_stopwatch.Elapsed - _lastTimeoutsTimeStamp >= _settings.OperationTimeoutCheckPeriod)
             {
@@ -322,15 +326,13 @@ namespace EventStore.ClientAPI.Core
                             CloseConnection("Reconnection limit reached.");
                         else
                         {
-                            if (_settings.Reconnecting != null) 
-                                _settings.Reconnecting(_esConnection);
+                            RaiseReconnecting();
                             DiscoverEndPoint(null);
                         }
                     }
                     if (_connectingPhase == ConnectingPhase.Authentication && _stopwatch.Elapsed - _authInfo.TimeStamp >= _settings.OperationTimeout)
                     {
-                        if (_settings.AuthenticationFailed != null)
-                            _settings.AuthenticationFailed(_esConnection, "Authentication timed out.");
+                        RaiseAuthenticationFailed("Authentication timed out.");
                         GoToConnectedState();
                     }
                     if (_connectingPhase > ConnectingPhase.ConnectionEstablishing)
@@ -463,8 +465,9 @@ namespace EventStore.ClientAPI.Core
                     && _connectingPhase == ConnectingPhase.Authentication
                     && _authInfo.CorrelationId == package.CorrelationId)
                 {
-                    if (package.Command == TcpCommand.NotAuthenticated && _settings.AuthenticationFailed != null)
-                        _settings.AuthenticationFailed(_esConnection, "Not authenticated");
+                    if (package.Command == TcpCommand.NotAuthenticated)
+                        RaiseAuthenticationFailed("Not authenticated");
+
                     GoToConnectedState();
                     return;
                 }
@@ -565,6 +568,43 @@ namespace EventStore.ClientAPI.Core
         {
             if (_settings.VerboseLogging) _settings.Log.Info("EventStoreConnection '{0}': {1}.", _esConnection.ConnectionName, parameters.Length == 0 ? message : string.Format(message, parameters));
         }
+
+        private void RaiseConnectedEvent(IPEndPoint remoteEndPoint)
+        {
+            Connected(_esConnection, new ClientConnectionEventArgs(_esConnection, remoteEndPoint));
+        }
+
+        private void RaiseDisconnected(IPEndPoint remoteEndPoint)
+        {
+            Disconnected(_esConnection, new ClientConnectionEventArgs(_esConnection, remoteEndPoint));
+        }
+
+        private void RaiseClosed(string reason)
+        {
+            Closed(_esConnection, new ClientClosedEventArgs(_esConnection, reason));
+        }
+
+        private void RaiseErrorOccurred(Exception exception)
+        {
+            ErrorOccurred(_esConnection, new ClientErrorEventArgs(_esConnection, exception));
+        }
+
+        private void RaiseReconnecting()
+        {
+            Reconnecting(_esConnection, new ClientReconnectingEventArgs(_esConnection));
+        }
+
+        private void RaiseAuthenticationFailed(string reason)
+        {
+            AuthenticationFailed(_esConnection, new ClientAuthenticationFailedEventArgs(_esConnection, reason));
+        }
+
+        public event EventHandler<ClientConnectionEventArgs> Connected = delegate { };
+        public event EventHandler<ClientConnectionEventArgs> Disconnected = delegate { };
+        public event EventHandler<ClientReconnectingEventArgs> Reconnecting = delegate { };
+        public event EventHandler<ClientClosedEventArgs> Closed = delegate { };
+        public event EventHandler<ClientErrorEventArgs> ErrorOccurred = delegate { };
+        public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed = delegate { };
 
         private struct HeartbeatInfo
         {
